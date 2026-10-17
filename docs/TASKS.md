@@ -79,7 +79,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 
 | Phase | Total | Not Started | Ready | In Progress | Blocked | In Review | Done | Deferred |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 01 — Requirements Finalization and Planning | 14 | 12 | 0 | 0 | 0 | 0 | 2 | 0 |
+| 01 — Requirements Finalization and Planning | 14 | 11 | 0 | 0 | 0 | 0 | 3 | 0 |
 | 02 — UI/UX Design | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 03 — Authentication and Core Backend | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -91,7 +91,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **169** | **0** | **0** | **0** | **0** | **2** | **0** |
+| **Total** | **171** | **168** | **0** | **0** | **0** | **0** | **3** | **0** |
 
 ## 4. Milestone tracker
 
@@ -136,13 +136,14 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Evidence:** [Scope inventory, exclusions, external decisions and verification](./evidence/P01-002-scope.md).\
   **Accepted:** Project owner, 17 October 2026 — “Scope checklist গ্রহণ করছি”.
 
-- [ ] **P01-003 — Establish complete FR and acceptance mapping**\
-  **Status:** `Not Started` · **Area:** Planning\
+- [x] **P01-003 — Establish complete FR and acceptance mapping**\
+  **Status:** `Done` · **Area:** Planning · **Owner:** Codex\
   **Sources:** PRD §5; §14; Implementation Plan §8\
   **Depends on:** `P01-001`\
   **Deliverable:** Trace FR-01 through FR-34, their individual subrequirements/business rules, and PRD §14 acceptance checks to owning phases/tasks, UI/API surfaces and verification tests; link applicable NFRs from P01-004.\
   **Acceptance:** Every applicable subrequirement and PRD §14 check has an owner and planned pass/fail evidence slot; gaps, shared ownership and release blockers are explicit without asserting completion.\
-  **Evidence to attach:** Requirements traceability register.
+  **Evidence:** [Complete clause, acceptance, surface, task and verification mapping](./evidence/P01-003-traceability.md).\
+  **Accepted:** Project owner, 17 October 2026 — “Traceability register গ্রহণ করছি”.
 
 - [ ] **P01-004 — Map NFRs and release acceptance**\
   **Status:** `Not Started` · **Area:** Planning\
@@ -1563,42 +1564,46 @@ independent work; use actual provider and policy evidence for financial and laun
 
 The matrix assigns implementation ownership. Record requirement-level evidence during execution and use PRD §14 as the definitive acceptance checklist.
 
+[P01-003 detailed traceability](./evidence/P01-003-traceability.md) maps every source clause and acceptance check to its
+accountable task, shared UI/API context and planned verification/evidence slot. The summary below retains the original
+owners and includes additional cross-domain owners identified by that mapping.
+
 | PRD requirement | Owning tasks (and key follow-through) |
 | --- | --- |
-| FR-01 | `P03-004`, `P03-005`, `P03-007`, `P03-010`, `P03-013`, `P03-014`, `P03-015`, `P03-016`, `P10-005`, `P11-003` |
-| FR-02 | `P03-004`, `P03-008`, `P03-010`, `P03-011`, `P03-013`, `P03-015`, `P03-016` |
-| FR-03 | `P04-012`, `P04-015`, `P09-008`, `P11-006` |
-| FR-04 | `P04-001`, `P04-009`, `P04-011`, `P04-013`, `P04-015`, `P10-009` |
-| FR-05 | `P04-002`, `P04-003`, `P04-010`, `P04-011`, `P04-014`, `P04-015`, `P10-009` |
-| FR-06 | `P04-002`, `P04-005`, `P04-010`, `P04-014`, `P04-015` |
-| FR-07 | `P05-001`, `P05-002`, `P05-003`, `P05-011`, `P05-013` |
+| FR-01 | `P03-004`, `P03-005`, `P03-007`, `P03-010`, `P03-013`, `P03-014`, `P03-015`, `P03-016`, `P10-005`, `P11-003`, `P09-003` |
+| FR-02 | `P03-004`, `P03-008`, `P03-010`, `P03-011`, `P03-013`, `P03-015`, `P03-016`, `P06-014`, `P05-004`, `P05-012`, `P08-012`, `P06-005`, `P08-013` |
+| FR-03 | `P04-012`, `P04-015`, `P09-008`, `P11-006`, `P02-006`, `P09-005` |
+| FR-04 | `P04-001`, `P04-009`, `P04-011`, `P04-013`, `P04-015`, `P10-009`, `P04-002` |
+| FR-05 | `P04-002`, `P04-003`, `P04-010`, `P04-011`, `P04-014`, `P04-015`, `P10-009`, `P05-001`, `P05-004`, `P05-010`, `P06-004` |
+| FR-06 | `P04-002`, `P04-005`, `P04-010`, `P04-014`, `P04-015`, `P04-006`, `P06-005` |
+| FR-07 | `P05-001`, `P05-002`, `P05-003`, `P05-011`, `P05-013`, `P06-004` |
 | FR-08 | `P05-004`, `P05-012`, `P05-013` |
-| FR-09 | `P05-005`, `P05-006`, `P05-007`, `P05-011`, `P05-013`, `P06-004`, `P06-007`, `P06-009`, `P06-010`, `P06-020`, `P07-008`, `P07-009`, `P10-002` |
+| FR-09 | `P05-005`, `P05-006`, `P05-007`, `P05-011`, `P05-013`, `P06-004`, `P06-007`, `P06-009`, `P06-010`, `P06-020`, `P07-008`, `P07-009`, `P10-002`, `P05-008`, `P06-008`, `P07-013` |
 | FR-10 | `P05-009`, `P05-010`, `P05-012`, `P05-013`, `P08-016`, `P08-017`, `P08-018`, `P09-006` |
-| FR-11 | `P06-004`, `P06-005`, `P06-006`, `P06-008`, `P06-009`, `P06-018`, `P06-020`, `P07-004`, `P10-002`, `P11-008` |
-| FR-12 | `P01-006`, `P06-008`, `P06-012`, `P07-001`, `P07-002`, `P07-003`, `P07-004`, `P07-005`, `P07-006`, `P07-007`, `P07-008`, `P07-009`, `P07-010`, `P07-011`, `P07-012`, `P07-013`, `P07-014`, `P07-015`, `P07-017`, `P10-003`, `P11-004`, `P11-005`, `P11-009`, `P12-005` |
-| FR-13 | `P04-006`, `P04-008`, `P04-015`, `P06-007`, `P06-008`, `P06-009`, `P06-010`, `P06-020`, `P07-008`, `P07-009`, `P07-017`, `P08-004`, `P10-002` |
-| FR-14 | `P06-005`, `P06-011`, `P06-014`, `P06-019`, `P06-020` |
-| FR-15 | `P06-013`, `P06-019`, `P06-020`, `P08-018` |
-| FR-16 | `P01-007`, `P06-001`, `P06-002`, `P06-003`, `P06-011`, `P06-017`, `P06-018`, `P06-020`, `P09-004`, `P09-008`, `P11-006`, `P11-007` |
+| FR-11 | `P06-004`, `P06-005`, `P06-006`, `P06-008`, `P06-009`, `P06-018`, `P06-020`, `P07-004`, `P10-002`, `P11-008`, `P06-001` |
+| FR-12 | `P01-006`, `P06-008`, `P06-012`, `P07-001`, `P07-002`, `P07-003`, `P07-004`, `P07-005`, `P07-006`, `P07-007`, `P07-008`, `P07-009`, `P07-010`, `P07-011`, `P07-012`, `P07-013`, `P07-014`, `P07-015`, `P07-017`, `P10-003`, `P11-004`, `P11-005`, `P11-009`, `P12-005`, `P06-010` |
+| FR-13 | `P04-006`, `P04-008`, `P04-015`, `P06-007`, `P06-008`, `P06-009`, `P06-010`, `P06-020`, `P07-008`, `P07-009`, `P07-017`, `P08-004`, `P10-002`, `P06-013`, `P07-011`, `P06-011` |
+| FR-14 | `P06-005`, `P06-011`, `P06-014`, `P06-019`, `P06-020`, `P06-013`, `P08-012`, `P08-013`, `P06-003`, `P06-017`, `P07-011` |
+| FR-15 | `P06-013`, `P06-019`, `P06-020`, `P08-018`, `P08-005`, `P06-016` |
+| FR-16 | `P01-007`, `P06-001`, `P06-002`, `P06-003`, `P06-011`, `P06-017`, `P06-018`, `P06-020`, `P09-004`, `P09-008`, `P11-006`, `P11-007`, `P06-016` |
 | FR-17 | `P01-007`, `P08-001`, `P08-002`, `P08-003`, `P08-004`, `P08-011`, `P08-012`, `P08-018`, `P11-007` |
 | FR-18 | `P01-006`, `P01-007`, `P07-011`, `P08-005`, `P08-006`, `P08-007`, `P08-008`, `P08-009`, `P08-010`, `P08-011`, `P08-013`, `P08-018`, `P10-004`, `P11-004`, `P11-005`, `P11-007`, `P11-009`, `P12-005` |
-| FR-19 | `P06-015`, `P06-019`, `P06-020`, `P10-005`, `P11-008` |
+| FR-19 | `P06-015`, `P06-019`, `P06-020`, `P10-005`, `P11-008`, `P06-013`, `P08-012`, `P08-013` |
 | FR-20 | `P03-009`, `P03-010`, `P06-016`, `P06-020`, `P07-016`, `P08-011`, `P10-010`, `P11-004` |
 | FR-21 | `P03-004`, `P03-005`, `P03-012`, `P03-013`, `P03-014`, `P03-015`, `P03-016`, `P09-010`, `P10-005`, `P11-003`, `P11-008` |
 | FR-22 | `P09-001`, `P09-002`, `P09-009`, `P09-010` |
 | FR-23 | `P04-002`, `P04-003`, `P04-005`, `P04-015`, `P09-010`, `P11-006` |
-| FR-24 | `P04-001`, `P04-004`, `P04-015`, `P09-010` |
-| FR-25 | `P04-006`, `P04-007`, `P04-015`, `P09-007`, `P09-010` |
-| FR-26 | `P06-003`, `P06-011`, `P06-012`, `P06-013`, `P06-017`, `P06-019`, `P06-020`, `P09-004`, `P09-007`, `P09-010`, `P11-008`, `P12-004` |
+| FR-24 | `P04-001`, `P04-004`, `P04-015`, `P09-010`, `P04-003` |
+| FR-25 | `P04-006`, `P04-007`, `P04-015`, `P09-007`, `P09-010`, `P08-004` |
+| FR-26 | `P06-003`, `P06-011`, `P06-012`, `P06-013`, `P06-017`, `P06-019`, `P06-020`, `P09-004`, `P09-007`, `P09-010`, `P11-008`, `P12-004`, `P07-015`, `P08-015` |
 | FR-27 | `P09-003`, `P09-009`, `P09-010` |
 | FR-28 | `P06-001`, `P06-002`, `P06-020`, `P09-005`, `P09-010`, `P11-006` |
-| FR-29 | `P06-012`, `P06-020`, `P07-002`, `P07-010`, `P07-012`, `P07-015`, `P07-017`, `P09-002`, `P09-007`, `P09-010`, `P10-003`, `P11-009`, `P12-005` |
+| FR-29 | `P06-012`, `P06-020`, `P07-002`, `P07-010`, `P07-012`, `P07-015`, `P07-017`, `P09-002`, `P09-007`, `P09-010`, `P10-003`, `P11-009`, `P12-005`, `P08-015` |
 | FR-30 | `P05-008`, `P05-013`, `P09-010` |
 | FR-31 | `P05-009`, `P05-010`, `P05-013`, `P08-016`, `P08-017`, `P09-006`, `P09-010` |
-| FR-32 | `P08-001`, `P08-003`, `P08-004`, `P08-014`, `P08-018`, `P09-010` |
-| FR-33 | `P08-005`, `P08-006`, `P08-008`, `P08-009`, `P08-010`, `P08-015`, `P08-018`, `P09-007`, `P09-010`, `P10-004`, `P11-009`, `P12-004` |
-| FR-34 | `P01-007`, `P06-017`, `P09-004`, `P09-005`, `P09-008`, `P09-010`, `P11-006`, `P11-007` |
+| FR-32 | `P08-001`, `P08-003`, `P08-004`, `P08-014`, `P08-018`, `P09-010`, `P08-002`, `P08-005` |
+| FR-33 | `P08-005`, `P08-006`, `P08-008`, `P08-009`, `P08-010`, `P08-015`, `P08-018`, `P09-007`, `P09-010`, `P10-004`, `P11-009`, `P12-004`, `P08-011`, `P08-007` |
+| FR-34 | `P01-007`, `P06-017`, `P09-004`, `P09-005`, `P09-008`, `P09-010`, `P11-006`, `P11-007`, `P06-001` |
 
 ### 7.1 Non-functional and cross-cutting coverage
 
@@ -1645,6 +1650,7 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | --- | --- | --- | --- | --- | --- |
 | 17 October 2026 | P01-001 | Baseline verification passed; project owner accepted the checklist; status Done | Codex / project owner | [Accepted baseline verification](./evidence/P01-001-baseline.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P01-002 | Scope and exclusion review passed; project owner accepted the checklist; status Done | Codex / project owner | [Accepted scope verification](./evidence/P01-002-scope.md) | Proceed through declared task dependencies |
+| 17 October 2026 | P01-003 | Traceability verification passed; project owner accepted the register; status Done | Codex / project owner | [Accepted traceability register](./evidence/P01-003-traceability.md) | Proceed through declared task dependencies |
 
 When execution starts, update the task status and attach evidence. Change a checkbox to `[x]` only after acceptance.
 Preserve IDs and dependency references; update phase totals and record milestone acceptance separately.
