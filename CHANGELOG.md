@@ -25,6 +25,7 @@ This changelog tracks the documentation baseline. Application releases are recor
 - Completed P01-011 agent execution-rule review with project-owner acceptance; clarified pre-enable risk tests, external-call transaction boundaries and CI check inventory.
 - Completed P01-012 task-status/evidence protocol with project-owner acceptance; clarified transitions/reopening and reconciled the initial unverified state and accepted task evidence.
 - Completed P01-013 testing-baseline review with project-owner acceptance; reconciled requirement/risk ownership, actual tooling/commands, planned app suites and coverage/execution counts.
+- Completed P01-014 operations-baseline review with project-owner acceptance; reconciled runbook/configuration handoffs, operational decision gates and executable-command prerequisites.
 
 ## Maintenance
 

@@ -241,6 +241,11 @@ lockfile, migrations, index definitions, required configuration, secret-store lo
 schedule definitions, email sender verification, gateway limits and callback configuration. A staging success never
 proves live merchant capabilities.
 
+Before executing an environment-specific runbook, record its actual resource/backup/secret-store references, named
+authorized operator, exact commands, preflight/abort conditions and tested recovery steps in the protected operating
+inventory. Unverified platform commands remain prerequisites; a published procedure does not prove an executable deployment.
+Use [P01-005 readiness records](./evidence/P01-005-readiness.md) to track unresolved ownership and external inputs.
+
 ## 5. CI/CD & deployment procedures
 
 ### 5.1 Release pipeline
@@ -264,10 +269,11 @@ flowchart TD
 
 The monorepo uses `storefront/`, `admin/` and `backend/` workspaces (Architecture §4). Implement the standard
 package-script interface in [Testing §5.3](./TESTING.md#53-standard-execution-interface) during foundation setup.
-Run the verified scripts against the committed manifest and lockfile:
+The required application build/validation interface is below. Run each command only after its implementation and
+environment prerequisites are verified against the committed manifest and lockfile:
 
 ```bash
-# Build and validation interface established during foundation setup.
+# Required application interface; establish with the owning foundation/slices before deployment.
 npm ci
 npm run lint
 npm run typecheck
@@ -278,6 +284,12 @@ npm run build --workspace=storefront
 npm run build --workspace=admin
 npm run build --workspace=backend
 ```
+
+The current repository foundation supports `npm ci`, `npm run workspaces:check`, `npm run lint`, `npm run test:unit`
+and `npm run ci`. It has no application build, deployment, migration or restore command yet. The three workspaces remain
+manifest-only in [ci-workspaces.json](../ci-workspaces.json); app scaffolding activates real required checks. See
+[Testing §5.3](./TESTING.md#53-standard-execution-interface) for current coverage and the complete required interface.
+Successful foundation CI is evidence for its configured checks only, not application deployment or operational readiness.
 
 CI must reject missing required scripts rather than silently skip checks. Pin compatible runtime/tool versions and
 preserve tested build outputs with commit SHA, dependency lock digest and signed/traceable artifact identity where
@@ -937,7 +949,7 @@ numeric timer.
 
 **Trigger:** Verified request to access, correct or erase personal data; approved retention expiry; legal hold or
 privacy incident. **Owner:** Authorized privacy/store owner with security/data operator; applicable legal
-requirements require independent approval (Operations §13.5).
+requirements require independent review under §16.2.
 
 1. Record request ID, intake source, requested action, affected identities and statutory/policy determination
    **without guessing a deadline**. Verify requester identity and authority through the approved account/guest
@@ -1267,6 +1279,11 @@ Each runbook execution must record:
 Use this configuration vocabulary consistently in runtime validation, `.env.example` and deployment records.
 Keep secret values outside Git and frontend bundles. Record environment-specific values through protected
 secret/configuration references in the operating inventory.
+
+The current [.env.example](../.env.example) is a minimal local template with twelve keys. Its localhost origins and
+sandbox mode are development conventions; blank secrets, proof-key version and quote/upload lifetimes are not valid
+deployed configuration. No runtime validator consumes this template yet. Add exact adapter/runtime keys with their owning
+implementation and per-key validation; complete all applicable categories below before deploying the corresponding service.
 
 | Configuration category | Identifiers / contents | Exposure / validation |
 | --- | --- | --- |

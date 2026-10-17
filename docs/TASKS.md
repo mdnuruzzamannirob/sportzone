@@ -101,7 +101,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 
 | Phase | Total | Not Started | Ready | In Progress | Blocked | In Review | Done | Deferred |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 01 — Requirements Finalization and Planning | 14 | 1 | 0 | 0 | 0 | 0 | 13 | 0 |
+| 01 — Requirements Finalization and Planning | 14 | 0 | 0 | 0 | 0 | 0 | 14 | 0 |
 | 02 — UI/UX Design | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 03 — Authentication and Core Backend | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -113,7 +113,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **158** | **0** | **0** | **0** | **0** | **13** | **0** |
+| **Total** | **171** | **157** | **0** | **0** | **0** | **0** | **14** | **0** |
 
 ## 4. Milestone tracker
 
@@ -257,13 +257,14 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Evidence:** [Reviewed testing baseline, requirement owners and current verification interface](./evidence/P01-013-testing-baseline.md).\
   **Accepted:** Project owner, 17 October 2026 — “Testing baseline গ্রহণ করছি”.
 
-- [ ] **P01-014 — Establish `OPERATIONS.md` baseline**\
-  **Status:** `Not Started` · **Area:** Documentation/operations\
+- [x] **P01-014 — Establish `OPERATIONS.md` baseline**\
+  **Status:** `Done` · **Area:** Documentation/operations · **Owner:** Codex\
   **Sources:** PRD §18; Architecture §13; Implementation Plan §4.3\
   **Depends on:** `P01-005`, `P01-009`\
   **Deliverable:** Review and reconcile the OPERATIONS.md baseline with environments, configuration names, provider/account ownership, deployment/recovery prerequisites, monitoring, backup/restore, incident and operator sections.\
   **Acceptance:** Unknown hosting values remain tracked decisions; later deployments require executable updated runbooks, with no secrets or invented provider readiness.\
-  **Evidence to attach:** Reviewed `OPERATIONS.md` baseline.
+  **Evidence:** [Operations baseline, configuration reconciliation, runbook owners and decision gates](./evidence/P01-014-operations-baseline.md).\
+  **Accepted:** Project owner, 17 October 2026 — “Operations baseline গ্রহণ করছি”.
 
 ### Phase 02 — UI/UX design
 
@@ -1709,6 +1710,7 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | 17 October 2026 | P01-011 | Agent-rule review and static checks passed; project owner accepted the reviewed instructions; status Done | Codex / project owner | [Accepted agent-rule review](./evidence/P01-011-agent-rules.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P01-012 | Not Started → In Review → Done; protocol/register checks passed; project owner accepted the task/status/evidence protocol | Codex / project owner | [Accepted task-protocol review](./evidence/P01-012-task-protocol.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P01-013 | Not Started → In Review → Done; coverage/static and local CI checks passed; project owner accepted the testing baseline | Codex / project owner | [Accepted testing baseline](./evidence/P01-013-testing-baseline.md) | Proceed through declared task dependencies |
+| 17 October 2026 | P01-014 | Not Started → In Review → Done; operations/static checks passed; project owner accepted the operations baseline | Codex / project owner | [Accepted operations baseline](./evidence/P01-014-operations-baseline.md) | Proceed through declared task dependencies |
 
 When execution starts, update the task status and attach evidence. Change a checkbox to `[x]` only after acceptance.
 Preserve IDs and dependency references; update phase totals and record milestone acceptance separately.
