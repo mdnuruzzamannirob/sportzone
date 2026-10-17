@@ -79,7 +79,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 
 | Phase | Total | Not Started | Ready | In Progress | Blocked | In Review | Done | Deferred |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 01 — Requirements Finalization and Planning | 14 | 4 | 0 | 0 | 0 | 0 | 10 | 0 |
+| 01 — Requirements Finalization and Planning | 14 | 3 | 0 | 0 | 0 | 0 | 11 | 0 |
 | 02 — UI/UX Design | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 03 — Authentication and Core Backend | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -91,7 +91,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **161** | **0** | **0** | **0** | **0** | **10** | **0** |
+| **Total** | **171** | **160** | **0** | **0** | **0** | **0** | **11** | **0** |
 
 ## 4. Milestone tracker
 
@@ -208,13 +208,14 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Evidence:** [CI workflow, local pipeline and deliberately failing checks](./evidence/P01-010-ci.md); hosted run [39039353486](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/39039353486) Passed.\
   **Accepted:** Project owner, 17 October 2026 — “accha yabar ay task ta done koro”.
 
-- [ ] **P01-011 — Reconcile and verify AGENTS.md execution rules**\
-  **Status:** `Not Started` · **Area:** Planning\
+- [x] **P01-011 — Reconcile and verify AGENTS.md execution rules**\
+  **Status:** `Done` · **Area:** Planning · **Owner:** Codex\
   **Sources:** Architecture §4; Implementation Plan §§1.3,4.2\
   **Depends on:** `P01-001`, `P01-009`\
   **Deliverable:** Document source precedence, scope constraints, task evidence, change control and safety checks.\
   **Acceptance:** Instructions do not contradict PRD, Architecture, Design or Implementation Plan.\
-  **Evidence to attach:** Reviewed AGENTS.md.
+  **Evidence:** [Reviewed agent instructions, authority consistency and safety/evidence controls](./evidence/P01-011-agent-rules.md).\
+  **Accepted:** Project owner, 17 October 2026 — “Agent-rule review গ্রহণ করছি”.
 
 - [ ] **P01-012 — Establish task statuses and evidence protocol**\
   **Status:** `Not Started` · **Area:** Planning\
@@ -1681,6 +1682,7 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | 17 October 2026 | P01-008 | Critical-scenario and dependency checks passed; project owner accepted the planning record; status Done; runtime verification remains separate | Codex / project owner | [Critical-scenario map](./evidence/P01-008-critical-scenarios.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P01-009 | Workspace clean-install/discovery and safety checks passed; project owner accepted the foundation; status Done | Codex / project owner | [Workspace foundation](./evidence/P01-009-workspace.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P01-010 | Local pipeline and 12 tooling regressions passed; hosted run 39039353486 Passed; project owner accepted baseline; status Done | Codex / project owner | [Accepted CI baseline evidence](./evidence/P01-010-ci.md) | Proceed through declared task dependencies |
+| 17 October 2026 | P01-011 | Agent-rule review and static checks passed; project owner accepted the reviewed instructions; status Done | Codex / project owner | [Accepted agent-rule review](./evidence/P01-011-agent-rules.md) | Proceed through declared task dependencies |
 
 When execution starts, update the task status and attach evidence. Change a checkbox to `[x]` only after acceptance.
 Preserve IDs and dependency references; update phase totals and record milestone acceptance separately.

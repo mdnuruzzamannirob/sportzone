@@ -108,6 +108,8 @@ Apply this sequence to each assigned change:
 
 Follow the dependency-driven feature-slice sequence in [Implementation Plan §§3, 6](docs/IMPLEMENTATION_PLAN.md). A phase label does not automatically require unrelated work to be sequential; safety prerequisites still apply.
 
+For higher-risk mutations, write state-transition and concurrency tests before enabling the mutation in an integrated environment, as required by Implementation Plan §3.1.
+
 ## 5. Implementation principles
 
 - **One authoritative backend:** Express services own prices, discounts, delivery charges, stock, permissions, order transitions and financial effects. Next.js route handlers or Server Actions may only be thin presentation adapters.
@@ -156,6 +158,7 @@ Follow the dependency-driven feature-slice sequence in [Implementation Plan §§
 - Implement the collection, field, index and transaction contracts in [Database](docs/DATABASE.md), preserving the invariants in [PRD](docs/PRD.md) and [Architecture](docs/ARCHITECTURE.md). Review changes to these contracts through normal change control. Verify implementation with migrations, indexes and applicable tests before task acceptance.
 - Use integer **poisha**, deterministic discount allocation and rounding, and historical order snapshots; never persist floating-point currency as the financial authority.
 - Enforce unique identities/indexes, atomic conditional inventory writes and MongoDB transactions for cross-document business invariants. Do not use standalone MongoDB to claim checkout transaction tests passed.
+- Keep provider, email and media calls outside MongoDB transactions. Persist recoverable operation intent before an uncertain external effect and reconcile its outcome before any financial retry, following Architecture §6.2 and Database §12.2.
 - Protect available/reserved/committed stock, coupon holds/redemptions, checkout idempotency, and order/payment/refund state transitions against duplicate and concurrent requests.
 - Record verified provider receipts separately from order funding/fulfillment decisions. Preserve unmatched, partial and excess collections for investigation; never silently discard or misallocate funds.
 - Limit refund commitments by actual verified source-collection balances and eligible merchandise quantities. Distinguish payment corrections from merchandise refunds; provider payout acceptance is not confirmed disbursement.
@@ -190,6 +193,8 @@ Verification depends on the change type. Consult [Testing](docs/TESTING.md) for 
 | Documentation | Correct references, Markdown structure/links, consistency with related contracts |
 
 Execute repository scripts **only after confirming their actual names** in `package.json` and CI. Do not imply planned scripts/tests already exist. Record command, environment, observed result and artifact link. Use these results honestly: **Passed**, **Failed**, **Not Run** (including unavailable infrastructure), or **Blocked**. A mock-only check or static review is not real provider, concurrency, deployment or production acceptance.
+
+When scaffolding a workspace or adding its scripts/dependencies, update [ci-workspaces.json](ci-workspaces.json) with the actual setup state and required checks. Every configured check must exist and pass; do not use `--if-present` or passing placeholders to conceal missing setup. A foundation CI pass does not prove application or milestone readiness.
 
 ## 12. Documentation & change management
 
