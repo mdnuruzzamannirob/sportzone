@@ -79,7 +79,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 
 | Phase | Total | Not Started | Ready | In Progress | Blocked | In Review | Done | Deferred |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 01 — Requirements Finalization and Planning | 14 | 11 | 0 | 0 | 0 | 0 | 3 | 0 |
+| 01 — Requirements Finalization and Planning | 14 | 10 | 0 | 0 | 0 | 0 | 4 | 0 |
 | 02 — UI/UX Design | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 03 — Authentication and Core Backend | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -91,7 +91,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **168** | **0** | **0** | **0** | **0** | **3** | **0** |
+| **Total** | **171** | **167** | **0** | **0** | **0** | **0** | **4** | **0** |
 
 ## 4. Milestone tracker
 
@@ -145,13 +145,14 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Evidence:** [Complete clause, acceptance, surface, task and verification mapping](./evidence/P01-003-traceability.md).\
   **Accepted:** Project owner, 17 October 2026 — “Traceability register গ্রহণ করছি”.
 
-- [ ] **P01-004 — Map NFRs and release acceptance**\
-  **Status:** `Not Started` · **Area:** Planning\
+- [x] **P01-004 — Map NFRs and release acceptance**\
+  **Status:** `Done` · **Area:** Planning · **Owner:** Codex\
   **Sources:** PRD §12; §14; §18\
   **Depends on:** `P01-003`\
   **Deliverable:** Track privacy, performance, accessibility, browser, reliability, availability and release controls.\
   **Acceptance:** No mandatory NFR or release gate is omitted from the planned verification register.\
-  **Evidence to attach:** NFR/launch coverage checklist.
+  **Evidence:** [Complete NFR, release, acceptance and milestone coverage register](./evidence/P01-004-nfr-release.md).\
+  **Accepted:** Project owner, 17 October 2026 — “NFR/release register গ্রহণ করছি”.
 
 - [ ] **P01-005 — Open operator and external-service readiness register**\
   **Status:** `Not Started` · **Area:** Planning\
@@ -1607,6 +1608,9 @@ owners and includes additional cross-domain owners identified by that mapping.
 
 ### 7.1 Non-functional and cross-cutting coverage
 
+[P01-004 detailed coverage](./evidence/P01-004-nfr-release.md) assigns each PRD §12 and §18 requirement, every existing
+AC check, QA/operations release checklist item and M1–M8 gate a task owner and planned verification/evidence slot.
+
 | Area | Owning task groups and release evidence |
 | --- | --- |
 | Authentication, security, authorization and privacy | P03 identity/security; P06 guest proof; P10 security regression; P11 production-origin verification |
@@ -1651,6 +1655,7 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | 17 October 2026 | P01-001 | Baseline verification passed; project owner accepted the checklist; status Done | Codex / project owner | [Accepted baseline verification](./evidence/P01-001-baseline.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P01-002 | Scope and exclusion review passed; project owner accepted the checklist; status Done | Codex / project owner | [Accepted scope verification](./evidence/P01-002-scope.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P01-003 | Traceability verification passed; project owner accepted the register; status Done | Codex / project owner | [Accepted traceability register](./evidence/P01-003-traceability.md) | Proceed through declared task dependencies |
+| 17 October 2026 | P01-004 | NFR/release coverage verification passed; project owner accepted the register; status Done | Codex / project owner | [Accepted NFR/release register](./evidence/P01-004-nfr-release.md) | Proceed through declared task dependencies |
 
 When execution starts, update the task status and attach evidence. Change a checkbox to `[x]` only after acceptance.
 Preserve IDs and dependency references; update phase totals and record milestone acceptance separately.
