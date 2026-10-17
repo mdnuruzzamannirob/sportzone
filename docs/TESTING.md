@@ -193,6 +193,7 @@ The diagram shows verification responsibilities, not a claim that test infrastru
 
 | Need | Tool | Integration requirement |
 | --- | --- | --- |
+| Repository CI guard regressions | Node.js built-in test runner | Existing `tests/ci.test.mjs`; validates tooling behavior only, not application acceptance |
 | TypeScript unit/component | Vitest | Compatible with approved React, Vite, Next.js and backend versions |
 | React behavior | React Testing Library + user-event | Accessible user interactions rather than component internals |
 | Browser E2E and device projects | Playwright | Browser-project config verified against actual supported browsers |
@@ -203,7 +204,9 @@ The diagram shows verification responsibilities, not a claim that test infrastru
 | Security and dependencies | SAST, dependency audit, secret scanner | CI availability and triage process agreed |
 | CI | GitHub Actions or approved CI system | Matches npm-workspaces repository and deployment controls |
 
-Use compatible supported releases when the repository is initialized, commit exact versions and lockfile, and record installed versions in run evidence.
+The Node.js tooling tests and GitHub Actions baseline exist. The application tools above are introduced with their
+owning feature/tooling tasks; listing a tool is not evidence that it is installed. Use compatible supported releases,
+commit exact versions and lockfile, and record installed versions in run evidence.
 
 ### 5.2 Test code organization
 
@@ -218,13 +221,16 @@ storefront/
 admin/
   src/**/*.test.tsx                       # UI behavior
 tests/
+  ci.test.mjs                            # Existing repository/CI guard regressions
   e2e/                                   # Browser scenarios, fixtures, projects
   performance/                           # Reproducible load scenarios
   security/                              # Authorized security checks
   fixtures/                              # Synthetic identities and catalog
 ```
 
-Use this layout without duplicating business rules inside test helpers. `TESTING.md` governs case intent; source validators and executable specs must be version-linked to `API.md`/`DATABASE.md`.
+Application/E2E directories in this layout are introduced with their owning slices; only the root CI guard test currently
+exists. Use this layout without duplicating business rules inside test helpers. `TESTING.md` governs case intent; source
+validators and executable specs must be version-linked to `API.md`/`DATABASE.md`.
 
 ### 5.3 Standard execution interface
 
@@ -240,7 +246,25 @@ Use this layout without duplicating business rules inside test helpers. `TESTING
 | `npm run test:coverage` | Produce coverage metrics with reproducible exclusion rules |
 | `npm run build` | Build independently deployable workspaces |
 
-Implement and verify these scripts during foundation setup. Staging provider, recovery and load checks have separately approved commands/workflows, not mandatory CI on every commit.
+This is the required application verification interface. Establish each command with its actual tooling during the
+corresponding foundation/feature slice; do not create passing placeholders for an unavailable suite. Staging provider,
+recovery and load checks have separately approved commands/workflows, not mandatory CI on every commit.
+
+**Current executable baseline:**
+
+| Root command | Current coverage / setup state |
+| --- | --- |
+| `npm run workspaces:check` | Three local manifest-only workspace links |
+| `npm run lint` | Repository JavaScript syntax, JSON, whitespace, Markdown structure/links and targeted credential checks |
+| `npm run test:unit` | Twelve repository/CI guard regressions; no application tests are implied |
+| `npm run ci` | Root checks plus every activated workspace check; machine-readable summary includes Not Configured app states |
+| `npm run typecheck`, `test:integration`, `test:contract`, `test:e2e`, `test:security`, `test:coverage`, `build` | Not yet configured at root; implement with the owning tooling/slices before accepting the corresponding capability |
+
+[ci-workspaces.json](../ci-workspaces.json) assigns storefront setup to P02-001, admin to P02-002 and backend to P03-001.
+Adding workspace source, scripts or dependencies requires active CI state and real lint/typecheck/unit/build scripts.
+Extend that inventory and the root aliases with applicable API/DB contract, concurrency, browser and security checks as
+the capabilities arrive. CI must fail for any missing or failing configured command; `--if-present` cannot establish a pass.
+Run evidence and source revisions, not this availability table, determine actual Passed/Failed results.
 
 ---
 
@@ -784,6 +808,11 @@ A `Blocked`/`Inconclusive` mandatory test is **not passed**. A required provider
 | Evidence/gate keys | `NTF-01`, `GATE-BKASH`, `ENV-01` | Artifacts or gates, not test executions |
 | Executable tests | Committed test function with stable mapped case ID | Count only after implementation and test discovery |
 | Executed tests | Run ID + actual result, environment, source revision, assertions | Count only real run evidence; **initially zero** |
+
+The initially-zero rule refers to unexecuted application coverage slots. Repository/CI tooling regressions now have real
+execution evidence in [P01-010](./evidence/P01-010-ci.md); they do not mark any application scenario or OPV slot Passed.
+Detailed requirement/owner mappings are maintained in [P01-003](./evidence/P01-003-traceability.md),
+[P01-004](./evidence/P01-004-nfr-release.md) and [P01-008](./evidence/P01-008-critical-scenarios.md).
 
 For each acceptance row, the mapped `DOMAIN-NN` scenario must eventually resolve to a runnable case and execution artifact. Suite names and fixture/evidence keys alone never satisfy acceptance. Separately report: documented scenario outlines, API slots, implemented test functions, executed cases, passed cases, blocked cases and reviewed acceptance items. Do not aggregate these categories into one misleading “number of tests.”
 
