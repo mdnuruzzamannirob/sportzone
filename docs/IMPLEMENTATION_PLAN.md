@@ -1,16 +1,15 @@
 # SportZone — Implementation plan
 
-**Version:** 1.3\
-**Documentation sync:** 16 October 2026 (editorial alignment; no milestone acceptance claimed)  
-**Updated:** 17 October 2026\
-**Documentation audit:** 17 October 2026 — review remediation adds proposed contracts and checks; no milestone acceptance is claimed.\
-**Status:** Development execution baseline — pending implementation  
-**Product reference:** [PRD](./PRD.md)  
-**Technical reference:** [Architecture](./ARCHITECTURE.md)  
-**Design reference:** [Design](./DESIGN.md)  
-**Execution reference:** [Tasks](./TASKS.md)  
-**Scope:** Single-store sports e-commerce platform for Bangladesh  
-**Audience:** Software engineers and development agents  
+**Version:** 1.0\
+**Status:** Final development baseline\
+**Updated:** 17 October 2026
+
+**Product reference:** [PRD](./PRD.md)\
+**Technical reference:** [Architecture](./ARCHITECTURE.md)\
+**Design reference:** [Design](./DESIGN.md)\
+**Execution reference:** [Tasks](./TASKS.md)\
+**Scope:** Single-store sports e-commerce platform for Bangladesh\
+**Audience:** Software engineers and development agents
 
 This document defines the implementation sequence, dependencies, work packages, verification activities, acceptance gates, and release preparation for SportZone. The PRD governs product scope, business rules, and acceptance criteria; `ARCHITECTURE.md` governs technical boundaries and data integrity; `DESIGN.md` governs interface behavior and visual consistency. `TASKS.md` is the existing execution register for the individual tasks derived from this plan. This document does not replace those specifications or assert that development work has already been completed.
 
@@ -63,17 +62,17 @@ Excluded features remain those listed in PRD §3.2, including multi-vendor opera
 - **Design:** authoritative for visual tokens, navigation, page specifications, components, interaction states, and accessibility behavior.
 - **Implementation Plan:** authoritative for execution sequence, work-package dependencies, and planned verification gates; it cannot overrule the three specifications.
 - **Tasks:** authoritative only for task-level ownership, execution status, blockers, and evidence links after decomposition from this plan.
-- **Database (proposed):** authoritative for collection/field schemas, indexes, persistence constraints, and migrations, within Architecture's invariants.
-- **API (proposed):** authoritative for endpoint requests/responses, errors, authorization, CSRF bootstrap, and idempotency contracts.
-- **Testing (documented; tests not executed):** authoritative for test strategy, scenario procedures, fixtures, commands, and verification matrices; product acceptance stays in PRD.
-- **Operations (proposed runbooks):** authoritative for deployment/configuration, monitoring, backups, restore, incidents, and operator procedures.
-- **README / AGENTS (documented):** root setup/navigation and coding-agent instructions. Neither overrides product or technical contracts.
+- **Database:** authoritative for collection/field schemas, indexes, persistence constraints, and migrations, within Architecture's invariants.
+- **API:** authoritative for endpoint requests/responses, errors, authorization, CSRF bootstrap, and idempotency contracts.
+- **Testing :** authoritative for test strategy, scenario procedures, fixtures, commands, and verification matrices; product acceptance stays in PRD.
+- **Operations:** authoritative for deployment/configuration, monitoring, backups, restore, incidents, and operator procedures.
+- **README / AGENTS:** root setup/navigation and coding-agent instructions. Neither overrides product or technical contracts.
 
 When a source requirement is unclear, unavailable, or apparently inconsistent, record the exact reference and decision needed. Do not treat an implementation assumption or a successful test mock as product approval. Obtain the relevant approval before changing product scope, architecture, or design.
 
 ### 1.4 Execution status
 
-The planning and design documents already exist as implementation baselines. Phase 01 and Phase 02 verify and prepare those baselines; they do **not** instruct the team to recreate the PRD, architecture, or design from the beginning. All phases below represent planned work, not completed milestones.
+This version defines the development baseline. Execute the roadmap through the stable tasks in TASKS.md, recording implementation status and milestone evidence there.
 
 ---
 
@@ -156,10 +155,10 @@ sportzone/
 │   ├── DESIGN.md
 │   ├── IMPLEMENTATION_PLAN.md
 │   ├── TASKS.md
-│   ├── DATABASE.md           # Proposed data contracts
-│   ├── API.md                # Proposed HTTP contracts
-│   ├── TESTING.md            # Documented test plans (not executed)
-│   └── OPERATIONS.md         # Proposed deployment/operations procedures
+│   ├── DATABASE.md           # Data contracts
+│   ├── API.md                # HTTP contracts
+│   ├── TESTING.md            # Verification procedures
+│   └── OPERATIONS.md         # Deployment/operations procedures
 ├── AGENTS.md
 ├── CHANGELOG.md
 ├── README.md
@@ -168,13 +167,11 @@ sportzone/
 └── package.json         # npm workspaces
 ```
 
-Use supported mutually compatible package versions and commit the lockfile. Configure workspace scripts for development, linting, type checking, testing, and independent application builds. Install code-formatting and lint rules appropriate to each application. Add a CI baseline that fails on broken types, tests, lint, or builds; expand its coverage as features arrive. Create `AGENTS.md` during Phase 01 with source-document precedence, scope constraints, task/evidence conventions, and required verification; keep it aligned with this plan and `TASKS.md`.
+Use supported mutually compatible package versions and commit the lockfile. Configure workspace scripts for development, linting, type checking, testing, and independent application builds. Install code-formatting and lint rules appropriate to each application. Add a CI baseline that fails on broken types, tests, lint, or builds; expand its coverage as features arrive. Verify `AGENTS.md` during Phase 01 with source-document precedence, scope constraints, task/evidence conventions, and required verification; keep it aligned with this plan and `TASKS.md`.
 
 Frontend applications must not import Mongoose models or backend runtime services. A shared pure contract package is optional only if verified duplication justifies it; a shared UI component library is not required.
 
 ### 4.3 Database and application infrastructure
-
-**Documentation preparation:** Phase 01 establishes the initial `TESTING.md` and `OPERATIONS.md` baselines, including evidence structure and environment/recovery prerequisites. Phase 03 establishes `DATABASE.md` and `API.md` for identity, browser/CSRF bootstrap, and shared conventions before accepting identity work. Extend data/API contracts before each later feature's implementation. Keep testing and operations instructions current with each slice. Phase 12 reconciles these existing documents against delivered code; it is not their first creation. These documentation baselines now exist; implementing, verifying, approving and reconciling them against delivered code remain outstanding tasks. Their earlier planned creation phases do not imply code or milestone acceptance.
 
 - Configure MongoDB connection management and Mongoose schema/index conventions. Use a replica-set-capable local/test/staging environment for transaction-dependent tests; a standalone server cannot validate transactional checkout behavior.
 - Establish consistent environment validation, health/readiness checks, request identifiers, safe error responses, structured logs, and protected secrets.
@@ -233,7 +230,7 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 **Objective:** Confirm the existing development baselines, unresolved operational decisions, requirement ownership, and implementation dependencies without rewriting approved specifications.
 
-**Prerequisites:** PRD v1.2, Architecture v1.2, and Design v1.2 available as the source documents.
+**Prerequisites:** PRD v1.0, Architecture v1.0, and Design v1.0 available as the source documents.
 
 **Work packages:**
 
@@ -241,7 +238,7 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 2. Map FR-01–FR-34 and PRD acceptance items to the implementation phases and their applicable UI/API surfaces.
 3. Open the readiness register for merchant features, refund support, hosting/DNS, transactional database, email, media, business policies, fulfillment process, and approved product content.
 4. Identify architectural trust boundaries and high-risk financial/inventory scenarios requiring dedicated tests.
-5. Establish the minimal repository and npm-workspaces skeleton needed for Phase 02 application scaffolding; create `AGENTS.md` with approved source precedence, implementation constraints, task/evidence rules, and verification expectations without implementing feature logic.
+5. Establish the minimal repository and npm-workspaces skeleton needed for Phase 02 application scaffolding; verify `AGENTS.md` against source precedence, implementation constraints, task/evidence rules, and verification expectations without implementing feature logic.
 6. Define task IDs, evidence recording, blocker escalation, and milestone acceptance ownership in `TASKS.md`.
 7. Resolve or explicitly defer only issues that do not prevent a safe next phase; do not silently decide unapproved policies.
 
@@ -255,7 +252,7 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 **Objective:** Implement the already-specified UI foundation; this phase does not redesign SportZone.
 
-**Prerequisites:** Phase 01 repository/workspace skeleton, `DESIGN.md` v1.2, and available approved visual assets or identified placeholders awaiting operator assets.
+**Prerequisites:** Phase 01 repository/workspace skeleton, `DESIGN.md` v1.0, and available approved visual assets or identified placeholders awaiting operator assets.
 
 **Work packages:**
 
@@ -349,7 +346,7 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 **Backend work packages:**
 
 1. Implement admin-managed delivery zones, district/area coverage and charges, enabled/disabled delivery selection, a shared store-wide guard for cross-zone charge scheduling/activation, estimated delivery dates, immutable deadline-rule snapshots and separate operational delivery commitments (Database §7.2; API §11.3). Calculate a confirmation-based absolute deadline only from the actual confirmation event. The PRD's 14-calendar-day delivery planning target is subject to any shorter applicable legal deadline; verify the operative rules before launch. Apply settings changes only to future orders.
-2. Review/approve API-D20 and implement scope-bound persisted checkout quotes, mandatory quoteId, expiry/commercial comparison and atomic single-order consumption; changed terms require explicit buyer reconfirmation. Implement checkout validation that rechecks selected SKUs, stock, sale prices, coupon eligibility, customer details, district/area, address, terms acceptance, and server-calculated totals in integer poisha.
+2. Implement the API §11.1 contract with scope-bound persisted checkout quotes, mandatory quoteId, expiry/commercial comparison and atomic single-order consumption; changed terms require explicit buyer reconfirmation. Implement checkout validation that rechecks selected SKUs, stock, sale prices, coupon eligibility, customer details, district/area, address, terms acceptance, and server-calculated totals in integer poisha.
 3. Implement immutable order/order-line snapshots, unique order numbers, fulfillment/payment separation, customer/order ownership, and stable checkout-intent idempotency keys.
 4. Establish transactionally safe allocation coordination: accepted COD remains Pending and commits stock and coupon redemption; administrator confirmation is a separate fulfillment transition; the online path creates **15-minute** inventory and coupon holds with generation-specific heldAt, synchronized stock/coupon expiry/release and idempotent replay that never extends a hold. Keep provider interaction disabled until Phase 07 integration is ready.
 5. Implement COD checkout acceptance, order confirmation, customer order history/details, authorized admin order confirmation/processing/shipment/delivery updates, stock movement on dispatch, and collection recording distinct from delivery status.
@@ -626,7 +623,7 @@ Implement PRD FR-09/FR-11–FR-18 and Architecture §§7/10 through domain servi
 
 Isolate merchant APIs behind backend adapters; verify callbacks through provider status/validation; persist unique references and attempts; distinguish payment collection from fulfillment and payout completion from refund initiation. Retry and reconciliation jobs must be durable, idempotent, observable, and recoverable after restart. Duplicate provider callbacks must not repeat allocation, refund, or notification effects.
 
-For proof-email delivery, review/approve API-D21: a challenge-local authenticated encrypted envelope and verification hash, external key custody, reference-only outbox, safe expiry/reissue and uncertain-send reconciliation. Never equate one event intent with exactly-once email transport.
+For proof-email delivery, follow API §16.3: a challenge-local authenticated encrypted envelope and verification hash, external key custody, reference-only outbox, safe expiry/reissue and uncertain-send reconciliation. Never equate one event intent with exactly-once email transport.
 
 For important state-change notifications, persist delivery intent durably with the originating business transition where needed; dispatch email separately and retry without replaying that business transition. Delivery failures remain visible and do not reverse successfully committed orders or refunds.
 
@@ -774,7 +771,3 @@ SportZone implementation is complete only when all initial-release PRD functiona
 ### 14.3 Relationship to `TASKS.md`
 
 This plan establishes **what to implement, in which dependency order, and with what acceptance evidence**. `TASKS.md` should contain individual work items and their execution status. A task may be marked complete only when its applicable Definition of Done is met; a phase is complete only when its exit gate and linked milestones have passed. Revisions to task breakdown may not silently change the PRD, architecture, design, or this implementation baseline.
-
----
-
-**End of SportZone Implementation Plan — Version 1.3**

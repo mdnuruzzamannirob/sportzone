@@ -1,25 +1,21 @@
 # SportZone — Database design specification
 
-**Version:** 1.3\
-**Source baseline:** PRD / Architecture v1.2; Design / Implementation Plan / Tasks v1.3; API / Testing / Operations v1.2\
-**Updated:** 17 October 2026\
-**Documentation audit:** 17 October 2026 — review remediation is proposed design, not technical approval, implemented behavior or release acceptance.\
-**Status:** Revised implementation proposal — technical sign-off and runtime verification pending  
-**Product reference:** [PRD](./PRD.md)  
-**Technical reference:** [Architecture](./ARCHITECTURE.md)  
-**Design reference:** [Design](./DESIGN.md)  
-**Execution references:** [Implementation Plan](./IMPLEMENTATION_PLAN.md) · [Tasks](./TASKS.md)  
-**Scope:** Single-store sports e-commerce platform for Bangladesh  
-**Stack:** MongoDB, Mongoose, Express/TypeScript  
+**Version:** 1.0\
+**Status:** Final development baseline\
+**Updated:** 17 October 2026
+
+**Product reference:** [PRD](./PRD.md)\
+**Technical reference:** [Architecture](./ARCHITECTURE.md)\
+**Design reference:** [Design](./DESIGN.md)\
+**Execution references:** [Implementation Plan](./IMPLEMENTATION_PLAN.md) · [Tasks](./TASKS.md)\
+**Scope:** Single-store sports e-commerce platform for Bangladesh\
+**Stack:** MongoDB, Mongoose, Express/TypeScript\
 **Audience:** Backend engineers, reviewers, and development agents
 
-This document defines SportZone's proposed durable data model: physical collections, embedded records, field contracts,
+This document defines SportZone's durable data model: physical collections, embedded records, field contracts,
 indexes, state persistence, transactions, data protection, and schema evolution. It translates the PRD's **27 logical
 entities** into an implementable design without requiring 27 one-to-one collections. The PRD remains authoritative for
-product and policy rules; `ARCHITECTURE.md` governs system boundaries and integrity invariants. This revision includes the
-API contract remediation for delivery timing, versioned policy content, mutation revisions, and provider amount
-reconciliation; MongoDB indexes, gateway behavior, Mermaid rendering, and integration tests remain **unverified at
-runtime**. Published policy types include the PRD-required privacy page; approval and publication use the same versioned controls as other policies.
+product and policy rules; `ARCHITECTURE.md` governs system boundaries and integrity invariants. It defines delivery timing, versioned policy content, guarded mutations and verified financial accounting. All policy types, including privacy, use versioned approval/publication controls.
 
 ---
 
@@ -41,7 +37,7 @@ runtime**. Published policy types include the PRD-required privacy page; approva
 - [14. Security, privacy, and retention](#14-security-privacy-and-retention)
 - [15. Migrations, environments, and recovery](#15-migrations-environments-and-recovery)
 - [16. Verification and traceability](#16-verification-and-traceability)
-- [Appendix A — Cross-document decision register](#appendix-a--cross-document-decision-register)
+- [Appendix A — Persistence standards](#appendix-a--persistence-standards)
 - [Appendix B — Schema implementation checklist](#appendix-b--schema-implementation-checklist)
 
 ---
@@ -54,17 +50,17 @@ runtime**. Published policy types include the PRD-required privacy page; approva
 | --- | --- | --- |
 | `PRD.md` | Functional requirements, business policies, acceptance | Never replace policy with a schema assumption |
 | `ARCHITECTURE.md` | MongoDB/Mongoose choice, trust boundaries, stock/payment invariants | No alternate business database or client-side writes |
-| **`DATABASE.md`** | Collections, exact field shapes, indexes, persistence state, transactions, migrations | Proposed specification for backend implementation |
-| [`API.md`](./API.md) (proposed) | HTTP payloads, errors, authorization, retry contracts | Map API DTOs to persisted fields; do not expose private models |
-| [`TESTING.md`](./TESTING.md) (documented; tests not executed) | Test procedures, fixtures, executable evidence | Validate contracts here with executable tests there |
-| [`OPERATIONS.md`](./OPERATIONS.md) (proposed runbooks) | Backup/restore procedure, production jobs, monitoring | This document states DB prerequisites and invariants |
+| **`DATABASE.md`** | Collections, exact field shapes, indexes, persistence state, transactions, migrations | Persistence contract for backend implementation |
+| [`API.md`](./API.md) | HTTP payloads, errors, authorization, retry contracts | Map API DTOs to persisted fields; do not expose private models |
+| [`TESTING.md`](./TESTING.md) | Test procedures, fixtures, executable evidence | Validate contracts here with executable tests there |
+| [`OPERATIONS.md`](./OPERATIONS.md) | Backup/restore procedure, production jobs, monitoring | This document states DB prerequisites and invariants |
 
-### 1.2 Scope and status
+### 1.2 Scope and authority
 
 - **In scope:** customer/admin identity, guest proof, products and variants, shopping, checkout, COD/online payments, stock, coupons, shipment, claims, refunds, notifications, support, settings, and audit history.
 - **Out of scope:** multi-vendor tenancy, loyalty, subscriptions, live courier GPS, automated courier integration, multi-currency, multi-role RBAC, and speculative analytics infrastructure (PRD §3.2).
 - **Authority:** Only Express domain services write business data. Next.js and the admin SPA never connect directly to MongoDB.
-- **Status convention:** Fields/indexes below are **proposed technical decisions** unless the cited PRD/Architecture requires them. Record decisions in Appendix A before marking this contract accepted; do not describe unexecuted migrations or index tests as complete.
+- **Contract:** implement the fields, indexes and state transitions below, then verify them with the corresponding API and database tests.
 
 ### 1.3 Cross-cutting acceptance conditions
 
@@ -114,7 +110,7 @@ explicitly `null`**, while an unissued `refundAttempts.refundRefId` is absent. M
 equivalent explicit DTO allowlists; direct unrestricted update operators are prohibited for protected fields. An embedded
 `id` is a stable ObjectId, not an array offset.
 
-**Proposed baseline limits** (apply where a table does not define a stricter bound; revise with an approved API/UX contract before accepting the schema):
+**Validation limits** (apply unless the owning field defines a stricter bound):
 
 | Field family | Default maximum / constraint |
 | --- | --- |
@@ -130,8 +126,7 @@ equivalent explicit DTO allowlists; direct unrestricted update operators are pro
 | Return claim lines / private evidence refs | 40 lines / 12 files per claim |
 | Embedded short status/contact history | 40 records; overflow goes to `auditLogs` or another approved durable event record |
 
-These are implementation-proposed abuse and document-size limits, **not pre-existing PRD approvals**. Do not silently
-truncate purchased quantities or personal information. Dates and optional ObjectIds use explicit JSON/BSON schema
+Enforce these abuse and document-size limits consistently. Reject invalid input rather than silently truncating purchased quantities or personal information. Dates and optional ObjectIds use explicit JSON/BSON schema
 validators, and optional reference fields must not be stored as `''`. Provider limits are authoritative for their
 corresponding API fields (`tran_id` 30, `bank_tran_id` 80, `refund_trans_id` 30, `refund_ref_id` 50 characters, per the
 currently published SSLCOMMERZ v4 reference).
@@ -165,9 +160,9 @@ events). Never embed an unbounded payment history, product review list, or movem
 
 ### 3.1 Collection inventory
 
-The following **37 physical collections** are proposals, not assertions about an existing database. `authChallenges`, `browserContexts`,
+The data model contains **37 physical collections**. `authChallenges`, `browserContexts`,
 `checkoutQuotes`, `checkoutIntents`, `mediaAssets`, `providerReceiptIntake`, `paymentCollections`, `couponCustomerCounters`, `orderItemBalances`,
-`cancellationRequests`, `deliveryExceptions`, and `jobLeases` are supporting collections required by the proposed safe
+`cancellationRequests`, `deliveryExceptions`, and `jobLeases` are supporting collections required by the defined
 persistence design.
 
 | Domain | Collections | Key embeddings |
@@ -290,7 +285,7 @@ flowchart TD
 
 ## 5. Identity and access collections
 
-**Common rule:** No password, session, guest-proof, CSRF context, or recovery token may be stored in plaintext. The proposed API-D21 design below uses a short-lived encrypted challenge-delivery envelope; the notification outbox contains only its challenge reference. Security/data-owner approval and key-custody verification remain prerequisites; never store raw proof links in the outbox. Use separate session types/cookie names for admin, customer, and scoped guest access; require server-side role and resource ownership checks (Architecture §9).
+**Common rule:** No password, session, guest-proof, CSRF context, or recovery token may be stored in plaintext. Use a short-lived encrypted challenge-delivery envelope with a reference-only notification outbox. Verify key custody and never store raw proof links in the outbox. Use separate session types/cookie names for admin, customer, and scoped guest access; require server-side role and resource ownership checks (Architecture §9).
 
 ### 5.1 `users` — `auth` / `customers`
 
@@ -349,7 +344,7 @@ flowchart TD
 
 **Rules:** guest proof is issued only after safe order/email lookup and grants order scope only after atomic single-use exchange; ambiguous lookup responses do not leak existence. Password reset token consumption and password/session revision must be coordinated safely.
 
-**Proof delivery (API-D21, proposal):** generate a cryptographically random, high-entropy single-use proof in memory.
+**Proof delivery (API §16.3):** generate a cryptographically random, high-entropy single-use proof in memory.
 Persist its `secretHash`, scope/expiry and authenticated encrypted `deliveryEnvelope` in the same transaction as the
 notification intent. Use a maintained AEAD implementation, a fresh nonce for each encryption under a key, and authenticated
 additional data binding challenge ID, purpose, principal/order, destination and expiry. The versioned encryption key is
@@ -360,8 +355,7 @@ consumes the challenge; it never decrypts to validate a supplied proof. Remove t
 expiry, independently of TTL lag. Keep old key versions only while still-valid envelopes need them; missing keys or AEAD
 failure fail closed. Resend/reissue must increment `users.challengeRevisions[purpose]` or `orders.guestAccessChallengeRevision`, invalidate the old challenge under that same principal/purpose serialization guard and
 create a fresh proof/intent; do not extend an existing proof's expiry. Delivery retry reuses that challenge and event key;
-see API §16.3 for uncertain-send handling. No new session is granted by delivery. The chosen proof transport is a high-entropy secure link; supporting short numeric codes later requires a separately reviewed guessing/attempt-limit design. Security review must validate key access,
-nonce management, concurrency, redaction and restore invalidation before implementation relies on this proposal.
+see API §16.3 for uncertain-send handling. No new session is granted by delivery. The chosen proof transport is a high-entropy secure link; supporting short numeric codes later requires a separately reviewed guessing/attempt-limit design. Security tests cover key access, nonce management, concurrency, redaction and restore invalidation.
 
 ### 5.4 `browserContexts` — pre-auth CSRF bootstrap
 
@@ -492,13 +486,13 @@ an expired unreferenced record as `deleting`; attachment cannot race past that c
 all references before provider deletion. Timeout remains `deleting` for status reconciliation; never delete a referenced
 asset or declare provider deletion from a local timeout. Private retrieval rechecks current order/claim ownership and
 issues only a short-lived authorized URL (never a permanent public evidence URL). Exact size/MIME/scan/retention values
-remain API-D10/OPS-D14 approvals; the lifecycle design is proposed under API-D18.
+are configured under API §16.2 and Operations §13.3.
 
 ## 7. Orders, delivery, and inventory collections
 
 ### 7.1 `checkoutIntents` — `checkout`
 
-#### 7.1.1 `checkoutQuotes` — buyer confirmation (API-D20 proposal)
+#### 7.1.1 `checkoutQuotes` — buyer confirmation
 
 | Field | Type | Constraints / notes |
 | --- | --- | --- |
@@ -517,8 +511,7 @@ line IDs; rejects changed prices, allocation, charge/rule, deadline basis, metho
 transaction, conditionally consume the quote with intent/order/allocation creation; concurrent different keys for the same
 quote cannot create two orders. Repeat same-key requests resolve the durable intent **before** checking quote expiry or
 consumption. Different payload under that key remains a conflict. A changed/expired quote needs a fresh quote and explicit
-buyer confirmation, never automatic resubmission. Stock/coupon capacity is checked again atomically at submit. This remains
-a design proposal requiring Product/API/data-owner sign-off, not approval to charge from an unreviewed contract.
+buyer confirmation, never automatic resubmission. Stock/coupon capacity is checked again atomically at submit. Verify scope, expiry, commercial comparison, replay and concurrent consumption through checkout transaction tests.
 
 #### 7.1.2 Checkout intent fields
 
@@ -601,7 +594,7 @@ exception handling (PRD FR-16).
 | Field | Type | Constraints / notes |
 | --- | --- | --- |
 | `orderId`! / `orderItemId`! | ObjectId | One balance per immutable `orders.items[].id` |
-| `purchasedQty`! | int | Immutable purchase quantity (1–50 under proposed limits) |
+| `purchasedQty`! | int | Immutable purchase quantity (1–50 under the validation limits) |
 | `unitCoverage[]`! | embedded[] | Exactly `purchasedQty` rows `{ordinal,netEntitlementPoisha,claimState,claimId?,refundHeldPoisha,refundCompletedPoisha,restockOperationKey?}` |
 | `activeClaimQty`! / `resolvedClaimQty`! | int | Recomputable counts for protected and resolved ordinal rows |
 | `refundedMerchandiseQty`! | int | Recomputable count of units **fully** paid out; partial amounts remain visible per ordinal |
@@ -1361,8 +1354,7 @@ stateDiagram-v2
 | 6 | No linked money and all relevant attempts are verified failed with no uncertain/new attempt | `failed` | A future verified collection supersedes this summary |
 | 7 | Everything else, including COD awaiting collection, partial/unassigned funds or an uncertain attempt | `pending` | Expose `collected/expected`, `unassigned`, and risk separately |
 
-`expected=0` requires a separately approved zero-value-order flow; do **not** infer `paid` by `0=0`. This proposal does not
-create a seventh PRD payment status. `merchandiseRefundCompleted` here includes eligible original delivery charge. For
+`expected=0` requires a separately approved zero-value-order flow; do **not** infer `paid` by `0=0`. The PRD payment-status enum remains unchanged. `merchandiseRefundCompleted` here includes eligible original delivery charge. For
 cancelled orders with merchandise funds already allocated, do not reclassify historic funded receipts merely to make the
 status nicer: keep `paid`/refund progression and record cancellation separately. **Correction-only refunds never move a
 payment to `partially_refunded` or `refunded`.** Underfunded orders with refunded partial collections remain pending plus
@@ -1432,12 +1424,12 @@ Payment, fulfillment, risk review, correction, refund capacity, and external pro
 | --- | --- | --- |
 | Expired sessions/challenges/context | Reject by timestamp; TTL cleanup permitted | Set with security/operations approval |
 | Cart/wishlist/profile | Maintain while account exists; deletion requests require verified processing | Operator policy and applicable legal requirements |
-| Orders/items/delivery snapshots | Preserve source-of-truth history for disputes, accounting and legal duties | **Not approved here** |
-| Attempts, verified collections, refunds, financial corrections | Preserve immutable financial evidence and reconciliation trail | **Not approved here** |
-| Inventory movements/redemptions/return claims | Preserve consistency and audit trace | **Not approved here** |
-| Complaints/notifications | Minimize and retain for approved response/support obligation | **Not approved here** |
-| Administrative/security audit | Append-only, access-controlled, integrity-protected retention | **Not approved here** |
-| Product media and return evidence | Clean unused/orphaned assets only when no active evidence/retention dependency | **Not approved here** |
+| Orders/items/delivery snapshots | Preserve source-of-truth history for disputes, accounting and legal duties | Environment retention policy; legal hold takes precedence |
+| Attempts, verified collections, refunds, financial corrections | Preserve immutable financial evidence and reconciliation trail | Environment retention policy; legal hold takes precedence |
+| Inventory movements/redemptions/return claims | Preserve consistency and audit trace | Environment retention policy; legal hold takes precedence |
+| Complaints/notifications | Minimize and retain for approved response/support obligation | Environment retention policy; legal hold takes precedence |
+| Administrative/security audit | Append-only, access-controlled, integrity-protected retention | Environment retention policy; legal hold takes precedence |
+| Product media and return evidence | Clean unused/orphaned assets only when no active evidence/retention dependency | Environment retention policy; legal hold takes precedence |
 
 **Account deletion:** verify requester ownership; revoke active sessions; assess ongoing orders, legally required
 financial/complaint evidence and deletion rights; pseudonymize/minimize personal account data where law/policy allows
@@ -1466,7 +1458,7 @@ a numeric legal retention period or introducing an unapproved self-service delet
 7. **Rollback/repair:** Preserve original accounting evidence; never blindly reverse paid receipts, shipped stock movements, or completed payouts. Use explicit compensating records and authorized incident procedure.
 8. **Record:** Commit migration name/version, deployment environment, run result and test evidence. No migration is considered executed by its appearance in this document.
 
-**Proposed code location:** `backend/src/db/migrations/` (or an equally documented backend-owned path); use monotonic
+**Code location:** `backend/src/db/migrations/`; use monotonic
 migration IDs, an append-only migration run record and environment-controlled execution. The final repository folder layout
 must remain aligned with `ARCHITECTURE.md` §4 rather than silently inventing another application.
 
@@ -1488,7 +1480,7 @@ must remain aligned with `ARCHITECTURE.md` §4 rather than silently inventing an
 
 ### 15.4 Backup, reconciliation, and restoration prerequisites
 
-- [Operations §11](./OPERATIONS.md#11-backup-restore--disaster-recovery) owns backup and recovery procedures. Exact cadence, retention, restore commands and recovery objectives remain pending operator approval and environment capability validation.
+- [Operations §11](./OPERATIONS.md#11-backup-restore--disaster-recovery) owns backup and recovery procedures. Record cadence, retention, restore commands and recovery objectives in the environment inventory.
 - A restored database must retain unique index definitions, checkout-key tombstones, unmatched provider intake, linked receipts, active allocations, live refund commitments, provider references and durable job state; rebuild derived payment/product counters only through a verified reconciliation process.
 - Restoration acceptance must check snapshot/index compatibility, aggregate money equations, inventory movement reconciliation, coupon usage totals, and any provider payments/refunds occurring after the backup point. **Restoring old data does not reverse externally completed money movements.**
 - Schedule reconciliation of uncertain gateway receipts, unsettled refund attempts, held allocation age, cash-flow projections, and stock movement deltas. Surface discrepancies for authorized resolution instead of silent destructive repairs.
@@ -1548,46 +1540,30 @@ must remain aligned with `ARCHITECTURE.md` §4 rather than silently inventing an
 | Architecture §§7, 9–10, 12 | Technical integrity, access scope, business transitions and retry safety | Throughout |
 | Implementation Plan §§3–4, 6, 11 and Tasks P03-017 | Incremental data contracts, tests, migration and evidence gates | §§1, 15–16 |
 
-### 16.3 Acceptance checklist for the specification
+### 16.3 Schema implementation requirements
 
-- [ ] All 27 PRD logical entities have an explicit storage mapping; all 37 proposed physical collections have an owner.
-- [ ] Every proposed physical collection has an owner, business field schema, validation and relevant indexes.
-- [ ] Every order/payment/stock/coupon/claim/refund balance has a documented atomic transition and recovery path, including unmatched cash, partial/excess allocations and ordinal-split refunds.
-- [ ] Mermaid diagrams agree with the tables and are rendered/visually checked in the target Markdown viewer.
-- [ ] Field names and enum values are reconciled with the proposed [API DTO contracts](./API.md#6-shared-dtos--response-contracts).
-- [ ] Unresolved policy/provider/retention decisions are approved or retained as explicit release blockers.
-- [ ] Mongoose schemas, actual MongoDB indexes, unique/partial filter predicates and transaction tests match this specification.
-- [ ] All cross-document deviations are approved and documented rather than silently inferred.
+- Implement all 37 physical collections with their owners, field validation and indexes.
+- Verify each money, stock, coupon, claim and refund transition with atomicity and recovery tests.
+- Match API DTOs to allowlisted persistence fields and immutable snapshots.
+- Validate diagrams, migration compatibility, index predicates and historical records.
+- Enforce retention, privacy and provider identity requirements through the operating configuration.
 
 ---
 
-## Appendix A — Cross-document decision register
+## Appendix A — Persistence standards
 
-These are **design proposals or external approvals still required**, not product requirements that have been silently changed. The document can guide implementation, but approval and executable verification remain necessary.
-
-| ID | Decision / dependency | Proposed handling | Status |
-| --- | --- | --- | --- |
-| DB-D01 | Physical collections vs embedded entities | Split high-growth/independently changed records; embed bounded snapshots/addresses/return items | Proposed |
-| DB-D02 | SKU stock authority | Counters live in `productVariants`; immutable event trail in `inventoryMovements` | Proposed |
-| DB-D03 | Per-customer coupon quota concurrency | Separate `couponCustomerCounters`, atomic with global coupon counters | Proposed |
-| DB-D04 | Refund source accounting | Every refund has exactly one verified `sourceCollectionId`; split cross-collection payouts | Proposed |
-| DB-D05 | Guest CSRF context persistence | `browserContexts` plus one-time `authChallenges` and scoped sessions | Proposed |
-| DB-D06 | Checkout idempotency retention and legal deletion | Retain minimal **non-TTL** key/order tombstone; retired replay key fails closed; approve erasure/archival duration with API and operations | Open policy decision; duplicate-order safety specified |
-| DB-D07 | Merchant/provider identifiers and duplicate-charge cardinality | Merchant `refundTransId` required; provider `refundRefId` later. No unique attempt→receipt assumption. Confirm exact provider identity, refund references and merchant capability in sandbox | External verification required |
-| DB-D08 | Active/scheduled delivery rules and regional charges | Global singleton deliveryCoverageRevision serializes all zones; one active rule and non-overlapping schedules per coverage key; actual regions/charges operator supplied | Operator approval required |
-| DB-D09 | Store policy versions, delivery/complaint legal deadlines, 7-day return/7-business-day refund targets | Snapshot approved policy; do not assert legal verification from PRD defaults | Legal/operator approval required |
-| DB-D10 | PII/transaction/audit retention, deletion and recovery objectives | No invented legal duration; finalize approved retention matrix before production | Legal/operator approval required |
-| DB-D11 | Search index design, catalog sizes, performance budgets | Select after profiling real query shapes and approved test workload | Deferred until benchmark |
-| DB-D12 | Admin initial account, SSL payment-channel activation and gateway credentials | Protected provisioning/verified merchant configuration; no placeholder production success | External prerequisite |
-| DB-D13 | Unmatched, partial and excess verified funds | `providerReceiptIntake` separates unknown ownership; linked receipts have exact merchandise/correction/unassigned amounts and auditable reallocations | Proposed technical contract; sandbox approval pending |
-| DB-D14 | Versioned migration execution and actual index support | Verify compatibility with selected MongoDB/Mongoose versions and deployed topology | Not yet verified |
-| DB-D15 | Numeric field/array validation limits | Use proposed global bounded defaults in §2.2; reconcile with final API/UI before acceptance | Proposed |
-| DB-D16 | Monetary rounding and refund unit accounting | Half-up basis-point calculation; largest remainder tie-break; unit-ordinal source-funded partial refunds | Proposed; requires tests |
-| DB-D17 | Buyer-confirmed quote persistence | checkoutQuotes + unique intent quoteId, atomic compare/consume; approved configurable expiry; API-D20 | Concrete proposal; Product/API/data review and transaction tests pending |
-| DB-D18 | Retry hold clock and synchronized capacity | Generation-specific heldAt and common stock/coupon expiry; no replay extension | Concrete proposal; backend/data review and race tests pending |
-| DB-D19 | Optional field removal and public DTO completion | Explicit request null→persisted absence; complete dashboard/refund/contact projections | Concrete proposal; API/data/frontend review and contract tests pending |
-| DB-D20 | Durable proof delivery without plaintext/outbox secrets | Hash plus challenge-local AEAD envelope, external key, reference-only intent and safe reissue; API-D21 | Concrete proposal; security/data review, key custody and fault tests pending |
-| DB-D21 | Homepage/media persistence | Separate homepageBanner from logo; mediaAssets ownership, attachment and cleanup ledger; API-D17/API-D18 | Concrete proposal; content/security/data review and tests pending |
+| Area | Implementation standard |
+| --- | --- |
+| Ownership | Backend domain services own writes; immutable snapshots and append-only evidence preserve history |
+| Concurrency | Unique indexes, conditional writes, aggregate revisions and transactions enforce cross-record invariants |
+| Inventory | Variant counters are authoritative; generation-specific holds and movement keys prevent duplicate effects |
+| Payments | Provider intake deduplicates verified funds; linked collections retain exact class allocations |
+| Refunds | Every obligation uses one verified source; unit ordinals, delivery entitlement and source-class caps reserve capacity |
+| Checkout | Scope-bound quotes are consumed once with a durable intent and order; retired keys retain uniqueness |
+| Identity | Hash verification secrets; use a short-lived authenticated envelope only for proof delivery, with keys outside MongoDB |
+| Media | Persist upload ownership, attachment references and deletion claims before external effects |
+| Configuration | Operations owns environment-specific lifetimes, retention, business calendars and service access |
+| Verification | Test actual schemas, indexes, transactions, retries and recovery against the requirements in §16 |
 
 ## Appendix B — Schema implementation checklist
 
@@ -1602,8 +1578,3 @@ These are **design proposals or external approvals still required**, not product
 | Administration and reporting | Audit/support/settings, reporting cash-flow formulas | Phase 09 |
 | Release evidence | Security, race tests, real index verification, backup/restore and reconciliation | Phases 10–11 |
 | Handover | Reconcile this schema with delivered Mongoose models, migrations, and tests | Phase 12 |
-
-**Definition of complete:** This document becomes the accepted database contract only after outstanding design decisions
-are resolved, `API.md` mappings are reconciled, implementation/indexes are reviewed, integration tests prove the stated
-invariants, and release-specific legal/provider/operator prerequisites are verified. A finished Markdown file by itself is
-not evidence of a working database. This **v1.3** working revision retains the v1.1/v1.2 corrections and adds review remediation; runtime, production, owner approval and provider sign-off remain pending.

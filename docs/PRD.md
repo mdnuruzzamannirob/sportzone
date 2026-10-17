@@ -1,20 +1,18 @@
 # SportZone — Product requirements document
 
-**Version:** 1.2  
-**Updated:** 16 October 2026  
-**Documentation audit:** 16 October 2026 — corrections in this working revision do not grant specification, task or release approval.  
-**Project Type:** Full-Stack E-Commerce Web Application  
-**Target Market:** Bangladesh  
-**Currency:** Bangladeshi Taka (BDT)  
-**Platform:** Responsive Web Application  
-**Document Status:** Product requirements baseline — implementation and launch acceptance pending  
-**Language:** English  
+**Version:** 1.0\
+**Status:** Final development baseline\
+**Updated:** 17 October 2026
+
+**Project Type:** Full-Stack E-Commerce Web Application\
+**Target Market:** Bangladesh\
+**Currency:** Bangladeshi Taka (BDT)\
+**Platform:** Responsive Web Application\
+**Language:** English
 
 ---
 
 This document owns product scope, business rules, customer rights, and product acceptance. Technical design belongs in [Architecture](./ARCHITECTURE.md); detailed data and HTTP contracts belong in [Database](./DATABASE.md) and [API](./API.md). Delivery sequencing belongs in [Implementation Plan](./IMPLEMENTATION_PLAN.md), execution status in [Tasks](./TASKS.md), verification procedures in [Testing](./TESTING.md), and operating procedures in [Operations](./OPERATIONS.md). [Design](./DESIGN.md) owns interface behavior. Root [README](../README.md) and [AGENTS](../AGENTS.md) provide repository orientation and coding-agent instructions.
-
-**Documentation synchronization (16 October 2026):** All twelve planned Markdown documentation files now exist as proposed/baseline artifacts. This editorial synchronization does not change the PRD v1.2 product requirements or claim implementation, technical sign-off, deployment, legal approval, or release acceptance.
 
 **Contents**
 
@@ -1418,7 +1416,7 @@ Delivery failures require an exception record and administrator resolution.
 
 ### 11.2 Payment lifecycle
 
-These are business summary states, not a complete provider-attempt state machine. A verified late collection must still be recorded after an earlier Failed/Cancelled attempt signal; it never reopens cancelled fulfillment. Multiple collections and payment-correction refunds must remain visible even when the merchandise payment remains Paid. Architecture §10 defines orchestration; [Database §§8, 13](./DATABASE.md) defines proposed aggregate and attempt fields.
+These are business summary states, not a complete provider-attempt state machine. A verified late collection must still be recorded after an earlier Failed/Cancelled attempt signal; it never reopens cancelled fulfillment. Multiple collections and payment-correction refunds must remain visible even when the merchandise payment remains Paid. Architecture §10 defines orchestration; [Database §§8, 13](./DATABASE.md) defines aggregate and attempt fields.
 
 Pending → Paid
 
@@ -1760,7 +1758,7 @@ The final handover should include:
 
 ### 19.2 Default business policies
 
-The following values are adopted for development and test fixtures in revision 1.2. Public policy publication and live operation still require operator approval and any overriding current legal requirements. A later policy change updates the owning FR first and is versioned; implementation must not treat these values as independently verified law:
+Use the following business policies for implementation. Published policy content must reflect current applicable law and operator-approved terms. Version subsequent changes through the owning functional requirement:
 
 - Standard return request window: 7 calendar days after delivery.
 - Cancellation: Before shipment, subject to processing status.
@@ -1775,7 +1773,7 @@ The following values are adopted for development and test fixtures in revision 1
 
 Review these policies against current Bangladesh consumer and digital-commerce rules before publication. Store policies cannot override customer rights.
 
-Background reference: [Digital Commerce Operation Guidelines 2021 — government gazette](https://www.dpp.gov.bd/bgpress/index.php/document/get_extraordinary/40432). This reference alone does not verify current law or its applicability.
+Background reference: [Digital Commerce Operation Guidelines 2021 — government gazette](https://www.dpp.gov.bd/bgpress/index.php/document/get_extraordinary/40432). Apply the current authoritative rules when publishing policies.
 
 ### 19.3 External dependencies
 
@@ -1833,7 +1831,3 @@ These are launch configuration requirements rather than missing product features
 23. Security and functional testing.
 24. Production deployment.
 25. Technical documentation and project handover.
-
----
-
-**End of Product Requirements Document — Version 1.2**

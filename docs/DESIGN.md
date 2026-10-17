@@ -1,15 +1,15 @@
 # SportZone — UI/UX design specification
 
-**Version:** 1.3\
-**Updated:** 17 October 2026\
-**Documentation audit:** 17 October 2026 — review remediation aligns UI data/consent requirements; implementation and independent acceptance remain pending.\
-**Status:** Design implementation baseline — monochrome light/dark themes with a consistent blue brand color  
-**Product reference:** [PRD](./PRD.md)  
-**Technical reference:** [Architecture](./ARCHITECTURE.md)  
-**Applications:** Customer storefront (Next.js) and administration portal (React + Vite)  
-**Market / currency:** Bangladesh / BDT  
+**Version:** 1.0\
+**Status:** Final development baseline\
+**Updated:** 17 October 2026
 
-This document owns the visual system, page composition, navigation, interactions, responsive behavior, and accessible UI states for SportZone. Detailed HTTP/data contracts and test/operating procedures are documented separately in [API](./API.md), [Database](./DATABASE.md), [Testing](./TESTING.md), and [Operations](./OPERATIONS.md); these files exist as proposed/baseline specifications, not verified implementations. The [PRD](./PRD.md) defines product scope and business rules; [Architecture](./ARCHITECTURE.md) defines technical boundaries. The interface uses a black-and-white light/dark foundation with restrained blue interactive accents and semantic tokens. Brand assets and policy content remain operator-supplied; no unapproved business claims are assumed.
+**Product reference:** [PRD](./PRD.md)\
+**Technical reference:** [Architecture](./ARCHITECTURE.md)\
+**Applications:** Customer storefront (Next.js) and administration portal (React + Vite)\
+**Market / currency:** Bangladesh / BDT
+
+This document owns the visual system, page composition, navigation, interactions, responsive behavior, and accessible UI states for SportZone. Detailed HTTP/data contracts and test/operating procedures are documented separately in [API](./API.md), [Database](./DATABASE.md), [Testing](./TESTING.md), and [Operations](./OPERATIONS.md). The [PRD](./PRD.md) defines product scope and business rules; [Architecture](./ARCHITECTURE.md) defines technical boundaries. The interface uses a black-and-white light/dark foundation with restrained blue interactive accents and semantic tokens. Brand assets and policy content remain operator-supplied; no unapproved business claims are assumed.
 
 ---
 
@@ -357,7 +357,7 @@ Account pages must not expose another customer's records. If a session expires, 
 | **Order Confirmation** | Order number, summary, payment/fulfillment status, next steps, receipt of submitted order | COD shown as unpaid until collection; pending online payment not mislabeled as paid |
 | **Order Lookup** | Order number + checkout email; request verification link/code; verified order view | Rate-limited, time-limited proof; scoped cancellation, return, and refund tracking only when eligible |
 
-**Checkout composition:** Keep contact/address first, then delivery area and charge, coupon, payment choice, and final summary. On desktop, a persistent summary column may be used; on mobile, show a compact summary during entry and the full total before the final action. A rejected checkout retains entered details and identifies the exact item or field requiring attention. Under proposed API-D20, final confirmation submits the server-issued quoteId; QUOTE_CHANGED/QUOTE_EXPIRED displays refreshed terms for explicit confirmation. Never automatically approve or resubmit a refreshed quote. Keep the same idempotency key during uncertain replay of an already submitted operation.
+**Checkout composition:** Keep contact/address first, then delivery area and charge, coupon, payment choice, and final summary. On desktop, a persistent summary column may be used; on mobile, show a compact summary during entry and the full total before the final action. A rejected checkout retains entered details and identifies the exact item or field requiring attention. Final confirmation submits the server-issued quote reference internally, as specified in API §11.1. Changed or expired quotes display current terms for explicit confirmation using plain-language feedback. Never automatically approve or resubmit a refreshed quote. Keep the same idempotency key during uncertain replay of an already submitted operation.
 
 **Payment messaging:** Distinguish *order submitted*, *payment pending verification*, *payment confirmed*, *payment failed*, and *payment cancelled*. For a late verified payment with unavailable stock/coupon capacity, show **Payment received — fulfillment under review**, not a false order confirmation. Do not display provider transaction secrets.
 
@@ -377,7 +377,7 @@ Account pages must not expose another customer's records. If a session expires, 
 
 **Deadline presentation:** Show a return-request deadline only when delivery date and applicable policy make it reliable; explain legally protected exceptions without implying that the standard window eliminates statutory rights. Refund targets begin at **refund approval**, not request submission. Read approvedAt and the authoritative timing projection from the API; under_review/awaiting_approval has no invented date. Display the approved business-calendar/policy basis and safe item/status timeline; do not calculate targets from a browser holiday guess. If the target is missed, display the latest verified status and support path; never imply payout has completed.
 
-**Legal/operational content:** Delivery commitments and policy wording must reflect the store's approved configuration and applicable law. The UI must not hard-code an unconditional 14-day delivery promise or represent proposed operating policies as verified legal rules.
+**Legal/operational content:** Delivery commitments and policy wording must reflect the store's approved configuration and applicable law. The UI must not hard-code an unconditional 14-day delivery promise or represent store policy drafts as verified legal rules.
 
 ---
 

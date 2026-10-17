@@ -1,13 +1,12 @@
 # SportZone — Software architecture
 
-**Version:** 1.2  
-**Updated:** 16 October 2026  
-**Documentation audit:** 16 October 2026 — corrections in this working revision do not grant specification, task or release approval.  
-**Status:** Implementation baseline — documentation references synchronized; runtime verification pending  
-**Documentation sync:** 16 October 2026 (no architectural scope change)  
-**Product reference:** [SportZone PRD v1.2](./PRD.md) (`docs/PRD.md` in the repository)  
-**Scope:** Single-store sports e-commerce platform serving Bangladesh  
-**Audience:** Software engineers and development agents  
+**Version:** 1.0\
+**Status:** Final development baseline\
+**Updated:** 17 October 2026
+
+**Product reference:** [SportZone PRD v1.0](./PRD.md) (`docs/PRD.md` in the repository)\
+**Scope:** Single-store sports e-commerce platform serving Bangladesh\
+**Audience:** Software engineers and development agents
 
 This document defines SportZone's application boundaries, technical structure, integrity invariants, integration boundaries, and workflow orchestration. The [PRD](./PRD.md) governs product scope, business rules, and acceptance criteria; this document defines their technical implementation.
 
@@ -119,7 +118,7 @@ Public category and product pages use Next.js server rendering or controlled rev
 
 ## 4. Project structure
 
-The following is the target layout. This checkout currently contains only the twelve Markdown documents; application directories, manifests, lockfiles, configuration templates, tests and CI are not present. Use independently buildable applications when the foundation is implemented:
+Use the following workspace layout with independently buildable applications:
 
 ```text
 sportzone/
@@ -152,10 +151,10 @@ sportzone/
 │   ├── DESIGN.md
 │   ├── IMPLEMENTATION_PLAN.md
 │   ├── TASKS.md
-│   ├── DATABASE.md             # Proposed persistence specification
-│   ├── API.md                  # Proposed HTTP contracts
-│   ├── TESTING.md              # Planned verification procedures (documented)
-│   └── OPERATIONS.md           # Proposed operational runbooks
+│   ├── DATABASE.md             # Persistence specification
+│   ├── API.md                  # HTTP contracts
+│   ├── TESTING.md              # Verification procedures
+│   └── OPERATIONS.md           # Operating runbooks
 ├── AGENTS.md
 ├── CHANGELOG.md
 ├── README.md
@@ -266,7 +265,7 @@ Run reservation expiry, uncertain-payment reconciliation, notification retries, 
 
 ## 7. Data architecture
 
-Detailed collection schemas, embedding/reference decisions, field validation, exact indexes, retention schedules, and migrations belong in the proposed [`DATABASE.md`](./DATABASE.md). This section owns modeling strategy and system-wide integrity constraints; it is not a replacement for that specification.
+Detailed collection schemas, embedding/reference decisions, field validation, exact indexes, retention schedules, and migrations belong in [`DATABASE.md`](./DATABASE.md). This section owns modeling strategy and system-wide integrity constraints; it is not a replacement for that specification.
 
 ### 7.1 Modeling approach
 
@@ -292,7 +291,7 @@ Products without selectable options still use a default SKU. The complete relati
 
 Define **Physical** as units on hand not yet shipped, **Reserved** as temporary online holds, and **Committed** as accepted but unshipped allocations.
 
-`Available = Physical − Reserved − Committed`  
+`Available = Physical − Reserved − Committed`\
 `Available >= 0; Reserved >= 0; Committed >= 0`
 
 Use conditional atomic writes to prevent negative availability. For changes spanning reservations, order state, coupon capacity, and stock counters, use MongoDB transactions on a replica-set-capable deployment. Accepted COD orders commit stock immediately; verified online payments convert active holds to commitments. Shipment decreases physical and committed quantities together. Pre-shipment cancellations and eligible expiries release their allocation exactly once; inspected resellable returns increase physical stock.
@@ -309,7 +308,7 @@ TTL cleanup may remove expired session or verification artifacts but must **not*
 
 ## 8. API architecture
 
-The proposed [`API.md`](./API.md) owns endpoint inventory, request/response schemas, error/status mappings, CSRF bootstrap, idempotency behavior, and callback contracts. Architecture owns the security and integration constraints those contracts must preserve.
+[`API.md`](./API.md) owns endpoint inventory, request/response schemas, error/status mappings, CSRF bootstrap, idempotency behavior, and callback contracts. Architecture owns the security and integration constraints those contracts must preserve.
 
 ### 8.1 REST conventions
 
@@ -349,7 +348,7 @@ Use opaque, revocable server-managed sessions. Store a hash of the session token
 
 Prefer same-site storefront, admin, and API subdomains under one approved registrable domain. The API issues **host-only cookies**; credentialed CORS allows only exact approved frontend origins. For state-changing browser requests, require a session-bound CSRF token in a custom request header and validate the `Origin` against approved frontend origins. Provide a non-cacheable CSRF bootstrap for browser requests before authentication as well as session-bound tokens after login. Before login, bind the CSRF token to a short-lived opaque browser-context cookie; this context grants no account or order access.
 
-Login, registration, recovery, guest checkout, and guest-proof exchange require this token and approved Origin validation. After login or proof exchange, rotate context and issue the token for the resulting customer/admin/order-scoped session. Refresh tokens after rotation or expiry; [API §4](./API.md#4-authentication-sessions--csrf) specifies the proposed endpoint and cookie contracts. Payment IPNs and provider browser-return endpoints are exempt from browser token/Origin requirements because they originate outside the approved application origins. They grant no customer/admin access and cannot trust redirect fields.
+Login, registration, recovery, guest checkout, and guest-proof exchange require this token and approved Origin validation. After login or proof exchange, rotate context and issue the token for the resulting customer/admin/order-scoped session. Refresh tokens after rotation or expiry; [API §4](./API.md#4-authentication-sessions--csrf) specifies the endpoint and cookie contracts. Payment IPNs and provider browser-return endpoints are exempt from browser token/Origin requirements because they originate outside the approved application origins. They grant no customer/admin access and cannot trust redirect fields.
 
 Any resulting financial transition requires independent provider verification and idempotency; ordinary browser payment-initiation/retry APIs remain protected.
 
@@ -428,7 +427,7 @@ sequenceDiagram
 **Checkout rules**
 
 1. Recalculate product prices, sale discounts, coupon eligibility, delivery zone/charge, stock, and final BDT total on the backend. Validate customer details and accepted terms.
-2. Persist one order per checkout intent, scoped to the customer or opaque guest browser context; the same key with a different payload is a conflict, not a second operation. Persist canonical request identity and outcome. [API §15](./API.md#15-idempotency-concurrency--recovery) defines replay and conflict handling; the exact replay/retention horizon remains open in API-D03.
+2. Persist one order per checkout intent, scoped to the customer or opaque guest browser context; the same key with a different payload is a conflict, not a second operation. Persist canonical request identity and outcome. [API §15](./API.md#15-idempotency-concurrency--recovery) defines replay and conflict handling; the exact replay/retention horizon remains open in API §15.1.
    Online checkout creates **15-minute** stock and coupon holds and a unique payment attempt transaction ID.
 3. Initiate SSLCOMMERZ hosted checkout on the server. Show bKash, Nagad, and Rocket only when activated for the merchant.
 4. Treat browser success/failure redirects as presentation signals. Verify payment independently using provider IPN and validation/status APIs.
@@ -570,7 +569,7 @@ Cache only suitable public storefront content and invalidate it when catalog dat
 
 ### 12.3 Verification priorities
 
-The proposed [`TESTING.md`](./TESTING.md) owns scenario catalogs, planned fixtures/commands, browser matrices, and test evidence format. Architecture identifies the risks to verify, not a second test procedure.
+[`TESTING.md`](./TESTING.md) owns scenario catalogs, planned fixtures/commands, browser matrices, and test evidence format. Architecture identifies the risks to verify, not a second test procedure.
 
 Test the behavior most likely to cause financial or inventory errors: concurrent final-unit purchases; coupon-limit races; duplicate checkout; delayed/repeated/out-of-order IPNs; missing payment callbacks; expired holds followed by verified payment; COD without collection; partial refunds and duplicate refund attempts; guest verification; session separation; CSRF; unauthorized admin operations; and critical mobile checkout paths. Cover these with unit, integration, and end-to-end tests as appropriate.
 
@@ -611,7 +610,7 @@ Prefer same-site subdomains for storefront, admin, and API to support secure coo
 
 ### 13.3 CI/CD and release safety
 
-The proposed [`OPERATIONS.md`](./OPERATIONS.md) owns deployment procedures, configuration inventory, approval-dependent alert thresholds and backup/restore schedules, rollout/rollback procedures, incident response, and operator workflows. Hosting/provider selections are operational decisions constrained by this topology; names and secrets must not be invented.
+[`OPERATIONS.md`](./OPERATIONS.md) owns deployment procedures, configuration inventory, approval-dependent alert thresholds and backup/restore schedules, rollout/rollback procedures, incident response, and operator workflows. Hosting/provider selections are operational decisions constrained by this topology; names and secrets must not be invented.
 
 Run lint, type checks, tests, and application builds before deployment. Apply and verify required database indexes. Exercise staging checkout, IPN reconciliation, refunds, guest access, CORS/cookies, and admin authorization using deployed origins. Confirm backups, restoration, monitoring, rollback steps, store configuration, merchant activation, and published operational policies before production release.
 
@@ -635,6 +634,6 @@ Run lint, type checks, tests, and application builds before deployment. Apply an
 | Delivery | Admin-managed zones/charges and manual fulfillment updates |
 | Deployment | Next.js runtime, static admin hosting, Express service, transactional MongoDB deployment |
 
-**Document ownership:** PRD owns product rules; Design owns UI behavior; Architecture owns component, security, and consistency decisions. `DATABASE.md` and `API.md` own proposed detailed data and HTTP contracts. `TESTING.md` owns verification procedures; `OPERATIONS.md` owns proposed deployment and operating procedures. All four documents exist; approve affected proposals before implementation relies on them, then reconcile them with code and evidence before dependent feature acceptance. Root README and AGENTS own setup/navigation and agent execution instructions.
+**Document ownership:** PRD owns product rules; Design owns UI behavior; Architecture owns component, security, and consistency decisions. `DATABASE.md` and `API.md` own detailed data and HTTP contracts. `TESTING.md` owns verification procedures; `OPERATIONS.md` owns deployment and operating procedures. Implement these contracts with each feature slice and verify them against code and test evidence. Root README and AGENTS own setup/navigation and agent execution instructions.
 
 The PRD remains authoritative for feature scope and store policies. Architecture changes must preserve its financial, inventory, access-control, and customer-rights requirements.

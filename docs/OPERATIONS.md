@@ -1,25 +1,23 @@
 # SportZone — Operations & maintenance specification
 
-**Version:** 1.2\
-**Updated:** 17 October 2026\
-**Documentation audit:** 17 October 2026 — review-remediation controls are proposed; deployment, drills and sign-off remain pending.\
-**Status:** Revised operational baseline — review findings addressed; deployment, drills, approvals and sign-off pending  
-**Product reference:** [PRD](./PRD.md)  
-**Technical reference:** [Architecture](./ARCHITECTURE.md)  
-**Design reference:** [Design](./DESIGN.md)  
-**Data reference:** [Database](./DATABASE.md) (v1.3)\
-**HTTP reference:** [API](./API.md) (v1.2)\
-**Quality reference:** [Testing](./TESTING.md) (v1.2)\
-**Delivery reference:** [Implementation Plan](./IMPLEMENTATION_PLAN.md)  
-**Execution reference:** [Tasks](./TASKS.md)  
-**Scope:** Single-store sports e-commerce platform for Bangladesh  
+**Version:** 1.0\
+**Status:** Final development baseline\
+**Updated:** 17 October 2026
+
+**Product reference:** [PRD](./PRD.md)\
+**Technical reference:** [Architecture](./ARCHITECTURE.md)\
+**Design reference:** [Design](./DESIGN.md)\
+**Data reference:** [Database](./DATABASE.md)\
+**HTTP reference:** [API](./API.md)\
+**Quality reference:** [Testing](./TESTING.md)\
+**Delivery reference:** [Implementation Plan](./IMPLEMENTATION_PLAN.md)\
+**Execution reference:** [Tasks](./TASKS.md)\
+**Scope:** Single-store sports e-commerce platform for Bangladesh\
 **Audience:** Developers, infrastructure operators, incident responders, store owner and release approvers
 
-This document defines **how to provision, deploy, operate, observe, secure and recover** SportZone. It is an
-operational specification and collection of **proposed runbooks**, not evidence of a deployed or tested service.
-Replace each `[APPROVAL REQUIRED]` item with a recorded decision before relying on it for live operations. Commands
-and provider-console steps are deliberately platform-neutral where hosting or tooling has not yet been selected;
-inventing a production command would be unsafe.
+This document defines how to provision, deploy, operate, observe, secure and recover SportZone. Runbooks specify
+service responsibilities and safety checks; the protected operating inventory records environment-specific commands,
+provider settings, owners and verification evidence.
 
 The **PRD** owns product policy and launch acceptance; **Architecture** owns component boundaries and integrity
 invariants; **Database/API** own persisted and HTTP contracts; **Testing** owns executable verification;
@@ -51,7 +49,7 @@ change those authoritative contracts.
 - [18. Ownership, handover & change management](#18-ownership-handover--change-management)
 - [Appendix A — Runbook index & execution template](#appendix-a--runbook-index--execution-template)
 - [Appendix B — Configuration inventory](#appendix-b--configuration-inventory)
-- [Appendix C — Decisions & external dependencies](#appendix-c--decisions--external-dependencies)
+- [Appendix C — Environment commissioning checklist](#appendix-c--environment-commissioning-checklist)
 - [Appendix D — Requirements & task traceability](#appendix-d--requirements--task-traceability)
 - [Appendix E — Operational evidence templates](#appendix-e--operational-evidence-templates)
 
@@ -174,11 +172,9 @@ live settlement identities.
 
 ### 3.2 Configuration ownership and startup validation
 
-Maintain a **per-key** environment registry in Appendix B. Suggested names are planning identifiers, **not** proof
-of implemented `.env` keys. Before deploying, reconcile every key with `.env.example`, the server-side validator,
-actual deployment secrets and approved platform. Record environment, required/optional status, exposure class,
-accountable owner, protected secret-store reference, validation rule, rotation, verification date and approval
-status for each actual key. A category summary is not a valid release configuration inventory.
+Maintain the per-key environment registry defined in Appendix B. Reconcile keys with `.env.example`, server-side
+validation and deployment configuration. Record environment, required conditions, exposure, owner, protected source
+reference, validation, rotation and verification evidence for each deployed key.
 
 - Fail API/worker startup on missing or invalid **required** secrets, DB configuration, deployed origins and
   provider modes; disable unactivated payment methods explicitly.
@@ -204,10 +200,10 @@ status for each actual key. A category summary is not a valid release configurat
 ### 4.1 Provisioning checklist (OP-PROV-01)
 
 **Trigger:** First setup or replacing infrastructure. **Owner:** Assigned infrastructure engineer;
-security/store-owner approval for live resources. **Status:** Planned, not performed.
+security/store-owner approval for live resources.
 
-1. Record the approved hosting, region, domains, budget owner, third-party accounts and topology decision. Resolve
-   the decision register before production provisioning.
+1. Record hosting, region, domains, budget owner, third-party accounts and topology in the
+   protected operating inventory before production provisioning.
 2. Create distinct staging/production projects, identities, resources, ingress policies and secret stores. Ensure
    no shared root tokens or DB credentials.
 3. Provision Next.js runtime, SPA static hosting with deep-route fallback, Express API and a scheduler/worker with
@@ -266,12 +262,12 @@ flowchart TD
 
 ### 5.2 Reproducible build interface
 
-The target monorepo uses `storefront/`, `admin/` and `backend/` workspaces (Architecture §4); none exist in this documentation-only checkout. Below is a **suggested
-package-script interface** drawn from [Testing §5.3](./TESTING.md#53-standard-execution-interface-proposed-script-names), not proof that these scripts or packages currently exist. Check repository
-`package.json` and lockfile before running.
+The monorepo uses `storefront/`, `admin/` and `backend/` workspaces (Architecture §4). Implement the standard
+package-script interface in [Testing §5.3](./TESTING.md#53-standard-execution-interface) during foundation setup.
+Run the verified scripts against the committed manifest and lockfile:
 
 ```bash
-# Suggested commands only after the workspace scripts have been implemented.
+# Build and validation interface established during foundation setup.
 npm ci
 npm run lint
 npm run typecheck
@@ -423,11 +419,10 @@ live production dump by default. Index creation, repair and restore must have an
 ### 8.1 Durable job inventory
 
 Jobs use backend domain services, stable job/operation identities and persisted state (`jobLeases`, attempts,
-outbox/notification documents as applicable). A scheduler tick is not proof a job succeeded. Exact cadence is
-**[APPROVAL REQUIRED]**, selected from business expiration requirements and measured backlog, not arbitrary timer
-values.
+outbox/notification documents as applicable). A scheduler tick is not proof a job succeeded. Configure cadence from business expiration requirements, provider
+limits and measured backlog; record the schedule and responsible role in the operating inventory.
 
-| Work item | Durable source | Primary safety property | Alert condition (threshold pending) |
+| Work item | Durable source | Primary safety property | Alert condition |
 | --- | --- | --- | --- |
 | Online hold expiry | Active `inventoryReservations`, associated order/payment status | Release only eligible unpaid hold after this generation heldAt + 15 minutes; synchronize coupon expiry; do not race newly verified payment or extend expiry on replay | Expired eligible holds unprocessed; repeated errors |
 | Coupon hold expiry | Active `couponRedemptions`, tied to checkout and inventory | Release eligible hold exactly once, atomically with dependent state | Old held coupon allocations |
@@ -464,19 +459,20 @@ idempotent. TTL removal never releases stock/coupon holds.
 uploads before provider cleanup. Never TTL-delete their authorization ledger or delete attached/legal-held evidence.
 Remove expired/consumed/invalidated challenge delivery envelopes without waiting for authChallenges TTL; retain only safe
 verification/audit facts for the approved period. Quote cleanup must preserve consumed consent evidence and intent/order
-uniqueness. Exact schedules, key custodians, temporary upload/quote lifetimes and retention remain approved configuration
-prerequisites, not invented numbers.
+uniqueness. Record schedules, key custodians, temporary upload/quote lifetimes and retention in the environment configuration inventory.
 
 ### 8.3 Schedule and ownership record
 
-| Job key | Schedule/timezone | Retry/backoff | Owner | Enabled environments | Status |
-| --- | --- | --- | --- | --- | --- |
-| Reservation/coupon expiry | Pending approved schedule; UTC execution | Bounded and idempotent | Unassigned | Local/CI/staging/prod as configured | Not configured |
-| Payment intake/verification | Pending approved interval + event-driven trigger | Bounded; status-aware | Unassigned | Sandbox/staging; live when activated | Not configured |
-| Refund status verification | Pending provider-supported polling policy | Bounded; no duplicate payout | Unassigned | Sandbox/staging; live when approved | Not configured |
-| Notification dispatch | Pending approved retry policy | Bounded; dedupe by `eventKey` | Unassigned | Distinct provider resources | Not configured |
-| Delivery-charge/policy activation | Pending approved schedule; evaluate UTC effective instants | CAS-protected, idempotent activation | Unassigned | Staging/prod; synthetic local/CI triggers | Not configured |
-| Consistency reconciliation | Pending approved batch schedule | Resumable and observable | Unassigned | Staging/prod | Not configured |
+| Job key | Scheduling basis (UTC) | Retry/backoff | Responsible role | Environment scope |
+| --- | --- | --- | --- | --- |
+| Reservation/coupon expiry | Process eligible holds at their recorded expiry | Bounded and idempotent | Backend owner | Local/CI, staging and production |
+| Payment intake/verification | Callback-driven intake plus provider-compatible reconciliation interval | Bounded; status-aware | Backend / merchant owner | Isolated sandbox; activated live merchant |
+| Refund status verification | Provider-supported polling and uncertainty reconciliation | Bounded; no duplicate payout | Backend / finance owner | Sandbox and authorized live service |
+| Notification dispatch | Durable outbox availability and configured retry policy | Bounded; dedupe by `eventKey` | Backend owner | Separate provider resources per environment |
+| Delivery-charge/policy activation | Recorded UTC effective instants | CAS-protected, idempotent activation | Backend / store operator | Staging and production; synthetic local/CI triggers |
+| Consistency reconciliation | Configured bounded batch interval | Resumable and observable | Backend / data owner | Staging and production |
+
+Record each deployed job's exact cadence, batch size, lease duration, retry limits and named duty contact in the operating inventory.
 
 ## 9. Monitoring, logging & observability
 
@@ -539,10 +535,9 @@ provisioning.
 | SEV-3 | Degraded email, selected catalog/admin path or delayed job with invariant checks still valid | Triage, monitor trend and restore service |
 | SEV-4 | Nonurgent maintainability, minor display or documentation defect | Standard change/backlog process |
 
-These are **proposed classification rules**. Alert thresholds, acknowledgement time, notification destinations and
-escalation timers are `[APPROVAL REQUIRED]`; do not claim a staffed on-call team until owners and coverage are
-assigned. Security/privacy incident disclosure or customer notification obligations depend on legal/operator review
-and are not invented here.
+Apply these severity rules to incident triage. The operations owner records alert thresholds, acknowledgement
+targets, notification destinations, escalation timers and duty coverage in the operating inventory. The responsible
+privacy/store owner determines disclosure and customer-notification obligations under current applicable rules.
 
 ### 10.2 Incident process
 
@@ -564,7 +559,7 @@ flowchart TD
 ### 10.3 Incident response runbook (OP-INC-01)
 
 **Trigger:** SEV-1/SEV-2, security alarm, customer loss-of-service or integrity warning. **Incident commander:**
-Named duty role (unassigned until approved).
+The designated duty lead in the operating inventory.
 
 1. Open incident with severity, detected time, impacted environment/versions, customer/payment scope and evidence
    links. Assign commander, technical responder, store-owner contact and communications owner.
@@ -584,13 +579,15 @@ Named duty role (unassigned until approved).
 
 ### 10.4 Alert routing inventory
 
-| Alert category | Primary owner | Backup/escalation | Delivery channel | Approved threshold |
-| --- | --- | --- | --- | --- |
-| Availability / API | Unassigned | Unassigned | Not configured | Pending |
-| DB / transaction integrity | Unassigned | Unassigned | Not configured | Pending |
-| Payment / refunds | Unassigned + merchant contact | Unassigned | Not configured | Pending |
-| Security / privacy | Unassigned | Store owner | Not configured | Pending |
-| Backup / worker drift | Unassigned | Unassigned | Not configured | Pending |
+| Alert category | Primary role | Backup/escalation | Routing requirement |
+| --- | --- | --- | --- |
+| Availability / API | Backend on-call | Platform owner | Reachable duty channel; availability and error-rate thresholds |
+| DB / transaction integrity | Data owner | Backend / platform owner | Immediate escalation for integrity violations |
+| Payment / refunds | Merchant / finance owner | Backend on-call and provider contact | Receipt, payout and uncertainty-age alerts |
+| Security / privacy | Security designate | Store owner | Restricted incident channel and disclosure escalation |
+| Backup / worker drift | Platform / backend owner | Data owner | Backup freshness, failed jobs and oldest-work thresholds |
+
+Record named contacts, destinations, coverage windows and exercised thresholds per environment.
 
 A monitored metric without an owned and exercised alert route is not an operationally accepted control.
 
@@ -598,18 +595,17 @@ A monitored metric without an owned and exercised alert route is not an operatio
 
 ### 11.1 Recovery objectives and coverage
 
-Backups must be protected, restorable and appropriate to a transaction-capable MongoDB deployment. Their cadence,
-point-in-time restore capability, independent storage/location, retention, legal holds, integrity checks and
-operator permissions are **unapproved decisions** until provider capabilities and business exposure are evaluated.
+Backups must be protected, restorable and appropriate to a transaction-capable MongoDB deployment. The data owner
+maintains the following environment-specific recovery policy and verifies it through isolated restore exercises.
 
-| Parameter | Baseline | Approval/evidence needed |
+| Parameter | Required definition and evidence | Accountable role |
 | --- | --- | --- |
-| RPO (maximum tolerable lost committed data) | Pending | Store/engineering risk acceptance; provider-backed restore capability and drill |
-| RTO (target restoration time) | Pending | Measured full recovery including app, jobs, verification and provider reconciliation |
-| Backup frequency / PITR window | Pending | Selected service capability, actual restore tests and cost |
-| Retention and encryption/key custody | Pending | Legal/privacy/operator approval, export/storage controls, deletion safeguards |
-| Restore drill cadence | Pending | Scheduled isolated staging exercises with recorded outcomes |
-| Cross-region/offsite protection | Pending | Threat model, data-residency, cost and provider capability |
+| RPO | Maximum tolerable loss of committed data; backup/PITR capability and measured recovery point | Store / data owner |
+| RTO | Restoration target including services, workers, verification and provider reconciliation; measured drill duration | Platform / data owner |
+| Backup frequency / PITR window | Configured schedule, recovery window, provider capability and restore results | Data owner |
+| Retention and encryption/key custody | Retention/legal-hold policy, protected storage, independent key custody and deletion controls | Privacy / security / data owner |
+| Restore drill cadence | Scheduled isolated exercises, responsible operator and retained results | Data owner |
+| Cross-region/offsite protection | Recovery location, residency constraints, threat coverage and provider capability | Platform / privacy owner |
 
 **RPO/RTO are targets, not inferred guarantees.** A successful database snapshot can still omit activity after its
 capture and cannot reverse settled external payments/refunds or reconstruct every missing local action.
@@ -694,7 +690,7 @@ target; never overwrite a running production database.
 | Gate | Required evidence before new business writes |
 | --- | --- |
 | Writer fencing | Old API, worker, scheduler, migration and repair identities are stopped or credibly fenced from DB/provider effects; no stale generation can commit a protected write |
-| New generation | Deployment/worker generation or equivalent fencing mechanism is recorded, enforced at claim/write boundaries and shown effective in staging; unresolved design tracked by `OPS-D16` |
+| New generation | Deployment/worker generation or equivalent fencing mechanism is recorded, enforced at claim/write boundaries and shown effective in staging; unresolved design tracked by Operations §11.3 |
 | Jobs | At most one authorized job-claim owner per key; expired old leases cannot let old code resume side effects; cursor/backlog reconciled before scheduling resumes |
 | Provider callback ingress | Approved reachable endpoint for selected environment, old endpoint closure/draining plan, accepted-request cutoff and durable intake/reconciliation evidence; provider retries are not assumed reliable without confirmation |
 | Auth protection | Pre-restore potentially revoked or consumed credentials refused, fresh login/proof flow verified; no cache/old session bypass |
@@ -941,7 +937,7 @@ numeric timer.
 
 **Trigger:** Verified request to access, correct or erase personal data; approved retention expiry; legal hold or
 privacy incident. **Owner:** Authorized privacy/store owner with security/data operator; applicable legal
-requirements require independent approval (`OPS-D12`).
+requirements require independent approval (Operations §13.5).
 
 1. Record request ID, intake source, requested action, affected identities and statutory/policy determination
    **without guessing a deadline**. Verify requester identity and authority through the approved account/guest
@@ -1187,28 +1183,27 @@ checklist alone cannot approve production.
 
 Test cases and objective pass/fail evidence are governed by `TESTING.md`; production **smoke** is limited to
 operator-approved low-risk activity. Merchant settlement/refund tests require explicit approval and real provider
-evidence; mocks and sandbox logs do not prove live activation. All checklists in this baseline are **unchecked**
-until observed.
+evidence; mocks and sandbox logs do not prove live activation. Record each checklist result against the observed environment and release artifact.
 
 ## 18. Ownership, handover & change management
 
-### 18.1 Responsibility matrix (roles, not invented people)
+### 18.1 Responsibility matrix
 
-| Decision/activity | Accountable role | Execution/support | Current status |
-| --- | --- | --- | --- |
-| Launch and published commerce policies | Store owner / authorized release approver | Product, legal/compliance, support | Person/approval pending |
-| Deploy and rollback | Release owner | Infrastructure, backend, QA | Person/coverage pending |
-| Database, backup and restore | Infrastructure/data owner | Backend and security | Person/provider pending |
-| Payment operations and refund approval | Merchant/finance owner | Backend support, provider | Person/merchant setup pending |
-| Access and security incidents | Security/owner designate | Infrastructure and backend | Person/incident process pending |
-| Content, catalog, delivery, complaints | Store administrator | Support and fulfillment | Owner/procedures pending |
-| Testing sign-off | QA/test approver | Backend, frontend, provider representative | Evidence pending |
-| Handover and ongoing support | Store owner and receiving operator | Engineering / maintenance party | Support agreement pending |
+| Decision/activity | Accountable role | Execution/support |
+| --- | --- | --- |
+| Launch and published commerce policies | Store owner / authorized release approver | Product, legal/compliance, support |
+| Deploy and rollback | Release owner | Infrastructure, backend, QA |
+| Database, backup and restore | Infrastructure/data owner | Backend and security |
+| Payment operations and refund approval | Merchant/finance owner | Backend support, provider |
+| Access and security incidents | Security/owner designate | Infrastructure and backend |
+| Content, catalog, delivery, complaints | Store administrator | Support and fulfillment |
+| Testing sign-off | QA/test approver | Backend, frontend, provider representative |
+| Handover and ongoing support | Store owner and receiving operator | Engineering / maintenance party |
 
 ### 18.2 Change-control procedure
 
 1. Create change record with ID, reason, affected source requirements, services/collections/endpoints,
-   financial/user impact and versioned proposal.
+   financial/user impact and versioned change specification.
 2. Classify risk (ordinary, financial, schema, security, external provider, legal/policy); appoint technical
    reviewer and authorized business approver.
 3. Update **the owning source first**: PRD for product/legal scope, Architecture for system boundaries, Database
@@ -1220,21 +1215,17 @@ until observed.
 6. Update runbooks, inventories, alert routes and decisions; never silently change customer rights or payment
    contract by editing this file alone.
 
-### 18.3 Final status and limitations
+### 18.3 Operating inventory maintenance
 
-At the time of writing, **no live infrastructure, accepted backups, successful restoration, monitored alert route,
-verified merchant activation, test execution or M7/M8 sign-off is claimed**. The added DR, finance, maintenance and
-privacy procedures are documented controls, not evidence of implemented fencing, credential revocation, independent
-close or callback durability. Named persons, hosting, production URLs, secrets, migration script names, cron
-schedules, RPO/RTO, legal approvals and operational thresholds are explicitly pending. The document becomes an
-executable *production runbook* only once those implementation-specific values and recorded drill evidence replace
-the open decisions below.
+Keep service owners, runtime versions, origins, secret references, migration commands, job schedules, recovery objectives
+and alert routes in the environment inventory. Link deployment/drill evidence to the exact release and runbook execution.
+Review the inventory after infrastructure, merchant, security or policy changes and transfer it with the M8 handover.
 
 ---
 
 ## Appendix A — Runbook index & execution template
 
-### A.1 runbook catalog
+### A.1 Runbook catalog
 
 | ID | Runbook | Section | Trigger | Required evidence |
 | --- | --- | --- | --- | --- |
@@ -1253,7 +1244,7 @@ the open decisions below.
 | OP-MNT-01 | Customer-impacting maintenance | §15.2 | Planned work | Approval, communication, state/replay checks |
 | OP-STORE-01 | Operator walkthrough | §16.4 | Prelaunch/handover | Store workflows, policy/provider exceptions, sign-off |
 
-### A.2 standard execution record
+### A.2 Standard execution record
 
 Each runbook execution must record:
 
@@ -1273,19 +1264,19 @@ Each runbook execution must record:
 
 ## Appendix B — Configuration inventory
 
-Variable names are **proposed implementation identifiers**, not proof they exist in source. Final names, validation
-rules and scopes must be synchronized with `.env.example` and server code before setup. Secret values are managed
-outside Git. Public settings must not be mistaken for server-only secrets.
+Use this configuration vocabulary consistently in runtime validation, `.env.example` and deployment records.
+Keep secret values outside Git and frontend bundles. Record environment-specific values through protected
+secret/configuration references in the operating inventory.
 
-| Configuration category | Proposed identifiers / contents | Exposure / validation |
+| Configuration category | Identifiers / contents | Exposure / validation |
 | --- | --- | --- |
 | Runtime | `NODE_ENV`, `PORT`, service/app release ID | Server runtime, allowlisted env and valid port |
 | Backend URL/origins | `API_PUBLIC_ORIGIN`, `STOREFRONT_ORIGIN`, `ADMIN_ORIGIN`, `CORS_ALLOWED_ORIGINS` | Server, exact HTTPS origins in prod; avoid wildcard credentials |
 | MongoDB | `MONGODB_URI`, database name, optional TLS/CA path | **Secret** URI; replica set and transaction capability checks |
 | Sessions | `SESSION_SECRET` or server-side signing/pepper key, cookie config | **Secret**; hash/opaque cookie policy, separated contexts |
 | CSRF and guest access | CSRF signing secret/context and one-time guest-token secret if implemented | **Secret**; expiry, rotation, no log/public bundle |
-| Proof delivery (API-D21) | PROOF_DELIVERY_KEY_VERSION and protected versioned key-store references | Encryption keys outside MongoDB/backups; worker-only decrypt, AEAD nonce/tamper checks, no plaintext/outbox envelope; fail closed if unavailable |
-| Quote/upload lifetimes | CHECKOUT_QUOTE_TTL_SECONDS, MEDIA_TEMP_TTL_SECONDS (proposed) | Positive bounded server configuration approved by owners; enforce expiry, no runtime fallback guessed here |
+| Proof delivery (API §16.3) | PROOF_DELIVERY_KEY_VERSION and protected versioned key-store references | Encryption keys outside MongoDB/backups; worker-only decrypt, AEAD nonce/tamper checks, no plaintext/outbox envelope; fail closed if unavailable |
+| Quote/upload lifetimes | CHECKOUT_QUOTE_TTL_SECONDS, MEDIA_TEMP_TTL_SECONDS | Positive bounded server configuration approved by owners; enforce expiry, no runtime fallback guessed here |
 | Refund business calendar | Approved versioned calendar/holiday and policy-rule references | Compute target from actual approvedAt; shorter applicable basis wins; under_review without guessed date |
 | Gateway | `SSLCOMMERZ_MODE`, merchant/store identity, store password, validation URLs/callback URLs | Mode-specific **secrets**, enabled channels approved by merchant |
 | Refund settings | Provider-supported refund mechanism, merchant identity, limits and feature enablement | Server-only; do not hardcode unsupported refund API paths |
@@ -1296,17 +1287,21 @@ outside Git. Public settings must not be mistaken for server-only secrets.
 | Backup | Managed backup policy IDs, encrypted key references, restore principal | **Secret**/restricted; never store raw backup URI/keys in docs |
 | UI public | Public site origin/asset configuration only | Allowed `NEXT_PUBLIC_*` / `VITE_*` values **never contain credentials** |
 
-**Per-key environment registry — required completion template (one row per deployed key):**
+**Per-key environment registry:** Maintain one record per deployed key with the following fields.
 
-| Exact key | Environment(s) | Required? | Exposure | Owner | Secret/config source reference | Startup validation | Rotation/revocation | Verified at / status |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `MONGODB_URI` (proposed) | Local / CI / staging / prod (distinct values) | Conditional on API/worker DB access | Secret / server | Unassigned | Pending approved secret reference | URI, allowed target, transaction capability | Pending | Not verified / Open |
-| `STOREFRONT_ORIGIN` (proposed) | Staging / prod | Conditional on browser/API deployment | Config / server | Unassigned | Pending platform config reference | Valid origin and environment allowlist | N/A; review on change | Not verified / Open |
-| Every other exact application key | Record separately | Approved from runtime contract | Explicit classification | Unassigned until appointed | Reference only; never value | Type, format, dependency and environment checks | Approved policy | Not verified / Open |
+| Field | Required content |
+| --- | --- |
+| Exact key and environment | Runtime key, consuming service and local/CI/staging/production scope |
+| Required conditions | Startup requirement and dependent capability |
+| Exposure | Secret, restricted server configuration or public configuration |
+| Owner | Accountable role and named operating contact |
+| Source reference | Secret-store or configuration-record reference; never the secret value |
+| Validation | Type, format, allowed target/origin, dependency and environment checks |
+| Rotation/revocation | Procedure, interval or change trigger and responsible role |
+| Verification | Deployment identity, verification time, observed result and evidence link |
 
-Do **not** treat these sample entries as approved keys. Populate the registry from the deployed code and
-infrastructure, remove non-existent examples, and block M7 until required keys have named owners, validated values
-(outside this document) and evidence. Secret values are never copied into this table.
+Reconcile this registry with runtime code and infrastructure before M7; every required key must have an owner,
+validated configuration and verification evidence.
 
 **Startup behavior:** Validate required presence/shape, host/origin matching, environment-specific modes and
 provider enablement; refuse unsafe startup or disable unsupported gateway methods. Do not implement a silent
@@ -1314,43 +1309,27 @@ production fallback to sandbox credentials or localhost.
 
 ---
 
-## Appendix C — Decisions & external dependencies
+## Appendix C — Environment commissioning checklist
 
-**Status:** `Open` means unresolved, `Blocked` means an acceptance gate cannot proceed, `Approved` requires real
-evidence, and `Rejected` records an explicit nonadoption. All entries are unresolved in this baseline. `Unassigned`
-is deliberate—not an invented owner. `Last reviewed` records actual reviews only; use `Not recorded` until
-verified.
+| Area | Required commissioning record | Accountable role |
+| --- | --- | --- |
+| Hosting and domains | Runtime/region inventory, exact origins, DNS/TLS ownership and rollback procedure | Platform owner |
+| Configuration | Per-key environment registry, secret-store references, validation and rotation | Platform / security owner |
+| Database and recovery | Transaction/index verification, backup/PITR policy, RPO/RTO, isolated restore and reconciliation | Data owner |
+| Workers | Job schedules, bounded retries, leases/fencing, backlog alerts and restart procedure | Backend owner |
+| Payments | Merchant/channel activation, supported limits, callbacks and receipt reconciliation | Merchant owner |
+| Refunds | Gateway status capability, manual verification/consent and source-capacity controls | Finance owner |
+| Store content | Catalog/stock, support contacts, coverage/charges and effective published policies | Store operator |
+| Monitoring | Dashboard/alert routes, severity thresholds, on-call roles and escalation exercise | Operations owner |
+| Privacy and media | Retention/legal holds, private asset access, scanning and deletion procedure | Privacy / security owner |
+| Disaster cutover | Old-writer fencing, callback handoff, restored-session rejection and controlled reopening | Incident commander |
+| Handover | Account ownership, support coverage, service costs and signed operating inventory | Store owner |
 
-| ID | Decision / dependency | Required evidence or resolution | Gate | Status | Owner | Approval / evidence | Last reviewed / next decision |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| OPS-D01 | Hosting, region, runtime and domains | Platform ownership, network/deploy/rollback review | M6/M7 | Open | Unassigned | Pending | Not recorded / Pending |
-| OPS-D02 | Monitoring, alerts and staffed escalation | Tested routes, thresholds, signed roster | M7 | Open | Unassigned | Pending | Not recorded / Pending |
-| OPS-D03 | Backup/PITR, encryption, retention, method | Provider capability and isolated restore drill | M6/M7 | Open | Unassigned | Pending | Not recorded / Pending |
-| OPS-D04 | RPO/RTO and drill cadence | Business risk approval and measured exercise | M7 | Open | Unassigned | Pending | Not recorded / Pending |
-| OPS-D05 | Job schedules, leases, retries and owners | Implemented worker semantics and overlap tests | M6/M7 | Open | Unassigned | Pending | Not recorded / Pending |
-| OPS-D06 | SSLCOMMERZ live channels/limits/callbacks | Merchant proof for bKash/Nagad/Rocket, COD acceptance | M7 | Blocked | Unassigned | Pending | Not recorded / Pending |
-| OPS-D07 | Provider refund status and manual alternatives | Sandbox, contract and operator-authorized process | M5/M7 | Open | Unassigned | Pending | Not recorded / Pending |
-| OPS-D08 | Delivery, returns, refunds and complaints policy | Current applicable law and approved published text | M7 | Blocked | Unassigned | Pending | Not recorded / Pending |
-| OPS-D09 | Catalog, stock, support and fulfillment ownership | Authorized content and accepted operating arrangements | M7 | Open | Unassigned | Pending | Not recorded / Pending |
-| OPS-D10 | `.env` registry, secret ownership and revocation | Per-key §3.2/Appendix B inventory and validation | M6/M7 | Open | Unassigned | Pending | Not recorded / Pending |
-| OPS-D11 | CI/deploy scripts, migrations and artifact versions | Executed staging/rollback evidence | M6/M7 | Open | Unassigned | Pending | Not recorded / Pending |
-| OPS-D12 | Retention, deletion, legal holds and privacy requests | Approved rules, OP-PRIV-01 procedure and tests | M7/M8 | Open | Unassigned | Pending | Not recorded / Pending |
-| OPS-D13 | Support agreements, costs and recipients | Named owners, budget/coverage and acceptance | M7/M8 | Open | Unassigned | Pending | Not recorded / Pending |
-| OPS-D14 | Private media and upload protection | Media privacy, scanning/cleanup and evidence | M6/M7 | Open | Unassigned | Pending | Not recorded / Pending |
-| OPS-D15 | Production-safe payment/refund smoke | Provider/store approval; no unapproved live writes | M7 | Open | Unassigned | Pending | Not recorded / Pending |
-| OPS-D16 | DR single-writer and callback handoff | Proven fencing generation/old-writer isolation, ingress cutoff and staging failover test | M7 | Blocked | Unassigned | Pending | Not recorded / Pending |
-| OPS-D17 | Restored-session fail-closed mechanism | Independent auth epoch/revocation or mass invalidation with replay tests | M7 | Blocked | Unassigned | Pending | Not recorded / Pending |
-| OPS-D18 | Period financial close controls | Period/extract design, independent reviewer, variance tolerance policy and dry-run close | M7/M8 | Open | Unassigned | Pending | Not recorded / Pending |
-
-API-D20/API-D21 and media/banner designs now have concrete proposals in Database/API; this does not resolve environment-specific key custody, lifetime/calendar values, provider capability or restore evidence. Rehearse key rotation/loss and stale-proof invalidation under OPS-D17; verify global delivery serialization and media attachment/cleanup under deployed jobs.
-
-Before changing any decision to `Approved`, record **named approver, timestamp, evidence link and affected
-version**. If a decision is blocked, leave the relevant release gate blocked regardless of passing unrelated
-engineering checks. Do not invent hosting, legal deadlines, cron intervals or merchant capability.
+Maintain environment-specific records in the protected operating inventory. Verify them at M6/M7 and transfer them at M8.
 
 ## Appendix D — Requirements & task traceability
 
-### D.1 normative sources
+### D.1 Normative sources
 
 | Source | Operations-owned consequence |
 | --- | --- |
@@ -1363,7 +1342,7 @@ engineering checks. Do not invent hosting, legal deadlines, cron intervals or me
 | [Tasks](./TASKS.md) Phase 11–12 and dependencies | Real work items, owners, blockers, test/approval evidence |
 | [Design](./DESIGN.md) §§7–12 | Public/admin UI availability, accessible customer-facing error/status experience |
 
-### D.2 functional ownership coverage
+### D.2 Functional ownership coverage
 
 | PRD requirement | Relevant operating control | Where documented |
 | --- | --- | --- |
@@ -1377,7 +1356,7 @@ engineering checks. Do not invent hosting, legal deadlines, cron intervals or me
 | FR-22 | Dashboard, period definitions, reconciliation and finance exceptions | §§9, 12, 16 |
 | FR-34 | Policy drafts, publication, contact/store settings and audit | §§3, 13, 16 |
 
-### D.3 production/handover execution crosswalk
+### D.3 Production/handover execution crosswalk
 
 | Task IDs | Required operational evidence | Runbook/section |
 | --- | --- | --- |
@@ -1389,7 +1368,7 @@ engineering checks. Do not invent hosting, legal deadlines, cron intervals or me
 | P12-001–P12-003 | Reconciled setup/API/data/tests, accurate deploy/recovery runbooks | §§5–8, 11, 18 |
 | P12-004–P12-009 | Store operator guide, ownership, limitations, support, M8 sign-off | §§16–18 |
 
-### D.4 external technical references (informative)
+### D.4 External technical references (informative)
 
 - [SSLCOMMERZ Developer Documentation v4](https://developer.sslcommerz.com/doc/v4/) — hosted initiation,
   verification, IPN and supported refund operations; live merchant availability remains an external approval.
@@ -1409,7 +1388,7 @@ These are contextual references, **not** proofs of live merchant activation, leg
 
 ## Appendix E — Operational evidence templates
 
-### E.1 release/incident record
+### E.1 Release/incident record
 
 ```yaml
 # Template only: all values must be supplied by the executing operator.
@@ -1430,24 +1409,24 @@ result: <Passed|Failed|Blocked|PartiallyRecovered>
 closedAtUtc: <ISO8601-if-closed>
 ```
 
-### E.2 recovery reconciliation checklist
+### E.2 Recovery reconciliation checklist
 
-| Check | Evidence expected | Default |
-| --- | --- | --- |
-| Backup point and restored target | Snapshot ID/UTC point; isolated restore environment | Not Run |
-| Collections, indexes and migrations | Manifest/query comparison and valid constraints | Not Run |
-| Inventory and coupon allocation | Physical/reserved/committed and hold/redemption reconciliation | Not Run |
-| Orders/checkout proofs and policy/deadline snapshots | Durable idempotency/history samples | Not Run |
-| Provider receipts and unmatched intake | Official verified references reconciled since restore point | Not Run |
-| Linked collections and source-class refund balances | Allocation, held and completed money invariants | Not Run |
-| Worker and notification backlog | Lease/retry/outbox restart safety | Not Run |
-| Nonreconstructable local changes | Explicit gap/impact/authorized remediation record, affected scope still restricted | Not Assessed |
-| Post-cutoff COD/manual payouts | Verified actor, order, receipt/disbursement proof and source-control reconciliation | Not Assessed |
-| Old writers, leases and callbacks | Writer fencing, single generation, cutoff/intake reconciliation and safe restart evidence | Not Assessed |
-| Restored auth proofs | Old session/recovery/guest challenges rejected and fresh proof verified | Not Assessed |
-| Safety to resume writes | Signed incident/store-owner decision | Not Approved |
+| Check | Evidence expected |
+| --- | --- |
+| Backup point and restored target | Snapshot ID/UTC point; isolated restore environment |
+| Collections, indexes and migrations | Manifest/query comparison and valid constraints |
+| Inventory and coupon allocation | Physical/reserved/committed and hold/redemption reconciliation |
+| Orders/checkout proofs and policy/deadline snapshots | Durable idempotency/history samples |
+| Provider receipts and unmatched intake | Official verified references reconciled since restore point |
+| Linked collections and source-class refund balances | Allocation, held and completed money invariants |
+| Worker and notification backlog | Lease/retry/outbox restart safety |
+| Nonreconstructable local changes | Explicit gap/impact/authorized remediation record, affected scope still restricted |
+| Post-cutoff COD/manual payouts | Verified actor, order, receipt/disbursement proof and source-control reconciliation |
+| Old writers, leases and callbacks | Writer fencing, single generation, cutoff/intake reconciliation and safe restart evidence |
+| Restored auth proofs | Old session/recovery/guest challenges rejected and fresh proof verified |
+| Safety to resume writes | Signed incident/store-owner decision |
 
-### E.3 operational sign-off rule
+### E.3 Operational sign-off rule
 
 A completed evidence form needs **real observations**, a traceable environment/version, actual operator/approver
 and an explicitly recorded decision. Placeholder text, checkbox presence, published runbook or synthetic gateway

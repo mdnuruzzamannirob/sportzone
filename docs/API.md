@@ -1,22 +1,21 @@
 # SportZone — API design & specification
 
-**Version:** 1.2\
-**Source baseline:** PRD / Architecture v1.2; Design / Implementation Plan / Tasks v1.3; Database v1.3\
-**Updated:** 17 October 2026\
-**Documentation audit:** 17 October 2026 — review remediation is proposed design, not technical approval, implemented behavior or release acceptance.\
-**Status:** Proposed implementation contract — approval, integration tests, and merchant verification pending  
-**Product reference:** [PRD](./PRD.md)  
-**Technical references:** [Architecture](./ARCHITECTURE.md) · [Database](./DATABASE.md)  
-**Interface reference:** [Design](./DESIGN.md)  
-**Execution references:** [Implementation Plan](./IMPLEMENTATION_PLAN.md) · [Tasks](./TASKS.md)  
-**Scope:** Single-store sports e-commerce platform for Bangladesh  
-**Stack:** Node.js, Express, TypeScript; MongoDB/Mongoose behind domain services  
-**Consumers:** Next.js storefront, React/Vite administration portal, controlled SSLCOMMERZ callbacks  
+**Version:** 1.0\
+**Status:** Final development baseline\
+**Updated:** 17 October 2026
+
+**Product reference:** [PRD](./PRD.md)\
+**Technical references:** [Architecture](./ARCHITECTURE.md) · [Database](./DATABASE.md)\
+**Interface reference:** [Design](./DESIGN.md)\
+**Execution references:** [Implementation Plan](./IMPLEMENTATION_PLAN.md) · [Tasks](./TASKS.md)\
+**Scope:** Single-store sports e-commerce platform for Bangladesh\
+**Stack:** Node.js, Express, TypeScript; MongoDB/Mongoose behind domain services\
+**Consumers:** Next.js storefront, React/Vite administration portal, controlled SSLCOMMERZ callbacks\
 **Audience:** Backend/frontend engineers, reviewers, and development agents
 
-This document specifies the proposed HTTP contracts for SportZone's single authoritative Express API.
+This document defines the HTTP contracts for SportZone's authoritative Express API.
 It defines routes, input/output DTOs, access controls, validation, errors, state-changing behavior, callbacks, and verification obligations.
-**The PRD owns product rules; Architecture owns system boundaries; Database owns persistence and financial invariants.** Proposed route names, field limits, and response shapes require implementation approval; an unwritten provider capability or unverified legal policy is not a released feature.
+The PRD governs product rules, Architecture governs system boundaries, and Database governs persistence and financial invariants. Implement the routes, DTOs, limits and response shapes in this specification.
 
 ---
 
@@ -27,21 +26,21 @@ It defines routes, input/output DTOs, access controls, validation, errors, state
 - [3. HTTP conventions & versioning](#3-http-conventions--versioning)
 - [4. Authentication, sessions & CSRF](#4-authentication-sessions--csrf)
 - [5. Authorization & data exposure](#5-authorization--data-exposure)
-- [6. Shared dtos & response contracts](#6-shared-dtos--response-contracts)
+- [6. Shared DTOs & response contracts](#6-shared-dtos--response-contracts)
 - [7. Validation & error catalog](#7-validation--error-catalog)
 - [8. Pagination, search & caching](#8-pagination-search--caching)
-- [9. Identity, customer & guest access apis](#9-identity-customer--guest-access-apis)
-- [10. Catalog, cart, promotions & reviews apis](#10-catalog-cart-promotions--reviews-apis)
-- [11. Checkout, orders & delivery apis](#11-checkout-orders--delivery-apis)
+- [9. Identity, customer & guest access APIs](#9-identity-customer--guest-access-apis)
+- [10. Catalog, cart, promotions & reviews APIs](#10-catalog-cart-promotions--reviews-apis)
+- [11. Checkout, orders & delivery APIs](#11-checkout-orders--delivery-apis)
 - [12. Payments, COD & gateway callbacks](#12-payments-cod--gateway-callbacks)
-- [13. Returns, claims & refund apis](#13-returns-claims--refund-apis)
-- [14. Administration, support & reporting apis](#14-administration-support--reporting-apis)
+- [13. Returns, claims & refund APIs](#13-returns-claims--refund-apis)
+- [14. Administration, support & reporting APIs](#14-administration-support--reporting-apis)
 - [15. Idempotency, concurrency & recovery](#15-idempotency-concurrency--recovery)
 - [16. External integrations & notifications](#16-external-integrations--notifications)
 - [17. Security, performance & compatibility](#17-security-performance--compatibility)
 - [18. Verification, traceability & change control](#18-verification-traceability--change-control)
 - [Appendix A — Complete endpoint register](#appendix-a--complete-endpoint-register)
-- [Appendix B — Decision & dependency register](#appendix-b--decision--dependency-register)
+- [Appendix B — Integration configuration](#appendix-b--integration-configuration)
 - [Appendix C — Endpoint definition checklist](#appendix-c--endpoint-definition-checklist)
 - [Appendix D — Operation contract & DTO register](#appendix-d--operation-contract--dto-register)
 
@@ -58,7 +57,7 @@ It defines routes, input/output DTOs, access controls, validation, errors, state
 | `DATABASE.md` | Data models, enums, unique references, accounting and transaction guards | Map allowlisted DTOs to persistence; never return raw models |
 | `DESIGN.md` | UI flows, loading/uncertain/error states, accessible feedback | Provide enough status and stable errors for each view |
 | `IMPLEMENTATION_PLAN.md` / `TASKS.md` | Sequence, dependencies, verification evidence | Contract precedes each feature slice; not an implementation claim |
-| **`API.md`** | HTTP methods/routes, DTOs, permissions, failures, retries, webhook responses | Respect each source within its subject authority; detailed proposed designs still require approval |
+| **`API.md`** | HTTP methods/routes, DTOs, permissions, failures, retries, webhook responses | Follow each source within its subject authority |
 
 **Included:** guest/customer shopping, one admin role, Bangladesh delivery, BDT, COD and enabled SSLCOMMERZ hosted
 bKash/Nagad/Rocket channels, after-sales, notifications, support, and essential operations. **Excluded:** multi-vendor,
@@ -66,12 +65,12 @@ courier API/tracking, international payments, loyalty, subscriptions, automatic 
 online channels remain hidden; **all three online channels and COD are mandatory launch acceptance** absent approved PRD
 change (PRD §3.3).
 
-### 1.2 Maturity rules
+### 1.2 Contract conventions
 
-- **Required invariant:** an explicit PRD/Architecture requirement, not subject to route-level convenience. Database field, collection and index proposals remain subject to the design approval required by Database §1.2 and AGENTS §9.
-- **Proposed HTTP contract:** an implementation-ready design target, pending owner approval and contract tests.
-- **External/open:** merchant activation, provider-specific channel/refund capability, legal deadlines, policy content, approved retention and production configuration; never fabricate confirmation.
-- `API.md` is a **design contract**, not proof that endpoints are running. Records marked `pending` / `uncertain` must not be presented as success.
+- Routes, DTOs, access rules, errors and retry behavior in this document govern `/api/v1` implementation.
+- Database schemas and transaction invariants follow [Database](./DATABASE.md); product rules follow [PRD](./PRD.md).
+- Environment values and service access are configured through [Operations](./OPERATIONS.md).
+- Verify each feature with its contract, authorization, concurrency and recovery tests before acceptance.
 
 ## 2. API architecture & ownership
 
@@ -117,10 +116,10 @@ Domain services coordinate cross-module mutations within MongoDB transactions. N
 | Resource names | Lowercase plural, hyphenated paths; JSON names `camelCase`; IDs serialized strings |
 | Time | ISO 8601 UTC instants ending `Z`; Bangladesh display derived from `Asia/Dhaka` |
 | Currency | Always `BDT`; **integer poisha** on every business API and internally; no floating-point money |
-| Status values | Persisted `snake_case` enum values from Database v1.3; UI labels are presentation only |
+| Status values | Persisted `snake_case` enum values from Database v1.0; UI labels are presentation only |
 | Creation | `201 Created` + `Location` where appropriate; replay may return `200 OK` with same logical result |
 | Deletion | Use `204 No Content` only where deletion/deactivation is an approved operation; no body |
-| Concurrency | `If-Match`/strong ETag for approved editable master records; backed by the `revision` CAS fields on category, product, variant, delivery-zone and charge-rule documents (Database v1.3); domain CAS for financial/stock operations |
+| Concurrency | `If-Match`/strong ETag for approved editable master records; backed by the `revision` CAS fields on category, product, variant, delivery-zone and charge-rule documents (Database v1.0); domain CAS for financial/stock operations |
 | Request correlation | Server-issued `X-Request-Id` returned on every response; incoming value never trusted as evidence |
 | API evolution | Additive compatible fields within `/api/v1`; incompatible changes require version review and consumer migration |
 
@@ -167,7 +166,7 @@ Paths use `{id}` in examples, but Express implementations bind `:id`. Route pref
 
 ### 4.1 Session and cookie contract
 
-| Cookie (proposed host-only names) | Principal | Rules |
+| Cookie (host-only names) | Principal | Rules |
 | --- | --- | --- |
 | `sz_customer_sid` | Registered customer | Opaque, hashed at rest; `HttpOnly`, `Secure`, approved `SameSite`, path `/` |
 | `sz_admin_sid` | Privately provisioned admin | Separate credential and revocation path; never accepted by customer routes as customer identity |
@@ -237,7 +236,7 @@ appropriate; a clearly authenticated but disallowed operation may use `403`.
 internal counters/history; customer DTOs expose only own PII and masked payment metadata; admin DTOs expose necessary
 scoped operational fields; external provider evidence is redacted even to administrators.
 
-## 6. Shared dtos & response contracts
+## 6. Shared DTOs & response contracts
 
 ### 6.1 Scalar types and standard objects
 
@@ -254,7 +253,7 @@ scoped operational fields; external provider evidence is redacted even to admini
 | `PolicyRef` | `{type,version,effectiveAt}` | Approved version used for terms/checkout snapshot |
 | `Revision` | Nonnegative integer | Required to prevent overwriting concurrent administrative edits |
 
-`?` in tables means optional and omitted, not an empty string or accidental `null`. Values of DB nullable fields (e.g. guest order `userId`) are never assumed present. The proposed default field/string/array bounds are in Database §2.2; they require API/UI alignment before acceptance.
+`?` in tables means optional and omitted, not an empty string or accidental `null`. Values of DB nullable fields (e.g. guest order `userId`) are never assumed present. Database §2.2 defines the field, string and array bounds shared by API validators and UI controls.
 
 ### 6.2 DTO registry
 
@@ -316,7 +315,7 @@ cannot create state by setting them. `OrderSummary.finalTotalPoisha` is purchase
 - Validate valid Bangladesh phone formatting and email syntax server-side; sanitize rich product content and escape on rendering.
 - Reject product/category/variant IDs that are missing, inactive, unauthorized or inconsistent; verify nested order-item IDs belong to the authoritative order.
 - Monetary values offered by clients are **informational only**. Backend calculates price, coupon, delivery, collection and refundable balance in integer poisha; reject client attempts to write resulting totals.
-- Use Database §2.2 proposed default bounds unless a domain rule is stricter; maintain the same limits in shared API validation. For provider fields obey the provider's documented limits.
+- Use Database §2.2 validation bounds unless a domain rule is stricter; maintain the same limits in shared API validation. For provider fields obey the provider's documented limits.
 
 ### 7.2 Error code register
 
@@ -358,7 +357,7 @@ successful refund request is **not** confirmed payout.
 
 ## 8. Pagination, search & caching
 
-| Concern | Proposed rule |
+| Concern | Rule |
 | --- | --- |
 | Pagination | `page` starts at `1`; `pageSize` defaults `20`, maximum `100`; no unbounded lists |
 | Sorting | Explicit endpoint allowlist, e.g. `newest`, `price_asc`, `price_desc`; stable ID tie-break |
@@ -373,7 +372,7 @@ For large audit/financial histories, use an opaque cursor with stable ordering *
 invent offset pagination where it risks missing/duplicating mutations. Query and index selection must agree with Database
 §11. Reject invalid sort keys, inverted price ranges, unknown filters and attempts to request oversized pages.
 
-## 9. Identity, customer & guest access apis
+## 9. Identity, customer & guest access APIs
 
 ### 9.1 Authentication and account endpoint contracts
 
@@ -446,7 +445,7 @@ An attacker cannot enumerate orders by timing, HTTP status or message difference
 Subsequent guest order actions use the same `/orders/{orderId}` routes as a customer, but with *exact* bound order ID checks.
 Do not include a public `GET /orders?email=...` endpoint.
 
-## 10. Catalog, cart, promotions & reviews apis
+## 10. Catalog, cart, promotions & reviews APIs
 
 ### 10.1 Public catalog and discovery
 
@@ -465,7 +464,7 @@ Inactive products/categories (including inactive ancestors) are excluded; out-of
 `variants` include one default SKU when a product has no selectable options.
 Search/index details in Database §11; do not assume an external search service.
 Product listings and homepage merchandising only include operator-approved media/content; no fabricated promotional claims.
-The homepage `banner` maps to `storeSettings.homepageBanner` with a validated public media asset and operator-approved content (API-D17). Return `HomepageBanner:{assetId,title,alt,href?,image:MediaRef}` only when configured and eligible; otherwise omit it honestly. Banner capability remains required by FR-03; absent/unapproved content is not accepted feature or launch evidence. No separate banner collection is proposed.
+The homepage `banner` maps to `storeSettings.homepageBanner` with a validated public media asset and operator-approved content (API §10.1). Return `HomepageBanner:{assetId,title,alt,href?,image:MediaRef}` only when configured and eligible; otherwise omit it honestly. Banner capability is required by FR-03; publish only operator-approved content. Store the banner in settings rather than a separate collection.
 
 ### 10.2 Cart and wishlist
 
@@ -521,7 +520,7 @@ Do not accept a client-controlled `isVerifiedPurchase`, `status`, or `reviewedBy
 
 The cart example is not a final payable quote. Catalog and public reviews use `200` reads; new reviews return `201` with `pending`. A rejected eligibility check is `422 BUSINESS_RULE_VIOLATION`, stale inventory at checkout is `409 OUT_OF_STOCK`.
 
-## 11. Checkout, orders & delivery apis
+## 11. Checkout, orders & delivery APIs
 
 ### 11.1 Checkout request/quote/submission
 
@@ -545,7 +544,7 @@ supplied/reconfirmed for C. `CheckoutSubmitInput` includes the same normalized f
 `quoteId`, `acceptedTermsVersion`, `acceptedPolicyVersionIds[]`. Reject direct `unitPrice`, `discount`, `deliveryCharge`, `total`,
 role, `userId` or target order ID fields.
 
-**Checkout confirmation design — API-D20 (proposal, owner sign-off pending):** `POST /checkout/quotes` persists a
+**Checkout confirmation:** `POST /checkout/quotes` persists a
 scope-bound `checkoutQuotes` record (Database §7.1.1) and returns server-issued `quoteId` and required `quoteExpiresAt`.
 The buyer reviews its exact commercial terms and submits that ID with the same normalized draft and accepted policy
 versions. A client ID is only a lookup: the backend checks scope, expiry, immutable draft fingerprint and commercial
@@ -553,8 +552,7 @@ digest, then revalidates prices, line allocations, charge/rule, deadline basis, 
 Stable quoted item IDs preserve deterministic rounding. Any commercial change is `409 QUOTE_CHANGED`; expiry is `409
 QUOTE_EXPIRED`; both require a fresh quote and explicit buyer confirmation. Neither error creates an order or gateway
 attempt. Do not automatically replace the quote and submit it. An unsupported method or unavailable capacity retains its
-specific business error. Draft fields inconsistent with the referenced quote return `409 QUOTE_CHANGED`; malformed input remains `400`. Wrong-scope/missing quote is scope-safe `404`. Product/API/data-owner approval and contract tests
-remain prerequisites before `P06-004`, `P06-018` and `P07-004` rely on this design.
+specific business error. Draft fields inconsistent with the referenced quote return `409 QUOTE_CHANGED`; malformed input remains `400`. Wrong-scope/missing quote is scope-safe `404`. Verify quote comparison, single consumption, idempotency and reconfirmation in the checkout contract tests.
 
 **Quote:** Recompute active SKU prices, stock visibility, product-discount-before-coupon, eligible coupon allocations,
 delivery-zone rule and eligible payment methods at request time. Return a **deadline rule/status**, not a made-up date
@@ -589,7 +587,7 @@ hosted payment session.
 }
 ```
 
-The example is a proposed `CheckoutSubmitInput` **body**; send a separate `Idempotency-Key` header. Admin-configured live payment activation and policy/zone data are prerequisites; the illustrated channel, area, coupon and version are **not claims of real configuration**.
+Send the `CheckoutSubmitInput` body with a separate `Idempotency-Key` header. Example identifiers, contact details, coupon and policy versions are illustrative; resolve actual values from the configured environment.
 
 ### 11.2 Price, hold and order response rules
 
@@ -623,7 +621,7 @@ The admin accepts/rejects after checking `pending/confirmed`, or `processing` wi
 - **Checkout:** persist immutable `deliverySnapshot` charge, rule version, start-event type and legal rule reference; quote `status:'awaiting_start'` for an unconfirmed confirmation-based target. Never persist an assumed `confirmedAt`.
 - **Confirmation:** record actual `confirmedAt`; derive the target as **14 calendar days after confirmation** under the approved baseline. Evaluate any independently approved shorter legal deadline using its actual applicable start event (which may differ). Persist the earlier applicable `deliveryCommitment.effectiveDeadlineAt` and exact basis under order CAS.
 - **Read/late updates:** return `{status,startEventAt?,targetDeadlineAt?,legalCapAt?,effectiveAt?}` and a distinct changeable `deliveryEstimate`. When no authorized event/rule exists, omit unavailable date fields and return `awaiting_start` or `under_review`, never a fictional firm date. Notify of changed estimates; log deadline-affecting policy corrections without overwriting snapshots.
-- **Boundary:** changing future charges or policies does not alter an accepted order's charge/rule snapshot. Fulfillment updates are manual (no courier/GPS integration). Legal applicability/start events must be approved before launch (API-D07).
+- **Boundary:** changing future charges or policies does not alter an accepted order's charge/rule snapshot. Fulfillment updates are manual (no courier/GPS integration). Legal applicability/start events must be approved before launch (API §§11.3, 14.3).
 
 ## 12. Payments, COD & gateway callbacks
 
@@ -731,7 +729,7 @@ nonpayment into receipt allocation. On transient validation or database failure 
 acknowledging payment processing; reconcile known attempts periodically even if IPN delivery never succeeds. **Never**
 repeat financial effects. A provider callback may legitimately be delivered more than once.
 
-**IPN acknowledgment and replay matrix (proposed adapter contract):**
+**IPN acknowledgment and replay matrix:**
 
 | Validated outcome | Durable action | Response / safe retry |
 | --- | --- | --- |
@@ -742,7 +740,7 @@ repeat financial effects. A provider callback may legitimately be delivered more
 | Malformed, oversized, unknown merchant / invalid reference | Reject, rate limit and record redacted security fingerprint | `400` / `403`; do not allocate funds |
 | Validation service unavailable, database commit failed | Preserve retryability; avoid acknowledging unpersisted business effects | `503` / `500`; scheduled polling supplements provider retry |
 
-Sandbox verification must confirm exact provider statuses, transport, retry behavior and acceptable acknowledgment body (API-D05); this table does not assert a provider delivery SLA.
+Sandbox verification must confirm exact provider statuses, transport, retry behavior and acceptable acknowledgment body (API §12.3); this table does not assert a provider delivery SLA.
 
 **Amount-mismatch protocol:** persist the immutable `expectedAmountPoisha` on attempt and separately
 `verifiedReceiptAmountPoisha` from trusted validation. Exact match is the default auto-allocation gate. A verified
@@ -790,7 +788,7 @@ A duplicate collection reference cannot be recorded twice; any genuinely distinc
 A public customer cannot mark their COD order paid.
 Manual evidence is access-controlled and redacted in APIs.
 
-## 13. Returns, claims & refund apis
+## 13. Returns, claims & refund APIs
 
 ### 13.1 Customer/guest claims and refund visibility
 
@@ -856,7 +854,7 @@ a refund basis without return receipt. Completing a claim **never** asserts a pa
 | `POST` | `/admin/refunds/{refundId}/reconcile` | A | `{reason} + Idempotency-Key → {status,attemptState}` | 33 |
 | `POST` | `/admin/refunds/{refundId}/manual-confirmations` | A | `{transferReference,evidenceRef,reason} + Idempotency-Key → Refund` | 33 |
 
-**RefundGroupInput (admin, proposed):**
+**RefundGroupInput (admin):**
 `{orderId,basis,basisRefId?,classification,requestedItems?:[{orderItemId,quantity}],deliveryChargeRequestedPoisha?,correctionCollectionId?,reason}`.
 The server computes line-ordinal amounts from the immutable order snapshot and source capacities. A multi-receipt payout
 creates **multiple** `refunds`, each assigned **exactly one** verified source collection, with a common `refundGroupKey`
@@ -875,7 +873,7 @@ commitments known safe to release.
 verified `bank_tran_id` **before** provider request. Store provider-issued `refund_ref_id` when returned. Gateway
 initiation acknowledgment is not payout completion. Reconcile through supported refund-status API and the source
 collection; `uncertain` retains held balance. A new refund transaction ID is issued only after verifying the old attempt
-cannot pay. Partial gateway refund / uniqueness/account limits need merchant sandbox verification (Database DB-D07).
+cannot pay. Partial gateway refund / uniqueness/account limits need merchant sandbox verification (Database Database §§8.6, 9.3).
 
 **Refund detail/timing:** public `Refund` includes `approvedAt?`, safe item amounts, a bounded status timeline and
 `timing:{status,targetBusinessDays:7,timezone:'Asia/Dhaka',policyVersion,calendarVersion?,targetAt?}`. Before approval,
@@ -945,13 +943,13 @@ sequenceDiagram
     API-->>Admin: Current refund and payout state
 ```
 
-## 14. Administration, support & reporting apis
+## 14. Administration, support & reporting APIs
 
 ### 14.1 Catalog, categories and variants (admin)
 
 Every route below is **A only** and requires session, Origin, CSRF and audit for mutations.
 `If-Match` is required where shown; the API must derive a strong ETag from a durable revision/CAS field and reject stale writes.
-Database v1.3 defines CAS `revision` for every affected master; every successful edit increments it, while server-only `storeSettings.deliveryCoverageRevision` serializes delivery changes across all zones; `deliveryZones.coverageRevision` is only a per-zone sequence (API-D19).
+Database v1.0 defines CAS `revision` for every affected master; every successful edit increments it, while server-only `storeSettings.deliveryCoverageRevision` serializes delivery changes across all zones; `deliveryZones.coverageRevision` is only a per-zone sequence (API §14.1).
 No public endpoint can mutate base/sale prices, SKU identity or stock.
 
 | Method | Path | Request → response | FR |
@@ -972,7 +970,7 @@ No public endpoint can mutate base/sale prices, SKU identity or stock.
 | `GET` | `/admin/inventory/{variantId}/movements` | `page?,from?,to? → InventoryMovement[]` | 25 |
 | `POST` | `/admin/inventory/{variantId}/adjustments` | `{deltaPhysical,reason} + Idempotency-Key → {stock,movementId}` | 25 |
 
-**Admin projections:** [Appendix D.2](#d2-typed-request-and-response-schema-registry) owns the `AdminProduct`, `AdminVariant` and `AdminCategory` allowlists. Responses carry the strong `ETag` **header** derived from the durable revision; do not create a competing body-only `etag` authority. `AdminVariant.stock.available` is derived from physical, reserved and committed stock. Inventory movements expose `id,variantId,type,deltaPhysical,deltaReserved,deltaCommitted,occurredAt,reason,actor`, with no connection or secret metadata. Field updates use explicit allowlists and backend service ownership. The CAS source must be approved and verified (API-D19).
+**Admin projections:** [Appendix D.2](#d2-typed-request-and-response-schema-registry) owns the `AdminProduct`, `AdminVariant` and `AdminCategory` allowlists. Responses carry the strong `ETag` **header** derived from the durable revision; do not create a competing body-only `etag` authority. `AdminVariant.stock.available` is derived from physical, reserved and committed stock. Inventory movements expose `id,variantId,type,deltaPhysical,deltaReserved,deltaCommitted,occurredAt,reason,actor`, with no connection or secret metadata. Field updates use explicit allowlists and backend service ownership. The CAS source must be approved and verified (API §14.1).
 
 **Clear semantics:** omission leaves the field unchanged. Explicit JSON `null` clears only
 `VariantPatch.salePricePoisha/lowStockThreshold` and `CategoryPatch.parentId/image` (and the declared nullable settings
@@ -1234,9 +1232,9 @@ Provider reference: [SSLCOMMERZ developer documentation v4](https://developer.ss
 Validate file type, extension, true content type, maximum size, malware/security scanning policy and server-generated object identifiers; never accept arbitrary external URLs as approved Cloudinary files.
 Claim uploads require the **path `orderId`** to match current C owner or G-scoped session, validated `claimType` and `orderItemIds[]` belonging to that order; the upload is a temporary, expiring reference that can only be attached to that same order’s eligible claim.
 Return an **opaque** private evidence identifier; no public Cloudinary URL to confidential photos.
-`assetId` is the opaque ID of proposed `mediaAssets` (Database §6.7), mapping one server-generated Cloudinary identity to owner/order/item scope, access, validation state and transactional attachment references (API-D18). Create upload intent before the external call; return attachable references only after validation. Attach and target update commit together under asset CAS. Cleanup atomically claims expired unreferenced assets as `deleting`, excluding concurrent attachment; reconcile unknown provider outcomes. Private evidence retrieval requires current C/G ownership or A permission and short-lived authorized delivery. No separate generic `assets` collection is implied.
+`assetId` is the opaque ID of `mediaAssets` (Database §6.7), mapping one server-generated Cloudinary identity to owner/order/item scope, access, validation state and transactional attachment references (Database §6.7). Create upload intent before the external call; return attachable references only after validation. Attach and target update commit together under asset CAS. Cleanup atomically claims expired unreferenced assets as `deleting`, excluding concurrent attachment; reconcile unknown provider outcomes. Private evidence retrieval requires current C/G ownership or A permission and short-lived authorized delivery. No separate generic `assets` collection is implied.
 Cleanup of unreferenced uploads is asynchronous and must not delete assets attached to immutable order/claim/audit evidence.
-Upload limits and scan implementation require approved environment policy (Decision API-D10).
+Configure upload limits and scanning under the environment media policy in Operations Appendix B.
 
 ### 16.3 Transactional email and public notifications
 
@@ -1245,7 +1243,7 @@ Events include registration/verification, email change, password reset, guest or
 Deduplicate by durable `eventKey`, record retries/attempts and safe provider delivery status; repeat IPNs must not send duplicate payment-success emails.
 Email failure **does not roll back** paid order or refund.
 
-**Credential delivery design — API-D21 (proposal, security/data sign-off pending):** Database §5.3 specifies a
+**Proof delivery:** Database §5.3 specifies a
 CSPRNG proof, verification hash and short-lived AES-256-GCM delivery envelope restricted to `authChallenges`. Atomically
 write challenge plus `notifications` intent; outbox payload holds `challengeId` only. A worker decrypts in memory using a
 versioned key from the external secret store, rechecks expiry/consumption/revocation and sends to the bound destination.
@@ -1258,10 +1256,9 @@ leaves `sending`/`delivery_uncertain`; reconcile by stable provider identity bef
 establish the outcome, expose the delivery exception; an explicitly requested/rate-limited reissue invalidates the old
 proof. Do not claim exactly-once email delivery from outbox uniqueness: only one logical intent and one valid proof are
 guaranteed. Email transport uncertainty never replays account/order work or extends token expiry. Worker leases/fencing,
-AEAD tamper handling, key loss/rotation, crashes, concurrent reissue/consume, expiry and logs need actual tests before
-P03-009, P03-010, P03-011, P03-012 or P06-015 can rely on the design. See [OWASP recovery-token guidance](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html)
+AEAD tamper handling, key loss/rotation, crashes, concurrent reissue/consume, expiry and logs are required security and reliability test cases for the identity and guest-access features. See [OWASP recovery-token guidance](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html)
 and [authenticated storage/key separation guidance](https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html);
-these support the security controls, not project approval or provider capability.
+these describe the security controls used by this contract.
 Customer-facing status is read from business resources, not from the presence/absence of an email.
 No marketing consent workflows are implied by transactional messaging.
 
@@ -1317,31 +1314,31 @@ arbitrary redirect URL from request input.
 
 ### 18.2 Functional requirement traceability
 
-| PRD requirement(s) | API section(s) | Required status |
-| --- | --- | --- |
-| FR-01, FR-02, FR-21 | §9 auth, customer, admin session | Proposed |
-| FR-03–FR-06 | §10.1 public home/catalog/variants | Proposed |
-| FR-07–FR-08 | §10.2 cart/wishlist | Proposed |
-| FR-09, FR-10 | §10.3; §14.3 coupon and §14.2 moderation | Proposed |
-| FR-11 | §11 checkout | Proposed |
-| FR-12 | §12 hosted methods, retry, IPN, COD, risk | Proposed; merchant capability pending |
-| FR-13 | §§11–12, 14.1, 15 stock guards | Proposed |
-| FR-14–FR-16 | §11 orders, cancellation, delivery; §14.2 admin | Proposed; deadline approval pending |
-| FR-17–FR-18 | §13 claims/refunds | Proposed; gateway/policy pending |
-| FR-19 | §9.2 guest challenge/session; scoped §§11–13 | Proposed |
-| FR-20 | §§14.4, 16 notifications, contact/complaints | Proposed |
-| FR-22 | §14.4 dashboard, reports | Proposed |
-| FR-23–FR-25 | §14.1 product/category/inventory administration | Proposed |
-| FR-26–FR-27 | §14.2 orders/customers | Proposed |
-| FR-28 | §14.3 delivery settings | Proposed |
-| FR-29 | §12 admin payments/reconciliation | Proposed |
-| FR-30–FR-31 | §§14.2–14.3 promotions/moderation | Proposed |
-| FR-32–FR-33 | §13 admin claims/refunds | Proposed |
-| FR-34 | §14.3 settings/policy versioning | Proposed |
+| PRD requirement(s) | API section(s) |
+| --- | --- |
+| FR-01, FR-02, FR-21 | §9 auth, customer, admin session |
+| FR-03–FR-06 | §10.1 public home/catalog/variants |
+| FR-07–FR-08 | §10.2 cart/wishlist |
+| FR-09, FR-10 | §10.3; §14.3 coupon and §14.2 moderation |
+| FR-11 | §11 checkout |
+| FR-12 | §12 hosted methods, retry, IPN, COD, risk |
+| FR-13 | §§11–12, 14.1, 15 stock guards |
+| FR-14–FR-16 | §11 orders, cancellation, delivery; §14.2 admin |
+| FR-17–FR-18 | §13 claims/refunds |
+| FR-19 | §9.2 guest challenge/session; scoped §§11–13 |
+| FR-20 | §§14.4, 16 notifications, contact/complaints |
+| FR-22 | §14.4 dashboard, reports |
+| FR-23–FR-25 | §14.1 product/category/inventory administration |
+| FR-26–FR-27 | §14.2 orders/customers |
+| FR-28 | §14.3 delivery settings |
+| FR-29 | §12 admin payments/reconciliation |
+| FR-30–FR-31 | §§14.2–14.3 promotions/moderation |
+| FR-32–FR-33 | §13 admin claims/refunds |
+| FR-34 | §14.3 settings/policy versioning |
 
-Coverage is **planning/contract coverage**; no checkbox here certifies an implemented or passing endpoint. Authoritative
-acceptance is PRD §14, rollout sequencing in Implementation Plan §6 and evidence attached in `TASKS.md`. Add contract tests
-with each feature slice and reconcile this specification against the delivered OpenAPI/types prior to acceptance.
+Use this mapping to implement contract tests with each feature slice. Apply PRD §14 acceptance criteria, follow
+Implementation Plan §6 sequencing and attach execution evidence in `TASKS.md`. Keep the delivered OpenAPI/types aligned
+with this specification.
 
 ### 18.3 Change and sign-off procedure
 
@@ -1373,36 +1370,23 @@ The canonical route definitions, access roles and request/response contracts app
 | Media and health | §§16.2–16.4 | Controlled uploads, private evidence, readiness/liveness |
 
 A later OpenAPI file should be generated/maintained against **the same contracts**, not introduced as a contradictory
-independent source. Every path listed in the main tables is a **proposed** v1 route; externally triggered callback methods
+independent source. Every path listed in the main tables is a v1 route; externally triggered callback methods
 and operational endpoints require deployment-specific adapter tests.
 
-## Appendix B — Decision & dependency register
+## Appendix B — Integration configuration
 
-| ID | Pending decision / requirement | Baseline handling | Status / owner to resolve |
-| --- | --- | --- | --- |
-| API-D01 | Exact resource route names, DTO validators and cookie names | Proposed tables in this document; use coordinated frontend/backend contract tests | Engineering approval pending |
-| API-D02 | Session lifetimes, SameSite and production subdomain arrangement | Host-only opaque tokens; approved Origin and context/session CSRF; no assumed hours | Security/hosting approval pending |
-| API-D03 | Idempotency replay/retention horizon | Persistent checkout tombstone; no duplicate order after replay expiry (Database DB-D06) | Operations/legal + engineering pending |
-| API-D04 | SSLCOMMERZ merchant bKash/Nagad/Rocket activation and actual channel selection | Hide inactive methods, **block launch** until 3 online + COD verified or PRD revised | Merchant verification pending |
-| API-D05 | Provider callback method, status/ack codes, unique verified identity and validation response version | Durable paid/nonpaid/unmatched callback decision table in §12.3; no inferred payment | Sandbox provider verification pending |
-| API-D06 | Refund route capability, original `bank_tran_id`, merchant `refund_trans_id`, provider `refund_ref_id` uniqueness and partial payouts | Separate source-funded records and reconcile before retry (Database DB-D07) | Provider/merchant sandbox pending |
-| API-D07 | Approved policies, legal delivery/complaint deadlines and returns/refund exception handling | `policyDocuments` v1.2 holds approved content; checkout snapshots rule basis, confirmation fixes target deadline; law start event remains a separately approved input | Store operator/legal approval pending |
-| API-D08 | Delivery coverage, actual charge values/effective periods | Area-first eligible rule, serialized non-overlap (Database DB-D08), using the shared store-wide guard across zones | Store operator values pending; design proposal requires review |
-| API-D09 | Catalog sorting/search index and performance thresholds | Bounded listing; choose final index/query after profiling (DB-D11) | Engineering testing pending |
-| API-D10 | Upload max size, accepted MIME and private evidence scanning/purge | Restricted backend-controlled Cloudinary upload with opaque private IDs | Security/operations pending |
-| API-D11 | Password strength/session recovery and rate limits | Enforce modern hashing, generic enumeration-safe errors, policy-configured limits | Security approval pending |
-| API-D12 | Public complaint response handling and account deletion/retention | Verified ownership for linked complaints, durable financial history | Operator/legal approval pending |
-| API-D13 | API numeric/array size bounds | Database §2.2 proposed defaults; agree UI and validators before sign-off | Frontend/backend pending |
-| API-D14 | Refund rounding, per-ordinal entitlements and source splitting | Database §§2.3, 7.3, 9 and 12 governing; never compute refunds from live catalog | Contract/unit/integration tests pending |
-| API-D15 | Ready/live hosting exposure and stable health route wiring | Restricted operational visibility, no leaked DB/provider state | Hosting/operations pending |
-| API-D16 | OpenAPI compatibility policy and version evolution | `/api/v1` additive changes; breaking changes require reviewed migration | Engineering approval pending |
-| API-D17 | Homepage promotional banner storage and public DTO | storeSettings.homepageBanner + public mediaAssets reference; typed input/public projection; no separate banner collection | Concrete proposal documented; content/data-owner sign-off pending |
-| API-D18 | Cloudinary upload reference authorization, temporary evidence storage and orphan cleanup | mediaAssets intent/ownership ledger, transactional attachment and CAS-protected deletion; private authorized retrieval (Database §6.7) | Concrete proposal documented; security/data-owner sign-off and tests pending |
-| API-D19 | Strong ETag/revision for catalog/category edits and delivery charge activation | Database v1.3 specifies master CAS and store-wide deliveryCoverageRevision, with per-zone change sequence; verify in integration tests | Proposed design synchronized; runtime evidence pending |
-| API-D20 | Buyer confirmation when server price/terms change between quote and submit | Scope-bound persisted checkoutQuotes, mandatory quoteId, expiry/change errors and atomic one-order consumption (§11.1; DB §7.1.1); tasks P06-004, P06-018, P07-004 | Concrete proposal documented; Product/API/data-owner sign-off and tests pending |
-| API-D21 | Durable recovery/guest email proof delivery under no-plaintext/no-secret-outbox rules | Challenge-local AEAD envelope and hash; reference-only outbox; external key custody, safe resend and uncertainty (§16.3; DB §5.3) | Concrete proposal documented; security/data-owner sign-off, keys/provider evidence and tests pending |
+| Area | Required configuration | Owner |
+| --- | --- | --- |
+| Browser security | Exact frontend/API origins, host-only cookie settings, session/challenge lifetimes and per-route rate limits | Security / platform engineering |
+| Checkout | Quote lifetime, replay-response horizon and persistent intent retention | Backend / data engineering |
+| Gateway | Environment, merchant identity, activated channels, transaction limits, callback transport and verified provider statuses | Merchant / backend engineering |
+| Refunds | Supported original-channel refund/status mechanism, source identifiers and manual-transfer verification procedure | Merchant / finance |
+| Delivery and policies | Coverage keys, charges/effective windows, published policy versions, business calendar and applicable legal start events | Store operations |
+| Media | Allowed MIME/size limits, scanning, temporary upload lifetime, private delivery and retention | Security / store operations |
+| Deployment | Restricted health access, secret-store references, request/body limits and API compatibility policy | Platform engineering |
 
-**Resolution rule:** An open item does not invalidate already-approved PRD behavior; it blocks claims of a fully accepted implementation where the detail is material. Record decision owner, evidence, approved date and resulting source-document revision before closing it.
+[Operations Appendix B](./OPERATIONS.md#appendix-b--configuration-inventory) owns deployment values and secret references.
+Route, DTO, storage and financial behavior follow this specification and [Database](./DATABASE.md).
 
 ## Appendix C — Endpoint definition checklist
 
@@ -1419,7 +1403,7 @@ Use this compact template when the team adds or changes any route:
 | Recovery | Retry behavior, duplicate callback action, timeout/uncertain state and safe polling |
 | Verification | Unit/contract/integration/E2E/security/provider tests and execution evidence |
 
-**Specification acceptance checklist**
+**Implementation acceptance checks**
 
 - [ ] All applicable FR-01–FR-34 surfaces and admin workflows have route ownership and acceptance tests.
 - [ ] All endpoint operation schemas in Appendix D are compiled to OpenAPI/TypeScript validators and checked against implemented handlers; no raw Mongoose models leak.
@@ -1430,19 +1414,13 @@ Use this compact template when the team adds or changes any route:
 - [ ] All examples, Markdown links and Mermaid diagrams render correctly in the target viewer; tables have consistent columns.
 - [ ] The API's real OpenAPI/TypeScript contracts, `DATABASE.md`, `TESTING.md`, `OPERATIONS.md` and `TASKS.md` evidence reconcile before final sign-off.
 
-**Definition of complete:** This file is the **proposed** HTTP contract for implementation. It becomes an accepted
-implementation contract only after required decisions, versioned validation schemas, runtime/provider tests and source
-cross-checks have been completed. It is not a claim of deployed endpoints, activated merchant channels, verified legal
-compliance or production readiness.
-
 ## Appendix D — Operation contract & DTO register
 
 This appendix is a **single normative companion** to the compact route tables in §§9–14 and §16. Read it with the access
-column in those tables and Database v1.3. The operation matrix below supplies a concrete default success status,
-route-level failure families and response profile. It is a design-time validation target; **the OpenAPI document,
-TypeScript/Zod validators and runtime contract tests do not exist yet**.
+column in those tables and Database v1.0. The operation matrix below supplies a concrete default success status,
+route-level failure families and response profile. Use it to implement OpenAPI components, runtime validators and contract tests.
 
-### D.1 schema notation and mandatory response rules
+### D.1 Schema notation and mandatory response rules
 
 | Notation | Meaning |
 | --- | --- |
@@ -1476,9 +1454,9 @@ STATE_CONFLICT`/`409 PAYMENT_UNCERTAIN`/`409 OUT_OF_STOCK`/`409 REFUND_BALANCE_E
 routes follow §12.3's own acknowledgment matrix **rather than** browser security errors. Do not return a generic success
 body with a hidden failure.
 
-### D.2 typed request and response schema registry
+### D.2 Typed request and response schema registry
 
-The following explicit field allowlists close the high-risk gaps identified in the review. `*Input` means client-writable fields only; `*` response fields are backend-produced. Fields inherited from an existing immutable snapshot are read-only even when their names appear in a response.
+The following field allowlists define client inputs and server responses. `*Input` means client-writable fields only; `*` response fields are backend-produced. Fields inherited from an existing immutable snapshot are read-only even when their names appear in a response.
 
 | Schema | Fields (required `!`; optional `?`) | Validity and behavior |
 | --- | --- | --- |
@@ -1538,11 +1516,10 @@ The following explicit field allowlists close the high-risk gaps identified in t
 
 **Nested type constraints:** `ContactInfo`, `QuoteItem`, `OrderLineSnapshot`, `StatusEvent`, `PolicyRef`, `AdminReview`,
 `NotificationSummary`, `RefundStatusEvent` (`{status,at,reasonCode?}`, max 40 latest chronological public milestone facts derived from audit/status history; approval/completion remain explicit fields), `AdminOrderSummary` (OrderSummary plus necessary masked admin context) and `CollectionSummary` are bounded projections of their owning Database §5–§10 schema, with
-public/private allowlists from §6.2. Their exact compiled validator files and machine-readable OpenAPI component
-definitions remain a **verification gate**, not an unearned completion claim. Numeric/string/array bounds follow Database
+public/private allowlists from §6.2. Implement these projections in runtime validators and machine-readable OpenAPI components. Numeric/string/array bounds follow Database
 §2.2 unless explicitly narrower above.
 
-### D.3 endpoint response/status/error matrix
+### D.3 Endpoint response/status/error matrix
 
 The main endpoint tables are authoritative for path, ownership and request shape. The matrix here records **each
 method/path exactly once** and supplies its nominal success status and additional error families. `Base` means the
@@ -1730,7 +1707,5 @@ Any difference between this matrix and the route's own explicitly stated `201`/`
 | `GET` | `/health/live` | `200` | Base |
 | `GET` | `/health/ready` | `200 / 503` | Restricted monitor; §16.4 |
 
-**Operation-registry acceptance:** The matrix is structurally complete for all routes presently defined in this Markdown
-file. Field-by-field OpenAPI coverage, generated sample validation, integration test evidence and external merchant
-acceptance must still be completed before the document is *approved*, rather than merely *revised*. New routes require an
-operation entry and DTO mapping in the same change.
+**Registry maintenance:** Keep every method/path, response status, DTO and error profile aligned with OpenAPI, runtime
+validation and contract tests. Add an operation entry, DTO mapping and test coverage slot in the same change as a new route.

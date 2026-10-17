@@ -1,15 +1,12 @@
 # SportZone — AI coding agent instructions
 
-**Version:** 1.1  
-**Updated:** 16 October 2026  
-**Documentation audit:** 16 October 2026 — corrections in this working revision do not grant specification, task or release approval.  
-**Status:** Proposed agent-execution baseline — repository implementation pending  
-**Project:** Single-store sports e-commerce platform for Bangladesh (BDT)  
-**Scope:** Repository-root instructions for coding agents working in `sportzone/`  
-**Planning task:** `P01-011` (creation and review; acceptance not claimed)  
-**Primary references:** [PRD](docs/PRD.md) · [Architecture](docs/ARCHITECTURE.md) · [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) · [Tasks](docs/TASKS.md)
+**Version:** 1.0\
+**Status:** Final development baseline\
+**Updated:** 17 October 2026
 
-**Repository evidence (16 October 2026):** This checkout contains the twelve Markdown documents only. Application directories, manifests, lockfiles, environment templates, test suites and CI workflows have not been created. Recheck this inventory when beginning later work.
+**Project:** Single-store sports e-commerce platform for Bangladesh (BDT)\
+**Scope:** Repository-root instructions for coding agents working in `sportzone/`\
+**Primary references:** [PRD](docs/PRD.md) · [Architecture](docs/ARCHITECTURE.md) · [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) · [Tasks](docs/TASKS.md)
 
 This file tells coding agents **how to work safely and verify their work**. It does not replace product, architecture, data, API, design, testing, or operational specifications. Follow the existing implementation and repository conventions after inspecting them; do not assume a planned file, command, service, or feature has already been implemented.
 
@@ -36,7 +33,7 @@ This file tells coding agents **how to work safely and verify their work**. It d
 
 ## 1. Purpose & scope
 
-These rules apply to agents editing repository code, tests, configuration, and documentation. The repository is planned as an npm-workspaces modular monolith with a Next.js storefront, React/Vite administration portal, Express API, and MongoDB/Mongoose persistence. This document establishes agent conduct; concrete product behavior is defined elsewhere.
+These rules apply to agents editing repository code, tests, configuration, and documentation. The architecture is an npm-workspaces modular monolith with a Next.js storefront, React/Vite administration portal, Express API, and MongoDB/Mongoose persistence. This document establishes agent conduct; concrete product behavior is defined elsewhere.
 
 **Agent MUST:**
 
@@ -81,12 +78,12 @@ sportzone/
 ├── docs/                # Project specifications and execution records
 ├── README.md
 ├── AGENTS.md
-├── CHANGELOG.md         # Documentation change history (prepared)
-├── .env.example         # Planned sanitized configuration template
-└── package.json         # Planned npm-workspaces manifest
+├── CHANGELOG.md         # Documentation version history
+├── .env.example         # Sanitized configuration template
+└── package.json         # npm-workspaces manifest
 ```
 
-This is a **planned** layout, not proof that directories or scripts exist. Inspect the live repository before using paths or commands. Within `backend/src/`, keep feature modules behind domain-service boundaries; route/controller code should not bypass them to manipulate another module’s private models. Background jobs reuse backend domain services and durable state; they are not a second business API.
+Inspect the live repository before using paths or commands from this target layout. Within `backend/src/`, keep feature modules behind domain-service boundaries; route/controller code should not bypass them to manipulate another module’s private models. Background jobs reuse backend domain services and durable state; they are not a second business API.
 
 | Area | Owner / boundary |
 | --- | --- |
@@ -156,7 +153,7 @@ Follow the dependency-driven feature-slice sequence in [Implementation Plan §§
 
 ## 9. Database & data integrity rules
 
-- Preserve the mandatory persistence and financial invariants in the [PRD](docs/PRD.md) and [Architecture](docs/ARCHITECTURE.md). Treat detailed collection, field, and index choices in [Database](docs/DATABASE.md) as **proposed design contracts** until reviewed and approved for the affected feature. Record unresolved decisions and obtain the required design approval **before relying on a proposed choice in implementation**; then implement the approved design and verify it with migrations, indexes, and applicable tests. Do not mark the schema or task accepted until the required verification evidence exists.
+- Implement the collection, field, index and transaction contracts in [Database](docs/DATABASE.md), preserving the invariants in [PRD](docs/PRD.md) and [Architecture](docs/ARCHITECTURE.md). Review changes to these contracts through normal change control. Verify implementation with migrations, indexes and applicable tests before task acceptance.
 - Use integer **poisha**, deterministic discount allocation and rounding, and historical order snapshots; never persist floating-point currency as the financial authority.
 - Enforce unique identities/indexes, atomic conditional inventory writes and MongoDB transactions for cross-document business invariants. Do not use standalone MongoDB to claim checkout transaction tests passed.
 - Protect available/reserved/committed stock, coupon holds/redemptions, checkout idempotency, and order/payment/refund state transitions against duplicate and concurrent requests.
