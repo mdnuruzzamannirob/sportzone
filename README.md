@@ -44,19 +44,24 @@ consume allowlisted DTOs. Private sessions, carts, checkout, orders and financia
 
 ## 3. Repository structure
 
-The repository currently contains the documentation set. Foundation tasks create the application workspaces and tooling.
+The repository contains the documentation set and three private npm workspace manifests. Frontend application setup
+follows in Phase 02; the Express runtime follows in Phase 03.
 
 ```text
 sportzone/
-├── storefront/                 # Next.js storefront
-├── admin/                      # React + Vite administration
-├── backend/                    # Express API and scheduled jobs
+├── storefront/package.json     # Storefront workspace
+├── admin/package.json          # Administration workspace
+├── backend/package.json        # Backend workspace
 ├── docs/                       # Product and engineering specifications
 ├── README.md
 ├── AGENTS.md
 ├── CHANGELOG.md
+├── .gitignore
+├── .npmrc                      # Reject unsupported runtime/tool versions
+├── .nvmrc                      # Verified Node.js patch
 ├── .env.example
-└── package.json                # npm workspaces
+├── package.json                # Private npm workspace root
+└── package-lock.json           # Locked workspace links
 ```
 
 [Architecture §4](docs/ARCHITECTURE.md#4-project-structure) defines application/module boundaries.
@@ -64,20 +69,49 @@ sportzone/
 ## 4. Development workflow
 
 1. Read [AGENTS](AGENTS.md), the assigned [task](docs/TASKS.md) and its owning contracts.
-2. Establish the workspace and locked toolchain through P01-009, then scaffold the frontends and backend in Phases 02–03.
+2. Install the workspace with the toolchain below, then scaffold the frontends and backend in Phases 02–03.
 3. Configure isolated local/test resources, a transaction-capable MongoDB replica set and sandbox integrations.
 4. Implement each feature with its API/data contracts, required UI states, tests and operating controls.
 5. Run applicable checks, review the diff and attach evidence before task acceptance.
 
-After foundation scripts exist, install dependencies with `npm ci` and discover the actual scripts using `npm run`.
-[Testing §5.3](docs/TESTING.md#53-standard-execution-interface) defines the required root verification interface. Record
-verified startup commands and local origins here as the workspaces are implemented.
+Verified toolchain: **Node.js 24.20.0 / npm 11.19.0**. `.nvmrc` selects the Node patch; `packageManager` records npm.
+The engine ranges permit compatible updates within Node 24 / npm 11 and `.npmrc` enforces those ranges. If using nvm,
+select the installed version with `nvm use`; otherwise provide these versions through your runtime manager.
+
+From the repository root:
+
+```sh
+node --version
+npm --version
+npm ci
+npm run workspaces:check
+npm pkg get name private --workspaces
+npm run
+```
+
+The install currently links three local packages and downloads no third-party dependencies. The verified offline form is
+`npm ci --offline --ignore-scripts --no-audit --no-fund`; it succeeds with the current dependency-free lockfile.
+`workspaces:check` lists `storefront`, `admin` and `backend` without missing dependencies.
+
+`npm run` currently exposes only `workspaces:check`. CI/quality setup is owned by P01-010; application dev/build/type/lint
+and test scripts are added with their tooling. [Testing §5.3](docs/TESTING.md#53-standard-execution-interface) defines the
+required verification interface. Missing scripts must fail; never use `--if-present` to report unimplemented checks as passed.
+Application startup commands will be recorded here after the runtimes exist.
 
 ## 5. Configuration and verification
 
 [Operations Appendix B](docs/OPERATIONS.md#appendix-b--configuration-inventory) defines configuration ownership, exposure
 and validation. Separate local, CI, staging and production data, origins, credentials and provider modes. Keep secrets out
 of Git, logs, artifacts and browser-exposed `NEXT_PUBLIC_*` / `VITE_*` values.
+
+`.env.example` contains local-only origin conventions (storefront `3000`, admin `5173`, API `4000`), sandbox mode and blank
+secret/approval-dependent values. These are future local configuration defaults; no server is listening yet and no runtime
+loads this template. MongoDB must use an isolated transaction-capable deployment. Add provider-specific keys with their
+actual adapters and validators, keeping Appendix B and the protected per-key inventory synchronized.
+
+Create service-local `.env` files only when configuring those services. `.gitignore` excludes local environment files,
+credentials, dependencies, build output and test artifacts while retaining sanitized `.env.example` templates and lockfiles.
+Review every template value before committing it; an example-file name does not make credentials safe to publish.
 
 Use real transaction-capable MongoDB for inventory, checkout, coupon and refund concurrency tests. Validate payment/refund
 adapters in sandbox. Verify responsive layouts, keyboard use, accessibility and both themes. Record commands, environment,

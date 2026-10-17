@@ -20,6 +20,7 @@ This changelog tracks the documentation baseline. Application releases are recor
 - Completed P01-006 official-source gateway/refund planning assessment, credential/input requirements, verification checks and merchant-specific gates with project-owner acceptance.
 - Completed P01-007 policy/customer-rights validation gates, official review sources and accountable launch-verification role with project-owner acceptance.
 - Completed P01-008 safety-critical scenario ownership, exception/invariant coverage and verified dependency path with project-owner acceptance.
+- Completed P01-009 minimal npm workspace foundation, generated lockfile, sanitized configuration template and verified README setup with project-owner acceptance.
 
 ## Maintenance
 

@@ -79,7 +79,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 
 | Phase | Total | Not Started | Ready | In Progress | Blocked | In Review | Done | Deferred |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 01 — Requirements Finalization and Planning | 14 | 6 | 0 | 0 | 0 | 0 | 8 | 0 |
+| 01 — Requirements Finalization and Planning | 14 | 5 | 0 | 0 | 0 | 0 | 9 | 0 |
 | 02 — UI/UX Design | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 03 — Authentication and Core Backend | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -91,7 +91,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **163** | **0** | **0** | **0** | **0** | **8** | **0** |
+| **Total** | **171** | **162** | **0** | **0** | **0** | **0** | **9** | **0** |
 
 ## 4. Milestone tracker
 
@@ -190,13 +190,14 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Evidence:** [Safety-critical scenarios, verification owners and dependency path](./evidence/P01-008-critical-scenarios.md).\
   **Accepted:** Project owner, 17 October 2026 — “Critical-scenario map গ্রহণ করছি”.
 
-- [ ] **P01-009 — Initialize minimal npm-workspaces repository**\
-  **Status:** `Not Started` · **Area:** Tooling\
+- [x] **P01-009 — Initialize minimal npm-workspaces repository**\
+  **Status:** `Done` · **Area:** Tooling · **Owner:** Codex\
   **Sources:** Architecture §4; Implementation Plan §4.2\
   **Depends on:** `P01-001`\
   **Deliverable:** Create root workspace configuration, .gitignore, sanitized .env.example and lockfile; preserve the documentation layout and extend README with verified setup commands.\
   **Acceptance:** Workspace discovery works; no secret is committed; no unapproved feature scaffolding.\
-  **Evidence to attach:** Repository tree and workspace validation output.
+  **Evidence:** [Repository foundation, clean installs, workspace discovery and configuration checks](./evidence/P01-009-workspace.md).\
+  **Accepted:** Project owner, 17 October 2026 — “Workspace foundation গ্রহণ করছি”.
 
 - [ ] **P01-010 — Establish baseline CI and quality workflow**\
   **Status:** `Not Started` · **Area:** Tooling\
@@ -1677,6 +1678,7 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | 17 October 2026 | P01-006 | Gateway/refund planning assessment passed; project owner accepted the assessment; status Done; merchant-specific activation/payout gates remain separate | Codex / project owner | [Accepted gateway/refund feasibility](./evidence/P01-006-gateway-feasibility.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P01-007 | Policy-gate verification passed; project owner accepted the record; status Done; actual legal/publication approvals remain separate | Codex / project owner | [Policy/customer-rights gates](./evidence/P01-007-policy-gates.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P01-008 | Critical-scenario and dependency checks passed; project owner accepted the planning record; status Done; runtime verification remains separate | Codex / project owner | [Critical-scenario map](./evidence/P01-008-critical-scenarios.md) | Proceed through declared task dependencies |
+| 17 October 2026 | P01-009 | Workspace clean-install/discovery and safety checks passed; project owner accepted the foundation; status Done | Codex / project owner | [Workspace foundation](./evidence/P01-009-workspace.md) | Proceed through declared task dependencies |
 
 When execution starts, update the task status and attach evidence. Change a checkbox to `[x]` only after acceptance.
 Preserve IDs and dependency references; update phase totals and record milestone acceptance separately.

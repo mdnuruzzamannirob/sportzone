@@ -1,0 +1,6 @@
+{
+  "name": "admin",
+  "version": "0.0.0",
+  "private": true,
+  "description": "React and Vite administration workspace; application setup follows in Phase 02"
+}

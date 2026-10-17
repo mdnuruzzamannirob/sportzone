@@ -1,0 +1,40 @@
+# Dependencies and generated output
+node_modules/
+.next/
+dist/
+build/
+coverage/
+.nyc_output/
+.cache/
+.turbo/
+*.tsbuildinfo
+
+# Local configuration and credentials; sanitized templates stay versioned
+.env
+.env.*
+!.env.example
+!.env.*.example
+.npmrc.local
+.aws/
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Runtime logs, local databases, backups and test artifacts
+*.log
+*.pid
+*.pid.lock
+*.dump
+*.bson
+backups/
+playwright-report/
+test-results/
+
+# Operating-system and editor-local files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
