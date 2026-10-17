@@ -26,6 +26,7 @@ This changelog tracks the documentation baseline. Application releases are recor
 - Completed P01-012 task-status/evidence protocol with project-owner acceptance; clarified transitions/reopening and reconciled the initial unverified state and accepted task evidence.
 - Completed P01-013 testing-baseline review with project-owner acceptance; reconciled requirement/risk ownership, actual tooling/commands, planned app suites and coverage/execution counts.
 - Completed P01-014 operations-baseline review with project-owner acceptance; reconciled runbook/configuration handoffs, operational decision gates and executable-command prerequisites.
+- Completed P02-001 Next.js storefront scaffold with TypeScript/Tailwind, public/private route boundaries, component/production smoke checks and activated storefront CI; project owner accepted the scaffold.
 
 ## Maintenance
 

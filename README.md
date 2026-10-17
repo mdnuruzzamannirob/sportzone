@@ -46,12 +46,12 @@ consume allowlisted DTOs. Private sessions, carts, checkout, orders and financia
 
 ## 3. Repository structure
 
-The repository contains the documentation set and three private npm workspace manifests. Frontend application setup
-follows in Phase 02; the Express runtime follows in Phase 03.
+The repository contains the documentation set, a runnable Next.js storefront scaffold and private admin/backend workspace
+manifests. The admin application follows in P02-002; the Express runtime follows in Phase 03.
 
 ```text
 sportzone/
-├── storefront/package.json     # Storefront workspace
+├── storefront/                 # Next.js App Router scaffold, styles and tests
 ├── admin/package.json          # Administration workspace
 ├── backend/package.json        # Backend workspace
 ├── docs/                       # Product and engineering specifications
@@ -91,8 +91,8 @@ npm pkg get name private --workspaces
 npm run
 ```
 
-The install currently links three local packages and downloads no third-party dependencies. The verified offline form is
-`npm ci --offline --ignore-scripts --no-audit --no-fund`; it succeeds with the current dependency-free lockfile.
+The install links the three workspaces and installs the storefront's exact locked dependencies. Initial installation
+requires npm registry access; offline installation works only with a complete matching package cache.
 `workspaces:check` lists `storefront`, `admin` and `backend` without missing dependencies.
 
 Current root checks:
@@ -106,7 +106,25 @@ npm run ci
 `lint` checks source JavaScript syntax, JSON, whitespace, Markdown tables/local links and targeted credential patterns.
 `test:unit` runs the CI guard regression tests using Node's test runner. `ci` runs workspace discovery, repository lint,
 tooling tests and every configured application check; it writes `test-results/ci.json`, including explicit workspace states.
-These checks currently validate the repository foundation. Application startup commands and checks follow with the apps.
+The storefront is active in CI; admin and backend app checks remain Not Configured until their scaffold tasks.
+
+Storefront commands, from the repository root:
+
+```sh
+npm run dev --workspace=storefront
+npm run lint --workspace=storefront
+npm run typecheck --workspace=storefront
+npm run test:unit --workspace=storefront
+npm run build --workspace=storefront
+npm run test:smoke --workspace=storefront
+npm run start --workspace=storefront
+```
+
+Dev/start bind to `127.0.0.1:3000`; stop one before starting the other. The production smoke command starts and cleans up
+its own loopback server on an available port and requires a completed build. Development and builds use Next.js's supported
+Webpack option. The scaffold includes public `/` and dynamic `/account` layouts; `/account` sends private/no-store and
+noindex headers and displays only an unavailable-account placeholder. Authentication and Express integration follow in
+Phase 03. The complete storefront, theme controls, typography and commerce flows remain owned by their later tasks.
 
 `.github/workflows/ci.yml` runs on pushes, pull requests and manual dispatch with read-only repository permissions and
 commit-pinned actions. It uses `.nvmrc`, npm 11.19.0, a locked install, `npm run ci` and a summary artifact; no deployment
@@ -127,8 +145,8 @@ and validation. Separate local, CI, staging and production data, origins, creden
 of Git, logs, artifacts and browser-exposed `NEXT_PUBLIC_*` / `VITE_*` values.
 
 `.env.example` contains local-only origin conventions (storefront `3000`, admin `5173`, API `4000`), sandbox mode and blank
-secret/approval-dependent values. These are future local configuration defaults; no server is listening yet and no runtime
-loads this template. MongoDB must use an isolated transaction-capable deployment. Add provider-specific keys with their
+secret/approval-dependent values. The storefront uses port 3000 when started; admin/API origins remain future local
+conventions. No application loads this template directly. MongoDB must use an isolated transaction-capable deployment. Add provider-specific keys with their
 actual adapters and validators, keeping Appendix B and the protected per-key inventory synchronized.
 
 Create service-local `.env` files only when configuring those services. `.gitignore` excludes local environment files,

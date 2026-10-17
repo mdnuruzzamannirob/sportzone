@@ -286,8 +286,9 @@ npm run build --workspace=backend
 ```
 
 The current repository foundation supports `npm ci`, `npm run workspaces:check`, `npm run lint`, `npm run test:unit`
-and `npm run ci`. It has no application build, deployment, migration or restore command yet. The three workspaces remain
-manifest-only in [ci-workspaces.json](../ci-workspaces.json); app scaffolding activates real required checks. See
+and `npm run ci`. The storefront now has independent lint/type/unit/build and production route-smoke commands; admin
+and backend remain manifest-only in [ci-workspaces.json](../ci-workspaces.json). No deployment, migration or restore
+command exists yet; local storefront build/start is not a production deployment procedure. See
 [Testing §5.3](./TESTING.md#53-standard-execution-interface) for current coverage and the complete required interface.
 Successful foundation CI is evidence for its configured checks only, not application deployment or operational readiness.
 

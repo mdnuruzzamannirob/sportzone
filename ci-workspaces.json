@@ -1,12 +1,13 @@
 {
   "storefront": {
-    "state": "manifest-only",
+    "state": "active",
     "ownerTask": "P02-001",
     "checks": [
       "lint",
       "typecheck",
       "test:unit",
-      "build"
+      "build",
+      "test:smoke"
     ]
   },
   "admin": {

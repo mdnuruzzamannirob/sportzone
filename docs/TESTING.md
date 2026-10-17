@@ -204,7 +204,8 @@ The diagram shows verification responsibilities, not a claim that test infrastru
 | Security and dependencies | SAST, dependency audit, secret scanner | CI availability and triage process agreed |
 | CI | GitHub Actions or approved CI system | Matches npm-workspaces repository and deployment controls |
 
-The Node.js tooling tests and GitHub Actions baseline exist. The application tools above are introduced with their
+Node.js tooling tests, the GitHub Actions baseline and storefront Vitest/layout smoke checks exist. Other application
+tools above are introduced with their
 owning feature/tooling tasks; listing a tool is not evidence that it is installed. Use compatible supported releases,
 commit exact versions and lockfile, and record installed versions in run evidence.
 
@@ -228,8 +229,8 @@ tests/
   fixtures/                              # Synthetic identities and catalog
 ```
 
-Application/E2E directories in this layout are introduced with their owning slices; only the root CI guard test currently
-exists. Use this layout without duplicating business rules inside test helpers. `TESTING.md` governs case intent; source
+Storefront layout tests now exist in `storefront/tests/layouts.test.tsx`, with production route checks in
+`storefront/tests/smoke.mjs`. Other application/E2E directories are introduced with their owning slices. Use this layout without duplicating business rules inside test helpers. `TESTING.md` governs case intent; source
 validators and executable specs must be version-linked to `API.md`/`DATABASE.md`.
 
 ### 5.3 Standard execution interface
@@ -254,11 +255,17 @@ recovery and load checks have separately approved commands/workflows, not mandat
 
 | Root command | Current coverage / setup state |
 | --- | --- |
-| `npm run workspaces:check` | Three local manifest-only workspace links |
+| `npm run workspaces:check` | Three local workspace links; storefront active, admin/backend manifest-only |
 | `npm run lint` | Repository JavaScript syntax, JSON, whitespace, Markdown structure/links and targeted credential checks |
 | `npm run test:unit` | Twelve repository/CI guard regressions; no application tests are implied |
 | `npm run ci` | Root checks plus every activated workspace check; machine-readable summary includes Not Configured app states |
 | `npm run typecheck`, `test:integration`, `test:contract`, `test:e2e`, `test:security`, `test:coverage`, `build` | Not yet configured at root; implement with the owning tooling/slices before accepting the corresponding capability |
+
+Storefront workspace commands now implement `lint` (Biome), `typecheck` (Next route types plus TypeScript), `test:unit`
+(Vitest layout rendering), `build` (Next production Webpack) and `test:smoke` (real production HTTP routes/CSS/cache/404
+checks). Run them with `npm run <command> --workspace=storefront`; smoke requires the build and manages its own temporary
+server. The active CI inventory runs all five checks. These scaffold checks do not establish customer authentication,
+backend ownership, real browser accessibility or commerce acceptance. Browser/theme/interaction suites extend with the UI tasks.
 
 [ci-workspaces.json](../ci-workspaces.json) assigns storefront setup to P02-001, admin to P02-002 and backend to P03-001.
 Adding workspace source, scripts or dependencies requires active CI state and real lint/typecheck/unit/build scripts.
