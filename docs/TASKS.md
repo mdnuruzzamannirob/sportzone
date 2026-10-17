@@ -79,7 +79,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 
 | Phase | Total | Not Started | Ready | In Progress | Blocked | In Review | Done | Deferred |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 01 — Requirements Finalization and Planning | 14 | 10 | 0 | 0 | 0 | 0 | 4 | 0 |
+| 01 — Requirements Finalization and Planning | 14 | 9 | 0 | 0 | 0 | 0 | 5 | 0 |
 | 02 — UI/UX Design | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 03 — Authentication and Core Backend | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -91,7 +91,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **167** | **0** | **0** | **0** | **0** | **4** | **0** |
+| **Total** | **171** | **166** | **0** | **0** | **0** | **0** | **5** | **0** |
 
 ## 4. Milestone tracker
 
@@ -154,13 +154,14 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Evidence:** [Complete NFR, release, acceptance and milestone coverage register](./evidence/P01-004-nfr-release.md).\
   **Accepted:** Project owner, 17 October 2026 — “NFR/release register গ্রহণ করছি”.
 
-- [ ] **P01-005 — Open operator and external-service readiness register**\
-  **Status:** `Not Started` · **Area:** Planning\
+- [x] **P01-005 — Open operator and external-service readiness register**\
+  **Status:** `Done` · **Area:** Planning · **Owner:** Codex\
   **Sources:** PRD §19; Implementation Plan §4.4\
   **Depends on:** `P01-002`\
   **Deliverable:** Record owners and evidence needs for merchant, MongoDB, email, Cloudinary, media, hosting, policies and catalog content.\
   **Acceptance:** Unknown activation/approval is marked pending rather than assumed complete.\
-  **Evidence to attach:** Readiness register with decision owners.
+  **Evidence:** [Opened readiness register, accountable functions, evidence requirements and next actions](./evidence/P01-005-readiness.md).\
+  **Accepted:** Project owner, 17 October 2026 — “Readiness register গ্রহণ করছি”.
 
 - [ ] **P01-006 — Verify planned gateway and refund feasibility**\
   **Status:** `Not Started` · **Area:** Planning\
@@ -1545,6 +1546,9 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
 
 ### 6.1 External readiness and blocker register
 
+[P01-005 readiness records](./evidence/P01-005-readiness.md) track accountable functions, named appointments, separate
+test/production states, evidence needs, blocking impacts and safe next actions for every EXT ID below.
+
 | ID | Dependency / gate | First affected tasks | Resolution evidence |
 | --- | --- | --- | --- |
 | EXT-01 | SSLCOMMERZ sandbox, live activation and enabled bKash/Nagad/Rocket channels | P01 gateway readiness; P07; P11 | Merchant account activation, test and live-channel verification |
@@ -1656,6 +1660,7 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | 17 October 2026 | P01-002 | Scope and exclusion review passed; project owner accepted the checklist; status Done | Codex / project owner | [Accepted scope verification](./evidence/P01-002-scope.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P01-003 | Traceability verification passed; project owner accepted the register; status Done | Codex / project owner | [Accepted traceability register](./evidence/P01-003-traceability.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P01-004 | NFR/release coverage verification passed; project owner accepted the register; status Done | Codex / project owner | [Accepted NFR/release register](./evidence/P01-004-nfr-release.md) | Proceed through declared task dependencies |
+| 17 October 2026 | P01-005 | Readiness-register verification passed; project owner accepted the register; status Done; external readiness remains separately Pending | Codex / project owner | [Accepted readiness register](./evidence/P01-005-readiness.md) | Proceed through declared task dependencies |
 
 When execution starts, update the task status and attach evidence. Change a checkbox to `[x]` only after acceptance.
 Preserve IDs and dependency references; update phase totals and record milestone acceptance separately.

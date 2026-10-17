@@ -16,6 +16,7 @@ This changelog tracks the documentation baseline. Application releases are recor
 - Completed P01-002 release-scope verification, exclusions, policy defaults and external decision records with project-owner checklist acceptance.
 - Completed P01-003 clause-level functional and acceptance traceability, shared ownership, UI/API contexts and planned verification slots with project-owner register acceptance.
 - Completed P01-004 NFR and release acceptance coverage, measurement prerequisites and milestone evidence controls with project-owner register acceptance.
+- Completed P01-005 operator/external-service readiness register with accountable functions, environment states, evidence needs and safe next actions; project owner accepted the register.
 
 ## Maintenance
 
