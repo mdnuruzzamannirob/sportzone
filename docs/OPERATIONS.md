@@ -1,7 +1,8 @@
-# SportZone — Operations & Maintenance Specification
+# SportZone — Operations & maintenance specification
 
 **Version:** 1.1  
 **Updated:** 16 October 2026  
+**Documentation audit:** 16 October 2026 — corrections in this working revision do not grant specification, task or release approval.  
 **Status:** Revised operational baseline — review findings addressed; deployment, drills, approvals and sign-off pending  
 **Product reference:** [PRD](./PRD.md)  
 **Technical reference:** [Architecture](./ARCHITECTURE.md)  
@@ -30,33 +31,33 @@ change those authoritative contracts.
 
 ## Contents
 
-- [1. Operations Overview & Objectives](#1-operations-overview--objectives)
-- [2. Production Infrastructure & Topology](#2-production-infrastructure--topology)
-- [3. Environments & Configuration Management](#3-environments--configuration-management)
-- [4. Infrastructure Provisioning & Setup](#4-infrastructure-provisioning--setup)
-- [5. CI/CD & Deployment Procedures](#5-cicd--deployment-procedures)
-- [6. Release Management & Rollback](#6-release-management--rollback)
-- [7. Database Operations](#7-database-operations)
-- [8. Background Jobs & Scheduled Tasks](#8-background-jobs--scheduled-tasks)
-- [9. Monitoring, Logging & Observability](#9-monitoring-logging--observability)
-- [10. Alerting & Incident Management](#10-alerting--incident-management)
-- [11. Backup, Restore & Disaster Recovery](#11-backup-restore--disaster-recovery)
-- [12. Payment & Financial Operations](#12-payment--financial-operations)
-- [13. Security & Access Operations](#13-security--access-operations)
-- [14. Performance, Capacity & Reliability](#14-performance-capacity--reliability)
-- [15. Maintenance & Operational Runbooks](#15-maintenance--operational-runbooks)
-- [16. Store Administration & Third-Party Services](#16-store-administration--third-party-services)
-- [17. Operational Verification & Acceptance](#17-operational-verification--acceptance)
-- [18. Ownership, Handover & Change Management](#18-ownership-handover--change-management)
-- [Appendix A — Runbook Index & Execution Template](#appendix-a--runbook-index--execution-template)
-- [Appendix B — Configuration Inventory](#appendix-b--configuration-inventory)
-- [Appendix C — Decisions & External Dependencies](#appendix-c--decisions--external-dependencies)
-- [Appendix D — Requirements & Task Traceability](#appendix-d--requirements--task-traceability)
-- [Appendix E — Operational Evidence Templates](#appendix-e--operational-evidence-templates)
+- [1. Operations overview & objectives](#1-operations-overview--objectives)
+- [2. Production infrastructure & topology](#2-production-infrastructure--topology)
+- [3. Environments & configuration management](#3-environments--configuration-management)
+- [4. Infrastructure provisioning & setup](#4-infrastructure-provisioning--setup)
+- [5. CI/CD & deployment procedures](#5-cicd--deployment-procedures)
+- [6. Release management & rollback](#6-release-management--rollback)
+- [7. Database operations](#7-database-operations)
+- [8. Background jobs & scheduled tasks](#8-background-jobs--scheduled-tasks)
+- [9. Monitoring, logging & observability](#9-monitoring-logging--observability)
+- [10. Alerting & incident management](#10-alerting--incident-management)
+- [11. Backup, restore & disaster recovery](#11-backup-restore--disaster-recovery)
+- [12. Payment & financial operations](#12-payment--financial-operations)
+- [13. Security & access operations](#13-security--access-operations)
+- [14. Performance, capacity & reliability](#14-performance-capacity--reliability)
+- [15. Maintenance & operational runbooks](#15-maintenance--operational-runbooks)
+- [16. Store administration & third-party services](#16-store-administration--third-party-services)
+- [17. Operational verification & acceptance](#17-operational-verification--acceptance)
+- [18. Ownership, handover & change management](#18-ownership-handover--change-management)
+- [Appendix A — Runbook index & execution template](#appendix-a--runbook-index--execution-template)
+- [Appendix B — Configuration inventory](#appendix-b--configuration-inventory)
+- [Appendix C — Decisions & external dependencies](#appendix-c--decisions--external-dependencies)
+- [Appendix D — Requirements & task traceability](#appendix-d--requirements--task-traceability)
+- [Appendix E — Operational evidence templates](#appendix-e--operational-evidence-templates)
 
 ---
 
-## 1. Operations Overview & Objectives
+## 1. Operations overview & objectives
 
 ### 1.1 Operational scope
 
@@ -99,7 +100,7 @@ staging before Phase 10, execute production readiness in **Phase 11 / M7**, and 
 reality during **Phase 12 / M8**. Production topology must match Architecture §13. Out-of-date runbooks are a
 release blocker when they are necessary to recover a critical flow.
 
-## 2. Production Infrastructure & Topology
+## 2. Production infrastructure & topology
 
 ### 2.1 Logical topology
 
@@ -156,7 +157,7 @@ not public document); region; data residency assessment; owner; backup/export ca
 dependencies; cost center; expiry/renewal; evidence link; last verified date**. Actual provider, region and plan
 must be recorded on provisioning, not invented.
 
-## 3. Environments & Configuration Management
+## 3. Environments & configuration management
 
 ### 3.1 Environment isolation matrix
 
@@ -198,7 +199,7 @@ status for each actual key. A category summary is not a valid release configurat
 | Backend binary, schema or index | Engineer review and deployment/migration gate | Compatible staging evidence before promotion |
 | Secrets, domains, auth or access policy | Security/owner authorization and rotation impact review | Targeted origin/session checks after change |
 
-## 4. Infrastructure Provisioning & Setup
+## 4. Infrastructure provisioning & setup
 
 ### 4.1 Provisioning checklist (OP-PROV-01)
 
@@ -244,7 +245,7 @@ lockfile, migrations, index definitions, required configuration, secret-store lo
 schedule definitions, email sender verification, gateway limits and callback configuration. A staging success never
 proves live merchant capabilities.
 
-## 5. CI/CD & Deployment Procedures
+## 5. CI/CD & deployment procedures
 
 ### 5.1 Release pipeline
 
@@ -265,8 +266,8 @@ flowchart TD
 
 ### 5.2 Reproducible build interface
 
-The monorepo has `storefront/`, `admin/` and `backend/` workspaces (Architecture §4). Below is a **suggested
-package-script interface**, not proof that these scripts or packages currently exist. Check repository
+The target monorepo uses `storefront/`, `admin/` and `backend/` workspaces (Architecture §4); none exist in this documentation-only checkout. Below is a **suggested
+package-script interface** drawn from [Testing §5.3](./TESTING.md#53-standard-execution-interface-proposed-script-names), not proof that these scripts or packages currently exist. Check repository
 `package.json` and lockfile before running.
 
 ```bash
@@ -274,7 +275,9 @@ package-script interface**, not proof that these scripts or packages currently e
 npm ci
 npm run lint
 npm run typecheck
-npm test
+npm run test:unit
+npm run test:integration
+npm run test:contract
 npm run build --workspace=storefront
 npm run build --workspace=admin
 npm run build --workspace=backend
@@ -320,7 +323,7 @@ or affected feature; use OP-REL-02 and OP-FIN-* instead of ad hoc manual ledger 
 - Staged rollout or maintenance-mode choices require the actual platform's capabilities and operator approval.
   Avoid having two incompatible worker versions process the same job queue.
 
-## 6. Release Management & Rollback
+## 6. Release management & rollback
 
 ### 6.1 Release record
 
@@ -366,7 +369,7 @@ allow retries, rolling back confirmed receipts or replacing stock counters manua
 | Auth/secrets | Security review, cookie/CSRF regression | Rotation, active-session impact and escalation |
 | Store policy/payment availability | Authorized operator approval | Effective version and published customer communication |
 
-## 7. Database Operations
+## 7. Database operations
 
 ### 7.1 Database authority and safety
 
@@ -415,7 +418,7 @@ Use scoped roles and time-bounded access. Production direct data edits are excep
 prefer versioned domain-service repair jobs preserving audit and uniqueness. No developer laptop receives a raw
 live production dump by default. Index creation, repair and restore must have an approved capacity/impact window.
 
-## 8. Background Jobs & Scheduled Tasks
+## 8. Background jobs & scheduled tasks
 
 ### 8.1 Durable job inventory
 
@@ -431,6 +434,8 @@ values.
 | Uncertain payment reconciliation | `paymentAttempts`, `providerReceiptIntake`, `paymentCollections` | Verify provider independently; allocate each real receipt once | Aging unknown attempt / unmatched intake |
 | Refund status reconciliation | `refundAttempts`, `refunds`, source collection balances | Unknown payout stays reserved until verified; no duplicate disbursement | Aging unknown refund, caps mismatch |
 | Notification retry | `notifications` / unique `eventKey` | Retry message without repeating commerce event | Delivery backlog / repeated failures |
+| Scheduled delivery-charge activation | `deliveryCharges`, owning zone revisions | Atomically end predecessor and activate due successor without overlapping selectable windows (Database §7.6) | Due rule not activated, overlap or coverage gap |
+| Scheduled policy publication | `policyDocuments`, `storeSettings.activePolicyVersions` | Publish only approved due revision; CAS-swap active pointer and preserve historic content (Database §10.5) | Due approved policy not activated or wrong public revision |
 | Operational consistency sweep | Immutable movements, claims, payment/refund projections | Detect drift; propose case for authorized resolution | Inventory, financial or policy mismatch |
 
 ### 8.2 Worker control and restart (OP-JOB-01)
@@ -463,9 +468,10 @@ idempotent. TTL removal never releases stock/coupon holds.
 | Payment intake/verification | Pending approved interval + event-driven trigger | Bounded; status-aware | Unassigned | Sandbox/staging; live when activated | Not configured |
 | Refund status verification | Pending provider-supported polling policy | Bounded; no duplicate payout | Unassigned | Sandbox/staging; live when approved | Not configured |
 | Notification dispatch | Pending approved retry policy | Bounded; dedupe by `eventKey` | Unassigned | Distinct provider resources | Not configured |
+| Delivery-charge/policy activation | Pending approved schedule; evaluate UTC effective instants | CAS-protected, idempotent activation | Unassigned | Staging/prod; synthetic local/CI triggers | Not configured |
 | Consistency reconciliation | Pending approved batch schedule | Resumable and observable | Unassigned | Staging/prod | Not configured |
 
-## 9. Monitoring, Logging & Observability
+## 9. Monitoring, logging & observability
 
 ### 9.1 Health model
 
@@ -515,7 +521,7 @@ Keep business timestamps and current-state definitions traceable to Database §1
 collection queries, sampling, cardinality limits, dashboard IDs and alert destinations must be recorded after
 provisioning.
 
-## 10. Alerting & Incident Management
+## 10. Alerting & incident management
 
 ### 10.1 Severity and escalation
 
@@ -581,7 +587,7 @@ Named duty role (unassigned until approved).
 
 A monitored metric without an owned and exercised alert route is not an operationally accepted control.
 
-## 11. Backup, Restore & Disaster Recovery
+## 11. Backup, restore & disaster recovery
 
 ### 11.1 Recovery objectives and coverage
 
@@ -717,7 +723,7 @@ production sign-off.
   personal data indefinitely. Do not put live backup URIs or encryption recovery keys in this repository.
 - Test account/cloud-region failure, credential loss, failed backup jobs and interrupted restore where relevant to the approved threat model.
 
-## 12. Payment & Financial Operations
+## 12. Payment & financial operations
 
 ### 12.1 Financial sources of truth
 
@@ -861,7 +867,7 @@ COD, unless the PRD and dependent documents are **explicitly revised and approve
 previously verified funds, (b) pending unknown outcomes, (c) genuinely failed/unverified attempts and (d)
 refundable excess. Log merchant escalation and avoid promising timelines without verified provider support.
 
-## 13. Security & Access Operations
+## 13. Security & access operations
 
 ### 13.1 Access governance
 
@@ -953,7 +959,7 @@ requirements require independent approval (`OPS-D12`).
 evidence, downstream/backup handling and closure decision are recorded. This runbook changes no PRD privacy right
 or jurisdictional requirement by itself.
 
-## 14. Performance, Capacity & Reliability
+## 14. Performance, capacity & reliability
 
 ### 14.1 Capacity management principles
 
@@ -988,7 +994,7 @@ financial cases, unresolved payout age, backup success and *measured* restore ti
 or time-to-resolution is asserted in this specification. Customer-facing delivery and refund obligations remain
 governed by PRD and verified law/published policies, not infrastructure metrics.
 
-## 15. Maintenance & Operational Runbooks
+## 15. Maintenance & operational runbooks
 
 ### 15.1 Operational routine matrix
 
@@ -1059,7 +1065,7 @@ obligations, pending emails, provider callbacks, restoration requirements, owner
 Revoke external access only after safe migration. The same controls apply to replacing staging when its fixtures
 include reconciliation evidence.
 
-## 16. Store Administration & Third-Party Services
+## 16. Store administration & third-party services
 
 ### 16.1 Store operator responsibilities
 
@@ -1121,7 +1127,7 @@ blockers and owner acknowledgement for each row. Any missing/failed safety contr
 until retested. Sandbox/mocks prove training flow only; live channel activation and provider refund acceptance
 remain separate M7 decisions.
 
-## 17. Operational Verification & Acceptance
+## 17. Operational verification & acceptance
 
 ### 17.1 Acceptance gate matrix
 
@@ -1177,7 +1183,7 @@ operator-approved low-risk activity. Merchant settlement/refund tests require ex
 evidence; mocks and sandbox logs do not prove live activation. All checklists in this baseline are **unchecked**
 until observed.
 
-## 18. Ownership, Handover & Change Management
+## 18. Ownership, handover & change management
 
 ### 18.1 Responsibility matrix (roles, not invented people)
 
@@ -1219,9 +1225,9 @@ the open decisions below.
 
 ---
 
-## Appendix A — Runbook Index & Execution Template
+## Appendix A — Runbook index & execution template
 
-### A.1 Runbook catalog
+### A.1 runbook catalog
 
 | ID | Runbook | Section | Trigger | Required evidence |
 | --- | --- | --- | --- | --- |
@@ -1240,7 +1246,7 @@ the open decisions below.
 | OP-MNT-01 | Customer-impacting maintenance | §15.2 | Planned work | Approval, communication, state/replay checks |
 | OP-STORE-01 | Operator walkthrough | §16.4 | Prelaunch/handover | Store workflows, policy/provider exceptions, sign-off |
 
-### A.2 Standard execution record
+### A.2 standard execution record
 
 Each runbook execution must record:
 
@@ -1258,7 +1264,7 @@ Each runbook execution must record:
 
 ---
 
-## Appendix B — Configuration Inventory
+## Appendix B — Configuration inventory
 
 Variable names are **proposed implementation identifiers**, not proof they exist in source. Final names, validation
 rules and scopes must be synchronized with `.env.example` and server code before setup. Secret values are managed
@@ -1298,7 +1304,7 @@ production fallback to sandbox credentials or localhost.
 
 ---
 
-## Appendix C — Decisions & External Dependencies
+## Appendix C — Decisions & external dependencies
 
 **Status:** `Open` means unresolved, `Blocked` means an acceptance gate cannot proceed, `Approved` requires real
 evidence, and `Rejected` records an explicit nonadoption. All entries are unresolved in this baseline. `Unassigned`
@@ -1330,9 +1336,9 @@ Before changing any decision to `Approved`, record **named approver, timestamp, 
 version**. If a decision is blocked, leave the relevant release gate blocked regardless of passing unrelated
 engineering checks. Do not invent hosting, legal deadlines, cron intervals or merchant capability.
 
-## Appendix D — Requirements & Task Traceability
+## Appendix D — Requirements & task traceability
 
-### D.1 Normative sources
+### D.1 normative sources
 
 | Source | Operations-owned consequence |
 | --- | --- |
@@ -1345,7 +1351,7 @@ engineering checks. Do not invent hosting, legal deadlines, cron intervals or me
 | [Tasks](./TASKS.md) Phase 11–12 and dependencies | Real work items, owners, blockers, test/approval evidence |
 | [Design](./DESIGN.md) §§7–12 | Public/admin UI availability, accessible customer-facing error/status experience |
 
-### D.2 Functional ownership coverage
+### D.2 functional ownership coverage
 
 | PRD requirement | Relevant operating control | Where documented |
 | --- | --- | --- |
@@ -1359,7 +1365,7 @@ engineering checks. Do not invent hosting, legal deadlines, cron intervals or me
 | FR-22 | Dashboard, period definitions, reconciliation and finance exceptions | §§9, 12, 16 |
 | FR-34 | Policy drafts, publication, contact/store settings and audit | §§3, 13, 16 |
 
-### D.3 Production/handover execution crosswalk
+### D.3 production/handover execution crosswalk
 
 | Task IDs | Required operational evidence | Runbook/section |
 | --- | --- | --- |
@@ -1371,7 +1377,7 @@ engineering checks. Do not invent hosting, legal deadlines, cron intervals or me
 | P12-001–P12-003 | Reconciled setup/API/data/tests, accurate deploy/recovery runbooks | §§5–8, 11, 18 |
 | P12-004–P12-009 | Store operator guide, ownership, limitations, support, M8 sign-off | §§16–18 |
 
-### D.4 External technical references (informative)
+### D.4 external technical references (informative)
 
 - [SSLCOMMERZ Developer Documentation v4](https://developer.sslcommerz.com/doc/v4/) — hosted initiation,
   verification, IPN and supported refund operations; live merchant availability remains an external approval.
@@ -1389,9 +1395,9 @@ These are contextual references, **not** proofs of live merchant activation, leg
 
 ---
 
-## Appendix E — Operational Evidence Templates
+## Appendix E — Operational evidence templates
 
-### E.1 Release/incident record
+### E.1 release/incident record
 
 ```yaml
 # Template only: all values must be supplied by the executing operator.
@@ -1412,7 +1418,7 @@ result: <Passed|Failed|Blocked|PartiallyRecovered>
 closedAtUtc: <ISO8601-if-closed>
 ```
 
-### E.2 Recovery reconciliation checklist
+### E.2 recovery reconciliation checklist
 
 | Check | Evidence expected | Default |
 | --- | --- | --- |
@@ -1429,7 +1435,7 @@ closedAtUtc: <ISO8601-if-closed>
 | Restored auth proofs | Old session/recovery/guest challenges rejected and fresh proof verified | Not Assessed |
 | Safety to resume writes | Signed incident/store-owner decision | Not Approved |
 
-### E.3 Operational sign-off rule
+### E.3 operational sign-off rule
 
 A completed evidence form needs **real observations**, a traceable environment/version, actual operator/approver
 and an explicitly recorded decision. Placeholder text, checkbox presence, published runbook or synthetic gateway

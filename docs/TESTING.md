@@ -1,7 +1,8 @@
-# SportZone — Testing & Quality Assurance Specification
+# SportZone — Testing & quality assurance specification
 
 **Version:** 1.1  
 **Updated:** 16 October 2026  
+**Documentation audit:** 16 October 2026 — corrections in this working revision do not grant specification, task or release approval.  
 **Status:** Revised verification baseline — planned cases only; no tests executed or accepted  
 **Product reference:** [PRD](./PRD.md)  
 **Technical reference:** [Architecture](./ARCHITECTURE.md)  
@@ -19,33 +20,33 @@ This document defines SportZone's **test strategy, reproducible verification pro
 
 ## Contents
 
-- [1. Purpose, Scope & Quality Objectives](#1-purpose-scope--quality-objectives)
-- [2. Testing Strategy & Principles](#2-testing-strategy--principles)
-- [3. Test Levels & Classification](#3-test-levels--classification)
-- [4. Environments & Configuration](#4-environments--configuration)
-- [5. Tooling & Test Organization](#5-tooling--test-organization)
-- [6. Test Data, Fixtures & Test Doubles](#6-test-data-fixtures--test-doubles)
-- [7. Storefront & Admin UI Verification](#7-storefront--admin-ui-verification)
-- [8. Backend & API Contract Verification](#8-backend--api-contract-verification)
-- [9. Database, Transactions & Migration Verification](#9-database-transactions--migration-verification)
-- [10. Commerce Workflow Test Cases](#10-commerce-workflow-test-cases)
-- [11. Payments, Returns & Refunds Test Cases](#11-payments-returns--refunds-test-cases)
-- [12. Security & Privacy Verification](#12-security--privacy-verification)
-- [13. Performance, Reliability & Recovery](#13-performance-reliability--recovery)
-- [14. Accessibility, Responsiveness & Compatibility](#14-accessibility-responsiveness--compatibility)
-- [15. Automation & Continuous Integration](#15-automation--continuous-integration)
-- [16. Test Register & Requirements Traceability](#16-test-register--requirements-traceability)
-- [17. Defect Management & Evidence Reporting](#17-defect-management--evidence-reporting)
-- [18. Release Verification & Acceptance](#18-release-verification--acceptance)
-- [Appendix A — Test Case Writing Template](#appendix-a--test-case-writing-template)
-- [Appendix B — PRD Acceptance Checklist Mapping](#appendix-b--prd-acceptance-checklist-mapping)
-- [Appendix C — Decisions & External Dependencies](#appendix-c--decisions--external-dependencies)
-- [Appendix D — Source & Tool References](#appendix-d--source--tool-references)
-- [Appendix E — API Operation Coverage Register](#appendix-e--api-operation-coverage-register)
+- [1. Purpose, scope & quality objectives](#1-purpose-scope--quality-objectives)
+- [2. Testing strategy & principles](#2-testing-strategy--principles)
+- [3. Test levels & classification](#3-test-levels--classification)
+- [4. Environments & configuration](#4-environments--configuration)
+- [5. Tooling & test organization](#5-tooling--test-organization)
+- [6. Test data, fixtures & test doubles](#6-test-data-fixtures--test-doubles)
+- [7. Storefront & admin UI verification](#7-storefront--admin-ui-verification)
+- [8. Backend & API contract verification](#8-backend--api-contract-verification)
+- [9. Database, transactions & migration verification](#9-database-transactions--migration-verification)
+- [10. Commerce workflow test cases](#10-commerce-workflow-test-cases)
+- [11. Payments, returns & refunds test cases](#11-payments-returns--refunds-test-cases)
+- [12. Security & privacy verification](#12-security--privacy-verification)
+- [13. Performance, reliability & recovery](#13-performance-reliability--recovery)
+- [14. Accessibility, responsiveness & compatibility](#14-accessibility-responsiveness--compatibility)
+- [15. Automation & continuous integration](#15-automation--continuous-integration)
+- [16. Test register & requirements traceability](#16-test-register--requirements-traceability)
+- [17. Defect management & evidence reporting](#17-defect-management--evidence-reporting)
+- [18. Release verification & acceptance](#18-release-verification--acceptance)
+- [Appendix A — Test case writing template](#appendix-a--test-case-writing-template)
+- [Appendix B — PRD acceptance checklist mapping](#appendix-b--prd-acceptance-checklist-mapping)
+- [Appendix C — Decisions & external dependencies](#appendix-c--decisions--external-dependencies)
+- [Appendix D — Source & tool references](#appendix-d--source--tool-references)
+- [Appendix E — API operation coverage register](#appendix-e--api-operation-coverage-register)
 
 ---
 
-## 1. Purpose, Scope & Quality Objectives
+## 1. Purpose, scope & quality objectives
 
 ### 1.1 Testing responsibility
 
@@ -79,7 +80,7 @@ Initial release is **one Bangladesh store, BDT, one primary admin role, guest/re
 
 ---
 
-## 2. Testing Strategy & Principles
+## 2. Testing strategy & principles
 
 ### 2.1 Risk-based, incremental delivery
 
@@ -129,7 +130,7 @@ The diagram shows verification responsibilities, not a claim that test infrastru
 
 ---
 
-## 3. Test Levels & Classification
+## 3. Test levels & classification
 
 | Level / type | Boundary | Representative assertions | Trigger |
 | --- | --- | --- | --- |
@@ -149,7 +150,7 @@ The diagram shows verification responsibilities, not a claim that test infrastru
 
 ---
 
-## 4. Environments & Configuration
+## 4. Environments & configuration
 
 ### 4.1 Environment matrix
 
@@ -186,7 +187,7 @@ The diagram shows verification responsibilities, not a claim that test infrastru
 
 ---
 
-## 5. Tooling & Test Organization
+## 5. Tooling & test organization
 
 ### 5.1 Proposed tools (not installed or version-pinned)
 
@@ -243,7 +244,7 @@ These scripts are **not yet created**. Implement and verify scripts during setup
 
 ---
 
-## 6. Test Data, Fixtures & Test Doubles
+## 6. Test data, fixtures & test doubles
 
 ### 6.1 Fixture catalog
 
@@ -285,8 +286,9 @@ For rounding and proportional allocation, generate property-based comparisons ac
 | `FX-ZONE-02` | Z1 deactivated at T4; location A belongs only to Z1 | New checkout to A rejected; historical O1 retains delivery rule/amount; concurrent stale zone revision fails CAS |
 | `FX-REPORT-01` | Period P: merchandise funded 100,000 poisha; COD verified 40,000 of those funds; merchandise refund completed 10,000; extra verified correction-only collection 5,000, correction refund completed 2,000 | Merchandise net after completed merchandise refunds = 90,000; linked collected cash before payouts = 105,000; cash net of both completed refund classes = 93,000; correction-only funds never treated as additional merchandise sales |
 | `FX-REPORT-02` | Same events with payment/return timestamps straddling approved report cutoff; one refund still held but not paid | Group by specified report time basis; held refund shown as liability separately, not as completed cash outflow; totals tie to persisted source collections/refunds |
+| `FX-REPORT-03` | Period with no collections and 10,000 poisha of verified refund completions from earlier-period receipts | `netLinkedCashFlowPoisha = -10,000`; signed safe-integer response accepted, original source refund caps unchanged |
 
-`FX-REPORT-*` values are **isolated test vectors**; labels in the actual API reports must use the API §14.4 metric definitions. Compare exact integer amounts for every report projection without silently inferring tax or additional order income.
+`FX-REPORT-*` values are **isolated test vectors**; labels in the actual API reports must use the API §14.4 metric definitions. Compare exact integer amounts (including negative period net cash flow) for every report projection without silently inferring tax or additional order income.
 
 ### 6.3 Test double boundary
 
@@ -297,7 +299,7 @@ For rounding and proportional allocation, generate property-based comparisons ac
 
 ---
 
-## 7. Storefront & Admin UI Verification
+## 7. Storefront & admin UI verification
 
 ### 7.1 Storefront functional UI matrix
 
@@ -344,7 +346,7 @@ These cases complement the UI matrices; verify real API/database state as well a
 | `SUP-03` | Customer A/guest proof A probes B's complaint or B's order complaint list | Scope-safe denial; no private customer/complaint data leaked; no state mutation | PRD §9; API §14.4 |
 | `SUP-04` | Late-delivery complaint under approved operator policy; retry notification delivery | Tracked acknowledgement/response and escalation evidence against **approved** deadline; no invented statutory SLA; notification failure does not delete complaint | PRD §6, FR-16, FR-26; API-D07 |
 | `SET-01` | Admin creates/edit policy draft, submits stale ETag, tries unauthorized write | Draft persists separately from published document; CAS rejects stale edit with no partial changes; activity auditable | FR-34; API §14.3 |
-| `SET-02` | Authorized policy approval/publish/schedule, then public read before/after effective time | Only approved effective revision shown publicly; past published versions/history remain intact; no draft leaks | FR-34; API §14.3; DB policyDocuments |
+| `SET-02` | Authorized policy approval/publish/schedule for every PolicyType, including privacy, then public read before/after effective time | Only approved effective revision shown publicly; past published versions/history remain intact; no draft leaks | FR-34; API §14.3; DB policyDocuments |
 | `SET-03` | Product/order already accepted under old policy; publish new version | Accepted order terms/policy references unchanged; future eligible orders reference newly effective policy | FR-34, FR-11; Database §7 |
 | `SET-04` | Admin patches store contact, branding/low-stock threshold with stale and valid revisions | Allowlisted values validated; ETag advances only on valid write; public contact changes after update; old order snapshots stable | FR-34; API §14.3 |
 | `ADM-01` | Admin searches, filters and pages customer records/history | Exact authorized masked fields, bounded stable pages; customer role cannot access admin records | FR-27; API §14.2 |
@@ -364,6 +366,8 @@ Each event below requires an **event-generation assertion**, separately testable
 | `NTF-02` | Order confirmation, cancellation, shipment, delivery | Accurate state/order reference and deduplicated retry | 06 |
 | `NTF-03` | Payment verified success/failure | Server-confirmed status, no duplicate email from repeat IPN | 07 |
 | `NTF-04` | Return update; refund approval, rejection and confirmed completion | Return/refund statuses distinguished; Completed notice only after confirmed payout | 08 |
+
+Recovery/guest-proof delivery must also exercise the API-D21 design after approval: crash before/after send, transport retry, token expiry, replay denial and no plaintext secret in durable payloads/logs.
 
 **Per-event verification cases** (run one distinct row for each event in the corresponding `NTF-*` family):
 
@@ -394,7 +398,7 @@ Do not mistake a `200` network response for a usable page. Test validation focus
 
 ---
 
-## 8. Backend & API Contract Verification
+## 8. Backend & API contract verification
 
 ### 8.1 Shared contract test matrix
 
@@ -439,7 +443,7 @@ Do not interpret the proposed route count as evidence that any route has been im
 
 ---
 
-## 9. Database, Transactions & Migration Verification
+## 9. Database, transactions & migration verification
 
 ### 9.1 Schema and index tests
 
@@ -471,11 +475,11 @@ For each multi-document financial/stock case, assert both **logical state** and 
 
 ### 9.3 Schema evolution and recovery
 
-Test mixed old/new records, migration reentrancy, incomplete batch repair, index backfill collisions, large existing orders and rollback compatibility. Database §15 sets migration design; `OPERATIONS.md` will define execution steps and access controls. A successful test restore must be followed by **payment/IPN/refund reconciliation for events after the backup cutoff**.
+Test mixed old/new records, migration reentrancy, incomplete batch repair, index backfill collisions, large existing orders and rollback compatibility. Database §15 sets migration design; [Operations §7](./OPERATIONS.md#7-database-operations) defines the execution procedure; platform-specific commands and access remain pending. A successful test restore must be followed by **payment/IPN/refund reconciliation for events after the backup cutoff**.
 
 ---
 
-## 10. Commerce Workflow Test Cases
+## 10. Commerce workflow test cases
 
 Each scenario follows: **Fixture / action → expected HTTP+business outcome → persisted invariant**. IDs are stable for traceability; variants may be added as `-a`, `-b` without renumbering accepted cases.
 
@@ -500,7 +504,7 @@ Each scenario follows: **Fixture / action → expected HTTP+business outcome →
 | --- | --- | --- | --- |
 | `CHK-01` | Guest checkout with full name, Bangladesh phone, email, area, terms | Server validates all required fields; creates scoped guest order; email alone is not access proof | 11, 19 |
 | `CHK-02` | Registered checkout with saved address, valid COD method | Charges and snapshots final at submit; physical stock allocation committed once; order stays `Pending` until admin confirmation; payment unpaid | 11–14 |
-| `CHK-03` | Browser quote changed after product/zone/coupon change | Backend recalculates using active conditions; stale quote rejected/reconfirmed, no forged price accepted | 09, 11, 16 |
+| `CHK-03` | Browser quote changed after product/zone/coupon change | Backend recalculates using active conditions; stale quote rejected/reconfirmed through the approved server-verifiable mechanism (API-D20); no forged price accepted | 09, 11, 16 |
 | `CHK-04` | Two concurrent identical checkout submissions with one key | Exactly one order and inventory/coupon effect; second receives safe replay/in-progress resolution | 11–13 |
 | `CHK-05` | Same idempotency key but changed payload; or replay beyond window | Conflict or pointer to prior order; never second order | 11 |
 | `INV-01` | `FX-STOCK-01`, two simultaneous competing checkouts | One allocation maximum; no negative availability, movement duplicated or stale winner | 13 |
@@ -521,7 +525,7 @@ For `ORD-06`, compare `placedAt`, actual `confirmedAt`, snapshotted `deadlineBas
 
 ---
 
-## 11. Payments, Returns & Refunds Test Cases
+## 11. Payments, returns & refunds test cases
 
 ### 11.1 Payment provider and COD scenarios
 
@@ -536,7 +540,7 @@ For `ORD-06`, compare `placedAt`, actual `confirmedAt`, snapshotted `deadlineBas
 | `PAY-07` | Payment verified after order cancellation | Order stays Cancelled; no new allocation/fulfillment; payment correction/refund obligation visible | 12, 14–15, 18 |
 | `PAY-08` | Risk-flagged provider payment (`risk_level=1`) | Collection can be recorded but fulfillment held for explicit risk decision | 12 |
 | `PAY-09` | Two independently verified paid attempts for one order | Both receipts retained; merchandise allocated/fulfilled at most once; excess linked to correction/refund and separately auditable | 12, 18 |
-| `PAY-10` | **Independently verified** partial, excess, wrong-attempt, unmatched or amount-discrepant provider receipt | Persist one deduplicated provider-verified intake with exact signed verified amount/currency/reference; quarantine until matching/allocation rules permit linkage; never silently discard proven funds or automatically mark order Paid | 12, 18 |
+| `PAY-10` | **Independently verified** partial, excess, wrong-attempt, unmatched or amount-discrepant provider receipt | Persist one deduplicated provider-verified intake with exact positive verified amount, currency and reference; quarantine until matching/allocation rules permit linkage; never silently discard proven funds or automatically mark order Paid | 12, 18 |
 | `PAY-11` | Payment initiation amount outside verified merchant/provider limit | Method unavailable/rejected before unsafe submission; no assumed gateway capability | 11–12 |
 | `PAY-12` | COD order not collected; admin verifies collection later | COD financial status unpaid until genuine collection; one verified source record; duplicate admin action has no double credit | 12, 29 |
 | `PAY-13` | Nonpayment IPNs: failed/cancelled/expired; repeats | Persist correct attempt outcome without removing independently verified later collection; response follows API §12.3 matrix | 12 |
@@ -599,7 +603,7 @@ Critical checks distinguish **payment collection**, **merchandise allocation**, 
 
 ---
 
-## 12. Security & Privacy Verification
+## 12. Security & privacy verification
 
 ### 12.1 Security test matrix
 
@@ -627,7 +631,7 @@ Test snapshots, traces, screenshots and CI artifacts may contain personal/financ
 
 ---
 
-## 13. Performance, Reliability & Recovery
+## 13. Performance, reliability & recovery
 
 ### 13.1 Workload and measurement contract
 
@@ -673,7 +677,7 @@ On an **isolated staging restore**, record backup timestamp and restore point, i
 
 ---
 
-## 14. Accessibility, Responsiveness & Compatibility
+## 14. Accessibility, responsiveness & compatibility
 
 ### 14.1 Accessible experience matrix
 
@@ -707,7 +711,7 @@ Automated accessibility scan is **supplementary**; keyboard review and at least 
 
 ---
 
-## 15. Automation & Continuous Integration
+## 15. Automation & continuous integration
 
 ### 15.1 Proposed CI verification pipeline
 
@@ -749,7 +753,7 @@ Pipeline names are **proposed acceptance behavior**, not an existing workflow or
 
 ---
 
-## 16. Test Register & Requirements Traceability
+## 16. Test register & requirements traceability
 
 ### 16.1 Stable identifiers and state
 
@@ -795,7 +799,7 @@ All FR rows below refer to planned scenario outlines and/or suite aliases, not e
 | FR-07 | Shopping cart | `SHP-01`, `PERF-CART`, `UI-SHP` | 05 |
 | FR-08 | Wishlist | `SHP-02`, `SEC-06`, `UI-SHP` | 05 |
 | FR-09 | Discounts/coupons | `PRM-01`–`PRM-04`, `DB-05`, `FX-MONEY-*` | 05–06 |
-| FR-10 | Reviews | `REV-01`, `SEC-06`, `UI-CAT` | 05, 09 |
+| FR-10 | Reviews | `REV-01`, `SEC-06`, `UI-CAT` | 05, 08–09 |
 | FR-11 | Checkout | `CHK-01`–`CHK-05`, `API-06`, `UI-CHECKOUT` | 06 |
 | FR-12 | Payment methods/verification | `PAY-01`–`PAY-14`, `API-05`, `REL-04` | 07 |
 | FR-13 | Inventory | `INV-01`–`INV-03`, `DB-05`, `DB-09` | 04, 06–07 |
@@ -805,7 +809,7 @@ All FR rows below refer to planned scenario outlines and/or suite aliases, not e
 | FR-17 | Returns | `RET-01`–`RET-06`, `DB-11` | 08 |
 | FR-18 | Refunds | `RFD-01`–`RFD-09`, `DB-12`, `REL-06` | 08 |
 | FR-19 | Guest order access | `ORD-07`, `API-09`, `SEC-05` | 06 |
-| FR-20 | Notifications | `NTC-01`–`NTC-12`, `NTC-01`–`NTC-12`, `REL-05` | 03, 06–08 |
+| FR-20 | Notifications | `NTC-01`–`NTC-12`, `REL-05` | 03, 06–08 |
 | FR-21 | Admin authentication | `SEC-02`–`SEC-04`, `UI-ADMIN-AUTH` | 03 |
 | FR-22 | Admin dashboard | `ADM-06`, `PERF-ADM`, `UI-ADMIN` | 09 |
 | FR-23 | Product administration | `CAT-01`, `CAT-02`, `API-04`, `UI-ADMIN` | 04, 09 |
@@ -838,7 +842,7 @@ All FR rows below refer to planned scenario outlines and/or suite aliases, not e
 
 ---
 
-## 17. Defect Management & Evidence Reporting
+## 17. Defect management & evidence reporting
 
 ### 17.1 Defect workflow and severity
 
@@ -887,7 +891,7 @@ Publish a per-feature report: planned/executed/pass/fail/blocked counts, critica
 
 ---
 
-## 18. Release Verification & Acceptance
+## 18. Release verification & acceptance
 
 ### 18.1 Phase milestones
 
@@ -923,7 +927,7 @@ Release is blocked when **any** mandatory PRD acceptance item lacks passing evid
 
 ---
 
-## Appendix A — Test Case Writing Template
+## Appendix A — Test case writing template
 
 Use this template for **each executable test** or parameterized set; never omit the initial state or the forbidden side effects for financial cases.
 
@@ -944,11 +948,11 @@ Use this template for **each executable test** or parameterized set; never omit 
 
 ---
 
-## Appendix B — PRD Acceptance Checklist Mapping
+## Appendix B — PRD acceptance checklist mapping
 
 The entries below preserve the **meaning and ordering** of PRD §14. They are planning slots to connect every acceptance bullet to executed cases and real evidence. `Mapped` does **not** mean passed. `AC-C`, `AC-A` and `AC-R` identifiers are local traceability IDs, not new product requirements.
 
-### B.1 Customer acceptance (PRD §14.1)
+### B.1 customer acceptance (PRD §14.1)
 
 | Acceptance ID | PRD acceptance condition | Planned cases / evidence | Status |
 | --- | --- | --- | --- |
@@ -980,7 +984,7 @@ The entries below preserve the **meaning and ordering** of PRD §14. They are pl
 | `AC-C26` | Customers can track refund status. | `RFD-03, RFD-09, UI-AFTERSALES` | Not Run |
 | `AC-C27` | Customers receive important transactional notifications. | `NTC-01`–`NTC-12`, `REL-05` | Not Run |
 
-### B.2 Administrator acceptance (PRD §14.2)
+### B.2 administrator acceptance (PRD §14.2)
 
 | Acceptance ID | PRD acceptance condition | Planned cases / evidence | Status |
 | --- | --- | --- | --- |
@@ -1003,7 +1007,7 @@ The entries below preserve the **meaning and ordering** of PRD §14. They are pl
 | `AC-A17` | Dashboard metrics account for refunds and COD. | `ADM-06, RFD-05, PAY-12` | Not Run |
 | `AC-A18` | Sensitive administrative actions are logged. | `SEC-12, DB-08` | Not Run |
 
-### B.3 Reliability and security acceptance (PRD §14.3)
+### B.3 reliability and security acceptance (PRD §14.3)
 
 | Acceptance ID | PRD acceptance condition | Planned cases / evidence | Status |
 | --- | --- | --- | --- |
@@ -1036,7 +1040,7 @@ The entries below preserve the **meaning and ordering** of PRD §14. They are pl
 
 ---
 
-## Appendix C — Decisions & External Dependencies
+## Appendix C — Decisions & external dependencies
 
 | ID | Open decision or prerequisite | Current safe testing approach | Needed to close |
 | --- | --- | --- | --- |
@@ -1054,14 +1058,15 @@ The entries below preserve the **meaning and ordering** of PRD §14. They are pl
 | `TST-D12` | Upload limits, anti-abuse, media cleanup and guest evidence storage | Use safe synthetic uploads; keep unauthorised retrieval tests | Security/operations approvals (API-D10, API-D18) |
 | `TST-D13` | Coupon/customer identification, operation tombstone retention, report cash classification | Follow Database v1.2 exact invariants; keep unresolved external periods open | Database/API decisions and integration evidence |
 | `TST-D14` | Test evidence access, retention and data redaction | Use synthetic data, minimum necessary access | Privacy/operations sign-off |
+| `TST-D15` | Buyer confirmation of changed quote and durable proof-email delivery | CHK-03 and recovery/guest tests remain Contract Pending until API-D20/API-D21 resolve; no invented request fields or plaintext token storage | Product/API and security/data owners approve the respective designs |
 
 An unresolved prerequisite must remain **Blocked** on the relevant test or milestone; do not change the underlying PRD rule or silently invent an operating policy. Decisions are recorded with a real owner, approval date, evidence and amended source version when available.
 
 ---
 
-## Appendix D — Source & Tool References
+## Appendix D — Source & tool references
 
-### D.1 Internal normative sources
+### D.1 internal normative sources
 
 - [Product Requirements](./PRD.md): §5 FR-01–FR-34, §11 exception states, §12 NFRs, §14 acceptance, §18 launch readiness.
 - [Software Architecture](./ARCHITECTURE.md): §§6–11 trust, persistence and critical workflows; §13 deployment boundaries.
@@ -1071,7 +1076,7 @@ An unresolved prerequisite must remain **Blocked** on the relevant test or miles
 - [Implementation Plan](./IMPLEMENTATION_PLAN.md): §§3, 6, 10–12 and milestones M1–M8.
 - [Task Register](./TASKS.md): phase tasks, evidence ownership and acceptance records.
 
-### D.2 External methodological references (informative)
+### D.2 external methodological references (informative)
 
 - [W3C WCAG 2.2](https://www.w3.org/TR/WCAG22/) — accessibility target and success criteria.
 - [Playwright project and browser configurations](https://playwright.dev/docs/test-projects) — selected browsers, devices and test setups; not evidence that these projects have been configured.
@@ -1081,7 +1086,7 @@ An unresolved prerequisite must remain **Blocked** on the relevant test or miles
 
 **Change control:** A new behavior or provider difference requires a cited source/decision update, new or revised stable test case, relevant executable assertions and impacted regression run. The PRD controls what is accepted; this testing plan controls how evidence is obtained.
 
-## Appendix E — API Operation Coverage Register
+## Appendix E — API operation coverage register
 
 This register is derived from the **164 method+path entries** in `API.md` v1.1 Appendix D. `OPV-*` is a stable **operation verification slot** (a planned parameterized contract vector), **not an existing executable test**. The named scenario column links domain-specific cases; its ranges denote the source suite to select for this operation, not a claim that every member applies. All rows are `Planned / Not Run` until attached to an actual test function, run ID and reviewed result.
 
@@ -1106,7 +1111,7 @@ This register is derived from the **164 method+path entries** in `API.md` v1.1 A
 | `OPV-015` | `GET` | `/me/addresses` | C | `200` | Base + OWN | ACC-01–05 / SEC-06 | Not Run |
 | `OPV-016` | `POST` | `/me/addresses` | C | `201` | Base + OWN | ACC-01–05 / SEC-06 | Not Run |
 | `OPV-017` | `PATCH` | `/me/addresses/{addressId}` | C | `200` | Base + OWN | ACC-01–05 / SEC-06 | Not Run |
-| `OPV-018` | `DELETE` | `/me/addresses/{addressId}` | C | `204` | Base + OWN + OWN | ACC-01–05 / SEC-06 | Not Run |
+| `OPV-018` | `DELETE` | `/me/addresses/{addressId}` | C | `204` | Base + OWN | ACC-01–05 / SEC-06 | Not Run |
 | `OPV-019` | `POST` | `/me/addresses/{addressId}/default` | C | `200` | Base + OWN | ACC-01–05 / SEC-06 | Not Run |
 | `OPV-020` | `POST` | `/me/deletion-requests` | C | `200` | Base + OWN | API-06 / SEC-06 | Not Run |
 | `OPV-021` | `GET` | `/admin/auth/csrf` | Public | `200` | Base + OWN | API-01 / SEC-01–05 | Not Run |
@@ -1129,11 +1134,11 @@ This register is derived from the **164 method+path entries** in `API.md` v1.1 A
 | `OPV-038` | `GET` | `/storefront/contact` | Public | `200` | Base | API-06 / SEC-06 | Not Run |
 | `OPV-039` | `GET` | `/cart` | C | `200` | Base + OWN | SHP-01 / SEC-06 | Not Run |
 | `OPV-040` | `PUT` | `/cart/items/{variantId}` | C | `200` | Base + OWN + STOCK | SHP-01 / SEC-06 | Not Run |
-| `OPV-041` | `DELETE` | `/cart/items/{variantId}` | C | `200` | Base + OWN + OWN + STOCK | SHP-01 / SEC-06 | Not Run |
+| `OPV-041` | `DELETE` | `/cart/items/{variantId}` | C | `200` | Base + OWN + STOCK | SHP-01 / SEC-06 | Not Run |
 | `OPV-042` | `POST` | `/cart/merge` | C | `200` | Base + OWN + STOCK | SHP-01 / SEC-06 | Not Run |
 | `OPV-043` | `GET` | `/wishlist` | C | `200` | Base + OWN | SHP-02 / SEC-06 | Not Run |
 | `OPV-044` | `PUT` | `/wishlist/products/{productId}` | C | `200` | Base + OWN | SHP-02 / SEC-06 | Not Run |
-| `OPV-045` | `DELETE` | `/wishlist/products/{productId}` | C | `200` | Base + OWN + OWN | SHP-02 / SEC-06 | Not Run |
+| `OPV-045` | `DELETE` | `/wishlist/products/{productId}` | C | `200` | Base + OWN | SHP-02 / SEC-06 | Not Run |
 | `OPV-046` | `POST` | `/coupons/preview` | C or Public+CSRF | `200` | Base + STATE + STOCK | PRM-01–04 / SEC-07 | Not Run |
 | `OPV-047` | `POST` | `/products/{productId}/reviews` | C | `201` | Base | REV-01 / SEC-06 | Not Run |
 | `OPV-048` | `PATCH` | `/reviews/{reviewId}` | C owner | `200` | Base | REV-01 / SEC-06 | Not Run |
@@ -1157,11 +1162,11 @@ This register is derived from the **164 method+path entries** in `API.md` v1.1 A
 | `OPV-066` | `GET` | `/admin/payments` | A | `200` | Base + OWN + MONEY | PAY-01–14 / SEC-07 | Not Run |
 | `OPV-067` | `GET` | `/admin/payments/{paymentId}` | A | `200` | Base + OWN + MONEY | PAY-01–14 / SEC-07 | Not Run |
 | `OPV-068` | `POST` | `/admin/payments/{paymentId}/reconcile` | A | `200 / 202` | Base + OWN + MONEY + REPLAY | PAY-01–14 / SEC-07 | Not Run |
-| `OPV-069` | `POST` | `/admin/payments/{paymentId}/risk-decisions` | A | `200` | Base + OWN + MONEY | PAY-01–14 / SEC-07 | Not Run |
-| `OPV-070` | `POST` | `/admin/payments/{paymentId}/cod-collections` | A | `200` | Base + OWN + MONEY | PAY-01–14 / SEC-07 | Not Run |
+| `OPV-069` | `POST` | `/admin/payments/{paymentId}/risk-decisions` | A | `200` | Base + OWN + MONEY + REPLAY | PAY-01–14 / SEC-07 | Not Run |
+| `OPV-070` | `POST` | `/admin/payments/{paymentId}/cod-collections` | A | `200` | Base + OWN + MONEY + REPLAY | PAY-01–14 / SEC-07 | Not Run |
 | `OPV-071` | `GET` | `/admin/provider-receipts` | A | `200` | Base + OWN + MONEY | PAY-01–14 / SEC-07 | Not Run |
-| `OPV-072` | `POST` | `/admin/provider-receipts/{intakeId}/link` | A | `200` | Base + OWN + MONEY | PAY-01–14 / SEC-07 | Not Run |
-| `OPV-073` | `POST` | `/admin/payment-collections/{collectionId}/allocate` | A | `200` | Base + OWN + CAS + MONEY | PAY-01–14 / SEC-07 | Not Run |
+| `OPV-072` | `POST` | `/admin/provider-receipts/{intakeId}/link` | A | `200` | Base + OWN + MONEY + REPLAY | PAY-01–14 / SEC-07 | Not Run |
+| `OPV-073` | `POST` | `/admin/payment-collections/{collectionId}/allocate` | A | `200` | Base + OWN + CAS + MONEY + REPLAY | PAY-01–14 / SEC-07 | Not Run |
 | `OPV-074` | `GET` | `/me/claims` | C | `200` | Base + OWN | RET-01–06 / SEC-06 | Not Run |
 | `OPV-075` | `GET` | `/me/refunds` | C | `200` | Base + OWN + REFUND | RFD-01–09 / SEC-06 | Not Run |
 | `OPV-076` | `GET` | `/orders/{orderId}/claim-eligibility` | C owner or G-scoped | `200` | Base + OWN | RET-01–06 / SEC-06 | Not Run |
@@ -1174,68 +1179,68 @@ This register is derived from the **164 method+path entries** in `API.md` v1.1 A
 | `OPV-083` | `GET` | `/admin/claims` | A | `200` | Base + OWN | RET-01–06 / SEC-06 | Not Run |
 | `OPV-084` | `GET` | `/admin/claims/{claimId}` | A | `200` | Base + OWN | RET-01–06 / SEC-06 | Not Run |
 | `OPV-085` | `POST` | `/admin/claims/{claimId}/review` | A | `200` | Base + OWN + STATE + REPLAY | RET-01–06 / SEC-06 | Not Run |
-| `OPV-086` | `POST` | `/admin/claims/{claimId}/receipt` | A | `200` | Base + OWN + STATE + REPLAY | PAY-01–14 / SEC-07 | Not Run |
+| `OPV-086` | `POST` | `/admin/claims/{claimId}/receipt` | A | `200` | Base + OWN + STATE + REPLAY | RET-01–06 / SEC-06 | Not Run |
 | `OPV-087` | `POST` | `/admin/claims/{claimId}/inspection` | A | `200` | Base + OWN + STATE + REPLAY | RET-01–06 / SEC-06 | Not Run |
 | `OPV-088` | `POST` | `/admin/claims/{claimId}/complete` | A | `200` | Base + OWN + STATE + REPLAY | RET-01–06 / SEC-06 | Not Run |
 | `OPV-089` | `GET` | `/admin/refunds` | A | `200` | Base + OWN + REFUND | RFD-01–09 / SEC-06 | Not Run |
 | `OPV-090` | `GET` | `/admin/refunds/{refundId}` | A | `200` | Base + OWN + REFUND | RFD-01–09 / SEC-06 | Not Run |
-| `OPV-091` | `POST` | `/admin/refund-groups` | A | `201` | Base + OWN + REFUND | RFD-01–09 / SEC-06 | Not Run |
+| `OPV-091` | `POST` | `/admin/refund-groups` | A | `201` | Base + OWN + REFUND + REPLAY | RFD-01–09 / SEC-06 | Not Run |
 | `OPV-092` | `POST` | `/admin/refunds/{refundId}/review` | A | `200` | Base + OWN + STATE + REFUND + REPLAY | RFD-01–09 / SEC-06 | Not Run |
 | `OPV-093` | `POST` | `/admin/refunds/{refundId}/payout-attempts` | A | `200 / 202` | Base + OWN + STATE + REFUND + REPLAY | RFD-01–09 / SEC-06 | Not Run |
 | `OPV-094` | `POST` | `/admin/refunds/{refundId}/reconcile` | A | `200 / 202` | Base + OWN + STATE + REFUND + REPLAY | RFD-01–09 / SEC-06 | Not Run |
 | `OPV-095` | `POST` | `/admin/refunds/{refundId}/manual-confirmations` | A | `200` | Base + OWN + STATE + REFUND + REPLAY | RFD-01–09 / SEC-06 | Not Run |
-| `OPV-096` | `GET` | `/admin/products` | Admin | `200` | Base + OWN | CAT-01–03 / DB-02 | Not Run |
-| `OPV-097` | `POST` | `/admin/products` | Admin | `201` | Base + OWN | CAT-01–03 / DB-02 | Not Run |
-| `OPV-098` | `GET` | `/admin/products/{productId}` | Admin | `200` | Base + OWN | CAT-01–03 / DB-02 | Not Run |
-| `OPV-099` | `PATCH` | `/admin/products/{productId}` | Admin | `200` | Base + OWN + CAS | CAT-01–03 / DB-02 | Not Run |
-| `OPV-100` | `POST` | `/admin/products/{productId}/deactivate` | Admin | `200` | Base + OWN + CAS | CAT-01–03 / DB-02 | Not Run |
-| `OPV-101` | `GET` | `/admin/categories` | Admin | `200` | Base + OWN | CAT-01–03 / DB-02 | Not Run |
-| `OPV-102` | `POST` | `/admin/categories` | Admin | `201` | Base + OWN | CAT-01–03 / DB-02 | Not Run |
-| `OPV-103` | `PATCH` | `/admin/categories/{categoryId}` | Admin | `200` | Base + OWN + CAS | CAT-01–03 / DB-02 | Not Run |
-| `OPV-104` | `POST` | `/admin/categories/{categoryId}/deactivate` | Admin | `200` | Base + OWN + CAS | CAT-01–03 / DB-02 | Not Run |
-| `OPV-105` | `POST` | `/admin/products/{productId}/variants` | Admin | `200` | Base + OWN + CAS | CAT-01–03 / DB-02 | Not Run |
-| `OPV-106` | `PATCH` | `/admin/variants/{variantId}` | Admin | `200` | Base + OWN + CAS | CAT-01–03 / DB-02 | Not Run |
-| `OPV-107` | `POST` | `/admin/variants/{variantId}/deactivate` | Admin | `200` | Base + OWN + CAS | CAT-01–03 / DB-02 | Not Run |
-| `OPV-108` | `GET` | `/admin/inventory` | Admin | `200` | Base + OWN | INV-01–03 / DB-09 | Not Run |
-| `OPV-109` | `GET` | `/admin/inventory/{variantId}/movements` | Admin | `200` | Base + OWN | INV-01–03 / DB-09 | Not Run |
-| `OPV-110` | `POST` | `/admin/inventory/{variantId}/adjustments` | Admin | `200` | Base + OWN + STOCK | INV-01–03 / DB-09 | Not Run |
-| `OPV-111` | `GET` | `/admin/orders` | Admin | `200` | Base + OWN | CHK-01–05 / ORD-01–08 | Not Run |
-| `OPV-112` | `GET` | `/admin/orders/{orderId}` | Admin | `200` | Base + OWN | CHK-01–05 / ORD-01–08 | Not Run |
-| `OPV-113` | `POST` | `/admin/orders/{orderId}/fulfillment-transitions` | Admin | `200` | Base + OWN + STATE + REPLAY | CHK-01–05 / ORD-01–08 | Not Run |
-| `OPV-114` | `GET` | `/admin/cancellation-requests` | Admin | `200` | Base + OWN | API-06 / SEC-06 | Not Run |
-| `OPV-115` | `POST` | `/admin/cancellation-requests/{requestId}/decision` | Admin | `200` | Base + OWN + REPLAY | API-06 / SEC-06 | Not Run |
-| `OPV-116` | `GET` | `/admin/orders/{orderId}/delivery-exceptions` | Admin | `200` | Base + OWN | CHK-01–05 / ORD-01–08 | Not Run |
-| `OPV-117` | `POST` | `/admin/orders/{orderId}/delivery-exceptions` | Admin | `201` | Base + OWN + STATE + REPLAY | CHK-01–05 / ORD-01–08 | Not Run |
-| `OPV-118` | `POST` | `/admin/delivery-exceptions/{exceptionId}/resolve` | Admin | `200` | Base + OWN + REPLAY | API-06 / SEC-06 | Not Run |
-| `OPV-119` | `GET` | `/admin/customers` | Admin | `200` | Base + OWN | ADM-01–04 / SEC-12 | Not Run |
-| `OPV-120` | `GET` | `/admin/customers/{customerId}` | Admin | `200` | Base + OWN | ADM-01–04 / SEC-12 | Not Run |
-| `OPV-121` | `GET` | `/admin/customers/{customerId}/orders` | Admin | `200` | Base + OWN | ADM-01–04 / SEC-12 | Not Run |
-| `OPV-122` | `GET` | `/admin/customers/{customerId}/claims` | Admin | `200` | Base + OWN | ADM-01–04 / SEC-12 | Not Run |
-| `OPV-123` | `GET` | `/admin/customers/{customerId}/refunds` | Admin | `200` | Base + OWN + REFUND | ADM-01–04 / SEC-12 | Not Run |
-| `OPV-124` | `POST` | `/admin/customers/{customerId}/status-decisions` | Admin | `200` | Base + OWN | ADM-01–04 / SEC-12 | Not Run |
-| `OPV-125` | `GET` | `/admin/reviews` | Admin | `200` | Base + OWN | REV-01 / SEC-06 | Not Run |
-| `OPV-126` | `POST` | `/admin/reviews/{reviewId}/moderation` | Admin | `200` | Base + OWN | REV-01 / SEC-06 | Not Run |
-| `OPV-127` | `GET` | `/admin/delivery/zones` | Admin | `200` | Base + OWN | ADM-05 / ORD-05–06 | Not Run |
-| `OPV-128` | `POST` | `/admin/delivery/zones` | Admin | `201` | Base + OWN | ADM-05 / ORD-05–06 | Not Run |
-| `OPV-129` | `PATCH` | `/admin/delivery/zones/{zoneId}` | Admin | `200` | Base + OWN + CAS | ADM-05 / ORD-05–06 | Not Run |
-| `OPV-130` | `GET` | `/admin/delivery/charges` | Admin | `200` | Base + OWN | ADM-05 / ORD-05–06 | Not Run |
-| `OPV-131` | `POST` | `/admin/delivery/charges` | Admin | `201` | Base + OWN + STATE | ADM-05 / ORD-05–06 | Not Run |
-| `OPV-132` | `POST` | `/admin/delivery/charges/{chargeId}/activate` | Admin | `200` | Base + OWN + CAS + STATE | ADM-05 / ORD-05–06 | Not Run |
-| `OPV-133` | `POST` | `/admin/delivery/charges/{chargeId}/supersede` | Admin | `200` | Base + OWN + CAS + STATE + REPLAY | ADM-05 / ORD-05–06 | Not Run |
-| `OPV-134` | `POST` | `/admin/delivery/charges/{chargeId}/deactivate` | Admin | `200` | Base + OWN + CAS + STATE | ADM-05 / ORD-05–06 | Not Run |
-| `OPV-135` | `GET` | `/admin/coupons` | Admin | `200` | Base + OWN | PRM-01–04 / SEC-07 | Not Run |
-| `OPV-136` | `POST` | `/admin/coupons` | Admin | `201` | Base + OWN + STATE | PRM-01–04 / SEC-07 | Not Run |
-| `OPV-137` | `PATCH` | `/admin/coupons/{couponId}` | Admin | `200` | Base + OWN + STATE + STOCK | PRM-01–04 / SEC-07 | Not Run |
-| `OPV-138` | `POST` | `/admin/coupons/{couponId}/deactivate` | Admin | `200` | Base + OWN + STATE + STOCK | PRM-01–04 / SEC-07 | Not Run |
-| `OPV-139` | `GET` | `/admin/coupons/{couponId}/redemptions` | Admin | `200` | Base + OWN | PRM-01–04 / SEC-07 | Not Run |
-| `OPV-140` | `GET` | `/admin/settings` | Admin | `200` | Base + OWN | SET-01–04 / SEC-12 | Not Run |
-| `OPV-141` | `PATCH` | `/admin/settings` | Admin | `200` | Base + OWN + CAS | SET-01–04 / SEC-12 | Not Run |
-| `OPV-142` | `GET` | `/admin/settings/policies` | Admin | `200` | Base + OWN | SET-01–04 / SEC-12 | Not Run |
-| `OPV-143` | `POST` | `/admin/settings/policies` | Admin | `201` | Base + OWN | SET-01–04 / SEC-12 | Not Run |
-| `OPV-144` | `GET` | `/admin/settings/policies/{policyId}` | Admin | `200` | Base + OWN | SET-01–04 / SEC-12 | Not Run |
-| `OPV-145` | `PATCH` | `/admin/settings/policies/{policyId}` | Admin | `200` | Base + OWN + CAS | SET-01–04 / SEC-12 | Not Run |
-| `OPV-146` | `POST` | `/admin/settings/policies/{policyId}/approve` | Admin | `200` | Base + OWN + CAS | SET-01–04 / SEC-12 | Not Run |
-| `OPV-147` | `POST` | `/admin/settings/policies/{policyId}/publish` | Admin | `200` | Base + OWN + CAS | SET-01–04 / SEC-12 | Not Run |
+| `OPV-096` | `GET` | `/admin/products` | A | `200` | Base + OWN | CAT-01–03 / DB-02 | Not Run |
+| `OPV-097` | `POST` | `/admin/products` | A | `201` | Base + OWN | CAT-01–03 / DB-02 | Not Run |
+| `OPV-098` | `GET` | `/admin/products/{productId}` | A | `200` | Base + OWN | CAT-01–03 / DB-02 | Not Run |
+| `OPV-099` | `PATCH` | `/admin/products/{productId}` | A | `200` | Base + OWN + CAS | CAT-01–03 / DB-02 | Not Run |
+| `OPV-100` | `POST` | `/admin/products/{productId}/deactivate` | A | `200` | Base + OWN + CAS | CAT-01–03 / DB-02 | Not Run |
+| `OPV-101` | `GET` | `/admin/categories` | A | `200` | Base + OWN | CAT-01–03 / DB-02 | Not Run |
+| `OPV-102` | `POST` | `/admin/categories` | A | `201` | Base + OWN | CAT-01–03 / DB-02 | Not Run |
+| `OPV-103` | `PATCH` | `/admin/categories/{categoryId}` | A | `200` | Base + OWN + CAS | CAT-01–03 / DB-02 | Not Run |
+| `OPV-104` | `POST` | `/admin/categories/{categoryId}/deactivate` | A | `200` | Base + OWN + CAS | CAT-01–03 / DB-02 | Not Run |
+| `OPV-105` | `POST` | `/admin/products/{productId}/variants` | A | `201` | Base + OWN | CAT-01–03 / DB-02 | Not Run |
+| `OPV-106` | `PATCH` | `/admin/variants/{variantId}` | A | `200` | Base + OWN + CAS | CAT-01–03 / DB-02 | Not Run |
+| `OPV-107` | `POST` | `/admin/variants/{variantId}/deactivate` | A | `200` | Base + OWN + CAS | CAT-01–03 / DB-02 | Not Run |
+| `OPV-108` | `GET` | `/admin/inventory` | A | `200` | Base + OWN | INV-01–03 / DB-09 | Not Run |
+| `OPV-109` | `GET` | `/admin/inventory/{variantId}/movements` | A | `200` | Base + OWN | INV-01–03 / DB-09 | Not Run |
+| `OPV-110` | `POST` | `/admin/inventory/{variantId}/adjustments` | A | `200` | Base + OWN + STOCK + REPLAY | INV-01–03 / DB-09 | Not Run |
+| `OPV-111` | `GET` | `/admin/orders` | A | `200` | Base + OWN | CHK-01–05 / ORD-01–08 | Not Run |
+| `OPV-112` | `GET` | `/admin/orders/{orderId}` | A | `200` | Base + OWN | CHK-01–05 / ORD-01–08 | Not Run |
+| `OPV-113` | `POST` | `/admin/orders/{orderId}/fulfillment-transitions` | A | `200` | Base + OWN + STATE + REPLAY | CHK-01–05 / ORD-01–08 | Not Run |
+| `OPV-114` | `GET` | `/admin/cancellation-requests` | A | `200` | Base + OWN | API-06 / SEC-06 | Not Run |
+| `OPV-115` | `POST` | `/admin/cancellation-requests/{requestId}/decision` | A | `200` | Base + OWN + REPLAY | API-06 / SEC-06 | Not Run |
+| `OPV-116` | `GET` | `/admin/orders/{orderId}/delivery-exceptions` | A | `200` | Base + OWN | CHK-01–05 / ORD-01–08 | Not Run |
+| `OPV-117` | `POST` | `/admin/orders/{orderId}/delivery-exceptions` | A | `201` | Base + OWN + STATE + REPLAY | CHK-01–05 / ORD-01–08 | Not Run |
+| `OPV-118` | `POST` | `/admin/delivery-exceptions/{exceptionId}/resolve` | A | `200` | Base + OWN + REPLAY | API-06 / SEC-06 | Not Run |
+| `OPV-119` | `GET` | `/admin/customers` | A | `200` | Base + OWN | ADM-01–04 / SEC-12 | Not Run |
+| `OPV-120` | `GET` | `/admin/customers/{customerId}` | A | `200` | Base + OWN | ADM-01–04 / SEC-12 | Not Run |
+| `OPV-121` | `GET` | `/admin/customers/{customerId}/orders` | A | `200` | Base + OWN | ADM-01–04 / SEC-12 | Not Run |
+| `OPV-122` | `GET` | `/admin/customers/{customerId}/claims` | A | `200` | Base + OWN | ADM-01–04 / SEC-12 | Not Run |
+| `OPV-123` | `GET` | `/admin/customers/{customerId}/refunds` | A | `200` | Base + OWN + REFUND | ADM-01–04 / SEC-12 | Not Run |
+| `OPV-124` | `POST` | `/admin/customers/{customerId}/status-decisions` | A | `200` | Base + OWN + REPLAY | ADM-01–04 / SEC-12 | Not Run |
+| `OPV-125` | `GET` | `/admin/reviews` | A | `200` | Base + OWN | REV-01 / SEC-06 | Not Run |
+| `OPV-126` | `POST` | `/admin/reviews/{reviewId}/moderation` | A | `200` | Base + OWN + REPLAY | REV-01 / SEC-06 | Not Run |
+| `OPV-127` | `GET` | `/admin/delivery/zones` | A | `200` | Base + OWN | ADM-05 / ORD-05–06 | Not Run |
+| `OPV-128` | `POST` | `/admin/delivery/zones` | A | `201` | Base + OWN | ADM-05 / ORD-05–06 | Not Run |
+| `OPV-129` | `PATCH` | `/admin/delivery/zones/{zoneId}` | A | `200` | Base + OWN + CAS | ADM-05 / ORD-05–06 | Not Run |
+| `OPV-130` | `GET` | `/admin/delivery/charges` | A | `200` | Base + OWN | ADM-05 / ORD-05–06 | Not Run |
+| `OPV-131` | `POST` | `/admin/delivery/charges` | A | `201` | Base + OWN + STATE | ADM-05 / ORD-05–06 | Not Run |
+| `OPV-132` | `POST` | `/admin/delivery/charges/{chargeId}/activate` | A | `200` | Base + OWN + CAS + STATE + REPLAY | ADM-05 / ORD-05–06 | Not Run |
+| `OPV-133` | `POST` | `/admin/delivery/charges/{chargeId}/supersede` | A | `200` | Base + OWN + CAS + STATE + REPLAY | ADM-05 / ORD-05–06 | Not Run |
+| `OPV-134` | `POST` | `/admin/delivery/charges/{chargeId}/deactivate` | A | `200` | Base + OWN + CAS + STATE + REPLAY | ADM-05 / ORD-05–06 | Not Run |
+| `OPV-135` | `GET` | `/admin/coupons` | A | `200` | Base + OWN | PRM-01–04 / SEC-07 | Not Run |
+| `OPV-136` | `POST` | `/admin/coupons` | A | `201` | Base + OWN + STATE | PRM-01–04 / SEC-07 | Not Run |
+| `OPV-137` | `PATCH` | `/admin/coupons/{couponId}` | A | `200` | Base + OWN + CAS + STATE + STOCK | PRM-01–04 / SEC-07 | Not Run |
+| `OPV-138` | `POST` | `/admin/coupons/{couponId}/deactivate` | A | `200` | Base + OWN + CAS + STATE + STOCK | PRM-01–04 / SEC-07 | Not Run |
+| `OPV-139` | `GET` | `/admin/coupons/{couponId}/redemptions` | A | `200` | Base + OWN | PRM-01–04 / SEC-07 | Not Run |
+| `OPV-140` | `GET` | `/admin/settings` | A | `200` | Base + OWN | SET-01–04 / SEC-12 | Not Run |
+| `OPV-141` | `PATCH` | `/admin/settings` | A | `200` | Base + OWN + CAS | SET-01–04 / SEC-12 | Not Run |
+| `OPV-142` | `GET` | `/admin/settings/policies` | A | `200` | Base + OWN | SET-01–04 / SEC-12 | Not Run |
+| `OPV-143` | `POST` | `/admin/settings/policies` | A | `201` | Base + OWN | SET-01–04 / SEC-12 | Not Run |
+| `OPV-144` | `GET` | `/admin/settings/policies/{policyId}` | A | `200` | Base + OWN | SET-01–04 / SEC-12 | Not Run |
+| `OPV-145` | `PATCH` | `/admin/settings/policies/{policyId}` | A | `200` | Base + OWN + CAS | SET-01–04 / SEC-12 | Not Run |
+| `OPV-146` | `POST` | `/admin/settings/policies/{policyId}/approve` | A | `200` | Base + OWN + CAS + REPLAY | SET-01–04 / SEC-12 | Not Run |
+| `OPV-147` | `POST` | `/admin/settings/policies/{policyId}/publish` | A | `200` | Base + OWN + CAS + REPLAY | SET-01–04 / SEC-12 | Not Run |
 | `OPV-148` | `GET` | `/admin/dashboard` | A | `200` | Base + OWN | ADM-06 / API-08 | Not Run |
 | `OPV-149` | `GET` | `/admin/reports/sales` | A | `200` | Base + OWN | ADM-06 / API-08 | Not Run |
 | `OPV-150` | `GET` | `/admin/reports/collections` | A | `200` | Base + OWN | ADM-06 / API-08 | Not Run |
@@ -1247,12 +1252,12 @@ This register is derived from the **164 method+path entries** in `API.md` v1.1 A
 | `OPV-156` | `POST` | `/admin/complaints/{complaintId}/resolve` | A | `200` | Base + OWN + REPLAY | SUP-01–04 / SEC-06 | Not Run |
 | `OPV-157` | `GET` | `/admin/audit-logs` | A | `200` | Base + OWN | API-06 / SEC-06 | Not Run |
 | `OPV-158` | `GET` | `/admin/notifications` | A | `200` | Base + OWN | NTC-01–12 / REL-05 | Not Run |
-| `OPV-159` | `POST` | `/admin/notifications/{notificationId}/retry` | A | `200` | Base + OWN | NTC-01–12 / REL-05 | Not Run |
+| `OPV-159` | `POST` | `/admin/notifications/{notificationId}/retry` | A | `200` | Base + OWN + REPLAY | NTC-01–12 / REL-05 | Not Run |
 | `OPV-160` | `POST` | `/admin/media/uploads` | A | `200` | Base + OWN | SEC-08 / API-06 | Not Run |
-| `OPV-161` | `POST` | `/orders/{orderId}/claims/evidence-uploads` | Owner/scoped | `200` | Base + OWN + STATE + REPLAY | RET-01–06 / SEC-06 | Not Run |
-| `OPV-162` | `DELETE` | `/admin/media/{assetId}` | A | `204` | Base + OWN + OWN | SEC-08 / API-06 | Not Run |
-| `OPV-163` | `GET` | `/health/live` | Probe | `200` | Base | API-06 / SEC-06 | Not Run |
-| `OPV-164` | `GET` | `/health/ready` | Probe | `200` | Base | API-06 / SEC-06 | Not Run |
+| `OPV-161` | `POST` | `/orders/{orderId}/claims/evidence-uploads` | C owner or G-scoped to exact order | `200` | Base + OWN + STATE | RET-01–06 / SEC-06 | Not Run |
+| `OPV-162` | `DELETE` | `/admin/media/{assetId}` | A | `204` | Base + OWN | SEC-08 / API-06 | Not Run |
+| `OPV-163` | `GET` | `/health/live` | Internal/operational | `200` | Base | API-06 / SEC-06 | Not Run |
+| `OPV-164` | `GET` | `/health/ready` | Restricted monitor | `200 / 503` | Restricted monitor; §16.4 | API §16.4 / no sensitive body; 503 when unready | Not Run |
 
 **Reconciliation rule:** Refresh this appendix from API Appendix D whenever that register changes; count and exact method/path sets must match. Operation rows with a source route lacking an explicit access profile must be reconciled against API §§4–5 and the canonical route table **before execution**. Any mismatch is `Blocked / Contract Pending`, not a passed test.
 

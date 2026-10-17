@@ -1,269 +1,155 @@
 # SportZone
 
-**Project:** Single-store sports e-commerce platform  
-**Market:** Bangladesh · **Currency:** BDT  
-**Applications:** Customer storefront · Administration portal · REST API  
-**Status:** Documentation baseline — implementation and deployment not yet verified  
-**Audience:** Developers, maintainers, and project collaborators  
-**Last documentation review:** 16 October 2026
+**Project:** Single-store sports e-commerce platform for Bangladesh · **Currency:** BDT  
+**Status:** Documentation baseline; application implementation not started in this checkout  
+**Repository inspected:** 16 October 2026
 
-SportZone is a planned full-stack online store for sports equipment, sportswear, fitness products, and accessories. Customers will be able to browse products, place guest or account-based orders, pay through supported local channels, and manage post-purchase requests. A separate administration portal will support store operations.
+SportZone is planned to provide a customer storefront, a separate administration portal and one authoritative REST API for a Bangladesh sports retailer. The backend will own prices, stock, order transitions, verified collections and refunds.
 
-> **Current state:** This README describes the approved project direction and the intended developer workflow; it is **not** a claim that the applications, repository scripts, external integrations, or production deployment are already running. Check the actual repository before following proposed commands.
-
----
+This checkout contains exactly the twelve Markdown documents listed below. It has no application directories, `package.json`, lockfile, `.env.example`, tests or CI workflows. The specifications describe intended behavior; their existence does not establish technical approval, implemented features or passing tests.
 
 ## Contents
 
-- [1. Project Overview](#1-project-overview)
-- [2. Key Features](#2-key-features)
-- [3. Technology Stack](#3-technology-stack)
-- [4. System Architecture](#4-system-architecture)
-- [5. Project Structure](#5-project-structure)
+- [1. Project overview](#1-project-overview)
+- [2. Key features](#2-key-features)
+- [3. Technology stack](#3-technology-stack)
+- [4. System architecture](#4-system-architecture)
+- [5. Project structure](#5-project-structure)
 - [6. Prerequisites](#6-prerequisites)
-- [7. Getting Started](#7-getting-started)
-- [8. Development and Available Scripts](#8-development-and-available-scripts)
-- [9. Environment Configuration](#9-environment-configuration)
-- [10. Testing and Quality Assurance](#10-testing-and-quality-assurance)
-- [11. Deployment and Operations](#11-deployment-and-operations)
-- [12. Documentation and Project Guidelines](#12-documentation-and-project-guidelines)
+- [7. Getting started](#7-getting-started)
+- [8. Development and available scripts](#8-development-and-available-scripts)
+- [9. Environment configuration](#9-environment-configuration)
+- [10. Testing and quality assurance](#10-testing-and-quality-assurance)
+- [11. Deployment and operations](#11-deployment-and-operations)
+- [12. Documentation and project guidelines](#12-documentation-and-project-guidelines)
 
----
+## 1. Project overview
 
-## 1. Project Overview
+The initial release serves one store, Bangladesh-only delivery, BDT, guests and registered customers, and one primary administrator role. Delivery charges are configurable; fulfillment updates are manual.
 
-SportZone serves **one Bangladesh-based sports retailer**, not a multi-vendor marketplace. The initial release is scoped to Bangladesh delivery, BDT pricing, a single administrator role, guest/registered checkout, and store-managed fulfillment. The backend remains authoritative for prices, discounts, delivery charges, stock, payment status, returns, and refunds.
+Required methods are **bKash, Nagad and Rocket through SSLCOMMERZ hosted checkout, plus store-managed Cash on Delivery (COD)**. Inactive channels stay hidden; missing activation blocks launch unless an approved product scope change revises the requirement. See [PRD §3.3](docs/PRD.md#33-release-boundaries).
 
-| Area | Initial-release scope |
-| --- | --- |
-| Store | Single retailer; Bangladesh-only delivery |
-| Customers | Guests and registered customers |
-| Administration | One primary administrator role |
-| Payments | SSLCOMMERZ-hosted bKash, Nagad, Rocket; store-managed Cash on Delivery (COD) |
-| Delivery | Configurable zones/charges; manually maintained fulfillment status |
-| Currency | BDT; monetary calculations and storage use integer poisha |
+## 2. Key features
 
-**Release gate:** The product baseline requires verified activation and acceptance of **bKash, Nagad, Rocket, and COD**. Unavailable online methods must not appear as active, and omitting a required method is **not** a substitute for an approved scope change. See [PRD](docs/PRD.md) §3.3 and [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) §12.
-
-## 2. Key Features
-
-The following capabilities are **planned**, not asserted to be implemented.
+All capabilities below are planned.
 
 | Customer storefront | Administration portal |
 | --- | --- |
-| Product catalog, categories, search, filters, variants | Products, categories, variants, images and inventory |
-| Cart, wishlist, coupons and reviews | Orders, customers, delivery zones and charges |
-| Customer accounts and guest checkout | Payment monitoring, COD records and reconciliation |
-| Hosted online payment and COD | Coupons, reviews, returns and refunds |
-| Order status, cancellation, returns and refund tracking | Store settings, policies, reports and audit history |
-| Transactional updates and support/complaints | Operational exception handling |
+| Catalog, categories, search, variants and reviews | Products, categories, media and inventory |
+| Cart, wishlist, coupons and guest/account checkout | Orders, customers, delivery zones and charges |
+| Hosted online payment, COD and verified order access | Payment monitoring, COD collection and reconciliation |
+| Order tracking, cancellation, returns and refund tracking | Coupons, moderation, returns and refunds |
+| Transactional updates, contact and policies | Settings, complaints, basic reports and audit history |
 
-The initial scope excludes multi-vendor selling, native mobile apps, automated courier integration, live GPS tracking, loyalty programs, and international shipping. Full scope and acceptance criteria live in the [PRD](docs/PRD.md).
+Scope exclusions include multi-vendor selling, native mobile apps, automated courier integration, live GPS tracking, loyalty and international shipping. [PRD §3](docs/PRD.md#3-project-scope) owns the full scope.
 
-## 3. Technology Stack
+## 3. Technology stack
+
+These are architectural selections, not installed dependencies. No versions can be verified without manifests and a lockfile.
 
 | Layer | Planned technology |
 | --- | --- |
 | Storefront | Next.js App Router, React, TypeScript, Tailwind CSS |
 | Admin | React, Vite, TypeScript, Tailwind CSS |
-| API | Node.js, Express, TypeScript; modular monolith |
-| Database | MongoDB with Mongoose; transaction-capable replica set for transactional workflows |
-| Authentication | Opaque, server-managed sessions using secure cookies |
-| Payment | SSLCOMMERZ hosted checkout; backend-managed COD |
-| Media | Cloudinary |
-| Transactional email | Resend or approved equivalent |
+| Backend | Node.js, Express, TypeScript; modular monolith |
+| Persistence | MongoDB/Mongoose; transaction-capable replica set |
+| Authentication | Opaque server-managed sessions with secure cookies |
+| Payments | SSLCOMMERZ hosted checkout; backend-managed COD |
+| Media / transactional email | Cloudinary / Resend or approved equivalent |
 | Repository | npm workspaces, Git, GitHub |
-| Quality | Type checking, linting, unit/integration/contract/E2E checks |
 
-Tool and package versions are **not pinned in this document**. Use supported, mutually compatible versions recorded in the implemented `package.json`, lockfile, and approved deployment baseline. The testing frameworks proposed in [Testing](docs/TESTING.md) must be confirmed before installation.
+[Architecture §2](docs/ARCHITECTURE.md#2-technology-stack) owns the technology choices. [Testing §5](docs/TESTING.md#5-tooling--test-organization) records proposed verification tools; installation and compatible versions remain pending.
 
-## 4. System Architecture
+## 4. System architecture
 
-Both web applications use the **same Express REST API**. Only the backend connects to persistence and privileged third-party services. Next.js rendering is not a second commerce backend.
+Both web applications consume the same Express `/api/v1` API. Only backend services and their scheduled jobs access MongoDB and privileged provider APIs. Next.js handles presentation and public rendering; private data must not enter shared caches.
 
-```mermaid
-flowchart TB
-    Customer[Customer / Guest] --> Storefront[Next.js Storefront]
-    Operator[Store Administrator] --> Admin[React + Vite Admin]
-    Storefront --> API[Express REST API]
-    Admin --> API
-    API --> Domain[Backend Domain Services]
-    Jobs[Backend Scheduled Jobs] --> Domain
-    Domain --> DB[(MongoDB)]
-    Domain --> Gateway[SSLCOMMERZ]
-    Domain --> Cloudinary[Cloudinary]
-    Domain --> Email[Transactional Email]
-    Gateway -->|Untrusted IPN; verify independently| API
-```
+See [Architecture §3](docs/ARCHITECTURE.md#3-system-architecture) for the system diagram and trust boundaries, [Database](docs/DATABASE.md) for proposed persistence contracts and [API](docs/API.md) for proposed HTTP contracts.
 
-- **Public API base:** `/api/v1` for application contracts; operational health routes are specified separately in [API](docs/API.md).
-- **Business authority:** Express validates identity, authorization, pricing, inventory, order state and financial transitions.
-- **Consistency:** Critical writes use guarded state transitions, idempotency and database transactions where required.
-- **Security:** Browser and gateway input are untrusted; session cookies, CSRF/Origin checks and server-side ownership checks apply.
+## 5. Project structure
 
-Details: [Architecture](docs/ARCHITECTURE.md), [Database](docs/DATABASE.md), [API](docs/API.md).
-
-## 5. Project Structure
-
-The **target layout** below comes from the architecture and implementation plan. It is not an inventory of files independently verified in a checked-out code repository.
+The current tracked layout is:
 
 ```text
 sportzone/
-├── storefront/                   # Next.js customer application
-│   ├── src/
-│   │   ├── app/
-│   │   ├── components/
-│   │   ├── features/
-│   │   └── lib/
-│   └── public/
-├── admin/                        # React + Vite administration app
-│   ├── src/
-│   │   ├── app/
-│   │   ├── features/
-│   │   ├── components/
-│   │   └── lib/
-│   └── public/
-├── backend/                      # Express API, domain services, Mongoose
-│   └── src/
-│       ├── modules/
-│       ├── middleware/
-│       ├── jobs/
-│       ├── config/
-│       └── shared/
-├── docs/
-│   ├── PRD.md
-│   ├── ARCHITECTURE.md
-│   ├── DESIGN.md
-│   ├── DATABASE.md
-│   ├── API.md
-│   ├── IMPLEMENTATION_PLAN.md
-│   ├── TASKS.md
-│   ├── TESTING.md
-│   └── OPERATIONS.md
-├── AGENTS.md                     # Agent execution instructions (documented)
-├── CHANGELOG.md                  # Documentation change history (created)
 ├── README.md
-├── .env.example                  # Planned safe configuration template
-├── .gitignore
-└── package.json                  # Planned npm workspace definitions
+├── AGENTS.md
+├── CHANGELOG.md
+└── docs/
+    ├── PRD.md
+    ├── DESIGN.md
+    ├── ARCHITECTURE.md
+    ├── DATABASE.md
+    ├── API.md
+    ├── IMPLEMENTATION_PLAN.md
+    ├── TASKS.md
+    ├── TESTING.md
+    └── OPERATIONS.md
 ```
 
-Do not import Mongoose models or backend-only services into either frontend. Add shared pure contracts only if actual duplication warrants it.
+The future `storefront/`, `admin/` and `backend/` workspaces are specified in [Architecture §4](docs/ARCHITECTURE.md#4-project-structure). Their creation and tooling are tracked in [Tasks](docs/TASKS.md); no task or milestone is accepted by this inventory.
 
 ## 6. Prerequisites
 
-Before local development, provide the following as the relevant phases are implemented:
+Once foundation work begins, development requires approved compatible Node.js/npm versions, a committed lockfile, an isolated transaction-capable MongoDB environment, approved local origins, and sandbox service accounts for affected integrations. Exact versions, ports and account access remain pending.
 
-| Requirement | Readiness guidance |
-| --- | --- |
-| Git | Install a supported version and obtain repository access |
-| Node.js and npm | Use versions approved by the committed project manifest and lockfile |
-| MongoDB | Use an isolated, transaction-capable replica-set deployment for checkout/integration tests |
-| Service accounts | Obtain approved **sandbox** credentials for required external integrations |
-| Environment template | Confirm actual `.env.example` and per-application environment validation exist |
-| Local origins | Confirm storefront, admin and API ports/origins from implemented configuration |
+Never use production credentials or customer data in local tests. [Operations §3](docs/OPERATIONS.md#3-environments--configuration-management) owns environment isolation and configuration requirements.
 
-Never use production customer data, payment credentials, or production callback endpoints in local tests.
+## 7. Getting started
 
-## 7. Getting Started
+There is no runnable application setup yet. Review [agent instructions](AGENTS.md), the assigned [task](docs/TASKS.md) and its source contracts before implementing a foundation slice.
 
-The setup sequence below is a **readiness checklist**, not a claim that current source code and scripts have been created.
+After the workspace manifests, lockfile and environment templates exist:
 
-1. Clone the approved SportZone repository using its actual URL, then open the repository root. The repository URL has not been supplied here.
-2. Confirm the root `package.json` declares the intended npm workspaces and a lockfile is committed.
-3. Install dependencies with `npm ci` **after** the lockfile and compatible Node/npm versions have been established.
-4. Copy the actual example environment files to local, ignored configuration files as instructed by their comments. Populate only approved local/sandbox values.
-5. Start the isolated MongoDB replica set, then validate required indexes and configuration using the implemented setup/migration tasks.
-6. Start backend, storefront, admin and required job processes using **scripts that actually exist**; discover them with `npm run` and `npm run --workspace=<workspace-name>` after workspace names are verified.
-7. Check `GET /api/v1/health/live` for a non-sensitive liveness response, then check `GET /api/v1/health/ready` **using authorized operational access**; readiness may return `503` until dependencies are healthy and must not be treated as public. Follow the [API health contract](docs/API.md) and exercise a public page and an authorized admin path without production data.
+1. Verify the approved Node.js/npm versions and workspace names in the committed configuration.
+2. Install locked dependencies with `npm ci`.
+3. Follow the actual sanitized environment templates; use only local/sandbox values.
+4. Start the isolated MongoDB replica set and verify required indexes using implemented setup tasks.
+5. Discover existing root and workspace scripts with `npm run` and `npm run --workspace=<verified-name>`.
+6. Start the applications and jobs using those verified scripts. Check `/api/v1/health/live`, then restricted `/api/v1/health/ready` with authorized operational access, as specified in [API §16.4](docs/API.md#164-health-endpoints).
 
-Once the repository foundation exists, these are the intended baseline commands:
+These are future setup steps. Commands, startup ports, seeding and entry-point URLs must be added and exercised when foundation work is implemented. The public repository URL has not been supplied.
 
-```bash
-# From the repository root, after package.json and a lockfile exist:
-npm ci
-npm run                 # Show root scripts actually available
-npm run --workspace=storefront  # Inspect storefront scripts only if the workspace exists
-```
+## 8. Development and available scripts
 
-**Do not assume** `npm run dev`, fixed port numbers, database seeding commands or a single `docker compose up` are available until they are implemented and verified. Add exact startup instructions to this section during the foundation phases.
+**Available application scripts: none.** There is no root or workspace manifest from which to run development, build or test commands.
 
-## 8. Development and Available Scripts
+[Testing §5.3](docs/TESTING.md#53-standard-execution-interface-proposed-script-names) is the single proposed root script interface for lint, type checking, unit/integration/contract/E2E/security/coverage and builds. Record exact verified startup commands here after implementation. CI must fail when a required declared check is missing.
 
-The following is the **planned script interface** from the [Testing Specification](docs/TESTING.md) and [Operations Specification](docs/OPERATIONS.md), not a list of verified executable scripts.
+## 9. Environment configuration
 
-| Proposed command | Intended responsibility |
-| --- | --- |
-| `npm run lint` | Lint configured workspaces |
-| `npm run typecheck` | Type-check application code |
-| `npm run test:unit` | Unit and component tests |
-| `npm run test:integration` | API/database integration tests |
-| `npm run test:contract` | HTTP/DTO and compatibility contracts |
-| `npm run test:e2e` | Browser end-to-end tests |
-| `npm run test:security` | Approved automated security checks |
-| `npm run test:coverage` | Coverage reports with defined exclusions |
-| `npm run build` | Build deployable workspaces |
+Use separate local, CI/test, staging and production data, origins, provider modes and credentials. [Operations Appendix B](docs/OPERATIONS.md#appendix-b--configuration-inventory) owns the proposed configuration inventory; actual variable names must agree with future environment validators and `.env.example` files.
 
-Development startup and per-workspace commands must be added **only after** the corresponding scripts are implemented. CI must fail when a required declared check is missing; it must not silently skip the check.
+Never commit secret-bearing `.env` files, customer data or private keys. Browser-exposed `NEXT_PUBLIC_*` and `VITE_*` values must contain no secrets. Missing required API/worker configuration must fail safely; unverified payment channels stay unavailable.
 
-## 9. Environment Configuration
+## 10. Testing and quality assurance
 
-Keep environment configuration **separate** for local, test, staging and production. Actual variable names and validation rules belong to implemented environment schemas and the operator-maintained register in [Operations](docs/OPERATIONS.md); do not treat illustrative names as installed configuration.
+[Testing](docs/TESTING.md) owns the strategy, scenario IDs, fixtures and evidence conventions. Financial and inventory concurrency checks require a real transaction-capable database. Mock results do not prove provider activation or release acceptance.
 
-| Configuration group | Required boundary |
-| --- | --- |
-| Application origins and API endpoints | Approved hosts, TLS and credentialed CORS policy |
-| MongoDB | Backend/worker-only connection and replica-set capability |
-| Sessions / CSRF | Server-only signing or session material, separate role/host boundaries |
-| SSLCOMMERZ | Sandbox vs live mode, approved merchant activation and return/IPN URLs |
-| Cloudinary and email | Server-only credentials and verified callback/delivery configuration |
-| Jobs and monitoring | Environment-isolated workers, leases, logs, health and alert configuration |
+Application tests are unavailable in this checkout; none were run during this audit. Record actual commands, environment, outcomes, defects and evidence in the relevant [task](docs/TASKS.md). Follow [Design](docs/DESIGN.md) for responsive, keyboard, accessibility and both-theme verification.
 
-- **Never commit** secret-bearing `.env` files, credentials, customer data or private keys. Commit only sanitized `.env.example` templates containing placeholders and no real secrets.
-- Browser-exposed `NEXT_PUBLIC_*` and `VITE_*` configuration must **not** contain secrets.
-- Missing required configuration should fail backend/worker startup; an inactive gateway channel must remain unavailable to customers.
-- Preserve production and staging separation, including database, provider credentials, callback targets and message recipients.
+## 11. Deployment and operations
 
-## 10. Testing and Quality Assurance
+[Operations](docs/OPERATIONS.md) owns deployment, configuration, monitoring, rollback, backups, restoration, incidents and operator procedures. Hosting, exact URLs, schedules, RPO/RTO, named owners and merchant activation remain pending decisions/evidence.
 
-Testing is expected **throughout feature development**, not only in the final QA phase. Apply unit, integration, contract, database/concurrency, E2E, accessibility, security and recovery checks to relevant changes.
+The intended delivery sequence is local development → isolated staging → gated production → handover. [Implementation Plan §11](docs/IMPLEMENTATION_PLAN.md#11-milestones--acceptance-gates) defines M1–M8: M7 authorizes production launch; M8 accepts handover. No deployment is claimed.
 
-| Quality concern | Minimum documentation reference |
-| --- | --- |
-| Authentication, CSRF, access control | [API](docs/API.md), [Testing](docs/TESTING.md) |
-| Stock, coupon and checkout concurrency | [Database](docs/DATABASE.md), [Testing](docs/TESTING.md) |
-| Verified payments, COD, returns and refunds | [PRD](docs/PRD.md), [Testing](docs/TESTING.md) |
-| Responsive layouts and theme/accessibility behavior | [Design](docs/DESIGN.md), [Testing](docs/TESTING.md) |
-| Deployment recovery and financial reconciliation | [Operations](docs/OPERATIONS.md), [Testing](docs/TESTING.md) |
-
-Test plans and mapped acceptance criteria are **not pass results**. Record executed commands, environment, outcomes, defects and evidence in the [task register](docs/TASKS.md). Provider sandbox and release checks need their own evidence and sign-off.
-
-## 11. Deployment and Operations
-
-The intended flow is **local development → isolated staging → gated production release → handover**. Build/deploy the storefront, admin portal, backend and scheduled jobs according to their actual runtime needs. Keep MongoDB, provider credentials and operational permissions restricted.
-
-Before public launch, verify application security, migrations/indexes, monitoring, backups and restoration, safe job recovery, payment/refund reconciliation, operator content and required gateway channels. A release must satisfy **M7 Production Ready**; operational ownership and runbooks belong to **M8 Handover Accepted**.
-
-Detailed deployment, rollback, monitoring, incident and disaster-recovery procedures: [Operations](docs/OPERATIONS.md). Production hosting, exact URLs, RPO/RTO, backup cadence, on-call ownership and external merchant activation remain pending approval/evidence; this README assigns none of them speculatively.
-
-## 12. Documentation and Project Guidelines
-
-The files in `docs/` are the source for their respective areas; this README is a **navigation and setup guide**, not a replacement for them.
+## 12. Documentation and project guidelines
 
 | Document | Authority / purpose |
 | --- | --- |
-| [PRD](docs/PRD.md) | Product scope, business rules, customer rights and acceptance |
-| [Architecture](docs/ARCHITECTURE.md) | System boundaries, ownership, security and reliability invariants |
-| [Design](docs/DESIGN.md) | UI design system, page behavior and accessibility |
-| [Database](docs/DATABASE.md) | Collections, indexes, persistence and transaction contracts |
-| [API](docs/API.md) | HTTP endpoints, DTOs, security and callback contracts |
-| [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) | Phases, dependencies, milestones and execution strategy |
-| [Tasks](docs/TASKS.md) | Stable task IDs, status, blockers and evidence links |
-| [Testing](docs/TESTING.md) | Test cases, traceability, fixtures and verification criteria |
-| [Operations](docs/OPERATIONS.md) | Deployment, secrets, maintenance, recovery and handover |
+| [PRD](docs/PRD.md) | Product scope, business rules and acceptance |
+| [Design](docs/DESIGN.md) | Visual tokens, UI behavior and accessibility |
+| [Architecture](docs/ARCHITECTURE.md) | System boundaries, technologies and integrity invariants |
+| [Database](docs/DATABASE.md) | Proposed persistence, indexes, transactions and migrations |
+| [API](docs/API.md) | Proposed HTTP, DTO, security and callback contracts |
+| [Implementation plan](docs/IMPLEMENTATION_PLAN.md) | Phases, dependencies and milestone gates |
+| [Tasks](docs/TASKS.md) | Stable IDs, statuses, blockers and acceptance evidence |
+| [Testing](docs/TESTING.md) | Verification strategy, scenarios and evidence conventions |
+| [Operations](docs/OPERATIONS.md) | Deployment, recovery and operational procedures |
+| [Agent instructions](AGENTS.md) | Coding-agent workflow and safeguards |
+| [Changelog](CHANGELOG.md) | Documentation change history |
 
-**Root guidance:** [AGENTS.md](AGENTS.md) is the proposed agent-execution baseline; [CHANGELOG.md](CHANGELOG.md) records documentation changes and future releases. These files are prepared as artifacts, not proof that the application repository has been assembled.
+This README owns onboarding and navigation. Resolve conflicts by subject authority, preserve approved requirements, and record unresolved decisions before relying on proposed designs. Update affected data/API/test/operations contracts with each slice; task completion requires evidence and independent acceptance.
 
-**Contribution workflow:** Check the current source documents and assigned task ID before making a change. Update affected data/API/test/operations contracts **before** implementing a feature slice. Validate affected code and UI behavior, record evidence, and obtain approval for scope or architecture changes. Follow actual repository branch, review and commit rules once established; none are invented here.
-
-**Security and support:** Do not publish exploits, credentials or customer details in issues. Route potential incidents and customer/payment problems through the approved operations and support procedures when configured. License, public repository URL and maintainer contacts are **not yet provided**, so they are intentionally not claimed here.
+Do not publish credentials, customer information or exploit details in public issues. Maintainer contacts, incident destinations, license and branch/review rules remain unspecified; follow the approved operational process when established.

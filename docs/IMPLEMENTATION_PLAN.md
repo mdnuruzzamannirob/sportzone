@@ -1,8 +1,9 @@
-# SportZone — Implementation Plan
+# SportZone — Implementation plan
 
 **Version:** 1.2  
 **Documentation sync:** 16 October 2026 (editorial alignment; no milestone acceptance claimed)  
-**Updated:** 15 October 2026  
+**Updated:** 16 October 2026  
+**Documentation audit:** 16 October 2026 — corrections in this working revision do not grant specification, task or release approval.  
 **Status:** Development execution baseline — pending implementation  
 **Product reference:** [PRD](./PRD.md)  
 **Technical reference:** [Architecture](./ARCHITECTURE.md)  
@@ -17,24 +18,24 @@ This document defines the implementation sequence, dependencies, work packages, 
 
 **Contents**
 
-- [1. Overview & Objectives](#1-overview--objectives)
-- [2. Implementation Principles](#2-implementation-principles)
-- [3. Development Strategy](#3-development-strategy)
-- [4. Foundation & Readiness](#4-foundation--readiness)
-- [5. Implementation Roadmap](#5-implementation-roadmap)
-- [6. Phase-by-Phase Implementation](#6-phase-by-phase-implementation)
-- [7. Dependencies & Critical Path](#7-dependencies--critical-path)
-- [8. Requirements Traceability](#8-requirements-traceability)
-- [9. Integration Strategy](#9-integration-strategy)
-- [10. Security & Quality Assurance](#10-security--quality-assurance)
-- [11. Milestones & Acceptance Gates](#11-milestones--acceptance-gates)
-- [12. Environments & Deployment](#12-environments--deployment)
-- [13. Risks & Change Management](#13-risks--change-management)
-- [14. Completion & Handover](#14-completion--handover)
+- [1. Overview & objectives](#1-overview--objectives)
+- [2. Implementation principles](#2-implementation-principles)
+- [3. Development strategy](#3-development-strategy)
+- [4. Foundation & readiness](#4-foundation--readiness)
+- [5. Implementation roadmap](#5-implementation-roadmap)
+- [6. Phase-by-phase implementation](#6-phase-by-phase-implementation)
+- [7. Dependencies & critical path](#7-dependencies--critical-path)
+- [8. Requirements traceability](#8-requirements-traceability)
+- [9. Integration strategy](#9-integration-strategy)
+- [10. Security & quality assurance](#10-security--quality-assurance)
+- [11. Milestones & acceptance gates](#11-milestones--acceptance-gates)
+- [12. Environments & deployment](#12-environments--deployment)
+- [13. Risks & change management](#13-risks--change-management)
+- [14. Completion & handover](#14-completion--handover)
 
 ---
 
-## 1. Overview & Objectives
+## 1. Overview & objectives
 
 ### 1.1 Purpose
 
@@ -76,7 +77,7 @@ The planning and design documents already exist as implementation baselines. Pha
 
 ---
 
-## 2. Implementation Principles
+## 2. Implementation principles
 
 1. **Backend authority.** Only Express domain services may confirm customer access, final prices, discounts, delivery charges, stock, order transitions, payment collection, or refunds.
 2. **One business backend.** The storefront and admin portal are separate presentations over the same `/api/v1` API. Next.js server rendering is not a second commerce backend.
@@ -93,7 +94,7 @@ The planning and design documents already exist as implementation baselines. Pha
 
 ---
 
-## 3. Development Strategy
+## 3. Development strategy
 
 ### 3.1 Delivery model
 
@@ -109,7 +110,7 @@ For higher-risk work, write state-transition and concurrency tests before enabli
 
 Each phase in §6 identifies its objective, prerequisite, implementation work, verification, deliverables, and exit gate. Backend, storefront, and administration work appear only when relevant. Cross-cutting standards in §§9–12 apply to every phase and should not be implemented a second time as separate competing features.
 
-### 3.3 Feature-level Definition of Done
+### 3.3 Feature-level definition of done
 
 An implementation work package is done when all applicable conditions are met:
 
@@ -134,7 +135,7 @@ Do not assign arbitrary completion dates. Estimate work after evaluating develop
 
 ---
 
-## 4. Foundation & Readiness
+## 4. Foundation & readiness
 
 ### 4.1 Baseline and environment prerequisites
 
@@ -203,7 +204,7 @@ Implement the approved semantic CSS tokens, theme bootstrap, font loading, respo
 
 ---
 
-## 5. Implementation Roadmap
+## 5. Implementation roadmap
 
 This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencing to this plan. Detailed delivery requirements are in §6; a dependency may be built earlier as a foundation and fully integrated in its designated feature phase.
 
@@ -226,9 +227,9 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 ---
 
-## 6. Phase-by-Phase Implementation
+## 6. Phase-by-phase implementation
 
-### Phase 01 — Requirements Finalization and Planning
+### Phase 01 — Requirements finalization and planning
 
 **Objective:** Confirm the existing development baselines, unresolved operational decisions, requirement ownership, and implementation dependencies without rewriting approved specifications.
 
@@ -250,7 +251,7 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 **Exit gate:** Required source references and the next-phase prerequisites are available; all open blockers have an explicit disposition.
 
-### Phase 02 — UI/UX Design
+### Phase 02 — UI/UX design
 
 **Objective:** Implement the already-specified UI foundation; this phase does not redesign SportZone.
 
@@ -271,7 +272,7 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 **Exit gate:** Applicable design-system primitives and route shells can support Phase 03–04 work without revisiting core visual decisions.
 
-### Phase 03 — Authentication and Core Backend
+### Phase 03 — Authentication and core backend
 
 **Objective:** Establish the modular Express API and secure identity foundation used by customer, admin, and later guest workflows.
 
@@ -294,7 +295,7 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 **Exit gate:** Authenticated routes and state-changing requests are safe, and subsequent modules can rely on proven role/session middleware.
 
-### Phase 04 — Product Catalog and Inventory
+### Phase 04 — Product catalog and inventory
 
 **Objective:** Make approved products discoverable and purchasable by SKU while establishing authoritative stock accounting.
 
@@ -316,7 +317,7 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 **Exit gate:** Public product/variant state derives from the API and all stock mutation primitives enforce their invariants under concurrent tests.
 
-### Phase 05 — Cart, Wishlist, Coupons, and Reviews
+### Phase 05 — Cart, wishlist, coupons, and reviews
 
 **Objective:** Implement shopping preparation, promotions, and review foundations before order placement.
 
@@ -339,7 +340,7 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 **Exit gate:** Cart/discount data is suitable for server-side checkout and unsupported review eligibility cannot be asserted as verified.
 
-### Phase 06 — Checkout, Orders, and Delivery Rules
+### Phase 06 — Checkout, orders, and delivery rules
 
 **Objective:** Deliver a complete guest/customer COD ordering path and the order/hold foundation required by verified online payments.
 
@@ -347,7 +348,7 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 **Backend work packages:**
 
-1. Implement admin-managed delivery zones, district/area coverage and charges, enabled/disabled delivery selection, estimated delivery dates, and applicable deadline snapshots. The PRD's 14-calendar-day delivery planning target is subject to any shorter applicable legal deadline; verify the operative rules before launch. Apply settings changes only to future orders.
+1. Implement admin-managed delivery zones, district/area coverage and charges, enabled/disabled delivery selection, estimated delivery dates, immutable deadline-rule snapshots and separate operational delivery commitments (Database §7.2; API §11.3). Calculate a confirmation-based absolute deadline only from the actual confirmation event. The PRD's 14-calendar-day delivery planning target is subject to any shorter applicable legal deadline; verify the operative rules before launch. Apply settings changes only to future orders.
 2. Implement checkout quote/validation that rechecks selected SKUs, stock, sale prices, coupon eligibility, customer details, district/area, address, terms acceptance, and server-calculated totals in integer poisha.
 3. Implement immutable order/order-line snapshots, unique order numbers, fulfillment/payment separation, customer/order ownership, and stable checkout-intent idempotency keys.
 4. Establish transactionally safe allocation coordination: accepted COD remains Pending and commits stock and coupon redemption; administrator confirmation is a separate fulfillment transition; the online path creates **15-minute** inventory and coupon holds with independent expiry/release and idempotent state changes. Keep provider interaction disabled until Phase 07 integration is ready.
@@ -365,7 +366,7 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 **Exit gate:** A guest and a registered customer can complete COD, an admin can fulfill and record collection, and all affected financial/stock/order invariants hold. Online payment is not represented as operational yet.
 
-### Phase 07 — Payment Integration and Verification
+### Phase 07 — Payment integration and verification
 
 **Objective:** Safely integrate supported SSLCOMMERZ-hosted methods and reconcile payment outcomes independently of the browser.
 
@@ -392,7 +393,7 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 **Exit gate:** No browser redirect alone marks Paid; verified collection is preserved accurately; stock/coupon commitment and fulfillment remain single-effect under retries and concurrency. Activated channel coverage is documented explicitly; sandbox acceptance does not waive any required production channel in PRD §3.3.
 
-### Phase 08 — Returns and Refunds
+### Phase 08 — Returns and refunds
 
 **Objective:** Deliver traceable cancellation-related refunds, physical returns, and full/partial refund outcomes without overpayment or premature completion.
 
@@ -418,7 +419,7 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 **Exit gate:** Refund amounts cannot exceed verified collected funds; no refund is marked Completed without payout evidence; inventory is never restored merely because a return was requested.
 
-### Phase 09 — Admin Management and Reports
+### Phase 09 — Admin management and reports
 
 **Objective:** Complete cross-feature administration and reporting over already-implemented domain data; do not defer earlier workflow-critical admin screens to this phase.
 
@@ -442,7 +443,7 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 **Exit gate:** All required administration tasks in the PRD can be completed using authorized screens and verified backend outcomes; the integrated staging deployment is available for Phase 10 acceptance.
 
-### Phase 10 — Testing, Security Review, and Bug Fixing
+### Phase 10 — Testing, security review, and bug fixing
 
 **Objective:** Prove end-to-end release behavior and remove critical defects; this phase consolidates rather than postpones continuous testing.
 
@@ -464,7 +465,7 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 **Exit gate:** Section 11 release-candidate milestone passes; remaining limitations are explicitly approved and do not violate the PRD or launch safety gates.
 
-### Phase 11 — Deployment and Production Verification
+### Phase 11 — Deployment and production verification
 
 **Objective:** Promote the accepted staging release to production and confirm real operational readiness.
 
@@ -487,7 +488,7 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 **Exit gate:** Store owner/authorized release approver confirms service configuration, policy readiness, live payment restrictions, recovery procedures, and acceptance of launch status.
 
-### Phase 12 — Documentation and Handover
+### Phase 12 — Documentation and handover
 
 **Objective:** Transfer a maintainable, operable system without exposing credentials or leaving unreconciled obligations undocumented.
 
@@ -511,7 +512,7 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 ---
 
-## 7. Dependencies & Critical Path
+## 7. Dependencies & critical path
 
 ### 7.1 Primary implementation dependencies
 
@@ -543,7 +544,7 @@ Parallel work includes admin UI for each domain, storefront presentation, notifi
 
 ---
 
-## 8. Requirements Traceability
+## 8. Requirements traceability
 
 ### 8.1 Functional requirements mapping
 
@@ -609,7 +610,7 @@ Acceptance criteria remain the full set in PRD §14. This matrix is an index, no
 
 ---
 
-## 9. Integration Strategy
+## 9. Integration strategy
 
 ### 9.1 API and data contracts
 
@@ -646,7 +647,7 @@ A product created in Admin appears in public catalog only when active; changed s
 
 ---
 
-## 10. Security & Quality Assurance
+## 10. Security & quality assurance
 
 ### 10.1 Quality checks by layer
 
@@ -663,7 +664,7 @@ A product created in Admin appears in public catalog only when active; changed s
 
 ### 10.2 Financial and inventory risk tests
 
-`TESTING.md` will own reproducible procedures for the architecture's critical scenarios. Phase 10 requires linked evidence for final-unit/coupon contention, duplicate checkout, hold expiry, late payment, paid-after-cancellation, forged/missing/repeated callbacks, overlapping paid attempts, risk review, COD collection, cancellation and final non-delivery, physical/shortage claims, refund capacity and unknown payout, inspected restock, and guest/customer/admin isolation. Feature phases exercise the relevant subset continuously. Missing mandatory evidence blocks the corresponding gate.
+[Testing](./TESTING.md) owns reproducible procedures for the architecture's critical scenarios. Phase 10 requires linked evidence for final-unit/coupon contention, duplicate checkout, hold expiry, late payment, paid-after-cancellation, forged/missing/repeated callbacks, overlapping paid attempts, risk review, COD collection, cancellation and final non-delivery, physical/shortage claims, refund capacity and unknown payout, inspected restock, and guest/customer/admin isolation. Feature phases exercise the relevant subset continuously. Missing mandatory evidence blocks the corresponding gate.
 
 ### 10.3 UI, accessibility, and content acceptance
 
@@ -677,7 +678,7 @@ Block release for a defect that can permit unauthorized access, duplicate/incorr
 
 ---
 
-## 11. Milestones & Acceptance Gates
+## 11. Milestones & acceptance gates
 
 | Milestone | Evidence required | Decision |
 | --- | --- | --- |
@@ -696,11 +697,11 @@ A milestone requires affirmative acceptance evidence. An engineering build passi
 
 ---
 
-## 12. Environments & Deployment
+## 12. Environments & deployment
 
 ### 12.1 Environment boundaries
 
-Architecture §13 owns topology and environment isolation. `OPERATIONS.md` will define actual local/staging/production setup, variables, owners, access, and recovery. Local and staging use non-production data and test providers; production uses approved live configuration. Configuration validation, secret isolation, and safe logs are prerequisites in every environment.
+Architecture §13 owns topology and environment isolation. [Operations](./OPERATIONS.md) owns setup, configuration, access and recovery procedures; platform-specific commands, exact keys and named owners still require decisions and verification. Local and staging use non-production data and test providers; production uses approved live configuration. Configuration validation, secret isolation, and safe logs are prerequisites in every environment.
 
 ### 12.2 Continuous integration and deployment
 
@@ -720,7 +721,7 @@ Confirm production administrator ownership, live merchant channel activation and
 
 ---
 
-## 13. Risks & Change Management
+## 13. Risks & change management
 
 ### 13.1 Risk register
 
@@ -749,7 +750,7 @@ A blocker record includes the missing evidence or capability, affected phase/req
 
 ---
 
-## 14. Completion & Handover
+## 14. Completion & handover
 
 ### 14.1 Final implementation acceptance
 

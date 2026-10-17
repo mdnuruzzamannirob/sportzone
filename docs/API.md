@@ -1,8 +1,9 @@
-# SportZone — API Design & Specification
+# SportZone — API design & specification
 
 **Version:** 1.1  
 **Source baseline:** PRD / Architecture / Design / Implementation Plan / Tasks v1.2; Database v1.2  
 **Updated:** 16 October 2026  
+**Documentation audit:** 16 October 2026 — corrections in this working revision do not grant specification, task or release approval.  
 **Status:** Proposed implementation contract — approval, integration tests, and merchant verification pending  
 **Product reference:** [PRD](./PRD.md)  
 **Technical references:** [Architecture](./ARCHITECTURE.md) · [Database](./DATABASE.md)  
@@ -21,32 +22,32 @@ It defines routes, input/output DTOs, access controls, validation, errors, state
 
 ## Contents
 
-- [1. Purpose, Scope & Contract Status](#1-purpose-scope--contract-status)
-- [2. API Architecture & Ownership](#2-api-architecture--ownership)
-- [3. HTTP Conventions & Versioning](#3-http-conventions--versioning)
-- [4. Authentication, Sessions & CSRF](#4-authentication-sessions--csrf)
-- [5. Authorization & Data Exposure](#5-authorization--data-exposure)
-- [6. Shared DTOs & Response Contracts](#6-shared-dtos--response-contracts)
-- [7. Validation & Error Catalog](#7-validation--error-catalog)
-- [8. Pagination, Search & Caching](#8-pagination-search--caching)
-- [9. Identity, Customer & Guest Access APIs](#9-identity-customer--guest-access-apis)
-- [10. Catalog, Cart, Promotions & Reviews APIs](#10-catalog-cart-promotions--reviews-apis)
-- [11. Checkout, Orders & Delivery APIs](#11-checkout-orders--delivery-apis)
-- [12. Payments, COD & Gateway Callbacks](#12-payments-cod--gateway-callbacks)
-- [13. Returns, Claims & Refund APIs](#13-returns-claims--refund-apis)
-- [14. Administration, Support & Reporting APIs](#14-administration-support--reporting-apis)
-- [15. Idempotency, Concurrency & Recovery](#15-idempotency-concurrency--recovery)
-- [16. External Integrations & Notifications](#16-external-integrations--notifications)
-- [17. Security, Performance & Compatibility](#17-security-performance--compatibility)
-- [18. Verification, Traceability & Change Control](#18-verification-traceability--change-control)
-- [Appendix A — Complete Endpoint Register](#appendix-a--complete-endpoint-register)
-- [Appendix B — Decision & Dependency Register](#appendix-b--decision--dependency-register)
-- [Appendix C — Endpoint Definition Checklist](#appendix-c--endpoint-definition-checklist)
-- [Appendix D — Operation Contract & DTO Register](#appendix-d--operation-contract--dto-register)
+- [1. Purpose, scope & contract status](#1-purpose-scope--contract-status)
+- [2. API architecture & ownership](#2-api-architecture--ownership)
+- [3. HTTP conventions & versioning](#3-http-conventions--versioning)
+- [4. Authentication, sessions & CSRF](#4-authentication-sessions--csrf)
+- [5. Authorization & data exposure](#5-authorization--data-exposure)
+- [6. Shared dtos & response contracts](#6-shared-dtos--response-contracts)
+- [7. Validation & error catalog](#7-validation--error-catalog)
+- [8. Pagination, search & caching](#8-pagination-search--caching)
+- [9. Identity, customer & guest access apis](#9-identity-customer--guest-access-apis)
+- [10. Catalog, cart, promotions & reviews apis](#10-catalog-cart-promotions--reviews-apis)
+- [11. Checkout, orders & delivery apis](#11-checkout-orders--delivery-apis)
+- [12. Payments, COD & gateway callbacks](#12-payments-cod--gateway-callbacks)
+- [13. Returns, claims & refund apis](#13-returns-claims--refund-apis)
+- [14. Administration, support & reporting apis](#14-administration-support--reporting-apis)
+- [15. Idempotency, concurrency & recovery](#15-idempotency-concurrency--recovery)
+- [16. External integrations & notifications](#16-external-integrations--notifications)
+- [17. Security, performance & compatibility](#17-security-performance--compatibility)
+- [18. Verification, traceability & change control](#18-verification-traceability--change-control)
+- [Appendix A — Complete endpoint register](#appendix-a--complete-endpoint-register)
+- [Appendix B — Decision & dependency register](#appendix-b--decision--dependency-register)
+- [Appendix C — Endpoint definition checklist](#appendix-c--endpoint-definition-checklist)
+- [Appendix D — Operation contract & DTO register](#appendix-d--operation-contract--dto-register)
 
 ---
 
-## 1. Purpose, Scope & Contract Status
+## 1. Purpose, scope & contract status
 
 ### 1.1 Responsibility and precedence
 
@@ -57,7 +58,7 @@ It defines routes, input/output DTOs, access controls, validation, errors, state
 | `DATABASE.md` | Data models, enums, unique references, accounting and transaction guards | Map allowlisted DTOs to persistence; never return raw models |
 | `DESIGN.md` | UI flows, loading/uncertain/error states, accessible feedback | Provide enough status and stable errors for each view |
 | `IMPLEMENTATION_PLAN.md` / `TASKS.md` | Sequence, dependencies, verification evidence | Contract precedes each feature slice; not an implementation claim |
-| **`API.md`** | HTTP methods/routes, DTOs, permissions, failures, retries, webhook responses | Avoid overriding higher-authority source specifications |
+| **`API.md`** | HTTP methods/routes, DTOs, permissions, failures, retries, webhook responses | Respect each source within its subject authority; detailed proposed designs still require approval |
 
 **Included:** guest/customer shopping, one admin role, Bangladesh delivery, BDT, COD and enabled SSLCOMMERZ hosted
 bKash/Nagad/Rocket channels, after-sales, notifications, support, and essential operations. **Excluded:** multi-vendor,
@@ -67,12 +68,12 @@ change (PRD §3.3).
 
 ### 1.2 Maturity rules
 
-- **Required invariant:** an explicit PRD/Architecture/Database requirement, not subject to route-level convenience.
+- **Required invariant:** an explicit PRD/Architecture requirement, not subject to route-level convenience. Database field, collection and index proposals remain subject to the design approval required by Database §1.2 and AGENTS §9.
 - **Proposed HTTP contract:** an implementation-ready design target, pending owner approval and contract tests.
 - **External/open:** merchant activation, provider-specific channel/refund capability, legal deadlines, policy content, approved retention and production configuration; never fabricate confirmation.
 - `API.md` is a **design contract**, not proof that endpoints are running. Records marked `pending` / `uncertain` must not be presented as success.
 
-## 2. API Architecture & Ownership
+## 2. API architecture & ownership
 
 ### 2.1 Runtime and request path
 
@@ -105,7 +106,7 @@ gateway. Scheduled jobs call shared services without bypassing invariants.
 
 Domain services coordinate cross-module mutations within MongoDB transactions. No external HTTP call occurs while a database transaction remains open.
 
-## 3. HTTP Conventions & Versioning
+## 3. HTTP conventions & versioning
 
 ### 3.1 Transport and representation
 
@@ -162,7 +163,7 @@ Paths use `{id}` in examples, but Express implementations bind `:id`. Route pref
 
 `meta` may be omitted from minimal successful responses only by explicit contract; errors always include a safe code/message and request ID. Never expose DB stack traces, password/token hashes, payment credentials, raw provider payloads or user existence clues.
 
-## 4. Authentication, Sessions & CSRF
+## 4. Authentication, sessions & CSRF
 
 ### 4.1 Session and cookie contract
 
@@ -208,7 +209,7 @@ sequenceDiagram
 
 | Scenario | Response / side effect |
 | --- | --- |
-| Authenticated `GET /auth/session` | Return `{principal:{id,role,...}}` from current valid customer session |
+| Authenticated `GET /auth/session` | Return `{account:Account}` from the current valid customer session (§9.1) |
 | Unauthenticated session | `401 AUTH_REQUIRED`, no user details |
 | Successful login | Rotate token; invalidate prior pre-auth context; issue session cookie plus new CSRF |
 | Failed login or suspended identity | Same generic `401 INVALID_CREDENTIALS` response where enumeration would be possible |
@@ -216,7 +217,7 @@ sequenceDiagram
 | Password reset/change | Single-use challenge consumption; advance security revision and invalidate affected sessions |
 | Guest proof | Single-use challenge grants **one order** and explicitly expires; cannot be used as general customer identity |
 
-## 5. Authorization & Data Exposure
+## 5. Authorization & data exposure
 
 | Principal | Allowed resources | Denied by default |
 | --- | --- | --- |
@@ -236,14 +237,15 @@ appropriate; a clearly authenticated but disallowed operation may use `403`.
 internal counters/history; customer DTOs expose only own PII and masked payment metadata; admin DTOs expose necessary
 scoped operational fields; external provider evidence is redacted even to administrators.
 
-## 6. Shared DTOs & Response Contracts
+## 6. Shared dtos & response contracts
 
 ### 6.1 Scalar types and standard objects
 
 | Type | JSON contract | Notes |
 | --- | --- | --- |
 | `Id` | Nonempty string | Stringified server ObjectId; never proof of permission |
-| `MoneyPoisha` | Nonnegative safe integer | Never JSON decimal BDT; allow signed deltas only on internal audit projections |
+| `MoneyPoisha` | Nonnegative safe integer | Business amounts, allocations and refund capacities; never JSON decimal BDT |
+| `SignedMoneyPoisha` | Signed safe integer | Derived net cash-flow reporting only; a period with more payouts than collections is negative |
 | `Instant` | ISO UTC string, e.g. `2026-10-16T00:00:00Z` | Reject ambiguous timezone formats in writes |
 | `Channel` | `cod` / `bkash` / `nagad` / `rocket` | Business choice; actual online provider display/availability subject to verified activation |
 | `AddressInput` | `{recipient,phone,districtKey,areaKey,street,addressLine2?}` | Bangladesh-supported area keys, no arbitrary delivery-zone ID |
@@ -260,17 +262,17 @@ scoped operational fields; external provider evidence is redacted even to admini
 | --- | --- | --- |
 | `ProductCard` | `id,slug,name,thumbnail,regularPricePoisha,effectivePricePoisha,rating,availability` | Internal stock counters, media credentials |
 | `ProductDetail` | Card + `description,categories,images,variants[{id,sku,attributes,regularPricePoisha,effectivePricePoisha,availableQty?}]` | Inventory movement and hidden draft data |
-| `Account` | `id,name,email,phone?,emailVerified,addresses[],status` | `passwordHash`, challenge/session tokens, other accounts |
+| `Account` | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry) | `passwordHash`, challenge/session tokens, other accounts |
 | `Cart` | `items[{variantId,quantity,product,estimatedUnitPoisha,availability}],estimatedSubtotalPoisha,revision` | Reservation claims; cart does **not** reserve stock |
-| `CheckoutQuote` | `items[],regularSubtotalPoisha,productDiscountPoisha,saleSubtotalPoisha,couponDiscountPoisha,deliveryChargePoisha,finalTotalPoisha,currency,deliveryEstimate?,deliveryDeadline:{status,ruleVersion,startEvent,startEventAt?,targetDeadlineAt?,legalCapAt?,effectiveAt?},availableMethods[{channel,eligible,reasonCode?}],policyVersions,quoteExpiresAt?` | A guaranteed confirmation-relative absolute deadline before the confirmation event, payment guarantee, or reservation |
-| `OrderSummary` | `id,orderNumber,fulfillmentStatus,paymentStatus,finalTotalPoisha,currency,placedAt,deliveryEstimate?,fulfillmentHold?` | Guest email/phone to unauthorized clients |
-| `OrderDetail` | Summary + immutable `items[]`, `pricingSnapshot`, `deliverySnapshot`, `policyVersions`, `statusHistory`, `paymentSummary`, `cancellationEligibility`, `claimEligibility` | Gateway raw payload, session secrets |
-| `PaymentSummary` | `status,fundingContext,expectedPoisha,verifiedCollectedPoisha,merchandiseFundedPoisha,correctionCollectedPoisha,unassignedCollectedPoisha,riskStatus,merchandiseRefundHeldPoisha,merchandiseRefundCompletedPoisha,correctionRefundHeldPoisha,correctionRefundCompletedPoisha` | `fundingContext` is derived `normal` or `correction_only`; never interchangeable with the six payment statuses |
+| `CheckoutQuote` | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry) | A guaranteed confirmation-relative absolute deadline before the confirmation event, payment guarantee, or reservation |
+| `OrderSummary` | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry) | Guest email/phone to unauthorized clients |
+| `OrderDetail` | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry) | Gateway raw payload, session secrets |
+| `PaymentSummary` | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry) | `fundingContext` is derived `normal` or `correction_only`; never interchangeable with the six payment statuses |
 | `CollectionSummary` | `id,amountPoisha,collectedAt,sourceKind,merchandiseAllocatedPoisha,correctionAllocatedPoisha,unassignedAllocatedPoisha,merchandiseRefundHeldPoisha,merchandiseRefundCompletedPoisha,correctionRefundHeldPoisha,correctionRefundCompletedPoisha` | Full bank/card data and provider secrets |
-| `Claim` | `id,orderId,claimType,items[{orderItemId,requestedQty,approvedQty?,reason}],status,requestedAt,evidence[]` | Cross-user evidence; raw protected storage URL |
-| `Refund` | `id,orderId,refundGroupKey?,classification,basis,sourceCollectionId,amountPoisha,method,status,capacityStatus,requestedAt?,completedAt?` | Transfer credentials / unmasked payout destination |
-| `Complaint` | `id,orderId?,status,issue,createdAt,response?,resolvedAt?` | Third-party contact details |
-| `AdminAudit` | `action,actor,subject,occurredAt,reason?,requestId?` | Raw before/after sensitive PII or passwords |
+| `Claim` | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry) | Cross-user evidence; raw protected storage URL |
+| `Refund` | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry) | Transfer credentials / unmasked payout destination |
+| `Complaint` | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry) | Third-party contact details |
+| `AdminAudit` | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry) | Raw before/after sensitive PII or passwords |
 
 **DTO naming:** `OrderDetail.items[]` retains historical line IDs; `PaymentSummary` displays correction/unassigned and
 merchandise funding as **separate amounts**, not a single “paid” badge. `CollectionSummary` uses the exact monetary field
@@ -305,7 +307,7 @@ cannot create state by setting them. `OrderSummary.finalTotalPoisha` is purchase
 
 *Example identifiers and amounts are illustrative, not production data. No guest order may retrieve this payload without verified order-scoped authorization.*
 
-## 7. Validation & Error Catalog
+## 7. Validation & error catalog
 
 ### 7.1 Shared validation rules
 
@@ -352,7 +354,7 @@ JSON”. On external timeout, do not report definitive `failed`; return pending/
 exists, or a safe transient error with correlation ID. Unknown user/email/guest-order lookup must not leak existence. A
 successful refund request is **not** confirmed payout.
 
-## 8. Pagination, Search & Caching
+## 8. Pagination, search & caching
 
 | Concern | Proposed rule |
 | --- | --- |
@@ -369,7 +371,7 @@ For large audit/financial histories, use an opaque cursor with stable ordering *
 invent offset pagination where it risks missing/duplicating mutations. Query and index selection must agree with Database
 §11. Reject invalid sort keys, inverted price ranges, unknown filters and attempts to request oversized pages.
 
-## 9. Identity, Customer & Guest Access APIs
+## 9. Identity, customer & guest access apis
 
 ### 9.1 Authentication and account endpoint contracts
 
@@ -442,7 +444,7 @@ An attacker cannot enumerate orders by timing, HTTP status or message difference
 Subsequent guest order actions use the same `/orders/{orderId}` routes as a customer, but with *exact* bound order ID checks.
 Do not include a public `GET /orders?email=...` endpoint.
 
-## 10. Catalog, Cart, Promotions & Reviews APIs
+## 10. Catalog, cart, promotions & reviews apis
 
 ### 10.1 Public catalog and discovery
 
@@ -517,7 +519,7 @@ Do not accept a client-controlled `isVerifiedPurchase`, `status`, or `reviewedBy
 
 The cart example is not a final payable quote. Catalog and public reviews use `200` reads; new reviews return `201` with `pending`. A rejected eligibility check is `422 BUSINESS_RULE_VIOLATION`, stale inventory at checkout is `409 OUT_OF_STOCK`.
 
-## 11. Checkout, Orders & Delivery APIs
+## 11. Checkout, orders & delivery apis
 
 ### 11.1 Checkout request/quote/submission
 
@@ -540,6 +542,8 @@ The cart example is not a final payable quote. Catalog and public reviews use `2
 supplied/reconfirmed for C. `CheckoutSubmitInput` includes the same normalized fields **plus** `notes?`,
 `acceptedTermsVersion`, `acceptedPolicyVersionIds[]`. Reject direct `unitPrice`, `discount`, `deliveryCharge`, `total`,
 role, `userId` or target order ID fields.
+
+**Checkout confirmation decision — API-D20:** PRD FR-11 requires final-amount confirmation, and Testing `CHK-03` requires a changed quote to be rejected or reconfirmed. The current request has no server-verifiable reference to the amount/terms the buyer confirmed: it rejects client totals and defines no quote identity. Recomputing at submission alone cannot demonstrate renewed consent to a changed total. **Do not implement automatic charging from this incomplete contract.** Product and API owners must approve a server-verifiable confirmation/precondition mechanism, its expiry and conflict/reconfirmation behavior before `P06-004`, `P06-018` and `P07-004` can be accepted. No new field or endpoint is approved by this note.
 
 **Quote:** Recompute active SKU prices, stock visibility, product-discount-before-coupon, eligible coupon allocations,
 delivery-zone rule and eligible payment methods at request time. Return a **deadline rule/status**, not a made-up date
@@ -607,10 +611,10 @@ The admin accepts/rejects after checking `pending/confirmed`, or `processing` wi
 
 - **Checkout:** persist immutable `deliverySnapshot` charge, rule version, start-event type and legal rule reference; quote `status:'awaiting_start'` for an unconfirmed confirmation-based target. Never persist an assumed `confirmedAt`.
 - **Confirmation:** record actual `confirmedAt`; derive the target as **14 calendar days after confirmation** under the approved baseline. Evaluate any independently approved shorter legal deadline using its actual applicable start event (which may differ). Persist the earlier applicable `deliveryCommitment.effectiveDeadlineAt` and exact basis under order CAS.
-- **Read/late updates:** return `{status,startEventAt?,targetDeadlineAt?,legalCapAt?,effectiveAt?}` and a distinct changeable `deliveryEstimate`. When no authorized event/rule exists, return `null`/`awaiting_start` or `under_review`, never a fictional firm date. Notify of changed estimates; log deadline-affecting policy corrections without overwriting snapshots.
+- **Read/late updates:** return `{status,startEventAt?,targetDeadlineAt?,legalCapAt?,effectiveAt?}` and a distinct changeable `deliveryEstimate`. When no authorized event/rule exists, omit unavailable date fields and return `awaiting_start` or `under_review`, never a fictional firm date. Notify of changed estimates; log deadline-affecting policy corrections without overwriting snapshots.
 - **Boundary:** changing future charges or policies does not alter an accepted order's charge/rule snapshot. Fulfillment updates are manual (no courier/GPS integration). Legal applicability/start events must be approved before launch (API-D07).
 
-## 12. Payments, COD & Gateway Callbacks
+## 12. Payments, COD & gateway callbacks
 
 ### 12.1 Payment surfaces and statuses
 
@@ -649,12 +653,11 @@ max(0, originalFinalTotalPoisha - currentVerifiedMerchandiseAllocatedPoisha)` fr
 browser total. No new attempt is permitted for a fully funded order or when a prior attempt is uncertain. A new attempt for
 a partially funded order targets this **remaining balance**, not the original total.
 2. If any previous attempt is pending or uncertain, **reconcile it first**; an HTTP timeout cannot authorize a second charge. Use distinct merchant-generated `tran_id` (provider length limits) only for a genuinely new attempt.
-3.
-Before initiating, validate the exact **attempt amount** against merchant-approved constraints.
-SSLCOMMERZ v4 publicly documents **BDT 10.00–500,000.00** (integer **1,000–50,000,000 poisha**) per initiation; these values are published-reference defaults, **not** proof of the merchant's own accepted limits.
-The effective range is the verified merchant/environment intersection.
-At quote, return channel `eligible:false,reasonCode:'PAYMENT_AMOUNT_UNSUPPORTED'` if known to be ineligible; at initiation return `422 PAYMENT_AMOUNT_UNSUPPORTED` without creating a provider charge.
-Do not silently split a large order or lower a small remainder to the minimum.
+3. Before initiating, validate the exact **attempt amount** against merchant-approved constraints.
+   SSLCOMMERZ v4 publicly documents **BDT 10.00–500,000.00** (integer **1,000–50,000,000 poisha**) per initiation; these values are published-reference defaults, **not** proof of the merchant's own accepted limits.
+   The effective range is the verified merchant/environment intersection.
+   At quote, return channel `eligible:false,reasonCode:'PAYMENT_AMOUNT_UNSUPPORTED'` if known to be ineligible; at initiation return `422 PAYMENT_AMOUNT_UNSUPPORTED` without creating a provider charge.
+   Do not silently split a large order or lower a small remainder to the minimum.
 4. Persist new `paymentAttempts.expectedAmountPoisha` (the immutable attempt request), `initiatedOutstandingPoisha`, unique
 `tranId` and idempotency record before the provider session call. The response provides an approved **absolute HTTPS**
 hosted redirect URL only after provider session acceptance; never accept a client-provided redirect target.
@@ -776,7 +779,7 @@ A duplicate collection reference cannot be recorded twice; any genuinely distinc
 A public customer cannot mark their COD order paid.
 Manual evidence is access-controlled and redacted in APIs.
 
-## 13. Returns, Claims & Refund APIs
+## 13. Returns, claims & refund apis
 
 ### 13.1 Customer/guest claims and refund visibility
 
@@ -923,7 +926,7 @@ sequenceDiagram
     API-->>Admin: Current refund and payout state
 ```
 
-## 14. Administration, Support & Reporting APIs
+## 14. Administration, support & reporting apis
 
 ### 14.1 Catalog, categories and variants (admin)
 
@@ -950,13 +953,7 @@ No public endpoint can mutate base/sale prices, SKU identity or stock.
 | `GET` | `/admin/inventory/{variantId}/movements` | `page?,from?,to? → InventoryMovement[]` | 25 |
 | `POST` | `/admin/inventory/{variantId}/adjustments` | `{deltaPhysical,reason} + Idempotency-Key → {stock,movementId}` | 25 |
 
-**Admin data projections (minimum allowlisted fields):** `AdminProduct` includes
-`id,name,slug,description,categoryIds,images,status,featured,createdAt,updatedAt,etag`; `AdminVariant` includes
-`id,productId,sku,attributes,regularPricePoisha,salePricePoisha?,status,stock:{physical,reserved,committed,available},etag`;
-`AdminCategory` includes `id,name,slug,parentId?,status,sortOrder,etag`; an `InventoryMovement` includes
-`id,variantId,type,deltaPhysical,deltaReserved,deltaCommitted,occurredAt,reason,actor` but not private internal DB
-connection or secret metadata. Field updates use explicit allowlists and verified backend service ownership. `etag` must be
-backed by an approved durable CAS source (API-D19), not a hash of a mutable arbitrary JSON response.
+**Admin projections:** [Appendix D.2](#d2-typed-request-and-response-schema-registry) owns the `AdminProduct`, `AdminVariant` and `AdminCategory` allowlists. Responses carry the strong `ETag` **header** derived from the durable revision; do not create a competing body-only `etag` authority. `AdminVariant.stock.available` is derived from physical, reserved and committed stock. Inventory movements expose `id,variantId,type,deltaPhysical,deltaReserved,deltaCommitted,occurredAt,reason,actor`, with no connection or secret metadata. Field updates use explicit allowlists and backend service ownership. The CAS source must be approved and verified (API-D19).
 
 **Master record schemas:**
 
@@ -1046,7 +1043,7 @@ rating or unfairly suppress valid negative feedback. Always audit decisions/reas
 individual redemptions, or past orders. Active holds keep their snapshotted terms; new/reacquired holds validate current
 terms. Per-customer counts require user IDs; guests cannot use limited-per-customer coupons.
 
-**Policy drafts and publication:** `PolicyDraftInput:{type,content,proposedEffectiveAt?}`; server assigns unique immutable
+**Policy drafts and publication:** `PolicyDraftInput:{type,content,proposedEffectiveAt?}` (types: `shipping`, `cancellation`, `returns`, `refunds`, `privacy`, `terms`, `complaints`); server assigns unique immutable
 `version`, ID, status `draft` and CAS revision in `policyDocuments` (Database §10.5).
 `PolicyDraftPatch:{content?,proposedEffectiveAt?}` is permitted only for draft; `approve` verifies and stores durable
 operator/legal approval evidence, then `publish` checks approved status, CAS and effective date. Publication with
@@ -1094,7 +1091,7 @@ before launch.
 | `unattributedProviderCashPoisha` | Verified **unmatched** provider intake, admin reconciliation only, never a customer's payment |
 | `completedMerchandiseRefundsPoisha` | Verified merchandise-class payout completions **by completedAt** |
 | `completedCorrectionRefundsPoisha` | Verified correction-class payout completions **by completedAt** |
-| `netLinkedCashFlowPoisha` | Verified **linked** receipts by `collectedAt` minus completed merchandise/correction payouts by `completedAt` within `[from,to)`; signed cash movement, **not revenue** |
+| `netLinkedCashFlowPoisha` | `SignedMoneyPoisha`: verified **linked** receipts by `collectedAt` minus completed merchandise/correction payouts by `completedAt` within `[from,to)`; signed cash movement, **not revenue** |
 | `netAcceptedOrderSalesPoisha` | Accepted non-cancelled original orders by `placedAt`: sale subtotal − coupon discounts + delivery charge (before returns); **order sales indicator**, not recognized accounting revenue |
 | `outstandingCodPoisha` | Verified still-uncollected COD balance **as of** snapshot cutoff |
 | `pendingRefundLiabilityPoisha` | Active reserved (held) refund amounts, **not** already completed payouts |
@@ -1106,7 +1103,7 @@ Report `asOf` prevents pretending concurrent cash events constitute one fully co
 COD without verified collection is not paid collections.
 Do not label `netLinkedCashFlowPoisha` as revenue or profit; report unmatched intake and correction liabilities separately.
 
-## 15. Idempotency, Concurrency & Recovery
+## 15. Idempotency, concurrency & recovery
 
 ### 15.1 Operation key ownership
 
@@ -1179,7 +1176,7 @@ unique references and explicit compensating recovery paths.
 | Notification failure | Business transaction remains committed | Retry event delivery from durable queue |
 | Customer session suspended mid-request | Reject authorization or recheck at commit boundary | Do not complete unauthorized mutation |
 
-## 16. External Integrations & Notifications
+## 16. External integrations & notifications
 
 ### 16.1 Gateway boundary
 
@@ -1213,6 +1210,8 @@ Notification intents are persisted in `notifications` and delivered by Resend or
 Events include registration, password reset, order confirmation/cancellation, payment success/failure, shipment/delivery, return update, refund approval/rejection/completion.
 Deduplicate by durable `eventKey`, record retries/attempts and safe provider delivery status; repeat IPNs must not send duplicate payment-success emails.
 Email failure **does not roll back** paid order or refund.
+
+**Credential delivery decision — API-D21:** Database §§5 and 10.1 prohibit plaintext challenge secrets and secret-bearing notification payloads, while recovery/guest-proof delivery must be durable and retryable. Before implementing `P03-009`, `P03-010` and `P06-015`, security and data owners must approve how a worker obtains a deliverable one-time proof without storing plaintext or logging it, including crash/retry, expiry and replay handling. This document selects no encryption, derivation or reissuance design; notification retries must not bypass the secret-storage rule.
 Customer-facing status is read from business resources, not from the presence/absence of an email.
 No marketing consent workflows are implied by transactional messaging.
 
@@ -1225,7 +1224,7 @@ No marketing consent workflows are implied by transactional messaging.
 
 Health endpoints may be served outside `/api/v1` by infrastructure **only if consistently configured and documented**; the baseline here uses `/api/v1/health/*`. Do not make a public readiness endpoint reveal internal deployment information.
 
-## 17. Security, Performance & Compatibility
+## 17. Security, performance & compatibility
 
 | Area | Enforced API contract |
 | --- | --- |
@@ -1248,7 +1247,7 @@ response-time or uptime guarantees without approval. Error fallback for slow int
 claim provider success before independent confirmation. Payment/return browser redirects are not credentials; never set
 arbitrary redirect URL from request input.
 
-## 18. Verification, Traceability & Change Control
+## 18. Verification, traceability & change control
 
 ### 18.1 Contract acceptance matrix
 
@@ -1304,7 +1303,7 @@ with each feature slice and reconcile this specification against the delivered O
 
 ---
 
-## Appendix A — Complete Endpoint Register
+## Appendix A — Complete endpoint register
 
 The canonical route definitions, access roles and request/response contracts appear in **§§9–14 and §16**, rather than a second competing route list. This index gives reviewers one place to find every group; count validation is part of the static review.
 
@@ -1327,7 +1326,7 @@ A later OpenAPI file should be generated/maintained against **the same contracts
 independent source. Every path listed in the main tables is a **proposed** v1 route; externally triggered callback methods
 and operational endpoints require deployment-specific adapter tests.
 
-## Appendix B — Decision & Dependency Register
+## Appendix B — Decision & dependency register
 
 | ID | Pending decision / requirement | Baseline handling | Status / owner to resolve |
 | --- | --- | --- | --- |
@@ -1350,10 +1349,12 @@ and operational endpoints require deployment-specific adapter tests.
 | API-D17 | Homepage promotional banner storage and public DTO | Use approved operator content in store settings if modeled; otherwise propose a Database change and withhold banner | Content/data-owner approval pending |
 | API-D18 | Cloudinary upload reference authorization, temporary evidence storage and orphan cleanup | Opaque scoped upload IDs map to provider `publicId`; no dedicated collection assumed | Security/data-owner design approval pending |
 | API-D19 | Strong ETag/revision for catalog/category edits and delivery charge activation | Database v1.2 specifies CAS `revision` for affected masters plus zone `coverageRevision`; verify in integration tests | Proposed design synchronized; runtime evidence pending |
+| API-D20 | Buyer confirmation when server price/terms change between quote and submit | Resolve §11.1 against PRD FR-11 and Testing CHK-03; block automatic charging until server-verifiable confirmation/reconfirmation is approved; affected tasks P06-004, P06-018, P07-004 | Product/API owner decision required |
+| API-D21 | Durable recovery/guest email proof delivery under no-plaintext/no-secret-outbox rules | Resolve §16.3 with Database §§5, 10.1 before P03-009, P03-010 and P06-015; verify crash/retry, expiry and replay safety | Security/data owner decision required |
 
 **Resolution rule:** An open item does not invalidate already-approved PRD behavior; it blocks claims of a fully accepted implementation where the detail is material. Record decision owner, evidence, approved date and resulting source-document revision before closing it.
 
-## Appendix C — Endpoint Definition Checklist
+## Appendix C — Endpoint definition checklist
 
 Use this compact template when the team adds or changes any route:
 
@@ -1384,15 +1385,14 @@ implementation contract only after required decisions, versioned validation sche
 cross-checks have been completed. It is not a claim of deployed endpoints, activated merchant channels, verified legal
 compliance or production readiness.
 
-
-## Appendix D — Operation Contract & DTO Register
+## Appendix D — Operation contract & DTO register
 
 This appendix is a **single normative companion** to the compact route tables in §§9–14 and §16. Read it with the access
 column in those tables and Database v1.2. The operation matrix below supplies a concrete default success status,
 route-level failure families and response profile. It is a design-time validation target; **the OpenAPI document,
 TypeScript/Zod validators and runtime contract tests do not exist yet**.
 
-### D.1 Schema notation and mandatory response rules
+### D.1 schema notation and mandatory response rules
 
 | Notation | Meaning |
 | --- | --- |
@@ -1425,7 +1425,7 @@ STATE_CONFLICT`/`409 PAYMENT_UNCERTAIN`/`409 OUT_OF_STOCK`/`409 REFUND_BALANCE_E
 routes follow §12.3's own acknowledgment matrix **rather than** browser security errors. Do not return a generic success
 body with a hidden failure.
 
-### D.2 Typed request and response schema registry
+### D.2 typed request and response schema registry
 
 The following explicit field allowlists close the high-risk gaps identified in the review. `*Input` means client-writable fields only; `*` response fields are backend-produced. Fields inherited from an existing immutable snapshot are read-only even when their names appear in a response.
 
@@ -1440,17 +1440,17 @@ The following explicit field allowlists close the high-risk gaps identified in t
 | `AdminCategory` | `id!,name!,slug!,parentId?,status!,revision:int!,sortOrder:int!,image?` | `ETag` on read/edit; hidden categories admin-only |
 | `ProductCreateInput` | `name:string!,slug:string!,description:string!,categoryIds:id[]!,images:MediaRef[]?,keywords:string[]?,featured:bool?,status:enum(draft,active,inactive)?` | No direct stock or variant price object |
 | `ProductPatch` | `name?,slug?,description?,categoryIds?,images?,keywords?,featured?,status?` | Approved fields only; CAS and audit |
-| `AdminProduct` | `id!,name!,slug!,description!,categoryIds:id[]!,status!,featured!,images:MediaRef[]!,revision:int!` | Variants separate; no raw Mongoose shape |
-| `VariantCreateInput` | `productId:id!,sku:string!,attributes:map<string,string>!,regularPricePoisha:money!,salePricePoisha:money?,status?` | SKU/attribute signature unique; `stock` assigned by inventory service |
-| `VariantPatch` | `sku?,attributes?,regularPricePoisha?,salePricePoisha?,status?` | Every change increments the same record `revision` |
-| `AdminVariant` | `id!,productId!,sku!,attributes!,regularPricePoisha!,salePricePoisha?,status!,stock:{physical,reserved,committed},revision:int!` | Available stock derived, never client-writable |
+| `AdminProduct` | `id!,name!,slug!,description!,categoryIds:id[]!,status!,featured!,images:MediaRef[]!,createdAt:date!,updatedAt:date!,revision:int!` | Variants separate; no raw Mongoose shape |
+| `VariantCreateInput` | `sku:string!,attributes:map<string,string>!,regularPricePoisha:money!,salePricePoisha:money?,status:enum(active,inactive)?` | Owning `productId` comes from the authorized path, never a conflicting body field; stock assigned by inventory service |
+| `VariantPatch` | `regularPricePoisha:money?,salePricePoisha:money?,status:enum(active,inactive)?,lowStockThreshold:int?` | Same allowlist as §14.1; no stock, SKU or attribute writes; every change increments the record revision |
+| `AdminVariant` | `id!,productId!,sku!,attributes!,regularPricePoisha!,salePricePoisha?,status!,stock:{physical,reserved,committed,available},revision:int!` | Available stock derived, never client-writable |
 | `CartLineInput` | `variantId:id!,quantity:int!` | Positive quantity; duplicate variant rejected/merged once |
 | `CheckoutQuoteInput` | `items:CartLineInput[]!,recipient:AddressInput! XOR savedAddressId:id!,email:string? (required guest),contactPhone:string?,couponCode:string?,method:enum(cod,bkash,nagad,rocket)!` | Contact phone defaults to `recipient.phone`; guest recipient phone required; no client money totals |
 | `CheckoutSubmitInput` | All quote fields plus `acceptedTermsVersion:string!,acceptedPolicyVersionIds:string[]!,notes:string?` | Same normalization as quote; request `Idempotency-Key` mandatory |
 | `DeliveryDeadline` | `status:enum(awaiting_start,calculated,under_review)!,startEvent:string!,startEventAt:date?,targetDeadlineAt:date?,legalCapAt:date?,effectiveAt:date?,ruleVersion:string!` | Actual 14-calendar-day target starts at recorded confirmation, not submission |
-| `CheckoutQuote` | `items:QuoteItem[]!,regularSubtotalPoisha:money!,productDiscountPoisha:money!,saleSubtotalPoisha:money!,couponDiscountPoisha:money!,deliveryChargePoisha:money!,finalTotalPoisha:money!,currency:enum(BDT)!,deliveryDeadline:DeliveryDeadline!,availableMethods:PaymentMethodEligibility[]!,policyVersions:PolicyRef[]!` | Quote never reserves stock/coupon; `quoteExpiresAt` optional display freshness |
+| `CheckoutQuote` | `items:QuoteItem[]!,regularSubtotalPoisha:money!,productDiscountPoisha:money!,saleSubtotalPoisha:money!,couponDiscountPoisha:money!,deliveryChargePoisha:money!,finalTotalPoisha:money!,currency:enum(BDT)!,deliveryEstimate:date?,quoteExpiresAt:date?,deliveryDeadline:DeliveryDeadline!,availableMethods:PaymentMethodEligibility[]!,policyVersions:PolicyRef[]!` | Quote never reserves stock/coupon; `quoteExpiresAt` optional display freshness |
 | `OrderSummary` | `id!,orderNumber!,fulfillmentStatus!,paymentStatus!,finalTotalPoisha!,currency!,placedAt:date!,deliveryEstimate?,fulfillmentHold?` | Stable order source, no PII leakage |
-| `OrderDetail` | `OrderSummary` plus `items:OrderLineSnapshot[]!,pricingSnapshot!,deliverySnapshot!,deliveryDeadline:DeliveryDeadline!,termsSnapshot!,statusHistory:StatusEvent[]!,paymentSummary:PaymentSummary!,cancellationEligibility!,claimEligibility!` | Immutable amounts/charge/rule; derived operational delivery commitment |
+| `OrderDetail` | `OrderSummary` plus `items:OrderLineSnapshot[]!,pricingSnapshot!,deliverySnapshot!,deliveryDeadline:DeliveryDeadline!,termsSnapshot!,policyVersions:PolicyRef[]!,statusHistory:StatusEvent[]!,paymentSummary:PaymentSummary!,cancellationEligibility!,claimEligibility!` | Immutable amounts/charge/rule; derived operational delivery commitment |
 | `PaymentMethodEligibility` | `channel:enum(cod,bkash,nagad,rocket)!,active:bool!,eligible:bool!,reasonCode:string?,minPoisha:money?,maxPoisha:money?` | Merchant activation and attempt amount both required for `eligible` |
 | `PaymentAttemptPublic` | `id!,state!,expectedAmountPoisha:money!,verifiedReceiptAmountPoisha:money?,amountDisposition!,riskStatus?,lastCheckedAt:date?,expiresAt:date?` | No provider credentials, PAN or validation payload |
 | `PaymentSummary` | `status!,fundingContext:enum(normal,correction_only)!,expectedPoisha!,verifiedCollectedPoisha!,merchandiseFundedPoisha!,correctionCollectedPoisha!,unassignedCollectedPoisha!,riskStatus!,merchandiseRefundHeldPoisha!,merchandiseRefundCompletedPoisha!,correctionRefundHeldPoisha!,correctionRefundCompletedPoisha!` | All numeric fields `money`; distinct from fulfillment status |
@@ -1461,21 +1461,23 @@ The following explicit field allowlists close the high-risk gaps identified in t
 | `DeliveryChargeRule` | `id!,zoneId!,coverageKey!,amountPoisha!,ruleVersion:int!,status:enum(scheduled,active,inactive)!,effectiveFrom!,effectiveTo?,revision:int!,supersedesChargeId?` | Historic charge amount/coverage write-once; deactivation only closes window |
 | `SettingsPatch` | `storeName?,branding?:MediaRef,contact?:ContactInfo,address?:ContactInfo,lowStockThreshold?:int,paymentChannels?:{bkashEnabled?,nagadEnabled?,rocketEnabled?,codEnabled?}` | No credentials; channel flag alone cannot assert live activation; CAS required |
 | `StoreSettings` | `SettingsPatch` read form plus `key:'primary',activePolicyVersions:Record<PolicyType,string>,revision:int!,updatedBy:id?` | Admin only; published policies external `policyDocuments` |
-| `PolicyDraftInput` | `type:enum(shipping,cancellation,returns,refunds,terms,complaints)!,content:string!,proposedEffectiveAt:date?` | Server generates version and ID; content length/sanitization enforced |
+| `PolicyDraftInput` | `type:enum(shipping,cancellation,returns,refunds,privacy,terms,complaints)!,content:string!,proposedEffectiveAt:date?` | Server generates version and ID; content length/sanitization enforced |
 | `PolicyDraftPatch` | `content:string?,proposedEffectiveAt:date?` | Draft only, revision CAS; cannot edit approved/published content |
 | `PolicyDocument` | `id!,type!,version!,status:enum(draft,approved,scheduled,published,superseded,withdrawn)!,content!,contentDigest!,revision:int!,effectiveAt?,approvalEvidenceRef?,approvedAt?,publishedAt?` | Admin only until published; immutable content after approval |
 | `PolicyDocumentSummary` | `id!,type!,version!,status!,effectiveAt?,revision!` | Excludes unpublished content in public endpoints |
 | `CustomerAdminDetail` | `id!,name!,emailMasked!,phoneMasked?,status!,emailVerified!,createdAt:date!` | Historic orders/claims/refunds via paginated scoped subroutes; not embedded |
 | `AdminOrderDetail` | `OrderDetail` plus `customerContactMasked?,allocationSummary,fulfillmentActions[],auditRefs[]` | Fields operationally necessary only; protected admin view |
 | `ClaimInput` | `claimType:enum(physical_return,shortage)!,items:[{orderItemId:id!,quantity:int!,reason:string!,evidenceAssetIds:id[]?}]!,description?` | Reject overlapping protected item ordinals; backend owns amounts/ordinal selection |
-| `Claim` | `id!,orderId!,claimType!,items[]!,status!,requestedAt:date!,evidence[]` | Claim evidence private; only masked metadata/authorized links |
-| `Refund` | `id!,orderId!,classification:enum(merchandise,correction)!,basis!,sourceCollectionId!,amountPoisha!,method!,status!,capacityStatus!,requestedAt?,completedAt?` | Source collected amount and unit entitlement guard obligations |
+| `Claim` | `id!,orderId!,claimType!,items:[{orderItemId,requestedQty,approvedQty?,reason}]!,status!,requestedAt:date!,evidence[]` | Claim evidence private; only masked metadata/authorized links |
+| `Refund` | `id!,orderId!,refundGroupKey:string?,classification:enum(merchandise,payment_correction)!,basis!,sourceCollectionId!,amountPoisha!,method!,status!,capacityStatus!,requestedAt?,completedAt?` | Source collected amount and unit entitlement guard obligations |
 | `ComplaintInput` | `orderId:id?,issue:string!,contactEmail:string? (required anonymous),contactPhone:string?,description:string?` | Order ID only with verified owner/guest proof; anti-spam limits |
 | `Complaint` | `id!,orderId?,status!,issue!,createdAt:date!,response?,resolvedAt?` | Customer sees only own/submitted authorized complaints |
 | `Review` | `id!,productId!,rating:int!,comment:string!,status!,createdAt:date!,verifiedPurchase:bool!` | `verifiedPurchase` server-derived from delivered qualifying order |
-| `DashboardMetrics` | `grossMerchandiseValuePoisha!,netAcceptedOrderSalesPoisha!,paidCollectionsPoisha!,netLinkedCashFlowPoisha!,unattributedProviderCashPoisha!,completedMerchandiseRefundsPoisha!,completedCorrectionRefundsPoisha!,pendingRefundLiabilityPoisha!,asOf:date!` | Sales by order placement, cash by collection/payout events; no revenue equivalence |
+| `DashboardMetrics` | `grossMerchandiseValuePoisha!,netAcceptedOrderSalesPoisha!,paidCollectionsPoisha!,netLinkedCashFlowPoisha:SignedMoneyPoisha!,unattributedProviderCashPoisha!,completedMerchandiseRefundsPoisha!,completedCorrectionRefundsPoisha!,pendingRefundLiabilityPoisha!,asOf:date!` | Sales by order placement, cash by collection/payout events; no revenue equivalence |
 | `MediaRef` | `publicId:string!,url:string!,alt:string?` | Only verified server-approved Cloudinary asset references |
 | `AdminAudit` | `action!,actor!,subject!,occurredAt:date!,reason?,requestId?` | Redact secret/raw PII before output |
+
+**Canonical schema ownership:** §6.1 defines scalar types; Appendix D.2 defines named DTO allowlists; §§9–14 and §16 define operation-specific inputs and access. Earlier DTO summaries are navigation aids. Keep shared fields synchronized rather than allowing either copy to redefine a contract. `PolicyType` is the seven-value enum in `PolicyDraftInput`, including `privacy`.
 
 **Nested type constraints:** `ContactInfo`, `QuoteItem`, `OrderLineSnapshot`, `StatusEvent`, `PolicyRef`, `AdminReview`,
 `NotificationSummary` and `CollectionSummary` are bounded projections of their owning Database §5–§10 schema, with
@@ -1483,7 +1485,7 @@ public/private allowlists from §6.2. Their exact compiled validator files and m
 definitions remain a **verification gate**, not an unearned completion claim. Numeric/string/array bounds follow Database
 §2.2 unless explicitly narrower above.
 
-### D.3 Endpoint response/status/error matrix
+### D.3 endpoint response/status/error matrix
 
 The main endpoint tables are authoritative for path, ownership and request shape. The matrix here records **each
 method/path exactly once** and supplies its nominal success status and additional error families. `Base` means the
@@ -1574,11 +1576,11 @@ Any difference between this matrix and the route's own explicitly stated `201`/`
 | `GET` | `/admin/payments` | `200` | Base + OWN + MONEY |
 | `GET` | `/admin/payments/{paymentId}` | `200` | Base + OWN + MONEY |
 | `POST` | `/admin/payments/{paymentId}/reconcile` | `200 / 202` | Base + OWN + MONEY + REPLAY |
-| `POST` | `/admin/payments/{paymentId}/risk-decisions` | `200` | Base + OWN + MONEY |
-| `POST` | `/admin/payments/{paymentId}/cod-collections` | `200` | Base + OWN + MONEY |
+| `POST` | `/admin/payments/{paymentId}/risk-decisions` | `200` | Base + OWN + MONEY + REPLAY |
+| `POST` | `/admin/payments/{paymentId}/cod-collections` | `200` | Base + OWN + MONEY + REPLAY |
 | `GET` | `/admin/provider-receipts` | `200` | Base + OWN + MONEY |
-| `POST` | `/admin/provider-receipts/{intakeId}/link` | `200` | Base + OWN + MONEY |
-| `POST` | `/admin/payment-collections/{collectionId}/allocate` | `200` | Base + OWN + CAS + MONEY |
+| `POST` | `/admin/provider-receipts/{intakeId}/link` | `200` | Base + OWN + MONEY + REPLAY |
+| `POST` | `/admin/payment-collections/{collectionId}/allocate` | `200` | Base + OWN + CAS + MONEY + REPLAY |
 | `GET` | `/me/claims` | `200` | Base + OWN |
 | `GET` | `/me/refunds` | `200` | Base + OWN + REFUND |
 | `GET` | `/orders/{orderId}/claim-eligibility` | `200` | Base + OWN |
@@ -1596,7 +1598,7 @@ Any difference between this matrix and the route's own explicitly stated `201`/`
 | `POST` | `/admin/claims/{claimId}/complete` | `200` | Base + OWN + STATE + REPLAY |
 | `GET` | `/admin/refunds` | `200` | Base + OWN + REFUND |
 | `GET` | `/admin/refunds/{refundId}` | `200` | Base + OWN + REFUND |
-| `POST` | `/admin/refund-groups` | `201` | Base + OWN + REFUND |
+| `POST` | `/admin/refund-groups` | `201` | Base + OWN + REFUND + REPLAY |
 | `POST` | `/admin/refunds/{refundId}/review` | `200` | Base + OWN + STATE + REFUND + REPLAY |
 | `POST` | `/admin/refunds/{refundId}/payout-attempts` | `200 / 202` | Base + OWN + STATE + REFUND + REPLAY |
 | `POST` | `/admin/refunds/{refundId}/reconcile` | `200 / 202` | Base + OWN + STATE + REFUND + REPLAY |
@@ -1610,12 +1612,12 @@ Any difference between this matrix and the route's own explicitly stated `201`/`
 | `POST` | `/admin/categories` | `201` | Base + OWN |
 | `PATCH` | `/admin/categories/{categoryId}` | `200` | Base + OWN + CAS |
 | `POST` | `/admin/categories/{categoryId}/deactivate` | `200` | Base + OWN + CAS |
-| `POST` | `/admin/products/{productId}/variants` | `200` | Base + OWN + CAS |
+| `POST` | `/admin/products/{productId}/variants` | `201` | Base + OWN |
 | `PATCH` | `/admin/variants/{variantId}` | `200` | Base + OWN + CAS |
 | `POST` | `/admin/variants/{variantId}/deactivate` | `200` | Base + OWN + CAS |
 | `GET` | `/admin/inventory` | `200` | Base + OWN |
 | `GET` | `/admin/inventory/{variantId}/movements` | `200` | Base + OWN |
-| `POST` | `/admin/inventory/{variantId}/adjustments` | `200` | Base + OWN + STOCK |
+| `POST` | `/admin/inventory/{variantId}/adjustments` | `200` | Base + OWN + STOCK + REPLAY |
 | `GET` | `/admin/orders` | `200` | Base + OWN |
 | `GET` | `/admin/orders/{orderId}` | `200` | Base + OWN |
 | `POST` | `/admin/orders/{orderId}/fulfillment-transitions` | `200` | Base + OWN + STATE + REPLAY |
@@ -1629,21 +1631,21 @@ Any difference between this matrix and the route's own explicitly stated `201`/`
 | `GET` | `/admin/customers/{customerId}/orders` | `200` | Base + OWN |
 | `GET` | `/admin/customers/{customerId}/claims` | `200` | Base + OWN |
 | `GET` | `/admin/customers/{customerId}/refunds` | `200` | Base + OWN + REFUND |
-| `POST` | `/admin/customers/{customerId}/status-decisions` | `200` | Base + OWN |
+| `POST` | `/admin/customers/{customerId}/status-decisions` | `200` | Base + OWN + REPLAY |
 | `GET` | `/admin/reviews` | `200` | Base + OWN |
-| `POST` | `/admin/reviews/{reviewId}/moderation` | `200` | Base + OWN |
+| `POST` | `/admin/reviews/{reviewId}/moderation` | `200` | Base + OWN + REPLAY |
 | `GET` | `/admin/delivery/zones` | `200` | Base + OWN |
 | `POST` | `/admin/delivery/zones` | `201` | Base + OWN |
 | `PATCH` | `/admin/delivery/zones/{zoneId}` | `200` | Base + OWN + CAS |
 | `GET` | `/admin/delivery/charges` | `200` | Base + OWN |
 | `POST` | `/admin/delivery/charges` | `201` | Base + OWN + STATE |
-| `POST` | `/admin/delivery/charges/{chargeId}/activate` | `200` | Base + OWN + CAS + STATE |
+| `POST` | `/admin/delivery/charges/{chargeId}/activate` | `200` | Base + OWN + CAS + STATE + REPLAY |
 | `POST` | `/admin/delivery/charges/{chargeId}/supersede` | `200` | Base + OWN + CAS + STATE + REPLAY |
-| `POST` | `/admin/delivery/charges/{chargeId}/deactivate` | `200` | Base + OWN + CAS + STATE |
+| `POST` | `/admin/delivery/charges/{chargeId}/deactivate` | `200` | Base + OWN + CAS + STATE + REPLAY |
 | `GET` | `/admin/coupons` | `200` | Base + OWN |
 | `POST` | `/admin/coupons` | `201` | Base + OWN + STATE |
-| `PATCH` | `/admin/coupons/{couponId}` | `200` | Base + OWN + STATE + STOCK |
-| `POST` | `/admin/coupons/{couponId}/deactivate` | `200` | Base + OWN + STATE + STOCK |
+| `PATCH` | `/admin/coupons/{couponId}` | `200` | Base + OWN + CAS + STATE + STOCK |
+| `POST` | `/admin/coupons/{couponId}/deactivate` | `200` | Base + OWN + CAS + STATE + STOCK |
 | `GET` | `/admin/coupons/{couponId}/redemptions` | `200` | Base + OWN |
 | `GET` | `/admin/settings` | `200` | Base + OWN |
 | `PATCH` | `/admin/settings` | `200` | Base + OWN + CAS |
@@ -1651,8 +1653,8 @@ Any difference between this matrix and the route's own explicitly stated `201`/`
 | `POST` | `/admin/settings/policies` | `201` | Base + OWN |
 | `GET` | `/admin/settings/policies/{policyId}` | `200` | Base + OWN |
 | `PATCH` | `/admin/settings/policies/{policyId}` | `200` | Base + OWN + CAS |
-| `POST` | `/admin/settings/policies/{policyId}/approve` | `200` | Base + OWN + CAS |
-| `POST` | `/admin/settings/policies/{policyId}/publish` | `200` | Base + OWN + CAS |
+| `POST` | `/admin/settings/policies/{policyId}/approve` | `200` | Base + OWN + CAS + REPLAY |
+| `POST` | `/admin/settings/policies/{policyId}/publish` | `200` | Base + OWN + CAS + REPLAY |
 | `GET` | `/admin/dashboard` | `200` | Base + OWN |
 | `GET` | `/admin/reports/sales` | `200` | Base + OWN |
 | `GET` | `/admin/reports/collections` | `200` | Base + OWN |
@@ -1664,12 +1666,12 @@ Any difference between this matrix and the route's own explicitly stated `201`/`
 | `POST` | `/admin/complaints/{complaintId}/resolve` | `200` | Base + OWN + REPLAY |
 | `GET` | `/admin/audit-logs` | `200` | Base + OWN |
 | `GET` | `/admin/notifications` | `200` | Base + OWN |
-| `POST` | `/admin/notifications/{notificationId}/retry` | `200` | Base + OWN |
+| `POST` | `/admin/notifications/{notificationId}/retry` | `200` | Base + OWN + REPLAY |
 | `POST` | `/admin/media/uploads` | `200` | Base + OWN |
-| `POST` | `/orders/{orderId}/claims/evidence-uploads` | `200` | Base + OWN + STATE + REPLAY |
+| `POST` | `/orders/{orderId}/claims/evidence-uploads` | `200` | Base + OWN + STATE |
 | `DELETE` | `/admin/media/{assetId}` | `204` | Base + OWN |
 | `GET` | `/health/live` | `200` | Base |
-| `GET` | `/health/ready` | `200` | Base |
+| `GET` | `/health/ready` | `200 / 503` | Restricted monitor; §16.4 |
 
 **Operation-registry acceptance:** The matrix is structurally complete for all routes presently defined in this Markdown
 file. Field-by-field OpenAPI coverage, generated sample validation, integration test evidence and external merchant

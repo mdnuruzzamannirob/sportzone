@@ -1,7 +1,8 @@
-# SportZone — Product Requirements Document
+# SportZone — Product requirements document
 
 **Version:** 1.2  
-**Updated:** 15 October 2026  
+**Updated:** 16 October 2026  
+**Documentation audit:** 16 October 2026 — corrections in this working revision do not grant specification, task or release approval.  
 **Project Type:** Full-Stack E-Commerce Web Application  
 **Target Market:** Bangladesh  
 **Currency:** Bangladeshi Taka (BDT)  
@@ -17,30 +18,30 @@ This document owns product scope, business rules, customer rights, and product a
 
 **Contents**
 
-- [1. Project Overview](#1-project-overview)
-- [2. Target Users](#2-target-users)
-- [3. Project Scope](#3-project-scope)
-- [4. Product Categories](#4-product-categories)
-- [5. Functional Requirements](#5-functional-requirements)
-- [6. Business Rules and Policies](#6-business-rules-and-policies)
-- [7. User Flows](#7-user-flows)
-- [8. Application Pages](#8-application-pages)
-- [9. Roles and Permissions](#9-roles-and-permissions)
-- [10. Data Requirements](#10-data-requirements)
-- [11. State Management and Edge Cases](#11-state-management-and-edge-cases)
-- [12. Non-Functional Requirements](#12-non-functional-requirements)
-- [13. Technical Constraints and Ownership](#13-technical-constraints-and-ownership)
-- [14. Acceptance Criteria](#14-acceptance-criteria)
-- [15. Delivery Planning](#15-delivery-planning)
-- [16. Success Metrics](#16-success-metrics)
-- [17. Future Enhancements](#17-future-enhancements)
-- [18. Release, Handover, and Support](#18-release-handover-and-support)
-- [19. Assumptions and Operational Dependencies](#19-assumptions-and-operational-dependencies)
-- [20. Final Deliverables](#20-final-deliverables)
+- [1. Project overview](#1-project-overview)
+- [2. Target users](#2-target-users)
+- [3. Project scope](#3-project-scope)
+- [4. Product categories](#4-product-categories)
+- [5. Functional requirements](#5-functional-requirements)
+- [6. Business rules and policies](#6-business-rules-and-policies)
+- [7. User flows](#7-user-flows)
+- [8. Application pages](#8-application-pages)
+- [9. Roles and permissions](#9-roles-and-permissions)
+- [10. Data requirements](#10-data-requirements)
+- [11. State management and Edge cases](#11-state-management-and-edge-cases)
+- [12. Non-functional requirements](#12-non-functional-requirements)
+- [13. Technical constraints and ownership](#13-technical-constraints-and-ownership)
+- [14. Acceptance criteria](#14-acceptance-criteria)
+- [15. Delivery planning](#15-delivery-planning)
+- [16. Success metrics](#16-success-metrics)
+- [17. Future enhancements](#17-future-enhancements)
+- [18. Release, handover, and support](#18-release-handover-and-support)
+- [19. Assumptions and operational dependencies](#19-assumptions-and-operational-dependencies)
+- [20. Final deliverables](#20-final-deliverables)
 
 ---
 
-## 1. Project Overview
+## 1. Project overview
 
 ### 1.1 Introduction
 
@@ -52,7 +53,7 @@ Administrators manage the catalog, stock, orders, payments, delivery, promotions
 
 The initial release will support a single online store operating within Bangladesh.
 
-### 1.2 Problem Statement
+### 1.2 Problem statement
 
 Customers need a reliable way to find sports products, compare prices, and check stock.
 
@@ -60,7 +61,7 @@ Store owners need one place to manage stock, orders, payments, delivery, and sup
 
 SportZone provides a simple storefront and a centralized store-management system.
 
-### 1.3 Project Objectives
+### 1.3 Project objectives
 
 - Build a responsive and user-friendly sports e-commerce platform.
 - Provide secure customer authentication and account management.
@@ -74,7 +75,7 @@ SportZone provides a simple storefront and a centralized store-management system
 - Provide transparent cancellation, return, and refund workflows.
 - Maintain secure, reliable, and maintainable business operations.
 
-### 1.4 Product Principles
+### 1.4 Product principles
 
 - Mobile-first shopping experience.
 - Transparent pricing and delivery information.
@@ -87,9 +88,9 @@ SportZone provides a simple storefront and a centralized store-management system
 
 ---
 
-## 2. Target Users
+## 2. Target users
 
-### 2.1 Guest Customers
+### 2.1 Guest customers
 
 Visitors who have not registered an account.
 
@@ -102,7 +103,7 @@ Visitors who have not registered an account.
 - Complete guest checkout.
 - Access their orders through a secure verification process.
 
-### 2.2 Registered Customers
+### 2.2 Registered customers
 
 Customers with an authenticated account.
 
@@ -119,7 +120,7 @@ Customers with an authenticated account.
 - Request product returns and refunds.
 - View order, return, and refund history.
 
-### 2.3 Store Administrators
+### 2.3 Store administrators
 
 Authorized personnel responsible for store operations.
 
@@ -138,9 +139,9 @@ Authorized personnel responsible for store operations.
 
 ---
 
-## 3. Project Scope
+## 3. Project scope
 
-### 3.1 Included Features
+### 3.1 Included features
 
 **Customer Features**
 
@@ -184,7 +185,7 @@ Authorized personnel responsible for store operations.
 15. Store settings.
 16. Basic reports and activity history.
 
-### 3.2 Excluded Features
+### 3.2 Excluded features
 
 The initial release will not include:
 
@@ -202,7 +203,7 @@ The initial release will not include:
 - Multiple administrator permission levels.
 - Advanced promotional campaign engines.
 
-### 3.3 Release Boundaries
+### 3.3 Release boundaries
 
 The initial release will operate with:
 
@@ -220,7 +221,7 @@ The initial-release baseline requires verified bKash, Nagad, and Rocket through 
 
 ---
 
-## 4. Product Categories
+## 4. Product categories
 
 Initial categories will include:
 
@@ -243,9 +244,9 @@ Initial categories will include:
 
 ---
 
-## 5. Functional Requirements
+## 5. Functional requirements
 
-### FR-01: Customer Authentication
+### FR-01: Customer authentication
 
 **Description:** Customers can securely register, log in, and manage their accounts.
 
@@ -273,7 +274,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-02: Customer Profile Management
+### FR-02: Customer profile management
 
 **Description:** Registered customers can manage personal information and account-related activities.
 
@@ -317,7 +318,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-04: Product Catalog
+### FR-04: Product catalog
 
 **Description:** Customers can browse and discover products.
 
@@ -343,7 +344,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-05: Product Details
+### FR-05: Product details
 
 **Description:** Customers can view detailed product information before purchasing.
 
@@ -374,7 +375,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-06: Product Variants
+### FR-06: Product variants
 
 **Description:** Products may contain purchasable variations such as size, color, or weight.
 
@@ -397,7 +398,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-07: Shopping Cart
+### FR-07: Shopping cart
 
 **Description:** Customers can manage products before checkout.
 
@@ -444,7 +445,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-09: Discounts and Coupons
+### FR-09: Discounts and coupons
 
 **Description:** Customers can receive product discounts and promotional coupon discounts.
 
@@ -481,7 +482,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-10: Reviews and Ratings
+### FR-10: Reviews and ratings
 
 **Description:** Eligible customers can submit feedback on purchased products.
 
@@ -554,7 +555,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-12: Payment System
+### FR-12: Payment system
 
 **Description:** Customers can pay using supported Bangladesh payment methods.
 
@@ -610,7 +611,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-13: Inventory Reservation and Stock Management
+### FR-13: Inventory reservation and stock management
 
 **Description:** The platform must prevent overselling and maintain accurate stock records.
 
@@ -643,7 +644,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-14: Customer Order Management
+### FR-14: Customer order management
 
 **Description:** Customers can view and track their orders.
 
@@ -684,7 +685,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-15: Order Cancellation
+### FR-15: Order cancellation
 
 **Description:** Customers can request cancellation of eligible orders.
 
@@ -711,7 +712,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-16: Delivery Management
+### FR-16: Delivery management
 
 **Description:** The store provides delivery throughout supported areas of Bangladesh.
 
@@ -751,7 +752,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-17: Return Management
+### FR-17: Return management
 
 **Description:** Customers can request returns for eligible delivered products.
 
@@ -805,7 +806,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-18: Refund Management
+### FR-18: Refund management
 
 **Description:** Eligible customers can receive full or partial refunds.
 
@@ -858,7 +859,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-19: Guest Order Access
+### FR-19: Guest order access
 
 **Description:** Guest customers can securely access order information without creating accounts.
 
@@ -915,7 +916,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-21: Admin Authentication
+### FR-21: Admin authentication
 
 **Description:** Only authorized administrators can access store management functionality.
 
@@ -939,7 +940,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-22: Admin Dashboard
+### FR-22: Admin dashboard
 
 **Description:** Administrators can monitor store activity.
 
@@ -978,7 +979,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-23: Product Management — Admin
+### FR-23: Product management — Admin
 
 **Requirements:**
 
@@ -996,7 +997,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-24: Category Management — Admin
+### FR-24: Category management — Admin
 
 **Requirements:**
 
@@ -1009,7 +1010,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-25: Inventory Management — Admin
+### FR-25: Inventory management — Admin
 
 **Requirements:**
 
@@ -1024,7 +1025,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-26: Order Management — Admin
+### FR-26: Order management — Admin
 
 **Requirements:**
 
@@ -1044,7 +1045,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-27: Customer Management — Admin
+### FR-27: Customer management — Admin
 
 **Requirements:**
 
@@ -1057,7 +1058,7 @@ Initial categories will include:
 
 **Priority:** Medium
 
-### FR-28: Delivery Charge Management — Admin
+### FR-28: Delivery charge management — Admin
 
 **Description:** Administrators can control delivery pricing and availability.
 
@@ -1081,7 +1082,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-29: Payment Management — Admin
+### FR-29: Payment management — Admin
 
 **Requirements:**
 
@@ -1096,7 +1097,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-30: Coupon Management — Admin
+### FR-30: Coupon management — Admin
 
 **Requirements:**
 
@@ -1111,7 +1112,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-31: Review Management — Admin
+### FR-31: Review management — Admin
 
 **Requirements:**
 
@@ -1124,7 +1125,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-32: Return Management — Admin
+### FR-32: Return management — Admin
 
 **Requirements:**
 
@@ -1141,7 +1142,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-33: Refund Management — Admin
+### FR-33: Refund management — Admin
 
 **Requirements:**
 
@@ -1159,7 +1160,7 @@ Initial categories will include:
 
 **Priority:** High
 
-### FR-34: Store Settings — Admin
+### FR-34: Store settings — Admin
 
 **Requirements:**
 
@@ -1177,9 +1178,9 @@ Initial categories will include:
 
 ---
 
-## 6. Business Rules and Policies
+## 6. Business rules and policies
 
-### 6.1 Pricing Rules
+### 6.1 Pricing rules
 
 FR-09 and FR-11 govern pricing. The business formula is:
 
@@ -1187,7 +1188,7 @@ FR-09 and FR-11 govern pricing. The business formula is:
 
 Allocate coupon discounts proportionally across eligible items and distribute rounding remainders consistently. For example, a BDT 100 coupon against eligible items worth BDT 600 and BDT 400 allocates BDT 60 and BDT 40. The first item's net merchandise value is BDT 540. Refunds use those original allocations, not current prices. Technical numeric representation belongs in Architecture §7.3; the exact allocation algorithm and fields belong in `DATABASE.md` and implementation contracts.
 
-### 6.2 Policy Ownership
+### 6.2 Policy ownership
 
 | Policy | Authoritative requirements |
 | --- | --- |
@@ -1202,17 +1203,17 @@ Use the referenced requirements when implementing or changing policy. This index
 
 ---
 
-## 7. User Flows
+## 7. User flows
 
 ### 7.1 Registration
 
 Home → Register → Enter Details → Create Account → Login → Customer Account
 
-### 7.2 Product Purchase
+### 7.2 Product purchase
 
 Browse Products → Product Details → Select Variant → Add to Cart → Checkout → Apply Coupon → Select Delivery Area → Select Payment → Place Order → Confirmation
 
-### 7.3 Online Payment
+### 7.3 Online payment
 
 Checkout → Create Pending Order → Reserve Stock → SSLCOMMERZ Hosted Checkout → IPN/Transaction Validation → Risk Check → Confirm Order → Send Notification
 
@@ -1220,7 +1221,7 @@ Checkout → Create Pending Order → Reserve Stock → SSLCOMMERZ Hosted Checko
 
 Payment Failed/Expired → Update Attempt → Release Reservation → Allow Safe Retry
 
-### 7.4 Cash on Delivery
+### 7.4 Cash on delivery
 
 Checkout → Select COD → Validate Stock → Accept Pending Order and Commit Stock/Coupon → Admin Confirmation → Processing → Shipment → Delivery → Confirm Payment Collection
 
@@ -1228,7 +1229,7 @@ Checkout → Select COD → Validate Stock → Accept Pending Order and Commit S
 
 Login → Browse Products → Add to Wishlist → Wishlist → Add to Cart
 
-### 7.6 Product Review
+### 7.6 Product review
 
 Login → Delivered Purchase → Select Product → Submit Review → Admin Moderation → Publish
 
@@ -1236,31 +1237,31 @@ Login → Delivered Purchase → Select Product → Submit Review → Admin Mode
 
 Order Details → Request Cancellation → Eligibility Check → Admin Review and Current Eligibility Check → Cancel Order → Release Stock → Refund if Paid
 
-### 7.8 Return Request
+### 7.8 Return request
 
 Delivered Order → Select Items → Provide Reason → Submit Request → Admin Review → Return Shipment → Inspection → Resolution
 
-### 7.9 Refund Processing
+### 7.9 Refund processing
 
 Eligible Cancellation / Inspected Return / Approved Shortage / Payment Correction → Calculate Refund → Admin Approval → Process Payout → Verify Transfer → Complete Refund
 
-### 7.10 Guest Order Access
+### 7.10 Guest order access
 
 Order Lookup → Enter Order Number and Email → Verify Access → View Order → Eligible Order Actions
 
-### 7.11 Admin Order Processing
+### 7.11 Admin order processing
 
 Admin Login → Orders → Review Order → Confirm → Process → Ship → Mark Delivered
 
-### 7.12 Payment Exception
+### 7.12 Payment exception
 
 Payment Callback Missing/Uncertain → Query SSLCOMMERZ Transaction Status → Verify Amount/Currency/Risk → Reconcile Transaction → Update Status or Flag for Admin Resolution
 
 ---
 
-## 8. Application Pages
+## 8. Application pages
 
-### 8.1 Customer Pages
+### 8.1 Customer pages
 
 | Page | Description |
 | --- | --- |
@@ -1293,7 +1294,7 @@ Payment Callback Missing/Uncertain → Query SSLCOMMERZ Transaction Status → V
 | Privacy Policy | Data handling information |
 | Terms & Conditions | Store terms |
 
-### 8.2 Admin Pages
+### 8.2 Admin pages
 
 | Page | Description |
 | --- | --- |
@@ -1317,7 +1318,7 @@ Payment Callback Missing/Uncertain → Query SSLCOMMERZ Transaction Status → V
 
 ---
 
-## 9. Roles and Permissions
+## 9. Roles and permissions
 
 | Feature | Guest | Customer | Admin |
 | --- | --- | --- | --- |
@@ -1348,7 +1349,7 @@ Payment Callback Missing/Uncertain → Query SSLCOMMERZ Transaction Status → V
 
 ---
 
-## 10. Data Requirements
+## 10. Data requirements
 
 | Entity | Important Fields |
 | --- | --- |
@@ -1380,7 +1381,7 @@ Payment Callback Missing/Uncertain → Query SSLCOMMERZ Transaction Status → V
 | Audit Log | ID, Actor, Action, Target, Timestamp |
 | Store Settings | Store Details, Policies, Operational Configuration |
 
-### 10.1 Data Integrity Rules
+### 10.1 Data integrity rules
 
 - User emails must be unique.
 - Product slugs must be unique.
@@ -1395,7 +1396,7 @@ Payment Callback Missing/Uncertain → Query SSLCOMMERZ Transaction Status → V
 - Guest orders use optional user IDs and verified order references.
 - Order item quantities must be positive; invalid status changes are rejected.
 
-### 10.2 Data Retention
+### 10.2 Data retention
 
 - Completed order and payment records must be preserved for the applicable operational and legal retention period.
 - Sensitive customer information must be protected.
@@ -1405,9 +1406,9 @@ Payment Callback Missing/Uncertain → Query SSLCOMMERZ Transaction Status → V
 
 ---
 
-## 11. State Management and Edge Cases
+## 11. State management and Edge cases
 
-### 11.1 Order Lifecycle
+### 11.1 Order lifecycle
 
 Pending → Confirmed → Processing → Shipped → Delivered
 
@@ -1415,9 +1416,9 @@ Eligible orders may transition to Cancelled before shipment.
 
 Delivery failures require an exception record and administrator resolution.
 
-### 11.2 Payment Lifecycle
+### 11.2 Payment lifecycle
 
-These are business summary states, not a complete provider-attempt state machine. A verified late collection must still be recorded after an earlier Failed/Cancelled attempt signal; it never reopens cancelled fulfillment. Multiple collections and payment-correction refunds must remain visible even when the merchandise payment remains Paid. Architecture §10 defines orchestration; `DATABASE.md` will define exact aggregate and attempt fields.
+These are business summary states, not a complete provider-attempt state machine. A verified late collection must still be recorded after an earlier Failed/Cancelled attempt signal; it never reopens cancelled fulfillment. Multiple collections and payment-correction refunds must remain visible even when the merchandise payment remains Paid. Architecture §10 defines orchestration; [Database §§8, 13](./DATABASE.md) defines proposed aggregate and attempt fields.
 
 Pending → Paid
 
@@ -1431,13 +1432,13 @@ Paid/Partially Refunded → Refunded
 
 Each retry is tracked as a separate payment attempt without duplicating the underlying order.
 
-### 11.3 Return Lifecycle
+### 11.3 Return lifecycle
 
 Requested → Under Review → Approved → Awaiting Return → Received → Inspected → Completed
 
 Physical returns may transition to Rejected after review. Non-physical shortage claims follow Requested → Under Review → Approved → Completed, or Rejected; claim completion and refund completion remain distinct.
 
-### 11.4 Refund Lifecycle
+### 11.4 Refund lifecycle
 
 Requested → Under Review → Approved → Processing → Completed
 
@@ -1445,7 +1446,7 @@ Requests may be Rejected during review.
 
 Processing may transition to Failed, followed by authorized retry or investigation.
 
-### 11.5 Required Exception Handling
+### 11.5 Required exception handling
 
 The system must handle:
 
@@ -1471,7 +1472,7 @@ These conditions must not create duplicate orders, apply the same collection twi
 
 ---
 
-## 12. Non-Functional Requirements
+## 12. Non-functional requirements
 
 ### 12.1 Performance
 
@@ -1520,7 +1521,7 @@ These conditions must not create duplicate orders, apply the same collection twi
 - Availability and downtime should be monitored.
 - A formal uptime target will be agreed based on the selected infrastructure and service budget.
 
-### 12.5 Responsive Design
+### 12.5 Responsive design
 
 The application must support:
 
@@ -1538,7 +1539,7 @@ The application must support:
 - Alternative text for meaningful images.
 - WCAG 2.2 AA as the accessibility target.
 
-### 12.7 Browser Compatibility
+### 12.7 Browser compatibility
 
 The platform should support current stable versions of:
 
@@ -1548,7 +1549,7 @@ The platform should support current stable versions of:
 - Brave.
 - Safari.
 
-### 12.8 Data Protection
+### 12.8 Data protection
 
 - Customer data access must be restricted.
 - Payment credentials must not be stored directly.
@@ -1558,7 +1559,7 @@ The platform should support current stable versions of:
 
 ---
 
-## 13. Technical Constraints and Ownership
+## 13. Technical constraints and ownership
 
 The product requires a responsive customer storefront, separate administrative interface, secure backend, BDT accounting, enabled SSLCOMMERZ-hosted channels, and store-managed COD. Chosen frameworks, persistence, session design, media, email, and deployment topology are defined in Architecture §§2–14. This PRD does not maintain a competing technology table.
 
@@ -1566,9 +1567,9 @@ Provider activation and refund support remain merchant-specific release dependen
 
 ---
 
-## 14. Acceptance Criteria
+## 14. Acceptance criteria
 
-### 14.1 Customer Features
+### 14.1 Customer features
 
 - [ ] Customers can register, log in, and reset passwords.
 - [ ] Customers can manage profiles and addresses.
@@ -1598,7 +1599,7 @@ Provider activation and refund support remain merchant-specific release dependen
 - [ ] Customers can track refund status.
 - [ ] Customers receive important transactional notifications.
 
-### 14.2 Admin Features
+### 14.2 Admin features
 
 - [ ] Administrator authentication is secure.
 - [ ] Products and variants can be managed.
@@ -1619,7 +1620,7 @@ Provider activation and refund support remain merchant-specific release dependen
 - [ ] Dashboard metrics account for refunds and COD.
 - [ ] Sensitive administrative actions are logged.
 
-### 14.3 Reliability and Security
+### 14.3 Reliability and security
 
 - [ ] Duplicate checkout submissions do not create duplicate orders.
 - [ ] Concurrent purchases cannot oversell stock.
@@ -1648,11 +1649,11 @@ Provider activation and refund support remain merchant-specific release dependen
 
 ---
 
-## 15. Delivery Planning
+## 15. Delivery planning
 
 `IMPLEMENTATION_PLAN.md` §§5–7 owns the twelve-phase roadmap, dependencies, work packages, and milestone gates. `TASKS.md` owns task execution status and evidence. Product scope and acceptance remain governed by this PRD.
 
-### 15.1 Development Approach
+### 15.1 Development approach
 
 Deliver and verify features incrementally. Confirm provider feasibility early, use isolated test environments, and review required milestone evidence before release. Scope changes update the product source before dependent plans.
 
@@ -1662,7 +1663,7 @@ Dates depend on capacity, approved content, provider access, and agreed mileston
 
 ---
 
-## 16. Success Metrics
+## 16. Success metrics
 
 | Metric | Measurement |
 | --- | --- |
@@ -1682,7 +1683,7 @@ Targets will be established after initial operational data is available.
 
 ---
 
-## 17. Future Enhancements
+## 17. Future enhancements
 
 Potential future features:
 
@@ -1700,9 +1701,9 @@ Potential future features:
 
 ---
 
-## 18. Release, Handover, and Support
+## 18. Release, handover, and support
 
-### 18.1 Release Requirements
+### 18.1 Release requirements
 
 Before production launch:
 
@@ -1716,7 +1717,7 @@ Before production launch:
 - Backup and recovery procedures must be checked.
 - Production checkout must be verified.
 
-### 18.2 Project Handover
+### 18.2 Project handover
 
 The final handover should include:
 
@@ -1729,7 +1730,7 @@ The final handover should include:
 - Basic administration guide.
 - Known limitations and operational dependencies.
 
-### 18.3 Support and Maintenance
+### 18.3 Support and maintenance
 
 - Development defects identified during the agreed warranty period will be corrected under the project agreement.
 - New features and scope changes require separate approval.
@@ -1739,9 +1740,9 @@ The final handover should include:
 
 ---
 
-## 19. Assumptions and Operational Dependencies
+## 19. Assumptions and operational dependencies
 
-### 19.1 Confirmed Decisions
+### 19.1 Confirmed decisions
 
 - Target market: Bangladesh.
 - Currency: BDT.
@@ -1757,7 +1758,7 @@ The final handover should include:
 - Full and partial refunds: Included.
 - Administrative management: Included.
 
-### 19.2 Default Business Policies
+### 19.2 Default business policies
 
 The following values are adopted for development and test fixtures in revision 1.2. Public policy publication and live operation still require operator approval and any overriding current legal requirements. A later policy change updates the owning FR first and is versioned; implementation must not treat these values as independently verified law:
 
@@ -1774,20 +1775,20 @@ The following values are adopted for development and test fixtures in revision 1
 
 Review these policies against current Bangladesh consumer and digital-commerce rules before publication. Store policies cannot override customer rights.
 
-Reference: Digital Commerce Operation Guidelines 2021 (government gazette: https://www.dpp.gov.bd/bgpress/index.php/document/get_extraordinary/40432).
+Background reference: [Digital Commerce Operation Guidelines 2021 — government gazette](https://www.dpp.gov.bd/bgpress/index.php/document/get_extraordinary/40432). This reference alone does not verify current law or its applicability.
 
-### 19.3 External Dependencies
+### 19.3 External dependencies
 
 - SSLCOMMERZ merchant account and credentials.
 - SSLCOMMERZ activation of bKash, Nagad, and Rocket channels.
-- SSLCOMMERZ payment and refund APIs: https://developer.sslcommerz.com/doc/v4/.
+- [SSLCOMMERZ payment and refund API reference](https://developer.sslcommerz.com/doc/v4/).
 - Email delivery service.
 - Product images and catalog data.
 - Delivery partners or fulfillment arrangements.
 - Production infrastructure.
 - Store branding and contact details.
 
-### 19.4 Operational Configuration Required Before Launch
+### 19.4 Operational configuration required before launch
 
 The store owner must provide or approve:
 
@@ -1805,7 +1806,7 @@ These are launch configuration requirements rather than missing product features
 
 ---
 
-## 20. Final Deliverables
+## 20. Final deliverables
 
 1. Responsive sports e-commerce storefront.
 2. Customer registration and authentication.

@@ -1,37 +1,38 @@
-# SportZone — Software Architecture
+# SportZone — Software architecture
 
 **Version:** 1.2  
-**Updated:** 15 October 2026  
+**Updated:** 16 October 2026  
+**Documentation audit:** 16 October 2026 — corrections in this working revision do not grant specification, task or release approval.  
 **Status:** Implementation baseline — documentation references synchronized; runtime verification pending  
 **Documentation sync:** 16 October 2026 (no architectural scope change)  
 **Product reference:** [SportZone PRD v1.2](./PRD.md) (`docs/PRD.md` in the repository)  
 **Scope:** Single-store sports e-commerce platform serving Bangladesh  
 **Audience:** Software engineers and development agents  
 
-This document defines SportZone's application boundaries, technical structure, data integrity, interfaces, and operational workflows. The [PRD](./PRD.md) governs product scope, business rules, and acceptance criteria; this document defines their technical implementation.
+This document defines SportZone's application boundaries, technical structure, integrity invariants, integration boundaries, and workflow orchestration. The [PRD](./PRD.md) governs product scope, business rules, and acceptance criteria; this document defines their technical implementation.
 
 ---
 
 **Contents**
 
-- [1. Architecture Overview](#1-architecture-overview)
-- [2. Technology Stack](#2-technology-stack)
-- [3. System Architecture](#3-system-architecture)
-- [4. Project Structure](#4-project-structure)
-- [5. Frontend Architecture](#5-frontend-architecture)
-- [6. Backend Architecture](#6-backend-architecture)
-- [7. Data Architecture](#7-data-architecture)
-- [8. API Architecture](#8-api-architecture)
-- [9. Authentication & Authorization](#9-authentication--authorization)
-- [10. Critical Business Workflows](#10-critical-business-workflows)
-- [11. Security Architecture](#11-security-architecture)
-- [12. Reliability & Performance](#12-reliability--performance)
-- [13. Deployment Architecture](#13-deployment-architecture)
-- [14. Architecture Decisions](#14-architecture-decisions)
+- [1. Architecture overview](#1-architecture-overview)
+- [2. Technology stack](#2-technology-stack)
+- [3. System architecture](#3-system-architecture)
+- [4. Project structure](#4-project-structure)
+- [5. Frontend architecture](#5-frontend-architecture)
+- [6. Backend architecture](#6-backend-architecture)
+- [7. Data architecture](#7-data-architecture)
+- [8. API architecture](#8-api-architecture)
+- [9. Authentication & authorization](#9-authentication--authorization)
+- [10. Critical business workflows](#10-critical-business-workflows)
+- [11. Security architecture](#11-security-architecture)
+- [12. Reliability & performance](#12-reliability--performance)
+- [13. Deployment architecture](#13-deployment-architecture)
+- [14. Architecture decisions](#14-architecture-decisions)
 
 ---
 
-## 1. Architecture Overview
+## 1. Architecture overview
 
 ### 1.1 Architectural style
 
@@ -59,7 +60,7 @@ Customers and administrators interact through separate web applications. Only th
 
 ---
 
-## 2. Technology Stack
+## 2. Technology stack
 
 | Component | Technology | Responsibility |
 | --- | --- | --- |
@@ -80,7 +81,7 @@ Use supported compatible package versions and commit lockfiles. Gateway payment 
 
 ---
 
-## 3. System Architecture
+## 3. System architecture
 
 ### 3.1 Component interaction
 
@@ -116,9 +117,9 @@ Public category and product pages use Next.js server rendering or controlled rev
 
 ---
 
-## 4. Project Structure
+## 4. Project structure
 
-Use a single repository with independently buildable applications:
+The following is the target layout. This checkout currently contains only the twelve Markdown documents; application directories, manifests, lockfiles, configuration templates, tests and CI are not present. Use independently buildable applications when the foundation is implemented:
 
 ```text
 sportzone/
@@ -167,7 +168,7 @@ sportzone/
 
 ---
 
-## 5. Frontend Architecture
+## 5. Frontend architecture
 
 ### 5.1 Storefront — Next.js
 
@@ -203,7 +204,7 @@ Both applications use consistent BDT formatting, Bangladesh address/phone input 
 
 ---
 
-## 6. Backend Architecture
+## 6. Backend architecture
 
 ### 6.1 Modules and ownership
 
@@ -222,7 +223,6 @@ flowchart TB
     AfterSales --> Data
     Operations --> Data
 ```
-
 
 This is a **logical module diagram**, not a set of microservices. Arrows indicate primary coordination paths, not an exhaustive call graph. Notification delivery and other supporting module details remain in the ownership table and §§6.3/10.6.
 
@@ -264,7 +264,7 @@ Run reservation expiry, uncertain-payment reconciliation, notification retries, 
 
 ---
 
-## 7. Data Architecture
+## 7. Data architecture
 
 Detailed collection schemas, embedding/reference decisions, field validation, exact indexes, retention schedules, and migrations belong in the proposed [`DATABASE.md`](./DATABASE.md). This section owns modeling strategy and system-wide integrity constraints; it is not a replacement for that specification.
 
@@ -272,7 +272,7 @@ Detailed collection schemas, embedding/reference decisions, field validation, ex
 
 MongoDB stores business records with Mongoose schemas, indexes, and validation. Embed small immutable order-line snapshots when appropriate; reference independently managed entities such as users, products, variants, payments, and refunds. The PRD's **27 logical entities** do not require 27 separate collections.
 
-The conceptual entity inventory is in PRD §10. `DATABASE.md` will map those concepts to physical collections and embedded documents without duplicating ownership here.
+The conceptual entity inventory is in PRD §10. [Database §3](./DATABASE.md#3-logical-and-physical-data-model) maps those concepts to physical collections and embedded documents without duplicating ownership here.
 
 ### 7.2 Core relationships
 
@@ -307,7 +307,7 @@ TTL cleanup may remove expired session or verification artifacts but must **not*
 
 ---
 
-## 8. API Architecture
+## 8. API architecture
 
 The proposed [`API.md`](./API.md) owns endpoint inventory, request/response schemas, error/status mappings, CSRF bootstrap, idempotency behavior, and callback contracts. Architecture owns the security and integration constraints those contracts must preserve.
 
@@ -325,17 +325,7 @@ The Express API uses `/api/v1` with resource-oriented routes. Standard requests 
 | Versioning | `/api/v1`; maintain compatible contracts within the version |
 | Financial mutations | Persisted idempotency keys and unique provider references |
 
-Example success:
-
-```json
-{"data":{"id":"order-id","status":"Pending"}}
-```
-
-Example error:
-
-```json
-{"error":{"code":"OUT_OF_STOCK","message":"Selected quantity is unavailable."}}
-```
+Exact wire enums, success/error envelopes and examples belong in [API §3](./API.md#3-http-conventions--versioning). Architecture summaries do not define alternative payloads.
 
 ### 8.2 Application integration
 
@@ -351,7 +341,7 @@ Use a persistent checkout intent or idempotency key to prevent duplicate order s
 
 ---
 
-## 9. Authentication & Authorization
+## 9. Authentication & authorization
 
 ### 9.1 Identity and sessions
 
@@ -359,7 +349,7 @@ Use opaque, revocable server-managed sessions. Store a hash of the session token
 
 Prefer same-site storefront, admin, and API subdomains under one approved registrable domain. The API issues **host-only cookies**; credentialed CORS allows only exact approved frontend origins. For state-changing browser requests, require a session-bound CSRF token in a custom request header and validate the `Origin` against approved frontend origins. Provide a non-cacheable CSRF bootstrap for browser requests before authentication as well as session-bound tokens after login. Before login, bind the CSRF token to a short-lived opaque browser-context cookie; this context grants no account or order access.
 
-Login, registration, recovery, guest checkout, and guest-proof exchange require this token and approved Origin validation. After login or proof exchange, rotate context and issue the token for the resulting customer/admin/order-scoped session. Refresh tokens after rotation or expiry; `API.md` will specify endpoint and cookie contracts. Payment IPNs and provider browser-return endpoints are exempt from browser token/Origin requirements because they originate outside the approved application origins. They grant no customer/admin access and cannot trust redirect fields.
+Login, registration, recovery, guest checkout, and guest-proof exchange require this token and approved Origin validation. After login or proof exchange, rotate context and issue the token for the resulting customer/admin/order-scoped session. Refresh tokens after rotation or expiry; [API §4](./API.md#4-authentication-sessions--csrf) specifies the proposed endpoint and cookie contracts. Payment IPNs and provider browser-return endpoints are exempt from browser token/Origin requirements because they originate outside the approved application origins. They grant no customer/admin access and cannot trust redirect fields.
 
 Any resulting financial transition requires independent provider verification and idempotency; ordinary browser payment-initiation/retry APIs remain protected.
 
@@ -394,7 +384,7 @@ Order number plus email address alone is not sufficient authorization for guest 
 
 ---
 
-## 10. Critical Business Workflows
+## 10. Critical business workflows
 
 ### 10.1 Checkout and online payment
 
@@ -438,7 +428,7 @@ sequenceDiagram
 **Checkout rules**
 
 1. Recalculate product prices, sale discounts, coupon eligibility, delivery zone/charge, stock, and final BDT total on the backend. Validate customer details and accepted terms.
-2. Persist one order per checkout intent, scoped to the customer or opaque guest browser context; the same key with a different payload is a conflict, not a second operation. Persist canonical request identity and outcome. `API.md` will define key lifetime, replay and conflict responses.
+2. Persist one order per checkout intent, scoped to the customer or opaque guest browser context; the same key with a different payload is a conflict, not a second operation. Persist canonical request identity and outcome. [API §15](./API.md#15-idempotency-concurrency--recovery) defines replay and conflict handling; the exact replay/retention horizon remains open in API-D03.
    Online checkout creates **15-minute** stock and coupon holds and a unique payment attempt transaction ID.
 3. Initiate SSLCOMMERZ hosted checkout on the server. Show bKash, Nagad, and Rocket only when activated for the merchant.
 4. Treat browser success/failure redirects as presentation signals. Verify payment independently using provider IPN and validation/status APIs.
@@ -451,7 +441,7 @@ sequenceDiagram
 
 Payment and fulfillment states are independent. Provider field handling and refund capabilities must match the [SSLCOMMERZ developer documentation](https://developer.sslcommerz.com/doc/v4/) and the enabled merchant account.
 
-### 10.2 Cash on Delivery
+### 10.2 Cash on delivery
 
 `Validate checkout → Accept Pending COD and commit allocation → Admin confirms → Process → Deliver → Verify collection`
 
@@ -544,7 +534,7 @@ Return and refund lifecycles are **separate**. Physical returns follow FR-17. Mi
 
 ---
 
-## 11. Security Architecture
+## 11. Security architecture
 
 | Control | Architecture requirement |
 | --- | --- |
@@ -563,7 +553,7 @@ Provider IPNs are authenticated through transaction verification rather than bro
 
 ---
 
-## 12. Reliability & Performance
+## 12. Reliability & performance
 
 ### 12.1 Consistency and recovery
 
@@ -586,7 +576,7 @@ Test the behavior most likely to cause financial or inventory errors: concurrent
 
 ---
 
-## 13. Deployment Architecture
+## 13. Deployment architecture
 
 ### 13.1 Deployment topology
 
@@ -627,7 +617,7 @@ Run lint, type checks, tests, and application builds before deployment. Apply an
 
 ---
 
-## 14. Architecture Decisions
+## 14. Architecture decisions
 
 | Concern | Architecture decision |
 | --- | --- |
@@ -645,6 +635,6 @@ Run lint, type checks, tests, and application builds before deployment. Apply an
 | Delivery | Admin-managed zones/charges and manual fulfillment updates |
 | Deployment | Next.js runtime, static admin hosting, Express service, transactional MongoDB deployment |
 
-**Document ownership:** PRD owns product rules; Design owns UI behavior; Architecture owns component, security, and consistency decisions. `DATABASE.md` and `API.md` will own detailed data and HTTP contracts. `TESTING.md` will own verification procedures; `OPERATIONS.md` will own deployment and operating procedures. These four documents must be authored before dependent feature acceptance, not deferred until handover. Root README and AGENTS own setup/navigation and agent execution instructions.
+**Document ownership:** PRD owns product rules; Design owns UI behavior; Architecture owns component, security, and consistency decisions. `DATABASE.md` and `API.md` own proposed detailed data and HTTP contracts. `TESTING.md` owns verification procedures; `OPERATIONS.md` owns proposed deployment and operating procedures. All four documents exist; approve affected proposals before implementation relies on them, then reconcile them with code and evidence before dependent feature acceptance. Root README and AGENTS own setup/navigation and agent execution instructions.
 
 The PRD remains authoritative for feature scope and store policies. Architecture changes must preserve its financial, inventory, access-control, and customer-rights requirements.

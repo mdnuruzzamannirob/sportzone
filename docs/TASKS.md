@@ -1,7 +1,8 @@
-# SportZone — Development Tasks
+# SportZone — Development tasks
 
 **Version:** 1.2  
-**Updated:** 15 October 2026  
+**Updated:** 16 October 2026  
+**Documentation audit:** 16 October 2026 — corrections in this working revision do not grant specification, task or release approval.  
 **Status:** Execution register — no implementation completion claimed  
 **Product reference:** [PRD](./PRD.md)  
 **Technical reference:** [Architecture](./ARCHITECTURE.md)  
@@ -16,34 +17,34 @@ This document decomposes the approved implementation plan into independently ver
 
 **Contents**
 
-- [1. Overview & Execution Rules](#1-overview--execution-rules)
-- [2. Task Management Conventions](#2-task-management-conventions)
-- [3. Project Progress Dashboard](#3-project-progress-dashboard)
-- [4. Milestone Tracker](#4-milestone-tracker)
-- [5. Phase-by-Phase Task Register](#5-phase-by-phase-task-register)
-  - [Phase 01 — Requirements Finalization and Planning](#phase-01--requirements-finalization-and-planning)
-  - [Phase 02 — UI/UX Design](#phase-02--uiux-design)
-  - [Phase 03 — Authentication and Core Backend](#phase-03--authentication-and-core-backend)
-  - [Phase 04 — Product Catalog and Inventory](#phase-04--product-catalog-and-inventory)
-  - [Phase 05 — Cart, Wishlist, Coupons, and Reviews](#phase-05--cart-wishlist-coupons-and-reviews)
-  - [Phase 06 — Checkout, Orders, and Delivery Rules](#phase-06--checkout-orders-and-delivery-rules)
-  - [Phase 07 — Payment Integration and Verification](#phase-07--payment-integration-and-verification)
-  - [Phase 08 — Returns and Refunds](#phase-08--returns-and-refunds)
-  - [Phase 09 — Admin Management and Reports](#phase-09--admin-management-and-reports)
-  - [Phase 10 — Testing, Security Review, and Bug Fixing](#phase-10--testing-security-review-and-bug-fixing)
-  - [Phase 11 — Deployment and Production Verification](#phase-11--deployment-and-production-verification)
-  - [Phase 12 — Documentation and Handover](#phase-12--documentation-and-handover)
-- [6. Dependencies & Blockers](#6-dependencies--blockers)
-- [7. Requirements Coverage Matrix](#7-requirements-coverage-matrix)
-- [8. Verification & Completion Rules](#8-verification--completion-rules)
-- [9. Change & Execution Log](#9-change--execution-log)
+- [1. Overview & execution rules](#1-overview--execution-rules)
+- [2. Task management conventions](#2-task-management-conventions)
+- [3. Project progress dashboard](#3-project-progress-dashboard)
+- [4. Milestone tracker](#4-milestone-tracker)
+- [5. Phase-by-phase task register](#5-phase-by-phase-task-register)
+  - [Phase 01 — Requirements finalization and planning](#phase-01--requirements-finalization-and-planning)
+  - [Phase 02 — UI/UX design](#phase-02--uiux-design)
+  - [Phase 03 — Authentication and core backend](#phase-03--authentication-and-core-backend)
+  - [Phase 04 — Product catalog and inventory](#phase-04--product-catalog-and-inventory)
+  - [Phase 05 — Cart, wishlist, coupons, and reviews](#phase-05--cart-wishlist-coupons-and-reviews)
+  - [Phase 06 — Checkout, orders, and delivery rules](#phase-06--checkout-orders-and-delivery-rules)
+  - [Phase 07 — Payment integration and verification](#phase-07--payment-integration-and-verification)
+  - [Phase 08 — Returns and refunds](#phase-08--returns-and-refunds)
+  - [Phase 09 — Admin management and reports](#phase-09--admin-management-and-reports)
+  - [Phase 10 — Testing, security review, and bug fixing](#phase-10--testing-security-review-and-bug-fixing)
+  - [Phase 11 — Deployment and production verification](#phase-11--deployment-and-production-verification)
+  - [Phase 12 — Documentation and handover](#phase-12--documentation-and-handover)
+- [6. Dependencies & blockers](#6-dependencies--blockers)
+- [7. Requirements coverage matrix](#7-requirements-coverage-matrix)
+- [8. Verification & completion rules](#8-verification--completion-rules)
+- [9. Change & execution log](#9-change--execution-log)
 
 ---
 
-## 1. Overview & Execution Rules
+## 1. Overview & execution rules
 
 - Work from the approved source documents; check current requirements and affected business rules before starting a task.
-- Before each feature slice, update its `DATABASE.md` and `API.md` contracts and applicable `TESTING.md`/OPERATIONS.md sections; do not postpone first creation to Phase 12.
+- Before each feature slice, update its `DATABASE.md` and `API.md` contracts and applicable `TESTING.md`/`OPERATIONS.md` sections; do not postpone first creation to Phase 12.
 - Implement complete vertical slices with real API integration; mocks are test doubles, never proof of external-service acceptance.
 - Follow declared dependencies rather than task ID alone. Parallel work is allowed once shared contracts exist.
 - Keep financial decisions in the Express backend; use integer poisha, immutable order snapshots, guarded state transitions, transactions and replay-safe operations as specified.
@@ -52,7 +53,7 @@ This document decomposes the approved implementation plan into independently ver
 - Record tests and review evidence before completion. The release gates in the Implementation Plan still apply even when every engineering checkbox appears checked.
 - Scope changes require source-document approval before changing this register; preserve existing IDs when adding tasks.
 
-## 2. Task Management Conventions
+## 2. Task management conventions
 
 | Field | Rule |
 | --- | --- |
@@ -72,9 +73,9 @@ This document decomposes the approved implementation plan into independently ver
 
 **Task granularity:** One task targets one reviewable engineering outcome. Do not create redundant folder-only microtasks or combine whole subsystems under one checkbox. An item may be split if its verification grows independently; retain the original identifier as a parent or approved replacement record with traceability.
 
-## 3. Project Progress Dashboard
+## 3. Project progress dashboard
 
-The following counts describe **planned tasks only**. All are initially `Not Started`; there is no claim that any repository work, merchant activation, tests, or acceptance has occurred. Recalculate counts when tasks are added or statuses change.
+The following counts describe **planned, unaccepted tasks**. All remain `Not Started` in this register. The twelve Markdown artifacts exist, but their presence does not satisfy task dependencies or independent acceptance; no application implementation, merchant activation, tests or milestone acceptance is claimed. Recalculate counts when tasks are added or statuses change.
 
 | Phase | Total | Not Started | Ready | In Progress | Blocked | In Review | Done | Deferred |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -92,7 +93,7 @@ The following counts describe **planned tasks only**. All are initially `Not Sta
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
 | **Total** | **171** | **171** | **0** | **0** | **0** | **0** | **0** | **0** |
 
-## 4. Milestone Tracker
+## 4. Milestone tracker
 
 | Gate | Required task evidence | Initial status |
 | --- | --- | --- |
@@ -109,11 +110,11 @@ Milestone acceptance follows the prerequisites in Implementation Plan §11. Gate
 
 Passing a task checklist never automatically accepts a milestone. Record approver, environment, test artifact, open blockers and decision separately when each gate is reviewed.
 
-## 5. Phase-by-Phase Task Register
+## 5. Phase-by-phase task register
 
-All tasks below are planned, **not completed**. Each uses `Status: Not Started`. Source pointers are an index, not a replacement for full source requirements or Implementation Plan §3.3 Definition of Done. Empty evidence links must not be filled with fabricated test outcomes.
+All tasks below remain **unaccepted**. Each uses `Status: Not Started`; existing documentation drafts are inputs to review, not accepted task outcomes. Source pointers are an index, not a replacement for full source requirements or Implementation Plan §3.3 Definition of Done. Empty evidence links must not be filled with fabricated test outcomes.
 
-### Phase 01 — Requirements Finalization and Planning
+### Phase 01 — Requirements finalization and planning
 
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 01. **Associated gate:** M1. **Tasks:** 14.
 
@@ -217,7 +218,7 @@ All tasks below are planned, **not completed**. Each uses `Status: Not Started`.
   **Status:** `Not Started` · **Area:** Documentation/quality  
   **Sources:** PRD §§12,14; Architecture §12; Implementation Plan §4.3  
   **Depends on:** `P01-004`, `P01-008`, `P01-009`  
-  **Deliverable:** Create docs/TESTING.md with test layers, requirement/scenario mapping, fixtures, environment prerequisites, commands as tooling becomes available, and evidence conventions.  
+  **Deliverable:** Review and reconcile the existing docs/TESTING.md draft with test layers, requirement/scenario mapping, fixtures, environment prerequisites, commands as tooling becomes available, and evidence conventions.  
   **Acceptance:** Critical risks and FR/NFR checks have verification owners; unimplemented commands remain explicitly pending. Extend procedures before each feature's acceptance.  
   **Evidence to attach:** Reviewed `TESTING.md` baseline.
 
@@ -225,11 +226,11 @@ All tasks below are planned, **not completed**. Each uses `Status: Not Started`.
   **Status:** `Not Started` · **Area:** Documentation/operations  
   **Sources:** PRD §18; Architecture §13; Implementation Plan §4.3  
   **Depends on:** `P01-005`, `P01-009`  
-  **Deliverable:** Create docs/OPERATIONS.md with environments, configuration names, provider/account ownership, deployment/recovery prerequisites, monitoring, backup/restore, incident and operator sections.  
+  **Deliverable:** Review and reconcile the existing docs/OPERATIONS.md draft with environments, configuration names, provider/account ownership, deployment/recovery prerequisites, monitoring, backup/restore, incident and operator sections.  
   **Acceptance:** Unknown hosting values remain tracked decisions; later deployments require executable updated runbooks, with no secrets or invented provider readiness.  
   **Evidence to attach:** Reviewed `OPERATIONS.md` baseline.
 
-### Phase 02 — UI/UX Design
+### Phase 02 — UI/UX design
 
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 02. **Associated gate:** M1. **Tasks:** 11.
 
@@ -321,7 +322,7 @@ All tasks below are planned, **not completed**. Each uses `Status: Not Started`.
   **Acceptance:** Focus, contrast, reflow and theme persistence findings resolved or documented as blockers.  
   **Evidence to attach:** Visual/a11y audit report.
 
-### Phase 03 — Authentication and Core Backend
+### Phase 03 — Authentication and core backend
 
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 03. **Associated gate:** M1. **Tasks:** 18.
 
@@ -395,6 +396,7 @@ All tasks below are planned, **not completed**. Each uses `Status: Not Started`.
   **Depends on:** `P03-002`, `P03-003`, `P03-007`  
   **Deliverable:** Implement server-only email adapter, durable notification intents, bounded retries, status and deduplication keys; connect registration intent to the delivery/retry pipeline.  
   **Acceptance:** Delivery failure does not undo committed account changes; registration event intent can be delivered/retried independently and duplicate sends are suppressed.  
+  **Design prerequisite:** API-D21 must resolve retryable proof delivery without plaintext challenge secrets or secret-bearing notification payloads.
   **Evidence to attach:** Adapter and retry tests with test provider.
 
 - [ ] **P03-010 — Implement customer password recovery and change**  
@@ -457,7 +459,7 @@ All tasks below are planned, **not completed**. Each uses `Status: Not Started`.
   **Status:** `Not Started` · **Area:** Documentation/data  
   **Sources:** PRD §10; Architecture §7; Implementation Plan §4.3  
   **Depends on:** `P03-002`, `P01-003`  
-  **Deliverable:** Create docs/DATABASE.md for initial identity/session/context/verification data, exact schemas/indexes, timestamp and money conventions, retention boundaries, and migration procedure. Extend before later feature implementation.  
+  **Deliverable:** Review and approve the existing docs/DATABASE.md proposal for initial identity/session/context/verification data, exact schemas/indexes, timestamp and money conventions, retention boundaries, and migration procedure. Extend before later feature implementation.  
   **Acceptance:** Current contracts are implementable; future commerce schemas remain planned until designed. Model choices preserve PRD/Architecture invariants and support source-collection refund accounting.  
   **Evidence to attach:** Reviewed `DATABASE.md` baseline.
 
@@ -465,11 +467,11 @@ All tasks below are planned, **not completed**. Each uses `Status: Not Started`.
   **Status:** `Not Started` · **Area:** Documentation/API  
   **Sources:** PRD FR-01, FR-02, FR-19, FR-21; Architecture §§8–9  
   **Depends on:** `P03-001`, `P03-017`  
-  **Deliverable:** Create docs/API.md endpoint/request/response/error/auth contracts for identity, browser-context and CSRF bootstrap, customer/admin sessions and recovery. Establish key replay/conflict conventions; extend before each commerce slice.  
+  **Deliverable:** Review and approve the existing docs/API.md endpoint/request/response/error/auth proposals for identity, browser-context and CSRF bootstrap, customer/admin sessions and recovery. Establish key replay/conflict conventions; extend before each commerce slice.  
   **Acceptance:** Pre-authentication and authenticated mutations have explicit protection; future guest/order-scoped contracts are tracked and completed before those feature tasks.  
   **Evidence to attach:** Reviewed `API.md` baseline.
 
-### Phase 04 — Product Catalog and Inventory
+### Phase 04 — Product catalog and inventory
 
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 04. **Associated gate:** M2. **Tasks:** 15.
 
@@ -593,7 +595,7 @@ All tasks below are planned, **not completed**. Each uses `Status: Not Started`.
   **Acceptance:** No static mock implies purchase readiness; M2 evidence demonstrates real API-backed catalog.  
   **Evidence to attach:** M2 catalog acceptance suite.
 
-### Phase 05 — Cart, Wishlist, Coupons, and Reviews
+### Phase 05 — Cart, wishlist, coupons, and reviews
 
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 05. **Associated gate:** M3. **Tasks:** 13.
 
@@ -701,7 +703,7 @@ All tasks below are planned, **not completed**. Each uses `Status: Not Started`.
   **Acceptance:** All checkout prerequisites pass while delivered-review submissions remain correctly gated.  
   **Evidence to attach:** P05 suite and prerequisite record.
 
-### Phase 06 — Checkout, Orders, and Delivery Rules
+### Phase 06 — Checkout, orders, and delivery rules
 
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 06. **Associated gate:** M3. **Tasks:** 20.
 
@@ -725,7 +727,7 @@ All tasks below are planned, **not completed**. Each uses `Status: Not Started`.
   **Status:** `Not Started` · **Area:** Backend/orders  
   **Sources:** FR-16; FR-26  
   **Depends on:** `P06-001`, `P01-007`  
-  **Deliverable:** Calculate/display applicable checkout deadline and estimated date from approved config/verified law, preserving snapshots.  
+  **Deliverable:** Display the applicable deadline rule/status and estimated date from approved configuration/verified law. Preserve the checkout rule basis; calculate a confirmation-based absolute deadline only after actual confirmation (Database §7.2; API §11.3).  
   **Acceptance:** 14-day planning target cannot override shorter applicable requirements; uncertain policy blocks final publication.  
   **Evidence to attach:** Deadline examples and compliance sign-off reference.
 
@@ -734,14 +736,15 @@ All tasks below are planned, **not completed**. Each uses `Status: Not Started`.
   **Sources:** FR-11; FR-09  
   **Depends on:** `P05-005`, `P05-006`, `P04-008`, `P06-001`  
   **Deliverable:** Revalidate identity/contact, email, Bangladesh phone, terms, SKU stock, coupon and delivery with integer-poisha totals.  
-  **Acceptance:** Invalid price/stock/area/coupon/terms rejected; server quote is final payable value.  
+  **Acceptance:** Invalid price/stock/area/coupon/terms rejected; quote is authoritative at calculation time; submission revalidates changes and obtains renewed confirmation rather than guaranteeing a stale price.  
+  **Design prerequisite:** API-D20 must resolve buyer confirmation/reconfirmation before this checkout contract is relied upon; missing confirmation must not become automatic charging.
   **Evidence to attach:** Checkout quote unit/integration suite.
 
 - [ ] **P06-005 — Implement orders, item snapshots and independent lifecycles**  
   **Status:** `Not Started` · **Area:** Backend/orders  
   **Sources:** FR-11; FR-14  
   **Depends on:** `P06-004`, `P03-002`  
-  **Deliverable:** Store unique order number, immutable item/variant/unit/discount/delivery/address/deadline values and separate payment/fulfillment states.  
+  **Deliverable:** Store unique order number, immutable item/variant/unit/discount/delivery/address/deadline-rule values with separate event-derived delivery commitments and payment/fulfillment states.  
   **Acceptance:** Historical changes do not rewrite snapshots; invalid transitions rejected.  
   **Evidence to attach:** Order model/index tests.
 
@@ -846,7 +849,7 @@ All tasks below are planned, **not completed**. Each uses `Status: Not Started`.
   **Sources:** FR-11; FR-16  
   **Depends on:** `P06-004`, `P06-008`, `P06-002`, `P02-008`  
   **Deliverable:** Build guest/account checkout, address, terms, coupon, order summary, COD and online-pending presentation.  
-  **Acceptance:** Final server charges/deadline visible before confirmation; pending online not represented as paid.  
+  **Acceptance:** Final server charges and applicable deadline rule/status visible before submission; pending online not represented as paid.  
   **Evidence to attach:** Mobile/desktop checkout E2E.
 
 - [ ] **P06-019 — Implement order tracking, guest lookup and admin fulfillment UI**  
@@ -865,7 +868,7 @@ All tasks below are planned, **not completed**. Each uses `Status: Not Started`.
   **Acceptance:** M3 acceptance proves COD and online-hold foundation, not live payment.  
   **Evidence to attach:** COD E2E, concurrency and M3 gate report.
 
-### Phase 07 — Payment Integration and Verification
+### Phase 07 — Payment integration and verification
 
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 07. **Associated gate:** M4. **Tasks:** 17.
 
@@ -1005,7 +1008,7 @@ All tasks below are planned, **not completed**. Each uses `Status: Not Started`.
   **Acceptance:** M4 requires provider-backed sandbox evidence; unsupported live channels remain disabled.  
   **Evidence to attach:** M4 sandbox and fault-injection report.
 
-### Phase 08 — Returns and Refunds
+### Phase 08 — Returns and refunds
 
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 08. **Associated gate:** M5. **Tasks:** 18.
 
@@ -1153,7 +1156,7 @@ All tasks below are planned, **not completed**. Each uses `Status: Not Started`.
   **Acceptance:** M5 safety gates pass; every Completed refund has verified payout proof.  
   **Evidence to attach:** M5 after-sales test report.
 
-### Phase 09 — Admin Management and Reports
+### Phase 09 — Admin management and reports
 
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 09. **Associated gate:** M6. **Tasks:** 12.
 
@@ -1253,7 +1256,7 @@ All tasks below are planned, **not completed**. Each uses `Status: Not Started`.
   **Acceptance:** Feature-complete staging includes accepted M1–M5 phase gates, public policy/contact pages and admin functionality; Phase 10 receives an isolated deployed environment with known fixture/reset process.  
   **Evidence to attach:** Staging deploy manifest and smoke tests.
 
-### Phase 10 — Testing, Security Review, and Bug Fixing
+### Phase 10 — Testing, security review, and bug fixing
 
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 10. **Associated gate:** M6. **Tasks:** 13.
 
@@ -1361,7 +1364,7 @@ All tasks below are planned, **not completed**. Each uses `Status: Not Started`.
   **Acceptance:** Production promotion is blocked until all mandatory gates pass.  
   **Evidence to attach:** M6 signed acceptance record.
 
-### Phase 11 — Deployment and Production Verification
+### Phase 11 — Deployment and production verification
 
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 11. **Associated gate:** M7. **Tasks:** 11.
 
@@ -1453,7 +1456,7 @@ All tasks below are planned, **not completed**. Each uses `Status: Not Started`.
   **Acceptance:** No unsafe or unverified money/security/policy gate is accepted as complete; all PRD-required channels pass, or an approved revised PRD explicitly defines the accepted channel set.  
   **Evidence to attach:** M7 launch approval record.
 
-### Phase 12 — Documentation and Handover
+### Phase 12 — Documentation and handover
 
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 12. **Associated gate:** M8. **Tasks:** 9.
 
@@ -1529,7 +1532,7 @@ All tasks below are planned, **not completed**. Each uses `Status: Not Started`.
   **Acceptance:** Repository, deployment, incident runbooks and approved production ownership are acknowledged.  
   **Evidence to attach:** M8 handover acceptance record.
 
-## 6. Dependencies & Blockers
+## 6. Dependencies & blockers
 
 **Core commerce path:** `P01–P03 foundation → P04 catalog/inventory → P05 pricing/coupon/cart → P06 delivery/checkout/COD/holds → P07 verified online payment → P08 refunds/returns → P09 integrated admin and staging → P10 release acceptance → P11 production → P12 handover`.
 
@@ -1554,7 +1557,7 @@ All tasks below are planned, **not completed**. Each uses `Status: Not Started`.
 
 **When actually blocked:** Update the affected task to `Blocked`; record the EXT ID, owner, what is missing, consequence for acceptance, safe independent work and next verification action. These are **unverified prerequisites**, not a claim that every related task is currently blocked. Do not substitute a mock for live financial or policy acceptance.
 
-## 7. Requirements Coverage Matrix
+## 7. Requirements coverage matrix
 
 The matrix below points to planned owning tasks. Its presence does not prove that the full source requirement, its subclauses or its release acceptance checks have passed. Update evidence and dispositions during execution; PRD §14 remains the definitive acceptance checklist.
 
@@ -1613,7 +1616,7 @@ Storefront pages must include Home, Products, Category, Product Details, Login/R
 
 For each critical user journey (guest COD, registered COD, hosted gateway, late/duplicate payment, return, refund, verified review, failed delivery and admin reconciliation), link a test in its owning task and the P10 release evidence. No separate page may bypass backend permission checks.
 
-## 8. Verification & Completion Rules
+## 8. Verification & completion rules
 
 Before checking a task, ensure its applicable code/configuration exists, builds and follows approved module boundaries; server-side validation, access control and failure states are covered; related UI states meet `DESIGN.md`; and tests plus reviewer evidence are recorded. Mark review/approval as distinct from implementation; use `In Review` until acceptance.
 
@@ -1631,13 +1634,13 @@ Before checking a task, ensure its applicable code/configuration exists, builds 
 
 **Failure policy:** A failed mandatory criterion keeps its task/phase/release gate open. Document the defect, affected scenario, reproduction and fix evidence; retest impacted behavior. Mandatory security, payment, inventory, coupon, checkout and recovery requirements cannot be waived as routine known issues.
 
-## 9. Change & Execution Log
+## 9. Change & execution log
 
 Use this table for **actual** future execution decisions. No approval, work completion or provider readiness is implied by blank rows.
 
 | Date (local) | Task/EXT ID | Change / blocker / decision | Owner / approver | Evidence link | Follow-up |
 | --- | --- | --- | --- | --- | --- |
-| — | — | No execution entries recorded in this planning baseline | — | — | — |
+| — | — | No task execution or acceptance entries recorded; documentation revisions are recorded in CHANGELOG.md | — | — | — |
 
 **Update protocol:** When a task starts or ends, update its status and checkmark, attach evidence and revise dependent readiness. On approved scope changes, update the authoritative PRD/Architecture/Design source first, then the Implementation Plan and relevant task records. If a task is split, preserve its old ID and add a stable new ID without renumbering unrelated tasks. Recalculate dashboard counts and FR coverage; record milestone acceptance separately.
 

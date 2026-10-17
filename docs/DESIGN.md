@@ -1,7 +1,8 @@
-# SportZone — UI/UX Design Specification
+# SportZone — UI/UX design specification
 
 **Version:** 1.2  
-**Updated:** 15 October 2026  
+**Updated:** 16 October 2026  
+**Documentation audit:** 16 October 2026 — corrections in this working revision do not grant specification, task or release approval.  
 **Status:** Design implementation baseline — monochrome light/dark themes with a consistent blue brand color  
 **Product reference:** [PRD](./PRD.md)  
 **Technical reference:** [Architecture](./ARCHITECTURE.md)  
@@ -14,24 +15,24 @@ This document owns the visual system, page composition, navigation, interactions
 
 **Contents**
 
-- [1. Design Overview](#1-design-overview)
-- [2. Design System](#2-design-system)
-- [3. Responsive Design](#3-responsive-design)
-- [4. Application Layouts](#4-application-layouts)
-- [5. Navigation & Information Architecture](#5-navigation--information-architecture)
-- [6. UI Components](#6-ui-components)
-- [7. Storefront Page Specifications](#7-storefront-page-specifications)
-- [8. Admin Portal Page Specifications](#8-admin-portal-page-specifications)
-- [9. Forms & Validation](#9-forms--validation)
-- [10. Interaction & State Design](#10-interaction--state-design)
-- [11. Critical User Flows](#11-critical-user-flows)
+- [1. Design overview](#1-design-overview)
+- [2. Design system](#2-design-system)
+- [3. Responsive design](#3-responsive-design)
+- [4. Application layouts](#4-application-layouts)
+- [5. Navigation & information architecture](#5-navigation--information-architecture)
+- [6. UI components](#6-ui-components)
+- [7. Storefront page specifications](#7-storefront-page-specifications)
+- [8. Admin portal page specifications](#8-admin-portal-page-specifications)
+- [9. Forms & validation](#9-forms--validation)
+- [10. Interaction & state design](#10-interaction--state-design)
+- [11. Critical user flows](#11-critical-user-flows)
 - [12. Accessibility](#12-accessibility)
-- [13. Content & Visual Assets](#13-content--visual-assets)
-- [14. Design Quality & Consistency](#14-design-quality--consistency)
+- [13. Content & visual assets](#13-content--visual-assets)
+- [14. Design quality & consistency](#14-design-quality--consistency)
 
 ---
 
-## 1. Design Overview
+## 1. Design overview
 
 ### 1.1 Experience goals
 
@@ -40,7 +41,7 @@ This document owns the visual system, page composition, navigation, interactions
 - Keep guest checkout usable without requiring account creation.
 - Make administrative decisions explicit, auditable, and difficult to trigger accidentally.
 - Provide consistent feedback for slow networks, expired sessions, payment uncertainty, and invalid operations.
-- Target **WCAG 2.2 AA** and current stable Chrome, Firefox, Edge, and Safari.
+- Target **WCAG 2.2 AA** and current stable Chrome, Firefox, Edge, Brave, and Safari, as required by PRD §12.7.
 
 ### 1.2 Design principles
 
@@ -58,7 +59,7 @@ The storefront serves guests and registered customers; the admin portal serves t
 
 ---
 
-## 2. Design System
+## 2. Design system
 
 ### 2.1 Visual direction
 
@@ -143,7 +144,7 @@ Use responsive spacing rather than fixed heights for content. Product imagery sh
 
 ---
 
-## 3. Responsive Design
+## 3. Responsive design
 
 ### 3.1 Breakpoints and layout behavior
 
@@ -178,7 +179,7 @@ No page-level horizontal overflow at common viewport sizes. Maintain visible foc
 
 ---
 
-## 4. Application Layouts
+## 4. Application layouts
 
 ### 4.1 Storefront shell
 
@@ -213,7 +214,7 @@ All shells must handle navigation loading, expired sessions, missing permissions
 
 ---
 
-## 5. Navigation & Information Architecture
+## 5. Navigation & information architecture
 
 ### 5.1 Storefront sitemap
 
@@ -251,7 +252,6 @@ The authenticated admin shell exposes these navigation groups. Group labels orga
 | Customers and after-sales | Customers, Returns, Refunds; complaints in order/customer context |
 | Configuration | Delivery Settings, Store Settings; account logout, appearance and recovery entry points |
 
-
 ### 5.3 Navigation conventions
 
 - Use predictable page titles and breadcrumbs on nested catalog, order, and admin detail pages.
@@ -262,7 +262,7 @@ The authenticated admin shell exposes these navigation groups. Group labels orga
 
 ---
 
-## 6. UI Components
+## 6. UI components
 
 ### 6.1 Shared component inventory
 
@@ -313,7 +313,7 @@ Every interactive component must define: default, hover (where applicable), focu
 
 ---
 
-## 7. Storefront Page Specifications
+## 7. Storefront page specifications
 
 ### 7.1 Discovery and shopping
 
@@ -381,7 +381,7 @@ Account pages must not expose another customer's records. If a session expires, 
 
 ---
 
-## 8. Admin Portal Page Specifications
+## 8. Admin portal page specifications
 
 ### 8.1 Dashboard and catalog
 
@@ -433,7 +433,7 @@ The dashboard must not treat uncollected COD as paid revenue. Charts are optiona
 
 ---
 
-## 9. Forms & Validation
+## 9. Forms & validation
 
 ### 9.1 Form anatomy
 
@@ -455,7 +455,7 @@ Checkout always shows the final backend-calculated payable amount before confirm
 
 ---
 
-## 10. Interaction & State Design
+## 10. Interaction & state design
 
 ### 10.1 Global UI states
 
@@ -497,7 +497,7 @@ Use inline validation for fields, toasts for reversible low-risk changes, and pe
 
 ---
 
-## 11. Critical User Flows
+## 11. Critical user flows
 
 ### 11.1 Checkout and payment experience
 
@@ -633,7 +633,7 @@ Review storefront discovery, variant selection, checkout, guest verification, or
 
 ---
 
-## 13. Content & Visual Assets
+## 13. Content & visual assets
 
 ### 13.1 Language and formatting
 
@@ -681,7 +681,7 @@ Email links must not expose sensitive data or imply that clicking a link verifie
 
 ---
 
-## 14. Design Quality & Consistency
+## 14. Design quality & consistency
 
 ### 14.1 Page completion checklist
 

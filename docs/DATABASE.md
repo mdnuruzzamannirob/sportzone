@@ -1,8 +1,9 @@
-# SportZone — Database Design Specification
+# SportZone — Database design specification
 
 **Version:** 1.2  
 **Source baseline:** PRD / Architecture / Design / Implementation Plan / Tasks v1.2  
 **Updated:** 16 October 2026  
+**Documentation audit:** 16 October 2026 — corrections in this working revision do not grant specification, task or release approval.  
 **Status:** Revised implementation proposal — technical sign-off and runtime verification pending  
 **Product reference:** [PRD](./PRD.md)  
 **Technical reference:** [Architecture](./ARCHITECTURE.md)  
@@ -18,34 +19,34 @@ entities** into an implementable design without requiring 27 one-to-one collecti
 product and policy rules; `ARCHITECTURE.md` governs system boundaries and integrity invariants. This revision includes the
 API contract remediation for delivery timing, versioned policy content, mutation revisions, and provider amount
 reconciliation; MongoDB indexes, gateway behavior, Mermaid rendering, and integration tests remain **unverified at
-runtime**.
+runtime**. Published policy types include the PRD-required privacy page; approval and publication use the same versioned controls as other policies.
 
 ---
 
 ## Contents
 
-- [1. Purpose and Contract Boundaries](#1-purpose-and-contract-boundaries)
-- [2. Database Architecture and Conventions](#2-database-architecture-and-conventions)
-- [3. Logical and Physical Data Model](#3-logical-and-physical-data-model)
-- [4. Relationship Diagrams](#4-relationship-diagrams)
-- [5. Identity and Access Collections](#5-identity-and-access-collections)
-- [6. Catalog and Shopping Collections](#6-catalog-and-shopping-collections)
-- [7. Orders, Delivery, and Inventory Collections](#7-orders-delivery-and-inventory-collections)
-- [8. Promotions and Payment Collections](#8-promotions-and-payment-collections)
-- [9. Returns and Refund Collections](#9-returns-and-refund-collections)
-- [10. Operations and Supporting Collections](#10-operations-and-supporting-collections)
-- [11. Indexes and Query Contracts](#11-indexes-and-query-contracts)
-- [12. Data Integrity and Transaction Contracts](#12-data-integrity-and-transaction-contracts)
-- [13. State Transitions and Data Lifecycles](#13-state-transitions-and-data-lifecycles)
-- [14. Security, Privacy, and Retention](#14-security-privacy-and-retention)
-- [15. Migrations, Environments, and Recovery](#15-migrations-environments-and-recovery)
-- [16. Verification and Traceability](#16-verification-and-traceability)
-- [Appendix A — Cross-document Decision Register](#appendix-a--cross-document-decision-register)
-- [Appendix B — Schema Implementation Checklist](#appendix-b--schema-implementation-checklist)
+- [1. Purpose and contract boundaries](#1-purpose-and-contract-boundaries)
+- [2. Database architecture and conventions](#2-database-architecture-and-conventions)
+- [3. Logical and physical data model](#3-logical-and-physical-data-model)
+- [4. Relationship diagrams](#4-relationship-diagrams)
+- [5. Identity and access collections](#5-identity-and-access-collections)
+- [6. Catalog and shopping collections](#6-catalog-and-shopping-collections)
+- [7. Orders, delivery, and inventory collections](#7-orders-delivery-and-inventory-collections)
+- [8. Promotions and payment collections](#8-promotions-and-payment-collections)
+- [9. Returns and refund collections](#9-returns-and-refund-collections)
+- [10. Operations and supporting collections](#10-operations-and-supporting-collections)
+- [11. Indexes and query contracts](#11-indexes-and-query-contracts)
+- [12. Data integrity and transaction contracts](#12-data-integrity-and-transaction-contracts)
+- [13. State transitions and data lifecycles](#13-state-transitions-and-data-lifecycles)
+- [14. Security, privacy, and retention](#14-security-privacy-and-retention)
+- [15. Migrations, environments, and recovery](#15-migrations-environments-and-recovery)
+- [16. Verification and traceability](#16-verification-and-traceability)
+- [Appendix A — Cross-document decision register](#appendix-a--cross-document-decision-register)
+- [Appendix B — Schema implementation checklist](#appendix-b--schema-implementation-checklist)
 
 ---
 
-## 1. Purpose and Contract Boundaries
+## 1. Purpose and contract boundaries
 
 ### 1.1 Ownership
 
@@ -76,7 +77,7 @@ runtime**.
 7. An event replay, job restart, or concurrent request cannot repeat stock/coupon/refund effects.
 8. Initial release requires verified bKash, Nagad, Rocket and COD acceptance; inactive channels are hidden, but missing required gateway activation blocks launch unless the PRD is explicitly revised (PRD §3.3).
 
-## 2. Database Architecture and Conventions
+## 2. Database architecture and conventions
 
 ### 2.1 Deployment and ownership
 
@@ -98,7 +99,7 @@ runtime**.
 | References | `<entity>Id: ObjectId`; never use an email or order number as proof of ownership |
 | Timestamps | UTC `Date` instants; `createdAt`/`updatedAt` for mutable records and `occurredAt` for event facts |
 | Business timezone | `Asia/Dhaka` for display, report buckets and approved deadline rules; never persist naive local dates |
-| Money | Integer **poisha** only; negative integers permitted only for signed movement deltas; `100 poisha = 1 BDT` |
+| Money | Integer **poisha** only; negative stored amounts permitted only for signed movement deltas; derived net cash-flow reports may also be negative; `100 poisha = 1 BDT` |
 | Currency | `BDT` for all monetary records and historic snapshots |
 | Enums | Lowercase `snake_case`; API/UI labels may differ, never reinterpret a persisted enum silently |
 | Normalized IDs | Lowercase trimmed email, SKU, coupon code and slugs; original display text retained separately if required |
@@ -160,7 +161,7 @@ limits are enforced, return-request item entries, and small status histories whe
 updated or high-growth records (variants, reservations, movements, attempts, collections, refunds, notifications, audit
 events). Never embed an unbounded payment history, product review list, or movement ledger in an order/product.
 
-## 3. Logical and Physical Data Model
+## 3. Logical and physical data model
 
 ### 3.1 Collection inventory
 
@@ -206,7 +207,7 @@ persistence design.
 - One order binds to at most one immutable `orders.couponSnapshot.couponId` for its lifetime. A new hold generation may be created only for that same coupon after a safe release and re-eligibility check.
 - A return request has one or more immutable order-item references; refund(s) reference the original order, source collection, and eligible basis.
 
-## 4. Relationship Diagrams
+## 4. Relationship diagrams
 
 ### 4.1 Commerce entity relationship diagram
 
@@ -283,9 +284,9 @@ flowchart TD
 
 **Persistence rule:** provider verification runs *outside* the MongoDB transaction. Its verified result is committed in a short transaction with idempotency guards; a crash can be replayed safely.
 
-## 5. Identity and Access Collections
+## 5. Identity and access collections
 
-**Common rule:** No password, session, guest-proof, CSRF context, or recovery token may be stored in plaintext. Use separate session types/cookie names for admin, customer, and scoped guest access; require server-side role and resource ownership checks (Architecture §9).
+**Common rule:** No password, session, guest-proof, CSRF context, or recovery token may be stored in plaintext. Durable delivery of recovery/guest proofs requires the security/data-owner decision tracked in [API-D21](./API.md#appendix-b--decision--dependency-register); do not store raw proof links in the notification outbox to make retries work. Use separate session types/cookie names for admin, customer, and scoped guest access; require server-side role and resource ownership checks (Architecture §9).
 
 ### 5.1 `users` — `auth` / `customers`
 
@@ -353,14 +354,14 @@ flowchart TD
 
 **Rules:** no user/order permission is granted by this record; Origin verification is still required on protected browser mutations. Implementations may replace this persistence with an equally secure signed short-lived context only after documented Architecture/API alignment.
 
-## 6. Catalog and Shopping Collections
+## 6. Catalog and shopping collections
 
 ### 6.1 `categories` — `catalog`
 
 | Field | Type | Constraints / notes |
 | --- | --- | --- |
 | `name`! / `slug`! | string | Nonempty; unique normalized slug |
-| `parentId`? | ObjectId | Self-reference; null for root |
+| `parentId`? | ObjectId | Self-reference; absent for root |
 | `status`! | enum(`active`,`inactive`) | Inactive excluded from public navigation |
 | `image`? | embedded | `{publicId,url,alt}`; Cloudinary reference, not binary image |
 | `sortOrder`! | int | Nonnegative display sequence |
@@ -446,7 +447,7 @@ flowchart TD
 
 **Rules:** validate delivered qualifying purchase and exclusions (PRD FR-10); edit re-enters moderation when required. Do not silently alter customer ratings. Rating aggregates are recalculable projections.
 
-## 7. Orders, Delivery, and Inventory Collections
+## 7. Orders, delivery, and inventory collections
 
 ### 7.1 `checkoutIntents` — `checkout`
 
@@ -472,12 +473,12 @@ actual legal retention horizon remains an approved operations decision.
 | Field | Type | Constraints / notes |
 | --- | --- | --- |
 | `orderNumber`! | string | Unique public reference; never an access credential |
-| `userId`? | ObjectId | Null for guest; ownership verified through scoped guest session |
+| `userId`! | ObjectId or null | Explicitly null for guest; ownership verified through scoped guest session |
 | `checkoutIntentId`! | ObjectId | Unique; one order per intent |
 | `items[]`! | embedded[] | Nonempty immutable item snapshots (below) |
 | `customerSnapshot`! | embedded | `{name,emailNormalized,phone}` captured at checkout |
 | `deliverySnapshot`! | embedded | **Immutable checkout facts:** `{recipient,phone,districtKey,areaKey,street,addressLine2?,zoneId,chargeRuleId,chargePoisha,estimateAtCheckout?,deadlineRuleVersion,deadlineBasis}`. `deadlineBasis` captures the approved target duration (normally 14 calendar days), start-event type, and applicable legal-cap rule reference/start event; it does **not** contain a fabricated confirmation-relative absolute deadline. |
-| `deliveryCommitment`! | embedded | **Operational projection:** `{status:'awaiting_start'\|'calculated'\|'under_review',startEventAt?,targetDeadlineAt?,legalDeadlineAt?,effectiveDeadlineAt?,calculatedAt?,revision}`; null absolute dates where the governing start event has not occurred. Changes require controlled transition/audit and never overwrite `deliverySnapshot`. |
+| `deliveryCommitment`! | embedded | **Operational projection:** `{status:'awaiting_start'\|'calculated'\|'under_review',startEventAt?,targetDeadlineAt?,legalDeadlineAt?,effectiveDeadlineAt?,calculatedAt?,revision}`; omit absolute dates where the governing start event has not occurred. Changes require controlled transition/audit and never overwrite `deliverySnapshot`. |
 | `pricingSnapshot`! | embedded | `{regularSubtotalPoisha,productDiscountPoisha,saleSubtotalPoisha,couponDiscountPoisha,deliveryChargePoisha,finalTotalPoisha,currency:'BDT'}` |
 | `couponSnapshot`? | embedded | `{couponId,code,type,value,eligibleSubtotalPoisha,discountPoisha,termsVersion}` |
 | `paymentMethod`! | enum(`online`,`cod`) | Specific online channel identified by verified provider method where available |
@@ -620,7 +621,7 @@ windows and legal deadlines are operator-approved, not invented.
 | `generation`! | int | Increment on valid reallocation after hold expiration |
 | `status`! | enum(`held`,`committed`,`released`,`shipped`) | One-way guarded state machine |
 | `activeKey`? | string | Set to `active` while held/committed; cleared on release/shipment |
-| `expiresAt`? | Date | Online held allocation: checkout creation + 15 minutes; null after commitment |
+| `expiresAt`? | Date | Online held allocation: checkout creation + 15 minutes; absent after commitment |
 | `committedAt`? / `releasedAt`? / `shippedAt`? | Date | Transition timestamps |
 | `releaseReason`? / `lastOperationKey`? | string | Replay/reconciliation context |
 
@@ -643,7 +644,7 @@ windows and legal deadlines are operator-approved, not invented.
 
 **Rules:** create movement and conditional counter mutation in the *same* transaction; duplicate movement key means replay, not an additional change. Manual stock adjustments may not make available negative.
 
-## 8. Promotions and Payment Collections
+## 8. Promotions and payment collections
 
 ### 8.1 `coupons` — `promotions`
 
@@ -674,7 +675,7 @@ windows and legal deadlines are operator-approved, not invented.
 | `status`! | enum(`held`,`redeemed`,`released`) | Confirmation/release once |
 | `activeKey`? | string | `active` for held/redeemed; cleared when released |
 | `termsSnapshot`! | embedded | `{code,type,value,version,discountPoisha,eligibleLineIds[]}` |
-| `expiresAt`? | Date | 15-minute online hold; null/ignored after redemption |
+| `expiresAt`? | Date | 15-minute online hold; absent after redemption |
 | `redeemedAt`? / `releasedAt`? / `lastOperationKey`? | Date / Date / string | Traceable transition |
 
 **Indexes:** unique `{couponId:1,orderId:1,generation:1}`; partial unique `{orderId:1,activeKey:1}` where `activeKey` is a string; `{status:1,expiresAt:1}`.
@@ -864,7 +865,7 @@ class-specific remaining capacity. Cross-source refunds are separate obligations
 entitlement (§§7.3, 9.2, 12.5). Verified provider status is independent of provider risk clearance or customer fulfillment;
 no retry of an uncertain external transaction is presumed safe.
 
-## 9. Returns and Refund Collections
+## 9. Returns and refund collections
 
 ### 9.1 `returnRequests` — `returns`
 
@@ -946,7 +947,7 @@ refunds and reference uniqueness must be sandbox-tested before production accept
 API](https://developer.sslcommerz.com/doc/v4/index.html#refund-api). Manual payouts require verified transfer evidence,
 authorization and applicable consent; a 7-business-day target is a policy target, not payout confirmation.
 
-## 10. Operations and Supporting Collections
+## 10. Operations and supporting collections
 
 ### 10.1 `notifications` — `notifications`
 
@@ -1003,7 +1004,7 @@ authorization and applicable consent; a 7-business-day target is a policy target
 | `contact`? / `address`? | embedded | Public operator-supplied data only when approved |
 | `lowStockThreshold`! | int | Nonnegative default stock alert threshold |
 | `paymentChannels`! | embedded | `{bkashEnabled,nagadEnabled,rocketEnabled,codEnabled}`; operational eligibility subject to verified merchant activation |
-| `activePolicyVersions`! | embedded | `{shipping,cancellation,returns,refunds,terms,complaints}` version IDs |
+| `activePolicyVersions`! | embedded | `{shipping,cancellation,returns,refunds,privacy,terms,complaints}` version IDs |
 | `policyHistory[]` | embedded[] | **Bounded read-only pointers** to published `policyDocuments` IDs, digest and effective dates (not canonical draft or full policy text) |
 | `updatedBy`? / `revision`! | ObjectId / int | Audit and concurrency guard |
 
@@ -1019,7 +1020,7 @@ unknown confirmation-relative absolute deadline; later policy updates do not rew
 
 | Field | Type | Constraints / notes |
 | --- | --- | --- |
-| `type`! / `version`! | enum(`shipping`,`cancellation`,`returns`,`refunds`,`terms`,`complaints`) / string | Immutable identity unique per policy type and version; no client-selected duplicate version |
+| `type`! / `version`! | enum(`shipping`,`cancellation`,`returns`,`refunds`,`privacy`,`terms`,`complaints`) / string | Immutable identity unique per policy type and version; no client-selected duplicate version |
 | `status`! | enum(`draft`,`approved`,`scheduled`,`published`,`superseded`,`withdrawn`) | Approval distinct from publication; withdrawn published history remains auditable |
 | `content`! / `contentDigest`! | sanitized bounded text / string | Full canonical versioned content; immutable from approval onward (new revision for correction) |
 | `effectiveAt`? / `publishedAt`? | Date | Never publish without reviewed approved effective time |
@@ -1052,7 +1053,7 @@ approved retention policy.
 
 **Rules:** process reservation expiry, payment uncertainty, refund verification and notification retries through idempotent domain services. A lease alone does not make a job's financial side effects idempotent.
 
-## 11. Indexes and Query Contracts
+## 11. Indexes and query contracts
 
 ### 11.1 Unique and partial-unique index register
 
@@ -1120,7 +1121,7 @@ MongoDB unique partial indexes constrain only matching documents; missing option
 - Use query plans and representative catalog data to select any text/Atlas Search strategy; do not claim a specific search service or latency target is approved. Enforce public visibility filters in the search path and revalidate checkout against primary business records.
 - Avoid unbounded skip/limit pagination for large histories; prefer indexed cursor seek on `(timestamp,_id)` where suitable. Record actual query plans and thresholds in `TESTING.md`.
 
-## 12. Data Integrity and Transaction Contracts
+## 12. Data integrity and transaction contracts
 
 ### 12.1 Hard invariants
 
@@ -1235,7 +1236,7 @@ to correction and keep fulfillment cancelled. Provider-linked receipts with unce
 
 An external acknowledgment or an error string is **not** proof of successful or failed payout. Cancellation/retirement of an obligation with a possibly payable external attempt is prohibited until reconciliation resolves the uncertainty.
 
-## 13. State Transitions and Data Lifecycles
+## 13. State transitions and data lifecycles
 
 ### 13.1 Fulfillment and allocation
 
@@ -1321,7 +1322,7 @@ Payment, fulfillment, risk review, correction, refund capacity, and external pro
 - **Deactivation:** user, product, category, variant and coupon eligibility may be deactivated without damaging referenced historical orders.
 - **Safe cleanup:** expired token artifacts and abandoned unreferenced media according to approved retention rules; never detach images needed to support open return evidence or orders without a reviewed policy.
 
-## 14. Security, Privacy, and Retention
+## 14. Security, privacy, and retention
 
 ### 14.1 Data classification and access
 
@@ -1366,7 +1367,7 @@ a numeric legal retention period or introducing an unapproved self-service delet
 - Net **linked** cash flow = linked verified collections minus **completed** refunds within the selected cash-flow period; show unmatched intake funds separately. Neither total is profit; pending refunds are outstanding liabilities, not already-paid refunds.
 - All reports state date basis, `Asia/Dhaka` business timezone, cutoff, and handling of cancellations/corrections. Any materialized summary must be rebuildable from primary records and reconciled before use.
 
-## 15. Migrations, Environments, and Recovery
+## 15. Migrations, environments, and recovery
 
 ### 15.1 Versioned migration procedure
 
@@ -1401,12 +1402,12 @@ must remain aligned with `ARCHITECTURE.md` §4 rather than silently inventing an
 
 ### 15.4 Backup, reconciliation, and restoration prerequisites
 
-- `OPERATIONS.md` will own exact backup cadence, retention, encryption, restore commands, escalation and recovery objectives; these require operator approval and environment capability validation.
+- [Operations §11](./OPERATIONS.md#11-backup-restore--disaster-recovery) owns backup and recovery procedures. Exact cadence, retention, restore commands and recovery objectives remain pending operator approval and environment capability validation.
 - A restored database must retain unique index definitions, checkout-key tombstones, unmatched provider intake, linked receipts, active allocations, live refund commitments, provider references and durable job state; rebuild derived payment/product counters only through a verified reconciliation process.
 - Restoration acceptance must check snapshot/index compatibility, aggregate money equations, inventory movement reconciliation, coupon usage totals, and any provider payments/refunds occurring after the backup point. **Restoring old data does not reverse externally completed money movements.**
 - Schedule reconciliation of uncertain gateway receipts, unsettled refund attempts, held allocation age, cash-flow projections, and stock movement deltas. Surface discrepancies for authorized resolution instead of silent destructive repairs.
 
-## 16. Verification and Traceability
+## 16. Verification and traceability
 
 ### 16.1 Database verification matrix
 
@@ -1467,14 +1468,14 @@ must remain aligned with `ARCHITECTURE.md` §4 rather than silently inventing an
 - [ ] Every proposed physical collection has an owner, business field schema, validation and relevant indexes.
 - [ ] Every order/payment/stock/coupon/claim/refund balance has a documented atomic transition and recovery path, including unmatched cash, partial/excess allocations and ordinal-split refunds.
 - [ ] Mermaid diagrams agree with the tables and are rendered/visually checked in the target Markdown viewer.
-- [ ] Field names and enum values are reconciled with the future `API.md` DTO contracts.
+- [ ] Field names and enum values are reconciled with the proposed [API DTO contracts](./API.md#6-shared-dtos--response-contracts).
 - [ ] Unresolved policy/provider/retention decisions are approved or retained as explicit release blockers.
 - [ ] Mongoose schemas, actual MongoDB indexes, unique/partial filter predicates and transaction tests match this specification.
 - [ ] All cross-document deviations are approved and documented rather than silently inferred.
 
 ---
 
-## Appendix A — Cross-document Decision Register
+## Appendix A — Cross-document decision register
 
 These are **design proposals or external approvals still required**, not product requirements that have been silently changed. The document can guide implementation, but approval and executable verification remain necessary.
 
@@ -1497,7 +1498,7 @@ These are **design proposals or external approvals still required**, not product
 | DB-D15 | Numeric field/array validation limits | Use proposed global bounded defaults in §2.2; reconcile with final API/UI before acceptance | Proposed |
 | DB-D16 | Monetary rounding and refund unit accounting | Half-up basis-point calculation; largest remainder tie-break; unit-ordinal source-funded partial refunds | Proposed; requires tests |
 
-## Appendix B — Schema Implementation Checklist
+## Appendix B — Schema implementation checklist
 
 | Stage | Expected code/review artifact | Source gate |
 | --- | --- | --- |
