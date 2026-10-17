@@ -28,6 +28,8 @@ This changelog tracks the documentation baseline. Application releases are recor
 - Completed P01-014 operations-baseline review with project-owner acceptance; reconciled runbook/configuration handoffs, operational decision gates and executable-command prerequisites.
 - Completed P02-001 Next.js storefront scaffold with TypeScript/Tailwind, public/private route boundaries, component/production smoke checks and activated storefront CI; project owner accepted the scaffold.
 
+- Completed P02-002 React/Vite admin scaffold with TypeScript/Tailwind, unavailable-access SPA boundaries, DOM navigation and built-asset smoke checks; activated admin CI and recorded project-owner acceptance.
+
 ## Maintenance
 
 Record subsequent documentation versions with their date, material changes and affected contracts. Keep application

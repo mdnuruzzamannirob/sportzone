@@ -286,8 +286,9 @@ npm run build --workspace=backend
 ```
 
 The current repository foundation supports `npm ci`, `npm run workspaces:check`, `npm run lint`, `npm run test:unit`
-and `npm run ci`. The storefront now has independent lint/type/unit/build and production route-smoke commands; admin
-and backend remain manifest-only in [ci-workspaces.json](../ci-workspaces.json). No deployment, migration or restore
+and `npm run ci`. Storefront and admin have independent lint/type/unit/build and HTTP smoke commands; only backend
+remains manifest-only in [ci-workspaces.json](../ci-workspaces.json). Admin Vite preview verifies local SPA fallback,
+not production static hosting; configure fallback and noindex/private document headers at the deployment host. No deployment, migration or restore
 command exists yet; local storefront build/start is not a production deployment procedure. See
 [Testing §5.3](./TESTING.md#53-standard-execution-interface) for current coverage and the complete required interface.
 Successful foundation CI is evidence for its configured checks only, not application deployment or operational readiness.

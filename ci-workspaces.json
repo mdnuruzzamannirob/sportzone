@@ -11,13 +11,14 @@
     ]
   },
   "admin": {
-    "state": "manifest-only",
+    "state": "active",
     "ownerTask": "P02-002",
     "checks": [
       "lint",
       "typecheck",
       "test:unit",
-      "build"
+      "build",
+      "test:smoke"
     ]
   },
   "backend": {

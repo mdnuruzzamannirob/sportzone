@@ -204,7 +204,7 @@ The diagram shows verification responsibilities, not a claim that test infrastru
 | Security and dependencies | SAST, dependency audit, secret scanner | CI availability and triage process agreed |
 | CI | GitHub Actions or approved CI system | Matches npm-workspaces repository and deployment controls |
 
-Node.js tooling tests, the GitHub Actions baseline and storefront Vitest/layout smoke checks exist. Other application
+Node.js tooling tests, the GitHub Actions baseline, storefront layout/HTTP checks and admin DOM routing/HTTP checks exist. Other application
 tools above are introduced with their
 owning feature/tooling tasks; listing a tool is not evidence that it is installed. Use compatible supported releases,
 commit exact versions and lockfile, and record installed versions in run evidence.
@@ -255,7 +255,7 @@ recovery and load checks have separately approved commands/workflows, not mandat
 
 | Root command | Current coverage / setup state |
 | --- | --- |
-| `npm run workspaces:check` | Three local workspace links; storefront active, admin/backend manifest-only |
+| `npm run workspaces:check` | Three local workspace links; storefront/admin active, backend manifest-only |
 | `npm run lint` | Repository JavaScript syntax, JSON, whitespace, Markdown structure/links and targeted credential checks |
 | `npm run test:unit` | Twelve repository/CI guard regressions; no application tests are implied |
 | `npm run ci` | Root checks plus every activated workspace check; machine-readable summary includes Not Configured app states |
@@ -266,6 +266,12 @@ Storefront workspace commands now implement `lint` (Biome), `typecheck` (Next ro
 checks). Run them with `npm run <command> --workspace=storefront`; smoke requires the build and manages its own temporary
 server. The active CI inventory runs all five checks. These scaffold checks do not establish customer authentication,
 backend ownership, real browser accessibility or commerce acceptance. Browser/theme/interaction suites extend with the UI tasks.
+
+Admin commands use the same workspace-qualified lint/typecheck/unit/build/smoke interface with `--workspace=admin`.
+Biome, strict TypeScript, Vitest/jsdom client navigation and Vite builds are configured. HTTP smoke checks verify built
+JS/CSS, local preview SPA fallback and no-store/noindex headers; they do not execute browser JavaScript. DOM tests cover
+entry redirect, direct nested access denial despite forged local flags, native-link/history navigation and unknown routes.
+No backend authentication, production hosting or real-browser accessibility result is inferred from these checks.
 
 [ci-workspaces.json](../ci-workspaces.json) assigns storefront setup to P02-001, admin to P02-002 and backend to P03-001.
 Adding workspace source, scripts or dependencies requires active CI state and real lint/typecheck/unit/build scripts.

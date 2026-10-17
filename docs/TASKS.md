@@ -102,7 +102,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | Phase | Total | Not Started | Ready | In Progress | Blocked | In Review | Done | Deferred |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | 01 — Requirements Finalization and Planning | 14 | 0 | 0 | 0 | 0 | 0 | 14 | 0 |
-| 02 — UI/UX Design | 11 | 10 | 0 | 0 | 0 | 0 | 1 | 0 |
+| 02 — UI/UX Design | 11 | 9 | 0 | 0 | 0 | 0 | 2 | 0 |
 | 03 — Authentication and Core Backend | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -113,7 +113,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **156** | **0** | **0** | **0** | **0** | **15** | **0** |
+| **Total** | **171** | **155** | **0** | **0** | **0** | **0** | **16** | **0** |
 
 ## 4. Milestone tracker
 
@@ -278,13 +278,13 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Acceptance:** Builds independently; public and private routes have appropriate layout boundaries.\
   **Evidence:** [Storefront build, route/cache boundaries, component and production smoke verification](./evidence/P02-001-storefront.md). Accepted by project owner on 17 October 2026: “Storefront scaffold গ্রহণ করছি”.
 
-- [ ] **P02-002 — Scaffold React + Vite admin workspace**\
-  **Status:** `Not Started` · **Area:** Frontend/admin\
+- [x] **P02-002 — Scaffold React + Vite admin workspace**\
+  **Status:** `Done` · **Area:** Frontend/admin · **Owner:** Codex\
   **Sources:** Architecture §§2,4,5\
   **Depends on:** `P01-009`\
   **Deliverable:** Initialize React, Vite, TypeScript, Tailwind and SPA routing.\
   **Acceptance:** Builds independently and supports secured app shell routing without assuming authorization.\
-  **Evidence to attach:** Admin build and navigation smoke test.
+  **Evidence:** [Admin build, DOM navigation and built-asset smoke verification](./evidence/P02-002-admin.md). Accepted by project owner on 17 October 2026: “Admin scaffold গ্রহণ করছি”.
 
 - [ ] **P02-003 — Implement monochrome design tokens across both apps**\
   **Status:** `Not Started` · **Area:** Design/UI\
@@ -1712,6 +1712,8 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | 17 October 2026 | P01-013 | Not Started → In Review → Done; coverage/static and local CI checks passed; project owner accepted the testing baseline | Codex / project owner | [Accepted testing baseline](./evidence/P01-013-testing-baseline.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P01-014 | Not Started → In Review → Done; operations/static checks passed; project owner accepted the operations baseline | Codex / project owner | [Accepted operations baseline](./evidence/P01-014-operations-baseline.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P02-001 | Not Started → In Progress → In Review → Done; build, layout/production smoke and configured CI checks passed; project owner accepted the storefront scaffold | Codex / project owner | [Accepted storefront scaffold](./evidence/P02-001-storefront.md) | Proceed through declared task dependencies |
+
+| 17 October 2026 | P02-002 | Not Started → In Progress → In Review → Done; independent build, DOM navigation, HTTP smoke and configured CI checks passed; project owner accepted the admin scaffold | Codex / project owner | [Accepted admin scaffold](./evidence/P02-002-admin.md) | Proceed through declared task dependencies |
 
 When execution starts, update the task status and attach evidence. Change a checkbox to `[x]` only after acceptance.
 Preserve IDs and dependency references; update phase totals and record milestone acceptance separately.
