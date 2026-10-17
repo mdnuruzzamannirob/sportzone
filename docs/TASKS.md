@@ -79,7 +79,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 
 | Phase | Total | Not Started | Ready | In Progress | Blocked | In Review | Done | Deferred |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 01 — Requirements Finalization and Planning | 14 | 8 | 0 | 0 | 0 | 0 | 6 | 0 |
+| 01 — Requirements Finalization and Planning | 14 | 7 | 0 | 0 | 0 | 0 | 7 | 0 |
 | 02 — UI/UX Design | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 03 — Authentication and Core Backend | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -91,7 +91,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **165** | **0** | **0** | **0** | **0** | **6** | **0** |
+| **Total** | **171** | **164** | **0** | **0** | **0** | **0** | **7** | **0** |
 
 ## 4. Milestone tracker
 
@@ -172,13 +172,14 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Evidence:** [Official-source assessment, protected inputs, capability checklist and external gates](./evidence/P01-006-gateway-feasibility.md).\
   **Accepted:** Project owner, 17 October 2026 — “Gateway/refund assessment গ্রহণ করছি”.
 
-- [ ] **P01-007 — Identify policy and customer-rights validation gates**\
-  **Status:** `Not Started` · **Area:** Planning\
+- [x] **P01-007 — Identify policy and customer-rights validation gates**\
+  **Status:** `Done` · **Area:** Planning · **Owner:** Codex\
   **Sources:** FR-16; FR-17; FR-18; FR-34\
   **Depends on:** `P01-005`\
   **Deliverable:** Record approvals required for delivery, complaints, cancellation, return, refund and privacy content.\
   **Acceptance:** Store policy drafts are not represented as legally certified; launch verification owner is assigned.\
-  **Evidence to attach:** Policy approval/checklist record.
+  **Evidence:** [Policy approval gates, accountable launch role, official review sources and verification checklist](./evidence/P01-007-policy-gates.md).\
+  **Accepted:** Project owner, 17 October 2026 — “Policy-gate record গ্রহণ করছি”.
 
 - [ ] **P01-008 — Define safety-critical scenarios and dependency path**\
   **Status:** `Not Started` · **Area:** Planning\
@@ -1422,6 +1423,7 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
 
 - [ ] **P11-007 — Obtain current legal and published-policy approvals**\
   **Status:** `Not Started` · **Area:** Operations/compliance\
+  **Accountable role:** Store owner / authorized release approver; actual named delegation recorded before review.\
   **Sources:** FR-16; FR-17; FR-18; FR-34\
   **Depends on:** `P01-007`, `P11-006`\
   **Deliverable:** Verify current Bangladesh delivery deadlines, the applicable complaint-response period, refund obligations and approved shipping, cancellation, return, refund, privacy and terms copy.\
@@ -1553,6 +1555,9 @@ test/production states, evidence needs, blocking impacts and safe next actions f
 [P01-006 gateway/refund assessment](./evidence/P01-006-gateway-feasibility.md) records official source findings and
 account-specific verification needs for EXT-01/02/09; it does not establish merchant activation or live payout capability.
 
+[P01-007 policy gates](./evidence/P01-007-policy-gates.md) assign the launch verification role and record required
+qualified/operator approvals, source evidence and publication checks; draft policies are not legally certified.
+
 | ID | Dependency / gate | First affected tasks | Resolution evidence |
 | --- | --- | --- | --- |
 | EXT-01 | SSLCOMMERZ sandbox, live activation and enabled bKash/Nagad/Rocket channels | P01 gateway readiness; P07; P11 | Merchant account activation, test and live-channel verification |
@@ -1666,6 +1671,7 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | 17 October 2026 | P01-004 | NFR/release coverage verification passed; project owner accepted the register; status Done | Codex / project owner | [Accepted NFR/release register](./evidence/P01-004-nfr-release.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P01-005 | Readiness-register verification passed; project owner accepted the register; status Done; external readiness remains separately Pending | Codex / project owner | [Accepted readiness register](./evidence/P01-005-readiness.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P01-006 | Gateway/refund planning assessment passed; project owner accepted the assessment; status Done; merchant-specific activation/payout gates remain separate | Codex / project owner | [Accepted gateway/refund feasibility](./evidence/P01-006-gateway-feasibility.md) | Proceed through declared task dependencies |
+| 17 October 2026 | P01-007 | Policy-gate verification passed; project owner accepted the record; status Done; actual legal/publication approvals remain separate | Codex / project owner | [Policy/customer-rights gates](./evidence/P01-007-policy-gates.md) | Proceed through declared task dependencies |
 
 When execution starts, update the task status and attach evidence. Change a checkbox to `[x]` only after acceptance.
 Preserve IDs and dependency references; update phase totals and record milestone acceptance separately.
