@@ -13,6 +13,7 @@ This changelog tracks the documentation baseline. Application releases are recor
 - Standardized document ownership, terminology, navigation and cross-references.
 - Consolidated configuration guidance and retained stable requirement, task, scenario and operation identifiers.
 - Completed P01-001 baseline verification with repository paths, source hashes and project-owner checklist acceptance.
+- Completed P01-002 release-scope verification, exclusions, policy defaults and external decision records with project-owner checklist acceptance.
 
 ## Maintenance
 

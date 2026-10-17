@@ -79,7 +79,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 
 | Phase | Total | Not Started | Ready | In Progress | Blocked | In Review | Done | Deferred |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 01 — Requirements Finalization and Planning | 14 | 13 | 0 | 0 | 0 | 0 | 1 | 0 |
+| 01 — Requirements Finalization and Planning | 14 | 12 | 0 | 0 | 0 | 0 | 2 | 0 |
 | 02 — UI/UX Design | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 03 — Authentication and Core Backend | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -91,7 +91,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **170** | **0** | **0** | **0** | **0** | **1** | **0** |
+| **Total** | **171** | **169** | **0** | **0** | **0** | **0** | **2** | **0** |
 
 ## 4. Milestone tracker
 
@@ -127,13 +127,14 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Evidence:** [Verified baseline checklist, paths, authority and source hashes](./evidence/P01-001-baseline.md).\
   **Accepted:** Project owner, 17 October 2026 — “Checklist গ্রহণ করছি”.
 
-- [ ] **P01-002 — Confirm initial-release boundaries and open decisions**\
-  **Status:** `Not Started` · **Area:** Planning\
+- [x] **P01-002 — Confirm initial-release boundaries and open decisions**\
+  **Status:** `Done` · **Area:** Planning · **Owner:** Codex\
   **Sources:** PRD §3; §19\
   **Depends on:** `P01-001`\
   **Deliverable:** Record one store, BDT, single admin role, included and excluded scope.\
   **Acceptance:** Excluded features are not accidentally made prerequisites; unresolved policy/provider issues are explicit decisions.\
-  **Evidence to attach:** Scope baseline and approved change records.
+  **Evidence:** [Scope inventory, exclusions, external decisions and verification](./evidence/P01-002-scope.md).\
+  **Accepted:** Project owner, 17 October 2026 — “Scope checklist গ্রহণ করছি”.
 
 - [ ] **P01-003 — Establish complete FR and acceptance mapping**\
   **Status:** `Not Started` · **Area:** Planning\
@@ -1643,6 +1644,7 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | Date (Asia/Dhaka) | Task / milestone | Change or result | Owner / reviewer | Evidence | Next action |
 | --- | --- | --- | --- | --- | --- |
 | 17 October 2026 | P01-001 | Baseline verification passed; project owner accepted the checklist; status Done | Codex / project owner | [Accepted baseline verification](./evidence/P01-001-baseline.md) | Proceed through declared task dependencies |
+| 17 October 2026 | P01-002 | Scope and exclusion review passed; project owner accepted the checklist; status Done | Codex / project owner | [Accepted scope verification](./evidence/P01-002-scope.md) | Proceed through declared task dependencies |
 
 When execution starts, update the task status and attach evidence. Change a checkbox to `[x]` only after acceptance.
 Preserve IDs and dependency references; update phase totals and record milestone acceptance separately.
