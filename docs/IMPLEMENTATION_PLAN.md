@@ -1,9 +1,9 @@
 # SportZone — Implementation plan
 
-**Version:** 1.2  
+**Version:** 1.3\
 **Documentation sync:** 16 October 2026 (editorial alignment; no milestone acceptance claimed)  
-**Updated:** 16 October 2026  
-**Documentation audit:** 16 October 2026 — corrections in this working revision do not grant specification, task or release approval.  
+**Updated:** 17 October 2026\
+**Documentation audit:** 17 October 2026 — review remediation adds proposed contracts and checks; no milestone acceptance is claimed.\
 **Status:** Development execution baseline — pending implementation  
 **Product reference:** [PRD](./PRD.md)  
 **Technical reference:** [Architecture](./ARCHITECTURE.md)  
@@ -348,10 +348,10 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 **Backend work packages:**
 
-1. Implement admin-managed delivery zones, district/area coverage and charges, enabled/disabled delivery selection, estimated delivery dates, immutable deadline-rule snapshots and separate operational delivery commitments (Database §7.2; API §11.3). Calculate a confirmation-based absolute deadline only from the actual confirmation event. The PRD's 14-calendar-day delivery planning target is subject to any shorter applicable legal deadline; verify the operative rules before launch. Apply settings changes only to future orders.
-2. Implement checkout quote/validation that rechecks selected SKUs, stock, sale prices, coupon eligibility, customer details, district/area, address, terms acceptance, and server-calculated totals in integer poisha.
+1. Implement admin-managed delivery zones, district/area coverage and charges, enabled/disabled delivery selection, a shared store-wide guard for cross-zone charge scheduling/activation, estimated delivery dates, immutable deadline-rule snapshots and separate operational delivery commitments (Database §7.2; API §11.3). Calculate a confirmation-based absolute deadline only from the actual confirmation event. The PRD's 14-calendar-day delivery planning target is subject to any shorter applicable legal deadline; verify the operative rules before launch. Apply settings changes only to future orders.
+2. Review/approve API-D20 and implement scope-bound persisted checkout quotes, mandatory quoteId, expiry/commercial comparison and atomic single-order consumption; changed terms require explicit buyer reconfirmation. Implement checkout validation that rechecks selected SKUs, stock, sale prices, coupon eligibility, customer details, district/area, address, terms acceptance, and server-calculated totals in integer poisha.
 3. Implement immutable order/order-line snapshots, unique order numbers, fulfillment/payment separation, customer/order ownership, and stable checkout-intent idempotency keys.
-4. Establish transactionally safe allocation coordination: accepted COD remains Pending and commits stock and coupon redemption; administrator confirmation is a separate fulfillment transition; the online path creates **15-minute** inventory and coupon holds with independent expiry/release and idempotent state changes. Keep provider interaction disabled until Phase 07 integration is ready.
+4. Establish transactionally safe allocation coordination: accepted COD remains Pending and commits stock and coupon redemption; administrator confirmation is a separate fulfillment transition; the online path creates **15-minute** inventory and coupon holds with generation-specific heldAt, synchronized stock/coupon expiry/release and idempotent replay that never extends a hold. Keep provider interaction disabled until Phase 07 integration is ready.
 5. Implement COD checkout acceptance, order confirmation, customer order history/details, authorized admin order confirmation/processing/shipment/delivery updates, stock movement on dispatch, and collection recording distinct from delivery status.
 6. Implement eligible pre-shipment cancellation requests, recorded reasons, required admin review (including dispatch verification during Processing), and exactly-once inventory/coupon release. A paid order creates a refund obligation for Phase 08; unpaid COD cancellation creates no monetary refund.
 7. Implement guest order lookup through order number plus email **followed by** a time-limited single-use email proof. Grant scope to only the verified order and eligible actions; apply rate limits and non-enumerating messages.
@@ -626,6 +626,8 @@ Implement PRD FR-09/FR-11–FR-18 and Architecture §§7/10 through domain servi
 
 Isolate merchant APIs behind backend adapters; verify callbacks through provider status/validation; persist unique references and attempts; distinguish payment collection from fulfillment and payout completion from refund initiation. Retry and reconciliation jobs must be durable, idempotent, observable, and recoverable after restart. Duplicate provider callbacks must not repeat allocation, refund, or notification effects.
 
+For proof-email delivery, review/approve API-D21: a challenge-local authenticated encrypted envelope and verification hash, external key custody, reference-only outbox, safe expiry/reissue and uncertain-send reconciliation. Never equate one event intent with exactly-once email transport.
+
 For important state-change notifications, persist delivery intent durably with the originating business transition where needed; dispatch email separately and retry without replaying that business transition. Delivery failures remain visible and do not reverse successfully committed orders or refunds.
 
 | PRD FR-20 notification event | Implementation phase | Required verification |
@@ -775,4 +777,4 @@ This plan establishes **what to implement, in which dependency order, and with w
 
 ---
 
-**End of SportZone Implementation Plan — Version 1.2**
+**End of SportZone Implementation Plan — Version 1.3**

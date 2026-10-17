@@ -1,9 +1,9 @@
 # SportZone — Database design specification
 
-**Version:** 1.2  
-**Source baseline:** PRD / Architecture / Design / Implementation Plan / Tasks v1.2  
-**Updated:** 16 October 2026  
-**Documentation audit:** 16 October 2026 — corrections in this working revision do not grant specification, task or release approval.  
+**Version:** 1.3\
+**Source baseline:** PRD / Architecture v1.2; Design / Implementation Plan / Tasks v1.3; API / Testing / Operations v1.2\
+**Updated:** 17 October 2026\
+**Documentation audit:** 17 October 2026 — review remediation is proposed design, not technical approval, implemented behavior or release acceptance.\
 **Status:** Revised implementation proposal — technical sign-off and runtime verification pending  
 **Product reference:** [PRD](./PRD.md)  
 **Technical reference:** [Architecture](./ARCHITECTURE.md)  
@@ -165,16 +165,16 @@ events). Never embed an unbounded payment history, product review list, or movem
 
 ### 3.1 Collection inventory
 
-The following are physical **proposals**, not assertions about an existing database. `authChallenges`, `browserContexts`,
-`checkoutIntents`, `providerReceiptIntake`, `paymentCollections`, `couponCustomerCounters`, `orderItemBalances`,
+The following **37 physical collections** are proposals, not assertions about an existing database. `authChallenges`, `browserContexts`,
+`checkoutQuotes`, `checkoutIntents`, `mediaAssets`, `providerReceiptIntake`, `paymentCollections`, `couponCustomerCounters`, `orderItemBalances`,
 `cancellationRequests`, `deliveryExceptions`, and `jobLeases` are supporting collections required by the proposed safe
 persistence design.
 
 | Domain | Collections | Key embeddings |
 | --- | --- | --- |
 | Identity | `users`, `sessions`, `authChallenges`, `browserContexts` | User `addresses[]` |
-| Catalog and shopping | `categories`, `products`, `productVariants`, `carts`, `wishlists`, `reviews` | Product `images[]`; cart `items[]` |
-| Orders and delivery | `checkoutIntents`, `orders`, `orderItemBalances`, `cancellationRequests`, `deliveryExceptions`, `deliveryZones`, `deliveryCharges` | Order `items[]`, customer/delivery/terms snapshots, transition history |
+| Catalog and shopping | `categories`, `products`, `productVariants`, `carts`, `wishlists`, `reviews`, `mediaAssets` | Product `images[]`; cart `items[]` |
+| Orders and delivery | `checkoutQuotes`, `checkoutIntents`, `orders`, `orderItemBalances`, `cancellationRequests`, `deliveryExceptions`, `deliveryZones`, `deliveryCharges` | Order `items[]`, customer/delivery/terms snapshots, transition history |
 | Inventory | `inventoryReservations`, `inventoryMovements` | Variant stock counters in `productVariants` |
 | Promotions | `coupons`, `couponRedemptions`, `couponCustomerCounters` | Coupon terms snapshot on order/redemption |
 | Payments | `payments`, `paymentAttempts`, `providerReceiptIntake`, `paymentCollections` | Independent verified-provider intake and linked collection references |
@@ -220,7 +220,10 @@ erDiagram
     PRODUCTS ||--|{ PRODUCT_VARIANTS : offers
     PRODUCT_VARIANTS ||--o{ INVENTORY_RESERVATIONS : reserves
     PRODUCT_VARIANTS ||--o{ INVENTORY_MOVEMENTS : records
+    CHECKOUT_QUOTES ||--o| CHECKOUT_INTENTS : consumed_once
     CHECKOUT_INTENTS ||--o| ORDERS : creates_once
+    MEDIA_ASSETS }o--o{ PRODUCTS : public_references
+    MEDIA_ASSETS }o--o{ RETURN_REQUESTS : private_evidence
     ORDERS ||--|{ ORDER_ITEMS : snapshots
     ORDERS ||--o{ INVENTORY_RESERVATIONS : allocates
     ORDERS ||--o{ COUPON_REDEMPTIONS : uses_same_coupon
@@ -240,6 +243,7 @@ erDiagram
 `ORDER_ITEMS` and `RETURN_ITEMS` are logical **embedded** nodes, not collections. `USERS o|--o{ ORDERS` reflects nullable
 `orders.userId` for guests. Multiple distinct independently verified receipts may relate to one gateway attempt when
 provider evidence proves separate collections; there is **no unique attempt-to-receipt constraint**.
+`CHECKOUT_QUOTES` and `MEDIA_ASSETS` below are supporting records, independent of the PRD entity count.
 `PROVIDER_RECEIPT_INTAKE` is the authoritative unique online-provider evidence intake; a verified but unmatched intake
 entry has no order reference.
 
@@ -286,7 +290,7 @@ flowchart TD
 
 ## 5. Identity and access collections
 
-**Common rule:** No password, session, guest-proof, CSRF context, or recovery token may be stored in plaintext. Durable delivery of recovery/guest proofs requires the security/data-owner decision tracked in [API-D21](./API.md#appendix-b--decision--dependency-register); do not store raw proof links in the notification outbox to make retries work. Use separate session types/cookie names for admin, customer, and scoped guest access; require server-side role and resource ownership checks (Architecture §9).
+**Common rule:** No password, session, guest-proof, CSRF context, or recovery token may be stored in plaintext. The proposed API-D21 design below uses a short-lived encrypted challenge-delivery envelope; the notification outbox contains only its challenge reference. Security/data-owner approval and key-custody verification remain prerequisites; never store raw proof links in the outbox. Use separate session types/cookie names for admin, customer, and scoped guest access; require server-side role and resource ownership checks (Architecture §9).
 
 ### 5.1 `users` — `auth` / `customers`
 
@@ -301,6 +305,7 @@ flowchart TD
 | `emailVerifiedAt`? | Date | Set only after challenge verification |
 | `addresses[]` | embedded[] | `{id,recipient,phone,districtKey,areaKey,street,addressLine2?,isDefault}`; bounded per customer |
 | `securityRevision`! | int | Increment when passwords, privileges, suspension, or security posture changes |
+| `challengeRevisions`! | embedded | Per-purpose nonnegative counters for email verification/change/reset; issuance/reissue and consumption serialize on the same principal/purpose counter |
 | `deletionRequest`? | embedded | `{requestedAt,verifiedAt,status,decisionAt?,decisionReason?}`; approval/retention-controlled |
 
 **Indexes:** unique `{emailNormalized:1}`; `{role:1,status:1,createdAt:-1}` for admin customer views.
@@ -335,11 +340,28 @@ flowchart TD
 | `targetEmailNormalized`? | string | For email-change workflow |
 | `expiresAt`! / `consumedAt`? | Date | Atomic consume; an expired/consumed proof fails |
 | `attemptCount`! | int | Enforce bounded guessing attempts and rate limits |
+| `scopeRevisionAtIssue`! | int | Current user purpose counter or order guestAccessChallengeRevision; verify on delivery/consume, not only secretHash |
 | `issuedContextHash`? | string | Optional binding to initiating browser context when required |
+| `deliveryEnvelope`? | embedded | `{algorithm:'AES-256-GCM',keyVersion,nonce,ciphertext,authTag}`; only the short-lived proof is encrypted, never passwords or session tokens; worker-only projection |
+| `deliveryNotificationId`? / `invalidatedAt`? | ObjectId / Date | One delivery intent for this challenge; explicit supersession/revocation independent of TTL |
 
 **Indexes:** unique `{secretHash:1}`; `{purpose:1,orderId:1,expiresAt:1}`; TTL `{expiresAt:1}`.
 
 **Rules:** guest proof is issued only after safe order/email lookup and grants order scope only after atomic single-use exchange; ambiguous lookup responses do not leak existence. Password reset token consumption and password/session revision must be coordinated safely.
+
+**Proof delivery (API-D21, proposal):** generate a cryptographically random, high-entropy single-use proof in memory.
+Persist its `secretHash`, scope/expiry and authenticated encrypted `deliveryEnvelope` in the same transaction as the
+notification intent. Use a maintained AEAD implementation, a fresh nonce for each encryption under a key, and authenticated
+additional data binding challenge ID, purpose, principal/order, destination and expiry. The versioned encryption key is
+held outside MongoDB/backups in the approved secret store; notification `payload` contains `challengeId` only, never proof,
+URL, ciphertext or key. A delivery worker reads the restricted envelope, checks current expiry/consumption/invalidation,
+decrypts only in memory and renders a link to a fixed configured HTTPS origin. Authentication verifies the hash and atomically
+consumes the challenge; it never decrypts to validate a supplied proof. Remove the envelope on consumption, invalidation or
+expiry, independently of TTL lag. Keep old key versions only while still-valid envelopes need them; missing keys or AEAD
+failure fail closed. Resend/reissue must increment `users.challengeRevisions[purpose]` or `orders.guestAccessChallengeRevision`, invalidate the old challenge under that same principal/purpose serialization guard and
+create a fresh proof/intent; do not extend an existing proof's expiry. Delivery retry reuses that challenge and event key;
+see API §16.3 for uncertain-send handling. No new session is granted by delivery. The chosen proof transport is a high-entropy secure link; supporting short numeric codes later requires a separately reviewed guessing/attempt-limit design. Security review must validate key access,
+nonce management, concurrency, redaction and restore invalidation before implementation relies on this proposal.
 
 ### 5.4 `browserContexts` — pre-auth CSRF bootstrap
 
@@ -447,21 +469,71 @@ flowchart TD
 
 **Rules:** validate delivered qualifying purchase and exclusions (PRD FR-10); edit re-enters moderation when required. Do not silently alter customer ratings. Rating aggregates are recalculable projections.
 
+### 6.7 `mediaAssets` — `catalog` / `returns`
+
+| Field | Type | Constraints / notes |
+| --- | --- | --- |
+| `publicId`! / `assetKind`! | string / enum(`public_media`,`claim_evidence`) | Server-generated unique provider object identity; not a client URL |
+| `owner`! | embedded | `{kind:admin or customer or guest_order,principalId}`; userId for accounts, orderId for guest_order; resolved server-side, never a client-selected ownership field |
+| `orderId`? / `claimType`? / `orderItemIds[]` | ObjectId / enum / ObjectId[] | Required for evidence; immutable scope validated before upload |
+| `mimeType`! / `size`! / `access`! | string / int / enum(`public`,`private`) | Verified file metadata; evidence always private |
+| `status`! | enum(`uploading`,`temporary`,`attached`,`deleting`,`deleted`,`quarantined`) | Quarantine until validation/scanning passes |
+| `references[]` | embedded[] | Bounded unique `{targetType,targetId,slot}` links; attaching/detaching and target mutation share one transaction |
+| `expiresAt`? / `deletedAt`? / `revision`! | Date / Date / int | Temporary cleanup deadline, actual deletion evidence and CAS guard |
+
+**Rules — public attachments:** each MediaRef.publicId must resolve to the approved public asset ledger; provider URL comparison alone is insufficient. Product/category/store updates and ledger references commit together. Reusing public media adds a distinct target reference; evidence can attach only to its immutable order/item claim scope.
+
+**Indexes:** unique `{publicId:1}`; `{orderId:1,assetKind:1,status:1}`; `{status:1,expiresAt:1}`. No TTL deletion: it
+would remove the authorization/cleanup ledger before the provider object is safely reconciled. Create `uploading` intent
+with deterministic provider identity before upload; external upload runs outside a transaction. Failed/uncertain uploads
+retain the intent for reconciliation. Claim attachment requires correct owner/order/item scope, unexpired `temporary`
+state and successful validation; it atomically adds a reference and changes state to `attached`. Cleanup first CAS-claims
+an expired unreferenced record as `deleting`; attachment cannot race past that claim. Recheck retention/legal hold and
+all references before provider deletion. Timeout remains `deleting` for status reconciliation; never delete a referenced
+asset or declare provider deletion from a local timeout. Private retrieval rechecks current order/claim ownership and
+issues only a short-lived authorized URL (never a permanent public evidence URL). Exact size/MIME/scan/retention values
+remain API-D10/OPS-D14 approvals; the lifecycle design is proposed under API-D18.
+
 ## 7. Orders, delivery, and inventory collections
 
 ### 7.1 `checkoutIntents` — `checkout`
+
+#### 7.1.1 `checkoutQuotes` — buyer confirmation (API-D20 proposal)
+
+| Field | Type | Constraints / notes |
+| --- | --- | --- |
+| `scopeType`! / `scopeKeyHash`! | enum(`customer`,`guest_context`) / string | Same principal scope as checkout intent; quote ID alone grants no access |
+| `requestFingerprint`! | string | Canonical draft fields after saved-address/contact resolution, including selected method/coupon |
+| `commercialSnapshot`! / `commercialDigest`! | embedded / string | Immutable line IDs, quantities, prices, discount allocations, charge rule, deadline basis, method and required policy versions shown to buyer |
+| `quotedAt`! / `expiresAt`! | Date / Date | Server-generated; approved configured quote lifetime, no hardcoded operating duration |
+| `status`! | enum(`open`,`consumed`) | Consumption commits with exactly one checkout intent/order |
+| `checkoutIntentId`? / `orderId`? / `consumedAt`? / `revision`! | ObjectId / ObjectId / Date / int | Write-once outcome pointers and conditional consume guard |
+
+**Indexes:** `{scopeType:1,scopeKeyHash:1,expiresAt:1}`; partial unique `{checkoutIntentId:1}` and `{orderId:1}` when
+ObjectId. No TTL until approved retention permits deleting unused quotes; consumed consent evidence is retained with the
+order or an equivalent immutable snapshot/digest. Quote creation reserves neither stock nor coupon capacity. Final submit
+checks same scope, unexpired open quote and identical normalized draft; recalculates commercial terms using stable quoted
+line IDs; rejects changed prices, allocation, charge/rule, deadline basis, method eligibility or policy versions. In one
+transaction, conditionally consume the quote with intent/order/allocation creation; concurrent different keys for the same
+quote cannot create two orders. Repeat same-key requests resolve the durable intent **before** checking quote expiry or
+consumption. Different payload under that key remains a conflict. A changed/expired quote needs a fresh quote and explicit
+buyer confirmation, never automatic resubmission. Stock/coupon capacity is checked again atomically at submit. This remains
+a design proposal requiring Product/API/data-owner sign-off, not approval to charge from an unreviewed contract.
+
+#### 7.1.2 Checkout intent fields
 
 | Field | Type | Constraints / notes |
 | --- | --- | --- |
 | `scopeType`! | enum(`customer`,`guest_context`) | Request identity scope |
 | `scopeKeyHash`! / `idempotencyKeyHash`! | string | Hash opaque guest/browser ID and client retry key; never trust raw email as scope |
 | `requestFingerprint`! | string | Hash of canonical validated checkout payload; retries with changed payload conflict |
+| `quoteId`! | ObjectId | Consumed server-issued quote; unique, bound to identical scope and commercial consent |
 | `orderId`? | ObjectId | Exactly one order once committed |
 | `status`! | enum(`preparing`,`order_created`,`resolved`) | Recover interrupted submission safely |
 | `resultSnapshot`? | embedded | Minimal durable result pointer/status, not sensitive response secrets |
 | `replayUntil`? | Date | Optional client replay-response availability deadline; **not** a deletion deadline |
 
-**Indexes:** unique `{scopeType:1,scopeKeyHash:1,idempotencyKeyHash:1}`; `{orderId:1}` (partial unique when present); **No TTL** on the unique key registry; retain a minimal key/fingerprint/order tombstone while its order can be replayed, reconciled, or referenced.
+**Indexes:** unique `{quoteId:1}`; unique `{scopeType:1,scopeKeyHash:1,idempotencyKeyHash:1}`; `{orderId:1}` (partial unique when present); **No TTL** on the unique key registry; retain a minimal key/fingerprint/order tombstone while its order can be replayed, reconciled, or referenced.
 
 **Rules:** concurrent identical submissions resolve to one order; changed payload with same key fails; persist outcome
 before reporting success. After `replayUntil`, an old key must return existing-order status or a `key_retired` conflict,
@@ -484,7 +556,8 @@ actual legal retention horizon remains an approved operations decision.
 | `paymentMethod`! | enum(`online`,`cod`) | Specific online channel identified by verified provider method where available |
 | `fulfillmentStatus`! | enum(`pending`,`confirmed`,`processing`,`shipped`,`delivered`,`cancelled`) | Not derived from payment status |
 | `fulfillmentHold`? | enum(`none`,`payment_pending`,`risk_review`,`allocation_shortfall`,`admin_review`) | Reason fulfillment cannot proceed; separate from payment status |
-| `termsSnapshot`! | embedded | `{acceptedAt,policyVersionIds[],termsVersion}`; preserves consent basis |
+| `guestAccessChallengeRevision`! | int | Internal nonnegative guest-proof issuance/revocation guard; never a public ownership credential |
+| `termsSnapshot`! | embedded | `{acceptedAt,policyVersionIds[],termsVersion,quoteId,commercialDigest}`; preserves consent basis |
 | `notes`? | string | Bounded customer note; sanitize display |
 | `placedAt`! / `confirmedAt`? / `shippedAt`? / `deliveredAt`? / `cancelledAt`? | Date | Actual transition timestamps |
 | `shipment`? | embedded | `{dispatchReference?,carrierLabel?,trackingText?,statusUpdatedBy?}`; manual only |
@@ -582,7 +655,7 @@ restock. Claim completion and payout confirmation are independent facts.
 | Collection / field | Type | Constraints / notes |
 | --- | --- | --- |
 | `deliveryZones.name`! / `status`! | string / enum(`active`,`inactive`) | Administrative group and availability |
-| `deliveryZones.description`? / `coverageRevision`! | string / int | Notes; nonnegative transactional serialization guard for coverage rule writes |
+| `deliveryZones.description`? / `coverageRevision`! | string / int | Notes; per-zone change sequence; not the global non-overlap guard |
 | `deliveryZones.revision`! | int | Distinct CAS revision for any editable zone metadata/status/coverage assignment |
 | `deliveryCharges.zoneId`! | ObjectId | Refers to delivery zone |
 | `deliveryCharges.coverageKey`! | string | Normalized `district:area` or `district:*` for approved district default |
@@ -594,20 +667,17 @@ restock. Claim completion and payout confirmation are independent facts.
 | `deliveryCharges.endedAt`? / `endedReason`? | Date / string | Audited effective-window closure; never change historical charge amount/coverage |
 
 **Indexes:** partial unique `deliveryCharges {coverageKey:1}` for `status:'active'`; unique
-`{coverageKey:1,ruleVersion:1}`; `{zoneId:1,status:1,effectiveFrom:1}`. Add `deliveryZones.coverageRevision:int`
-(initialized to 0) as the **write-serialization guard** for all charge rule insertions/activations in a zone.
+`{coverageKey:1,ruleVersion:1}`; `{zoneId:1,status:1,effectiveFrom:1}`. Use `storeSettings.deliveryCoverageRevision:int` (initialized to 0 on the unique `primary` singleton) as the **store-wide write-serialization guard**; retain `deliveryZones.coverageRevision` only as a per-zone change sequence.
 
 **Rules:** `effectiveFrom <= checkoutAt < effectiveTo` (or no upper bound) for selected active rule. Resolve exact area
-coverage before its district wildcard; never combine two rules. In a transaction, first conditionally bump the owning
-zone's `coverageRevision` to serialize competing writers, then reject any **overlapping** effective windows for that
+coverage before its district wildcard; never combine two rules. In every charge insert/schedule/activate/end/supersede or zone-status transaction, first conditionally increment the **same singleton** `storeSettings.deliveryCoverageRevision`, then update affected zones in stable ID order and reject any **overlapping** effective windows globally for that
 `coverageKey` among scheduled/active rules. To replace an indefinite live charge, create a **new** version, then in one
-zone-guarded transaction close the predecessor's `effectiveTo` **once**, set its status `inactive` at the agreed effective
+globally guarded transaction close the predecessor's `effectiveTo` **once**, set its status `inactive` at the agreed effective
 boundary, and activate the successor when due; no overlapping selectable windows are allowed. The current `active`
 partial-unique index is satisfied by atomically ending the predecessor before activating the replacement. Planned future
 versions may remain `scheduled`; their windows must not overlap any approved scheduled/active rule unless the predecessor
 is closed in the **same** serialized decision. Deactivation without replacement closes the current window and leaves the
-coverage unavailable (checkout fails closed). Every master edit checks `revision`; `coverageRevision` is the additional
-zone-wide serialization guard. The activation job performs the same guarded transition. Existing order snapshots keep the
+coverage unavailable (checkout fails closed). Every master edit checks its `revision`; zone revisions never replace the store-wide guard. Allocate each next `ruleVersion` under this same guard across the full history of the coverage key, including inactive rules. Transactions for different zones and the same key must conflict/retry before interval checks; missing singleton fails closed. The activation job performs the same guarded transition. Existing order snapshots keep the
 original rule ID and amount. If no precisely eligible active rule exists, **fail checkout closed** rather than guess a
 charge. Snapshot selected version/charge/deadline **rule basis**, not a confirmation-relative absolute date. Effective
 windows and legal deadlines are operator-approved, not invented.
@@ -619,15 +689,16 @@ windows and legal deadlines are operator-approved, not invented.
 | `orderId`! / `variantId`! | ObjectId | Allocation owner and SKU |
 | `quantity`! | int | `> 0`; equal to canonical order-item quantity |
 | `generation`! | int | Increment on valid reallocation after hold expiration |
+| `heldAt`? | Date | Server event for creation of this held generation; required for online holds, absent for direct COD commitment |
 | `status`! | enum(`held`,`committed`,`released`,`shipped`) | One-way guarded state machine |
 | `activeKey`? | string | Set to `active` while held/committed; cleared on release/shipment |
-| `expiresAt`? | Date | Online held allocation: checkout creation + 15 minutes; absent after commitment |
+| `expiresAt`? | Date | Online: `heldAt + 15 minutes` for **this generation**; initial `heldAt` is placement, retry `heldAt` is successful atomic reacquisition; absent after commitment |
 | `committedAt`? / `releasedAt`? / `shippedAt`? | Date | Transition timestamps |
 | `releaseReason`? / `lastOperationKey`? | string | Replay/reconciliation context |
 
 **Indexes:** unique `{orderId:1,variantId:1,generation:1}`; partial unique `{orderId:1,variantId:1,activeKey:1}` **only where `activeKey` is a string**; `{status:1,expiresAt:1}`. **Do not TTL these records:** they are financial/stock history.
 
-**Rules:** expiry job performs a status-guarded release transaction; TTL time passing does nothing by itself. A payment retry after expired holds acquires a new generation; never overwrite/extend the expired one.
+**Rules:** expiry job performs a status-guarded release transaction; TTL time passing does nothing by itself. A payment retry after expired holds acquires a new generation; never overwrite/extend the expired one. The same transaction captures one `heldAt` and expiry for all stock lines and the coupon generation. Idempotent replay returns that generation without resetting its clock. Reacquisition directly after verified full funding may commit immediately without creating a fresh unpaid hold; it cannot reopen a cancelled order.
 
 ### 7.8 `inventoryMovements` — `inventory` (append-only)
 
@@ -675,7 +746,7 @@ windows and legal deadlines are operator-approved, not invented.
 | `status`! | enum(`held`,`redeemed`,`released`) | Confirmation/release once |
 | `activeKey`? | string | `active` for held/redeemed; cleared when released |
 | `termsSnapshot`! | embedded | `{code,type,value,version,discountPoisha,eligibleLineIds[]}` |
-| `expiresAt`? | Date | 15-minute online hold; absent after redemption |
+| `heldAt`? / `expiresAt`? | Date | Same generation start/expiry as stock: `expiresAt = heldAt + 15 minutes`; absent expiry after redemption |
 | `redeemedAt`? / `releasedAt`? / `lastOperationKey`? | Date / Date / string | Traceable transition |
 
 **Indexes:** unique `{couponId:1,orderId:1,generation:1}`; partial unique `{orderId:1,activeKey:1}` where `activeKey` is a string; `{status:1,expiresAt:1}`.
@@ -685,7 +756,7 @@ windows and legal deadlines are operator-approved, not invented.
 a previous hold is released. The unique active-key index only prevents simultaneous active generations and does **not**
 enforce lifetime identity. Pending holds consume quota until deliberately released; pre-shipment eligible cancellation
 releases redeemed usage once; post-dispatch refund/non-delivery never automatically restores coupon usage. Coupon edits do
-not rewrite accepted orders.
+not rewrite accepted orders. Reacquisition must honor the accepted price/allocation snapshot; incompatible current terms block new initiation pending cancellation/new explicit checkout, never silently reprice. Late collected money is preserved and fulfillment held for reviewed resolution/refund.
 
 ### 8.3 `couponCustomerCounters` — `promotions`
 
@@ -905,8 +976,11 @@ ordinal namespace. A completed claim does not mean the payout has completed.
 | `capacityStatus`! | enum(`not_reserved`,`reserved`,`completed`,`released`) | Source-collection balance commitment stage |
 | `consentEvidenceRef`? | string | Required when switching from supported original channel to approved manual method |
 | `approvedBy`? / `approvedAt`? / `completedAt`? | ObjectId / Date / Date | Recorded approvals and verified payout |
+| `timingSnapshot`? | embedded | Set at approval: `{policyVersion,timezone:'Asia/Dhaka',targetBusinessDays:7,calendarVersion?,legalRuleRef?,targetAt?,status:calculated or under_review}`; approved shorter rule wins; no date without approved business calendar/start basis |
 | `decisionKey`! | string | Idempotency token for one approved refund obligation |
 | `policyVersion`! / `revision`! | string / int | Snapshot applicable approved rules; guarded updates |
+
+`requestedAt` in the API maps to immutable refund `createdAt`. The public timeline is a bounded projection of durable status/audit events; retain approval/completion facts separately so history truncation cannot remove timing authority. Timing basis corrections require audited domain updates, preserve approvedAt, and must not delay an otherwise authorized payout.
 
 **Indexes:** unique `{orderId:1,decisionKey:1}`; `{sourceCollectionId:1,status:1}`; `{orderId:1,classification:1,createdAt:-1}`.
 
@@ -956,22 +1030,27 @@ authorization and applicable consent; a 7-business-day target is a policy target
 | `eventKey`! | string | Unique event + recipient + template purpose; prevents duplicate intent |
 | `orderId`? / `userId`? | ObjectId | Optional source reference |
 | `recipient`! | embedded | `{emailNormalized,displayName?}`; restricted |
-| `eventType`! | enum | `registration`, `password_reset`, `order_confirmation`, `payment_success`, `payment_failure`, `order_cancellation`, `shipment_update`, `delivery_completion`, `return_update`, `refund_approval`, `refund_rejection`, `refund_completion` (PRD FR-20) |
+| `eventType`! | enum | `registration`, `email_verification`, `email_change`, `password_reset`, `guest_order_access`, `order_received`, `order_confirmation`, `payment_success`, `payment_failure`, `order_cancellation`, `shipment_update`, `delivery_completion`, `return_update`, `refund_approval`, `refund_rejection`, `refund_completion` (PRD FR-20) |
 | `templateVersion`! / `payload`! | string / embedded | Minimal redacted template data; no secrets |
-| `status`! | enum(`queued`,`sending`,`sent`,`retry_wait`,`failed`) | Delivery state independent of business success |
+| `status`! | enum(`queued`,`sending`,`delivery_uncertain`,`sent`,`retry_wait`,`failed`) | Delivery state independent of business success |
 | `attemptCount`! / `nextAttemptAt`? | int / Date | Bounded backoff |
 | `providerMessageId`? / `lastErrorCode`? / `sentAt`? | string / string / Date | Outcome trace |
 
 **Indexes:** unique `{eventKey:1}`; `{status:1,nextAttemptAt:1}`.
 
-**Rules:** critical intent is created in the originating business transaction where necessary (outbox-style), then sent asynchronously; a retry cannot repeat the commerce operation. Do not store credentials or full payment details in message payloads.
+**Rules:** critical intent is created in the originating business transaction where necessary (outbox-style), then sent
+asynchronously; retry cannot repeat commerce work. `order_received` is placement/Pending, `order_confirmation` only the
+Confirmed transition; proof events reference a challenge ID, with no rendered secret-bearing content in `payload`.
+`delivery_uncertain` means a send may have succeeded; reconcile provider identity or explicitly reissue an invalidating
+proof, never blindly send an unrelated new token. Event uniqueness prevents duplicate intents, not a claim of exactly-once
+transport; use verified provider idempotency where available. Do not store credentials or full payment details in payloads.
 
 ### 10.2 `complaints` — `support`
 
 | Field | Type | Constraints / notes |
 | --- | --- | --- |
 | `orderId`? / `userId`? | ObjectId | Optional order/customer reference |
-| `contact`! | embedded | `{name,emailNormalized,phone?}` |
+| `contact`! | embedded | `{name,emailNormalized,phone?}`; anonymous name/email from validated input, authenticated omissions resolved from own profile or verified order snapshot; never invent a name |
 | `issue`! | string | Length-limited, access-controlled customer report |
 | `status`! | enum(`open`,`in_review`,`resolved`,`closed`) | Admin-managed lifecycle |
 | `resolution`? / `respondedAt`? / `resolvedAt`? | string / Date / Date | Document action and response |
@@ -1000,15 +1079,19 @@ authorization and applicable consent; a 7-business-day target is a policy target
 | Field | Type | Constraints / notes |
 | --- | --- | --- |
 | `key`! | enum(`primary`) | Unique singleton identity |
-| `storeName`? / `branding`? | string / embedded | Operator-approved store name and image references |
+| `storeName`? / `branding`? | string / embedded | Operator-approved store name and logo media reference |
+| `homepageBanner`? | embedded | `{assetId,title,alt,href?}`; validated public `mediaAssets` reference, bounded operator-approved copy and internal relative destination only |
+| `deliveryCoverageRevision`! | int | Server-only store-wide guard for every delivery-rule/zone-status transaction; independent of settings edit ETag |
 | `contact`? / `address`? | embedded | Public operator-supplied data only when approved |
 | `lowStockThreshold`! | int | Nonnegative default stock alert threshold |
 | `paymentChannels`! | embedded | `{bkashEnabled,nagadEnabled,rocketEnabled,codEnabled}`; operational eligibility subject to verified merchant activation |
-| `activePolicyVersions`! | embedded | `{shipping,cancellation,returns,refunds,privacy,terms,complaints}` version IDs |
+| `activePolicyVersions`! | embedded | Map with optional `shipping,cancellation,returns,refunds,privacy,terms,complaints` version IDs; absent keys mean unpublished, never empty-string/null references |
 | `policyHistory[]` | embedded[] | **Bounded read-only pointers** to published `policyDocuments` IDs, digest and effective dates (not canonical draft or full policy text) |
 | `updatedBy`? / `revision`! | ObjectId / int | Audit and concurrency guard |
 
 **Indexes:** unique `{key:1}`.
+
+**Bootstrap:** initialize the unique primary singleton before delivery writes, with revision/deliveryCoverageRevision 0, all payment flags false, an empty policy-pointer map and a low-stock threshold from approved environment/test configuration. Do not fabricate published policies or active merchant channels. Missing required effective policies block dependent checkout; operator/test fixtures provide reviewed versions through normal services. This is a foundation prerequisite, not a dependency on the later settings UI.
 
 **Rules:** `activePolicyVersions` references immutable published `policyDocuments`; publishing an immediately effective
 replacement atomically updates the pointer and records the previous version as superseded; future-effective approved
@@ -1067,7 +1150,9 @@ Collection-level tables define the exact intended fields. This list contains min
 | `productVariants` | `{skuNormalized:1}`; `{productId:1,attributeSignature:1}` | Both unique |
 | `carts` / `wishlists` | `{userId:1}` | Unique separately |
 | `reviews` | `{userId:1,productId:1}` | Unique where `{isActive:true}` |
-| `checkoutIntents` | `{scopeType:1,scopeKeyHash:1,idempotencyKeyHash:1}` | Unique persistent identity; **never TTL** |
+| `checkoutQuotes` | `{checkoutIntentId:1}`; `{orderId:1}` | Each partial unique when ObjectId; conditional open→consumed plus intent uniqueness |
+| `checkoutIntents` | `{scopeType:1,scopeKeyHash:1,idempotencyKeyHash:1}`; `{quoteId:1}` | Unique persistent identity and quote consumption; **never TTL** |
+| `mediaAssets` | `{publicId:1}` | Unique upload/deletion intent identity |
 | `orders` | `{orderNumber:1}`; `{checkoutIntentId:1}` | Both unique |
 | `orderItemBalances` | `{orderId:1,orderItemId:1}` | Unique balance; unit ordinals protected by document CAS |
 | `inventoryReservations` | `{orderId:1,variantId:1,generation:1}` | Unique generation |
@@ -1140,7 +1225,7 @@ MongoDB unique partial indexes constrain only matching documents; missing option
 | DB-I11 | Shipped final non-delivery cannot bypass custody resolution | Transactional item disposition coverage + admin evidence |
 | DB-I12 | A replay cannot duplicate a financial, stock, coupon or notification effect | Stable operation keys, unique indexes and state CAS |
 | DB-I13 | Linked collection amount equals its exact allocation split; unmatched online funds never impersonate order money | Source amount equation, intake reference, validation and reconciliation guard |
-| DB-I14 | A retired checkout key never creates another order and a scheduled delivery rule never overlaps a peer | Persistent key tombstone; serialized coverage writes, uniqueness and time-window check |
+| DB-I14 | A retired checkout key never creates another order and a scheduled delivery rule never overlaps a peer | Persistent key tombstone; global singleton coverage guard across all zones, uniqueness and time-window check |
 
 **Important:** Mongoose validation alone cannot enforce cross-document quantities, uniqueness, or concurrent account/payment constraints. Use database indexes, predicates and transactions. Approval and provider confirmation are independent of having a valid schema.
 
@@ -1148,8 +1233,8 @@ MongoDB unique partial indexes constrain only matching documents; missing option
 
 | Operation | Atomic database mutation | External work outside transaction |
 | --- | --- | --- |
-| Customer checkout (online) | Canonical intent + one order/payment + item balances + stock hold + coupon hold + movements + notification intent | Create hosted gateway session; reconcile if outcome uncertain |
-| Accepted COD checkout | Intent/order/payment + committed stock + redemption + movements | Dispatch email independently; collection happens later |
+| Customer checkout (online) | Scope-bound quote compare/consume + canonical intent + one order/payment + item balances + stock hold + coupon hold + movements + notification intent | Create hosted gateway session; reconcile if outcome uncertain |
+| Accepted COD checkout | Quote compare/consume + intent/order/payment + committed stock + redemption + movements | Dispatch email independently; collection happens later |
 | Verified online provider funds | Upsert unique `providerReceiptIntake`; if reliably matched, link exactly one `paymentCollections` receipt, allocate monetary splits, update payment projection and conditionally commit **only if fully funded** and eligible | Independent provider verification **before** transaction; unmatched receipt stays in intake |
 | Hold expiration | Conditional held→released; decrement reserved; release eligible coupon quota; append movements | Worker scheduling only |
 | Pre-dispatch cancellation approval | Approve request; pending/confirmed/processing→cancelled; release allocation/coupon once; eligible refund obligation | Actual payout outside transaction |
@@ -1361,6 +1446,7 @@ a numeric legal retention period or introducing an unapproved self-service delet
 
 ### 14.3 Reporting data integrity
 
+- Dashboard cutoff counts and bounded recent/low-stock lists follow API §14.4 and Appendix D.2. Historic cutoffs require reconstructible history or an approved snapshot; otherwise reject the request, never substitute current state.
 - Gross merchandise value uses **accepted non-cancelled orders** by **order placement period**, computed from original pre-discount merchandise snapshots; show sale and coupon discounts separately.
 - Linked paid collections use verified `paymentCollections.collectedAt`, **including separately disclosed overpayments**; COD counts only after verified collection. Independently verified **unmatched** merchant funds from `providerReceiptIntake` appear in a separate suspense/reconciliation line, never as an order sale or linked receipt.
 - Completed refunds use `refunds.completedAt`, separately classified as merchandise vs payment correction.
@@ -1464,7 +1550,7 @@ must remain aligned with `ARCHITECTURE.md` §4 rather than silently inventing an
 
 ### 16.3 Acceptance checklist for the specification
 
-- [ ] All 27 PRD logical entities have an explicit storage mapping; all 35 proposed physical collections have an owner.
+- [ ] All 27 PRD logical entities have an explicit storage mapping; all 37 proposed physical collections have an owner.
 - [ ] Every proposed physical collection has an owner, business field schema, validation and relevant indexes.
 - [ ] Every order/payment/stock/coupon/claim/refund balance has a documented atomic transition and recovery path, including unmatched cash, partial/excess allocations and ordinal-split refunds.
 - [ ] Mermaid diagrams agree with the tables and are rendered/visually checked in the target Markdown viewer.
@@ -1488,7 +1574,7 @@ These are **design proposals or external approvals still required**, not product
 | DB-D05 | Guest CSRF context persistence | `browserContexts` plus one-time `authChallenges` and scoped sessions | Proposed |
 | DB-D06 | Checkout idempotency retention and legal deletion | Retain minimal **non-TTL** key/order tombstone; retired replay key fails closed; approve erasure/archival duration with API and operations | Open policy decision; duplicate-order safety specified |
 | DB-D07 | Merchant/provider identifiers and duplicate-charge cardinality | Merchant `refundTransId` required; provider `refundRefId` later. No unique attempt→receipt assumption. Confirm exact provider identity, refund references and merchant capability in sandbox | External verification required |
-| DB-D08 | Active/scheduled delivery rules and regional charges | Serialized non-overlap per coverage key, one current active rule, area-first fallback; actual regions/charges operator supplied | Operator approval required |
+| DB-D08 | Active/scheduled delivery rules and regional charges | Global singleton deliveryCoverageRevision serializes all zones; one active rule and non-overlapping schedules per coverage key; actual regions/charges operator supplied | Operator approval required |
 | DB-D09 | Store policy versions, delivery/complaint legal deadlines, 7-day return/7-business-day refund targets | Snapshot approved policy; do not assert legal verification from PRD defaults | Legal/operator approval required |
 | DB-D10 | PII/transaction/audit retention, deletion and recovery objectives | No invented legal duration; finalize approved retention matrix before production | Legal/operator approval required |
 | DB-D11 | Search index design, catalog sizes, performance budgets | Select after profiling real query shapes and approved test workload | Deferred until benchmark |
@@ -1497,6 +1583,11 @@ These are **design proposals or external approvals still required**, not product
 | DB-D14 | Versioned migration execution and actual index support | Verify compatibility with selected MongoDB/Mongoose versions and deployed topology | Not yet verified |
 | DB-D15 | Numeric field/array validation limits | Use proposed global bounded defaults in §2.2; reconcile with final API/UI before acceptance | Proposed |
 | DB-D16 | Monetary rounding and refund unit accounting | Half-up basis-point calculation; largest remainder tie-break; unit-ordinal source-funded partial refunds | Proposed; requires tests |
+| DB-D17 | Buyer-confirmed quote persistence | checkoutQuotes + unique intent quoteId, atomic compare/consume; approved configurable expiry; API-D20 | Concrete proposal; Product/API/data review and transaction tests pending |
+| DB-D18 | Retry hold clock and synchronized capacity | Generation-specific heldAt and common stock/coupon expiry; no replay extension | Concrete proposal; backend/data review and race tests pending |
+| DB-D19 | Optional field removal and public DTO completion | Explicit request null→persisted absence; complete dashboard/refund/contact projections | Concrete proposal; API/data/frontend review and contract tests pending |
+| DB-D20 | Durable proof delivery without plaintext/outbox secrets | Hash plus challenge-local AEAD envelope, external key, reference-only intent and safe reissue; API-D21 | Concrete proposal; security/data review, key custody and fault tests pending |
+| DB-D21 | Homepage/media persistence | Separate homepageBanner from logo; mediaAssets ownership, attachment and cleanup ledger; API-D17/API-D18 | Concrete proposal; content/security/data review and tests pending |
 
 ## Appendix B — Schema implementation checklist
 
@@ -1515,4 +1606,4 @@ These are **design proposals or external approvals still required**, not product
 **Definition of complete:** This document becomes the accepted database contract only after outstanding design decisions
 are resolved, `API.md` mappings are reconciled, implementation/indexes are reviewed, integration tests prove the stated
 invariants, and release-specific legal/provider/operator prerequisites are verified. A finished Markdown file by itself is
-not evidence of a working database. The earlier v1.1 review corrections are retained in this **v1.2** proposal, including the subsequent API/database alignment; runtime, production, and provider sign-off remain pending.
+not evidence of a working database. This **v1.3** working revision retains the v1.1/v1.2 corrections and adds review remediation; runtime, production, owner approval and provider sign-off remain pending.

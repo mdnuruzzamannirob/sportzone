@@ -1,15 +1,15 @@
 # SportZone — Operations & maintenance specification
 
-**Version:** 1.1  
-**Updated:** 16 October 2026  
-**Documentation audit:** 16 October 2026 — corrections in this working revision do not grant specification, task or release approval.  
+**Version:** 1.2\
+**Updated:** 17 October 2026\
+**Documentation audit:** 17 October 2026 — review-remediation controls are proposed; deployment, drills and sign-off remain pending.\
 **Status:** Revised operational baseline — review findings addressed; deployment, drills, approvals and sign-off pending  
 **Product reference:** [PRD](./PRD.md)  
 **Technical reference:** [Architecture](./ARCHITECTURE.md)  
 **Design reference:** [Design](./DESIGN.md)  
-**Data reference:** [Database](./DATABASE.md) (v1.2)  
-**HTTP reference:** [API](./API.md) (v1.1)  
-**Quality reference:** [Testing](./TESTING.md) (v1.1)  
+**Data reference:** [Database](./DATABASE.md) (v1.3)\
+**HTTP reference:** [API](./API.md) (v1.2)\
+**Quality reference:** [Testing](./TESTING.md) (v1.2)\
 **Delivery reference:** [Implementation Plan](./IMPLEMENTATION_PLAN.md)  
 **Execution reference:** [Tasks](./TASKS.md)  
 **Scope:** Single-store sports e-commerce platform for Bangladesh  
@@ -429,12 +429,12 @@ values.
 
 | Work item | Durable source | Primary safety property | Alert condition (threshold pending) |
 | --- | --- | --- | --- |
-| Online hold expiry | Active `inventoryReservations`, associated order/payment status | Release only eligible unpaid hold after 15-minute expiry; do not race newly verified payment | Expired eligible holds unprocessed; repeated errors |
+| Online hold expiry | Active `inventoryReservations`, associated order/payment status | Release only eligible unpaid hold after this generation heldAt + 15 minutes; synchronize coupon expiry; do not race newly verified payment or extend expiry on replay | Expired eligible holds unprocessed; repeated errors |
 | Coupon hold expiry | Active `couponRedemptions`, tied to checkout and inventory | Release eligible hold exactly once, atomically with dependent state | Old held coupon allocations |
 | Uncertain payment reconciliation | `paymentAttempts`, `providerReceiptIntake`, `paymentCollections` | Verify provider independently; allocate each real receipt once | Aging unknown attempt / unmatched intake |
 | Refund status reconciliation | `refundAttempts`, `refunds`, source collection balances | Unknown payout stays reserved until verified; no duplicate disbursement | Aging unknown refund, caps mismatch |
 | Notification retry | `notifications` / unique `eventKey` | Retry message without repeating commerce event | Delivery backlog / repeated failures |
-| Scheduled delivery-charge activation | `deliveryCharges`, owning zone revisions | Atomically end predecessor and activate due successor without overlapping selectable windows (Database §7.6) | Due rule not activated, overlap or coverage gap |
+| Scheduled delivery-charge activation | `deliveryCharges`, storeSettings.deliveryCoverageRevision and affected zone revisions | Acquire the shared global guard before interval/version checks across all zones; atomically end predecessor and activate due successor without overlapping scheduled/selectable windows (Database §7.6) | Due rule not activated, overlap or coverage gap |
 | Scheduled policy publication | `policyDocuments`, `storeSettings.activePolicyVersions` | Publish only approved due revision; CAS-swap active pointer and preserve historic content (Database §10.5) | Due approved policy not activated or wrong public revision |
 | Operational consistency sweep | Immutable movements, claims, payment/refund projections | Detect drift; propose case for authorized resolution | Inventory, financial or policy mismatch |
 
@@ -459,6 +459,13 @@ lease/fencing mechanism known.
 
 **Hard rule:** A lease prevents some duplicate workers; it **does not** make payment/refund/stock side effects
 idempotent. TTL removal never releases stock/coupon holds.
+
+**Additional maintenance controls:** reconcile `mediaAssets` uploading/deleting outcomes and CAS-claim expired unreferenced
+uploads before provider cleanup. Never TTL-delete their authorization ledger or delete attached/legal-held evidence.
+Remove expired/consumed/invalidated challenge delivery envelopes without waiting for authChallenges TTL; retain only safe
+verification/audit facts for the approved period. Quote cleanup must preserve consumed consent evidence and intent/order
+uniqueness. Exact schedules, key custodians, temporary upload/quote lifetimes and retention remain approved configuration
+prerequisites, not invented numbers.
 
 ### 8.3 Schedule and ownership record
 
@@ -1277,6 +1284,9 @@ outside Git. Public settings must not be mistaken for server-only secrets.
 | MongoDB | `MONGODB_URI`, database name, optional TLS/CA path | **Secret** URI; replica set and transaction capability checks |
 | Sessions | `SESSION_SECRET` or server-side signing/pepper key, cookie config | **Secret**; hash/opaque cookie policy, separated contexts |
 | CSRF and guest access | CSRF signing secret/context and one-time guest-token secret if implemented | **Secret**; expiry, rotation, no log/public bundle |
+| Proof delivery (API-D21) | PROOF_DELIVERY_KEY_VERSION and protected versioned key-store references | Encryption keys outside MongoDB/backups; worker-only decrypt, AEAD nonce/tamper checks, no plaintext/outbox envelope; fail closed if unavailable |
+| Quote/upload lifetimes | CHECKOUT_QUOTE_TTL_SECONDS, MEDIA_TEMP_TTL_SECONDS (proposed) | Positive bounded server configuration approved by owners; enforce expiry, no runtime fallback guessed here |
+| Refund business calendar | Approved versioned calendar/holiday and policy-rule references | Compute target from actual approvedAt; shorter applicable basis wins; under_review without guessed date |
 | Gateway | `SSLCOMMERZ_MODE`, merchant/store identity, store password, validation URLs/callback URLs | Mode-specific **secrets**, enabled channels approved by merchant |
 | Refund settings | Provider-supported refund mechanism, merchant identity, limits and feature enablement | Server-only; do not hardcode unsupported refund API paths |
 | Email | Email provider API key, verified sender/domain, message retry policy | **Secret**; nonproduction/live sender separation |
@@ -1331,6 +1341,8 @@ verified.
 | OPS-D16 | DR single-writer and callback handoff | Proven fencing generation/old-writer isolation, ingress cutoff and staging failover test | M7 | Blocked | Unassigned | Pending | Not recorded / Pending |
 | OPS-D17 | Restored-session fail-closed mechanism | Independent auth epoch/revocation or mass invalidation with replay tests | M7 | Blocked | Unassigned | Pending | Not recorded / Pending |
 | OPS-D18 | Period financial close controls | Period/extract design, independent reviewer, variance tolerance policy and dry-run close | M7/M8 | Open | Unassigned | Pending | Not recorded / Pending |
+
+API-D20/API-D21 and media/banner designs now have concrete proposals in Database/API; this does not resolve environment-specific key custody, lifetime/calendar values, provider capability or restore evidence. Rehearse key rotation/loss and stale-proof invalidation under OPS-D17; verify global delivery serialization and media attachment/cleanup under deployed jobs.
 
 Before changing any decision to `Approved`, record **named approver, timestamp, evidence link and affected
 version**. If a decision is blocked, leave the relevant release gate blocked regardless of passing unrelated

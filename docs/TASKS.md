@@ -1,8 +1,8 @@
 # SportZone — Development tasks
 
-**Version:** 1.2  
-**Updated:** 16 October 2026  
-**Documentation audit:** 16 October 2026 — corrections in this working revision do not grant specification, task or release approval.  
+**Version:** 1.3\
+**Updated:** 17 October 2026\
+**Documentation audit:** 17 October 2026 — review-remediation contracts and cases are prepared; task and milestone acceptance remain pending.\
 **Status:** Execution register — no implementation completion claimed  
 **Product reference:** [PRD](./PRD.md)  
 **Technical reference:** [Architecture](./ARCHITECTURE.md)  
@@ -395,8 +395,8 @@ All tasks below remain **unaccepted**. Each uses `Status: Not Started`; existing
   **Sources:** FR-20; Architecture §§6,10  
   **Depends on:** `P03-002`, `P03-003`, `P03-007`  
   **Deliverable:** Implement server-only email adapter, durable notification intents, bounded retries, status and deduplication keys; connect registration intent to the delivery/retry pipeline.  
-  **Acceptance:** Delivery failure does not undo committed account changes; registration event intent can be delivered/retried independently and duplicate sends are suppressed.  
-  **Design prerequisite:** API-D21 must resolve retryable proof delivery without plaintext challenge secrets or secret-bearing notification payloads.
+  **Acceptance:** Delivery failure does not undo committed account changes; registration event intent can be delivered/retried independently; one logical event intent is guaranteed, with verified provider idempotency or explicit delivery uncertainty rather than an unsupported exactly-once-send claim.\
+  **Design prerequisite:** Review and approve the API-D21/Database §5.3 proposal: challenge-local AEAD envelope, reference-only notification intent, external key custody, purpose revision and safe uncertain-send/reissue behavior. Never persist plaintext or encrypted proof in the outbox.
   **Evidence to attach:** Adapter and retry tests with test provider.
 
 - [ ] **P03-010 — Implement customer password recovery and change**  
@@ -495,7 +495,7 @@ All tasks below remain **unaccepted**. Each uses `Status: Not Started`; existing
   **Status:** `Not Started` · **Area:** Backend/media  
   **Sources:** FR-05; FR-23; Architecture §11  
   **Depends on:** `P03-003`, `P01-005`  
-  **Deliverable:** Upload approved product media with format/size limits and safe orphan cleanup.  
+  **Deliverable:** Implement proposed mediaAssets ownership/upload-intent ledger, validation/quarantine, transactionally attached references, private evidence authorization and CAS-protected orphan cleanup; upload/delete provider calls stay outside DB transactions (API-D18).\
   **Acceptance:** Only authorized admin uploads; credentials never reach browser bundles.  
   **Evidence to attach:** Media adapter/upload security tests.
 
@@ -503,7 +503,7 @@ All tasks below remain **unaccepted**. Each uses `Status: Not Started`; existing
   **Status:** `Not Started` · **Area:** Admin/catalog  
   **Sources:** FR-24  
   **Depends on:** `P04-001`, `P03-013`, `P02-010`  
-  **Deliverable:** Create/edit/deactivate categories and image controls through protected API and admin UI.  
+  **Deliverable:** Create/edit/deactivate categories and image controls through protected API and admin UI; explicit null removes a parent/image after hierarchy/reference checks, omission preserves it.\
   **Acceptance:** Dependent-product deletion is guarded; status changes propagate safely.  
   **Evidence to attach:** Admin category CRUD integration.
 
@@ -511,7 +511,7 @@ All tasks below remain **unaccepted**. Each uses `Status: Not Started`; existing
   **Status:** `Not Started` · **Area:** Admin/catalog  
   **Sources:** FR-23; FR-06  
   **Depends on:** `P04-002`, `P04-003`, `P03-013`, `P02-010`  
-  **Deliverable:** Build create/edit/deactivate, prices, featured settings, variants/SKUs and image management.  
+  **Deliverable:** Build create/edit/deactivate, prices, featured settings, variants/SKUs and image management, including explicit null→unset for sale price/threshold; omitted fields remain unchanged.\
   **Acceptance:** Form errors reflect uniqueness/invalid variants and saved data appears through API.  
   **Evidence to attach:** Admin product CRUD/E2E.
 
@@ -567,7 +567,7 @@ All tasks below remain **unaccepted**. Each uses `Status: Not Started`; existing
   **Status:** `Not Started` · **Area:** Storefront/catalog  
   **Sources:** FR-03  
   **Depends on:** `P04-009`, `P04-011`, `P02-006`  
-  **Deliverable:** Implement approved banner, categories, featured/new/discounted products, search, account/cart/wishlist cues and policy/support contact links.  
+  **Deliverable:** Implement approved storeSettings.homepageBanner and its public-media reference/input/projection (API-D17), categories, featured/new/discounted products, search, account/cart/wishlist cues and policy/support contact links; logo and banner are separate.\
   **Acceptance:** Empty/unconfigured sections are honest; navigation and responsive states work.  
   **Evidence to attach:** Home content and link audit.
 
@@ -711,8 +711,8 @@ All tasks below remain **unaccepted**. Each uses `Status: Not Started`; existing
   **Status:** `Not Started` · **Area:** Backend/delivery  
   **Sources:** FR-16; FR-28  
   **Depends on:** `P03-002`, `P03-013`, `P01-007`  
-  **Deliverable:** Create district/area zone/charge schema and admin CRUD with active/unsupported-area rules.  
-  **Acceptance:** Prices never negative; past orders will not be recalculated after config changes.  
+  **Deliverable:** Bootstrap the primary settings singleton before delivery writes (Database §10.4); create district/area zone/charge schema and admin CRUD; acquire shared storeSettings.deliveryCoverageRevision before every charge/zone-status transaction, including cross-zone scheduling, supersession and activation.\
+  **Acceptance:** Prices never negative; past orders unchanged; concurrent different-zone writers cannot approve overlapping windows for the same coverageKey. No zone-local guard substitutes for the global guard.\
   **Evidence to attach:** Delivery setting and snapshot tests.
 
 - [ ] **P06-002 — Implement admin Delivery Settings and customer location selection**  
@@ -737,7 +737,7 @@ All tasks below remain **unaccepted**. Each uses `Status: Not Started`; existing
   **Depends on:** `P05-005`, `P05-006`, `P04-008`, `P06-001`  
   **Deliverable:** Revalidate identity/contact, email, Bangladesh phone, terms, SKU stock, coupon and delivery with integer-poisha totals.  
   **Acceptance:** Invalid price/stock/area/coupon/terms rejected; quote is authoritative at calculation time; submission revalidates changes and obtains renewed confirmation rather than guaranteeing a stale price.  
-  **Design prerequisite:** API-D20 must resolve buyer confirmation/reconfirmation before this checkout contract is relied upon; missing confirmation must not become automatic charging.
+  **Design prerequisite:** Review and approve the API-D20/Database §7.1.1 proposal: mandatory scope-bound quoteId, server expiry/commercial comparison, explicit reconfirmation on change, and atomic one-order consumption before relying on checkout.
   **Evidence to attach:** Checkout quote unit/integration suite.
 
 - [ ] **P06-005 — Implement orders, item snapshots and independent lifecycles**  
@@ -768,7 +768,7 @@ All tasks below remain **unaccepted**. Each uses `Status: Not Started`; existing
   **Status:** `Not Started` · **Area:** Backend/orders  
   **Sources:** FR-11; FR-12; FR-13  
   **Depends on:** `P06-007`, `P06-001`  
-  **Deliverable:** Accept COD order once as Pending, commit allocations, create pending collection and order-received notification. Administrator confirmation separately moves eligible fulfillment to Confirmed.  
+  **Deliverable:** Accept COD order once as Pending, commit allocations, create a pending payment aggregate (no unverified paymentCollections receipt), and order_received notification. Administrator confirmation separately moves eligible fulfillment to Confirmed.\
   **Acceptance:** COD Paid status requires later collection evidence; no provider payment falsely created.  
   **Evidence to attach:** COD checkout integration.
 
@@ -777,7 +777,7 @@ All tasks below remain **unaccepted**. Each uses `Status: Not Started`; existing
   **Sources:** FR-11; FR-13; FR-09  
   **Depends on:** `P06-007`, `P06-006`  
   **Deliverable:** Create order and temporary stock/coupon reservations for a future online payment attempt.  
-  **Acceptance:** Holds last 15 minutes and cannot initiate gateway call until Phase 07 provider integration.  
+  **Acceptance:** Each held generation expires 15 minutes after its own server heldAt; all stock/coupon clocks agree, replay never extends them. Provider calls remain disabled until Phase 07 integration.\
   **Evidence to attach:** Hold lifecycle tests.
 
 - [ ] **P06-010 — Implement reservation expiry, durable lease and release**  
@@ -972,7 +972,7 @@ All tasks below remain **unaccepted**. Each uses `Status: Not Started`; existing
   **Status:** `Not Started` · **Area:** Backend/payments  
   **Sources:** FR-12  
   **Depends on:** `P07-012`, `P07-009`  
-  **Deliverable:** Re-evaluate prior outcome and stock/coupon capacity before issuing fresh tran_id for same order.  
+  **Deliverable:** Reconcile prior outcome and atomically reacquire expired stock/coupon capacity with a new shared heldAt/expiry before issuing fresh tran_id for the same order; preserve immutable order pricing or return a reviewed conflict if current coupon terms cannot honor it.\
   **Acceptance:** No double paid order, stale hold reuse or premature release across overlapping attempts.  
   **Evidence to attach:** Retry/race tests.
 
@@ -1112,7 +1112,7 @@ All tasks below remain **unaccepted**. Each uses `Status: Not Started`; existing
   **Status:** `Not Started` · **Area:** Storefront/refunds  
   **Sources:** FR-18  
   **Depends on:** `P08-005`, `P08-011`, `P02-009`  
-  **Deliverable:** Show original collection, refund amount/method, approval date, development-baseline seven-business-day target (or applicable shorter requirement), status and failure/support path.  
+  **Deliverable:** Consume canonical Refund.approvedAt, safe items/timeline and persisted timing snapshot; show original collection, amount/method, approved calendar/shorter-rule target, status and failure/support path. Missing approved timing basis is under_review with no guessed target date.\
   **Acceptance:** Processing is not shown as completed; deadline labels distinguish business/calendar days.  
   **Evidence to attach:** Refund details UI tests.
 
@@ -1164,7 +1164,7 @@ All tasks below remain **unaccepted**. Each uses `Status: Not Started`; existing
   **Status:** `Not Started` · **Area:** Admin/analytics  
   **Sources:** FR-22  
   **Depends on:** `P06-011`, `P08-005`, `P04-006`, `P03-013`  
-  **Deliverable:** Show product/customer/order counts, low stock, recent orders and pending returns with bounded queries.  
+  **Deliverable:** Implement full canonical DashboardMetrics/DashboardCounts: product/customer/order and status counts, pending physical returns, lowStockItems/recentOrders (≤20 each), cutoff/date basis, outstanding COD and financial fields.\
   **Acceptance:** Statistics correspond to authoritative API; access restricted to administrator.  
   **Evidence to attach:** Dashboard dataset/route tests.
 
@@ -1188,7 +1188,7 @@ All tasks below remain **unaccepted**. Each uses `Status: Not Started`; existing
   **Status:** `Not Started` · **Area:** Admin/support  
   **Sources:** FR-16; FR-26; FR-34  
   **Depends on:** `P06-017`, `P06-019`, `P03-013`  
-  **Deliverable:** Provide complaint record, contact, order context, status, resolution and customer response path.  
+  **Deliverable:** Provide complaint record, contact, order context, status, resolution and customer response path. Anonymous input requires contactName/contactEmail; authenticated omissions resolve only from own profile/verified order, never fabricated values.\
   **Acceptance:** Deadlines/complaint response rules are policy-verified before launch; duplicate actions preserve history.  
   **Evidence to attach:** Complaint workflow integration.
 
@@ -1642,8 +1642,35 @@ Use this table for **actual** future execution decisions. No approval, work comp
 | --- | --- | --- | --- | --- | --- |
 | — | — | No task execution or acceptance entries recorded; documentation revisions are recorded in CHANGELOG.md | — | — | — |
 
+### 9.1 Documentation review remediation — 17 October 2026
+
+These are documentation dispositions **In Review**, not accepted implementation tasks. Existing 171 task statuses and
+checkboxes remain unchanged. Named approvers and runtime evidence must be attached during normal execution.
+
+| Review item | Concrete source correction/proposal | Affected tasks | Required reviewer / evidence |
+| --- | --- | --- | --- |
+| F01 | Database §7.6 / API §14.3: store-wide deliveryCoverageRevision, global interval/version checks | P06-001, P06-002, P10-002 | Backend/data + delivery owner; ADM-05 two-zone race and activation/abort tests |
+| F02 | Database §§7.7, 8.2 / API §12.2: generation-specific shared heldAt and expiry | P06-009, P06-010, P07-009, P07-013 | Backend/data/API; INV-02 and late-payment/replay race tests |
+| F03 | API §§14.1, D.2: explicit nullable clear inputs, persisted absence and immutable history | P04-004, P04-005 | Catalog/API/data; CAT-04 round-trip and stale revision tests |
+| F04 | API §§14.4, D.2: complete dashboard counts, balances, bounded lists and cutoff semantics | P09-001, P09-002, P09-009 | Reporting/API/frontend; ADM-06 and OPV-148 complete DTO checks |
+| F05 | Database §9.2 / API §13.3, D.2: approvedAt, timing snapshot, public items/timeline | P08-013, P08-015 | Refund/API/policy; RFD-09 date-basis and privacy checks |
+| F06 | Database §10.2 / API §14.4, D.2: anonymous contactName/email and principal-derived defaults | P06-017, P09-004, P09-008 | Support/API/data; SUP-01 minimal anonymous round-trip |
+| API-D17 / API-D18 | Database §§6.7, 10.4 / API §§10.1, 16.2: homepageBanner and mediaAssets lifecycle | P04-003, P04-012, P08-003, P09-005 | Content/security/data; CAT-05, REL-09/11, SEC-08; policy values pending |
+| API-D20 | Database §7.1.1 / API §11.1: persisted quote confirmation and one-order consume | P06-004, P06-018, P07-004 | Product/API/data sign-off, configured lifetime, CHK-03/04/05 transaction tests |
+| API-D21 | Database §5.3 / API §16.3: encrypted challenge delivery, hash, reference-only outbox | P03-009, P03-010, P03-011, P03-012, P06-015 | Security/data sign-off, external key/provider verification, NTC-01/02 and SEC-05/10 fault tests |
+
+**Local documentation verification, 17 October 2026:** `python3 /tmp/sportzone_remediation_check.py` and
+`git diff --check` — **Passed** in this documentation-only checkout: 374 local links, 171 task definitions/statuses,
+164 API operations/test slots, matching success/error profiles, table/fence structure and 37-collection inventory.
+Temporary evidence: `/tmp/sportzone_remediation_results.json`; this is a local static review receipt, not durable CI or
+runtime acceptance evidence. Application/DB concurrency, provider, rendering and legal checks — **Not Run**.
+
+External merchant activation/refund capability, current legal policies, approved calendars/retention, infrastructure,
+OPS-D16/OPS-D17 recovery mechanisms and all runtime verification remain unaccepted. Documentation cannot supply those
+external facts. Continue only dependent work whose applicable design approval and prerequisites are actually satisfied.
+
 **Update protocol:** When a task starts or ends, update its status and checkmark, attach evidence and revise dependent readiness. On approved scope changes, update the authoritative PRD/Architecture/Design source first, then the Implementation Plan and relevant task records. If a task is split, preserve its old ID and add a stable new ID without renumbering unrelated tasks. Recalculate dashboard counts and FR coverage; record milestone acceptance separately.
 
 ---
 
-**End of SportZone Development Tasks — Version 1.2**
+**End of SportZone Development Tasks — Version 1.3**

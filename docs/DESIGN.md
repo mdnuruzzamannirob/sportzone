@@ -1,8 +1,8 @@
 # SportZone — UI/UX design specification
 
-**Version:** 1.2  
-**Updated:** 16 October 2026  
-**Documentation audit:** 16 October 2026 — corrections in this working revision do not grant specification, task or release approval.  
+**Version:** 1.3\
+**Updated:** 17 October 2026\
+**Documentation audit:** 17 October 2026 — review remediation aligns UI data/consent requirements; implementation and independent acceptance remain pending.\
 **Status:** Design implementation baseline — monochrome light/dark themes with a consistent blue brand color  
 **Product reference:** [PRD](./PRD.md)  
 **Technical reference:** [Architecture](./ARCHITECTURE.md)  
@@ -190,7 +190,7 @@ Main content: page heading/breadcrumbs → page-specific sections
 Footer: contact | customer support | shipping | returns/refunds | privacy | terms
 ```
 
-Use one consistent header/footer across public pages, with a simplified distraction-free checkout header if necessary; policy/help access must remain available. A promotional banner is optional per content configuration, not a persistent blocking overlay. The header must not cover page headings or keyboard focus targets. Provide the Light / Dark / System control in the accessible account or appearance menu (also available to guests).
+Use one consistent header/footer across public pages, with a simplified distraction-free checkout header if necessary; policy/help access must remain available. Render a promotional banner only from approved storeSettings.homepageBanner content, independently of the logo. Missing content is an honest empty state; banner capability remains required by FR-03 and is not waived by withholding unapproved content. It is not a persistent blocking overlay. The header must not cover page headings or keyboard focus targets. Provide the Light / Dark / System control in the accessible account or appearance menu (also available to guests).
 
 ### 4.2 Customer account shell
 
@@ -357,7 +357,7 @@ Account pages must not expose another customer's records. If a session expires, 
 | **Order Confirmation** | Order number, summary, payment/fulfillment status, next steps, receipt of submitted order | COD shown as unpaid until collection; pending online payment not mislabeled as paid |
 | **Order Lookup** | Order number + checkout email; request verification link/code; verified order view | Rate-limited, time-limited proof; scoped cancellation, return, and refund tracking only when eligible |
 
-**Checkout composition:** Keep contact/address first, then delivery area and charge, coupon, payment choice, and final summary. On desktop, a persistent summary column may be used; on mobile, show a compact summary during entry and the full total before the final action. A rejected checkout retains entered details and identifies the exact item or field requiring attention.
+**Checkout composition:** Keep contact/address first, then delivery area and charge, coupon, payment choice, and final summary. On desktop, a persistent summary column may be used; on mobile, show a compact summary during entry and the full total before the final action. A rejected checkout retains entered details and identifies the exact item or field requiring attention. Under proposed API-D20, final confirmation submits the server-issued quoteId; QUOTE_CHANGED/QUOTE_EXPIRED displays refreshed terms for explicit confirmation. Never automatically approve or resubmit a refreshed quote. Keep the same idempotency key during uncertain replay of an already submitted operation.
 
 **Payment messaging:** Distinguish *order submitted*, *payment pending verification*, *payment confirmed*, *payment failed*, and *payment cancelled*. For a late verified payment with unavailable stock/coupon capacity, show **Payment received — fulfillment under review**, not a false order confirmation. Do not display provider transaction secrets.
 
@@ -368,14 +368,14 @@ Account pages must not expose another customer's records. If a session expires, 
 | **Return Request** | Eligible order items/quantities, reason, optional evidence upload, policy summary, submit | Show applicable request deadline (standard baseline: 7 calendar days after delivery), eligibility exceptions, and inspection for physical returns only; shortage claims skip shipment/receipt/inspection; block duplicate active claims and invalid quantities |
 | **My Returns** | Return list, item context, current status, dates and decisions | Distinguish approved return from approved refund; show deadline and next required action where applicable |
 | **Refund Details** | Refund amount, method, status, associated items/transaction, timestamps | Show approval date and target (normally 7 business days after approval), provider delay/overdue message when applicable; completion only after confirmed payout |
-| **Contact** | Store-provided contact details and basic complaint submission/channel | Submission feedback and reference when available; no invented live chat |
+| **Contact** | Store-provided contact details and basic complaint submission/channel; anonymous contact name/email required | Submission feedback and reference when available; no invented live chat |
 | **Shipping Policy** | Store-approved delivery coverage, charges approach, deadlines, exceptions | Accessible readable content; operator-supplied policy |
 | **Return & Refund Policy** | Eligibility, return window, refund methods/timing, consumer-rights statement | Store-approved content; link from checkout and after-sales screens |
 | **Privacy Policy** | Approved privacy and data-use content | Accessible headings and links |
 | **Terms & Conditions** | Approved terms, checkout-related policies | Explicit acceptance at checkout |
 | **Not Found / Error** | Clear explanation, home/catalog navigation, retry where useful | Do not expose stack traces or private data |
 
-**Deadline presentation:** Show a return-request deadline only when delivery date and applicable policy make it reliable; explain legally protected exceptions without implying that the standard window eliminates statutory rights. Refund targets begin at **refund approval**, not request submission. If the target is missed, display the latest verified status and support path; never imply payout has completed.
+**Deadline presentation:** Show a return-request deadline only when delivery date and applicable policy make it reliable; explain legally protected exceptions without implying that the standard window eliminates statutory rights. Refund targets begin at **refund approval**, not request submission. Read approvedAt and the authoritative timing projection from the API; under_review/awaiting_approval has no invented date. Display the approved business-calendar/policy basis and safe item/status timeline; do not calculate targets from a browser holiday guess. If the target is missed, display the latest verified status and support path; never imply payout has completed.
 
 **Legal/operational content:** Delivery commitments and policy wording must reflect the store's approved configuration and applicable law. The UI must not hard-code an unconditional 14-day delivery promise or represent proposed operating policies as verified legal rules.
 

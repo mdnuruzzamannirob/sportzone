@@ -1,9 +1,9 @@
 # SportZone — API design & specification
 
-**Version:** 1.1  
-**Source baseline:** PRD / Architecture / Design / Implementation Plan / Tasks v1.2; Database v1.2  
-**Updated:** 16 October 2026  
-**Documentation audit:** 16 October 2026 — corrections in this working revision do not grant specification, task or release approval.  
+**Version:** 1.2\
+**Source baseline:** PRD / Architecture v1.2; Design / Implementation Plan / Tasks v1.3; Database v1.3\
+**Updated:** 17 October 2026\
+**Documentation audit:** 17 October 2026 — review remediation is proposed design, not technical approval, implemented behavior or release acceptance.\
 **Status:** Proposed implementation contract — approval, integration tests, and merchant verification pending  
 **Product reference:** [PRD](./PRD.md)  
 **Technical references:** [Architecture](./ARCHITECTURE.md) · [Database](./DATABASE.md)  
@@ -117,10 +117,10 @@ Domain services coordinate cross-module mutations within MongoDB transactions. N
 | Resource names | Lowercase plural, hyphenated paths; JSON names `camelCase`; IDs serialized strings |
 | Time | ISO 8601 UTC instants ending `Z`; Bangladesh display derived from `Asia/Dhaka` |
 | Currency | Always `BDT`; **integer poisha** on every business API and internally; no floating-point money |
-| Status values | Persisted `snake_case` enum values from Database v1.2; UI labels are presentation only |
+| Status values | Persisted `snake_case` enum values from Database v1.3; UI labels are presentation only |
 | Creation | `201 Created` + `Location` where appropriate; replay may return `200 OK` with same logical result |
 | Deletion | Use `204 No Content` only where deletion/deactivation is an approved operation; no body |
-| Concurrency | `If-Match`/strong ETag for approved editable master records; backed by the `revision` CAS fields on category, product, variant, delivery-zone and charge-rule documents (Database v1.2); domain CAS for financial/stock operations |
+| Concurrency | `If-Match`/strong ETag for approved editable master records; backed by the `revision` CAS fields on category, product, variant, delivery-zone and charge-rule documents (Database v1.3); domain CAS for financial/stock operations |
 | Request correlation | Server-issued `X-Request-Id` returned on every response; incoming value never trusted as evidence |
 | API evolution | Additive compatible fields within `/api/v1`; incompatible changes require version review and consumer migration |
 
@@ -332,6 +332,8 @@ cannot create state by setting them. `OrderSummary.finalTotalPoisha` is purchase
 | `403` | `CSRF_INVALID` | Missing/stale context/token or invalid Origin |
 | `404` | `NOT_FOUND` | Hidden/inactive/out-of-scope resource or unknown route |
 | `409` | `STATE_CONFLICT` | Invalid lifecycle transition or concurrent conflict |
+| `409` | `QUOTE_CHANGED` | Fresh server terms differ from buyer-confirmed quote; obtain and explicitly confirm a new quote |
+| `409` | `QUOTE_EXPIRED` | Quote expired before a new intent committed; same-key committed replay still returns existing result |
 | `409` | `IDEMPOTENCY_CONFLICT` | Same key, different canonical payload |
 | `409` | `IDEMPOTENCY_KEY_RETIRED` | Key too old for replay, retained tombstone prevents new order |
 | `409` | `REVISION_CONFLICT` | Client/admin update based on stale revision |
@@ -463,7 +465,7 @@ Inactive products/categories (including inactive ancestors) are excluded; out-of
 `variants` include one default SKU when a product has no selectable options.
 Search/index details in Database §11; do not assume an external search service.
 Product listings and homepage merchandising only include operator-approved media/content; no fabricated promotional claims.
-The optional homepage `banner` requires an approved content source and its mapping to `storeSettings.branding` or a separately approved persistence change; do not assume a banner collection already exists (API-D17).
+The homepage `banner` maps to `storeSettings.homepageBanner` with a validated public media asset and operator-approved content (API-D17). Return `HomepageBanner:{assetId,title,alt,href?,image:MediaRef}` only when configured and eligible; otherwise omit it honestly. Banner capability remains required by FR-03; absent/unapproved content is not accepted feature or launch evidence. No separate banner collection is proposed.
 
 ### 10.2 Cart and wishlist
 
@@ -540,24 +542,32 @@ The cart example is not a final payable quote. Catalog and public reviews use `2
 `contactPhone?` may override the buyer contact number, otherwise the server copies `recipient.phone` into the immutable
 `customerSnapshot.phone`. Recipient/delivery phone remains separately snapshotted. Customer details may be explicitly
 supplied/reconfirmed for C. `CheckoutSubmitInput` includes the same normalized fields **plus** `notes?`,
-`acceptedTermsVersion`, `acceptedPolicyVersionIds[]`. Reject direct `unitPrice`, `discount`, `deliveryCharge`, `total`,
+`quoteId`, `acceptedTermsVersion`, `acceptedPolicyVersionIds[]`. Reject direct `unitPrice`, `discount`, `deliveryCharge`, `total`,
 role, `userId` or target order ID fields.
 
-**Checkout confirmation decision — API-D20:** PRD FR-11 requires final-amount confirmation, and Testing `CHK-03` requires a changed quote to be rejected or reconfirmed. The current request has no server-verifiable reference to the amount/terms the buyer confirmed: it rejects client totals and defines no quote identity. Recomputing at submission alone cannot demonstrate renewed consent to a changed total. **Do not implement automatic charging from this incomplete contract.** Product and API owners must approve a server-verifiable confirmation/precondition mechanism, its expiry and conflict/reconfirmation behavior before `P06-004`, `P06-018` and `P07-004` can be accepted. No new field or endpoint is approved by this note.
+**Checkout confirmation design — API-D20 (proposal, owner sign-off pending):** `POST /checkout/quotes` persists a
+scope-bound `checkoutQuotes` record (Database §7.1.1) and returns server-issued `quoteId` and required `quoteExpiresAt`.
+The buyer reviews its exact commercial terms and submits that ID with the same normalized draft and accepted policy
+versions. A client ID is only a lookup: the backend checks scope, expiry, immutable draft fingerprint and commercial
+digest, then revalidates prices, line allocations, charge/rule, deadline basis, method eligibility, policies and capacity.
+Stable quoted item IDs preserve deterministic rounding. Any commercial change is `409 QUOTE_CHANGED`; expiry is `409
+QUOTE_EXPIRED`; both require a fresh quote and explicit buyer confirmation. Neither error creates an order or gateway
+attempt. Do not automatically replace the quote and submit it. An unsupported method or unavailable capacity retains its
+specific business error. Draft fields inconsistent with the referenced quote return `409 QUOTE_CHANGED`; malformed input remains `400`. Wrong-scope/missing quote is scope-safe `404`. Product/API/data-owner approval and contract tests
+remain prerequisites before `P06-004`, `P06-018` and `P07-004` rely on this design.
 
 **Quote:** Recompute active SKU prices, stock visibility, product-discount-before-coupon, eligible coupon allocations,
 delivery-zone rule and eligible payment methods at request time. Return a **deadline rule/status**, not a made-up date
 anchored to a future confirmation. An approved placement-started legal cap may be absolute; a 14-day-from-confirmation
-target remains provisional until `confirmedAt`. Return `quoteExpiresAt?` for **display freshness only**; quote is not a
-stock/coupon reservation or promise of capacity. There is no client-trusted `quoteId` authority. The accepted terms must
-match currently applicable operator-approved versions; if changed, return `409 STATE_CONFLICT` and current policy
+target remains provisional until `confirmedAt`. `quoteExpiresAt` is an enforced server precondition using an approved configured lifetime, not a stock/coupon reservation or promise of capacity. The accepted terms must
+match currently applicable operator-approved versions; on submit, if changed from the confirmed quote, return `409 QUOTE_CHANGED` and current policy
 references for renewed consent.
 
-**Submit:** `Idempotency-Key` mandatory; canonical payload fingerprint fixed for the identity scope (customer or opaque
-guest browser context). In one transaction create `checkoutIntents`, immutable order snapshot and `orderItemBalances`, then
+**Submit:** A new quote is evaluated from authoritative business records; advisory stock counts/estimates are excluded from the commercial digest, but checkout still checks their current eligibility. Never include a confirmation-relative guessed absolute deadline in that digest. `Idempotency-Key` mandatory; canonical payload fingerprint fixed for the identity scope (customer or opaque
+guest browser context). Resolve an existing intent first, even when its quote has since expired/been consumed. For a new intent, in one transaction conditionally consume the open quote and create `checkoutIntents`, immutable order snapshot/consent digest and `orderItemBalances`, then
 either COD **committed** inventory/coupon or online **15-minute held** stock/coupon. Save one order per key before
 returning. A same-key replay returns the same operation resource/result; different payload is `409 IDEMPOTENCY_CONFLICT`.
-Timeout or disconnect must not create another order on retry. Do not hold a MongoDB transaction open while requesting
+A unique intent `quoteId` plus the quote consume guard also prevents two different keys from creating two orders for the same quote; a second key returns `409 STATE_CONFLICT` with no foreign-order disclosure. Renewed confirmation uses a fresh quote and fresh key after a rejected precommit submission. Timeout or disconnect must not create another order on retry. Do not hold a MongoDB transaction open while requesting
 hosted payment session.
 
 ```json
@@ -573,6 +583,7 @@ hosted payment session.
   "email": "buyer@example.com",
   "method": "bkash",
   "couponCode": "EXAMPLE10",
+  "quoteId": "server-issued-quote-id",
   "acceptedTermsVersion": "approved-terms-v1",
   "acceptedPolicyVersionIds": ["approved-shipping-v1"]
 }
@@ -662,7 +673,7 @@ a partially funded order targets this **remaining balance**, not the original to
 `tranId` and idempotency record before the provider session call. The response provides an approved **absolute HTTPS**
 hosted redirect URL only after provider session acceptance; never accept a client-provided redirect target.
 5. If holds expired, atomically reacquire **both** inventory and applicable coupon capacity under current eligibility
-before further payment initiation. Never silently prolong an expired reservation. If not available, return a durable
+before further payment initiation. Capture one server `heldAt` for the new generation; inventory and coupon expire exactly 15 minutes later (Database §7.7). An identical retry does not restart that clock. Never silently prolong an expired reservation. If not available, return a durable
 allocation shortfall state; do not create a new attempt that assumes fulfillment.
 6. On provider call timeout, persist `uncertain`; let the read endpoint show current state and let reconciliation query provider. Do not reuse an old attempt's `tran_id` as a new financial attempt.
 7. Collection funds might be partial, duplicate, excess or late. One order can have multiple independently verified receipts; do not assume one successful receipt per attempt without sandbox proof (Database §8.5–8.7).
@@ -866,6 +877,14 @@ initiation acknowledgment is not payout completion. Reconcile through supported 
 collection; `uncertain` retains held balance. A new refund transaction ID is issued only after verifying the old attempt
 cannot pay. Partial gateway refund / uniqueness/account limits need merchant sandbox verification (Database DB-D07).
 
+**Refund detail/timing:** public `Refund` includes `approvedAt?`, safe item amounts, a bounded status timeline and
+`timing:{status,targetBusinessDays:7,timezone:'Asia/Dhaka',policyVersion,calendarVersion?,targetAt?}`. Before approval,
+`status='awaiting_approval'` and there is no `targetAt`; after approval use the persisted timing snapshot and approved
+calendar/shorter legal basis. If that basis is unavailable return `under_review` with no fabricated date. Never calculate
+a refund target from `requestedAt`, current catalog data or an unversioned browser holiday calendar. A retry cannot reset
+approval or target time. Timing review must not delay an otherwise authorized refund payout; later correction of its timing basis is audited and preserves original approval time. Customer timeline entries expose only `{status,at,reasonCode?}`, never internal notes, operator
+PII or transfer proof. Correction refunds have no merchandise items.
+
 **Manual payout:** the admin registers masked destination and approved consent; another authorized confirmation step
 records verified transfer reference/evidence (where the one-admin baseline cannot support dual control, an explicit review
 trail and verification standard is required). The server sets `confirmedAt` from independently verified transfer evidence;
@@ -932,7 +951,7 @@ sequenceDiagram
 
 Every route below is **A only** and requires session, Origin, CSRF and audit for mutations.
 `If-Match` is required where shown; the API must derive a strong ETag from a durable revision/CAS field and reject stale writes.
-Database v1.2 defines CAS `revision` for every affected master; every successful edit increments it, while `deliveryZones.coverageRevision` separately guards concurrent coverage changes (API-D19).
+Database v1.3 defines CAS `revision` for every affected master; every successful edit increments it, while server-only `storeSettings.deliveryCoverageRevision` serializes delivery changes across all zones; `deliveryZones.coverageRevision` is only a per-zone sequence (API-D19).
 No public endpoint can mutate base/sale prices, SKU identity or stock.
 
 | Method | Path | Request → response | FR |
@@ -955,6 +974,11 @@ No public endpoint can mutate base/sale prices, SKU identity or stock.
 
 **Admin projections:** [Appendix D.2](#d2-typed-request-and-response-schema-registry) owns the `AdminProduct`, `AdminVariant` and `AdminCategory` allowlists. Responses carry the strong `ETag` **header** derived from the durable revision; do not create a competing body-only `etag` authority. `AdminVariant.stock.available` is derived from physical, reserved and committed stock. Inventory movements expose `id,variantId,type,deltaPhysical,deltaReserved,deltaCommitted,occurredAt,reason,actor`, with no connection or secret metadata. Field updates use explicit allowlists and backend service ownership. The CAS source must be approved and verified (API-D19).
 
+**Clear semantics:** omission leaves the field unchanged. Explicit JSON `null` clears only
+`VariantPatch.salePricePoisha/lowStockThreshold` and `CategoryPatch.parentId/image` (and the declared nullable settings
+banner). Persist absence via controlled unset; response optional fields remain omitted. Reject null elsewhere, invalid
+prices and protected fields. Empty bounded arrays replace a list only where the corresponding patch allows it.
+
 **Master record schemas:**
 
 | Input | Validated field allowlist / guard |
@@ -962,7 +986,7 @@ No public endpoint can mutate base/sale prices, SKU identity or stock.
 | `ProductCreateInput` | `name,slug,description,categoryIds[],images[],keywords?,featured?,status?`; activate only with valid category and purchasable variant |
 | `ProductPatch` | Same editable fields; cannot edit immutable order snapshots or internal rating counters |
 | `VariantCreateInput` | `sku,attributes,regularPricePoisha,salePricePoisha?,status?`; default SKU required for no-options product |
-| `VariantPatch` | `regularPricePoisha?,salePricePoisha?,status?,lowStockThreshold?`; **no stock fields** |
+| `VariantPatch` | `regularPricePoisha?,salePricePoisha:nullable<money>?,status?,lowStockThreshold:nullable<int>?`; **no stock fields** |
 | `CategoryCreateInput` | `name,slug,parentId?,status?,image?,sortOrder?`; reject cycles and invalid parents |
 | `CategoryPatch` | Editable metadata/status; reassignment required before prohibited destructive changes |
 
@@ -1032,16 +1056,16 @@ rating or unfairly suppress valid negative feedback. Always audit decisions/reas
 
 **Delivery inputs and versioned administration:**
 
-- `DeliveryZoneInput:{name,description?,status}`; `DeliveryZonePatch` permits only name/description/status. Require record `revision` ETag for master edits; `coverageRevision` additionally serializes charge changes.
+- `DeliveryZoneInput:{name,description?,status}`; `DeliveryZonePatch` permits only name/description/status. Require record `revision` ETag for master edits; the server additionally acquires the global `storeSettings.deliveryCoverageRevision` guard for zone-status and charge changes; per-zone `coverageRevision` is not sufficient.
 - `DeliveryChargeInput:{zoneId,coverageKey,amountPoisha,effectiveFrom,effectiveTo?}`; coverage is an approved normalized district:area or district:* identifier. `amountPoisha >= 0`; old prices are **never overwritten**.
-- To **edit a charge**, use `supersede` to create a new immutable-priced version and close the predecessor's effective window in **one** zone-guarded transaction. Deactivation ends the window without replacement; subsequent checkout for uncovered areas fails closed. Activate a scheduled version only if it is effective and nonoverlapping. Compare each rule's `revision` and return updated `ETag`; stale state is `412`, overlaps `409 STATE_CONFLICT`. Scheduled future changes do not retroactively alter order snapshots.
+- To **edit a charge**, use `supersede` to create a new immutable-priced version and close the predecessor's effective window in **one** store-wide-guarded transaction. Deactivation ends the window without replacement; subsequent checkout for uncovered areas fails closed. Activate a scheduled version only if it is effective and nonoverlapping. Compare each rule's `revision` and return updated `ETag`; stale state is `412`, overlaps `409 STATE_CONFLICT`. Scheduled future changes do not retroactively alter order snapshots.
 - No unsupported zone can be quoted. Legal deadline/coverage rules require operator approval before activation (Database §7.6).
 
 **Coupons:**
 `CouponInput:{code,type,value,minEligibleSubtotalPoisha,startsAt,expiresAt,status,overallLimit?,perCustomerLimit?,eligibleProductIds?,eligibleCategoryIds?}`;
 `type=percentage` uses basis points `1..10000`, fixed uses poisha. No client edit to `heldCount`, `redeemedCount`,
 individual redemptions, or past orders. Active holds keep their snapshotted terms; new/reacquired holds validate current
-terms. Per-customer counts require user IDs; guests cannot use limited-per-customer coupons.
+terms. Reacquisition must still honor immutable accepted line allocations/total; if current eligibility cannot honor them, block new payment initiation with STATE_CONFLICT and require cancellation/new explicitly confirmed checkout, never reprice an existing order. A late verified receipt instead remains recorded with fulfillment held for reviewed resolution/refund. Per-customer counts require user IDs; guests cannot use limited-per-customer coupons.
 
 **Policy drafts and publication:** `PolicyDraftInput:{type,content,proposedEffectiveAt?}` (types: `shipping`, `cancellation`, `returns`, `refunds`, `privacy`, `terms`, `complaints`); server assigns unique immutable
 `version`, ID, status `draft` and CAS revision in `policyDocuments` (Database §10.5).
@@ -1076,9 +1100,9 @@ deadline.
 | `GET` | `/admin/notifications` | A | `status?,eventType?,page? → NotificationSummary[]` | 20 |
 | `POST` | `/admin/notifications/{notificationId}/retry` | A | `{reason} + Idempotency-Key → {status}` (send intent only) | 20 |
 
-**Complaint access:** anonymous contact submissions may omit `orderId` and must be rate-limited/spam-guarded; they receive
+**Complaint access:** anonymous contact submissions require `contactName` and `contactEmail` and may omit `orderId` and must be rate-limited/spam-guarded; they receive
 a safe reference, **not** a public arbitrary-reference lookup. To link an order, the caller must have C/G ownership of that
-order. Never return other reporters' contact details. PRD complaint-response deadlines require legal/operator confirmation
+order. `contactName?`/`contactEmail?` omissions for C/G are resolved only from their authenticated profile or verified order customer snapshot; the submitted contact is never ownership proof. Require valid nonempty resolved name/email. Never return other reporters' contact details. PRD complaint-response deadlines require legal/operator confirmation
 before launch.
 
 **Reporting field definitions (`DashboardMetrics` and export DTOs):**
@@ -1098,7 +1122,18 @@ before launch.
 | `unassignedLinkedCashPoisha` | Linked but unresolved allocations separately; not both cash flow and new sale |
 | `lowStockVariants` | Available count below approved threshold at report cutoff |
 
-Every report returns `{from,to,asOf,timezone:'Asia/Dhaka',dateBasis,filters,totals,...}` and explicitly distinguishes period sums vs as-of balances, pending vs completed refunds and correction vs merchandise.
+**Dashboard shape/time basis:** `DashboardMetrics` returns `from,to,asOf,timezone:'Asia/Dhaka',dateBasis` and the
+canonical fields in Appendix D.2. `counts` contains nonnegative integers `activeProducts,registeredCustomers,totalOrders,
+pendingOrders,confirmedOrders,processingOrders,shippedOrders,deliveredOrders,cancelledOrders,lowStockVariants,
+pendingReturnRequests`; counts/balances describe state at `asOf`, not period cash flow. `registeredCustomers` excludes
+admin principals and includes all retained customer account statuses. Pending returns are nonterminal physical-return
+claims; shortages are not silently counted as physical returns. `recentOrders` and `lowStockItems` contain at most 20
+safe summaries each, ordered by `(placedAt,id)` and `(available,id)` respectively; total matching counts remain separate.
+Money fields use §14.4 event periods; outstanding COD and held/unassigned balances use the cutoff. Historical `asOf`
+requests require reconstructible source history/snapshot; otherwise return `422 BUSINESS_RULE_VIOLATION`, never relabel
+current counters as historical. A response records its actual cutoff and consistency limits. Dashboard uses the flat canonical metrics plus counts/lists rather than a second totals wrapper; dateBasis identifies as_of counts/balances, placedAt sales, collectedAt collections and completedAt refunds. `recentOrders` sorts newest first with ID as deterministic descending tie-break; lowStockItems sorts availability then ID ascending.
+
+Every export report returns `{from,to,asOf,timezone:'Asia/Dhaka',dateBasis,filters,totals,...}` and explicitly distinguishes period sums vs as-of balances, pending vs completed refunds and correction vs merchandise.
 Report `asOf` prevents pretending concurrent cash events constitute one fully consistent snapshot unless reporting snapshot guarantees are actually implemented.
 COD without verified collection is not paid collections.
 Do not label `netLinkedCashFlowPoisha` as revenue or profit; report unmatched intake and correction liabilities separately.
@@ -1199,19 +1234,34 @@ Provider reference: [SSLCOMMERZ developer documentation v4](https://developer.ss
 Validate file type, extension, true content type, maximum size, malware/security scanning policy and server-generated object identifiers; never accept arbitrary external URLs as approved Cloudinary files.
 Claim uploads require the **path `orderId`** to match current C owner or G-scoped session, validated `claimType` and `orderItemIds[]` belonging to that order; the upload is a temporary, expiring reference that can only be attached to that same order’s eligible claim.
 Return an **opaque** private evidence identifier; no public Cloudinary URL to confidential photos.
-`assetId` is an opaque validated upload reference mapped to a Cloudinary `publicId`; it is **not** evidence of a dedicated `assets` collection in Database v1.2.
-Choose an auditable temporary upload-authorization/cleanup strategy before implementation (API-D18).
+`assetId` is the opaque ID of proposed `mediaAssets` (Database §6.7), mapping one server-generated Cloudinary identity to owner/order/item scope, access, validation state and transactional attachment references (API-D18). Create upload intent before the external call; return attachable references only after validation. Attach and target update commit together under asset CAS. Cleanup atomically claims expired unreferenced assets as `deleting`, excluding concurrent attachment; reconcile unknown provider outcomes. Private evidence retrieval requires current C/G ownership or A permission and short-lived authorized delivery. No separate generic `assets` collection is implied.
 Cleanup of unreferenced uploads is asynchronous and must not delete assets attached to immutable order/claim/audit evidence.
 Upload limits and scan implementation require approved environment policy (Decision API-D10).
 
 ### 16.3 Transactional email and public notifications
 
 Notification intents are persisted in `notifications` and delivered by Resend or an approved equivalent **after** business commit.
-Events include registration, password reset, order confirmation/cancellation, payment success/failure, shipment/delivery, return update, refund approval/rejection/completion.
+Events include registration/verification, email change, password reset, guest order proof, order receipt/confirmation/cancellation, payment success/failure, shipment/delivery, return update and refund approval/rejection/completion. Placement and fulfillment confirmation use distinct event types.
 Deduplicate by durable `eventKey`, record retries/attempts and safe provider delivery status; repeat IPNs must not send duplicate payment-success emails.
 Email failure **does not roll back** paid order or refund.
 
-**Credential delivery decision — API-D21:** Database §§5 and 10.1 prohibit plaintext challenge secrets and secret-bearing notification payloads, while recovery/guest-proof delivery must be durable and retryable. Before implementing `P03-009`, `P03-010` and `P06-015`, security and data owners must approve how a worker obtains a deliverable one-time proof without storing plaintext or logging it, including crash/retry, expiry and replay handling. This document selects no encryption, derivation or reissuance design; notification retries must not bypass the secret-storage rule.
+**Credential delivery design — API-D21 (proposal, security/data sign-off pending):** Database §5.3 specifies a
+CSPRNG proof, verification hash and short-lived AES-256-GCM delivery envelope restricted to `authChallenges`. Atomically
+write challenge plus `notifications` intent; outbox payload holds `challengeId` only. A worker decrypts in memory using a
+versioned key from the external secret store, rechecks expiry/consumption/revocation and sends to the bound destination.
+Challenge purpose maps to `email_verification`, `email_change`, `password_reset` or `guest_order_access` events. Never
+log/return the proof, envelope or full URL; templates cannot persist rendered secret-bearing email. Expired/used/superseded
+challenges cannot be resent; reissue creates a fresh challenge and invalidates its predecessor transactionally.
+
+Use the stable event key with provider idempotency **only when supported and verified**. A crash after possible send
+leaves `sending`/`delivery_uncertain`; reconcile by stable provider identity before another send. If the provider cannot
+establish the outcome, expose the delivery exception; an explicitly requested/rate-limited reissue invalidates the old
+proof. Do not claim exactly-once email delivery from outbox uniqueness: only one logical intent and one valid proof are
+guaranteed. Email transport uncertainty never replays account/order work or extends token expiry. Worker leases/fencing,
+AEAD tamper handling, key loss/rotation, crashes, concurrent reissue/consume, expiry and logs need actual tests before
+P03-009, P03-010, P03-011, P03-012 or P06-015 can rely on the design. See [OWASP recovery-token guidance](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html)
+and [authenticated storage/key separation guidance](https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html);
+these support the security controls, not project approval or provider capability.
 Customer-facing status is read from business resources, not from the presence/absence of an email.
 No marketing consent workflows are implied by transactional messaging.
 
@@ -1337,7 +1387,7 @@ and operational endpoints require deployment-specific adapter tests.
 | API-D05 | Provider callback method, status/ack codes, unique verified identity and validation response version | Durable paid/nonpaid/unmatched callback decision table in §12.3; no inferred payment | Sandbox provider verification pending |
 | API-D06 | Refund route capability, original `bank_tran_id`, merchant `refund_trans_id`, provider `refund_ref_id` uniqueness and partial payouts | Separate source-funded records and reconcile before retry (Database DB-D07) | Provider/merchant sandbox pending |
 | API-D07 | Approved policies, legal delivery/complaint deadlines and returns/refund exception handling | `policyDocuments` v1.2 holds approved content; checkout snapshots rule basis, confirmation fixes target deadline; law start event remains a separately approved input | Store operator/legal approval pending |
-| API-D08 | Delivery coverage, actual charge values/effective periods | Area-first eligible rule, serialized non-overlap (Database DB-D08) | Store operator pending |
+| API-D08 | Delivery coverage, actual charge values/effective periods | Area-first eligible rule, serialized non-overlap (Database DB-D08), using the shared store-wide guard across zones | Store operator values pending; design proposal requires review |
 | API-D09 | Catalog sorting/search index and performance thresholds | Bounded listing; choose final index/query after profiling (DB-D11) | Engineering testing pending |
 | API-D10 | Upload max size, accepted MIME and private evidence scanning/purge | Restricted backend-controlled Cloudinary upload with opaque private IDs | Security/operations pending |
 | API-D11 | Password strength/session recovery and rate limits | Enforce modern hashing, generic enumeration-safe errors, policy-configured limits | Security approval pending |
@@ -1346,11 +1396,11 @@ and operational endpoints require deployment-specific adapter tests.
 | API-D14 | Refund rounding, per-ordinal entitlements and source splitting | Database §§2.3, 7.3, 9 and 12 governing; never compute refunds from live catalog | Contract/unit/integration tests pending |
 | API-D15 | Ready/live hosting exposure and stable health route wiring | Restricted operational visibility, no leaked DB/provider state | Hosting/operations pending |
 | API-D16 | OpenAPI compatibility policy and version evolution | `/api/v1` additive changes; breaking changes require reviewed migration | Engineering approval pending |
-| API-D17 | Homepage promotional banner storage and public DTO | Use approved operator content in store settings if modeled; otherwise propose a Database change and withhold banner | Content/data-owner approval pending |
-| API-D18 | Cloudinary upload reference authorization, temporary evidence storage and orphan cleanup | Opaque scoped upload IDs map to provider `publicId`; no dedicated collection assumed | Security/data-owner design approval pending |
-| API-D19 | Strong ETag/revision for catalog/category edits and delivery charge activation | Database v1.2 specifies CAS `revision` for affected masters plus zone `coverageRevision`; verify in integration tests | Proposed design synchronized; runtime evidence pending |
-| API-D20 | Buyer confirmation when server price/terms change between quote and submit | Resolve §11.1 against PRD FR-11 and Testing CHK-03; block automatic charging until server-verifiable confirmation/reconfirmation is approved; affected tasks P06-004, P06-018, P07-004 | Product/API owner decision required |
-| API-D21 | Durable recovery/guest email proof delivery under no-plaintext/no-secret-outbox rules | Resolve §16.3 with Database §§5, 10.1 before P03-009, P03-010 and P06-015; verify crash/retry, expiry and replay safety | Security/data owner decision required |
+| API-D17 | Homepage promotional banner storage and public DTO | storeSettings.homepageBanner + public mediaAssets reference; typed input/public projection; no separate banner collection | Concrete proposal documented; content/data-owner sign-off pending |
+| API-D18 | Cloudinary upload reference authorization, temporary evidence storage and orphan cleanup | mediaAssets intent/ownership ledger, transactional attachment and CAS-protected deletion; private authorized retrieval (Database §6.7) | Concrete proposal documented; security/data-owner sign-off and tests pending |
+| API-D19 | Strong ETag/revision for catalog/category edits and delivery charge activation | Database v1.3 specifies master CAS and store-wide deliveryCoverageRevision, with per-zone change sequence; verify in integration tests | Proposed design synchronized; runtime evidence pending |
+| API-D20 | Buyer confirmation when server price/terms change between quote and submit | Scope-bound persisted checkoutQuotes, mandatory quoteId, expiry/change errors and atomic one-order consumption (§11.1; DB §7.1.1); tasks P06-004, P06-018, P07-004 | Concrete proposal documented; Product/API/data-owner sign-off and tests pending |
+| API-D21 | Durable recovery/guest email proof delivery under no-plaintext/no-secret-outbox rules | Challenge-local AEAD envelope and hash; reference-only outbox; external key custody, safe resend and uncertainty (§16.3; DB §5.3) | Concrete proposal documented; security/data-owner sign-off, keys/provider evidence and tests pending |
 
 **Resolution rule:** An open item does not invalidate already-approved PRD behavior; it blocks claims of a fully accepted implementation where the detail is material. Record decision owner, evidence, approved date and resulting source-document revision before closing it.
 
@@ -1388,7 +1438,7 @@ compliance or production readiness.
 ## Appendix D — Operation contract & DTO register
 
 This appendix is a **single normative companion** to the compact route tables in §§9–14 and §16. Read it with the access
-column in those tables and Database v1.2. The operation matrix below supplies a concrete default success status,
+column in those tables and Database v1.3. The operation matrix below supplies a concrete default success status,
 route-level failure families and response profile. It is a design-time validation target; **the OpenAPI document,
 TypeScript/Zod validators and runtime contract tests do not exist yet**.
 
@@ -1397,6 +1447,7 @@ TypeScript/Zod validators and runtime contract tests do not exist yet**.
 | Notation | Meaning |
 | --- | --- |
 | `string!`, `string?` | Required/optional UTF-8 bounded string; no implicit `null`; reject unlisted keys |
+| `nullable<T>` | Explicit request-only clear value: `T` or JSON `null`; omission leaves current value unchanged; server persists absence with `$unset`, never accidental BSON null |
 | `id!`, `id[]` | Opaque serialized MongoDB ID, server-authorized and validated for ownership |
 | `money!` | Nonnegative **integer poisha**; signed stock adjustment uses `int` instead |
 | `date!` | UTC ISO 8601 instant ending `Z`; date arithmetic only on approved server events |
@@ -1436,19 +1487,19 @@ The following explicit field allowlists close the high-risk gaps identified in t
 | `Credentials` | `email:string!,password:string!` | No role, privilege or session-type input |
 | `Account` | `id,name,email:string!,phone:string?,emailVerified:bool!,addresses:Address[],status:enum(active,suspended)` | Never password/session/token details |
 | `CategoryCreateInput` | `name:string!,slug:string!,parentId:id?,status:enum(active,inactive)?,image:MediaRef?,sortOrder:int?` | Parent acyclic; active ancestry required for public use |
-| `CategoryPatch` | `name?,slug?,parentId?,status?,image?,sortOrder?` | Same typed fields as create; revision-checked |
+| `CategoryPatch` | `name?,slug?,parentId:nullable<id>?,status?,image:nullable<MediaRef>?,sortOrder?` | Null parent makes root after hierarchy checks; null image removes reference safely; CAS required |
 | `AdminCategory` | `id!,name!,slug!,parentId?,status!,revision:int!,sortOrder:int!,image?` | `ETag` on read/edit; hidden categories admin-only |
 | `ProductCreateInput` | `name:string!,slug:string!,description:string!,categoryIds:id[]!,images:MediaRef[]?,keywords:string[]?,featured:bool?,status:enum(draft,active,inactive)?` | No direct stock or variant price object |
 | `ProductPatch` | `name?,slug?,description?,categoryIds?,images?,keywords?,featured?,status?` | Approved fields only; CAS and audit |
 | `AdminProduct` | `id!,name!,slug!,description!,categoryIds:id[]!,status!,featured!,images:MediaRef[]!,createdAt:date!,updatedAt:date!,revision:int!` | Variants separate; no raw Mongoose shape |
 | `VariantCreateInput` | `sku:string!,attributes:map<string,string>!,regularPricePoisha:money!,salePricePoisha:money?,status:enum(active,inactive)?` | Owning `productId` comes from the authorized path, never a conflicting body field; stock assigned by inventory service |
-| `VariantPatch` | `regularPricePoisha:money?,salePricePoisha:money?,status:enum(active,inactive)?,lowStockThreshold:int?` | Same allowlist as §14.1; no stock, SKU or attribute writes; every change increments the record revision |
+| `VariantPatch` | `regularPricePoisha:money?,salePricePoisha:nullable<money>?,status:enum(active,inactive)?,lowStockThreshold:nullable<int>?` | Null clears sale/threshold override; omission unchanged; same allowlist as §14.1; no stock, SKU or attribute writes; every change increments the record revision |
 | `AdminVariant` | `id!,productId!,sku!,attributes!,regularPricePoisha!,salePricePoisha?,status!,stock:{physical,reserved,committed,available},revision:int!` | Available stock derived, never client-writable |
 | `CartLineInput` | `variantId:id!,quantity:int!` | Positive quantity; duplicate variant rejected/merged once |
 | `CheckoutQuoteInput` | `items:CartLineInput[]!,recipient:AddressInput! XOR savedAddressId:id!,email:string? (required guest),contactPhone:string?,couponCode:string?,method:enum(cod,bkash,nagad,rocket)!` | Contact phone defaults to `recipient.phone`; guest recipient phone required; no client money totals |
-| `CheckoutSubmitInput` | All quote fields plus `acceptedTermsVersion:string!,acceptedPolicyVersionIds:string[]!,notes:string?` | Same normalization as quote; request `Idempotency-Key` mandatory |
+| `CheckoutSubmitInput` | All quote fields plus `quoteId:id!,acceptedTermsVersion:string!,acceptedPolicyVersionIds:string[]!,notes:string?` | Same normalization as quote; request `Idempotency-Key` mandatory |
 | `DeliveryDeadline` | `status:enum(awaiting_start,calculated,under_review)!,startEvent:string!,startEventAt:date?,targetDeadlineAt:date?,legalCapAt:date?,effectiveAt:date?,ruleVersion:string!` | Actual 14-calendar-day target starts at recorded confirmation, not submission |
-| `CheckoutQuote` | `items:QuoteItem[]!,regularSubtotalPoisha:money!,productDiscountPoisha:money!,saleSubtotalPoisha:money!,couponDiscountPoisha:money!,deliveryChargePoisha:money!,finalTotalPoisha:money!,currency:enum(BDT)!,deliveryEstimate:date?,quoteExpiresAt:date?,deliveryDeadline:DeliveryDeadline!,availableMethods:PaymentMethodEligibility[]!,policyVersions:PolicyRef[]!` | Quote never reserves stock/coupon; `quoteExpiresAt` optional display freshness |
+| `CheckoutQuote` | `quoteId:id!,items:QuoteItem[]!,regularSubtotalPoisha:money!,productDiscountPoisha:money!,saleSubtotalPoisha:money!,couponDiscountPoisha:money!,deliveryChargePoisha:money!,finalTotalPoisha:money!,currency:enum(BDT)!,deliveryEstimate:date?,quoteExpiresAt:date!,deliveryDeadline:DeliveryDeadline!,availableMethods:PaymentMethodEligibility[]!,policyVersions:PolicyRef[]!` | Scope-bound immutable consent terms; expiry enforced on new submission, no stock/coupon reservation |
 | `OrderSummary` | `id!,orderNumber!,fulfillmentStatus!,paymentStatus!,finalTotalPoisha!,currency!,placedAt:date!,deliveryEstimate?,fulfillmentHold?` | Stable order source, no PII leakage |
 | `OrderDetail` | `OrderSummary` plus `items:OrderLineSnapshot[]!,pricingSnapshot!,deliverySnapshot!,deliveryDeadline:DeliveryDeadline!,termsSnapshot!,policyVersions:PolicyRef[]!,statusHistory:StatusEvent[]!,paymentSummary:PaymentSummary!,cancellationEligibility!,claimEligibility!` | Immutable amounts/charge/rule; derived operational delivery commitment |
 | `PaymentMethodEligibility` | `channel:enum(cod,bkash,nagad,rocket)!,active:bool!,eligible:bool!,reasonCode:string?,minPoisha:money?,maxPoisha:money?` | Merchant activation and attempt amount both required for `eligible` |
@@ -1459,8 +1510,10 @@ The following explicit field allowlists close the high-risk gaps identified in t
 | `DeliveryZone` | `id!,name!,description?,status!,revision:int!,coverageRevision:int!` | `ETag` refers to `revision`, not `coverageRevision` |
 | `DeliveryChargeInput` | `zoneId:id!,coverageKey:string!,amountPoisha:money!,effectiveFrom:date!,effectiveTo:date?` | Admin approved, no conflicting windows |
 | `DeliveryChargeRule` | `id!,zoneId!,coverageKey!,amountPoisha!,ruleVersion:int!,status:enum(scheduled,active,inactive)!,effectiveFrom!,effectiveTo?,revision:int!,supersedesChargeId?` | Historic charge amount/coverage write-once; deactivation only closes window |
-| `SettingsPatch` | `storeName?,branding?:MediaRef,contact?:ContactInfo,address?:ContactInfo,lowStockThreshold?:int,paymentChannels?:{bkashEnabled?,nagadEnabled?,rocketEnabled?,codEnabled?}` | No credentials; channel flag alone cannot assert live activation; CAS required |
-| `StoreSettings` | `SettingsPatch` read form plus `key:'primary',activePolicyVersions:Record<PolicyType,string>,revision:int!,updatedBy:id?` | Admin only; published policies external `policyDocuments` |
+| `SettingsPatch` | `storeName?,branding?:MediaRef,contact?:ContactInfo,address?:ContactInfo,homepageBanner:nullable<HomepageBannerInput>?,lowStockThreshold?:int,paymentChannels?:{bkashEnabled?,nagadEnabled?,rocketEnabled?,codEnabled?}` | No credentials; channel flag alone cannot assert live activation; CAS required |
+| `StoreSettings` | Resolved settings read form (homepageBanner includes verified image; nullable clear inputs become omitted optional fields) plus `key:'primary',activePolicyVersions:Partial<Record<PolicyType,string>>,revision:int!,updatedBy:id?` | Admin only; published policies external `policyDocuments` |
+| `HomepageBanner` | `assetId:id!,title:string!,alt:string!,href:string?,image:MediaRef!` | Resolved approved public projection; image supplied by server from mediaAssets |
+| `HomepageBannerInput` | `assetId:id!,title:string!,alt:string!,href:string?` | Validated public media asset; relative internal destination; null in SettingsPatch removes banner safely |
 | `PolicyDraftInput` | `type:enum(shipping,cancellation,returns,refunds,privacy,terms,complaints)!,content:string!,proposedEffectiveAt:date?` | Server generates version and ID; content length/sanitization enforced |
 | `PolicyDraftPatch` | `content:string?,proposedEffectiveAt:date?` | Draft only, revision CAS; cannot edit approved/published content |
 | `PolicyDocument` | `id!,type!,version!,status:enum(draft,approved,scheduled,published,superseded,withdrawn)!,content!,contentDigest!,revision:int!,effectiveAt?,approvalEvidenceRef?,approvedAt?,publishedAt?` | Admin only until published; immutable content after approval |
@@ -1469,18 +1522,22 @@ The following explicit field allowlists close the high-risk gaps identified in t
 | `AdminOrderDetail` | `OrderDetail` plus `customerContactMasked?,allocationSummary,fulfillmentActions[],auditRefs[]` | Fields operationally necessary only; protected admin view |
 | `ClaimInput` | `claimType:enum(physical_return,shortage)!,items:[{orderItemId:id!,quantity:int!,reason:string!,evidenceAssetIds:id[]?}]!,description?` | Reject overlapping protected item ordinals; backend owns amounts/ordinal selection |
 | `Claim` | `id!,orderId!,claimType!,items:[{orderItemId,requestedQty,approvedQty?,reason}]!,status!,requestedAt:date!,evidence[]` | Claim evidence private; only masked metadata/authorized links |
-| `Refund` | `id!,orderId!,refundGroupKey:string?,classification:enum(merchandise,payment_correction)!,basis!,sourceCollectionId!,amountPoisha!,method!,status!,capacityStatus!,requestedAt?,completedAt?` | Source collected amount and unit entitlement guard obligations |
-| `ComplaintInput` | `orderId:id?,issue:string!,contactEmail:string? (required anonymous),contactPhone:string?,description:string?` | Order ID only with verified owner/guest proof; anti-spam limits |
+| `Refund` | `id!,orderId!,refundGroupKey:string?,classification:enum(merchandise,payment_correction)!,basis!,sourceCollectionId!,amountPoisha!,method!,status!,capacityStatus!,requestedAt:date!,approvedAt:date?,completedAt:date?,items:[{orderItemId,amountPoisha}]!,timing:RefundTiming!,timeline:RefundStatusEvent[]!` | Source caps enforced; item totals reconcile; timing from approval snapshot, timeline max 40 public status facts |
+| `RefundStatusEvent` | `status:enum(requested,under_review,approved,processing,completed,failed,rejected)!,at:date!,reasonCode:string?` | Public status fact only; no actor identifiers, internal notes or transfer evidence |
+| `RefundTiming` | `status:enum(awaiting_approval,calculated,under_review)!,targetBusinessDays:int!,timezone:enum(Asia/Dhaka)!,policyVersion:string!,calendarVersion:string?,targetAt:date?` | Standard target 7 business days; approved shorter rule prevails; absent date when basis missing |
+| `ComplaintInput` | `orderId:id?,issue:string!,contactName:string? (required anonymous),contactEmail:string? (required anonymous),contactPhone:string?,description:string?` | Order ID only with verified owner/guest proof; anti-spam limits |
 | `Complaint` | `id!,orderId?,status!,issue!,createdAt:date!,response?,resolvedAt?` | Customer sees only own/submitted authorized complaints |
 | `Review` | `id!,productId!,rating:int!,comment:string!,status!,createdAt:date!,verifiedPurchase:bool!` | `verifiedPurchase` server-derived from delivered qualifying order |
-| `DashboardMetrics` | `grossMerchandiseValuePoisha!,netAcceptedOrderSalesPoisha!,paidCollectionsPoisha!,netLinkedCashFlowPoisha:SignedMoneyPoisha!,unattributedProviderCashPoisha!,completedMerchandiseRefundsPoisha!,completedCorrectionRefundsPoisha!,pendingRefundLiabilityPoisha!,asOf:date!` | Sales by order placement, cash by collection/payout events; no revenue equivalence |
-| `MediaRef` | `publicId:string!,url:string!,alt:string?` | Only verified server-approved Cloudinary asset references |
+| `DashboardMetrics` | `from:date!,to:date!,asOf:date!,timezone:enum(Asia/Dhaka)!,dateBasis!,counts:DashboardCounts!,recentOrders:AdminOrderSummary[]!,lowStockItems:LowStockSummary[]!,grossMerchandiseValuePoisha!,productDiscountPoisha!,couponDiscountPoisha!,netAcceptedOrderSalesPoisha!,paidCollectionsPoisha!,netLinkedCashFlowPoisha:SignedMoneyPoisha!,unattributedProviderCashPoisha!,completedMerchandiseRefundsPoisha!,completedCorrectionRefundsPoisha!,pendingRefundLiabilityPoisha!,outstandingCodPoisha!,unassignedLinkedCashPoisha!` | Counts and balances at cutoff; period cash uses event dates; lists max 20 each; all other money fields nonnegative integers |
+| `DashboardCounts` | `activeProducts:int!,registeredCustomers:int!,totalOrders:int!,pendingOrders:int!,confirmedOrders:int!,processingOrders:int!,shippedOrders:int!,deliveredOrders:int!,cancelledOrders:int!,lowStockVariants:int!,pendingReturnRequests:int!` | Nonnegative cutoff counts; fulfillment-status counts sum to totalOrders |
+| `LowStockSummary` | `variantId:id!,productId:id!,sku:string!,available:int!,threshold:int!` | Admin-only; nonnegative counters and approved threshold |
+| `MediaRef` | `publicId:string!,url:string!,alt:string?` | Server resolves publicId through an eligible public mediaAssets record before attachment; client URL alone is never ownership/approval proof |
 | `AdminAudit` | `action!,actor!,subject!,occurredAt:date!,reason?,requestId?` | Redact secret/raw PII before output |
 
 **Canonical schema ownership:** §6.1 defines scalar types; Appendix D.2 defines named DTO allowlists; §§9–14 and §16 define operation-specific inputs and access. Earlier DTO summaries are navigation aids. Keep shared fields synchronized rather than allowing either copy to redefine a contract. `PolicyType` is the seven-value enum in `PolicyDraftInput`, including `privacy`.
 
 **Nested type constraints:** `ContactInfo`, `QuoteItem`, `OrderLineSnapshot`, `StatusEvent`, `PolicyRef`, `AdminReview`,
-`NotificationSummary` and `CollectionSummary` are bounded projections of their owning Database §5–§10 schema, with
+`NotificationSummary`, `RefundStatusEvent` (`{status,at,reasonCode?}`, max 40 latest chronological public milestone facts derived from audit/status history; approval/completion remain explicit fields), `AdminOrderSummary` (OrderSummary plus necessary masked admin context) and `CollectionSummary` are bounded projections of their owning Database §5–§10 schema, with
 public/private allowlists from §6.2. Their exact compiled validator files and machine-readable OpenAPI component
 definitions remain a **verification gate**, not an unearned completion claim. Numeric/string/array bounds follow Database
 §2.2 unless explicitly narrower above.
@@ -1495,7 +1552,7 @@ mandatory failure set in D.1; the abbreviations below add targeted failures.
 | --- | --- |
 | `OWN` | `AUTH_REQUIRED`, `GUEST_PROOF_REQUIRED`, `FORBIDDEN`, `NOT_FOUND` (scope-safe) |
 | `CAS` | `PRECONDITION_REQUIRED` (`428`), `PRECONDITION_FAILED` (`412`) |
-| `STATE` | `STATE_CONFLICT`, `BUSINESS_RULE_VIOLATION` |
+| `STATE` | `STATE_CONFLICT`, `BUSINESS_RULE_VIOLATION`, `QUOTE_CHANGED`/`QUOTE_EXPIRED` for checkout submission |
 | `STOCK` | `OUT_OF_STOCK`, `COUPON_UNAVAILABLE` |
 | `MONEY` | `PAYMENT_UNCERTAIN`, `PAYMENT_AMOUNT_UNSUPPORTED`, `PROVIDER_ERROR` |
 | `REFUND` | `REFUND_BALANCE_EXCEEDED`, `PAYMENT_UNCERTAIN` |

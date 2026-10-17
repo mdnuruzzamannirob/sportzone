@@ -1,14 +1,14 @@
 # SportZone — Testing & quality assurance specification
 
-**Version:** 1.1  
-**Updated:** 16 October 2026  
-**Documentation audit:** 16 October 2026 — corrections in this working revision do not grant specification, task or release approval.  
+**Version:** 1.2\
+**Updated:** 17 October 2026\
+**Documentation audit:** 17 October 2026 — review-remediation cases are planned; no runtime test or acceptance is claimed.\
 **Status:** Revised verification baseline — planned cases only; no tests executed or accepted  
 **Product reference:** [PRD](./PRD.md)  
 **Technical reference:** [Architecture](./ARCHITECTURE.md)  
 **Design reference:** [Design](./DESIGN.md)  
-**Data reference:** [Database](./DATABASE.md) (v1.2)  
-**HTTP reference:** [API](./API.md) (v1.1)  
+**Data reference:** [Database](./DATABASE.md) (v1.3)\
+**HTTP reference:** [API](./API.md) (v1.2)\
 **Delivery reference:** [Implementation Plan](./IMPLEMENTATION_PLAN.md)  
 **Execution reference:** [Tasks](./TASKS.md)  
 **Scope:** Single-store sports e-commerce platform for Bangladesh  
@@ -341,7 +341,7 @@ These cases complement the UI matrices; verify real API/database state as well a
 | `ACC-03` | Add/edit/remove address; submit unsupported area/invalid phone | Owned address CRUD/default validation, bounded list, rejected input leaves no partial mutation | FR-02; API §9 |
 | `ACC-04` | Change default address, delete nondefault/default, attempt cross-customer update | Exactly one valid default when addresses exist per contract; owner isolation; default conflict handled deterministically | FR-02; API §9 |
 | `ACC-05` | Place order, then modify/delete profile and delivery address | Stored order recipient/zone/charge/deadline-rule snapshots remain immutable; private order view stays scoped | FR-02, FR-11; Database §7 |
-| `SUP-01` | Customer creates complaint; anonymous/guest actor submits using allowed proof and order context | Valid complaint persisted with reference, timestamp, ownership/proof relationship; invalid proof or spam fields rejected without disclosure | PRD §3, FR-20, FR-26; API §14.4 |
+| `SUP-01` | Customer creates complaint; anonymous/guest actor submits using allowed proof and order context | Minimal anonymous {contactName,contactEmail,issue} persists the exact normalized contact; missing/blank name or email fails without mutation. C/G omitted contact resolves from own principal/order only; forged order proof is denied. No fabricated contact or other reporter disclosure | PRD §3, FR-20, FR-26; API §14.4 |
 | `SUP-02` | Admin lists, investigates and resolves open complaint with documented response | Authorized status transition, durable response/contact outcome, audit, and appropriate customer-visible history; repeated command not duplicate | FR-26; API §14.4 |
 | `SUP-03` | Customer A/guest proof A probes B's complaint or B's order complaint list | Scope-safe denial; no private customer/complaint data leaked; no state mutation | PRD §9; API §14.4 |
 | `SUP-04` | Late-delivery complaint under approved operator policy; retry notification delivery | Tracked acknowledgement/response and escalation evidence against **approved** deadline; no invented statutory SLA; notification failure does not delete complaint | PRD §6, FR-16, FR-26; API-D07 |
@@ -353,8 +353,8 @@ These cases complement the UI matrices; verify real API/database state as well a
 | `ADM-02` | Admin suspends active customer, then attempts new and existing authenticated actions | Status decision audited; existing protected sessions denied/revoked per source contract; no unauthorized write possible | FR-27, FR-01; API §14.2; SEC-03 |
 | `ADM-03` | Admin reactivates customer with reason; replay suspend/reactivate command | Authorized transition recorded once; status accurate; no automatic recreation of revoked session without fresh valid authentication | FR-27; API §14.2 |
 | `ADM-04` | Unauthorized actor targets suspend/reactivate route; admin submits invalid decision | Scope-safe denial/error; no status/audit spoofing or protected customer data exposure | FR-27; API §14.2 |
-| `ADM-05` | Activate/deactivate zone, replace charge rule, quote unsupported area, then inspect old order | Current zone eligibility and non-overlapping effective windows correct; disabled region rejected; historical delivery charge unchanged | FR-28; API §14.3 |
-| `ADM-06` | Seed COD-unpaid, verified COD receipt, merchandise refund held/paid, duplicate correction receipt across reporting interval boundaries | Report separates merchandise revenue, verified collection cash-flow, corrections and refund categories; sums agree with source records and UTC/approved reporting period | FR-22, FR-29, FR-33; API §14.4 |
+| `ADM-05` | Activate/deactivate zone, replace charge rule, quote unsupported area, then inspect old order | Global singleton guard serializes two-zone writers for the same coverageKey (different ruleVersions) and rejects overlapping scheduled windows before activation; same-zone/cross-zone insert, supersede, deactivate and activation races preserve one eligible rule; transaction abort leaves no partial window change; disabled region rejected; historical delivery charge unchanged | FR-28; API §14.3 |
+| `ADM-06` | Seed COD-unpaid, verified COD receipt, merchandise refund held/paid, duplicate correction receipt across reporting interval boundaries | Validate full DashboardMetrics allowlist: all counts/status sums, outstanding COD, discounts, cutoff balances, pending physical returns, recentOrders/lowStockItems lists ≤20, and timezone/date basis; reject unreconstructible historical cutoff. Period financial sums agree with source records; separate sales, verified cash flow, corrections and refund classes | FR-22, FR-29, FR-33; API §14.4 |
 
 ### 7.4 Transactional notification event coverage
 
@@ -362,20 +362,20 @@ Each event below requires an **event-generation assertion**, separately testable
 
 | Evidence key | Event source | Expected behavior | Phase |
 | --- | --- | --- | --- |
-| `NTF-01` | Registration verification / password reset | Safe single-use link, provider failure and re-send without leaking account existence | 03 |
-| `NTF-02` | Order confirmation, cancellation, shipment, delivery | Accurate state/order reference and deduplicated retry | 06 |
+| `NTF-01` | Registration verification / email change / password reset / guest order proof | Safe single-use link, provider failure and re-send without leaking account existence | 03, 06 |
+| `NTF-02` | Order receipt, confirmation, cancellation, shipment, delivery | Accurate state/order reference and deduplicated retry | 06 |
 | `NTF-03` | Payment verified success/failure | Server-confirmed status, no duplicate email from repeat IPN | 07 |
 | `NTF-04` | Return update; refund approval, rejection and confirmed completion | Return/refund statuses distinguished; Completed notice only after confirmed payout | 08 |
 
-Recovery/guest-proof delivery must also exercise the API-D21 design after approval: crash before/after send, transport retry, token expiry, replay denial and no plaintext secret in durable payloads/logs.
+Recovery/guest-proof delivery must exercise the concrete API-D21 proposal after security approval: hash plus challenge-local AEAD envelope, reference-only outbox, external key custody/rotation, tamper/key-loss denial, crash before/after send, delivery uncertainty, concurrent reissue/consume, expiry, replay denial and no plaintext or encrypted proof in notification payloads/logs. Provider send idempotency must be verified; one event intent is not proof of exactly-once delivery.
 
 **Per-event verification cases** (run one distinct row for each event in the corresponding `NTF-*` family):
 
 | Case ID | Trigger | Assertions including negative/retry path |
 | --- | --- | --- |
-| `NTC-01` | Registration verification requested | Correct recipient/single-use expiry, redacted proof, retry and no account enumeration |
+| `NTC-01` | Registration verification requested | Correct recipient/single-use expiry, reference-only outbox/AEAD envelope, tamper/key-loss denial, safe retry/reissue and no account enumeration |
 | `NTC-02` | Password reset requested | Correct token scope, no leaked account existence, used/expired links fail, resend safely rate-limited |
-| `NTC-03` | Order confirmed | Confirmed-only event and source order reference, one durable intent and deduplicated provider retries |
+| `NTC-03` | Order confirmed | Distinct order_received at placement/Pending and order_confirmation at Confirmed; correct source reference, one intent per transition, provider idempotency or explicit send uncertainty; no early confirmed notice |
 | `NTC-04` | Order cancelled | Verified cancellation reason/status; no notification from merely requested cancellation |
 | `NTC-05` | Manual shipment confirmed | Shipped timestamp/status, one intent on transition, no duplicate from repeat admin action |
 | `NTC-06` | Delivery marked completed | Delivered-only notification; failed delivery does not emit success |
@@ -490,6 +490,8 @@ Each scenario follows: **Fixture / action → expected HTTP+business outcome →
 | `CAT-01` | Admin activates/deactivates product and category; public list/search/detail | Only eligible active records publicly appear; category/product association intact; slug uniqueness | 03–06, 23–24 |
 | `CAT-02` | Multiple variants with different SKU, price and availability | Correct variant selected; out-of-stock cannot be submitted; SKU unique | 05–06, 13 |
 | `CAT-03` | Search/filter/sort/paginate seeded active and inactive catalog | Stable pages and tie-break, correct facets/availability, no inactive leakage | 04 |
+| `CAT-04` | Clear sale price/threshold override, remove category image, reparent a child to root with explicit null, then omit fields | Null performs only declared clear operations; omission retains current data; stored optional fields absent; stale ETag rejected. Later regular-price change uses regular price after sale cleared; old order snapshots unchanged | 06, 23–25 |
+| `CAT-05` | Configure/change/remove homepage banner with approved and foreign/private/invalid media references | Public home shows only approved banner; internal href/alt enforced; logo unaffected; no arbitrary URL attachment; absent content does not waive FR-03 | 03, 23, 34 |
 | `SHP-01` | Guest cart → user cart after login, quantities and repeated adds | Consistent permitted merge/persistence; cart does **not** reserve inventory | 07–08 |
 | `SHP-02` | Customer A adds/re-adds item, logs out, starts a new session, logs back in, removes item and repeats login; Customer B and guest attempt access | Same item persists without duplicates across authenticated sessions; removal persists; inactive product behavior follows contract; guest and cross-owner access cannot expose A's list | 08 |
 | `PRM-01` | `FX-MONEY-01/02` percentage/fixed coupons with sale prices | Server matches integer/rounding example, proportional largest remainder, delivery excluded | 09, 11 |
@@ -504,11 +506,11 @@ Each scenario follows: **Fixture / action → expected HTTP+business outcome →
 | --- | --- | --- | --- |
 | `CHK-01` | Guest checkout with full name, Bangladesh phone, email, area, terms | Server validates all required fields; creates scoped guest order; email alone is not access proof | 11, 19 |
 | `CHK-02` | Registered checkout with saved address, valid COD method | Charges and snapshots final at submit; physical stock allocation committed once; order stays `Pending` until admin confirmation; payment unpaid | 11–14 |
-| `CHK-03` | Browser quote changed after product/zone/coupon change | Backend recalculates using active conditions; stale quote rejected/reconfirmed through the approved server-verifiable mechanism (API-D20); no forged price accepted | 09, 11, 16 |
+| `CHK-03` | Browser quote changed after product/zone/coupon change | Persisted scope-bound quoteId and identical draft required; QUOTE_CHANGED/QUOTE_EXPIRED before order/attempt; fresh quote requires explicit confirmation; same-key committed replay works after expiry; two keys cannot consume one quote twice (API-D20 proposal); no forged price accepted | 09, 11, 16 |
 | `CHK-04` | Two concurrent identical checkout submissions with one key | Exactly one order and inventory/coupon effect; second receives safe replay/in-progress resolution | 11–13 |
 | `CHK-05` | Same idempotency key but changed payload; or replay beyond window | Conflict or pointer to prior order; never second order | 11 |
 | `INV-01` | `FX-STOCK-01`, two simultaneous competing checkouts | One allocation maximum; no negative availability, movement duplicated or stale winner | 13 |
-| `INV-02` | Online checkout starts reservation, clock advances 15 min | Eligible unpaid hold released once, without releasing another active/paid allocation | 09, 12–13 |
+| `INV-02` | Online checkout at 10:00, expiry at 10:15, safely reconciled retry/reacquisition at 10:20 | First hold releases once; new generation has heldAt 10:20 and expiry 10:35 for every stock line and coupon; replay does not extend expiry, expiry/payment races cannot double release/commit | 09, 12–13 |
 | `INV-03` | Commit → shipment → inspected resellable return | Shipment reduces physical/committed once; only inspected recovered goods restocked | 13–14, 17 |
 | `ORD-01` | Pending → Confirmed → Processing → Shipped → Delivered | Only guarded transitions succeed; timestamps/history accurate; invalid/replayed transition blocked | 14, 26 |
 | `ORD-02` | Customer requests cancellation in Pending/Confirmed/Processing | Admin approves/rejects explicitly; before-dispatch recheck is atomic; not cancelled by request itself | 15 |
@@ -579,7 +581,7 @@ For `ORD-06`, compare `placedAt`, actual `confirmedAt`, snapshotted `deadlineBas
 | `RFD-06` | COD refund request before COD collected | No payout eligible as collected funds are zero | 12, 18 |
 | `RFD-07` | Manual payout with alternate channel | Customer consent, verified transfer evidence, separate approval and confirmed completion | 18 |
 | `RFD-08` | Gateway refund request/response/status | Preserve original `bank_tran_id`, merchant-generated `refund_trans_id` and returned `refund_ref_id` where provided; confirmation from supported status mechanism | 18 |
-| `RFD-09` | Refund approval, policy timing and notification | Target 7 **business days** from approval unless law sooner; timely notification; unresolved provider delay visible | 18, 20 |
+| `RFD-09` | Refund approval, policy timing and notification | Refund DTO exposes approvedAt, items, public timeline and timing snapshot. Approval later than request anchors the target; replay/retry never resets it. Approved business-calendar/shorter-law basis governs targetAt; missing basis is under_review without date. No internal evidence leaks; timely notification and overdue provider delay remain visible | 18, 20 |
 
 ### 11.3 Payment/refund consistency flow
 
@@ -661,6 +663,7 @@ Capture run-specific workload, commit, data seed, test machine, server shape, wa
 | `REL-08` | Restore point precedes later gateway and locally committed changes | Identify loss window and freeze affected mutations; independently re-query externally verifiable payment/refund events, compare surviving logs/outbox/manual records, enumerate **unreconstructable gaps** and obtain authorized disposition before reopening writes |
 | `REL-09` | Cloudinary missing/deleted or upload failed | No unauthorized image/evidence exposure; documented retry/orphan cleanup |
 | `REL-10` | Delivery exception unresolved past approved target | Correct complaint/exception escalation and truthful customer-facing status |
+| `REL-11` | Evidence upload/attachment races orphan cleanup, process crashes after provider call | Persisted mediaAssets intent; exact owner/order/item scope; quarantine until validated; one attach or deletion claimant wins CAS. Never delete referenced/legal-held evidence; unknown delete reconciles, private read reauthorizes |
 
 ### 13.3 Deployment and rollback rehearsal
 
@@ -1056,9 +1059,9 @@ The entries below preserve the **meaning and ordering** of PRD §14. They are pl
 | `TST-D10` | Supported browser/OS and assistive-tech test selection | Playwright projects + manual cross-browser check plan | Release reviewer confirms coverage matrix |
 | `TST-D11` | Backup frequency, retention, RPO/RTO, restore operator | Isolated restored-data integrity and post-cutoff reconciliation tests | Approved `OPERATIONS.md` runbook and restore evidence |
 | `TST-D12` | Upload limits, anti-abuse, media cleanup and guest evidence storage | Use safe synthetic uploads; keep unauthorised retrieval tests | Security/operations approvals (API-D10, API-D18) |
-| `TST-D13` | Coupon/customer identification, operation tombstone retention, report cash classification | Follow Database v1.2 exact invariants; keep unresolved external periods open | Database/API decisions and integration evidence |
+| `TST-D13` | Coupon/customer identification, operation tombstone retention, report cash classification | Follow Database v1.3 exact invariants; keep unresolved external periods open | Database/API decisions and integration evidence |
 | `TST-D14` | Test evidence access, retention and data redaction | Use synthetic data, minimum necessary access | Privacy/operations sign-off |
-| `TST-D15` | Buyer confirmation of changed quote and durable proof-email delivery | CHK-03 and recovery/guest tests remain Contract Pending until API-D20/API-D21 resolve; no invented request fields or plaintext token storage | Product/API and security/data owners approve the respective designs |
+| `TST-D15` | Buyer confirmation and durable proof-email delivery | Concrete API-D20/API-D21 proposals mapped to CHK-03, API-09, NTC-01/02 and SEC-05/10; remain Contract Pending until owner sign-off and runtime evidence | Product/API/data and security owners review quote transactions, AEAD/key custody and crash/replay tests |
 
 An unresolved prerequisite must remain **Blocked** on the relevant test or milestone; do not change the underlying PRD rule or silently invent an operating policy. Decisions are recorded with a real owner, approval date, evidence and amended source version when available.
 
@@ -1071,8 +1074,8 @@ An unresolved prerequisite must remain **Blocked** on the relevant test or miles
 - [Product Requirements](./PRD.md): §5 FR-01–FR-34, §11 exception states, §12 NFRs, §14 acceptance, §18 launch readiness.
 - [Software Architecture](./ARCHITECTURE.md): §§6–11 trust, persistence and critical workflows; §13 deployment boundaries.
 - [UI/UX Design](./DESIGN.md): §2 semantic design tokens, §§7–12 flows and accessibility.
-- [Database Specification](./DATABASE.md): v1.2 §§2–15 schemas, financial arithmetic, allocation, retries, indexes and recovery.
-- [API Specification](./API.md): v1.1 §§3–17 and Appendix D for operation contracts and schema definitions.
+- [Database Specification](./DATABASE.md): v1.3 §§2–15 schemas, financial arithmetic, allocation, retries, indexes and recovery.
+- [API Specification](./API.md): v1.2 §§3–17 and Appendix D for operation contracts and schema definitions.
 - [Implementation Plan](./IMPLEMENTATION_PLAN.md): §§3, 6, 10–12 and milestones M1–M8.
 - [Task Register](./TASKS.md): phase tasks, evidence ownership and acceptance records.
 
@@ -1088,7 +1091,7 @@ An unresolved prerequisite must remain **Blocked** on the relevant test or miles
 
 ## Appendix E — API operation coverage register
 
-This register is derived from the **164 method+path entries** in `API.md` v1.1 Appendix D. `OPV-*` is a stable **operation verification slot** (a planned parameterized contract vector), **not an existing executable test**. The named scenario column links domain-specific cases; its ranges denote the source suite to select for this operation, not a claim that every member applies. All rows are `Planned / Not Run` until attached to an actual test function, run ID and reviewed result.
+This register is derived from the **164 method+path entries** in `API.md` v1.2 Appendix D. `OPV-*` is a stable **operation verification slot** (a planned parameterized contract vector), **not an existing executable test**. The named scenario column links domain-specific cases; its ranges denote the source suite to select for this operation, not a claim that every member applies. All rows are `Planned / Not Run` until attached to an actual test function, run ID and reviewed result.
 
 **Per-slot execution recipe:** use the API Appendix D typed request/response schema, send an authorized valid request and assert the listed success status and DTO/envelope; test invalid input against D.1 failure defaults and the listed operation-specific error families; test unauthenticated/incorrect-role and cross-owner access where applicable; for browser mutations test Origin+CSRF; for CAS/replay routes test missing/stale `If-Match` and repeated/changed idempotency payload; assert both allowed and forbidden persistent side effects. Provider callbacks use their special acknowledgment matrix; liveness/readiness use deployment-defined status without privileged data. A row may be marked Covered only after executable linkage; Passed only after real evidence.
 
