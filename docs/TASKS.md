@@ -101,7 +101,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 
 | Phase | Total | Not Started | Ready | In Progress | Blocked | In Review | Done | Deferred |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 01 — Requirements Finalization and Planning | 14 | 2 | 0 | 0 | 0 | 0 | 12 | 0 |
+| 01 — Requirements Finalization and Planning | 14 | 1 | 0 | 0 | 0 | 0 | 13 | 0 |
 | 02 — UI/UX Design | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 03 — Authentication and Core Backend | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -113,7 +113,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **159** | **0** | **0** | **0** | **0** | **12** | **0** |
+| **Total** | **171** | **158** | **0** | **0** | **0** | **0** | **13** | **0** |
 
 ## 4. Milestone tracker
 
@@ -248,13 +248,14 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Evidence:** [Task/status/evidence protocol review and register reconciliation](./evidence/P01-012-task-protocol.md).\
   **Accepted:** Project owner, 17 October 2026 — “Task protocol গ্রহণ করছি”.
 
-- [ ] **P01-013 — Establish `TESTING.md` baseline**\
-  **Status:** `Not Started` · **Area:** Documentation/quality\
+- [x] **P01-013 — Establish `TESTING.md` baseline**\
+  **Status:** `Done` · **Area:** Documentation/quality · **Owner:** Codex\
   **Sources:** PRD §§12,14; Architecture §12; Implementation Plan §4.3\
   **Depends on:** `P01-004`, `P01-008`, `P01-009`\
   **Deliverable:** Review and reconcile the TESTING.md baseline with test layers, requirement/scenario mapping, fixtures, environment prerequisites, commands as tooling becomes available, and evidence conventions.\
   **Acceptance:** Critical risks and FR/NFR checks have verification owners; foundation tasks establish the documented command interface. Extend procedures before each feature's acceptance.\
-  **Evidence to attach:** Reviewed `TESTING.md` baseline.
+  **Evidence:** [Reviewed testing baseline, requirement owners and current verification interface](./evidence/P01-013-testing-baseline.md).\
+  **Accepted:** Project owner, 17 October 2026 — “Testing baseline গ্রহণ করছি”.
 
 - [ ] **P01-014 — Establish `OPERATIONS.md` baseline**\
   **Status:** `Not Started` · **Area:** Documentation/operations\
@@ -1707,6 +1708,7 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | 17 October 2026 | P01-010 | Local pipeline and 12 tooling regressions passed; hosted run 39039353486 Passed; project owner accepted baseline; status Done | Codex / project owner | [Accepted CI baseline evidence](./evidence/P01-010-ci.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P01-011 | Agent-rule review and static checks passed; project owner accepted the reviewed instructions; status Done | Codex / project owner | [Accepted agent-rule review](./evidence/P01-011-agent-rules.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P01-012 | Not Started → In Review → Done; protocol/register checks passed; project owner accepted the task/status/evidence protocol | Codex / project owner | [Accepted task-protocol review](./evidence/P01-012-task-protocol.md) | Proceed through declared task dependencies |
+| 17 October 2026 | P01-013 | Not Started → In Review → Done; coverage/static and local CI checks passed; project owner accepted the testing baseline | Codex / project owner | [Accepted testing baseline](./evidence/P01-013-testing-baseline.md) | Proceed through declared task dependencies |
 
 When execution starts, update the task status and attach evidence. Change a checkbox to `[x]` only after acceptance.
 Preserve IDs and dependency references; update phase totals and record milestone acceptance separately.
