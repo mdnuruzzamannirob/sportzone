@@ -12,6 +12,7 @@ This changelog tracks the documentation baseline. Application releases are recor
 - Defined the implementation roadmap, 171-task execution register, verification scenarios and operating runbooks.
 - Standardized document ownership, terminology, navigation and cross-references.
 - Consolidated configuration guidance and retained stable requirement, task, scenario and operation identifiers.
+- Completed P01-001 baseline verification with repository paths, source hashes and project-owner checklist acceptance.
 
 ## Maintenance
 
