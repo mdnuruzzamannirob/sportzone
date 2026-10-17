@@ -1,20 +1,5 @@
 @import "tailwindcss";
-
-:root {
-  color-scheme: light dark;
-  --canvas: #ffffff;
-  --text: #0a0a0a;
-  --muted: #525252;
-  --brand: #2563eb;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --canvas: #000000;
-    --text: #fafafa;
-    --muted: #a3a3a3;
-  }
-}
+@import "../../styles/tokens.css";
 
 body {
   margin: 0;
@@ -24,11 +9,16 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--brand);
+  outline: 2px solid var(--focus);
   outline-offset: 4px;
+}
+
+a {
+  color: var(--link-text);
+  text-decoration-color: var(--link-accent);
 }
 
 ::selection {
   background: var(--brand);
-  color: #ffffff;
+  color: var(--on-brand);
 }

@@ -102,7 +102,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | Phase | Total | Not Started | Ready | In Progress | Blocked | In Review | Done | Deferred |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | 01 — Requirements Finalization and Planning | 14 | 0 | 0 | 0 | 0 | 0 | 14 | 0 |
-| 02 — UI/UX Design | 11 | 9 | 0 | 0 | 0 | 0 | 2 | 0 |
+| 02 — UI/UX Design | 11 | 8 | 0 | 0 | 0 | 0 | 3 | 0 |
 | 03 — Authentication and Core Backend | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -113,7 +113,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **155** | **0** | **0** | **0** | **0** | **16** | **0** |
+| **Total** | **171** | **154** | **0** | **0** | **0** | **0** | **17** | **0** |
 
 ## 4. Milestone tracker
 
@@ -286,13 +286,13 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Acceptance:** Builds independently and supports secured app shell routing without assuming authorization.\
   **Evidence:** [Admin build, DOM navigation and built-asset smoke verification](./evidence/P02-002-admin.md). Accepted by project owner on 17 October 2026: “Admin scaffold গ্রহণ করছি”.
 
-- [ ] **P02-003 — Implement monochrome design tokens across both apps**\
-  **Status:** `Not Started` · **Area:** Design/UI\
+- [x] **P02-003 — Implement monochrome design tokens across both apps**\
+  **Status:** `Done` · **Area:** Design/UI · **Owner:** Codex\
   **Sources:** Design §2.2\
   **Depends on:** `P02-001`, `P02-002`\
   **Deliverable:** Create semantic CSS token mappings for light/dark themes.\
   **Acceptance:** Brand #2563EB and on-brand white remain identical in both modes; neutrals are grayscale.\
-  **Evidence to attach:** Token assertions and visual comparison.
+  **Evidence:** [Shared token, contrast, build checks and rendered light/dark comparison](./evidence/P02-003-tokens.md). Accepted by project owner on 17 October 2026: “Design tokens গ্রহণ করছি”.
 
 - [ ] **P02-004 — Configure typography, spacing and currency utilities**\
   **Status:** `Not Started` · **Area:** Design/UI\
@@ -1714,6 +1714,8 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | 17 October 2026 | P02-001 | Not Started → In Progress → In Review → Done; build, layout/production smoke and configured CI checks passed; project owner accepted the storefront scaffold | Codex / project owner | [Accepted storefront scaffold](./evidence/P02-001-storefront.md) | Proceed through declared task dependencies |
 
 | 17 October 2026 | P02-002 | Not Started → In Progress → In Review → Done; independent build, DOM navigation, HTTP smoke and configured CI checks passed; project owner accepted the admin scaffold | Codex / project owner | [Accepted admin scaffold](./evidence/P02-002-admin.md) | Proceed through declared task dependencies |
+
+| 17 October 2026 | P02-003 | Not Started → In Progress → In Review → Done; token/contrast, both builds and configured CI checks passed; project owner accepted the design tokens and rendered comparison | Codex / project owner | [Accepted design tokens](./evidence/P02-003-tokens.md) | Proceed through declared task dependencies |
 
 When execution starts, update the task status and attach evidence. Change a checkbox to `[x]` only after acceptance.
 Preserve IDs and dependency references; update phase totals and record milestone acceptance separately.

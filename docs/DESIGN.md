@@ -106,7 +106,7 @@ Use the same **brand blue `#2563EB` in light and dark modes**, including primary
 - Set `color-scheme` appropriately and style native controls, skeletons, overlays, icons, and charts for each mode. Do not invert product photographs; use theme-appropriate logo assets if necessary.
 - Respect `prefers-reduced-motion`. Verify WCAG 2.2 AA text contrast, non-text contrast, and visible focus in **both** modes.
 
-**Implementation mapping:** Define semantic CSS custom properties (for example, `--color-brand`, `--color-canvas`, `--color-text`, `--color-link-text`) on `:root`, overridden by `[data-theme="dark"]`. Keep `--color-brand: #2563EB` and `--color-on-brand: #FFFFFF` unchanged in both modes. Map Tailwind utilities to the same token names in both applications; avoid raw hex values in components. A shared token source is sufficient; a shared UI component library is not required.
+**Implementation mapping:** [Shared color tokens](../styles/tokens.css) define semantic CSS custom properties (`--brand`, `--on-brand`, `--canvas`, `--text`, `--link-text`) on `:root`, overridden by `:root[data-theme="dark"]`. Without an explicit light/dark choice, the system preference supplies the dark fallback. Keep `--brand: #2563EB` and `--on-brand: #FFFFFF` unchanged in both modes. Tailwind color mappings use the same kebab-case names in both applications (`bg-brand`, `text-on-brand`, `text-text-muted`, `border-control-border`); avoid raw hex values in components. A shared token source is sufficient; a shared UI component library is not required.
 
 ### 2.3 Typography
 

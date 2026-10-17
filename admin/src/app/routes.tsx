@@ -11,9 +11,9 @@ function PublicLayout() {
 function SignInUnavailable() {
   return (
     <>
-      <p className="text-sm text-(--muted)">SportZone Admin</p>
+      <p className="text-sm text-text-muted">SportZone Admin</p>
       <h1 className="mt-4 text-3xl font-semibold">Administrator access</h1>
-      <p className="mt-4 text-(--muted)">Sign-in is not available yet.</p>
+      <p className="mt-4 text-text-muted">Sign-in is not available yet.</p>
     </>
   )
 }
@@ -24,7 +24,7 @@ function AdminAccessBoundary() {
   return (
     <main id="main-content" className="mx-auto min-h-dvh max-w-xl px-6 py-16">
       <h1 className="text-3xl font-semibold">Admin access unavailable</h1>
-      <p className="mt-4 text-(--muted)">
+      <p className="mt-4 text-text-muted">
         Administrator sign-in is required. Access is not available yet.
       </p>
       <Link

@@ -9,7 +9,7 @@ export default function AccountPage() {
       <h1 id="account-title" className="text-3xl font-semibold">
         Your account
       </h1>
-      <p className="mt-4 leading-relaxed" style={{ color: 'var(--muted)' }}>
+      <p className="mt-4 leading-relaxed text-text-muted">
         Account access is not available yet.
       </p>
       <Link href="/" className="mt-8 inline-block underline underline-offset-4">

@@ -66,7 +66,10 @@ try {
   assert.ok(style, 'Production HTML must reference built CSS')
   const css = await fetch(new URL(style[1].replaceAll('&amp;', '&'), origin))
   assert.equal(css.status, 200)
-  assert.match(await css.text(), /100dvh/)
+  const stylesheet = await css.text()
+  assert.match(stylesheet, /100dvh/)
+  assert.match(stylesheet, /color:var\(--text-muted\)/)
+  assert.ok(stylesheet.includes('--link-text:') && stylesheet.includes('--on-brand:'), 'Shared light/dark tokens must reach production CSS')
   console.log(
     'SMOKE-01 Passed: public route, landmark and compiled Tailwind CSS',
   )

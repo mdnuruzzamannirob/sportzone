@@ -28,7 +28,11 @@ try {
     assert.equal(response.status, 200)
     const body = await response.text()
     assert.ok(body.length > 0)
-    if (asset.endsWith('.css')) assert.match(body, /100dvh/)
+    if (asset.endsWith('.css')) {
+      assert.match(body, /100dvh/)
+      assert.match(body, /color:var\(--text-muted\)/)
+      assert.ok(body.includes('--link-text:') && body.includes('--on-brand:'), 'Shared light/dark tokens must reach built CSS')
+    }
   }
   console.log('ADMIN-SMOKE-02 Passed: compiled JavaScript and Tailwind CSS served')
 } finally {

@@ -273,6 +273,11 @@ JS/CSS, local preview SPA fallback and no-store/noindex headers; they do not exe
 entry redirect, direct nested access denial despite forged local flags, native-link/history navigation and unknown routes.
 No backend authentication, production hosting or real-browser accessibility result is inferred from these checks.
 
+Both workspaces run four semantic-token regressions from `tests/tokens.test.tsx`, using the shared
+`tests/design-tokens.ts` assertions. They compare all 17 values with Design §2.2, check grayscale/invariant colors,
+text/control contrast and app/Tailwind integration. Built CSS smoke checks require the shared variables and compiled
+muted-text utility. Token swatch comparisons are distinct from browser layout/interaction acceptance.
+
 [ci-workspaces.json](../ci-workspaces.json) assigns storefront setup to P02-001, admin to P02-002 and backend to P03-001.
 Adding workspace source, scripts or dependencies requires active CI state and real lint/typecheck/unit/build scripts.
 Extend that inventory and the root aliases with applicable API/DB contract, concurrency, browser and security checks as

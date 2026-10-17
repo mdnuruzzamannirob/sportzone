@@ -1,0 +1,86 @@
+/* Design §2.2: shared semantic colors for storefront and admin. */
+@theme inline {
+  --color-*: initial;
+  --color-brand: var(--brand);
+  --color-on-brand: var(--on-brand);
+  --color-link-text: var(--link-text);
+  --color-link-accent: var(--link-accent);
+  --color-selected-surface: var(--selected-surface);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-control-border: var(--control-border);
+  --color-focus: var(--focus);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info-text: var(--info-text);
+}
+
+:root {
+  color-scheme: light;
+  --brand: #2563EB;
+  --on-brand: #FFFFFF;
+  --link-text: #2563EB;
+  --link-accent: #2563EB;
+  --selected-surface: #F5F5F5;
+  --text: #0A0A0A;
+  --text-muted: #525252;
+  --canvas: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-muted: #F5F5F5;
+  --border: #D4D4D4;
+  --control-border: #737373;
+  --focus: #2563EB;
+  --success: #166534;
+  --warning: #92400E;
+  --danger: #B91C1C;
+  --info-text: #2563EB;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    color-scheme: dark;
+    --brand: #2563EB;
+    --on-brand: #FFFFFF;
+    --link-text: #FAFAFA;
+    --link-accent: #2563EB;
+    --selected-surface: #171717;
+    --text: #FAFAFA;
+    --text-muted: #A3A3A3;
+    --canvas: #000000;
+    --surface: #0A0A0A;
+    --surface-muted: #171717;
+    --border: #404040;
+    --control-border: #737373;
+    --focus: #2563EB;
+    --success: #86EFAC;
+    --warning: #FCD34D;
+    --danger: #FCA5A5;
+    --info-text: #FAFAFA;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --brand: #2563EB;
+  --on-brand: #FFFFFF;
+  --link-text: #FAFAFA;
+  --link-accent: #2563EB;
+  --selected-surface: #171717;
+  --text: #FAFAFA;
+  --text-muted: #A3A3A3;
+  --canvas: #000000;
+  --surface: #0A0A0A;
+  --surface-muted: #171717;
+  --border: #404040;
+  --control-border: #737373;
+  --focus: #2563EB;
+  --success: #86EFAC;
+  --warning: #FCD34D;
+  --danger: #FCA5A5;
+  --info-text: #FAFAFA;
+}

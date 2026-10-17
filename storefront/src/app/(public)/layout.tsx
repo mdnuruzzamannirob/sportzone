@@ -10,9 +10,9 @@ export default function PublicLayout({
         Skip to content
       </a>
       <header className="py-8">
-        <Link href="/" className="text-xl font-bold tracking-tight">
+        <Link href="/" className="text-xl font-bold tracking-tight text-text">
           SportZone
-          <span aria-hidden="true" style={{ color: 'var(--brand)' }}>
+          <span aria-hidden="true" className="text-brand">
             .
           </span>
         </Link>
@@ -24,7 +24,7 @@ export default function PublicLayout({
       >
         {children}
       </main>
-      <footer className="py-6 text-sm" style={{ color: 'var(--muted)' }}>
+      <footer className="py-6 text-sm text-text-muted">
         Made for your next game.
       </footer>
     </div>

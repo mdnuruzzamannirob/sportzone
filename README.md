@@ -54,6 +54,7 @@ sportzone/
 ├── storefront/                 # Next.js App Router scaffold, styles and tests
 ├── admin/                      # React/Vite SPA scaffold, styles and tests
 ├── backend/package.json        # Backend workspace
+├── styles/tokens.css           # Shared semantic light/dark colors and Tailwind mappings
 ├── docs/                       # Product and engineering specifications
 ├── README.md
 ├── AGENTS.md
@@ -156,6 +157,10 @@ fails CI. Add integration/contract/security/E2E/coverage suites to the inventory
 backend financial slices require the real replica-set integration and contract suites before acceptance.
 [Testing §5.3](docs/TESTING.md#53-standard-execution-interface) defines the full required interface. A foundation CI pass
 does not establish application or milestone readiness. Missing scripts must fail; never use `--if-present` to conceal them.
+
+Both apps import `styles/tokens.css` for the 17 Design §2.2 colors. Use semantic utilities such as `bg-brand`,
+`text-on-brand`, `text-text-muted` and `border-control-border`. Explicit root `data-theme="light"` / `"dark"` overrides the
+system fallback; preference controls and persistence follow in P02-005. See [Design §2.2](docs/DESIGN.md#22-light-and-dark-color-system).
 
 ## 5. Configuration and verification
 
