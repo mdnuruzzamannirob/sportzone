@@ -79,7 +79,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 
 | Phase | Total | Not Started | Ready | In Progress | Blocked | In Review | Done | Deferred |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 01 — Requirements Finalization and Planning | 14 | 4 | 0 | 0 | 0 | 1 | 9 | 0 |
+| 01 — Requirements Finalization and Planning | 14 | 4 | 0 | 0 | 0 | 0 | 10 | 0 |
 | 02 — UI/UX Design | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 03 — Authentication and Core Backend | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -91,7 +91,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **161** | **0** | **0** | **0** | **1** | **9** | **0** |
+| **Total** | **171** | **161** | **0** | **0** | **0** | **0** | **10** | **0** |
 
 ## 4. Milestone tracker
 
@@ -199,13 +199,14 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Evidence:** [Repository foundation, clean installs, workspace discovery and configuration checks](./evidence/P01-009-workspace.md).\
   **Accepted:** Project owner, 17 October 2026 — “Workspace foundation গ্রহণ করছি”.
 
-- [ ] **P01-010 — Establish baseline CI and quality workflow**\
-  **Status:** `In Review` · **Area:** Tooling · **Owner:** Codex\
+- [x] **P01-010 — Establish baseline CI and quality workflow**\
+  **Status:** `Done` · **Area:** Tooling · **Owner:** Codex\
   **Sources:** Architecture §13; Implementation Plan §§4.2,12.2\
   **Depends on:** `P01-009`\
   **Deliverable:** Configure CI for available workspace lint, type checks, tests and builds, extending checks as apps are scaffolded.\
   **Acceptance:** CI fails when configured checks fail; missing app setup is tracked rather than silently reported as passing.\
-  **Evidence:** [CI workflow, local pipeline and deliberately failing checks](./evidence/P01-010-ci.md); hosted run Not Run (no Git remote).
+  **Evidence:** [CI workflow, local pipeline and deliberately failing checks](./evidence/P01-010-ci.md); hosted run [39039353486](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/39039353486) Passed.\
+  **Accepted:** Project owner, 17 October 2026 — “accha yabar ay task ta done koro”.
 
 - [ ] **P01-011 — Reconcile and verify AGENTS.md execution rules**\
   **Status:** `Not Started` · **Area:** Planning\
@@ -1679,7 +1680,7 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | 17 October 2026 | P01-007 | Policy-gate verification passed; project owner accepted the record; status Done; actual legal/publication approvals remain separate | Codex / project owner | [Policy/customer-rights gates](./evidence/P01-007-policy-gates.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P01-008 | Critical-scenario and dependency checks passed; project owner accepted the planning record; status Done; runtime verification remains separate | Codex / project owner | [Critical-scenario map](./evidence/P01-008-critical-scenarios.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P01-009 | Workspace clean-install/discovery and safety checks passed; project owner accepted the foundation; status Done | Codex / project owner | [Workspace foundation](./evidence/P01-009-workspace.md) | Proceed through declared task dependencies |
-| 17 October 2026 | P01-010 | Added CI workflow and guarded check inventory; local pipeline and 12 tooling regressions passed; hosted run Not Run; status In Review | Codex / independent acceptance required | [CI baseline evidence](./evidence/P01-010-ci.md) | Review baseline and hosted-run disposition |
+| 17 October 2026 | P01-010 | Local pipeline and 12 tooling regressions passed; hosted run 39039353486 Passed; project owner accepted baseline; status Done | Codex / project owner | [Accepted CI baseline evidence](./evidence/P01-010-ci.md) | Proceed through declared task dependencies |
 
 When execution starts, update the task status and attach evidence. Change a checkbox to `[x]` only after acceptance.
 Preserve IDs and dependency references; update phase totals and record milestone acceptance separately.

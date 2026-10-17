@@ -21,7 +21,7 @@ This changelog tracks the documentation baseline. Application releases are recor
 - Completed P01-007 policy/customer-rights validation gates, official review sources and accountable launch-verification role with project-owner acceptance.
 - Completed P01-008 safety-critical scenario ownership, exception/invariant coverage and verified dependency path with project-owner acceptance.
 - Completed P01-009 minimal npm workspace foundation, generated lockfile, sanitized configuration template and verified README setup with project-owner acceptance.
-- Added P01-010 CI workflow, repository guards, tooling regressions and explicit application-check setup tracking for review; hosted workflow execution remains Not Run.
+- Completed P01-010 CI workflow, repository guards, tooling regressions and explicit application-check setup tracking with project-owner acceptance; local pipeline and hosted CI run 39039353486 passed.
 
 ## Maintenance
 
