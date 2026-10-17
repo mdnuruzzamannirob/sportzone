@@ -14,6 +14,9 @@
     "backend"
   ],
   "scripts": {
-    "workspaces:check": "npm ls --workspaces --depth=0"
+    "workspaces:check": "npm ls --workspaces --depth=0",
+    "lint": "node scripts/check-repository.mjs",
+    "test:unit": "node --test --test-isolation=none tests/ci.test.mjs",
+    "ci": "node scripts/ci.mjs"
   }
 }

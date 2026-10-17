@@ -1,0 +1,37 @@
+name: CI
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  baseline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Select recorded npm version
+        run: npm install --global npm@11.19.0 --ignore-scripts --no-audit --no-fund
+      - name: Locked install
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Run configured checks
+        run: npm run ci
+      - name: Preserve check summary
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ci-summary-${{ github.run_id }}-${{ github.run_attempt }}
+          path: test-results/ci.json
+          if-no-files-found: error

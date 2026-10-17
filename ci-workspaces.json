@@ -1,0 +1,32 @@
+{
+  "storefront": {
+    "state": "manifest-only",
+    "ownerTask": "P02-001",
+    "checks": [
+      "lint",
+      "typecheck",
+      "test:unit",
+      "build"
+    ]
+  },
+  "admin": {
+    "state": "manifest-only",
+    "ownerTask": "P02-002",
+    "checks": [
+      "lint",
+      "typecheck",
+      "test:unit",
+      "build"
+    ]
+  },
+  "backend": {
+    "state": "manifest-only",
+    "ownerTask": "P03-001",
+    "checks": [
+      "lint",
+      "typecheck",
+      "test:unit",
+      "build"
+    ]
+  }
+}

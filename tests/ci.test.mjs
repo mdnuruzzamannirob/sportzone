@@ -1,0 +1,205 @@
+import assert from 'node:assert/strict'
+import { spawnSync as spawn } from 'node:child_process'
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
+import test from 'node:test'
+import {
+  baseChecks,
+  inspectRepository,
+  workspacePlan,
+} from '../scripts/check-repository.mjs'
+
+// Nested CLI runs must not inherit the parent test runner's IPC context.
+const childEnv = { ...process.env }
+delete childEnv.NODE_TEST_CONTEXT
+const spawnSync = (command, args, options = {}) =>
+  spawn(command, args, { ...options, env: childEnv })
+
+function fixture(t) {
+  const root = mkdtempSync(join(tmpdir(), 'sportzone-ci-'))
+  t.after(() => rmSync(root, { recursive: true, force: true }))
+  const put = (file, data) => {
+    mkdirSync(join(root, file, '..'), { recursive: true })
+    writeFileSync(
+      join(root, file),
+      typeof data === 'string' ? data : `${JSON.stringify(data, null, 2)}\n`,
+    )
+  }
+  assert.equal(spawnSync('git', ['init', '--quiet', root]).status, 0)
+  put('package.json', {
+    private: true,
+    workspaces: ['storefront', 'admin', 'backend'],
+  })
+  const config = {}
+  for (const name of ['storefront', 'admin', 'backend']) {
+    put(`${name}/package.json`, { name, private: true })
+    config[name] = {
+      state: 'manifest-only',
+      ownerTask: 'P02-001',
+      checks: baseChecks,
+    }
+  }
+  put('ci-workspaces.json', config)
+  return { root, put, config }
+}
+test('CI-01: manifest-only workspaces are explicitly Not Configured', (t) => {
+  const { root } = fixture(t)
+  assert.deepEqual(
+    workspacePlan(root).map((w) => w.state),
+    Array(3).fill('Not Configured'),
+  )
+})
+test('CI-02: source cannot bypass workspace activation', (t) => {
+  const { root, put } = fixture(t)
+  put('storefront/src/page.tsx', 'export default 1;\n')
+  assert.throws(() => workspacePlan(root), /requires active/)
+})
+test('CI-03: dependency/script addition cannot remain manifest-only', (t) => {
+  const { root, put } = fixture(t)
+  put('admin/package.json', {
+    name: 'admin',
+    private: true,
+    devDependencies: { example: '1.0.0' },
+  })
+  assert.throws(() => workspacePlan(root), /requires active/)
+})
+test('CI-04: active workspace must supply every core check', (t) => {
+  const { root, put, config } = fixture(t)
+  config.backend.state = 'active'
+  put('ci-workspaces.json', config)
+  put('backend/package.json', {
+    name: 'backend',
+    private: true,
+    scripts: { lint: 'node --version' },
+  })
+  assert.throws(() => workspacePlan(root), /missing\/unsafe script typecheck/)
+})
+test('CI-05: core checks cannot be removed from active inventory', (t) => {
+  const { root, put, config } = fixture(t)
+  config.admin.state = 'active'
+  config.admin.checks = ['lint']
+  put('ci-workspaces.json', config)
+  assert.throws(() => workspacePlan(root), /missing required/)
+})
+test('CI-06: every configured extra suite is mandatory, never if-present', (t) => {
+  const { root, put, config } = fixture(t)
+  config.backend.state = 'active'
+  config.backend.checks = [...baseChecks, 'test:integration']
+  put('ci-workspaces.json', config)
+  const scripts = Object.fromEntries(
+    baseChecks.map((c) => [c, 'node --version']),
+  )
+  put('backend/package.json', { name: 'backend', private: true, scripts })
+  assert.throws(() => workspacePlan(root), /test:integration/)
+  scripts['test:integration'] = 'npm run missing --if-present'
+  put('backend/package.json', { name: 'backend', private: true, scripts })
+  assert.throws(() => workspacePlan(root), /missing\/unsafe/)
+})
+test('CI-07: broken link or anchor fails repository lint', (t) => {
+  const { root, put } = fixture(t)
+  put('README.md', '# Hello\n\n[missing](missing.md)\n[anchor](#absent)\n')
+  assert.equal(
+    inspectRepository(root).errors.filter((e) => e.includes('broken local'))
+      .length,
+    2,
+  )
+})
+test('CI-08: valid duplicate heading anchors pass', (t) => {
+  const { root, put } = fixture(t)
+  put('README.md', '# Hello\n\n## Hello\n\n[one](#hello) [two](#hello-1)\n')
+  assert.deepEqual(inspectRepository(root).errors, [])
+})
+test('CI-09: syntax, whitespace and malformed JSON are failures', (t) => {
+  const { root, put } = fixture(t)
+  put('bad.mjs', 'const = ;\n')
+  put('bad.json', '{oops}\n')
+  put('README.md', '# Bad  \n')
+  const errors = inspectRepository(root).errors
+  for (const message of ['syntax', 'invalid JSON', 'trailing whitespace'])
+    assert.ok(errors.some((e) => e.includes(message)))
+})
+test('CI-10: tracked environment files and credential patterns are rejected without values', (t) => {
+  const { root, put } = fixture(t)
+  put('.env', 'EXAMPLE=\n')
+  const fake = ['ghp', '_', 'a'.repeat(36)].join('')
+  put('sample.txt.json', `${JSON.stringify({ fake })}\n`)
+  const result = inspectRepository(root)
+  assert.ok(result.errors.some((e) => e.includes('environment file')))
+  assert.ok(result.errors.some((e) => e.includes('credential material')))
+  assert.ok(!JSON.stringify(result).includes(fake))
+})
+test('CI-11: configured failing command propagates to pipeline exit and report; later step does not run', (t) => {
+  const { root, put } = fixture(t)
+  cpSync(resolve('scripts'), join(root, 'scripts'), { recursive: true })
+  put('package-lock.json', { lockfileVersion: 3 })
+  put('package.json', {
+    private: true,
+    workspaces: ['storefront', 'admin', 'backend'],
+    scripts: {
+      'workspaces:check': 'node --version',
+      lint: 'node -e "process.exit(7)"',
+      'test:unit':
+        "node -e \"require('node:fs').writeFileSync('should-not-exist','bad')\"",
+    },
+  })
+  const child = spawnSync(process.execPath, ['scripts/ci.mjs'], {
+    cwd: root,
+    encoding: 'utf8',
+  })
+  assert.equal(child.status, 1)
+  const report = JSON.parse(
+    readFileSync(join(root, 'test-results/ci.json'), 'utf8'),
+  )
+  assert.equal(report.result, 'Failed')
+  assert.equal(report.checks.at(-1).result, 'Failed')
+  assert.equal(existsSync(join(root, 'should-not-exist')), false)
+})
+test('CI-12: a failing workspace build propagates to pipeline failure', (t) => {
+  const { root, put, config } = fixture(t)
+  config.storefront.state = 'active'
+  put('ci-workspaces.json', config)
+  cpSync(resolve('scripts'), join(root, 'scripts'), { recursive: true })
+  put('package-lock.json', { lockfileVersion: 3 })
+  put('package.json', {
+    private: true,
+    workspaces: ['storefront', 'admin', 'backend'],
+    scripts: Object.fromEntries(
+      ['workspaces:check', 'lint', 'test:unit'].map((c) => [
+        c,
+        'node --version',
+      ]),
+    ),
+  })
+  put('storefront/package.json', {
+    name: 'storefront',
+    private: true,
+    scripts: Object.fromEntries(
+      baseChecks.map((c) => [
+        c,
+        c === 'build' ? 'node -e "process.exit(9)"' : 'node --version',
+      ]),
+    ),
+  })
+  const child = spawnSync(process.execPath, ['scripts/ci.mjs'], {
+    cwd: root,
+    encoding: 'utf8',
+  })
+  assert.equal(child.status, 1)
+  const report = JSON.parse(
+    readFileSync(join(root, 'test-results/ci.json'), 'utf8'),
+  )
+  assert.equal(
+    report.checks.at(-1).command,
+    'npm run build --workspace=storefront',
+  )
+  assert.equal(report.checks.at(-1).result, 'Failed')
+})

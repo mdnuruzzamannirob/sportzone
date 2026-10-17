@@ -9,13 +9,15 @@ administration portal and one authoritative backend API.
 
 ## Contents
 
-- [1. Product overview](#1-product-overview)
-- [2. Architecture and technology](#2-architecture-and-technology)
-- [3. Repository structure](#3-repository-structure)
-- [4. Development workflow](#4-development-workflow)
-- [5. Configuration and verification](#5-configuration-and-verification)
-- [6. Delivery and operations](#6-delivery-and-operations)
-- [7. Documentation map](#7-documentation-map)
+- [SportZone](#sportzone)
+  - [Contents](#contents)
+  - [1. Product overview](#1-product-overview)
+  - [2. Architecture and technology](#2-architecture-and-technology)
+  - [3. Repository structure](#3-repository-structure)
+  - [4. Development workflow](#4-development-workflow)
+  - [5. Configuration and verification](#5-configuration-and-verification)
+  - [6. Delivery and operations](#6-delivery-and-operations)
+  - [7. Documentation map](#7-documentation-map)
 
 ## 1. Product overview
 
@@ -29,15 +31,15 @@ loyalty and international shipping are outside the initial release.
 
 ## 2. Architecture and technology
 
-| Application / service | Technology | Responsibility |
-| --- | --- | --- |
-| Storefront | Next.js App Router, React, TypeScript, Tailwind CSS | Customer presentation, public rendering and API consumption |
-| Administration | React, Vite, TypeScript, Tailwind CSS | Store-management interface |
-| Backend | Node.js, Express, TypeScript | Authentication and authoritative business services |
-| Persistence | MongoDB, Mongoose | Indexed records, conditional writes and transactions |
-| Payments | SSLCOMMERZ and internal COD workflow | Verified collections, attempts and reconciliation |
-| Media / email | Cloudinary / Resend or equivalent transactional provider | Controlled uploads and durable message delivery |
-| Repository | npm workspaces | Independent application builds and shared quality commands |
+| Application / service | Technology                                               | Responsibility                                              |
+| --------------------- | -------------------------------------------------------- | ----------------------------------------------------------- |
+| Storefront            | Next.js App Router, React, TypeScript, Tailwind CSS      | Customer presentation, public rendering and API consumption |
+| Administration        | React, Vite, TypeScript, Tailwind CSS                    | Store-management interface                                  |
+| Backend               | Node.js, Express, TypeScript                             | Authentication and authoritative business services          |
+| Persistence           | MongoDB, Mongoose                                        | Indexed records, conditional writes and transactions        |
+| Payments              | SSLCOMMERZ and internal COD workflow                     | Verified collections, attempts and reconciliation           |
+| Media / email         | Cloudinary / Resend or equivalent transactional provider | Controlled uploads and durable message delivery             |
+| Repository            | npm workspaces                                           | Independent application builds and shared quality commands  |
 
 The Express `/api/v1` API owns prices, stock, permissions, order transitions, payment verification and refunds. Frontends
 consume allowlisted DTOs. Private sessions, carts, checkout, orders and financial data never enter shared caches.
@@ -93,10 +95,30 @@ The install currently links three local packages and downloads no third-party de
 `npm ci --offline --ignore-scripts --no-audit --no-fund`; it succeeds with the current dependency-free lockfile.
 `workspaces:check` lists `storefront`, `admin` and `backend` without missing dependencies.
 
-`npm run` currently exposes only `workspaces:check`. CI/quality setup is owned by P01-010; application dev/build/type/lint
-and test scripts are added with their tooling. [Testing §5.3](docs/TESTING.md#53-standard-execution-interface) defines the
-required verification interface. Missing scripts must fail; never use `--if-present` to report unimplemented checks as passed.
-Application startup commands will be recorded here after the runtimes exist.
+Current root checks:
+
+```sh
+npm run lint
+npm run test:unit
+npm run ci
+```
+
+`lint` checks source JavaScript syntax, JSON, whitespace, Markdown tables/local links and targeted credential patterns.
+`test:unit` runs the CI guard regression tests using Node's test runner. `ci` runs workspace discovery, repository lint,
+tooling tests and every configured application check; it writes `test-results/ci.json`, including explicit workspace states.
+These checks currently validate the repository foundation. Application startup commands and checks follow with the apps.
+
+`.github/workflows/ci.yml` runs on pushes, pull requests and manual dispatch with read-only repository permissions and
+commit-pinned actions. It uses `.nvmrc`, npm 11.19.0, a locked install, `npm run ci` and a summary artifact; no deployment
+or merchant secrets are required. A hosted run requires the repository to be connected and pushed to GitHub.
+
+`ci-workspaces.json` tracks app setup against P02-001, P02-002 and P03-001. While a workspace contains only its manifest,
+CI reports **Not Configured** for app checks. Adding source, scripts or dependencies requires switching it to `active`
+and supplying real `lint`, `typecheck`, `test:unit` and `build` scripts. All listed checks run and any missing/failed script
+fails CI. Add integration/contract/security/E2E/coverage suites to the inventory as their capabilities are implemented;
+backend financial slices require the real replica-set integration and contract suites before acceptance.
+[Testing §5.3](docs/TESTING.md#53-standard-execution-interface) defines the full required interface. A foundation CI pass
+does not establish application or milestone readiness. Missing scripts must fail; never use `--if-present` to conceal them.
 
 ## 5. Configuration and verification
 
@@ -128,19 +150,19 @@ and operator procedures. Populate the environment inventory during provisioning 
 
 ## 7. Documentation map
 
-| Document | Owns |
-| --- | --- |
-| [PRD](docs/PRD.md) | Product scope, business rules and acceptance |
-| [Architecture](docs/ARCHITECTURE.md) | Technology, boundaries and system invariants |
-| [Design](docs/DESIGN.md) | Tokens, layouts, interactions and accessibility |
-| [Database](docs/DATABASE.md) | Collections, schemas, indexes, transactions and migrations |
-| [API](docs/API.md) | Routes, DTOs, authorization, errors and retries |
-| [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) | Feature sequence, dependencies and milestones |
-| [Tasks](docs/TASKS.md) | Stable task IDs, execution status and evidence |
-| [Testing](docs/TESTING.md) | Scenarios, fixtures, tools and verification procedures |
-| [Operations](docs/OPERATIONS.md) | Configuration, deployment, recovery and operating procedures |
-| [AGENTS](AGENTS.md) | Agent workflow and editing safeguards |
-| [Changelog](CHANGELOG.md) | Documentation version history |
+| Document                                           | Owns                                                         |
+| -------------------------------------------------- | ------------------------------------------------------------ |
+| [PRD](docs/PRD.md)                                 | Product scope, business rules and acceptance                 |
+| [Architecture](docs/ARCHITECTURE.md)               | Technology, boundaries and system invariants                 |
+| [Design](docs/DESIGN.md)                           | Tokens, layouts, interactions and accessibility              |
+| [Database](docs/DATABASE.md)                       | Collections, schemas, indexes, transactions and migrations   |
+| [API](docs/API.md)                                 | Routes, DTOs, authorization, errors and retries              |
+| [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) | Feature sequence, dependencies and milestones                |
+| [Tasks](docs/TASKS.md)                             | Stable task IDs, execution status and evidence               |
+| [Testing](docs/TESTING.md)                         | Scenarios, fixtures, tools and verification procedures       |
+| [Operations](docs/OPERATIONS.md)                   | Configuration, deployment, recovery and operating procedures |
+| [AGENTS](AGENTS.md)                                | Agent workflow and editing safeguards                        |
+| [Changelog](CHANGELOG.md)                          | Documentation version history                                |
 
 Use each document for its stated subject. Keep related contracts synchronized when behavior changes and preserve the
 PRD's initial-release boundaries.
