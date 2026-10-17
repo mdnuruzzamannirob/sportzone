@@ -23,6 +23,7 @@ This changelog tracks the documentation baseline. Application releases are recor
 - Completed P01-009 minimal npm workspace foundation, generated lockfile, sanitized configuration template and verified README setup with project-owner acceptance.
 - Completed P01-010 CI workflow, repository guards, tooling regressions and explicit application-check setup tracking with project-owner acceptance; local pipeline and hosted CI run 39039353486 passed.
 - Completed P01-011 agent execution-rule review with project-owner acceptance; clarified pre-enable risk tests, external-call transaction boundaries and CI check inventory.
+- Completed P01-012 task-status/evidence protocol with project-owner acceptance; clarified transitions/reopening and reconciled the initial unverified state and accepted task evidence.
 
 ## Maintenance
 

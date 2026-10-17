@@ -71,6 +71,28 @@ This document decomposes the approved implementation plan into independently ver
 
 **Status changes:** Start each task as `Not Started`. Move to `Ready` only after dependencies and required external prerequisites are satisfied; `In Progress` indicates active work; `In Review` indicates submitted evidence awaiting verification. Mark `Done` and check the box only after independent acceptance. A blocked external provider or policy gate cannot be cleared by a mock. Task metadata may be updated as execution proceeds, while source-approved requirements stay unchanged.
 
+| Status | Required record / exit condition |
+| --- | --- |
+| `Not Started` | No accepted implementation or task evidence is implied; keep the checkbox unchecked |
+| `Ready` | Declared task prerequisites are Done and required external inputs for this work are available |
+| `In Progress` | Actual work has started; record the executor, scope and applicable verification needs |
+| `Blocked` | Record the failed prerequisite, accountable function, affected acceptance, evidence and next action; resume affected work only after its prerequisite is resolved |
+| `In Review` | Deliverable and applicable observed verification results are attached; independent acceptance is pending |
+| `Done` | Applicable Definition of Done is met; record actual independent reviewer, date, decision and evidence; check the box |
+| `Deferred` | Record authorized scope/release disposition, rationale and impact; mandatory safety/launch gates cannot be waived by this status |
+
+**Evidence record:** Link the exact task/deliverable revision or commit, source references, verification command/procedure,
+environment and fixture, observed result, artifact, executor and actual reviewer decision. Use
+[Testing §17.2](./TESTING.md#172-test-evidence-record) for test-run fields. Distinguish planned cases from executed tests,
+and local doubles from real database/provider evidence. Record unavailable checks as Not Run or Blocked with their cause;
+never infer acceptance from a generated file, a green unrelated check or an unavailable infrastructure dependency.
+
+**Transition record:** For a material status change, update the task, phase/total counts and execution log together. Record
+the prior/resulting state, reason, evidence, executor/reviewer and next action. Preserve accepted history; if acceptance
+is invalidated by a defect or contract change, reopen the affected work with linked correction/retest evidence and review.
+Preserve stable IDs and dependency references. Task acceptance never automatically accepts a milestone; milestone records
+retain their own approver, environment, artifacts, blockers and explicit decision under Implementation Plan §11.
+
 **Task granularity:** One task targets one reviewable engineering outcome. Do not create redundant folder-only microtasks or combine whole subsystems under one checkbox. An item may be split if its verification grows independently; retain the original identifier as a parent or approved replacement record with traceability.
 
 ## 3. Project progress dashboard
@@ -79,7 +101,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 
 | Phase | Total | Not Started | Ready | In Progress | Blocked | In Review | Done | Deferred |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 01 — Requirements Finalization and Planning | 14 | 3 | 0 | 0 | 0 | 0 | 11 | 0 |
+| 01 — Requirements Finalization and Planning | 14 | 2 | 0 | 0 | 0 | 0 | 12 | 0 |
 | 02 — UI/UX Design | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 03 — Authentication and Core Backend | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -91,7 +113,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **160** | **0** | **0** | **0** | **0** | **11** | **0** |
+| **Total** | **171** | **159** | **0** | **0** | **0** | **0** | **12** | **0** |
 
 ## 4. Milestone tracker
 
@@ -217,13 +239,14 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Evidence:** [Reviewed agent instructions, authority consistency and safety/evidence controls](./evidence/P01-011-agent-rules.md).\
   **Accepted:** Project owner, 17 October 2026 — “Agent-rule review গ্রহণ করছি”.
 
-- [ ] **P01-012 — Establish task statuses and evidence protocol**\
-  **Status:** `Not Started` · **Area:** Planning\
+- [x] **P01-012 — Establish task statuses and evidence protocol**\
+  **Status:** `Done` · **Area:** Planning · **Owner:** Codex\
   **Sources:** Implementation Plan §§3.4,11,14\
   **Depends on:** `P01-003`, `P01-008`\
   **Deliverable:** Keep stable task IDs, dependencies, milestone gates, blocker dispositions and completion-evidence rules.\
   **Acceptance:** Every task is initially unverified; status changes require acceptance evidence.\
-  **Evidence to attach:** Reviewed TASKS.md/task convention.
+  **Evidence:** [Task/status/evidence protocol review and register reconciliation](./evidence/P01-012-task-protocol.md).\
+  **Accepted:** Project owner, 17 October 2026 — “Task protocol গ্রহণ করছি”.
 
 - [ ] **P01-013 — Establish `TESTING.md` baseline**\
   **Status:** `Not Started` · **Area:** Documentation/quality\
@@ -1683,6 +1706,7 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | 17 October 2026 | P01-009 | Workspace clean-install/discovery and safety checks passed; project owner accepted the foundation; status Done | Codex / project owner | [Workspace foundation](./evidence/P01-009-workspace.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P01-010 | Local pipeline and 12 tooling regressions passed; hosted run 39039353486 Passed; project owner accepted baseline; status Done | Codex / project owner | [Accepted CI baseline evidence](./evidence/P01-010-ci.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P01-011 | Agent-rule review and static checks passed; project owner accepted the reviewed instructions; status Done | Codex / project owner | [Accepted agent-rule review](./evidence/P01-011-agent-rules.md) | Proceed through declared task dependencies |
+| 17 October 2026 | P01-012 | Not Started → In Review → Done; protocol/register checks passed; project owner accepted the task/status/evidence protocol | Codex / project owner | [Accepted task-protocol review](./evidence/P01-012-task-protocol.md) | Proceed through declared task dependencies |
 
 When execution starts, update the task status and attach evidence. Change a checkbox to `[x]` only after acceptance.
 Preserve IDs and dependency references; update phase totals and record milestone acceptance separately.
