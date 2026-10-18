@@ -102,7 +102,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | Phase | Total | Not Started | Ready | In Progress | Blocked | In Review | Done | Deferred |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | 01 — Requirements Finalization and Planning | 14 | 0 | 0 | 0 | 0 | 0 | 14 | 0 |
-| 02 — UI/UX Design | 11 | 3 | 0 | 0 | 0 | 0 | 8 | 0 |
+| 02 — UI/UX Design | 11 | 2 | 0 | 0 | 0 | 0 | 9 | 0 |
 | 03 — Authentication and Core Backend | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -113,7 +113,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **149** | **0** | **0** | **0** | **0** | **22** | **0** |
+| **Total** | **171** | **148** | **0** | **0** | **0** | **0** | **23** | **0** |
 
 ## 4. Milestone tracker
 
@@ -334,13 +334,13 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Acceptance:** Error text associates with fields; dialogs restore focus and preserve entered data.\
   **Evidence:** [HeroUI fields/forms, validation/focus, feedback and overlay verification](./evidence/P02-008-forms.md). Accepted by project owner on 18 October 2026: “Form/feedback foundation গ্রহণ করছি”. Browser/manual keyboard checks remain Not Run.
 
-- [ ] **P02-009 — Implement reusable commerce visual primitives**\
-  **Status:** `Not Started` · **Area:** Design/UI\
+- [x] **P02-009 — Implement reusable commerce visual primitives**\
+  **Status:** `Done` · **Area:** Design/UI · **Owner:** Codex\
   **Sources:** Design §§6-7\
   **Depends on:** `P02-008`\
   **Deliverable:** Build price, product card, variant selector, cart line, status badge, order summary and skeleton primitives.\
   **Acceptance:** States show text not color alone; no browser calculation treated as final checkout truth.\
-  **Evidence to attach:** Component state tests in both themes.
+  **Evidence:** [Commerce primitives and both-theme state verification](./evidence/P02-009-commerce.md). All 13 CI commands passed: 203 tests, both production builds and six HTTP smoke groups. Accepted by project owner on 18 October 2026: “Commerce primitives গ্রহণ করছি”. Browser visual/native keyboard checks remain Not Run.
 
 - [ ] **P02-010 — Implement reusable admin visual primitives**\
   **Status:** `Not Started` · **Area:** Design/UI\
@@ -1726,6 +1726,8 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | 18 October 2026 | P02-007 | Not Started → In Progress → In Review → Done; admin navigation/Drawer, title/actions, signed-out and offline behavior implemented; 103 tests, both builds and configured CI checks passed; project owner accepted the admin shell | Codex / project owner | [Accepted admin shell](./evidence/P02-007-admin-shell.md) | Proceed through declared task dependencies; retain separate browser verification |
 
 | 18 October 2026 | P02-008 | Not Started → In Progress → In Review → Done; HeroUI form/feedback foundations, field-error associations, pending guards and draft/focus preservation implemented; 163 tests, both builds and all configured CI commands passed; project owner accepted the foundation | Codex / project owner | [Accepted form foundation](./evidence/P02-008-forms.md) | Proceed through declared task dependencies; retain separate browser/manual keyboard verification |
+
+| 18 October 2026 | P02-009 | Not Started → In Progress → In Review → Done; HeroUI commerce primitives implemented; 40 new both-theme cases, 203 total tests, both builds and all configured CI commands passed; project owner accepted the commerce primitives | Codex / project owner | [Commerce primitive evidence](./evidence/P02-009-commerce.md) | Proceed through declared task dependencies; retain separate browser verification |
 
 **18 October 2026 — UI foundation change:** The project owner selected HeroUI and delegated visual design within the approved specification. Dependency/theme integration, app-owned controls and working conventions are recorded in [HeroUI foundation review](./evidence/heroui-foundation.md). The follow-up [existing UI migration](./evidence/heroui-existing-ui.md) replaces the earlier native-control exceptions. These changes are In Review; they do not accept another numbered task or milestone.
 

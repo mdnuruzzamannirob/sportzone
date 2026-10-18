@@ -320,6 +320,8 @@ The authenticated admin shell exposes these navigation groups. Group labels orga
 - **Order summary:** Subtotal, product discounts, coupon discount, delivery charge, total payable, and payment method. Display confirmed server-calculated values before final submission.
 - **Payment method choice:** Show COD and only gateway channels currently enabled. Use the provider's recognizable channel labels without implying unavailable activation.
 
+**Implementation:** Storefront [commerce components](../storefront/src/components/commerce/product-card.tsx) follow the [usage/state contracts](./UI_COMPONENTS.md#commerce-compositions). Price/line/summary amounts are supplied by the consuming feature/API; quantity controls and variant options express requests/eligibility without reserving stock. Status text remains explicit; payment, funding and fulfillment are never inferred from a monetary total. These components do not populate unavailable catalog/cart pages with synthetic products.
+
 ### 6.3 Administrative components
 
 - **Management tables:** Search/filter toolbar, visible row status, bulk selection only where an actual bulk operation exists, and contextual row actions.

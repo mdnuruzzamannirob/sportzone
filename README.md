@@ -105,6 +105,9 @@ provide the existing controls, panels and feedback states. See [Design](docs/DES
 
 App-owned form/feedback primitives and their state/validation conventions are described in [UI components](docs/UI_COMPONENTS.md).
 
+Storefront commerce primitives live in `src/components/commerce/`; see the [commerce usage contracts](docs/UI_COMPONENTS.md#commerce-compositions).
+They are presentation foundations; catalog/cart/checkout routes retain their separate real-data integration tasks.
+
 Current root checks:
 
 ```sh

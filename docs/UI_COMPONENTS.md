@@ -58,6 +58,30 @@ Pending Buttons keep their accessible progress text and block activation through
 - While `isPending`, Escape, backdrop dismissal and Cancel are disabled. The caller must settle pending state and show a verified result/error; the panel does not start, retry or complete an operation itself. Never leave a panel permanently locked after a failed request.
 - Optional `isOpen`/`onOpenChange` support caller-controlled lifecycle. Do not add a public preview route or synthetic authenticated session to demonstrate a foundation component.
 
+## Commerce compositions
+
+Storefront commerce components live in `storefront/src/components/commerce/`. These presentation props are not new public DTOs; consuming features adapt the API contract at their boundary. No live catalog/cart/checkout feature is implied by this foundation.
+
+| Module | Contract |
+| --- | --- |
+| `price.tsx` | Display exact nonnegative integer poisha through the existing formatter; show regular-price comparison only when regular is higher; no discount percentage calculation |
+| `product-card.tsx` | Name/link, controlled image/fallback, supplied prices, availability text and approved rating summary when valid; optional action is outside the product link |
+| `product-image.tsx` | Next Image with explicit dimensions/sizes, source-keyed failure recovery and an honest missing-image state |
+| `variant-selector.tsx` | Controlled complete-variant options with backend-supplied eligibility; disabled choices, loading/error/empty states and selection/stock announcements |
+| `cart-line.tsx` | Supplied estimated unit/line amounts, variant/SKU, bounded quantity requests, pending/removal, stock/price warnings and no-reservation notice |
+| `status-badge.tsx` | Textual status/availability using neutral surfaces and semantic foregrounds; caller maps verified backend states to labels/tones |
+| `order-summary.tsx` | Regular subtotal, product/coupon discounts, delivery and supplied final total, labelled estimate/quote/order; payment method is separate from payment outcome |
+| `commerce-skeleton.tsx` | Product, cart-line and summary layouts with one loading announcement and hidden decorative placeholders |
+
+- `ProductCard` receives only an approved public rating summary; omit it when unavailable. Pass an approved local/allowed remote image source and descriptive alt text. Next.js remote-host configuration belongs to the media/catalog feature. Key image replacements by source; do not keep a failed old image state for a replacement asset.
+- Variant options represent complete valid combinations from the owning feature/API. A selected ID must still be eligible before a consuming Add to cart action can run. The primitive does not perform inventory arithmetic or grant purchase permission.
+- Product-card actions may include a feature-owned wishlist/cart action, but they must enforce its pending/eligibility state and server checks. No purchase action is built in by default. Do not nest buttons in the product link.
+- Cart `maxQuantity` is a backend/feature-supplied integer limit (zero disables edits); quantity changes are requests, never reservations. Keep the server-supplied estimated line amount visible until a replacement arrives; do not multiply quantity and unit amount to establish checkout truth. A reduced stock limit preserves the requested quantity and displays recovery guidance.
+- Adapt `SummaryAmounts` from CheckoutQuote or the immutable order pricing snapshot. `kind="quote"` does not prove quote freshness, reserve stock or complete payment. The consuming checkout feature owns expiry/consent validation and authoritative submission. Display payment/fulfillment/refund statuses separately; never infer Paid from a total or receipt amount.
+- Example catalog data belongs only in tests/previews. Existing public unavailable pages stay unchanged until their feature tasks integrate real data.
+
 ## Verification
 
 Both apps run the same behavior contract against their own components in light and dark modes. Tests cover labels/errors, input retention, selection, pending guards, feedback semantics, summary focus and dialog/drawer dismissal/draft preservation. Browser viewport, native Tab cycling, zoom, pointer/touch and assistive-technology checks remain distinct from DOM tests. Record observed verification in the owning task evidence.
+
+Storefront additionally runs 40 commerce cases (20 per theme), covering sale/rating/image states, unavailable variants, bounded/direct quantities, pending/removal, supplied amount authority and loading semantics. Browser layout/image-delivery/zoom/native keyboard checks remain separate from DOM state checks.

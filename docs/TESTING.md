@@ -289,6 +289,12 @@ pending/destructive Buttons, four Notice severities, loading/empty states and re
 Controlled draft retention, Escape/Cancel focus restoration, pending dismissal locks and retry-enabling after settlement
 are DOM checks; manual native Tab/backdrop/touch/viewport evidence remains separate. See [UI components](./UI_COMPONENTS.md).
 
+Storefront runs 40 commerce primitive cases in `tests/commerce.test.tsx` (20 per theme): genuine sale comparison,
+exact poisha display, approved rating/missing-image behavior, unavailable and pending variants, bounded and direct
+quantity requests, pending removal, explicit statuses, backend-supplied line/final totals and three skeleton layouts.
+Fixtures deliberately supply line/final amounts differing from browser arithmetic to verify the UI displays supplied
+values without recalculation. No live catalog/cart/quote, stock reservation, image delivery or payment outcome is inferred.
+
 Both workspaces run four semantic-token regressions from `tests/tokens.test.tsx`, using the shared
 `tests/design-tokens.ts` assertions. They compare all 17 values with Design §2.2, check grayscale/invariant colors,
 text/control contrast and app/Tailwind integration. Built CSS smoke checks require the shared variables and compiled
