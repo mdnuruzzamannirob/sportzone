@@ -1,8 +1,9 @@
-import { Alert, Breadcrumbs, Disclosure, Drawer } from '@heroui/react'
+import { Breadcrumbs, Disclosure, Drawer } from '@heroui/react'
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 import { ThemePreferenceSelect } from '../theme-preference'
 import { Link } from '../ui/link'
+import { Notice } from '../ui/feedback'
 import { navigationContext, navigationGroups } from './navigation'
 
 function Navigation({ label, onNavigate }: { label: string; onNavigate?: () => void }) {
@@ -48,12 +49,9 @@ function ConnectionStatus() {
     }
   }, [])
   return offline ? (
-    <Alert role="status" className="mb-6 border border-control-border">
-      <Alert.Content>
-        <Alert.Title>You are offline</Alert.Title>
-        <Alert.Description>Check your connection and try again.</Alert.Description>
-      </Alert.Content>
-    </Alert>
+    <div className="mb-6">
+      <Notice title="You are offline">Check your connection and try again.</Notice>
+    </div>
   ) : null
 }
 

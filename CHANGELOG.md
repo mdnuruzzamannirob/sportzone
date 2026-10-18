@@ -52,3 +52,5 @@ and personal data from change entries.
 - Migrated existing Appearance controls, disclosures, router-aware links, page/admin/loading cards, spinner and offline/error alerts to HeroUI; added popup interaction coverage. Review: [existing UI migration](docs/evidence/heroui-existing-ui.md).
 
 - Implemented P02-007 admin sidebar/mobile HeroUI Drawer, shared navigation groups, title/action shell, Appearance and offline/signed-out presentation; project owner accepted the task on 18 October 2026 after local verification; browser checks remain Not Run. Evidence: [admin shell evidence](docs/evidence/P02-007-admin-shell.md).
+
+- Implemented P02-008 HeroUI field, form/error-summary, feedback and overlay foundations in both apps; reused them in Appearance/connectivity/loading consumers. Project owner accepted the foundation on 18 October 2026; browser/manual keyboard checks remain Not Run. Usage: [UI components](docs/UI_COMPONENTS.md); evidence: [form foundation evidence](docs/evidence/P02-008-forms.md).

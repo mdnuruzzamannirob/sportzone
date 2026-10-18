@@ -67,3 +67,23 @@
 .select__popover {
   border-radius: var(--radius-card);
 }
+
+.input,
+.textarea {
+  min-height: var(--spacing-control);
+  border-radius: var(--radius-control);
+}
+
+.modal__dialog {
+  border-radius: var(--radius-dialog);
+}
+
+.alert--success .alert__title,
+.alert--success .alert__indicator { color: var(--success); }
+.alert--warning .alert__title,
+.alert--warning .alert__indicator { color: var(--warning); }
+.alert--danger .alert__title,
+.alert--danger .alert__indicator { color: var(--danger); }
+
+.list-box-item { min-height: var(--spacing-control); }
+.field-error { color: var(--danger); }

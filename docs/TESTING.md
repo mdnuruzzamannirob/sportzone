@@ -283,6 +283,12 @@ Verify shared token aliases in emitted CSS, 44px controls, explicit Light/Dark a
 cover native keyboard/focus behavior, responsive layouts and both themes; DOM/HTTP checks do not establish visual acceptance.
 Integration evidence is recorded in [the HeroUI foundation review](./evidence/heroui-foundation.md).
 
+Both workspaces also run 30 form/feedback cases each (15 per explicit theme) from `tests/form-primitives.test.tsx`.
+The shared test-only contract exercises each app's own fields, form submit guard, focus-requested error summary,
+pending/destructive Buttons, four Notice severities, loading/empty states and real HeroUI dialog/drawer behavior.
+Controlled draft retention, Escape/Cancel focus restoration, pending dismissal locks and retry-enabling after settlement
+are DOM checks; manual native Tab/backdrop/touch/viewport evidence remains separate. See [UI components](./UI_COMPONENTS.md).
+
 Both workspaces run four semantic-token regressions from `tests/tokens.test.tsx`, using the shared
 `tests/design-tokens.ts` assertions. They compare all 17 values with Design §2.2, check grayscale/invariant colors,
 text/control contrast and app/Tailwind integration. Built CSS smoke checks require the shared variables and compiled

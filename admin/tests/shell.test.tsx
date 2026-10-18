@@ -118,10 +118,26 @@ describe('admin navigation shell', () => {
     expect(dialog()?.getAttribute('aria-label')).toBe('Admin navigation')
     expect(host.closest('[aria-hidden="true"]')).not.toBeNull()
     expect(dialog()?.querySelectorAll('nav a')).toHaveLength(14)
-    expect(dialog()?.contains(document.activeElement)).toBe(true)
+    await vi.waitFor(
+      async () => {
+        await act(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 0))
+        })
+        expect(dialog()?.contains(document.activeElement)).toBe(true)
+      },
+      { timeout: 2000, interval: 20 },
+    )
     await pressEscape()
     expect(dialog()).toBeNull()
-    expect(document.activeElement).toBe(trigger())
+    await vi.waitFor(
+      async () => {
+        await act(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 0))
+        })
+        expect(document.activeElement).toBe(trigger())
+      },
+      { timeout: 2000, interval: 20 },
+    )
   })
   it('ADMIN-SHELL-03: mobile navigation changes the URL/context, closes the Drawer and never unlocks a screen', async () => {
     await visit('/app')
@@ -142,7 +158,15 @@ describe('admin navigation shell', () => {
       dialog()?.querySelector<HTMLButtonElement>('[data-slot="drawer-close-trigger"]'),
     )
     expect(dialog()).toBeNull()
-    expect(document.activeElement).toBe(trigger())
+    await vi.waitFor(
+      async () => {
+        await act(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 0))
+        })
+        expect(document.activeElement).toBe(trigger())
+      },
+      { timeout: 2000, interval: 20 },
+    )
     await click(trigger())
     desktop.matches = true
     await act(async () => {

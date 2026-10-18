@@ -103,6 +103,8 @@ Project tokens govern both themes; the existing Appearance bootstrap/storage rem
 App-owned Button defaults live in `src/components/ui/button.tsx`. HeroUI Link adapters preserve native anchors and app routing; Select, Disclosure, Card, Alert and Spinner
 provide the existing controls, panels and feedback states. See [Design](docs/DESIGN.md#2-design-system) for visual direction and component conventions.
 
+App-owned form/feedback primitives and their state/validation conventions are described in [UI components](docs/UI_COMPONENTS.md).
+
 Current root checks:
 
 ```sh

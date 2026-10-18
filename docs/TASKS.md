@@ -102,7 +102,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | Phase | Total | Not Started | Ready | In Progress | Blocked | In Review | Done | Deferred |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | 01 — Requirements Finalization and Planning | 14 | 0 | 0 | 0 | 0 | 0 | 14 | 0 |
-| 02 — UI/UX Design | 11 | 4 | 0 | 0 | 0 | 0 | 7 | 0 |
+| 02 — UI/UX Design | 11 | 3 | 0 | 0 | 0 | 0 | 8 | 0 |
 | 03 — Authentication and Core Backend | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -113,7 +113,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **150** | **0** | **0** | **0** | **0** | **21** | **0** |
+| **Total** | **171** | **149** | **0** | **0** | **0** | **0** | **22** | **0** |
 
 ## 4. Milestone tracker
 
@@ -326,13 +326,13 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Acceptance:** Narrow layouts retain navigation; client route guards do not replace backend authorization.\
   **Evidence:** [HeroUI admin navigation, Drawer interaction, signed-out boundary and production checks](./evidence/P02-007-admin-shell.md). Accepted by project owner on 18 October 2026: “Admin shell গ্রহণ করছি”. Browser visual/native keyboard checks remain Not Run.
 
-- [ ] **P02-008 — Implement accessible form and feedback primitives**\
-  **Status:** `Not Started` · **Area:** Design/UI\
+- [x] **P02-008 — Implement accessible form and feedback primitives**\
+  **Status:** `Done` · **Area:** Design/UI · **Owner:** Codex\
   **Sources:** Design §§6,9-10\
   **Depends on:** `P02-003`, `P02-004`\
   **Deliverable:** Build inputs, selection controls, validation feedback, alerts, buttons, dialogs, drawers, focus handling and loading states.\
   **Acceptance:** Error text associates with fields; dialogs restore focus and preserve entered data.\
-  **Evidence to attach:** Component tests and manual keyboard evidence.
+  **Evidence:** [HeroUI fields/forms, validation/focus, feedback and overlay verification](./evidence/P02-008-forms.md). Accepted by project owner on 18 October 2026: “Form/feedback foundation গ্রহণ করছি”. Browser/manual keyboard checks remain Not Run.
 
 - [ ] **P02-009 — Implement reusable commerce visual primitives**\
   **Status:** `Not Started` · **Area:** Design/UI\
@@ -1724,6 +1724,8 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | 18 October 2026 | P02-006 | Not Started → In Progress → In Review → Done; shell interaction/recovery, destination/404, both-build and configured CI checks passed; project owner accepted the storefront shell | Codex / project owner | [Accepted storefront shell](./evidence/P02-006-storefront-shell.md) | Proceed through declared task dependencies |
 
 | 18 October 2026 | P02-007 | Not Started → In Progress → In Review → Done; admin navigation/Drawer, title/actions, signed-out and offline behavior implemented; 103 tests, both builds and configured CI checks passed; project owner accepted the admin shell | Codex / project owner | [Accepted admin shell](./evidence/P02-007-admin-shell.md) | Proceed through declared task dependencies; retain separate browser verification |
+
+| 18 October 2026 | P02-008 | Not Started → In Progress → In Review → Done; HeroUI form/feedback foundations, field-error associations, pending guards and draft/focus preservation implemented; 163 tests, both builds and all configured CI commands passed; project owner accepted the foundation | Codex / project owner | [Accepted form foundation](./evidence/P02-008-forms.md) | Proceed through declared task dependencies; retain separate browser/manual keyboard verification |
 
 **18 October 2026 — UI foundation change:** The project owner selected HeroUI and delegated visual design within the approved specification. Dependency/theme integration, app-owned controls and working conventions are recorded in [HeroUI foundation review](./evidence/heroui-foundation.md). The follow-up [existing UI migration](./evidence/heroui-existing-ui.md) replaces the earlier native-control exceptions. These changes are In Review; they do not accept another numbered task or milestone.
 
