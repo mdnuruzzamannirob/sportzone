@@ -103,7 +103,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | 01 — Requirements Finalization and Planning | 14 | 0 | 0 | 0 | 0 | 0 | 14 | 0 |
 | 02 — UI/UX Design | 11 | 0 | 0 | 0 | 0 | 0 | 11 | 0 |
-| 03 — Authentication and Core Backend | 18 | 17 | 0 | 0 | 0 | 0 | 1 | 0 |
+| 03 — Authentication and Core Backend | 18 | 16 | 0 | 0 | 0 | 0 | 2 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 06 — Checkout, Orders, and Delivery Rules | 20 | 20 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -113,7 +113,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **145** | **0** | **0** | **0** | **0** | **26** | **0** |
+| **Total** | **171** | **144** | **0** | **0** | **0** | **0** | **27** | **0** |
 
 ## 4. Milestone tracker
 
@@ -370,13 +370,13 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Acceptance:** Independently builds; validated errors do not leak internals; controllers delegate to services.\
   **Evidence:** [Express transport and request verification](./evidence/P03-001-backend.md). All 19 CI commands, 37 backend cases, independent build and compiled-server smoke passed. Full pipeline: 260 unit/component tests and 30 browser cases. Accepted by project owner on 18 October 2026: “Backend scaffold গ্রহণ করছি”; persistence, identity and deployed health remain their owning tasks.
 
-- [ ] **P03-002 — Configure MongoDB/Mongoose and transactional test environment**\
-  **Status:** `Not Started` · **Area:** Backend/data\
+- [x] **P03-002 — Configure MongoDB/Mongoose and transactional test environment**\
+  **Status:** `Done` · **Area:** Backend/data · **Owner:** Codex\
   **Sources:** Architecture §§7,13\
   **Depends on:** `P03-001`, `P01-005`\
   **Deliverable:** Configure connection lifecycle, schema conventions, indexes, replica-set-capable local/test DB and safe fixtures.\
   **Acceptance:** Required transactions run on supported deployment; unique indexes are verifiable.\
-  **Evidence to attach:** DB integration and index test evidence.
+  **Evidence:** [Real replica-set connection/index/transaction verification](./evidence/P03-002-database.md). All 24 MongoDB integration cases and 20 CI commands passed; unique/partial indexes, commit/rollback/concurrency, lifecycle and safe fixtures verified. Accepted by project owner on 18 October 2026: “Database foundation গ্রহণ করছি”; production/failover/restore and domain financial flows remain their owning tasks.
 
 - [ ] **P03-003 — Add environment validation, health checks and observability base**\
   **Status:** `Not Started` · **Area:** Backend/core\
@@ -1734,6 +1734,8 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | 18 October 2026 | P02-011 | Not Started → In Progress → In Review → Done; Chromium/Firefox/WebKit foundation audits, both themes and three viewports; accessible-name and foreground findings resolved; all 14 CI commands and 30 browser cases passed; project owner accepted the foundation audit | Codex / project owner | [Foundation audit evidence](./evidence/P02-011-accessibility.md) | Proceed through declared task dependencies; retain feature/release browser and assistive-technology checks |
 
 | 18 October 2026 | P03-001 | Not Started → In Progress → In Review → Done; modular Express bootstrap, safe errors/validation and bounded pagination implemented; backend activated in CI; 37 backend cases and all 19 configured commands passed; project owner accepted the backend scaffold | Codex / project owner | [Backend bootstrap evidence](./evidence/P03-001-backend.md) | Proceed through declared dependencies |
+
+| 18 October 2026 | P03-002 | Not Started → In Progress → In Review → Done; Mongoose/schema/index/transaction foundations and ephemeral local DB implemented; real MongoDB replica-set integration 24/24 and all 20 CI commands passed; project owner accepted the database foundation | Codex / project owner | [Database foundation evidence](./evidence/P03-002-database.md) | Proceed through declared task dependencies; retain deployment and domain-invariant gates |
 
 **18 October 2026 — UI foundation change:** The project owner selected HeroUI and delegated visual design within the approved specification. Dependency/theme integration, app-owned controls and working conventions are recorded in [HeroUI foundation review](./evidence/heroui-foundation.md). The follow-up [existing UI migration](./evidence/heroui-existing-ui.md) replaces the earlier native-control exceptions. These changes are In Review; they do not accept another numbered task or milestone.
 

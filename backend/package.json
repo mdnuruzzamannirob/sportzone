@@ -5,6 +5,7 @@
   "description": "SportZone modular Express API",
   "dependencies": {
     "express": "5.3.0",
+    "mongoose": "9.11.2",
     "zod": "4.6.7"
   },
   "devDependencies": {
@@ -12,6 +13,7 @@
     "@types/express": "5.0.6",
     "@types/node": "24.19.2",
     "@types/supertest": "7.2.1",
+    "mongodb-memory-server-core": "11.3.0",
     "supertest": "7.3.1",
     "typescript": "6.0.3",
     "vitest": "5.0.5"
@@ -20,11 +22,13 @@
   "scripts": {
     "dev": "node --watch dist/server.js",
     "start": "node dist/server.js",
-    "lint": "biome lint src tests vitest.config.ts --error-on-warnings",
+    "lint": "biome lint src tests tools vitest.config.ts vitest.integration.config.ts --error-on-warnings",
     "typecheck": "tsc --project tsconfig.check.json",
     "test:unit": "vitest run",
     "build": "tsc --project tsconfig.json",
     "build:watch": "tsc --watch --project tsconfig.json",
-    "test:smoke": "node tests/smoke.mjs"
+    "test:smoke": "node tests/smoke.mjs",
+    "test:integration": "vitest run --config vitest.integration.config.ts --reporter=default --reporter=json --outputFile=../test-results/database.json",
+    "db:local": "node tools/local-database.mjs"
   }
 }

@@ -135,7 +135,16 @@ npm run test:smoke --workspace=backend
 npm run start --workspace=backend
 ```
 
-The compiled API binds `127.0.0.1` on `PORT` (default 4000); `.env` files are not automatically loaded. During editing, run `npm run build:watch --workspace=backend` alongside `npm run dev --workspace=backend` after an initial build. The dev listener watches compiled output. Unimplemented routes return safe JSON 404s; no health/auth/product endpoint is fabricated. Database, full environment/observability setup, sessions and Origin/CORS/CSRF remain P03-002/003/005/006. See [backend evidence](docs/evidence/P03-001-backend.md).
+The compiled API binds `127.0.0.1` on `PORT` (default 4000); `.env` files are not automatically loaded. During editing, run `npm run build:watch --workspace=backend` alongside `npm run dev --workspace=backend` after an initial build. The dev listener watches compiled output. Unimplemented routes return safe JSON 404s; no health/auth/product endpoint is fabricated. Database primitives are available; HTTP startup wiring, full environment/observability setup, sessions and Origin/CORS/CSRF remain P03-003/005/006. See [backend evidence](docs/evidence/P03-001-backend.md).
+
+Database foundation commands:
+
+```sh
+npm run db:local --workspace=backend
+npm run test:integration --workspace=backend
+```
+
+The local tool runs an ephemeral real MongoDB 8.0.16 replica set on loopback; stop it to discard its synthetic data. Integration tests start their own isolated replica and never use your `MONGODB_URI`. On Ubuntu 26, prefix these commands with `MONGOMS_DISTRO=ubuntu-24.04` to select the compatible binary. The first run downloads the pinned binary. Report: `test-results/database.json`. See [database foundation evidence](docs/evidence/P03-002-database.md). HTTP startup/configuration wiring and health probes remain P03-003.
 
 Storefront commands, from the repository root:
 

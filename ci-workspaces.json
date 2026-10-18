@@ -32,7 +32,8 @@
       "typecheck",
       "test:unit",
       "build",
-      "test:smoke"
+      "test:smoke",
+      "test:integration"
     ]
   }
 }

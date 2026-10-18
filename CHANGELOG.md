@@ -70,3 +70,7 @@ and personal data from change entries.
 - Implemented P03-001 Express/TypeScript transport scaffold, safe versioned envelopes/errors, Zod validation, bounded pagination, independent build/start and request/compiled-server smoke tests; activated backend CI checks. [Evidence](docs/evidence/P03-001-backend.md) distinguishes scaffold delivery from database, identity and deployment readiness.
 
 - Recorded project-owner acceptance of P03-001 backend scaffold on 18 October 2026; task marked Done with 37 backend tests, independent build/compiled-server smoke and all 19 CI commands passed. Persistence, identity and deployment remain their owning tasks.
+
+- Implemented P03-002 Mongoose connection/schema/index/transaction foundations, a real isolated MongoDB replica-set integration suite and an ephemeral local database tool; added mandatory integration CI/report artifacts. [Evidence](docs/evidence/P03-002-database.md) records scope and verification.
+
+- Recorded project-owner acceptance of P03-002 database foundation on 18 October 2026; task marked Done with 24 real MongoDB integration cases and all 20 CI commands passed. Production/failover/restore and domain financial-flow verification remain their owning gates.

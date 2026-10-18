@@ -37,6 +37,7 @@ jobs:
           name: ci-summary-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             test-results/ci.json
+            test-results/database.json
             test-results/ui-report.json
             test-results/ui/
           if-no-files-found: error

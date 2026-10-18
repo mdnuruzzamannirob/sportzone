@@ -87,6 +87,8 @@ product and policy rules; `ARCHITECTURE.md` governs system boundaries and integr
 | External calls | Never hold an open DB transaction across payment, Cloudinary, or email HTTP calls |
 | Boundaries | Public APIs return allowlisted DTOs, never raw Mongoose documents |
 
+The implemented foundation in `backend/src/db/` supplies an explicit bounded connection factory with replica-set/session checks, mutable-schema options, strict integer/optional-reference helpers, additive index creation/verification and a session-aware transaction boundary. See [P03-002 implementation evidence](./evidence/P03-002-database.md). These primitives do not create the business collections below. Each feature still owns its exact fields, BSON/collection validators, indexes, protected update allowlists and DTO mappings; schema validators alone do not authorize arbitrary update operators.
+
 ### 2.2 Field standards
 
 | Convention | Definition |
