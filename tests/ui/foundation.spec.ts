@@ -152,6 +152,7 @@ for (const theme of ['light', 'dark'] as const) {
     await page.getByRole('button', { name: 'Appearance', exact: true }).click()
     await page.locator('[data-slot="select-trigger"]').press('Enter')
     await page.getByRole('option', { name: 'System', exact: true }).press('Enter')
+    await expect(page.getByRole('dialog', { name: 'Appearance', exact: true })).toBeHidden()
     await expect(page.locator('html')).not.toHaveAttribute('data-theme')
     await page.emulateMedia({ colorScheme: 'dark' })
     await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(0, 0, 0)')
@@ -162,7 +163,8 @@ for (const theme of ['light', 'dark'] as const) {
     )
     const menu = page.getByRole('button', { name: 'Menu', exact: true })
     await menu.press('Enter')
-    await expect(page.getByRole('dialog')).toBeVisible()
+    const navigationDialog = page.getByRole('dialog', { name: 'Admin navigation', exact: true })
+    await expect(navigationDialog).toBeVisible()
     expect(
       (
         await new AxeBuilder({ page })
@@ -171,7 +173,7 @@ for (const theme of ['light', 'dark'] as const) {
       ).violations,
     ).toEqual([])
     await page.keyboard.press('Escape')
-    await expect(page.getByRole('dialog')).toBeHidden()
+    await expect(navigationDialog).toBeHidden()
     await expect(menu).toBeFocused()
     await page.goto('http://127.0.0.1:3100')
     const customerMenu = page.getByRole('button', { name: 'Menu', exact: true })

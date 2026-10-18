@@ -327,6 +327,15 @@ flowchart TD
 
 **Rules:** rotate after login, proof exchange or privilege changes; revoke on logout/suspension; do not treat physical TTL deletion as authentication expiry. A guest session cannot access other orders or admin/customer routes.
 
+The implemented customer/admin lifecycle in `sessions.ts` stores HMAC-SHA-256 digests with route-kind/domain separation
+under SESSION_SECRET; API §4.4 defines the exact session/CSRF encoding. Fresh issuance/rotation creates independent
+32-byte opaque session/CSRF values; only digests persist. Rotation revokes the predecessor and writes the replacement
+transactionally. Active lookup checks current role/status/security revision independently of TTL; principal revocation
+increments securityRevision and marks matching sessions in one transaction. Raw tokens are returned only inside the
+backend issuance result for cookie/private CSRF response composition, never in a session DTO or log. Browser-context,
+challenge and guest digest issuance remain with their owning later services; their placeholder schema strings do not
+constitute a cryptographic implementation. No session is minted by HTTP startup or by simply knowing an ObjectId.
+
 ### 5.3 `authChallenges` — verification and recovery
 
 | Field | Type | Constraints / notes |
@@ -464,10 +473,11 @@ never runs this initializer or enables an identity writer automatically.
 consumption. Consumption matches purpose, verified-digest lookup, user/role, active status, expiry/attempt bounds and
 principal purpose revision; it advances that revision, marks consumed and removes the envelope with the caller's DB-only
 effect in one transaction. A fresh server clock is checked on every retry and before consumption; failure rolls everything
-back. Consumed/invalidated challenges cannot retain an envelope under the collection validator. Token hashing/provenance,
-AEAD encryption/key custody, issuance/reissue, cookie authentication, CSRF, password/recovery services and guest-order
-consumption remain their owning P03-005–014/P06-015 implementations. The helper grants no permission from a client-supplied
-digest or ObjectId. No new public endpoint or live account is created by these models.
+back. Consumed/invalidated challenges cannot retain an envelope under the collection validator. P03-005 now implements
+customer/admin opaque issuance, HMAC storage, cookie controls and session-required middleware (API §4.4). Browser-context/
+Origin/CSRF composition, credential login, proof issuance/reissue, AEAD/key custody, password/recovery and guest-order
+consumption remain P03-006–014/P06-015. The proof helper grants no permission from a client-supplied digest or ObjectId.
+No new public endpoint or live account is created by these models.
 
 Guest order references are schema-validated without claiming that the future orders collection exists. Other commerce
 collections in §§6–10 remain specifications until their owning feature implementations. See

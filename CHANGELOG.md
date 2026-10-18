@@ -90,3 +90,9 @@ and personal data from change entries.
 - Implemented P03-004 connection-owned identity/address/session/challenge/context models, strict BSON validators and ten named indexes; added expiry-aware lookups and transactional single-use user-challenge consumption with rollback/envelope removal. Added real replica-set schema/index/raw-write/expiry/concurrency tests and explicit bootstrap/migration guidance. [Evidence](docs/evidence/P03-004-identity-models.md).
 
 - Recorded project-owner acceptance of P03-004 identity persistence implementation on 18 October 2026; task marked Done with 40 new real MongoDB cases, all 69 integration cases and all 20 CI commands passed. Public authentication/session/CSRF/recovery services remain their owning tasks.
+
+- Implemented P03-005 opaque customer/admin sessions, kind-separated HMAC/CSRF material, atomic rotation/revocation and host-only secure cookie adapters with explicit lifecycle policy. Added real MongoDB/HTTP isolation, expiry, replay, rollback and cookie tests; updated API/data/operations configuration handoffs. No public auth route activated. [Evidence](docs/evidence/P03-005-sessions.md).
+
+- Stabilized the existing browser navigation regression by waiting for the Appearance popover to close and selecting the Admin navigation dialog by accessible name; retained keyboard/focus/axe assertions and zero automatic retries.
+
+- Recorded project-owner acceptance of P03-005 on 18 October 2026: “Session/cookie implementation গ্রহণ করছি”. Marked the task Done with its existing Passed evidence: 181 backend unit/contract tests, 89 MongoDB integration cases and all 20 CI commands. Public authentication and complete Origin/CSRF remain separate tasks. [Evidence](docs/evidence/P03-005-sessions.md).

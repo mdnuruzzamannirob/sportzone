@@ -221,6 +221,40 @@ fields add no public DTO properties. Executable validators and protocol/replay t
 | Password reset/change | Single-use challenge consumption; advance security revision and invalidate affected sessions |
 | Guest proof | Single-use challenge grants **one order** and explicitly expires; cannot be used as general customer identity |
 
+### 4.4 Implemented customer/admin session boundary
+
+`backend/src/modules/auth/sessions.ts` implements the internal session lifecycle; `session-http.ts` supplies route-selected
+cookie parsing, set/clear controls and session-required middleware. The production router remains health-only until the
+owning login/authentication features compose credential verification with P03-006's Origin/CSRF defenses. No endpoint may
+issue a session from a client-supplied user ID alone. The internal issuer accepts only the verified principal selected by
+the owning customer/admin authentication flow and rechecks active role/status.
+
+| Concern | Implemented contract |
+| --- | --- |
+| Opaque credentials | Independent CSPRNG 32-byte session and CSRF values, unpadded base64url (43 characters); no user/order/role claims in either token |
+| Session storage | HMAC-SHA-256 using the decoded 32-byte SESSION_SECRET; lowercase hex digest; message `sportzone:session:v1:<kind>::<token>`; kind is route-selected customer/admin |
+| CSRF material | HMAC message `sportzone:csrf:v1:<kind>:<tokenHash>:<csrfToken>`; binds verifier to exactly one session credential; comparison uses fixed-length timing-safe bytes; this material check alone is not complete Origin/CSRF middleware |
+| Lifetime | Explicit CUSTOMER_SESSION_TTL_SECONDS/ADMIN_SESSION_TTL_SECONDS; positive safe seconds, finite absolute Date expiry; reads do not extend expiry; reject at expiresAt even if TTL record remains |
+| Cookie policy | Exact names from §4.1; host-only (no Domain), HttpOnly, path /; SESSION_COOKIE_SAME_SITE explicitly lax or strict; HTTPS always Secure; HTTP exception only configured local/test loopback origin; request Host/proxy headers cannot weaken it |
+| Cookie parsing | Only the route's cookie name accepted; missing, malformed or duplicate credentials fail closed; no query, Bearer, client role, guest cookie or other namespace fallback |
+| Session authorization | Correct kind, live expiry, absent revokedAt, existing active principal with matching role and securityRevisionAtIssue; absence/ineligibility yields generic 401 AUTH_REQUIRED |
+| Rotation | Fresh session/CSRF plus revocation of the old credential in one transaction; concurrent rotation has one winner; insert failure rolls back old revocation; stale/expired/revoked credential cannot rotate |
+| Fresh login | Always create fresh random values; optional predecessor revocation is conditional on same user/kind; an unrelated account/namespace credential is never revoked by replacement |
+| Logout | Idempotently revoke only supplied route-kind credential and clear only that cookie using matching attributes; repeated/expired/missing credential does not revoke another session; public logout still requires §4.2's valid Origin/CSRF and fresh context response |
+| Principal revocation | Atomically advance principal securityRevision and mark its route-kind sessions revoked; other principals unaffected; status/role/revision changes deny old access even before cleanup |
+| Secret rotation | New SESSION_SECRET immediately rejects old digests on processes using it; drain/restart all old-key processes before declaring revocation complete; no dual-key acceptance is implemented |
+
+`loadSessionOptions(process.env)` validates these session-specific settings when session composition is activated; no
+lifetime/SameSite fallback is supplied and the current health-only startup does not implicitly activate them. Configuration
+errors identify fields only. Operators must approve deployed values and verify real same-site domains/TLS/cookie behavior.
+Cookie expiry is advisory; server-side lookup remains authoritative. Set a cookie only after successful committed issuance;
+await durable logout before reporting server revocation, then perform P03-006's safe CSRF/context refresh.
+
+The service's authenticate result is an explicit internal principal projection; never serialize a raw session document.
+The private lookup explicitly selects its CSRF verifier for the session service; ordinary model projections still exclude
+all credential verifiers. Guest sessions remain P06-015. Password verification/provisioning/recovery, complete CSRF/CORS,
+endpoint throttles/audit and integrated browser security remain P03-006–016.
+
 ## 5. Authorization & data exposure
 
 | Principal | Allowed resources | Denied by default |

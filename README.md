@@ -140,9 +140,15 @@ explicit, never automatic HTTP startup; existing database changes require the do
 synthetic accounts/digests on an owned replica. No customer/admin authentication route is enabled yet; see
 [identity persistence evidence](docs/evidence/P03-004-identity-models.md).
 
+Customer/admin session service and cookie adapter are implemented in `backend/src/modules/auth/`. They require explicit
+session lifetime/SameSite settings through `loadSessionOptions` when authentication is composed; no values are supplied as
+defaults. Tokens are opaque and hashed at rest; issuance, rotation and revocation are verified with real MongoDB fixtures.
+The current runtime still exposes no login/logout route; full Origin/CSRF and verified-credential integration follow in
+their owning tasks. See [session evidence](docs/evidence/P03-005-sessions.md).
+
 Backend startup validates configuration, connects to a transaction-capable MongoDB, then opens HTTP. The default bind is loopback (`API_BIND_HOST=127.0.0.1`), port 4000. Copy `.env.example` to a private root `.env`, supply your local replica URI/database, and generate separate random 32-byte hex values for `SESSION_SECRET` and `HEALTH_MONITOR_TOKEN`. No secret value is supplied by the repository. From the root, after building, `node --env-file=.env backend/dist/server.js` explicitly loads that local file; `npm run start --workspace=backend` reads already injected process variables. For editing, use `npm run build:watch --workspace=backend` alongside `node --env-file=.env --watch backend/dist/server.js`.
 
-`/api/v1/health/live` reports process liveness; `/api/v1/health/ready` requires the operational Bearer token. Readiness covers the current API/Mongo serving state, not completed commerce features or launch acceptance. Logs contain allowlisted metadata and server-generated correlation IDs. See [runtime configuration and health evidence](docs/evidence/P03-003-operations.md). Sessions and browser Origin/CORS/CSRF remain P03-005/006.
+`/api/v1/health/live` reports process liveness; `/api/v1/health/ready` requires the operational Bearer token. Readiness covers the current API/Mongo serving state, not completed commerce features or launch acceptance. Logs contain allowlisted metadata and server-generated correlation IDs. See [runtime configuration and health evidence](docs/evidence/P03-003-operations.md). Session service/cookie controls are delivered by P03-005; public credential routes and complete browser Origin/CORS/CSRF remain their owning integration tasks.
 
 Database foundation commands:
 

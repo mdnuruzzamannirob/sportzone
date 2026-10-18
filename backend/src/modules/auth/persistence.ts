@@ -91,7 +91,7 @@ export async function findActiveUserSession(
       expiresAt: { $gt: input.now },
       revokedAt: { $exists: false },
     })
-    .select('+securityRevisionAtIssue')
+    .select('+securityRevisionAtIssue +csrfSecretHash')
   if (!session?.userId || typeof session.securityRevisionAtIssue !== 'number') return null
   const user = await models.users.exists({
     _id: session.userId,

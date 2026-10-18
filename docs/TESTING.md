@@ -586,6 +586,16 @@ See [P03-004 evidence](./evidence/P03-004-identity-models.md). Synthetic digest/
 hashing, token provenance, AEAD encryption, email delivery or public cookie/CSRF authentication. Those service and deployed
 checks remain with P03-005–016/P06-015.
 
+**P03-005 session verification:** `backend/tests/sessions.test.ts` covers explicit policy validation and route-selected
+malformed/duplicate cookie rejection in backend test:unit. `backend/tests/integration/sessions.test.ts` uses real MongoDB
+for opaque issuance/hash-at-rest, kind/role separation, bound CSRF material, absolute expiry with retained records,
+rotation/replay/concurrent winners, logout/revocation/status/revision denial, key rotation and rollback on actual replacement
+insert failure. Fixture-only HTTP routes verify real Express cookie attributes/set/clear, route-pinned authorization,
+no query/Bearer fallback and safe logs. The rollback fault changes only its owned fixture validator and restores it in
+finally; TTL monitoring is disabled only on that fixture's mongod. Public auth routes remain absent.
+This does not prove credential login, complete Origin/CORS/CSRF, actual deployed-domain/browser cookie acceptance or guest
+access; those remain the owning feature/security/operator gates. See [P03-005 evidence](./evidence/P03-005-sessions.md).
+
 ### 9.2 Transaction outcome inspection
 
 For each multi-document financial/stock case, assert both **logical state** and **physical persisted records**:
