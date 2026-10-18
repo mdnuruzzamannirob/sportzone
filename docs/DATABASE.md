@@ -303,7 +303,7 @@ flowchart TD
 | `addresses[]` | embedded[] | `{id,recipient,phone,districtKey,areaKey,street,addressLine2?,isDefault}`; bounded per customer |
 | `securityRevision`! | int | Increment when passwords, privileges, suspension, or security posture changes |
 | `challengeRevisions`! | embedded | Per-purpose nonnegative counters for email verification/change/reset; issuance/reissue and consumption serialize on the same principal/purpose counter |
-| `deletionRequest`? | embedded | `{requestedAt,verifiedAt,status,decisionAt?,decisionReason?}`; approval/retention-controlled |
+| `deletionRequest`? | embedded | `{id,requestedAt,verifiedAt,status,reason?,decisionAt?,decisionReason?}`; approval/retention-controlled (§5.5) |
 
 **Indexes:** unique `{emailNormalized:1}`; `{role:1,status:1,createdAt:-1}` for admin customer views.
 
@@ -317,7 +317,8 @@ flowchart TD
 | `kind`! | enum(`customer`,`admin`,`guest_order`) | Separate credential/cookie namespaces |
 | `userId`? | ObjectId | Required for customer/admin; absent for guest-order |
 | `orderId`? | ObjectId | Required only for guest-order scope |
-| `securityRevisionAtIssue`? | int | Principal security revision to detect invalidation |
+| `securityRevisionAtIssue`? | int | Required for customer/admin; absent for guest-order; principal security revision to detect invalidation |
+| `csrfSecretHash`! | string | Session-bound CSRF verifier; private projection; rotate with the session (API §4) |
 | `expiresAt`! | Date | Enforced during each request, independent of TTL |
 | `revokedAt`? | Date | Revocation takes effect immediately |
 | `lastUsedAt`? | Date | Minimal retained metadata; avoid storing full IP by default |
@@ -364,6 +365,7 @@ see API §16.3 for uncertain-send handling. No new session is granted by deliver
 | Field | Type | Constraints / notes |
 | --- | --- | --- |
 | `contextTokenHash`! | string | Unique hash of short-lived opaque browser-context cookie |
+| `audience`! | enum(`storefront`,`admin`) | Bind bootstrap to its approved frontend/route namespace; never selected by an untrusted role field |
 | `csrfSecretHash`! | string | Server-verifiable session/context-bound CSRF token material |
 | `expiresAt`! | Date | Short-lived and independently checked |
 | `rotatedAt`? | Date | Rotate after authentication/proof exchange |
@@ -371,6 +373,107 @@ see API §16.3 for uncertain-send handling. No new session is granted by deliver
 **Indexes:** unique `{contextTokenHash:1}`; TTL `{expiresAt:1}`.
 
 **Rules:** no user/order permission is granted by this record; Origin verification is still required on protected browser mutations. Implementations may replace this persistence with an equally secure signed short-lived context only after documented Architecture/API alignment.
+
+### 5.5 Identity field and projection rules
+
+The four identity collections use explicit physical names and the mutable timestamp/strict-schema conventions in §2.
+`_id`, `createdAt` and `updatedAt` are required server-owned fields. Embedded records disable Mongoose's implicit `_id`;
+saved addresses and deletion requests instead use the explicit stable `id` ObjectId. Optional values are absent, not
+`null`; nested records reject unknown keys. Counters use nonnegative safe integers without string/boolean coercion.
+
+| Record / field family | Persistence validation and write ownership |
+| --- | --- |
+| `users.emailNormalized` | Valid email, at most 254 characters, equal to its trimmed lowercase form; unique across customer/admin and all account statuses; never release an identity by suspension |
+| `users.name`, `addresses.recipient` | Trimmed, nonempty, at most 120 Unicode characters; do not silently truncate |
+| `users.passwordHash` | Nonempty encoded adaptive password hash, never a password or generic unsalted digest; credential service owns algorithm/parameters in P03-007; default queries exclude it |
+| `users.phone`, `addresses.phone` | Normalize and validate Bangladesh phone at the service boundary; optional user phone absent when unset; address phone required; never use phone as ownership proof |
+| `users.role`, `users.status` | Required closed enums from §5.1; public registration supplies neither and writes `customer`/`active`; private provisioning owns admin creation |
+| `users.securityRevision` | Required, initial `0`; security changes increment atomically; clients cannot choose/reset it |
+| `users.challengeRevisions` | Required exact object `{email_verify,email_change,password_reset}`, each initial `0`; the keys deliberately match challenge purposes, not notification event names |
+| `users.addresses` | Required array, initial `[]`, maximum 10; distinct ObjectId `id`; required recipient/phone/districtKey/areaKey/street/isDefault; street and optional addressLine2 at most 300 characters; keys validated against supported coverage; zero or one default |
+| `users.deletionRequest` | Optional exact object; required `id:ObjectId`, UTC requestedAt/verifiedAt, status enum(`requested`,`under_review`,`approved`,`rejected`,`completed`); optional nonempty reason/decisionReason at most 2,000 characters and UTC decisionAt; terminal decisions require decisionAt; review approval alone does not erase data |
+| Token/CSRF/context digests | Required nonempty one-way verifier strings, backend-only and excluded from default projections; token generation/digest encoding belongs to P03-005/006 and must be consistent between issuer and verifier; schema acceptance alone cannot prove a string is a hash |
+| `sessions.kind` and references | Customer/admin: userId and securityRevisionAtIssue required, orderId absent; guest_order: orderId required, userId and securityRevisionAtIssue absent; no dual-principal record |
+| `authChallenges` scope | email_verify/email_change/password_reset: userId required, orderId absent; guest_order_access: orderId required, userId absent; targetEmailNormalized required only for email_change and absent otherwise |
+| Challenge destination/counters | emailNormalized and targetEmailNormalized use the same email rules as users; attemptCount initially `0`; scopeRevisionAtIssue is required; issuedContextHash/deliveryNotificationId absent until applicable |
+| Optional instants | emailVerifiedAt/revokedAt/lastUsedAt/consumedAt/invalidatedAt/rotatedAt and decision dates are BSON Date instants when present; no string, invalid Date or null persistence |
+| Expiry | expiresAt required BSON Date, later than createdAt on issuance; persisted expired artifacts remain structurally valid but cannot authorize; lifetimes are validated positive configuration owned by security/operations, not invented schema constants |
+| Delivery envelope | Exact all-or-none object from §5.3; algorithm exactly AES-256-GCM, nonempty external keyVersion, binary nonce/ciphertext/authTag; bytes are server-created, never a public input or outbox payload; nonce/tag validation and encryption are P03-009/010 responsibilities |
+
+A customer/admin session's user must exist, match its kind and be eligible under the owning authentication service;
+ObjectId shape validation is not a foreign-key or authorization check. `deactivated` and `deletion_pending` are internal
+persistence states, not additional values silently added to API's Account status enum; the identity API task must deny
+ineligible self-session access and explicitly reconcile any administrative projection. P03-008 owns deletion request
+transitions/retention review; no deletion endpoint is enabled by this contract.
+
+Only credential services select password/token/CSRF verifiers. Delivery workers explicitly select the encrypted envelope;
+normal account and notification queries cannot. Lean/raw-driver queries still require explicit allowlists—Mongoose
+`select:false` alone is not an API security boundary. Account/address output follows API §9.1/Appendix D.2; never serialize
+security revisions, challenges, context audience internals, digests or delivery envelopes to account DTOs.
+
+### 5.6 Identity indexes and eligibility predicates
+
+Use explicit stable index names below; directions and options are part of the contract. All indexes are additive,
+non-sparse and non-partial unless specified; `_id` has MongoDB's ordinary unique index. TTL uses `expireAfterSeconds:0`
+on the absolute BSON Date, not a guessed duration. No TTL index belongs on users or financial records.
+
+| Collection | Index name | Ordered key | Options |
+| --- | --- | --- | --- |
+| users | `users_email_unique` | `{emailNormalized:1}` | unique |
+| users | `users_role_status_created` | `{role:1,status:1,createdAt:-1}` | ordinary |
+| sessions | `sessions_token_unique` | `{tokenHash:1}` | unique |
+| sessions | `sessions_user_kind_revoked` | `{userId:1,kind:1,revokedAt:1}` | ordinary |
+| sessions | `sessions_expiry` | `{expiresAt:1}` | TTL, expireAfterSeconds:0 |
+| authChallenges | `auth_challenges_secret_unique` | `{secretHash:1}` | unique |
+| authChallenges | `auth_challenges_purpose_order_expiry` | `{purpose:1,orderId:1,expiresAt:1}` | ordinary |
+| authChallenges | `auth_challenges_expiry` | `{expiresAt:1}` | TTL, expireAfterSeconds:0 |
+| browserContexts | `browser_contexts_token_unique` | `{contextTokenHash:1}` | unique |
+| browserContexts | `browser_contexts_expiry` | `{expiresAt:1}` | TTL, expireAfterSeconds:0 |
+
+- **Session:** matching digest and route-selected kind, `expiresAt > now`, revokedAt absent; customer/admin additionally
+  require current eligible role/status and matching securityRevision. Scoped guests additionally match the exact order.
+- **Browser context:** matching digest and route-selected audience, `expiresAt > now`, rotatedAt absent; compare bound
+  CSRF verifier and exact approved Origin independently. A valid context grants no account/order permission.
+- **Challenge:** matching purpose/digest/principal, `expiresAt > now`, consumedAt and invalidatedAt absent, attempts within
+  the approved bound and current scope revision equal to scopeRevisionAtIssue. Email-change also checks the bound target.
+- **Consumption/reissue:** use a transaction and conditional writes on the same principal/purpose revision; one winner
+  advances the revision. Consumption sets consumedAt and removes deliveryEnvelope with the associated password/email/
+  session effect in that transaction. Reissue invalidates/removes the predecessor envelope and creates a fresh challenge
+  plus notification intent; retries must not extend expiry. Never verify via a read followed by an unconditional write.
+- **Addresses:** create/delete/default changes use guarded user-document writes; concurrent requests preserve the ten-address
+  bound, distinct IDs and at-most-one-default rule. A saved-address edit cannot rewrite orders.
+
+The query paths above supplement §11's global index register; a future measured additional index is an additive reviewed
+change, not permission to drop these indexes or create business collections during server startup.
+
+### 5.7 Identity implementation and rollout gates
+
+P03-017 establishes this contract; it does not instantiate models or claim authentication works. At this baseline,
+`backend/src/db/` implements shared connection/schema/index/transaction helpers only; `modules/health` owns operational
+probes. No User, Session, AuthChallenge or BrowserContext model exists yet. P03-004 owns the executable model/schema/index
+checks after P03-018's API reconciliation; P03-005/006 own session and browser protection, P03-007–014 own identity services.
+Guest order references and guest proof execution remain gated by P06-015 and the order schema. Other commerce collections
+in §§6–10 are specified requirements whose executable schemas remain with their owning future tasks.
+
+Before enabling an identity writer, apply §15.1 with a migration ID and independent environment approval:
+
+1. Inventory existing documents/indexes and serving code. On an empty owned test database, bootstrap explicitly; do not
+   assume staging/production are empty. Verify backup/restore and operator authority before deployed changes.
+2. Report invalid/duplicate normalized email, digest, scope, timestamp and counter records without printing PII/secrets.
+   Stop on collisions; do not merge identities, drop indexes or normalize duplicates silently.
+3. Expand compatible fields/readers, then checkpoint any bounded resumable backfill. Records without provable credential
+   provenance are revoked/invalidated through an approved security procedure, never upgraded into valid access by defaults.
+4. Explicitly create and verify named unique/query/TTL indexes and collection validators before new writes. BSON validators
+   enforce types/enums/required conditional scope and strict fields; service guards enforce ownership and atomic transitions.
+   Mongoose update validation alone does not make arbitrary update operators safe.
+5. Verify duplicate races, TTL-lag expiry, single-use/reissue races, scope separation, revision invalidation and recovery on
+   a real isolated replica set; link model and API evidence. Synthetic fixtures contain no live identity or secret.
+6. Cut over only when old/new readers and writers agree. Preserve migration run evidence and protected conflict reports;
+   rollback must keep revocations, consumed proofs and advanced revisions. Never restore an old credential's validity.
+
+Retention remains §14.2/Operations OP-PRIV-01. Expired envelopes are stripped independently of TTL; legally held records
+and immutable order/collection/refund history survive account review. Every refund obligation still references verified
+source collections and preserves classification/unit caps (§§8.6, 9, 12.5); identity deletion cannot weaken those rules.
 
 ## 6. Catalog and shopping collections
 
@@ -1544,7 +1647,7 @@ must remain aligned with `ARCHITECTURE.md` §4 rather than silently inventing an
 
 ### 16.3 Schema implementation requirements
 
-- Implement all 37 physical collections with their owners, field validation and indexes.
+- Implement the 37 physical collections incrementally in their owning feature tasks, with field validation and indexes; the contract inventory is not evidence that these models exist.
 - Verify each money, stock, coupon, claim and refund transition with atomicity and recovery tests.
 - Match API DTOs to allowlisted persistence fields and immutable snapshots.
 - Validate diagrams, migration compatibility, index predicates and historical records.
@@ -1571,7 +1674,8 @@ must remain aligned with `ARCHITECTURE.md` §4 rather than silently inventing an
 
 | Stage | Expected code/review artifact | Source gate |
 | --- | --- | --- |
-| Identity foundation | `users`, sessions, contexts/challenges, index bootstrap, single-use proofs | Tasks P03-003, P03-004, P03-017 |
+| Identity contract | Reviewed fields, conditional scopes, exact indexes, retention and rollout gates (§§5.5–5.7) | Task P03-017; executable models and security behavior remain below |
+| Identity implementation | `users`, sessions, contexts/challenges, index bootstrap, single-use proofs and API reconciliation | Tasks P03-004–014, P03-018; scoped guest behavior P06-015 |
 | Catalog | Category/product/variant models, SKU/index tests and stock counters | Implementation Plan Phase 04 |
 | Shopping and promotion | Cart/wishlist/review, coupon global+per-user capacity and holds | Phases 04–05 |
 | Checkout/COD | Orders and snapshots, item balances, intent uniqueness, COD allocation/delivery rules | Phase 06 |

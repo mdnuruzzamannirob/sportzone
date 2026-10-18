@@ -78,3 +78,7 @@ and personal data from change entries.
 - Implemented P03-003 startup configuration/DB wiring, internal liveness and Bearer-protected readiness, secret-safe structured lifecycle/request logs and graceful shutdown; added configuration/health/redaction and real-runtime tests. [Evidence](docs/evidence/P03-003-operations.md) records local verification and operational boundaries.
 
 - Recorded project-owner acceptance of P03-003 runtime/health foundation on 18 October 2026; task marked Done with 72 backend cases, 29 real MongoDB integration cases and all 20 CI commands passed. Deployment/operator gates remain separate.
+
+- Established P03-017 identity persistence contracts: conditional scopes, session CSRF verifier/context audience, exact index names/options, private projections, guarded proof/address transitions and additive rollout/retention rules. Reconciled API and Testing handoffs; executable identity models remain P03-004. [Evidence](docs/evidence/P03-017-identity-contracts.md).
+
+- Recorded project-owner acceptance of P03-017 identity persistence contract on 18 October 2026; task marked Done. Static contract checks passed; executable models and API/security behavior remain their owning implementation tasks.

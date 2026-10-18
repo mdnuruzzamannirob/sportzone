@@ -550,6 +550,21 @@ Keep the operation inventory synchronized with API changes and attach actual res
 | `DB-11` | Claim quantity/ordinal guards | Same purchased unit cannot be claimed/refunded twice through concurrent physical/shortage paths |
 | `DB-12` | Refund source and order counters | Pending plus completed obligations never exceed verified collection capacity or permitted merchandise entitlement |
 
+**Identity contract handoff (P03-017):** Database §§5.5–5.7 define the following concrete assertions within the existing
+case IDs. This is a test specification; identity model/service cases are **Not Run** until their owning tasks deliver them.
+The existing generic DB/runtime foundation tests do not prove these identity behaviors.
+
+| Existing cases | Required identity assertion | Implementation owner |
+| --- | --- | --- |
+| DB-01, API-06 | Exact conditional session/challenge scopes; required private CSRF verifier/context audience; closed enums, BSON dates, absent-only optionals and safe counters; unknown-key rejection | P03-004, P03-018 |
+| DB-02, DB-04 | All ten named identity indexes have the declared keys/options; concurrent normalized-email/digest duplicates have one winner; inspect access paths with representative fixtures | P03-004; P10-009 for measured plans |
+| API-02, SEC-03 | Expired/revoked/revision-stale session rejected while its record still exists; correct customer/admin kind and eligible principal required | P03-005, P03-007, P03-012 |
+| API-01, SEC-04 | Storefront context cannot authorize admin bootstrap/mutation; rotation/expiry invalidates old CSRF; exact Origin independently checked | P03-006, P03-018 |
+| SEC-01, SEC-05 | Two simultaneous consume/reissue operations serialize on the same scope revision; stale/expired/consumed/invalidated proof fails; guest scope cannot reset a user | P03-010, P03-011, P03-012, P06-015 |
+| SEC-06, DB-09 | Concurrent address/default writes preserve maximum ten, unique embedded IDs and at most one default; foreign address IDs cannot mutate an account | P03-008 |
+| SEC-10 | Default and explicit API projections omit verifiers/envelopes; reference-only notification payload, old-envelope removal, key/tamper failure and uncertain-send behavior | P03-009, P03-010, P03-018 |
+| DB-07, DB-08, DB-10 | Identity migration detects collisions without PII output; replay/backfill safe; rollback does not revive revoked credentials; deletion review retains financial snapshots/source balances | P03-004, P03-008; P10-011 for restore |
+
 ### 9.2 Transaction outcome inspection
 
 For each multi-document financial/stock case, assert both **logical state** and **physical persisted records**:

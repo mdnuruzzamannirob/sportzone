@@ -204,6 +204,11 @@ sequenceDiagram
 - The backend chooses the applicable cookie namespace from the **route and principal type**, not from a user-supplied role. Public registration always creates `customer`.
 - IPN/provider returns are on explicitly segregated routes with no browser CSRF/Origin prerequisite; they **never** establish authenticated sessions or directly mark payments paid.
 
+Persistence maps to Database §§5.2–5.6: authenticated sessions retain a private `csrfSecretHash`; pre-auth
+`browserContexts.audience` is server-selected `storefront` or `admin`. Bootstrap/verification must preserve that audience
+and route-selected session kind; neither a body role nor an unrelated valid context can switch namespaces. These private
+fields add no public DTO properties. Executable validators and protocol/replay tests are owned by P03-018/005/006.
+
 ### 4.3 Authentication lifecycle expectations
 
 | Scenario | Response / side effect |
