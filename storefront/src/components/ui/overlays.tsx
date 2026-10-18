@@ -46,6 +46,7 @@ export function FormDialog({
             <Modal.Body>{children}</Modal.Body>
             <Modal.Footer>
               <Modal.CloseTrigger
+                aria-label="Cancel"
                 isDisabled={isPending}
                 className="button button--outline"
               >
@@ -89,6 +90,7 @@ export function FormDrawer({
             <Drawer.Body>{children}</Drawer.Body>
             <Drawer.Footer>
               <Drawer.CloseTrigger
+                aria-label="Cancel"
                 isDisabled={isPending}
                 className="button button--outline"
               >

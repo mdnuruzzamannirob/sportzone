@@ -104,3 +104,5 @@ Both apps run the same behavior contract against their own components in light a
 Storefront additionally runs 40 commerce cases (20 per theme), covering sale/rating/image states, unavailable variants, bounded/direct quantities, pending/removal, supplied amount authority and loading semantics. Browser layout/image-delivery/zoom/native keyboard checks remain separate from DOM state checks.
 
 Admin management tests run ten cases per explicit theme (20 total): server row order/header/sort, arrow-key navigation, local overflow structure, result states/retry, pagination guards, filter drafts, file constraints/preview cleanup/progress/retry, explicit reason/eligibility confirmation and Escape/focus restoration and caller-controlled closure. DOM tests do not establish rendered viewport usability or native file-picker behavior.
+
+The cross-app browser fixture and foundation audit live in `tests/ui/`. `npm run test:ui` requires both built apps and installed Playwright engines; see [P02-011 audit evidence](./evidence/P02-011-accessibility.md). The fixture uses real components and synthetic data outside the production route trees; it provides no authentication bypass.

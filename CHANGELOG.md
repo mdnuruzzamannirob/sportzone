@@ -62,3 +62,7 @@ and personal data from change entries.
 - Implemented P02-010 HeroUI admin table/filter/pagination, file upload and guarded confirmation foundations with both-theme state/keyboard tests; [verification evidence](docs/evidence/P02-010-admin-primitives.md) records the execution and acceptance state.
 
 - Recorded project-owner acceptance of P02-010 admin primitives on 18 October 2026; task marked Done with 223 passing tests, both builds and all 13 CI commands. Browser viewport/native keyboard/file-picker checks remain Not Run.
+
+- Added P02-011 cross-browser foundation audit tooling (Playwright 1.64.1, axe 4.14.0), isolated component fixture, mandatory CI inventory entry, browser installation and report artifacts; fixed both apps’ Cancel accessible names and the admin drawer close label, and made commerce money/summary foregrounds explicit for the WebKit audit; [audit evidence](docs/evidence/P02-011-accessibility.md) records viewport/theme/keyboard results and release-verification boundaries.
+
+- Recorded project-owner acceptance of P02-011 foundation audit on 18 October 2026; task marked Done with all 30 browser cases and 14 CI commands passed. All eleven Phase 02 tasks are accepted; milestone M1 remains separately unaccepted.

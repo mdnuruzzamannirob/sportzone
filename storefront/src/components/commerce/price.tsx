@@ -14,7 +14,7 @@ export function Price({
     regularPricePoisha === undefined ? undefined : formatBdt(regularPricePoisha)
   const sale = regularPricePoisha !== undefined && regularPricePoisha > amountPoisha
   return (
-    <span className="inline-flex flex-wrap items-baseline gap-2 numeric">
+    <span className="inline-flex flex-wrap items-baseline gap-2 numeric text-text">
       <span>
         <span className="sr-only">{label}: </span>
         <span className="font-semibold">{amount}</span>

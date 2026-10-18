@@ -258,7 +258,8 @@ recovery and load checks have separately approved commands/workflows, not mandat
 | `npm run workspaces:check` | Three local workspace links; storefront/admin active, backend manifest-only |
 | `npm run lint` | Repository JavaScript syntax, JSON, whitespace, Markdown structure/links and targeted credential checks |
 | `npm run test:unit` | Twelve repository/CI guard regressions; no application tests are implied |
-| `npm run ci` | Root checks plus every activated workspace check; machine-readable summary includes Not Configured app states |
+| `npm run ci` | Root checks plus every activated workspace check, including the cross-app browser audit through admin `test:a11y`; machine-readable summary includes Not Configured app states |
+| `npm run test:ui` | Type-check isolated fixture/config/tests; Playwright Chromium/Firefox/WebKit foundation reflow, axe, keyboard, theme and reduced-motion checks; requires both production builds and installed browser engines |
 | `npm run typecheck`, `test:integration`, `test:contract`, `test:e2e`, `test:security`, `test:coverage`, `build` | Not yet configured at root; implement with the owning tooling/slices before accepting the corresponding capability |
 
 Storefront workspace commands now implement `lint` (Biome), `typecheck` (Next route types plus TypeScript), `test:unit`
@@ -778,6 +779,10 @@ On an **isolated staging restore**, record backup timestamp and restore point, i
 | Locales/amounts | BDT formatting and optional Bengali fallbacks legible; calendar-day/business-day messaging accurate |
 
 `DESIGN.md` §2 fixes **brand blue `#2563EB` + white button label in both themes**; light/dark surfaces are monochrome and dark-mode links use readable light text with a persistent blue indicator. UI tests assert the actual semantic computed styles for the approved tokens—not screenshots alone.
+
+The implemented P02-011 foundation suite is `tests/ui/foundation.spec.ts`. It runs 30 browser cases: three engines × two themes × (three viewport audits plus keyboard/motion and theme/menu checks). Each viewport case examines the actual built storefront home, built public admin login and an isolated component fixture. The fixture composes real admin/commerce/form components with synthetic data; it does not bypass live authorization or represent authenticated feature acceptance. It has its own Tailwind source discovery and is excluded from both app builds.
+
+Checks include 320/768/1440 CSS-pixel reflow, labelled local table scrolling, axe WCAG A/AA tags including 2.2, visible focus, native Tab/Enter/Arrow/Escape, dialog containment/restore, selected-file preview/removal, reduced-motion computed duration, draft-preserving theme changes, persistence after reload, System/OS changes and mobile menus. Screenshots and full axe results attach to `test-results/ui-report.json`; failure traces are under `test-results/ui/`. No rules are disabled and no violations are allowlisted. Manual screenshot inspection supplements these assertions. This is not proof of screen-reader experience, real touch devices, native OS file-picker interaction, browser zoom UI or the complete release journeys. See [foundation audit evidence](./evidence/P02-011-accessibility.md).
 
 ### 14.2 Device and browser sampling
 

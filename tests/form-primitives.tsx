@@ -367,6 +367,11 @@ export function formPrimitiveTests(
           { timeout: 2000, interval: 20 },
         )
         expect(description(dialog())).toContain('Changes are not sent automatically')
+        expect(
+          [...(dialog()?.querySelectorAll('button') ?? [])]
+            .find((node) => node.textContent === 'Cancel')
+            ?.getAttribute('aria-label'),
+        ).toBe('Cancel')
         expect(host.closest('[aria-hidden="true"]')).not.toBeNull()
         await edit(dialog()?.querySelector('input') ?? null, 'retained draft')
         await pressEscape()

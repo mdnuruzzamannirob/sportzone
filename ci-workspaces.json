@@ -19,7 +19,8 @@
       "typecheck",
       "test:unit",
       "build",
-      "test:smoke"
+      "test:smoke",
+      "test:a11y"
     ],
     "uiLibrary": "HeroUI v3"
   },

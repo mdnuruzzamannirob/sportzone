@@ -120,7 +120,7 @@ export function AdminShell({
                   >
                     <Drawer.Header>
                       <Drawer.Heading>SportZone Admin</Drawer.Heading>
-                      <Drawer.CloseTrigger className="button button--outline">
+                      <Drawer.CloseTrigger aria-label="Close menu" className="button button--outline">
                         Close menu
                       </Drawer.CloseTrigger>
                     </Drawer.Header>
