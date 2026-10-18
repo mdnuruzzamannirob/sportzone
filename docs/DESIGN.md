@@ -227,6 +227,8 @@ Main: page title/actions → filters/summary → content → pagination
 
 Provide the Light / Dark / System control in the administrator account/appearance menu. Group related destinations without creating extra permission levels. Show current section and contextual actions. Keep the administrator's session and access separate from customer sessions. Complaint handling is available from the order/customer context where relevant; a standalone complaint screen is not required by the PRD.
 
+**Current shell implementation:** [Admin shell](../admin/src/components/admin/admin-shell.tsx) uses a persistent sidebar from 1024px and a HeroUI left Drawer below that breakpoint. The five groups and 14 destinations share one navigation source. Selected items use a grayscale surface and blue border. Drawer navigation, Escape/Close and desktop transitions dismiss the overlay; the body scrolls vertically. Page title/actions and Appearance are reusable compositions. Until Phase 03 session integration, only public navigation metadata and an unavailable-access state render on `/app/*`; no management data, logged-in identity or working logout is implied.
+
 ### 4.4 Shared layout states
 
 All shells must handle navigation loading, expired sessions, missing permissions, offline/network errors, and not-found routes without displaying stale sensitive data.

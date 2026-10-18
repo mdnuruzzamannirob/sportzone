@@ -271,6 +271,10 @@ Admin commands use the same workspace-qualified lint/typecheck/unit/build/smoke 
 Biome, strict TypeScript, Vitest/jsdom client navigation and Vite builds are configured. HTTP smoke checks verify built
 JS/CSS, local preview SPA fallback and no-store/noindex headers; they do not execute browser JavaScript. DOM tests cover
 entry redirect, direct nested access denial despite forged local flags, native-link/history navigation and unknown routes.
+Admin shell tests additionally cover the five groups/14 destinations, active nested sections, one main/skip target,
+HeroUI Drawer containment and Escape/Close focus recovery, route/desktop dismissal, reusable title/actions,
+Appearance draft/URL preservation, offline cleanup and signed-out non-disclosure. HTTP checks cover direct navigation
+URLs with the same SPA/no-store/noindex contract. Browser viewport reflow and native Tab cycling remain separate checks.
 No backend authentication, production hosting or real-browser accessibility result is inferred from these checks.
 
 HeroUI integration uses the existing workspace check inventory: lint, typecheck, unit tests, build and HTTP smoke.

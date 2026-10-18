@@ -157,7 +157,10 @@ preview is local verification, not a production server. `/` redirects to `/login
 unavailable until backend session verification is implemented. Client flags never grant access. Unknown public routes
 show a recovery link. Static hosting must serve `dist/index.html` for SPA navigation URLs while preserving real asset/API
 handling; configure noindex and private/no-store document headers at the host. Local Vite headers are not deployment proof.
-Full admin navigation and authentication remain owned by P02-007 and Phase 03 respectively.
+P02-007 adds a desktop sidebar and HeroUI mobile Drawer with five groups and 14 presentation destinations, current-section
+context, a title/action region, skip target, Appearance menu and offline feedback. All `/app/*` screens still deny access;
+no business views, administrator identity or logout success are fabricated. The admin boundary loads as a separate route chunk
+with a polite loading fallback. Backend session integration remains in Phase 03.
 
 `.github/workflows/ci.yml` runs on pushes, pull requests and manual dispatch with read-only repository permissions and
 commit-pinned actions. It uses `.nvmrc`, npm 11.19.0, a locked install, `npm run ci` and a summary artifact; no deployment

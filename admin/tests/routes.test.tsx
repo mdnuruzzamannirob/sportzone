@@ -1,7 +1,7 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { BrowserRouter } from 'react-router'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppRoutes } from '../src/app/routes'
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
@@ -21,7 +21,22 @@ afterEach(async () => {
 })
 async function visit(path: string) {
   window.history.replaceState(null, '', path)
-  await act(() => root.render(<BrowserRouter><AppRoutes /></BrowserRouter>))
+  await act(() =>
+    root.render(
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>,
+    ),
+  )
+  await vi.waitFor(
+    async () => {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      })
+      expect(container.querySelector('h1')).not.toBeNull()
+    },
+    { timeout: 2000, interval: 20 },
+  )
 }
 
 describe('admin scaffold routing', () => {
@@ -32,7 +47,11 @@ describe('admin scaffold routing', () => {
     expect(container.querySelector('h1')?.textContent).toBe('Administrator access')
     expect(container.textContent).toContain('Sign-in is not available yet.')
     expect(container.querySelector('form')).toBeNull()
-    expect(container.querySelector('button')?.disabled).toBe(true)
+    expect(
+      [...container.querySelectorAll('button')].find(
+        (button) => button.textContent === 'Sign in',
+      )?.disabled,
+    ).toBe(true)
   })
 
   it('AD-02: direct nested admin URLs remain unavailable despite forged client flags', async () => {
@@ -46,9 +65,13 @@ describe('admin scaffold routing', () => {
 
   it('AD-03: native link navigation and history preserve route boundaries', async () => {
     await visit('/app')
-    const link = container.querySelector('a')
+    const link = container.querySelector('a[href="/login"]')
     expect(link?.getAttribute('href')).toBe('/login')
-    await act(() => link?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 })))
+    await act(() =>
+      link?.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }),
+      ),
+    )
     expect(window.location.pathname).toBe('/login')
     expect(container.querySelector('h1')?.textContent).toBe('Administrator access')
     await act(() => {
