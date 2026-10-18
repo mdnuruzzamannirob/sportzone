@@ -46,8 +46,7 @@ consume allowlisted DTOs. Private sessions, carts, checkout, orders and financia
 
 ## 3. Repository structure
 
-The repository contains the documentation set, runnable Next.js storefront and React/Vite admin scaffolds, and a private
-backend workspace manifest. The Express runtime follows in Phase 03.
+The repository contains the documentation set, runnable Next.js storefront, React/Vite admin and TypeScript Express API scaffolds. Business APIs and persistence follow their Phase 03–09 tasks.
 
 ```text
 sportzone/
@@ -123,7 +122,20 @@ npm run ci
 `lint` checks source JavaScript syntax, JSON, whitespace, Markdown tables/local links and targeted credential patterns.
 `test:unit` runs the CI guard regression tests using Node's test runner. `ci` runs workspace discovery, repository lint,
 tooling tests and every configured application check; it writes `test-results/ci.json`, including explicit workspace states.
-Storefront and admin are active in CI; backend app checks remain Not Configured until P03-001.
+All three workspaces are active in CI. Backend checks verify transport and build behavior; they do not establish database, identity or commerce readiness.
+
+Backend commands, from the repository root:
+
+```sh
+npm run lint --workspace=backend
+npm run typecheck --workspace=backend
+npm run test:unit --workspace=backend
+npm run build --workspace=backend
+npm run test:smoke --workspace=backend
+npm run start --workspace=backend
+```
+
+The compiled API binds `127.0.0.1` on `PORT` (default 4000); `.env` files are not automatically loaded. During editing, run `npm run build:watch --workspace=backend` alongside `npm run dev --workspace=backend` after an initial build. The dev listener watches compiled output. Unimplemented routes return safe JSON 404s; no health/auth/product endpoint is fabricated. Database, full environment/observability setup, sessions and Origin/CORS/CSRF remain P03-002/003/005/006. See [backend evidence](docs/evidence/P03-001-backend.md).
 
 Storefront commands, from the repository root:
 

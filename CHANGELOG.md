@@ -66,3 +66,7 @@ and personal data from change entries.
 - Added P02-011 cross-browser foundation audit tooling (Playwright 1.64.1, axe 4.14.0), isolated component fixture, mandatory CI inventory entry, browser installation and report artifacts; fixed both apps’ Cancel accessible names and the admin drawer close label, and made commerce money/summary foregrounds explicit for the WebKit audit; [audit evidence](docs/evidence/P02-011-accessibility.md) records viewport/theme/keyboard results and release-verification boundaries.
 
 - Recorded project-owner acceptance of P02-011 foundation audit on 18 October 2026; task marked Done with all 30 browser cases and 14 CI commands passed. All eleven Phase 02 tasks are accepted; milestone M1 remains separately unaccepted.
+
+- Implemented P03-001 Express/TypeScript transport scaffold, safe versioned envelopes/errors, Zod validation, bounded pagination, independent build/start and request/compiled-server smoke tests; activated backend CI checks. [Evidence](docs/evidence/P03-001-backend.md) distinguishes scaffold delivery from database, identity and deployment readiness.
+
+- Recorded project-owner acceptance of P03-001 backend scaffold on 18 October 2026; task marked Done with 37 backend tests, independent build/compiled-server smoke and all 19 CI commands passed. Persistence, identity and deployment remain their owning tasks.

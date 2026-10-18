@@ -1,0 +1,45 @@
+import { randomUUID } from 'node:crypto'
+import express, { type Router } from 'express'
+import { handleError } from './middleware/errors.js'
+import { ApiError } from './shared/errors.js'
+import { createApiRouter } from './routes.js'
+
+export function createApp({
+  apiRouter = createApiRouter(),
+  jsonBodyLimitBytes = 102400,
+}: {
+  apiRouter?: Router
+  jsonBodyLimitBytes?: number
+} = {}) {
+  if (!Number.isSafeInteger(jsonBodyLimitBytes) || jsonBodyLimitBytes < 1)
+    throw new RangeError('Invalid JSON body limit')
+  const app = express()
+  app.disable('x-powered-by')
+  app.disable('etag')
+  app.set('trust proxy', false)
+  app.set('query parser', 'simple')
+  app.use((_req, res, next) => {
+    res.locals.requestId = randomUUID()
+    res.setHeader('X-Request-Id', res.locals.requestId)
+    res.setHeader('Cache-Control', 'no-store')
+    res.setHeader('X-Content-Type-Options', 'nosniff')
+    next()
+  })
+  const json = express.json({ limit: jsonBodyLimitBytes, strict: true, inflate: false })
+  app.use((req, res, next) => {
+    const hasBody =
+      req.headers['transfer-encoding'] !== undefined ||
+      Number(req.headers['content-length'] ?? 0) > 0
+    if (hasBody && !req.is('application/json')) {
+      next(new ApiError('INVALID_REQUEST'))
+      return
+    }
+    json(req, res, (error?: unknown) =>
+      next(error ? new ApiError('INVALID_REQUEST') : undefined),
+    )
+  })
+  app.use('/api/v1', apiRouter)
+  app.use((_req, _res, next) => next(new ApiError('NOT_FOUND')))
+  app.use(handleError)
+  return app
+}

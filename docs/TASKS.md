@@ -103,7 +103,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | 01 — Requirements Finalization and Planning | 14 | 0 | 0 | 0 | 0 | 0 | 14 | 0 |
 | 02 — UI/UX Design | 11 | 0 | 0 | 0 | 0 | 0 | 11 | 0 |
-| 03 — Authentication and Core Backend | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 0 |
+| 03 — Authentication and Core Backend | 18 | 17 | 0 | 0 | 0 | 0 | 1 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 06 — Checkout, Orders, and Delivery Rules | 20 | 20 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -113,7 +113,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **146** | **0** | **0** | **0** | **0** | **25** | **0** |
+| **Total** | **171** | **145** | **0** | **0** | **0** | **0** | **26** | **0** |
 
 ## 4. Milestone tracker
 
@@ -362,13 +362,13 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
 
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 03. **Associated gate:** M1. **Tasks:** 18.
 
-- [ ] **P03-001 — Bootstrap modular Express API and shared middleware**\
-  **Status:** `Not Started` · **Area:** Backend/core\
+- [x] **P03-001 — Bootstrap modular Express API and shared middleware**\
+  **Status:** `Done` · **Area:** Backend/core · **Owner:** Codex\
   **Sources:** Architecture §§4,6,8\
   **Depends on:** `P01-009`\
   **Deliverable:** Initialize TypeScript Express backend, /api/v1 envelopes, error handling, validation, pagination and test bootstrap.\
   **Acceptance:** Independently builds; validated errors do not leak internals; controllers delegate to services.\
-  **Evidence to attach:** API lint/type/build and request tests.
+  **Evidence:** [Express transport and request verification](./evidence/P03-001-backend.md). All 19 CI commands, 37 backend cases, independent build and compiled-server smoke passed. Full pipeline: 260 unit/component tests and 30 browser cases. Accepted by project owner on 18 October 2026: “Backend scaffold গ্রহণ করছি”; persistence, identity and deployed health remain their owning tasks.
 
 - [ ] **P03-002 — Configure MongoDB/Mongoose and transactional test environment**\
   **Status:** `Not Started` · **Area:** Backend/data\
@@ -1732,6 +1732,8 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | 18 October 2026 | P02-010 | Not Started → In Progress → In Review → Done; HeroUI table/filter/pagination, upload and guarded-action foundations implemented; 20 new both-theme cases, 223 tests, both builds and all configured CI commands passed; project owner accepted the admin primitives | Codex / project owner | [Admin primitive evidence](./evidence/P02-010-admin-primitives.md) | Proceed through declared task dependencies; retain separate browser verification |
 
 | 18 October 2026 | P02-011 | Not Started → In Progress → In Review → Done; Chromium/Firefox/WebKit foundation audits, both themes and three viewports; accessible-name and foreground findings resolved; all 14 CI commands and 30 browser cases passed; project owner accepted the foundation audit | Codex / project owner | [Foundation audit evidence](./evidence/P02-011-accessibility.md) | Proceed through declared task dependencies; retain feature/release browser and assistive-technology checks |
+
+| 18 October 2026 | P03-001 | Not Started → In Progress → In Review → Done; modular Express bootstrap, safe errors/validation and bounded pagination implemented; backend activated in CI; 37 backend cases and all 19 configured commands passed; project owner accepted the backend scaffold | Codex / project owner | [Backend bootstrap evidence](./evidence/P03-001-backend.md) | Proceed through declared dependencies |
 
 **18 October 2026 — UI foundation change:** The project owner selected HeroUI and delegated visual design within the approved specification. Dependency/theme integration, app-owned controls and working conventions are recorded in [HeroUI foundation review](./evidence/heroui-foundation.md). The follow-up [existing UI migration](./evidence/heroui-existing-ui.md) replaces the earlier native-control exceptions. These changes are In Review; they do not accept another numbered task or milestone.
 

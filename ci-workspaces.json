@@ -25,13 +25,14 @@
     "uiLibrary": "HeroUI v3"
   },
   "backend": {
-    "state": "manifest-only",
+    "state": "active",
     "ownerTask": "P03-001",
     "checks": [
       "lint",
       "typecheck",
       "test:unit",
-      "build"
+      "build",
+      "test:smoke"
     ]
   }
 }

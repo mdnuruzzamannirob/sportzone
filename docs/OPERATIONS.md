@@ -286,11 +286,12 @@ npm run build --workspace=backend
 ```
 
 The current repository foundation supports `npm ci`, `npm run workspaces:check`, `npm run lint`, `npm run test:unit`
-and `npm run ci`. Storefront and admin have independent lint/type/unit/build and HTTP smoke commands; only backend
-remains manifest-only in [ci-workspaces.json](../ci-workspaces.json). Admin Vite preview verifies local SPA fallback,
+and `npm run ci`. All three workspaces have independent lint/type/unit/build and HTTP smoke commands in [ci-workspaces.json](../ci-workspaces.json). Admin Vite preview verifies local SPA fallback,
 not production static hosting; configure fallback and noindex/private document headers at the deployment host. No deployment, migration or restore
 command exists yet; local storefront build/start is not a production deployment procedure. See
 [Testing §5.3](./TESTING.md#53-standard-execution-interface) for current coverage and the complete required interface.
+The compiled Express scaffold starts with `npm run start --workspace=backend` after `npm run build --workspace=backend`, bound to loopback only. It reads process-environment `PORT` (default 4000) and rejects malformed/out-of-range values with a static startup error. No `.env` autoloading or production listener configuration is implemented. SIGTERM/SIGINT stop acceptance and close connections, with a ten-second connection-drain bound. Every response receives a server UUID, `no-store` and `nosniff`; unknown routes and errors use API-safe JSON. Ordinary JSON parsing is strict, uncompressed and limited to 102400 bytes by default (a validated app-factory option), with rejected media/parser/limit input mapped to API `400 INVALID_REQUEST`. Media/provider routes must later configure their approved segregated parsers before enabling those contracts. This scaffold has no deployed health/readiness/DB/session integration or operational request logger; P03-002/003/005/006 retain those responsibilities. No request bodies, cookies or exception diagnostics are logged by this bootstrap.
+
 Successful foundation CI is evidence for its configured checks only, not application deployment or operational readiness. Browser audit setup now requires `npx playwright install --with-deps chromium firefox webkit` after locked installation. The audit is mandatory through admin `test:a11y` in the CI inventory and starts only loopback test servers on 3100/5273/5180 after both builds. `test-results/ui-report.json` and `test-results/ui/` are CI artifacts; the fixture is not a deployment asset. Missing engines/libraries fail the audit rather than silently skip it. Local engine-wrapper overrides are test-machine configuration only; see [P02-011 environment evidence](./evidence/P02-011-accessibility.md).
 
 CI must reject missing required scripts rather than silently skip checks. Pin compatible runtime/tool versions and

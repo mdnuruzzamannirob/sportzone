@@ -255,7 +255,7 @@ recovery and load checks have separately approved commands/workflows, not mandat
 
 | Root command | Current coverage / setup state |
 | --- | --- |
-| `npm run workspaces:check` | Three local workspace links; storefront/admin active, backend manifest-only |
+| `npm run workspaces:check` | Three local workspace links; storefront, admin and backend active |
 | `npm run lint` | Repository JavaScript syntax, JSON, whitespace, Markdown structure/links and targeted credential checks |
 | `npm run test:unit` | Twelve repository/CI guard regressions; no application tests are implied |
 | `npm run ci` | Root checks plus every activated workspace check, including the cross-app browser audit through admin `test:a11y`; machine-readable summary includes Not Configured app states |
@@ -267,6 +267,8 @@ Storefront workspace commands now implement `lint` (Biome), `typecheck` (Next ro
 checks). Run them with `npm run <command> --workspace=storefront`; smoke requires the build and manages its own temporary
 server. The active CI inventory runs all five checks. These scaffold checks do not establish customer authentication,
 backend ownership, real browser accessibility or commerce acceptance. Browser/theme/interaction suites extend with the UI tasks.
+
+Backend implements Biome lint, strict NodeNext TypeScript (including test/config type checks), Vitest/Supertest request tests, independent `tsc` build and a compiled-listener smoke check. Run `npm run <command> --workspace=backend`. The active CI inventory requires all five. The 37 scaffold cases cover envelopes/request IDs, service handoff, shape/media/parser/size failures, safe sync/async/serialization errors, nested field paths and bounded/duplicate/operator/unknown query rejection. The smoke check verifies redacted invalid PORT, actual compiled HTTP 404/no-store/correlation and graceful SIGTERM. Synthetic test routes are never registered in the production router; no persistence, session, concurrency or provider result is implied. See [P03-001 evidence](./evidence/P03-001-backend.md).
 
 Admin commands use the same workspace-qualified lint/typecheck/unit/build/smoke interface with `--workspace=admin`.
 Biome, strict TypeScript, Vitest/jsdom client navigation and Vite builds are configured. HTTP smoke checks verify built
