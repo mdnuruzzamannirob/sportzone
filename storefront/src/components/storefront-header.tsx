@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useId, useRef, useState } from 'react'
+import { Button } from './ui/button'
 import { ThemePreferenceSelect } from './theme-preference'
 
 const links = [
@@ -70,19 +71,19 @@ export function StorefrontHeader() {
           ))}
         </nav>
         <div className="flex items-center gap-2 lg:hidden">
-          <button
+          <Button
             ref={trigger}
             type="button"
             aria-expanded={open}
             aria-controls={id}
-            className="min-h-control rounded-control border border-control-border px-3"
-            onClick={() => setOpen(!open)}
+            variant="outline"
+            onPress={() => setOpen(!open)}
             onKeyDown={(event) => {
               if (event.key === 'Escape' && open) dismiss()
             }}
           >
             Menu
-          </button>
+          </Button>
           <Link
             href="/search"
             className="inline-flex min-h-control items-center px-1 underline"
@@ -129,13 +130,14 @@ export function StorefrontHeader() {
           >
             Customer support
           </Link>
-          <button
+          <Button
             type="button"
-            onClick={dismiss}
-            className="min-h-control justify-self-start rounded-control border border-control-border px-3"
+            onPress={dismiss}
+            variant="outline"
+            className="justify-self-start"
           >
             Close menu
-          </button>
+          </Button>
         </div>
       </nav>
       <details className="mt-2 max-w-full text-sm">

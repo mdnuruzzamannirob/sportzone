@@ -43,3 +43,8 @@ This changelog tracks the documentation baseline. Application releases are recor
 Record subsequent documentation versions with their date, material changes and affected contracts. Keep application
 release records, executed test evidence and deployment approvals in their respective release/task records. Exclude secrets
 and personal data from change entries.
+## Development changes — 18 October 2026
+
+- Adopted HeroUI v3 for storefront/admin under the project owner's instruction and delegated UI design within the existing design specification.
+- Added a shared semantic-token adapter and app-owned Button defaults; migrated storefront menu/close/retry controls and rendered disabled admin sign-in through HeroUI.
+- Documented component ownership, visual review and incremental cleanup rules. Verification and review status: [HeroUI foundation](docs/evidence/heroui-foundation.md).

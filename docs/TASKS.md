@@ -1723,5 +1723,7 @@ Record task execution, material blockers, acceptance and milestone decisions her
 
 | 18 October 2026 | P02-006 | Not Started → In Progress → In Review → Done; shell interaction/recovery, destination/404, both-build and configured CI checks passed; project owner accepted the storefront shell | Codex / project owner | [Accepted storefront shell](./evidence/P02-006-storefront-shell.md) | Proceed through declared task dependencies |
 
+**18 October 2026 — UI foundation change:** The project owner selected HeroUI and delegated visual design within the approved specification. Dependency/theme integration, app-owned controls and working conventions are recorded in [HeroUI foundation review](./evidence/heroui-foundation.md). This change is In Review; it does not accept another numbered task or milestone.
+
 When execution starts, update the task status and attach evidence. Change a checkbox to `[x]` only after acceptance.
 Preserve IDs and dependency references; update phase totals and record milestone acceptance separately.

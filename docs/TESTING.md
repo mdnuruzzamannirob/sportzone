@@ -273,6 +273,12 @@ JS/CSS, local preview SPA fallback and no-store/noindex headers; they do not exe
 entry redirect, direct nested access denial despite forged local flags, native-link/history navigation and unknown routes.
 No backend authentication, production hosting or real-browser accessibility result is inferred from these checks.
 
+HeroUI integration uses the existing workspace check inventory: lint, typecheck, unit tests, build and HTTP smoke.
+Menu/close/retry interactions exercise HeroUI Buttons; admin sign-in remains disabled until authentication exists.
+Verify shared token aliases in emitted CSS, 44px controls, explicit Light/Dark and CSS System mode. Browser checks must
+cover native keyboard/focus behavior, responsive layouts and both themes; DOM/HTTP checks do not establish visual acceptance.
+Integration evidence is recorded in [the HeroUI foundation review](./evidence/heroui-foundation.md).
+
 Both workspaces run four semantic-token regressions from `tests/tokens.test.tsx`, using the shared
 `tests/design-tokens.ts` assertions. They compare all 17 values with Design §2.2, check grayscale/invariant colors,
 text/control contrast and app/Tailwind integration. Built CSS smoke checks require the shared variables and compiled

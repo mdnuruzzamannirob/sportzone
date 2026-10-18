@@ -97,6 +97,12 @@ The install links the three workspaces and installs the storefront's exact locke
 requires npm registry access; offline installation works only with a complete matching package cache.
 `workspaces:check` lists `storefront`, `admin` and `backend` without missing dependencies.
 
+Both frontends use HeroUI v3 (`@heroui/react` and `@heroui/styles`, locked to 3.2.6) with Tailwind CSS v4.
+CSS imports Tailwind, HeroUI, project tokens/foundation and the shared HeroUI adapter in that order.
+Project tokens govern both themes; the existing Appearance bootstrap/storage remains the only theme mechanism.
+App-owned Button defaults live in `src/components/ui/button.tsx`. Native navigation, disclosure and Appearance select
+remain semantic controls. See [Design](docs/DESIGN.md#2-design-system) for visual direction and component conventions.
+
 Current root checks:
 
 ```sh

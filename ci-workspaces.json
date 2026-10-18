@@ -8,7 +8,8 @@
       "test:unit",
       "build",
       "test:smoke"
-    ]
+    ],
+    "uiLibrary": "HeroUI v3"
   },
   "admin": {
     "state": "active",
@@ -19,7 +20,8 @@
       "test:unit",
       "build",
       "test:smoke"
-    ]
+    ],
+    "uiLibrary": "HeroUI v3"
   },
   "backend": {
     "state": "manifest-only",

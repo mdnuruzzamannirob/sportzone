@@ -1,6 +1,5 @@
 /* Design §2.2: shared semantic colors for storefront and admin. */
 @theme inline {
-  --color-*: initial;
   --color-brand: var(--brand);
   --color-on-brand: var(--on-brand);
   --color-link-text: var(--link-text);

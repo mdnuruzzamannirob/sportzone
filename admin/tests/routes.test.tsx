@@ -32,6 +32,7 @@ describe('admin scaffold routing', () => {
     expect(container.querySelector('h1')?.textContent).toBe('Administrator access')
     expect(container.textContent).toContain('Sign-in is not available yet.')
     expect(container.querySelector('form')).toBeNull()
+    expect(container.querySelector('button')?.disabled).toBe(true)
   })
 
   it('AD-02: direct nested admin URLs remain unavailable despite forged client flags', async () => {

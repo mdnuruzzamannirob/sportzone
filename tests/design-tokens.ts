@@ -122,7 +122,8 @@ export function verifyIntegration(app: 'storefront' | 'admin') {
   assert.match(entry, /text-decoration-color: var\(--link-accent\)/)
   assert.match(entry, /color: var\(--on-brand\)/)
   assert.doesNotMatch(entry, /#[\da-f]{3,8}\b/i)
-  assert.match(css, /--color-\*: initial;/)
+  assert.ok(entry.indexOf('@import "tailwindcss"') < entry.indexOf('@import "@heroui/styles"'))
+  assert.match(entry, /styles\/heroui\.css/)
   for (const [name] of Object.entries(light)) {
     assert.ok(css.includes(`--color-${name}: var(--${name});`), name)
   }
