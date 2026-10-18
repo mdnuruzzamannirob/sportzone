@@ -1,4 +1,6 @@
 const definitions = {
+  AUTH_REQUIRED: { status: 401, message: 'Authentication is required.' },
+  SERVICE_UNAVAILABLE: { status: 503, message: 'Service is temporarily unavailable.' },
   INVALID_REQUEST: { status: 400, message: 'Invalid request.' },
   VALIDATION_FAILED: { status: 400, message: 'Please check the supplied fields.' },
   NOT_FOUND: { status: 404, message: 'Resource not found.' },

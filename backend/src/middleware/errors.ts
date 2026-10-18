@@ -8,6 +8,7 @@ export const handleError: ErrorRequestHandler = (error: unknown, _req, res, _nex
     return
   }
   const safe = error instanceof ApiError ? error : new ApiError('INTERNAL_ERROR')
+  res.locals.errorCode = safe.code
   res.status(safe.status).json({
     error: {
       code: safe.code,

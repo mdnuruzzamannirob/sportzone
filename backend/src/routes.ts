@@ -1,7 +1,11 @@
 import { Router } from 'express'
+import { healthRoutes } from './modules/health/routes.js'
+import type { HealthDependencies } from './modules/health/service.js'
 
-// Feature modules register their own routers here as their tasks implement them.
-// No health/auth/business endpoint is fabricated by the transport scaffold.
-export function createApiRouter() {
-  return Router()
+export function createApiRouter(
+  health: HealthDependencies = { isReady: async () => false },
+) {
+  const router = Router()
+  router.use(healthRoutes(health))
+  return router
 }

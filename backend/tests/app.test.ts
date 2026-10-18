@@ -184,12 +184,7 @@ describe('API transport and validation', () => {
       )
   })
   it('does not expose fake health/auth/data or enable credentialed CORS', async () => {
-    for (const path of [
-      '/api/v1',
-      '/api/v1/health/live',
-      '/api/v1/auth/csrf',
-      '/api/v1/products',
-    ]) {
+    for (const path of ['/api/v1', '/api/v1/auth/csrf', '/api/v1/products']) {
       const response = await request(createApp())
         .get(path)
         .set('Origin', 'https://unapproved.example')

@@ -2,13 +2,19 @@ import { randomUUID } from 'node:crypto'
 import express, { type Router } from 'express'
 import { handleError } from './middleware/errors.js'
 import { ApiError } from './shared/errors.js'
+import type { Logger } from './observability/logger.js'
+import type { HealthDependencies } from './modules/health/service.js'
 import { createApiRouter } from './routes.js'
 
 export function createApp({
-  apiRouter = createApiRouter(),
+  apiRouter,
+  health,
+  logger,
   jsonBodyLimitBytes = 102400,
 }: {
   apiRouter?: Router
+  health?: HealthDependencies
+  logger?: Logger
   jsonBodyLimitBytes?: number
 } = {}) {
   if (!Number.isSafeInteger(jsonBodyLimitBytes) || jsonBodyLimitBytes < 1)
@@ -25,6 +31,28 @@ export function createApp({
     res.setHeader('X-Content-Type-Options', 'nosniff')
     next()
   })
+  if (logger)
+    app.use((req, res, next) => {
+      const started = performance.now()
+      let recorded = false
+      const record = () => {
+        if (recorded) return
+        recorded = true
+        // Only the registered pattern, never originalUrl/baseUrl/params/query/header/body.
+        const route = typeof req.route?.path === 'string' ? req.route.path : 'unmatched'
+        logger.request({
+          requestId: res.locals.requestId,
+          method: req.method,
+          route,
+          status: res.writableFinished ? res.statusCode : 499,
+          durationMs: performance.now() - started,
+          ...(res.locals.errorCode ? { errorCode: res.locals.errorCode } : {}),
+        })
+      }
+      res.once('finish', record)
+      res.once('close', record)
+      next()
+    })
   const json = express.json({ limit: jsonBodyLimitBytes, strict: true, inflate: false })
   app.use((req, res, next) => {
     const hasBody =
@@ -38,7 +66,7 @@ export function createApp({
       next(error ? new ApiError('INVALID_REQUEST') : undefined),
     )
   })
-  app.use('/api/v1', apiRouter)
+  app.use('/api/v1', apiRouter ?? createApiRouter(health))
   app.use((_req, _res, next) => next(new ApiError('NOT_FOUND')))
   app.use(handleError)
   return app

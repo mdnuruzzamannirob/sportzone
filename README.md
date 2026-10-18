@@ -135,7 +135,9 @@ npm run test:smoke --workspace=backend
 npm run start --workspace=backend
 ```
 
-The compiled API binds `127.0.0.1` on `PORT` (default 4000); `.env` files are not automatically loaded. During editing, run `npm run build:watch --workspace=backend` alongside `npm run dev --workspace=backend` after an initial build. The dev listener watches compiled output. Unimplemented routes return safe JSON 404s; no health/auth/product endpoint is fabricated. Database primitives are available; HTTP startup wiring, full environment/observability setup, sessions and Origin/CORS/CSRF remain P03-003/005/006. See [backend evidence](docs/evidence/P03-001-backend.md).
+Backend startup validates configuration, connects to a transaction-capable MongoDB, then opens HTTP. The default bind is loopback (`API_BIND_HOST=127.0.0.1`), port 4000. Copy `.env.example` to a private root `.env`, supply your local replica URI/database, and generate separate random 32-byte hex values for `SESSION_SECRET` and `HEALTH_MONITOR_TOKEN`. No secret value is supplied by the repository. From the root, after building, `node --env-file=.env backend/dist/server.js` explicitly loads that local file; `npm run start --workspace=backend` reads already injected process variables. For editing, use `npm run build:watch --workspace=backend` alongside `node --env-file=.env --watch backend/dist/server.js`.
+
+`/api/v1/health/live` reports process liveness; `/api/v1/health/ready` requires the operational Bearer token. Readiness covers the current API/Mongo serving state, not completed commerce features or launch acceptance. Logs contain allowlisted metadata and server-generated correlation IDs. See [runtime configuration and health evidence](docs/evidence/P03-003-operations.md). Sessions and browser Origin/CORS/CSRF remain P03-005/006.
 
 Database foundation commands:
 
@@ -144,7 +146,7 @@ npm run db:local --workspace=backend
 npm run test:integration --workspace=backend
 ```
 
-The local tool runs an ephemeral real MongoDB 8.0.16 replica set on loopback; stop it to discard its synthetic data. Integration tests start their own isolated replica and never use your `MONGODB_URI`. On Ubuntu 26, prefix these commands with `MONGOMS_DISTRO=ubuntu-24.04` to select the compatible binary. The first run downloads the pinned binary. Report: `test-results/database.json`. See [database foundation evidence](docs/evidence/P03-002-database.md). HTTP startup/configuration wiring and health probes remain P03-003.
+The local tool runs an ephemeral real MongoDB 8.0.16 replica set on loopback; stop it to discard its synthetic data. Integration tests start their own isolated replica and never use your `MONGODB_URI`. On Ubuntu 26, prefix these commands with `MONGOMS_DISTRO=ubuntu-24.04` to select the compatible binary. The first run downloads the pinned binary. Report: `test-results/database.json`. See [database foundation evidence](docs/evidence/P03-002-database.md). HTTP startup now uses these database primitives; see the runtime configuration section above.
 
 Storefront commands, from the repository root:
 

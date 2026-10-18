@@ -74,3 +74,7 @@ and personal data from change entries.
 - Implemented P03-002 Mongoose connection/schema/index/transaction foundations, a real isolated MongoDB replica-set integration suite and an ephemeral local database tool; added mandatory integration CI/report artifacts. [Evidence](docs/evidence/P03-002-database.md) records scope and verification.
 
 - Recorded project-owner acceptance of P03-002 database foundation on 18 October 2026; task marked Done with 24 real MongoDB integration cases and all 20 CI commands passed. Production/failover/restore and domain financial-flow verification remain their owning gates.
+
+- Implemented P03-003 startup configuration/DB wiring, internal liveness and Bearer-protected readiness, secret-safe structured lifecycle/request logs and graceful shutdown; added configuration/health/redaction and real-runtime tests. [Evidence](docs/evidence/P03-003-operations.md) records local verification and operational boundaries.
+
+- Recorded project-owner acceptance of P03-003 runtime/health foundation on 18 October 2026; task marked Done with 72 backend cases, 29 real MongoDB integration cases and all 20 CI commands passed. Deployment/operator gates remain separate.

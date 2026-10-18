@@ -1,9 +1,11 @@
 import type { Response } from 'express'
+import type { ErrorCode } from './errors.js'
 import type { PageMeta } from './pagination.js'
 
 declare global {
   namespace Express {
     interface Locals {
+      errorCode?: ErrorCode
       requestId: string
     }
   }

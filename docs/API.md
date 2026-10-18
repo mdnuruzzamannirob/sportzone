@@ -1269,6 +1269,8 @@ No marketing consent workflows are implied by transactional messaging.
 | `GET` | `/health/live` | Internal/operational | `200` when server process responds; no sensitive dependency details |
 | `GET` | `/health/ready` | Restricted monitor | `200` only when essential services ready, otherwise `503`; no credentials, topology or DB data in body |
 
+Implemented operational probe contract (P03-003): liveness returns `{data:{status:"live"},meta:{requestId}}`. Readiness requires `Authorization: Bearer <HEALTH_MONITOR_TOKEN>` with the separately configured 32-byte hex monitor credential; session cookies, query parameters and user-supplied correlation IDs do not authenticate it. Missing/invalid monitor proof returns `401 AUTH_REQUIRED` with `WWW-Authenticate: Bearer`. Authorized readiness returns `{data:{status:"ready"},meta:{requestId}}` only while serving with a connected MongoDB and successful bounded ping; otherwise `503 SERVICE_UNAVAILABLE` with a generic message. No readiness response reveals which dependency, topology, URI or secret failed. Both endpoints use `no-store`. This credential authorizes only the operational probe and grants no customer/admin/business access. Protect operational ingress and TLS under Operations; credential provisioning/rotation is an operator responsibility.
+
 Health endpoints may be served outside `/api/v1` by infrastructure **only if consistently configured and documented**; the baseline here uses `/api/v1/health/*`. Do not make a public readiness endpoint reveal internal deployment information.
 
 ## 17. Security, performance & compatibility
