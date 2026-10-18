@@ -288,6 +288,11 @@ changes, draft/DOM/URL preservation, remount restore, blocked storage, same-orig
 CSS reduced-motion contracts and SSR hydration. HTTP smoke checks verify the blocking head script and its actual served
 source. These DOM/HTML checks are distinct from browser first-paint filmstrips and native keyboard/OS-motion verification.
 
+Storefront shell tests exercise mobile disclosure/ARIA and Escape/focus recovery, link/Close dismissal, route/breakpoint
+changes, landmark/support-link structure, offline recovery and safe retry/loading/not-found states. Production smoke
+checks all 11 unavailable/noindex destinations and 404 recovery. jsdom key events and mocked breakpoint changes do not
+establish native browser tab order, viewport overflow or real assistive-technology acceptance.
+
 [ci-workspaces.json](../ci-workspaces.json) assigns storefront setup to P02-001, admin to P02-002 and backend to P03-001.
 Adding workspace source, scripts or dependencies requires active CI state and real lint/typecheck/unit/build scripts.
 Extend that inventory and the root aliases with applicable API/DB contract, concurrency, browser and security checks as

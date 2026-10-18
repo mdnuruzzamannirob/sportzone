@@ -102,7 +102,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | Phase | Total | Not Started | Ready | In Progress | Blocked | In Review | Done | Deferred |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | 01 — Requirements Finalization and Planning | 14 | 0 | 0 | 0 | 0 | 0 | 14 | 0 |
-| 02 — UI/UX Design | 11 | 6 | 0 | 0 | 0 | 0 | 5 | 0 |
+| 02 — UI/UX Design | 11 | 5 | 0 | 0 | 0 | 0 | 6 | 0 |
 | 03 — Authentication and Core Backend | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -113,7 +113,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **152** | **0** | **0** | **0** | **0** | **19** | **0** |
+| **Total** | **171** | **151** | **0** | **0** | **0** | **0** | **20** | **0** |
 
 ## 4. Milestone tracker
 
@@ -310,13 +310,13 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Acceptance:** Theme changes do not reset forms or navigation; first paint avoids theme flash.\
   **Evidence:** [Theme preference, bootstrap, hydration and state-preservation verification](./evidence/P02-005-theme.md). Accepted by project owner on 18 October 2026: “Theme preference গ্রহণ করছি”.
 
-- [ ] **P02-006 — Implement responsive storefront navigation shell**\
-  **Status:** `Not Started` · **Area:** Frontend/storefront\
+- [x] **P02-006 — Implement responsive storefront navigation shell**\
+  **Status:** `Done` · **Area:** Frontend/storefront · **Owner:** Codex\
   **Sources:** Design §§3-5\
   **Depends on:** `P02-001`, `P02-005`\
   **Deliverable:** Build header, footer, mobile navigation, policy/support entry points, loading/error and not-found shell states.\
   **Acceptance:** Keyboard and mobile navigation works; placeholders do not imply feature completion.\
-  **Evidence to attach:** Responsive/keyboard shell check.
+  **Evidence:** [Responsive navigation, Escape/focus, shell states and production route checks](./evidence/P02-006-storefront-shell.md). Accepted by project owner on 18 October 2026: “Storefront shell গ্রহণ করছি”.
 
 - [ ] **P02-007 — Implement admin navigation and protected-layout presentation**\
   **Status:** `Not Started` · **Area:** Frontend/admin\
@@ -1720,6 +1720,8 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | 18 October 2026 | P02-004 | Not Started → In Progress → In Review → Done; font, dimension, BDT, both-build and configured CI checks passed; project owner accepted the typography/BDT foundation | Codex / project owner | [Accepted typography and BDT foundation](./evidence/P02-004-foundation.md) | Proceed through declared task dependencies |
 
 | 18 October 2026 | P02-005 | Not Started → In Progress → In Review → Done; theme interaction/hydration, bootstrap HTTP, both builds and configured CI checks passed; project owner accepted theme preference | Codex / project owner | [Accepted theme preference](./evidence/P02-005-theme.md) | Proceed through declared task dependencies |
+
+| 18 October 2026 | P02-006 | Not Started → In Progress → In Review → Done; shell interaction/recovery, destination/404, both-build and configured CI checks passed; project owner accepted the storefront shell | Codex / project owner | [Accepted storefront shell](./evidence/P02-006-storefront-shell.md) | Proceed through declared task dependencies |
 
 When execution starts, update the task status and attach evidence. Change a checkbox to `[x]` only after acceptance.
 Preserve IDs and dependency references; update phase totals and record milestone acceptance separately.

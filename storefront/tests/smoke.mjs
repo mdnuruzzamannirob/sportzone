@@ -99,8 +99,24 @@ try {
   console.log(
     'SMOKE-02 Passed: private route no-store/noindex and no cookie echo across two contexts',
   )
+  for (const path of ['/products', '/search', '/wishlist', '/cart', '/contact', '/support', '/policies/shipping', '/policies/cancellation', '/policies/returns-refunds', '/policies/privacy', '/policies/terms']) {
+    const response = await fetch(origin + path)
+    assert.equal(response.status, 200, path)
+    const body = await response.text()
+    assert.match(body, /This page is not available yet/)
+    assert.match(body, /name="robots" content="noindex, nofollow"/)
+    assert.equal((body.match(/<main\b/g) ?? []).length, 1)
+    assert.match(body, /Support and policies/)
+  }
+  assert.match(html, /aria-label="Mobile navigation"/)
+  assert.match(html, /aria-expanded="false"/)
+  console.log('SMOKE-04 Passed: 11 honest noindex destinations, consistent shell and closed mobile navigation')
   for (const path of ['/not-a-route', '/%28public%29', '/%28private%29']) {
-    assert.equal((await fetch(origin + path)).status, 404)
+    const response = await fetch(origin + path)
+    assert.equal(response.status, 404)
+    const missing = await response.text()
+    assert.match(missing, /Page not found/)
+    assert.match(missing, /Support and policies/)
   }
   console.log(
     'SMOKE-03 Passed: unknown routes and internal route-group names return 404',

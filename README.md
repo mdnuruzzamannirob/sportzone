@@ -128,6 +128,12 @@ Webpack option. The scaffold includes public `/` and dynamic `/account` layouts;
 noindex headers and displays only an unavailable-account placeholder. Authentication and Express integration follow in
 Phase 03. The complete storefront, theme controls, typography and commerce flows remain owned by their later tasks.
 
+Storefront public routes now share responsive header/footer navigation, a mobile disclosure with Escape/Close focus
+recovery, Appearance menu, offline feedback and loading/error/not-found states. `/products`, `/search`, `/wishlist`,
+`/cart`, `/contact`, `/support` and the five linked policy routes are explicit noindex unavailable placeholders. They
+contain no catalog, cart, contact or approved policy data; those features retain their own task owners. Unknown URLs
+return 404 with recovery/navigation. The private account presentation remains separate.
+
 Admin commands, from the repository root:
 
 ```sh

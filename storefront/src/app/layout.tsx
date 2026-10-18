@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { ThemePreferenceSelect } from '../components/theme-preference'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -18,9 +17,6 @@ export default function RootLayout({
         <script src="/theme-bootstrap.js" />
       </head>
       <body suppressHydrationWarning>
-        <div className="mx-auto max-w-storefront px-6 pt-6">
-          <ThemePreferenceSelect />
-        </div>
         {children}
       </body>
     </html>
