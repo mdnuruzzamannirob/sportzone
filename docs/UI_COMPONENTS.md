@@ -80,8 +80,27 @@ Storefront commerce components live in `storefront/src/components/commerce/`. Th
 - Adapt `SummaryAmounts` from CheckoutQuote or the immutable order pricing snapshot. `kind="quote"` does not prove quote freshness, reserve stock or complete payment. The consuming checkout feature owns expiry/consent validation and authoritative submission. Display payment/fulfillment/refund statuses separately; never infer Paid from a total or receipt amount.
 - Example catalog data belongs only in tests/previews. Existing public unavailable pages stay unchanged until their feature tasks integrate real data.
 
+## Admin management compositions
+
+Admin-only primitives live in `admin/src/components/management/`. They are presentation foundations, with no authenticated preview routes, live management data or backend mutations.
+
+| Module | Contract |
+| --- | --- |
+| `data-table.tsx` | HeroUI table with stable row IDs, header associations, controlled sort requests, textual loading/error/empty states, retry and retained-result notice; a labelled focusable region contains horizontal overflow |
+| `list-controls.tsx` | Controlled search draft, explicit apply/clear and optional feature filters; HeroUI previous/next pagination uses supplied PageMeta values without deriving counts from rows |
+| `file-upload.tsx` | HeroUI file input with explicit MIME/byte constraints, linked errors, selected-file summary, raster preview with object-URL cleanup, progress, removal and retry |
+| `guarded-action.tsx` | Confirmation dialog with descriptive context, optional required reason, changing eligibility, pending dismissal/submission guards and retained rejection feedback |
+
+- Tables display caller-supplied rows in their original order; sort/filter/page events are requests to the owning feature. Keep essential status/actions in the first columns. Use concise labelled row-action buttons, not whole-row click-only navigation. No bulk selection exists until a real approved bulk operation needs it. Use mobile summaries for workflows requiring frequent phone use.
+- Keep filter drafts and applied query state in the feature; applying or clearing resets the API page where appropriate. Pass pending state to disable conflicting controls. Pagination accepts API page metadata, including an empty result or a page made stale by concurrent deletion; recover an out-of-range page in the feature rather than inventing a new count.
+- Upload `acceptedTypes` are explicit exact MIME strings, with a positive integer `maxBytes` from the approved environment media policy. The browser checks these for usability only; the backend must validate bytes, scanning, authorization and attachment lifecycle. A locally selected file is not uploaded. Set `state="uploaded"` only from a verified server response. Keep the selected File in the parent on errors; retry must respect the owning upload operation and uncertain provider outcomes. Only JPEG/PNG/WebP receive local previews; object URLs are revoked on replacement/unmount. No private URL or secret enters this primitive.
+- Guarded actions receive backend-eligible state and feature-owned reason/context. Context must identify the target, historical facts and applicable amount/source/commitment before high-impact confirmation. Keep reason state outside the dialog. The feature owns authorization, CSRF, If-Match, idempotency and request lifecycle; set pending immediately, retain ambiguous outcomes, and only show success/close after authoritative confirmation. The primitive never grants permission, initiates financial effects or converts a click into a successful status.
+- `FormDialog` supplies focus containment, Escape/cancel and trigger focus restoration. Pending actions lock dismissal; the feature must settle pending/error state and provide recovery. Multiple action instances have distinct reason-field IDs. Optional `isOpen`/`onOpenChange` lets the feature close the dialog after a verified result; the confirmation callback itself never closes it.
+
 ## Verification
 
 Both apps run the same behavior contract against their own components in light and dark modes. Tests cover labels/errors, input retention, selection, pending guards, feedback semantics, summary focus and dialog/drawer dismissal/draft preservation. Browser viewport, native Tab cycling, zoom, pointer/touch and assistive-technology checks remain distinct from DOM tests. Record observed verification in the owning task evidence.
 
 Storefront additionally runs 40 commerce cases (20 per theme), covering sale/rating/image states, unavailable variants, bounded/direct quantities, pending/removal, supplied amount authority and loading semantics. Browser layout/image-delivery/zoom/native keyboard checks remain separate from DOM state checks.
+
+Admin management tests run ten cases per explicit theme (20 total): server row order/header/sort, arrow-key navigation, local overflow structure, result states/retry, pagination guards, filter drafts, file constraints/preview cleanup/progress/retry, explicit reason/eligibility confirmation and Escape/focus restoration and caller-controlled closure. DOM tests do not establish rendered viewport usability or native file-picker behavior.

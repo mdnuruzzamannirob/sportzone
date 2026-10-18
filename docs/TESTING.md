@@ -295,6 +295,8 @@ quantity requests, pending removal, explicit statuses, backend-supplied line/fin
 Fixtures deliberately supply line/final amounts differing from browser arithmetic to verify the UI displays supplied
 values without recalculation. No live catalog/cart/quote, stock reservation, image delivery or payment outcome is inferred.
 
+`admin/tests/management.test.tsx` runs 20 light/dark DOM cases for table header/sort and keyboard navigation, local scroll-region structure, retained/loading/error/empty results, retry, controlled filters and bounded pagination, upload constraints and preview cleanup, pending/retry/removal, and reason/eligibility/confirmation plus Escape/focus restoration. Synthetic records and local callbacks do not prove authenticated API behavior, provider upload success or real mutations. Browser viewport/zoom/native keyboard/file-picker checks remain separate from DOM assertions.
+
 Both workspaces run four semantic-token regressions from `tests/tokens.test.tsx`, using the shared
 `tests/design-tokens.ts` assertions. They compare all 17 values with Design §2.2, check grayscale/invariant colors,
 text/control contrast and app/Tailwind integration. Built CSS smoke checks require the shared variables and compiled

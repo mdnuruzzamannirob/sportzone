@@ -330,6 +330,8 @@ The authenticated admin shell exposes these navigation groups. Group labels orga
 - **Financial actions:** Show source transaction, eligible amount, pending commitments, intended payout method, and confirmation before submission. Never mark payout complete from an optimistic UI update.
 - **Audit context:** Display available actor, timestamp, and action details for sensitive changes without exposing secrets.
 
+Implementation foundation: admin table/filter/pagination, file upload and guarded confirmation compositions are defined in the [component usage guide](./UI_COMPONENTS.md#admin-management-compositions). Feature integrations supply authoritative rows, upload policy and eligible actions; these primitives do not grant administrator access or execute business operations.
+
 ### 6.4 Component state contract
 
 Every interactive component must define: default, hover (where applicable), focus-visible, active/selected, disabled, pending/loading, validation error, and successful completion states **in both themes**. Disabled actions that matter to users should include an explanation nearby.

@@ -58,3 +58,7 @@ and personal data from change entries.
 - Implemented P02-009 HeroUI commerce cards, variants, bounded cart quantities, explicit status/availability, exact price/summary display and skeletons; real catalog/cart/checkout integration remains with its feature tasks. Evidence: [commerce primitives](docs/evidence/P02-009-commerce.md).
 
 - Recorded project-owner acceptance of P02-009 commerce primitives on 18 October 2026; task marked Done with 203 passing tests, both builds and all 13 CI commands. Browser visual/native keyboard checks remain Not Run.
+
+- Implemented P02-010 HeroUI admin table/filter/pagination, file upload and guarded confirmation foundations with both-theme state/keyboard tests; [verification evidence](docs/evidence/P02-010-admin-primitives.md) records the execution and acceptance state.
+
+- Recorded project-owner acceptance of P02-010 admin primitives on 18 October 2026; task marked Done with 223 passing tests, both builds and all 13 CI commands. Browser viewport/native keyboard/file-picker checks remain Not Run.

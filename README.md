@@ -108,6 +108,8 @@ App-owned form/feedback primitives and their state/validation conventions are de
 Storefront commerce primitives live in `src/components/commerce/`; see the [commerce usage contracts](docs/UI_COMPONENTS.md#commerce-compositions).
 They are presentation foundations; catalog/cart/checkout routes retain their separate real-data integration tasks.
 
+Admin management foundations live in `admin/src/components/management/`; see the [component guide](docs/UI_COMPONENTS.md#admin-management-compositions) for server-owned list data, upload constraints and guarded-action integration.
+
 Current root checks:
 
 ```sh
