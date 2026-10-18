@@ -283,6 +283,11 @@ six invalid numeric inputs and a nonnumeric-input rejection case. Shared HTTP ch
 assets, require same-origin 200 responses and compare their hashes with the licensed sources. Browser font-swap/CLS
 checks remain distinct from static font contracts, glyph/shaping specimens and asset-serving checks.
 
+Theme suites run 12 cases per app in jsdom: persisted pre-mount bootstrap, invalid/System fallback, native select
+changes, draft/DOM/URL preservation, remount restore, blocked storage, same-origin storage synchronization/cleanup,
+CSS reduced-motion contracts and SSR hydration. HTTP smoke checks verify the blocking head script and its actual served
+source. These DOM/HTML checks are distinct from browser first-paint filmstrips and native keyboard/OS-motion verification.
+
 [ci-workspaces.json](../ci-workspaces.json) assigns storefront setup to P02-001, admin to P02-002 and backend to P03-001.
 Adding workspace source, scripts or dependencies requires active CI state and real lint/typecheck/unit/build scripts.
 Extend that inventory and the root aliases with applicable API/DB contract, concurrency, browser and security checks as

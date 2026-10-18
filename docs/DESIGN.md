@@ -106,6 +106,11 @@ Use the same **brand blue `#2563EB` in light and dark modes**, including primary
 - Set `color-scheme` appropriately and style native controls, skeletons, overlays, icons, and charts for each mode. Do not invert product photographs; use theme-appropriate logo assets if necessary.
 - Respect `prefers-reduced-motion`. Verify WCAG 2.2 AA text contrast, non-text contrast, and visible focus in **both** modes.
 
+Both apps expose a native labelled Appearance select. Browser-local `sportzone.theme` stores Light/Dark/System per
+origin; same-origin tabs synchronize changes. A blocking same-origin `/theme-bootstrap.js` in the document head applies
+explicit choices before body content. System remains CSS media-driven, including OS changes. Storage failures preserve
+a usable page-local selection. Theme state is independent of route/form state; reduced-motion rules apply in both apps.
+
 **Implementation mapping:** [Shared color tokens](../styles/tokens.css) define semantic CSS custom properties (`--brand`, `--on-brand`, `--canvas`, `--text`, `--link-text`) on `:root`, overridden by `:root[data-theme="dark"]`. Without an explicit light/dark choice, the system preference supplies the dark fallback. Keep `--brand: #2563EB` and `--on-brand: #FFFFFF` unchanged in both modes. Tailwind color mappings use the same kebab-case names in both applications (`bg-brand`, `text-on-brand`, `text-text-muted`, `border-control-border`); avoid raw hex values in components. A shared token source is sufficient; a shared UI component library is not required.
 
 ### 2.3 Typography

@@ -1,3 +1,4 @@
+import { verifyThemeBootstrap } from '../../tests/theme-smoke.mjs'
 import { verifyFontAssets } from '../../tests/font-assets.mjs'
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
@@ -60,6 +61,9 @@ try {
   const home = await fetch(origin)
   assert.equal(home.status, 200)
   const html = await home.text()
+  await verifyThemeBootstrap(html, origin, 'storefront')
+  assert.match(html, /Appearance/)
+  assert.match(html, /<option value="dark"/)
   assert.match(html, /Ready for your next game/)
   assert.match(html, /id="main-content"/)
   assert.equal(home.headers.get('x-powered-by'), null)

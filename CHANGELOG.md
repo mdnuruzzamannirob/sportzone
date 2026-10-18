@@ -34,6 +34,8 @@ This changelog tracks the documentation baseline. Application releases are recor
 
 - Completed P02-004 self-hosted licensed typography/Bengali fallbacks, shared spacing/radius mappings and exact integer-poisha BDT display utilities with font, formatting, built-asset checks and project-owner acceptance.
 
+- Completed P02-005 Light/Dark/System appearance controls, persistent browser-local preferences, blocking pre-body bootstrap, same-origin tab synchronization and reduced-motion rules with interaction/hydration/HTTP checks and project-owner acceptance.
+
 ## Maintenance
 
 Record subsequent documentation versions with their date, material changes and affected contracts. Keep application

@@ -1,3 +1,4 @@
+import { verifyThemeBootstrap } from '../../tests/theme-smoke.mjs'
 import { verifyFontAssets } from '../../tests/font-assets.mjs'
 import assert from 'node:assert/strict'
 import { preview } from 'vite'
@@ -19,6 +20,7 @@ try {
     assert.match(html, /name="robots" content="noindex, nofollow"/)
     if (index) assert.equal(html, index, 'Deep links must receive the same SPA entry document')
     index = html
+    await verifyThemeBootstrap(html, origin, 'admin')
   }
   console.log('ADMIN-SMOKE-01 Passed: entry/deep-link SPA fallback and no-store/noindex headers')
   const js = index.match(/src="([^" ]+\.js)"/)

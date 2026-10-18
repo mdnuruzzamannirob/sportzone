@@ -102,7 +102,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | Phase | Total | Not Started | Ready | In Progress | Blocked | In Review | Done | Deferred |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | 01 — Requirements Finalization and Planning | 14 | 0 | 0 | 0 | 0 | 0 | 14 | 0 |
-| 02 — UI/UX Design | 11 | 7 | 0 | 0 | 0 | 0 | 4 | 0 |
+| 02 — UI/UX Design | 11 | 6 | 0 | 0 | 0 | 0 | 5 | 0 |
 | 03 — Authentication and Core Backend | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -113,7 +113,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **153** | **0** | **0** | **0** | **0** | **18** | **0** |
+| **Total** | **171** | **152** | **0** | **0** | **0** | **0** | **19** | **0** |
 
 ## 4. Milestone tracker
 
@@ -302,13 +302,13 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Acceptance:** Fonts have fallbacks; layouts are stable and amounts display consistently.\
   **Evidence:** [Typography, licensed font assets, dimensions and exact BDT verification](./evidence/P02-004-foundation.md). Accepted by project owner on 18 October 2026: “Typography/BDT foundation গ্রহণ করছি”.
 
-- [ ] **P02-005 — Implement Light/Dark/System preference and bootstrap**\
-  **Status:** `Not Started` · **Area:** Design/UI\
+- [x] **P02-005 — Implement Light/Dark/System preference and bootstrap**\
+  **Status:** `Done` · **Area:** Design/UI · **Owner:** Codex\
   **Sources:** Design §2.2\
   **Depends on:** `P02-003`\
   **Deliverable:** Apply persisted appearance before paint and support system preference and reduced motion.\
   **Acceptance:** Theme changes do not reset forms or navigation; first paint avoids theme flash.\
-  **Evidence to attach:** Both-theme interactive tests.
+  **Evidence:** [Theme preference, bootstrap, hydration and state-preservation verification](./evidence/P02-005-theme.md). Accepted by project owner on 18 October 2026: “Theme preference গ্রহণ করছি”.
 
 - [ ] **P02-006 — Implement responsive storefront navigation shell**\
   **Status:** `Not Started` · **Area:** Frontend/storefront\
@@ -1718,6 +1718,8 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | 17 October 2026 | P02-003 | Not Started → In Progress → In Review → Done; token/contrast, both builds and configured CI checks passed; project owner accepted the design tokens and rendered comparison | Codex / project owner | [Accepted design tokens](./evidence/P02-003-tokens.md) | Proceed through declared task dependencies |
 
 | 18 October 2026 | P02-004 | Not Started → In Progress → In Review → Done; font, dimension, BDT, both-build and configured CI checks passed; project owner accepted the typography/BDT foundation | Codex / project owner | [Accepted typography and BDT foundation](./evidence/P02-004-foundation.md) | Proceed through declared task dependencies |
+
+| 18 October 2026 | P02-005 | Not Started → In Progress → In Review → Done; theme interaction/hydration, bootstrap HTTP, both builds and configured CI checks passed; project owner accepted theme preference | Codex / project owner | [Accepted theme preference](./evidence/P02-005-theme.md) | Proceed through declared task dependencies |
 
 When execution starts, update the task status and attach evidence. Change a checkbox to `[x]` only after acceptance.
 Preserve IDs and dependency references; update phase totals and record milestone acceptance separately.

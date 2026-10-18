@@ -161,7 +161,10 @@ does not establish application or milestone readiness. Missing scripts must fail
 
 Both apps import `styles/tokens.css` for the 17 Design §2.2 colors. Use semantic utilities such as `bg-brand`,
 `text-on-brand`, `text-text-muted` and `border-control-border`. Explicit root `data-theme="light"` / `"dark"` overrides the
-system fallback; preference controls and persistence follow in P02-005. See [Design §2.2](docs/DESIGN.md#22-light-and-dark-color-system).
+system fallback. Both apps expose a labelled Appearance select with Light/Dark/System. Choices persist under
+`sportzone.theme` in localStorage per origin and synchronize across same-origin tabs. A blocking head script applies
+explicit choices before body content; System uses CSS media preferences. Storage errors retain page-local usability.
+Reduced-motion CSS limits animation/transition duration and disables smooth scrolling. See [Design §2.2](docs/DESIGN.md#22-light-and-dark-color-system).
 
 Typography and dimensions come from `styles/foundation.css`: self-hosted Inter, Plus Jakarta Sans and Noto Sans Bengali,
 font-display swap, system fallbacks, a 4px spacing unit, semantic radii and a 1280px storefront container. Font provenance
