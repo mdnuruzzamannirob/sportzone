@@ -1,0 +1,26 @@
+@import "tailwindcss";
+@import "@heroui/styles";
+@import "../../../styles/tokens.css";
+@import "../../../styles/foundation.css";
+@import "../../../styles/heroui.css";
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--text);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 4px;
+}
+
+a {
+  color: var(--link-text);
+  text-decoration-color: var(--link-accent);
+}
+
+::selection {
+  background: var(--brand);
+  color: var(--on-brand);
+}

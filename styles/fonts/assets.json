@@ -1,0 +1,21 @@
+{
+  "source": "Fontsource npm packages",
+  "version": "5.3.0",
+  "assets": [
+    {
+      "file": "inter-latin-wght-normal.woff2",
+      "bytes": 48256,
+      "sha256": "3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62"
+    },
+    {
+      "file": "noto-sans-bengali-bengali-wght-normal.woff2",
+      "bytes": 107720,
+      "sha256": "4ccdc6269af7581727fc3eea491831bda1962c1baaca7f2c0dec054bfddde478"
+    },
+    {
+      "file": "plus-jakarta-sans-latin-wght-normal.woff2",
+      "bytes": 27348,
+      "sha256": "153fc85b70298beeb1d61a5f723331649e7f23bb77302a66e61cb3e2fbdb5e79"
+    }
+  ]
+}

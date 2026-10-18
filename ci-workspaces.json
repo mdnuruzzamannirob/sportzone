@@ -1,23 +1,28 @@
 {
   "storefront": {
-    "state": "manifest-only",
+    "state": "active",
     "ownerTask": "P02-001",
     "checks": [
       "lint",
       "typecheck",
       "test:unit",
-      "build"
-    ]
+      "build",
+      "test:smoke"
+    ],
+    "uiLibrary": "HeroUI v3"
   },
   "admin": {
-    "state": "manifest-only",
+    "state": "active",
     "ownerTask": "P02-002",
     "checks": [
       "lint",
       "typecheck",
       "test:unit",
-      "build"
-    ]
+      "build",
+      "test:smoke",
+      "test:a11y"
+    ],
+    "uiLibrary": "HeroUI v3"
   },
   "backend": {
     "state": "manifest-only",

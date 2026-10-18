@@ -17,6 +17,11 @@
     "workspaces:check": "npm ls --workspaces --depth=0",
     "lint": "node scripts/check-repository.mjs",
     "test:unit": "node --test --test-isolation=none tests/ci.test.mjs",
-    "ci": "node scripts/ci.mjs"
+    "ci": "node scripts/ci.mjs",
+    "test:ui": "tsc --project tests/ui/tsconfig.json && playwright test --config tests/ui/playwright.config.mts"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.64.1"
   }
 }

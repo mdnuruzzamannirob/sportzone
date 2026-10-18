@@ -135,6 +135,10 @@ For higher-risk mutations, write state-transition and concurrency tests before e
 
 **Admin (`admin/`):** Follow React/Vite client-side routing and API-backed management forms. Enforce permission and ownership again on every backend mutation; route hiding is only a usability measure.
 
+**UI implementation convention:** Use HeroUI v3 for new reusable interactive controls in both apps, with app-owned defaults in `src/components/ui/`. Keep components needed only by one feature with that feature; keep route files focused on composition and navigation. Import HeroUI directly when no repeated project defaults are needed. Existing Appearance controls, disclosures, links, alerts and panels use HeroUI. Preserve Next.js/React Router navigation through app-owned Link adapters. Native headings, text and page landmarks remain semantic HTML; use HeroUI for the corresponding interactive or visual primitive rather than maintaining a second custom implementation. Do not add another component library, theme store or a generic wrapper without a concrete need.
+
+**Design responsibility:** The project owner delegates UI design to the implementing agent within `docs/DESIGN.md`. Figma is not a prerequisite. Use the documented monochrome/blue direction, typography, spacing and component variants consistently; document meaningful design changes in the owning specification. Present working screens for feedback and incorporate owner corrections. Design delegation does not waive task acceptance or authorize changes to product/security rules. Treat browser visual review separately from lint, builds and DOM tests; never claim visual acceptance from a CI pass.
+
 **Both UIs MUST:**
 
 - Use [Design](docs/DESIGN.md) semantic tokens rather than ad-hoc brand colors. Primary blue `#2563EB` and white button text are the same in light and dark mode; neutrals remain grayscale.

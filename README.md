@@ -46,14 +46,16 @@ consume allowlisted DTOs. Private sessions, carts, checkout, orders and financia
 
 ## 3. Repository structure
 
-The repository contains the documentation set and three private npm workspace manifests. Frontend application setup
-follows in Phase 02; the Express runtime follows in Phase 03.
+The repository contains the documentation set, runnable Next.js storefront and React/Vite admin scaffolds, and a private
+backend workspace manifest. The Express runtime follows in Phase 03.
 
 ```text
 sportzone/
-├── storefront/package.json     # Storefront workspace
-├── admin/package.json          # Administration workspace
+├── storefront/                 # Next.js App Router scaffold, styles and tests
+├── admin/                      # React/Vite SPA scaffold, styles and tests
 ├── backend/package.json        # Backend workspace
+├── styles/                     # Shared colors, typography, dimensions and licensed fonts
+├── shared/format-bdt.ts         # Pure integer-poisha display formatter
 ├── docs/                       # Product and engineering specifications
 ├── README.md
 ├── AGENTS.md
@@ -91,9 +93,24 @@ npm pkg get name private --workspaces
 npm run
 ```
 
-The install currently links three local packages and downloads no third-party dependencies. The verified offline form is
-`npm ci --offline --ignore-scripts --no-audit --no-fund`; it succeeds with the current dependency-free lockfile.
+The install links the three workspaces and installs the storefront's exact locked dependencies. Initial installation
+requires npm registry access; offline installation works only with a complete matching package cache.
 `workspaces:check` lists `storefront`, `admin` and `backend` without missing dependencies.
+
+Both frontends use HeroUI v3 (`@heroui/react` and `@heroui/styles`, locked to 3.2.6) with Tailwind CSS v4.
+CSS imports Tailwind, HeroUI, project tokens/foundation and the shared HeroUI adapter in that order.
+Project tokens govern both themes; the existing Appearance bootstrap/storage remains the only theme mechanism.
+App-owned Button defaults live in `src/components/ui/button.tsx`. HeroUI Link adapters preserve native anchors and app routing; Select, Disclosure, Card, Alert and Spinner
+provide the existing controls, panels and feedback states. See [Design](docs/DESIGN.md#2-design-system) for visual direction and component conventions.
+
+App-owned form/feedback primitives and their state/validation conventions are described in [UI components](docs/UI_COMPONENTS.md).
+
+Storefront commerce primitives live in `src/components/commerce/`; see the [commerce usage contracts](docs/UI_COMPONENTS.md#commerce-compositions).
+They are presentation foundations; catalog/cart/checkout routes retain their separate real-data integration tasks.
+
+Admin management foundations live in `admin/src/components/management/`; see the [component guide](docs/UI_COMPONENTS.md#admin-management-compositions) for server-owned list data, upload constraints and guarded-action integration.
+
+Browser foundation audits use Playwright and axe. After building both apps, run `npx playwright install --with-deps chromium firefox webkit`, then `npm run test:ui`. The full CI runs the same audit through admin's `test:a11y` inventory entry. Tests reserve loopback ports 3100, 5273 and 5180; the component fixture is never included in application builds. Reports and screenshots are generated under `test-results/`. See [audit scope and environment notes](docs/evidence/P02-011-accessibility.md).
 
 Current root checks:
 
@@ -106,7 +123,53 @@ npm run ci
 `lint` checks source JavaScript syntax, JSON, whitespace, Markdown tables/local links and targeted credential patterns.
 `test:unit` runs the CI guard regression tests using Node's test runner. `ci` runs workspace discovery, repository lint,
 tooling tests and every configured application check; it writes `test-results/ci.json`, including explicit workspace states.
-These checks currently validate the repository foundation. Application startup commands and checks follow with the apps.
+Storefront and admin are active in CI; backend app checks remain Not Configured until P03-001.
+
+Storefront commands, from the repository root:
+
+```sh
+npm run dev --workspace=storefront
+npm run lint --workspace=storefront
+npm run typecheck --workspace=storefront
+npm run test:unit --workspace=storefront
+npm run build --workspace=storefront
+npm run test:smoke --workspace=storefront
+npm run start --workspace=storefront
+```
+
+Dev/start bind to `127.0.0.1:3000`; stop one before starting the other. The production smoke command starts and cleans up
+its own loopback server on an available port and requires a completed build. Development and builds use Next.js's supported
+Webpack option. The scaffold includes public `/` and dynamic `/account` layouts; `/account` sends private/no-store and
+noindex headers and displays only an unavailable-account placeholder. Authentication and Express integration follow in
+Phase 03. The complete storefront, theme controls, typography and commerce flows remain owned by their later tasks.
+
+Storefront public routes now share responsive header/footer navigation, a mobile disclosure with Escape/Close focus
+recovery, Appearance menu, offline feedback and loading/error/not-found states. `/products`, `/search`, `/wishlist`,
+`/cart`, `/contact`, `/support` and the five linked policy routes are explicit noindex unavailable placeholders. They
+contain no catalog, cart, contact or approved policy data; those features retain their own task owners. Unknown URLs
+return 404 with recovery/navigation. The private account presentation remains separate.
+
+Admin commands, from the repository root:
+
+```sh
+npm run dev --workspace=admin
+npm run lint --workspace=admin
+npm run typecheck --workspace=admin
+npm run test:unit --workspace=admin
+npm run build --workspace=admin
+npm run test:smoke --workspace=admin
+npm run preview --workspace=admin
+```
+
+Admin dev/preview bind to `127.0.0.1:5173` and fail if that port is occupied. Preview and smoke require a completed build;
+preview is local verification, not a production server. `/` redirects to `/login`; `/app` and its nested routes show access
+unavailable until backend session verification is implemented. Client flags never grant access. Unknown public routes
+show a recovery link. Static hosting must serve `dist/index.html` for SPA navigation URLs while preserving real asset/API
+handling; configure noindex and private/no-store document headers at the host. Local Vite headers are not deployment proof.
+P02-007 adds a desktop sidebar and HeroUI mobile Drawer with five groups and 14 presentation destinations, current-section
+context, a title/action region, skip target, Appearance menu and offline feedback. All `/app/*` screens still deny access;
+no business views, administrator identity or logout success are fabricated. The admin boundary loads as a separate route chunk
+with a polite loading fallback. Backend session integration remains in Phase 03.
 
 `.github/workflows/ci.yml` runs on pushes, pull requests and manual dispatch with read-only repository permissions and
 commit-pinned actions. It uses `.nvmrc`, npm 11.19.0, a locked install, `npm run ci` and a summary artifact; no deployment
@@ -120,6 +183,20 @@ backend financial slices require the real replica-set integration and contract s
 [Testing §5.3](docs/TESTING.md#53-standard-execution-interface) defines the full required interface. A foundation CI pass
 does not establish application or milestone readiness. Missing scripts must fail; never use `--if-present` to conceal them.
 
+Both apps import `styles/tokens.css` for the 17 Design §2.2 colors. Use semantic utilities such as `bg-brand`,
+`text-on-brand`, `text-text-muted` and `border-control-border`. Explicit root `data-theme="light"` / `"dark"` overrides the
+system fallback. Both apps expose a labelled Appearance select with Light/Dark/System. Choices persist under
+`sportzone.theme` in localStorage per origin and synchronize across same-origin tabs. A blocking head script applies
+explicit choices before body content; System uses CSS media preferences. Storage errors retain page-local usability.
+Reduced-motion CSS limits animation/transition duration and disables smooth scrolling. See [Design §2.2](docs/DESIGN.md#22-light-and-dark-color-system).
+
+Typography and dimensions come from `styles/foundation.css`: self-hosted Inter, Plus Jakarta Sans and Noto Sans Bengali,
+font-display swap, system fallbacks, a 4px spacing unit, semantic radii and a 1280px storefront container. Font provenance
+and licenses are in [styles/fonts](styles/fonts/README.md). Use `font-heading`, `font-bengali`, `numeric`, `min-h-control`
+and `rounded-control/card/dialog` as appropriate. Each app exports `formatBdt` from `src/lib/format-bdt.ts`; pass integer
+poisha, for example `formatBdt(123450)` → `৳1,234.50`. Zero fractions omit decimals; nonzero fractions show two digits.
+Negative, fractional, unsafe or nonnumeric inputs are rejected. This utility displays backend amounts and calculates no totals.
+
 ## 5. Configuration and verification
 
 [Operations Appendix B](docs/OPERATIONS.md#appendix-b--configuration-inventory) defines configuration ownership, exposure
@@ -127,8 +204,8 @@ and validation. Separate local, CI, staging and production data, origins, creden
 of Git, logs, artifacts and browser-exposed `NEXT_PUBLIC_*` / `VITE_*` values.
 
 `.env.example` contains local-only origin conventions (storefront `3000`, admin `5173`, API `4000`), sandbox mode and blank
-secret/approval-dependent values. These are future local configuration defaults; no server is listening yet and no runtime
-loads this template. MongoDB must use an isolated transaction-capable deployment. Add provider-specific keys with their
+secret/approval-dependent values. Storefront and admin use ports 3000 and 5173 when started; the API origin remains a future local
+convention. No application loads this template directly. MongoDB must use an isolated transaction-capable deployment. Add provider-specific keys with their
 actual adapters and validators, keeping Appendix B and the protected per-key inventory synchronized.
 
 Create service-local `.env` files only when configuring those services. `.gitignore` excludes local environment files,

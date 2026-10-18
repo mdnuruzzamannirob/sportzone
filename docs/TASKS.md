@@ -102,7 +102,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | Phase | Total | Not Started | Ready | In Progress | Blocked | In Review | Done | Deferred |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | 01 — Requirements Finalization and Planning | 14 | 0 | 0 | 0 | 0 | 0 | 14 | 0 |
-| 02 — UI/UX Design | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
+| 02 — UI/UX Design | 11 | 0 | 0 | 0 | 0 | 0 | 11 | 0 |
 | 03 — Authentication and Core Backend | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -113,7 +113,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **157** | **0** | **0** | **0** | **0** | **14** | **0** |
+| **Total** | **171** | **146** | **0** | **0** | **0** | **0** | **25** | **0** |
 
 ## 4. Milestone tracker
 
@@ -270,93 +270,93 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
 
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 02. **Associated gate:** M1. **Tasks:** 11.
 
-- [ ] **P02-001 — Scaffold Next.js storefront workspace**\
-  **Status:** `Not Started` · **Area:** Frontend/storefront\
+- [x] **P02-001 — Scaffold Next.js storefront workspace**\
+  **Status:** `Done` · **Area:** Frontend/storefront · **Owner:** Codex\
   **Sources:** Architecture §§2,4,5\
   **Depends on:** `P01-009`\
   **Deliverable:** Initialize Next.js App Router with React, TypeScript and Tailwind and functional build scripts.\
   **Acceptance:** Builds independently; public and private routes have appropriate layout boundaries.\
-  **Evidence to attach:** Storefront build and route smoke test.
+  **Evidence:** [Storefront build, route/cache boundaries, component and production smoke verification](./evidence/P02-001-storefront.md). Accepted by project owner on 17 October 2026: “Storefront scaffold গ্রহণ করছি”.
 
-- [ ] **P02-002 — Scaffold React + Vite admin workspace**\
-  **Status:** `Not Started` · **Area:** Frontend/admin\
+- [x] **P02-002 — Scaffold React + Vite admin workspace**\
+  **Status:** `Done` · **Area:** Frontend/admin · **Owner:** Codex\
   **Sources:** Architecture §§2,4,5\
   **Depends on:** `P01-009`\
   **Deliverable:** Initialize React, Vite, TypeScript, Tailwind and SPA routing.\
   **Acceptance:** Builds independently and supports secured app shell routing without assuming authorization.\
-  **Evidence to attach:** Admin build and navigation smoke test.
+  **Evidence:** [Admin build, DOM navigation and built-asset smoke verification](./evidence/P02-002-admin.md). Accepted by project owner on 17 October 2026: “Admin scaffold গ্রহণ করছি”.
 
-- [ ] **P02-003 — Implement monochrome design tokens across both apps**\
-  **Status:** `Not Started` · **Area:** Design/UI\
+- [x] **P02-003 — Implement monochrome design tokens across both apps**\
+  **Status:** `Done` · **Area:** Design/UI · **Owner:** Codex\
   **Sources:** Design §2.2\
   **Depends on:** `P02-001`, `P02-002`\
   **Deliverable:** Create semantic CSS token mappings for light/dark themes.\
   **Acceptance:** Brand #2563EB and on-brand white remain identical in both modes; neutrals are grayscale.\
-  **Evidence to attach:** Token assertions and visual comparison.
+  **Evidence:** [Shared token, contrast, build checks and rendered light/dark comparison](./evidence/P02-003-tokens.md). Accepted by project owner on 17 October 2026: “Design tokens গ্রহণ করছি”.
 
-- [ ] **P02-004 — Configure typography, spacing and currency utilities**\
-  **Status:** `Not Started` · **Area:** Design/UI\
+- [x] **P02-004 — Configure typography, spacing and currency utilities**\
+  **Status:** `Done` · **Area:** Design/UI · **Owner:** Codex\
   **Sources:** Design §§2.3-2.5\
   **Depends on:** `P02-003`\
   **Deliverable:** Configure Inter, Plus Jakarta Sans, Bengali fallback, spacing/radii and BDT/tabular formatting.\
   **Acceptance:** Fonts have fallbacks; layouts are stable and amounts display consistently.\
-  **Evidence to attach:** Typography and money-format tests.
+  **Evidence:** [Typography, licensed font assets, dimensions and exact BDT verification](./evidence/P02-004-foundation.md). Accepted by project owner on 18 October 2026: “Typography/BDT foundation গ্রহণ করছি”.
 
-- [ ] **P02-005 — Implement Light/Dark/System preference and bootstrap**\
-  **Status:** `Not Started` · **Area:** Design/UI\
+- [x] **P02-005 — Implement Light/Dark/System preference and bootstrap**\
+  **Status:** `Done` · **Area:** Design/UI · **Owner:** Codex\
   **Sources:** Design §2.2\
   **Depends on:** `P02-003`\
   **Deliverable:** Apply persisted appearance before paint and support system preference and reduced motion.\
   **Acceptance:** Theme changes do not reset forms or navigation; first paint avoids theme flash.\
-  **Evidence to attach:** Both-theme interactive tests.
+  **Evidence:** [Theme preference, bootstrap, hydration and state-preservation verification](./evidence/P02-005-theme.md). Accepted by project owner on 18 October 2026: “Theme preference গ্রহণ করছি”.
 
-- [ ] **P02-006 — Implement responsive storefront navigation shell**\
-  **Status:** `Not Started` · **Area:** Frontend/storefront\
+- [x] **P02-006 — Implement responsive storefront navigation shell**\
+  **Status:** `Done` · **Area:** Frontend/storefront · **Owner:** Codex\
   **Sources:** Design §§3-5\
   **Depends on:** `P02-001`, `P02-005`\
   **Deliverable:** Build header, footer, mobile navigation, policy/support entry points, loading/error and not-found shell states.\
   **Acceptance:** Keyboard and mobile navigation works; placeholders do not imply feature completion.\
-  **Evidence to attach:** Responsive/keyboard shell check.
+  **Evidence:** [Responsive navigation, Escape/focus, shell states and production route checks](./evidence/P02-006-storefront-shell.md). Accepted by project owner on 18 October 2026: “Storefront shell গ্রহণ করছি”.
 
-- [ ] **P02-007 — Implement admin navigation and protected-layout presentation**\
-  **Status:** `Not Started` · **Area:** Frontend/admin\
+- [x] **P02-007 — Implement admin navigation and protected-layout presentation**\
+  **Status:** `Done` · **Area:** Frontend/admin · **Owner:** Codex\
   **Sources:** Design §§3-5\
   **Depends on:** `P02-002`, `P02-005`\
   **Deliverable:** Build admin sidebar/drawer, title/action shell and signed-out presentation.\
   **Acceptance:** Narrow layouts retain navigation; client route guards do not replace backend authorization.\
-  **Evidence to attach:** Route/accessibility preview.
+  **Evidence:** [HeroUI admin navigation, Drawer interaction, signed-out boundary and production checks](./evidence/P02-007-admin-shell.md). Accepted by project owner on 18 October 2026: “Admin shell গ্রহণ করছি”. Browser visual/native keyboard checks remain Not Run.
 
-- [ ] **P02-008 — Implement accessible form and feedback primitives**\
-  **Status:** `Not Started` · **Area:** Design/UI\
+- [x] **P02-008 — Implement accessible form and feedback primitives**\
+  **Status:** `Done` · **Area:** Design/UI · **Owner:** Codex\
   **Sources:** Design §§6,9-10\
   **Depends on:** `P02-003`, `P02-004`\
   **Deliverable:** Build inputs, selection controls, validation feedback, alerts, buttons, dialogs, drawers, focus handling and loading states.\
   **Acceptance:** Error text associates with fields; dialogs restore focus and preserve entered data.\
-  **Evidence to attach:** Component tests and manual keyboard evidence.
+  **Evidence:** [HeroUI fields/forms, validation/focus, feedback and overlay verification](./evidence/P02-008-forms.md). Accepted by project owner on 18 October 2026: “Form/feedback foundation গ্রহণ করছি”. Browser/manual keyboard checks remain Not Run.
 
-- [ ] **P02-009 — Implement reusable commerce visual primitives**\
-  **Status:** `Not Started` · **Area:** Design/UI\
+- [x] **P02-009 — Implement reusable commerce visual primitives**\
+  **Status:** `Done` · **Area:** Design/UI · **Owner:** Codex\
   **Sources:** Design §§6-7\
   **Depends on:** `P02-008`\
   **Deliverable:** Build price, product card, variant selector, cart line, status badge, order summary and skeleton primitives.\
   **Acceptance:** States show text not color alone; no browser calculation treated as final checkout truth.\
-  **Evidence to attach:** Component state tests in both themes.
+  **Evidence:** [Commerce primitives and both-theme state verification](./evidence/P02-009-commerce.md). All 13 CI commands passed: 203 tests, both production builds and six HTTP smoke groups. Accepted by project owner on 18 October 2026: “Commerce primitives গ্রহণ করছি”. Browser visual/native keyboard checks remain Not Run.
 
-- [ ] **P02-010 — Implement reusable admin visual primitives**\
-  **Status:** `Not Started` · **Area:** Design/UI\
+- [x] **P02-010 — Implement reusable admin visual primitives**\
+  **Status:** `Done` · **Area:** Design/UI · **Owner:** Codex\
   **Sources:** Design §§6,8\
   **Depends on:** `P02-008`, `P02-007`\
   **Deliverable:** Build table/filter/pagination, file upload and guarded action/confirmation patterns.\
   **Acceptance:** Keyboard operation, action feedback and small-screen overflow are usable.\
-  **Evidence to attach:** Admin component tests.
+  **Evidence:** [Admin primitives and both-theme verification](./evidence/P02-010-admin-primitives.md). All 13 CI commands, 223 tests, both production builds and six HTTP smoke groups passed. Accepted by project owner on 18 October 2026: “Admin primitives গ্রহণ করছি”. Browser viewport/native keyboard/file-picker checks remain Not Run.
 
-- [ ] **P02-011 — Verify foundation responsiveness and WCAG-targeted behavior**\
-  **Status:** `Not Started` · **Area:** Quality/UI\
+- [x] **P02-011 — Verify foundation responsiveness and WCAG-targeted behavior**\
+  **Status:** `Done` · **Area:** Quality/UI · **Owner:** Codex\
   **Sources:** Design §§3,12,14\
   **Depends on:** `P02-006`, `P02-007`, `P02-008`, `P02-009`, `P02-010`\
   **Deliverable:** Audit foundations in both themes at representative viewports and with keyboard and reduced motion.\
   **Acceptance:** Focus, contrast, reflow and theme persistence findings resolved or documented as blockers.\
-  **Evidence to attach:** Visual/a11y audit report.
+  **Evidence:** [Three-engine responsive/accessibility audit](./evidence/P02-011-accessibility.md). All 14 CI commands, 223 unit/component tests, 30 browser cases, both builds and six HTTP smoke groups passed. Accessible-name and foreground findings resolved; accepted by project owner on 18 October 2026: “Foundation audit গ্রহণ করছি”. Real-device/screen-reader and complete release-journey verification remains with feature/release tasks.
 
 ### Phase 03 — Authentication and core backend
 
@@ -1711,6 +1711,29 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | 17 October 2026 | P01-012 | Not Started → In Review → Done; protocol/register checks passed; project owner accepted the task/status/evidence protocol | Codex / project owner | [Accepted task-protocol review](./evidence/P01-012-task-protocol.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P01-013 | Not Started → In Review → Done; coverage/static and local CI checks passed; project owner accepted the testing baseline | Codex / project owner | [Accepted testing baseline](./evidence/P01-013-testing-baseline.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P01-014 | Not Started → In Review → Done; operations/static checks passed; project owner accepted the operations baseline | Codex / project owner | [Accepted operations baseline](./evidence/P01-014-operations-baseline.md) | Proceed through declared task dependencies |
+| 17 October 2026 | P02-001 | Not Started → In Progress → In Review → Done; build, layout/production smoke and configured CI checks passed; project owner accepted the storefront scaffold | Codex / project owner | [Accepted storefront scaffold](./evidence/P02-001-storefront.md) | Proceed through declared task dependencies |
+
+| 17 October 2026 | P02-002 | Not Started → In Progress → In Review → Done; independent build, DOM navigation, HTTP smoke and configured CI checks passed; project owner accepted the admin scaffold | Codex / project owner | [Accepted admin scaffold](./evidence/P02-002-admin.md) | Proceed through declared task dependencies |
+
+| 17 October 2026 | P02-003 | Not Started → In Progress → In Review → Done; token/contrast, both builds and configured CI checks passed; project owner accepted the design tokens and rendered comparison | Codex / project owner | [Accepted design tokens](./evidence/P02-003-tokens.md) | Proceed through declared task dependencies |
+
+| 18 October 2026 | P02-004 | Not Started → In Progress → In Review → Done; font, dimension, BDT, both-build and configured CI checks passed; project owner accepted the typography/BDT foundation | Codex / project owner | [Accepted typography and BDT foundation](./evidence/P02-004-foundation.md) | Proceed through declared task dependencies |
+
+| 18 October 2026 | P02-005 | Not Started → In Progress → In Review → Done; theme interaction/hydration, bootstrap HTTP, both builds and configured CI checks passed; project owner accepted theme preference | Codex / project owner | [Accepted theme preference](./evidence/P02-005-theme.md) | Proceed through declared task dependencies |
+
+| 18 October 2026 | P02-006 | Not Started → In Progress → In Review → Done; shell interaction/recovery, destination/404, both-build and configured CI checks passed; project owner accepted the storefront shell | Codex / project owner | [Accepted storefront shell](./evidence/P02-006-storefront-shell.md) | Proceed through declared task dependencies |
+
+| 18 October 2026 | P02-007 | Not Started → In Progress → In Review → Done; admin navigation/Drawer, title/actions, signed-out and offline behavior implemented; 103 tests, both builds and configured CI checks passed; project owner accepted the admin shell | Codex / project owner | [Accepted admin shell](./evidence/P02-007-admin-shell.md) | Proceed through declared task dependencies; retain separate browser verification |
+
+| 18 October 2026 | P02-008 | Not Started → In Progress → In Review → Done; HeroUI form/feedback foundations, field-error associations, pending guards and draft/focus preservation implemented; 163 tests, both builds and all configured CI commands passed; project owner accepted the foundation | Codex / project owner | [Accepted form foundation](./evidence/P02-008-forms.md) | Proceed through declared task dependencies; retain separate browser/manual keyboard verification |
+
+| 18 October 2026 | P02-009 | Not Started → In Progress → In Review → Done; HeroUI commerce primitives implemented; 40 new both-theme cases, 203 total tests, both builds and all configured CI commands passed; project owner accepted the commerce primitives | Codex / project owner | [Commerce primitive evidence](./evidence/P02-009-commerce.md) | Proceed through declared task dependencies; retain separate browser verification |
+
+| 18 October 2026 | P02-010 | Not Started → In Progress → In Review → Done; HeroUI table/filter/pagination, upload and guarded-action foundations implemented; 20 new both-theme cases, 223 tests, both builds and all configured CI commands passed; project owner accepted the admin primitives | Codex / project owner | [Admin primitive evidence](./evidence/P02-010-admin-primitives.md) | Proceed through declared task dependencies; retain separate browser verification |
+
+| 18 October 2026 | P02-011 | Not Started → In Progress → In Review → Done; Chromium/Firefox/WebKit foundation audits, both themes and three viewports; accessible-name and foreground findings resolved; all 14 CI commands and 30 browser cases passed; project owner accepted the foundation audit | Codex / project owner | [Foundation audit evidence](./evidence/P02-011-accessibility.md) | Proceed through declared task dependencies; retain feature/release browser and assistive-technology checks |
+
+**18 October 2026 — UI foundation change:** The project owner selected HeroUI and delegated visual design within the approved specification. Dependency/theme integration, app-owned controls and working conventions are recorded in [HeroUI foundation review](./evidence/heroui-foundation.md). The follow-up [existing UI migration](./evidence/heroui-existing-ui.md) replaces the earlier native-control exceptions. These changes are In Review; they do not accept another numbered task or milestone.
 
 When execution starts, update the task status and attach evidence. Change a checkbox to `[x]` only after acceptance.
 Preserve IDs and dependency references; update phase totals and record milestone acceptance separately.

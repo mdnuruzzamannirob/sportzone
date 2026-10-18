@@ -204,7 +204,8 @@ The diagram shows verification responsibilities, not a claim that test infrastru
 | Security and dependencies | SAST, dependency audit, secret scanner | CI availability and triage process agreed |
 | CI | GitHub Actions or approved CI system | Matches npm-workspaces repository and deployment controls |
 
-The Node.js tooling tests and GitHub Actions baseline exist. The application tools above are introduced with their
+Node.js tooling tests, the GitHub Actions baseline, storefront layout/HTTP checks and admin DOM routing/HTTP checks exist. Other application
+tools above are introduced with their
 owning feature/tooling tasks; listing a tool is not evidence that it is installed. Use compatible supported releases,
 commit exact versions and lockfile, and record installed versions in run evidence.
 
@@ -228,8 +229,8 @@ tests/
   fixtures/                              # Synthetic identities and catalog
 ```
 
-Application/E2E directories in this layout are introduced with their owning slices; only the root CI guard test currently
-exists. Use this layout without duplicating business rules inside test helpers. `TESTING.md` governs case intent; source
+Storefront layout tests now exist in `storefront/tests/layouts.test.tsx`, with production route checks in
+`storefront/tests/smoke.mjs`. Other application/E2E directories are introduced with their owning slices. Use this layout without duplicating business rules inside test helpers. `TESTING.md` governs case intent; source
 validators and executable specs must be version-linked to `API.md`/`DATABASE.md`.
 
 ### 5.3 Standard execution interface
@@ -254,11 +255,68 @@ recovery and load checks have separately approved commands/workflows, not mandat
 
 | Root command | Current coverage / setup state |
 | --- | --- |
-| `npm run workspaces:check` | Three local manifest-only workspace links |
+| `npm run workspaces:check` | Three local workspace links; storefront/admin active, backend manifest-only |
 | `npm run lint` | Repository JavaScript syntax, JSON, whitespace, Markdown structure/links and targeted credential checks |
 | `npm run test:unit` | Twelve repository/CI guard regressions; no application tests are implied |
-| `npm run ci` | Root checks plus every activated workspace check; machine-readable summary includes Not Configured app states |
+| `npm run ci` | Root checks plus every activated workspace check, including the cross-app browser audit through admin `test:a11y`; machine-readable summary includes Not Configured app states |
+| `npm run test:ui` | Type-check isolated fixture/config/tests; Playwright Chromium/Firefox/WebKit foundation reflow, axe, keyboard, theme and reduced-motion checks; requires both production builds and installed browser engines |
 | `npm run typecheck`, `test:integration`, `test:contract`, `test:e2e`, `test:security`, `test:coverage`, `build` | Not yet configured at root; implement with the owning tooling/slices before accepting the corresponding capability |
+
+Storefront workspace commands now implement `lint` (Biome), `typecheck` (Next route types plus TypeScript), `test:unit`
+(Vitest layout rendering), `build` (Next production Webpack) and `test:smoke` (real production HTTP routes/CSS/cache/404
+checks). Run them with `npm run <command> --workspace=storefront`; smoke requires the build and manages its own temporary
+server. The active CI inventory runs all five checks. These scaffold checks do not establish customer authentication,
+backend ownership, real browser accessibility or commerce acceptance. Browser/theme/interaction suites extend with the UI tasks.
+
+Admin commands use the same workspace-qualified lint/typecheck/unit/build/smoke interface with `--workspace=admin`.
+Biome, strict TypeScript, Vitest/jsdom client navigation and Vite builds are configured. HTTP smoke checks verify built
+JS/CSS, local preview SPA fallback and no-store/noindex headers; they do not execute browser JavaScript. DOM tests cover
+entry redirect, direct nested access denial despite forged local flags, native-link/history navigation and unknown routes.
+Admin shell tests additionally cover the five groups/14 destinations, active nested sections, one main/skip target,
+HeroUI Drawer containment and Escape/Close focus recovery, route/desktop dismissal, reusable title/actions,
+Appearance draft/URL preservation, offline cleanup and signed-out non-disclosure. HTTP checks cover direct navigation
+URLs with the same SPA/no-store/noindex contract. Browser viewport reflow and native Tab cycling remain separate checks.
+No backend authentication, production hosting or real-browser accessibility result is inferred from these checks.
+
+HeroUI integration uses the existing workspace check inventory: lint, typecheck, unit tests, build and HTTP smoke.
+Menu/close/retry interactions exercise HeroUI Buttons; admin sign-in remains disabled until authentication exists.
+Verify shared token aliases in emitted CSS, 44px controls, explicit Light/Dark and CSS System mode. Browser checks must
+cover native keyboard/focus behavior, responsive layouts and both themes; DOM/HTTP checks do not establish visual acceptance.
+Integration evidence is recorded in [the HeroUI foundation review](./evidence/heroui-foundation.md).
+
+Both workspaces also run 30 form/feedback cases each (15 per explicit theme) from `tests/form-primitives.test.tsx`.
+The shared test-only contract exercises each app's own fields, form submit guard, focus-requested error summary,
+pending/destructive Buttons, four Notice severities, loading/empty states and real HeroUI dialog/drawer behavior.
+Controlled draft retention, Escape/Cancel focus restoration, pending dismissal locks and retry-enabling after settlement
+are DOM checks; manual native Tab/backdrop/touch/viewport evidence remains separate. See [UI components](./UI_COMPONENTS.md).
+
+Storefront runs 40 commerce primitive cases in `tests/commerce.test.tsx` (20 per theme): genuine sale comparison,
+exact poisha display, approved rating/missing-image behavior, unavailable and pending variants, bounded and direct
+quantity requests, pending removal, explicit statuses, backend-supplied line/final totals and three skeleton layouts.
+Fixtures deliberately supply line/final amounts differing from browser arithmetic to verify the UI displays supplied
+values without recalculation. No live catalog/cart/quote, stock reservation, image delivery or payment outcome is inferred.
+
+`admin/tests/management.test.tsx` runs 20 light/dark DOM cases for table header/sort and keyboard navigation, local scroll-region structure, retained/loading/error/empty results, retry, controlled filters and bounded pagination, upload constraints and preview cleanup, pending/retry/removal, and reason/eligibility/confirmation plus Escape/focus restoration. Synthetic records and local callbacks do not prove authenticated API behavior, provider upload success or real mutations. Browser viewport/zoom/native keyboard/file-picker checks remain separate from DOM assertions.
+
+Both workspaces run four semantic-token regressions from `tests/tokens.test.tsx`, using the shared
+`tests/design-tokens.ts` assertions. They compare all 17 values with Design §2.2, check grayscale/invariant colors,
+text/control contrast and app/Tailwind integration. Built CSS smoke checks require the shared variables and compiled
+muted-text utility. Token swatch comparisons are distinct from browser layout/interaction acceptance.
+
+Each workspace also runs 19 foundation cases: font/fallback and spacing/radius assertions, ten exact BDT examples,
+six invalid numeric inputs and a nonnumeric-input rejection case. Shared HTTP checks fetch all three emitted WOFF2
+assets, require same-origin 200 responses and compare their hashes with the licensed sources. Browser font-swap/CLS
+checks remain distinct from static font contracts, glyph/shaping specimens and asset-serving checks.
+
+Theme suites run 13 cases per app in jsdom: persisted pre-mount bootstrap, invalid/System fallback, HeroUI select
+changes, draft/DOM/URL preservation, remount restore, blocked storage, same-origin storage synchronization/cleanup,
+CSS reduced-motion contracts, SSR hydration and keyboard opening/option selection through the real HeroUI popup. HTTP smoke checks verify the blocking head script and its actual served
+source. These DOM/HTML checks are distinct from browser first-paint filmstrips and native keyboard/OS-motion verification.
+
+Storefront shell tests exercise mobile disclosure/ARIA and Escape/focus recovery, link/Close dismissal, route/breakpoint
+changes, landmark/support-link structure, offline recovery and safe retry/loading/not-found states. Production smoke
+checks all 11 unavailable/noindex destinations and 404 recovery. jsdom key events and mocked breakpoint changes do not
+establish native browser tab order, viewport overflow or real assistive-technology acceptance.
 
 [ci-workspaces.json](../ci-workspaces.json) assigns storefront setup to P02-001, admin to P02-002 and backend to P03-001.
 Adding workspace source, scripts or dependencies requires active CI state and real lint/typecheck/unit/build scripts.
@@ -721,6 +779,10 @@ On an **isolated staging restore**, record backup timestamp and restore point, i
 | Locales/amounts | BDT formatting and optional Bengali fallbacks legible; calendar-day/business-day messaging accurate |
 
 `DESIGN.md` §2 fixes **brand blue `#2563EB` + white button label in both themes**; light/dark surfaces are monochrome and dark-mode links use readable light text with a persistent blue indicator. UI tests assert the actual semantic computed styles for the approved tokens—not screenshots alone.
+
+The implemented P02-011 foundation suite is `tests/ui/foundation.spec.ts`. It runs 30 browser cases: three engines × two themes × (three viewport audits plus keyboard/motion and theme/menu checks). Each viewport case examines the actual built storefront home, built public admin login and an isolated component fixture. The fixture composes real admin/commerce/form components with synthetic data; it does not bypass live authorization or represent authenticated feature acceptance. It has its own Tailwind source discovery and is excluded from both app builds.
+
+Checks include 320/768/1440 CSS-pixel reflow, labelled local table scrolling, axe WCAG A/AA tags including 2.2, visible focus, native Tab/Enter/Arrow/Escape, dialog containment/restore, selected-file preview/removal, reduced-motion computed duration, draft-preserving theme changes, persistence after reload, System/OS changes and mobile menus. Screenshots and full axe results attach to `test-results/ui-report.json`; failure traces are under `test-results/ui/`. No rules are disabled and no violations are allowlisted. Manual screenshot inspection supplements these assertions. This is not proof of screen-reader experience, real touch devices, native OS file-picker interaction, browser zoom UI or the complete release journeys. See [foundation audit evidence](./evidence/P02-011-accessibility.md).
 
 ### 14.2 Device and browser sampling
 

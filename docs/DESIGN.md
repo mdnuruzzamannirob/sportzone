@@ -65,6 +65,12 @@ The storefront serves guests and registered customers; the admin portal serves t
 
 SportZone uses a **black-and-white foundation with a restrained blue brand accent**. Light mode is predominantly white; dark mode is predominantly black. All neutral backgrounds, borders, and text use true grayscale without blue, green, or purple undertones. Blue identifies primary actions, interactive links, selection, and focus; it does not tint page backgrounds, cards, or large interface regions. Product photography provides the visual energy. The brand blue is identical in both themes. The same system applies to the storefront and admin portal, with layouts tailored to each application.
 
+**Component system:** HeroUI v3 is the standard component library for both frontends, using `@heroui/react` and `@heroui/styles`. Application-owned Button defaults live in each app's `src/components/ui/button.tsx`: primary for the main action, outline for secondary actions, ghost for low-emphasis actions and danger for destructive actions. Use app-owned HeroUI Link adapters to preserve Next.js/React Router navigation. Appearance uses HeroUI Select; mobile navigation and the Appearance panel use Disclosure. Page/loading panels use Card, loading feedback uses Spinner and connectivity/error feedback uses Alert. Keep native headings, text and landmarks for document semantics. Add further primitives as their feature tasks require them, with accessible pending, disabled, error and keyboard states.
+
+**Design delivery:** The project owner delegates visual design within this specification; no separate Figma file is required. Use clear product-focused layouts, generous consistent spacing, restrained blue actions and grayscale surfaces. Storefront layouts prioritize discovery and purchase; admin layouts prioritize readable data and explicit actions. Review actual responsive screens and both themes, then incorporate owner feedback. Earlier scaffold acceptance does not approve every future screen's appearance.
+
+**Implementation ownership:** Keep layout/composition in routes, repeated UI defaults in app-owned `components/ui/`, feature-specific components with their feature, pure shared behavior in `shared/` and cross-app design values in `styles/`. Avoid speculative abstractions, a shared UI package and additional component libraries. Remove superseded code/styles as components migrate.
+
 ### 2.2 Light and dark color system
 
 Use the same **brand blue `#2563EB` in light and dark modes**, including primary buttons and selection indicators. Theme switching changes only monochrome surfaces, text, and borders; it does not change the brand hue. Neutrals are strictly grayscale. Success, warning, and danger colors are reserved for functional status feedback, never decorative backgrounds.
@@ -106,7 +112,12 @@ Use the same **brand blue `#2563EB` in light and dark modes**, including primary
 - Set `color-scheme` appropriately and style native controls, skeletons, overlays, icons, and charts for each mode. Do not invert product photographs; use theme-appropriate logo assets if necessary.
 - Respect `prefers-reduced-motion`. Verify WCAG 2.2 AA text contrast, non-text contrast, and visible focus in **both** modes.
 
-**Implementation mapping:** Define semantic CSS custom properties (for example, `--color-brand`, `--color-canvas`, `--color-text`, `--color-link-text`) on `:root`, overridden by `[data-theme="dark"]`. Keep `--color-brand: #2563EB` and `--color-on-brand: #FFFFFF` unchanged in both modes. Map Tailwind utilities to the same token names in both applications; avoid raw hex values in components. A shared token source is sufficient; a shared UI component library is not required.
+Both apps expose a native labelled Appearance select. Browser-local `sportzone.theme` stores Light/Dark/System per
+origin; same-origin tabs synchronize changes. A blocking same-origin `/theme-bootstrap.js` in the document head applies
+explicit choices before body content. System remains CSS media-driven, including OS changes. Storage failures preserve
+a usable page-local selection. Theme state is independent of route/form state; reduced-motion rules apply in both apps.
+
+**Implementation mapping:** [Shared color tokens](../styles/tokens.css) define semantic CSS custom properties (`--brand`, `--on-brand`, `--canvas`, `--text`, `--link-text`) on `:root`, overridden by `:root[data-theme="dark"]`. Without an explicit light/dark choice, the system preference supplies the dark fallback. Keep `--brand: #2563EB` and `--on-brand: #FFFFFF` unchanged in both modes. Tailwind color mappings use the same kebab-case names in both applications (`bg-brand`, `text-on-brand`, `text-text-muted`, `border-control-border`); avoid raw hex values in components. HeroUI aliases in [the adapter](../styles/heroui.css) reference these tokens in both apps; no separate shared UI package is needed. Tailwind library color mappings remain available for HeroUI internals, while project components use semantic tokens. Keep the existing CSS-driven System fallback and blocking bootstrap; do not add a second theme manager. HeroUI v3 needs no global provider.
 
 ### 2.3 Typography
 
@@ -117,6 +128,9 @@ Use the same **brand blue `#2563EB` in light and dark modes**, including primary
 - **Loading:** Prefer self-hosted, subsetted WOFF2 files with `font-display: swap`; avoid unnecessary weights. Preserve readable layout while fonts load.
 - **Sizing:** Body 16px at 1.5–1.6 line height; most supporting UI text at least 14px; 12px reserved for nonessential metadata. Scale: 12, 14, 16, 18, 20, 24, 30, 36px. Responsive page titles typically 24–32px.
 - **Numeric content:** Use tabular figures for BDT amounts, quantities, order identifiers, and dashboard metrics. Preserve semantic heading order and avoid excessive all-caps labels.
+
+[Typography foundation](../styles/foundation.css) provides the shared font faces and Tailwind font/size mappings.
+[Font assets and licenses](../styles/fonts/README.md) are self-hosted; use `numeric` for tabular figures.
 
 ### 2.4 Spacing, dimensions, and surfaces
 
@@ -141,6 +155,11 @@ Use responsive spacing rather than fixed heights for content. Product imagery sh
 - Disabled controls explain the reason when useful, particularly for unavailable variants, ineligible actions, and unactivated payment channels.
 - Prices use **৳** or **BDT** consistently, with the display precision determined by the amount; never use floating-point UI arithmetic as the source of checkout totals.
 - Product images use `object-fit: contain` for catalog thumbnails when cropping would hide merchandise; editorial banners may use intentional cover cropping.
+
+The shared foundation maps the 4px spacing unit, `min-h-control` (44px), `max-w-storefront` (1280px), and
+`rounded-control/card/dialog` (8/12/16px). The [BDT display utility](../shared/format-bdt.ts) accepts nonnegative safe integer
+poisha and uses the taka symbol with en-BD grouping. Whole taka omit decimals; other amounts show exactly two digits
+(for example, 100 → ৳1, 105 → ৳1.05, 123450 → ৳1,234.50). Invalid input is rejected without coercion.
 
 ---
 
@@ -207,6 +226,8 @@ Main: page title/actions → filters/summary → content → pagination
 ```
 
 Provide the Light / Dark / System control in the administrator account/appearance menu. Group related destinations without creating extra permission levels. Show current section and contextual actions. Keep the administrator's session and access separate from customer sessions. Complaint handling is available from the order/customer context where relevant; a standalone complaint screen is not required by the PRD.
+
+**Current shell implementation:** [Admin shell](../admin/src/components/admin/admin-shell.tsx) uses a persistent sidebar from 1024px and a HeroUI left Drawer below that breakpoint. The five groups and 14 destinations share one navigation source. Selected items use a grayscale surface and blue border. Drawer navigation, Escape/Close and desktop transitions dismiss the overlay; the body scrolls vertically. Page title/actions and Appearance are reusable compositions. Until Phase 03 session integration, only public navigation metadata and an unavailable-access state render on `/app/*`; no management data, logged-in identity or working logout is implied.
 
 ### 4.4 Shared layout states
 
@@ -299,6 +320,8 @@ The authenticated admin shell exposes these navigation groups. Group labels orga
 - **Order summary:** Subtotal, product discounts, coupon discount, delivery charge, total payable, and payment method. Display confirmed server-calculated values before final submission.
 - **Payment method choice:** Show COD and only gateway channels currently enabled. Use the provider's recognizable channel labels without implying unavailable activation.
 
+**Implementation:** Storefront [commerce components](../storefront/src/components/commerce/product-card.tsx) follow the [usage/state contracts](./UI_COMPONENTS.md#commerce-compositions). Price/line/summary amounts are supplied by the consuming feature/API; quantity controls and variant options express requests/eligibility without reserving stock. Status text remains explicit; payment, funding and fulfillment are never inferred from a monetary total. These components do not populate unavailable catalog/cart pages with synthetic products.
+
 ### 6.3 Administrative components
 
 - **Management tables:** Search/filter toolbar, visible row status, bulk selection only where an actual bulk operation exists, and contextual row actions.
@@ -307,9 +330,13 @@ The authenticated admin shell exposes these navigation groups. Group labels orga
 - **Financial actions:** Show source transaction, eligible amount, pending commitments, intended payout method, and confirmation before submission. Never mark payout complete from an optimistic UI update.
 - **Audit context:** Display available actor, timestamp, and action details for sensitive changes without exposing secrets.
 
+Implementation foundation: admin table/filter/pagination, file upload and guarded confirmation compositions are defined in the [component usage guide](./UI_COMPONENTS.md#admin-management-compositions). Feature integrations supply authoritative rows, upload policy and eligible actions; these primitives do not grant administrator access or execute business operations.
+
 ### 6.4 Component state contract
 
 Every interactive component must define: default, hover (where applicable), focus-visible, active/selected, disabled, pending/loading, validation error, and successful completion states **in both themes**. Disabled actions that matter to users should include an explanation nearby.
+
+**Implementation:** Both apps provide HeroUI field/form/feedback/overlay compositions in `src/components/ui/`; usage and state ownership are documented in [UI components](./UI_COMPONENTS.md). Appearance selects, connectivity notices and storefront loading feedback consume these primitives. Parent editors retain controlled drafts across overlay dismissal; pending panels block Escape/backdrop/Cancel until the caller settles. Field errors and linked summaries use explicit accessible associations; summary focus is requested only after a failed submission.
 
 ---
 
