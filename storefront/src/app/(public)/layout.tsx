@@ -5,12 +5,12 @@ export default function PublicLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
   return (
-    <div className="mx-auto flex min-h-dvh max-w-6xl flex-col px-6">
+    <div className="mx-auto flex min-h-dvh max-w-storefront flex-col px-6">
       <a href="#main-content" className="sr-only focus:not-sr-only">
         Skip to content
       </a>
       <header className="py-8">
-        <Link href="/" className="text-xl font-bold tracking-tight text-text">
+        <Link href="/" className="text-xl font-semibold tracking-tight text-text">
           SportZone
           <span aria-hidden="true" className="text-brand">
             .

@@ -1,11 +1,11 @@
 @import "tailwindcss";
 @import "../../styles/tokens.css";
+@import "../../styles/foundation.css";
 
 body {
   margin: 0;
   background: var(--canvas);
   color: var(--text);
-  font-family: Arial, Helvetica, sans-serif;
 }
 
 :focus-visible {

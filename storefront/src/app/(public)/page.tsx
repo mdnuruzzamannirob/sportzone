@@ -7,7 +7,7 @@ export default function HomePage() {
       />
       <h1
         id="welcome-title"
-        className="text-4xl font-semibold tracking-tight sm:text-6xl"
+        className="text-3xl font-semibold tracking-tight sm:text-4xl"
       >
         Ready for your next game.
       </h1>

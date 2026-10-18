@@ -118,6 +118,9 @@ Use the same **brand blue `#2563EB` in light and dark modes**, including primary
 - **Sizing:** Body 16px at 1.5–1.6 line height; most supporting UI text at least 14px; 12px reserved for nonessential metadata. Scale: 12, 14, 16, 18, 20, 24, 30, 36px. Responsive page titles typically 24–32px.
 - **Numeric content:** Use tabular figures for BDT amounts, quantities, order identifiers, and dashboard metrics. Preserve semantic heading order and avoid excessive all-caps labels.
 
+[Typography foundation](../styles/foundation.css) provides the shared font faces and Tailwind font/size mappings.
+[Font assets and licenses](../styles/fonts/README.md) are self-hosted; use `numeric` for tabular figures.
+
 ### 2.4 Spacing, dimensions, and surfaces
 
 | Element | Baseline |
@@ -141,6 +144,11 @@ Use responsive spacing rather than fixed heights for content. Product imagery sh
 - Disabled controls explain the reason when useful, particularly for unavailable variants, ineligible actions, and unactivated payment channels.
 - Prices use **৳** or **BDT** consistently, with the display precision determined by the amount; never use floating-point UI arithmetic as the source of checkout totals.
 - Product images use `object-fit: contain` for catalog thumbnails when cropping would hide merchandise; editorial banners may use intentional cover cropping.
+
+The shared foundation maps the 4px spacing unit, `min-h-control` (44px), `max-w-storefront` (1280px), and
+`rounded-control/card/dialog` (8/12/16px). The [BDT display utility](../shared/format-bdt.ts) accepts nonnegative safe integer
+poisha and uses the taka symbol with en-BD grouping. Whole taka omit decimals; other amounts show exactly two digits
+(for example, 100 → ৳1, 105 → ৳1.05, 123450 → ৳1,234.50). Invalid input is rejected without coercion.
 
 ---
 

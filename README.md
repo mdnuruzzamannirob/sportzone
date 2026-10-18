@@ -54,7 +54,8 @@ sportzone/
 ├── storefront/                 # Next.js App Router scaffold, styles and tests
 ├── admin/                      # React/Vite SPA scaffold, styles and tests
 ├── backend/package.json        # Backend workspace
-├── styles/tokens.css           # Shared semantic light/dark colors and Tailwind mappings
+├── styles/                     # Shared colors, typography, dimensions and licensed fonts
+├── shared/format-bdt.ts         # Pure integer-poisha display formatter
 ├── docs/                       # Product and engineering specifications
 ├── README.md
 ├── AGENTS.md
@@ -161,6 +162,13 @@ does not establish application or milestone readiness. Missing scripts must fail
 Both apps import `styles/tokens.css` for the 17 Design §2.2 colors. Use semantic utilities such as `bg-brand`,
 `text-on-brand`, `text-text-muted` and `border-control-border`. Explicit root `data-theme="light"` / `"dark"` overrides the
 system fallback; preference controls and persistence follow in P02-005. See [Design §2.2](docs/DESIGN.md#22-light-and-dark-color-system).
+
+Typography and dimensions come from `styles/foundation.css`: self-hosted Inter, Plus Jakarta Sans and Noto Sans Bengali,
+font-display swap, system fallbacks, a 4px spacing unit, semantic radii and a 1280px storefront container. Font provenance
+and licenses are in [styles/fonts](styles/fonts/README.md). Use `font-heading`, `font-bengali`, `numeric`, `min-h-control`
+and `rounded-control/card/dialog` as appropriate. Each app exports `formatBdt` from `src/lib/format-bdt.ts`; pass integer
+poisha, for example `formatBdt(123450)` → `৳1,234.50`. Zero fractions omit decimals; nonzero fractions show two digits.
+Negative, fractional, unsafe or nonnumeric inputs are rejected. This utility displays backend amounts and calculates no totals.
 
 ## 5. Configuration and verification
 

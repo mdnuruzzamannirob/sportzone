@@ -1,3 +1,4 @@
+import { verifyFontAssets } from '../../tests/font-assets.mjs'
 import assert from 'node:assert/strict'
 import { preview } from 'vite'
 
@@ -30,6 +31,7 @@ try {
     assert.ok(body.length > 0)
     if (asset.endsWith('.css')) {
       assert.match(body, /100dvh/)
+      await verifyFontAssets(body, origin)
       assert.match(body, /color:var\(--text-muted\)/)
       assert.ok(body.includes('--link-text:') && body.includes('--on-brand:'), 'Shared light/dark tokens must reach built CSS')
     }

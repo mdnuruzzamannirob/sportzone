@@ -278,6 +278,11 @@ Both workspaces run four semantic-token regressions from `tests/tokens.test.tsx`
 text/control contrast and app/Tailwind integration. Built CSS smoke checks require the shared variables and compiled
 muted-text utility. Token swatch comparisons are distinct from browser layout/interaction acceptance.
 
+Each workspace also runs 19 foundation cases: font/fallback and spacing/radius assertions, ten exact BDT examples,
+six invalid numeric inputs and a nonnumeric-input rejection case. Shared HTTP checks fetch all three emitted WOFF2
+assets, require same-origin 200 responses and compare their hashes with the licensed sources. Browser font-swap/CLS
+checks remain distinct from static font contracts, glyph/shaping specimens and asset-serving checks.
+
 [ci-workspaces.json](../ci-workspaces.json) assigns storefront setup to P02-001, admin to P02-002 and backend to P03-001.
 Adding workspace source, scripts or dependencies requires active CI state and real lint/typecheck/unit/build scripts.
 Extend that inventory and the root aliases with applicable API/DB contract, concurrency, browser and security checks as

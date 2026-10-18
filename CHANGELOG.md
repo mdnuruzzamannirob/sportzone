@@ -32,6 +32,8 @@ This changelog tracks the documentation baseline. Application releases are recor
 
 - Completed P02-003 shared light/dark semantic colors and Tailwind mappings across both apps, token/contrast regressions, built-CSS checks and rendered color comparison with project-owner acceptance.
 
+- Completed P02-004 self-hosted licensed typography/Bengali fallbacks, shared spacing/radius mappings and exact integer-poisha BDT display utilities with font, formatting, built-asset checks and project-owner acceptance.
+
 ## Maintenance
 
 Record subsequent documentation versions with their date, material changes and affected contracts. Keep application
