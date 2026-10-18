@@ -86,3 +86,7 @@ and personal data from change entries.
 - Implemented P03-018 strict identity request/response contracts for 26 operations, explicit service-policy injection, pure challenge freshness preconditions and registered safe identity errors; reconciled browser protection/replay and future guest handoffs in API/Testing. No live identity routes enabled. [Evidence](docs/evidence/P03-018-api-contracts.md).
 
 - Recorded project-owner acceptance of P03-018 identity API contract on 18 October 2026; task marked Done with 73 new contract cases, 145 backend tests and all 20 CI commands passed. Runtime identity/session/security behavior remains with its owning tasks.
+
+- Implemented P03-004 connection-owned identity/address/session/challenge/context models, strict BSON validators and ten named indexes; added expiry-aware lookups and transactional single-use user-challenge consumption with rollback/envelope removal. Added real replica-set schema/index/raw-write/expiry/concurrency tests and explicit bootstrap/migration guidance. [Evidence](docs/evidence/P03-004-identity-models.md).
+
+- Recorded project-owner acceptance of P03-004 identity persistence implementation on 18 October 2026; task marked Done with 40 new real MongoDB cases, all 69 integration cases and all 20 CI commands passed. Public authentication/session/CSRF/recovery services remain their owning tasks.

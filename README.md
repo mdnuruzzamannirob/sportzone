@@ -122,7 +122,7 @@ npm run ci
 `lint` checks source JavaScript syntax, JSON, whitespace, Markdown tables/local links and targeted credential patterns.
 `test:unit` runs the CI guard regression tests using Node's test runner. `ci` runs workspace discovery, repository lint,
 tooling tests and every configured application check; it writes `test-results/ci.json`, including explicit workspace states.
-All three workspaces are active in CI. Backend checks verify transport and build behavior; they do not establish database, identity or commerce readiness.
+All three workspaces are active in CI. Backend checks cover transport, builds and isolated database/identity persistence primitives; they do not establish integrated authentication, commerce or release readiness.
 
 Backend commands, from the repository root:
 
@@ -134,6 +134,11 @@ npm run build --workspace=backend
 npm run test:smoke --workspace=backend
 npm run start --workspace=backend
 ```
+
+Identity models and persistence primitives live in `backend/src/modules/auth/`. Collection validators/index bootstrap is
+explicit, never automatic HTTP startup; existing database changes require the documented migration process. Tests use
+synthetic accounts/digests on an owned replica. No customer/admin authentication route is enabled yet; see
+[identity persistence evidence](docs/evidence/P03-004-identity-models.md).
 
 Backend startup validates configuration, connects to a transaction-capable MongoDB, then opens HTTP. The default bind is loopback (`API_BIND_HOST=127.0.0.1`), port 4000. Copy `.env.example` to a private root `.env`, supply your local replica URI/database, and generate separate random 32-byte hex values for `SESSION_SECRET` and `HEALTH_MONITOR_TOKEN`. No secret value is supplied by the repository. From the root, after building, `node --env-file=.env backend/dist/server.js` explicitly loads that local file; `npm run start --workspace=backend` reads already injected process variables. For editing, use `npm run build:watch --workspace=backend` alongside `node --env-file=.env --watch backend/dist/server.js`.
 

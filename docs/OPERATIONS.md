@@ -401,6 +401,15 @@ business records. Transaction-capable deployment and unique indexes are required
 traffic. Database §11–§15 controls exact index keys, schema changes, state transitions and recovery invariants;
 this section governs safe execution.
 
+Identity collection bootstrap is explicit in `backend/src/modules/auth/collection-validators.ts`, not HTTP startup.
+`initializeIdentityPersistence` creates missing empty collections with strict/error validators and additive named indexes;
+it rejects existing validator mismatches without collMod/drop. Before a deployed invocation, follow Database §15.1:
+record migration/environment authority, duplicate/invalid-data preflight, backup/recovery compatibility and index results.
+A partial empty bootstrap must be inventoried and resumed safely; do not infer that an existing environment is empty or
+relax a validator to make startup pass. Real customer/credential migrations and production provisioning were not executed
+by P03-004. The test-only TTL-monitor override is confined to the owned ephemeral replica.
+
+
 ### 7.2 Index and migration runbook (OP-DB-01)
 
 **Trigger:** Schema/index deployment or flagged drift. **Owner:** Backend/database engineer, reviewed by release

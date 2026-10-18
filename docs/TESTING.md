@@ -551,7 +551,7 @@ Keep the operation inventory synchronized with API changes and attach actual res
 | `DB-12` | Refund source and order counters | Pending plus completed obligations never exceed verified collection capacity or permitted merchandise entitlement |
 
 **Identity contract handoff (P03-017):** Database §§5.5–5.7 define the following concrete assertions within the existing
-case IDs. This is a test specification; identity model/service cases are **Not Run** until their owning tasks deliver them.
+case IDs. Assertions remain **Not Run** until their owning tasks deliver actual evidence; P03-004 model/persistence results are distinguished below.
 The existing generic DB/runtime foundation tests do not prove these identity behaviors.
 
 | Existing cases | Required identity assertion | Implementation owner |
@@ -573,6 +573,18 @@ Express validation/status/no-store/correlation/error envelopes; fixtures are nev
 These are schema/pure-state/transport checks, not proof of session security or atomic proof consumption. Actual security
 and DB race assertions remain with the owners in the handoff above; deployed origins, guest scope and real proof delivery
 remain Not Run until their implementations exist. See [P03-018 evidence](./evidence/P03-018-api-contracts.md).
+
+**P03-004 identity persistence checks:** `backend/tests/integration/identity.test.ts` runs under mandatory backend
+`test:integration` on its own real replica set. It verifies all four BSON collection validators and ten exact indexes
+against Database §5.6, strict/default/private model fields, unique email/digest constraints, scope/target/optional/date/
+reference rules, raw-driver invalid-write rejection and concurrent address/default constraints. Real transactions prove
+one proof-consumption winner, replay/expiry/revision/role/principal/attempt denial, envelope removal and rollback of both
+consumption/revision/effect. Active-session/context lookups reject expiry/revocation/security revision/role/audience and
+rotation while records remain. TTL monitoring is disabled **only on that owned test mongod** to prove timestamp enforcement;
+no deployed TTL setting is changed. Validator mismatch is rejected without silently relaxing the deployed collection.
+See [P03-004 evidence](./evidence/P03-004-identity-models.md). Synthetic digest/hash/envelope fixtures do not prove password
+hashing, token provenance, AEAD encryption, email delivery or public cookie/CSRF authentication. Those service and deployed
+checks remain with P03-005–016/P06-015.
 
 ### 9.2 Transaction outcome inspection
 

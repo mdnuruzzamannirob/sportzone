@@ -448,12 +448,30 @@ change, not permission to drop these indexes or create business collections duri
 
 ### 5.7 Identity implementation and rollout gates
 
-P03-017 establishes this contract; it does not instantiate models or claim authentication works. At this baseline,
-`backend/src/db/` implements shared connection/schema/index/transaction helpers only; `modules/health` owns operational
-probes. No User, Session, AuthChallenge or BrowserContext model exists yet. P03-004 owns the executable model/schema/index
-checks after P03-018's API reconciliation; P03-005/006 own session and browser protection, P03-007–014 own identity services.
-Guest order references and guest proof execution remain gated by P06-015 and the order schema. Other commerce collections
-in §§6–10 are specified requirements whose executable schemas remain with their owning future tasks.
+P03-017 established this contract. P03-004 now supplies connection-owned User, Session, AuthChallenge and BrowserContext
+models in `backend/src/modules/auth/models.ts`, with collection-level validators and ten named indexes in
+`collection-validators.ts`. Private verifiers/envelopes are excluded from default queries. Shared `backend/src/db/`
+helpers still own connection/schema/index/transaction mechanics; index verification accepts only its required
+`diffIndexes` interface so inferred strict models need no type casts.
+
+`initializeIdentityPersistence(connection, models)` explicitly bootstraps empty collections and verifies existing
+validator/validation-level/action compatibility before additive index creation. It does not silently use collMod, replace
+validators, drop indexes or repair duplicate identities. Existing mismatches require the reviewed migration below; a
+failed bootstrap may leave already-created empty collections and must be resumed/reconciled explicitly. HTTP startup
+never runs this initializer or enables an identity writer automatically.
+
+`persistence.ts` supplies internal active user-session/browser-context lookups and transactional user-challenge
+consumption. Consumption matches purpose, verified-digest lookup, user/role, active status, expiry/attempt bounds and
+principal purpose revision; it advances that revision, marks consumed and removes the envelope with the caller's DB-only
+effect in one transaction. A fresh server clock is checked on every retry and before consumption; failure rolls everything
+back. Consumed/invalidated challenges cannot retain an envelope under the collection validator. Token hashing/provenance,
+AEAD encryption/key custody, issuance/reissue, cookie authentication, CSRF, password/recovery services and guest-order
+consumption remain their owning P03-005–014/P06-015 implementations. The helper grants no permission from a client-supplied
+digest or ObjectId. No new public endpoint or live account is created by these models.
+
+Guest order references are schema-validated without claiming that the future orders collection exists. Other commerce
+collections in §§6–10 remain specifications until their owning feature implementations. See
+[P03-004 evidence](./evidence/P03-004-identity-models.md) for actual model/index/transaction verification.
 
 Before enabling an identity writer, apply §15.1 with a migration ID and independent environment approval:
 
