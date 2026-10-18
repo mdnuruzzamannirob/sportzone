@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { Link } from './ui/link'
 import type { ReactNode } from 'react'
 import { NetworkStatus } from './network-status'
 import { StorefrontHeader } from './storefront-header'
@@ -13,9 +13,7 @@ export const supportLinks = [
   ['Terms', '/policies/terms'],
 ] as const
 
-export function StorefrontShell({
-  children,
-}: Readonly<{ children: ReactNode }>) {
+export function StorefrontShell({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-storefront flex-col px-4 sm:px-6">
       <a href="#main-content" className="sr-only focus:not-sr-only">
@@ -23,11 +21,7 @@ export function StorefrontShell({
       </a>
       <StorefrontHeader />
       <NetworkStatus />
-      <main
-        id="main-content"
-        tabIndex={-1}
-        className="min-w-0 flex-1 py-12 sm:py-16"
-      >
+      <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 py-12 sm:py-16">
         {children}
       </main>
       <footer className="border-t border-border py-6 text-sm text-text-muted">
@@ -40,7 +34,7 @@ export function StorefrontShell({
             <Link
               key={href}
               href={href}
-              className="inline-flex min-h-control items-center underline underline-offset-4"
+              className="inline-flex min-h-control items-center"
             >
               {label}
             </Link>

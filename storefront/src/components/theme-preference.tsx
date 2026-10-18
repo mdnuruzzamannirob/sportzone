@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useId, useState } from 'react'
+import { Label, ListBox, Select } from '@heroui/react'
+import { useEffect, useState } from 'react'
 import {
   getThemePreference,
   setThemePreference,
@@ -10,7 +11,6 @@ import {
 } from '../../../shared/theme'
 
 export function ThemePreferenceSelect() {
-  const id = useId()
   const [preference, setPreference] = useState<ThemePreference>('system')
   useEffect(() => {
     synchronizeThemePreference()
@@ -18,22 +18,36 @@ export function ThemePreferenceSelect() {
     return subscribeThemePreference(() => setPreference(getThemePreference()))
   }, [])
   return (
-    <div className="flex items-center gap-3 text-sm">
-      <label htmlFor={id}>Appearance</label>
-      <select
-        id={id}
-        value={preference}
-        className="min-h-control rounded-control border border-control-border bg-surface px-3 text-text"
-        onChange={(event) => {
-          const value = event.currentTarget.value
-          if (value === 'light' || value === 'dark' || value === 'system')
-            setThemePreference(value)
-        }}
-      >
-        <option value="light">Light</option>
-        <option value="dark">Dark</option>
-        <option value="system">System</option>
-      </select>
-    </div>
+    <Select
+      name="appearance"
+      value={preference}
+      className="w-full max-w-xs"
+      onChange={(value) => {
+        if (value === 'light' || value === 'dark' || value === 'system')
+          setThemePreference(value)
+      }}
+    >
+      <Label>Appearance</Label>
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox aria-label="Appearance options">
+          <ListBox.Item id="light" textValue="Light">
+            Light
+            <ListBox.ItemIndicator />
+          </ListBox.Item>
+          <ListBox.Item id="dark" textValue="Dark">
+            Dark
+            <ListBox.ItemIndicator />
+          </ListBox.Item>
+          <ListBox.Item id="system" textValue="System">
+            System
+            <ListBox.ItemIndicator />
+          </ListBox.Item>
+        </ListBox>
+      </Select.Popover>
+    </Select>
   )
 }

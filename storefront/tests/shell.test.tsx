@@ -20,27 +20,59 @@ beforeEach(() => {
   localStorage.clear()
   media = Object.assign(new EventTarget(), { matches: false })
   vi.stubGlobal('matchMedia', () => media)
-  host = document.createElement('div'); document.body.append(host); root = createRoot(host)
+  host = document.createElement('div')
+  document.body.append(host)
+  root = createRoot(host)
 })
-afterEach(async () => { await act(() => root.unmount()); host.remove(); vi.restoreAllMocks(); vi.unstubAllGlobals() })
+afterEach(async () => {
+  await act(() => root.unmount())
+  host.remove()
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
+})
 async function click(element: Element | null) {
   expect(element).not.toBeNull()
-  await act(() => element?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })))
+  await act(() =>
+    element?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true }),
+    ),
+  )
 }
-function panel() { return host.querySelector('nav[aria-label="Mobile navigation"]') }
-function trigger() { return host.querySelector('button[aria-controls]') }
+function panel() {
+  return host.querySelector('nav[aria-label="Mobile navigation"]')
+}
+function trigger() {
+  return host.querySelector('button[aria-controls]')
+}
+function disclosure() {
+  return panel()?.closest('[data-slot="disclosure-content"]')
+}
 
 describe('responsive storefront shell', () => {
   it('SHELL-01: mobile disclosure is closed and labelled, opens with current links and closes via Escape with restored focus', async () => {
     await act(() => root.render(<StorefrontHeader />))
-    expect(panel()?.hasAttribute('hidden')).toBe(true)
-    expect(trigger()?.getAttribute('aria-controls')).toBe(panel()?.id)
+    expect(disclosure()?.hasAttribute('hidden')).toBe(true)
+    expect(trigger()?.getAttribute('aria-controls')).toBe(disclosure()?.id)
     await click(trigger())
     expect(trigger()?.getAttribute('aria-expanded')).toBe('true')
-    expect(panel()?.hasAttribute('hidden')).toBe(false)
+    expect(disclosure()?.hasAttribute('hidden')).toBe(false)
     const first = panel()?.querySelector('a')
     first?.focus()
-    await act(() => first?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
+    await act(() =>
+      first?.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      ),
+    )
+    expect(trigger()?.getAttribute('aria-expanded')).toBe('false')
+    expect(document.activeElement).toBe(trigger())
+    await click(trigger())
+    const close = panel()?.querySelector('button')
+    close?.focus()
+    await act(() =>
+      close?.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      ),
+    )
     expect(trigger()?.getAttribute('aria-expanded')).toBe('false')
     expect(document.activeElement).toBe(trigger())
   })
@@ -50,25 +82,38 @@ describe('responsive storefront shell', () => {
     const link = panel()?.querySelector('a')
     link?.addEventListener('click', (event) => event.preventDefault())
     await click(link ?? null)
-    expect(panel()?.hasAttribute('hidden')).toBe(true)
-    await click(trigger()); await click(panel()?.querySelector('button') ?? null)
+    expect(disclosure()?.hasAttribute('hidden')).toBe(true)
+    await click(trigger())
+    await click(panel()?.querySelector('button') ?? null)
     expect(document.activeElement).toBe(trigger())
-    expect(panel()?.hasAttribute('hidden')).toBe(true)
+    expect(disclosure()?.hasAttribute('hidden')).toBe(true)
   })
   it('SHELL-03: route changes and desktop breakpoint dismiss stale mobile navigation', async () => {
     await act(() => root.render(<StorefrontHeader />))
     await click(trigger())
     navigation.pathname = '/products'
     await act(() => root.render(<StorefrontHeader />))
-    expect(panel()?.hasAttribute('hidden')).toBe(true)
-    expect(host.querySelector('nav[aria-label="Main navigation"] a[aria-current="page"]')?.getAttribute('href')).toBe('/products')
-    await click(trigger()); panel()?.querySelector('a')?.focus(); media.matches = true
+    expect(disclosure()?.hasAttribute('hidden')).toBe(true)
+    expect(
+      host
+        .querySelector('nav[aria-label="Main navigation"] a[aria-current="page"]')
+        ?.getAttribute('href'),
+    ).toBe('/products')
+    await click(trigger())
+    panel()?.querySelector('a')?.focus()
+    media.matches = true
     await act(() => media.dispatchEvent(new Event('change')))
-    expect(panel()?.hasAttribute('hidden')).toBe(true)
-    expect(document.activeElement).toBe(host.querySelector('a[aria-label="SportZone home"]'))
+    expect(disclosure()?.hasAttribute('hidden')).toBe(true)
+    expect(document.activeElement).toBe(
+      host.querySelector('a[aria-label="SportZone home"]'),
+    )
   })
   it('SHELL-04: shell exposes one main/skip target, responsive navigation, policy/support entries and appearance', () => {
-    const html = renderToStaticMarkup(<StorefrontShell><h1>Page</h1></StorefrontShell>)
+    const html = renderToStaticMarkup(
+      <StorefrontShell>
+        <h1>Page</h1>
+      </StorefrontShell>,
+    )
     expect(html.match(/<main\b/g)).toHaveLength(1)
     expect(html).toContain('tabindex="-1"')
     expect(html).toContain('href="#main-content"')
@@ -84,9 +129,11 @@ describe('responsive storefront shell', () => {
     vi.spyOn(navigator, 'onLine', 'get').mockImplementation(() => online)
     await act(() => root.render(<NetworkStatus />))
     expect(host.querySelector('[role="status"]')).toBeNull()
-    online = false; await act(() => window.dispatchEvent(new Event('offline')))
+    online = false
+    await act(() => window.dispatchEvent(new Event('offline')))
     expect(host.textContent).toContain('You are offline')
-    online = true; await act(() => window.dispatchEvent(new Event('online')))
+    online = true
+    await act(() => window.dispatchEvent(new Event('online')))
     expect(host.querySelector('[role="status"]')).toBeNull()
     await act(() => root.render(null))
     await act(() => window.dispatchEvent(new Event('offline')))
@@ -94,10 +141,15 @@ describe('responsive storefront shell', () => {
   })
   it('SHELL-06: error uses safe text and real retry callback; loading and 404 expose recovery/status semantics', async () => {
     const reset = vi.fn()
-    await act(() => root.render(<PublicError error={new Error('sensitive synthetic detail')} reset={reset} />))
+    await act(() =>
+      root.render(
+        <PublicError error={new Error('sensitive synthetic detail')} reset={reset} />,
+      ),
+    )
     expect(host.querySelector('[role="alert"]')).not.toBeNull()
     expect(host.textContent).not.toContain('sensitive synthetic detail')
-    await click(host.querySelector('button')); expect(reset).toHaveBeenCalledOnce()
+    await click(host.querySelector('button'))
+    expect(reset).toHaveBeenCalledOnce()
     expect(renderToStaticMarkup(<LoadingPage />)).toContain('role="status"')
     expect(renderToStaticMarkup(<MissingPage />)).toContain('href="/"')
   })

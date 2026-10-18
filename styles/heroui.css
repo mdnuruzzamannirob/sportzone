@@ -50,3 +50,20 @@
   outline: 2px solid var(--focus);
   outline-offset: 4px;
 }
+
+/* Project sizing applies to library-managed controls as well as Buttons. */
+.select__trigger,
+.disclosure__trigger {
+  min-height: var(--spacing-control);
+}
+
+.select__trigger {
+  border-radius: var(--radius-control);
+  border: 1px solid var(--control-border);
+}
+
+.card,
+.alert,
+.select__popover {
+  border-radius: var(--radius-card);
+}

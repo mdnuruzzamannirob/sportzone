@@ -1,5 +1,6 @@
 'use client'
 
+import { Alert } from '@heroui/react'
 import { useEffect, useState } from 'react'
 
 export function NetworkStatus() {
@@ -15,12 +16,13 @@ export function NetworkStatus() {
     }
   }, [])
   return offline ? (
-    <p
-      role="status"
-      className="mt-4 rounded-card border border-control-border bg-surface-muted p-4 text-sm"
-    >
-      You are offline. Some pages may be unavailable. Check your connection and
-      try again.
-    </p>
+    <Alert role="status" className="mt-4 rounded-card border border-control-border">
+      <Alert.Content>
+        <Alert.Title>You are offline</Alert.Title>
+        <Alert.Description>
+          Some pages may be unavailable. Check your connection and try again.
+        </Alert.Description>
+      </Alert.Content>
+    </Alert>
   ) : null
 }
