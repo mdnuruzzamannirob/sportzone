@@ -103,7 +103,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | 01 — Requirements Finalization and Planning | 14 | 0 | 0 | 0 | 0 | 0 | 14 | 0 |
 | 02 — UI/UX Design | 11 | 0 | 0 | 0 | 0 | 0 | 11 | 0 |
-| 03 — Authentication and Core Backend | 18 | 14 | 0 | 0 | 0 | 0 | 4 | 0 |
+| 03 — Authentication and Core Backend | 18 | 13 | 0 | 0 | 0 | 0 | 5 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 06 — Checkout, Orders, and Delivery Rules | 20 | 20 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -113,7 +113,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **142** | **0** | **0** | **0** | **0** | **29** | **0** |
+| **Total** | **171** | **141** | **0** | **0** | **0** | **0** | **30** | **0** |
 
 ## 4. Milestone tracker
 
@@ -498,13 +498,13 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Acceptance:** Current contracts are implementable; future commerce schemas remain planned until designed. Model choices preserve PRD/Architecture invariants and support source-collection refund accounting.\
   **Evidence:** [Reviewed identity persistence contract](./evidence/P03-017-identity-contracts.md). Four identity collections, ten exact indexes, conditional scope/projection rules, retention/rollout gates and eight test handoffs reconciled. Static checks passed; accepted by project owner on 18 October 2026: “Identity persistence contract গ্রহণ করছি”; executable identity models remain P03-004.
 
-- [ ] **P03-018 — Establish `API.md` identity and browser security contracts**\
-  **Status:** `Not Started` · **Area:** Documentation/API\
+- [x] **P03-018 — Establish `API.md` identity and browser security contracts**\
+  **Status:** `Done` · **Area:** Documentation/API · **Owner:** Codex\
   **Sources:** PRD FR-01, FR-02, FR-19, FR-21; Architecture §§8–9\
   **Depends on:** `P03-001`, `P03-017`\
   **Deliverable:** Apply docs/API.md to identity endpoints, browser-context/CSRF bootstrap, customer/admin sessions and recovery; implement validators and contract tests for request/response/error and replay behavior.\
   **Acceptance:** Pre-authentication and authenticated mutations have explicit protection; future guest/order-scoped contracts are tracked and completed before those feature tasks.\
-  **Evidence to attach:** Reviewed `API.md` baseline.
+  **Evidence:** [Reviewed identity API contracts](./evidence/P03-018-api-contracts.md). Strict validators for 26 operations, browser/replay obligations and safe errors implemented; 73 new contract cases, 145 backend tests and all 20 CI commands passed. Accepted by project owner on 18 October 2026: “Identity API contract গ্রহণ করছি”; real identity/session/CSRF implementations remain their owning tasks.
 
 ### Phase 04 — Product catalog and inventory
 
@@ -1740,6 +1740,8 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | 18 October 2026 | P03-003 | Not Started → In Progress → In Review → Done; validated runtime startup, operational health/readiness, secret-safe structured logs and graceful shutdown implemented; 72 backend cases, 29 DB integration cases and all 20 CI commands passed; project owner accepted the runtime/health foundation | Codex / project owner | [Runtime/health evidence](./evidence/P03-003-operations.md) | Proceed through declared task dependencies; retain deployed operational gates |
 
 | 18 October 2026 | P03-017 | Not Started → In Progress → In Review → Done; identity field/scope/index/projection and migration/retention contract reviewed; API and Testing handoffs reconciled; static checks passed; project owner accepted the identity persistence contract | Codex / project owner | [Identity contract evidence](./evidence/P03-017-identity-contracts.md) | Proceed to P03-018 before P03-004 |
+
+| 18 October 2026 | P03-018 | Not Started → In Progress → In Review → Done; 26-operation identity validators, response/error/replay preconditions and API/Testing reconciliation delivered; 73 new contract cases, 145 backend cases and all 20 CI commands passed; project owner accepted the identity API contract | Codex / project owner | [Identity API contract evidence](./evidence/P03-018-api-contracts.md) | Proceed to P03-004 model implementation |
 
 **18 October 2026 — UI foundation change:** The project owner selected HeroUI and delegated visual design within the approved specification. Dependency/theme integration, app-owned controls and working conventions are recorded in [HeroUI foundation review](./evidence/heroui-foundation.md). The follow-up [existing UI migration](./evidence/heroui-existing-ui.md) replaces the earlier native-control exceptions. These changes are In Review; they do not accept another numbered task or milestone.
 

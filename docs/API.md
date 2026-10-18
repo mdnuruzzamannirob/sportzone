@@ -450,6 +450,56 @@ An attacker cannot enumerate orders by timing, HTTP status or message difference
 Subsequent guest order actions use the same `/orders/{orderId}` routes as a customer, but with *exact* bound order ID checks.
 Do not include a public `GET /orders?email=...` endpoint.
 
+### 9.3 Executable identity contract baseline
+
+`backend/src/modules/auth/contracts.ts` defines strict request, path/query and response schemas for all 26 §9.1
+operations. It is a contract module, not an Express router: no authentication/account route becomes available merely by
+importing it. Controllers must validate requests before service delegation and validate/allowlist outputs before the
+success envelope. Internal invalid output is a server fault, never a client validation failure; no raw document is returned.
+
+| Boundary | Exact validation / protection contract |
+| --- | --- |
+| Email/name | Email trimmed/lowercased and validated up to 254 characters; names trimmed/nonempty, maximum 120 Unicode characters; no silent truncation |
+| Password | Credentials nonempty and never normalized; register/reset/change additionally require the owning service's explicit password-policy schema; a policy that transforms the supplied password is rejected; no guessed password policy is installed |
+| Proof/CSRF token wire shape | Nonempty URL-safe ASCII `[A-Za-z0-9_-]`, at most 128 characters; no whitespace/URL/object coercion; issuing services must generate approved high-entropy opaque values, not treat shape as entropy proof |
+| ID/time | ObjectId wire strings are 24 lowercase hexadecimal characters; response instants are ISO UTC ending Z; persistence uses BSON Date/ObjectId; neither string validation nor a known ID authorizes a resource |
+| Address | Required input matches AddressInput; recipient at most 120 characters, street/addressLine2 at most 300, districtKey/areaKey at most 64; supplied phone and coverage policies validate canonical phone/served pair; keys alone are not caller-selected delivery charges |
+| Partial edits | Nonempty profile/address patch; unknown fields and null rejected; merge partial location with the authorized stored address and revalidate the complete address before writing; explicit supported removal semantics require an owning contract update |
+| Response | Exact field allowlists; maximum ten addresses, distinct IDs, at most one default; no role/hash/revision/envelope leakage; internal deletion_pending/deactivated are not silently mapped to active |
+| No-input operations | GET body absent; bodyless mutations accept absent body or exact empty object; query empty; only addressId is accepted for address path parameters |
+| Acknowledgements | accepted/verified/reset/revoked/verificationSent/changed must be literal true where specified; ambiguous request acknowledgements never include account existence; DELETE address returns 204 without a JSON body |
+| Deletion intake | Optional bounded reason only; response requestId and Database §5.5 review status; no immediate deletion or retention waiver |
+
+The contract factory requires new-password, phone and coverage policies from the owning service; tests supply synthetic
+policies. This avoids an implicit production password policy or invented national coverage dataset. No default policy,
+private credential or live customer data is provisioned here. Login must continue to verify the exact supplied credential
+rather than rejecting a historic password merely because new-password rules changed.
+
+**Browser protection and replay:** all §9.1 mutations require the route's approved Origin and bound CSRF, including
+register/login/recovery and repeat logout. Customer routes resolve only customer sessions; admin routes resolve only admin
+sessions/contexts; browser context alone grants no account access. The registry records the route namespace and protection
+obligations; it does not replace session lookup, Origin/CORS/CSRF middleware, hashing, role/ownership checks or rate limits.
+
+- Bootstrap: non-cacheable GET, exact approved frontend origin; admin and storefront contexts cannot be interchanged.
+- Login/proof success: rotate the applicable credential/context and CSRF; old tokens fail. Registration returns only its
+  documented account/verificationRequired shape and does not imply successful email delivery or an undocumented login.
+- Logout: repeated valid-context requests return the same revoked:true shape while each may return fresh CSRF; missing/
+  stale context or invalid Origin remains 403 CSRF_INVALID, even when the session has expired. No other namespace is revoked.
+- Challenge confirmation: expired, consumed, invalidated, revision-stale, attempt-exhausted, wrong-purpose or wrong-principal
+  proof is rejected. Map invalid proof to generic 400 VALIDATION_FAILED with token/INVALID_PROOF detail, without revealing
+  which condition failed. Password-reset admin/customer role/principal binding is checked independently.
+- `isChallengeCurrent` checks only expiry, lifecycle, scope/purpose/revision and attempt-bound preconditions after trusted
+  record lookup; it neither verifies a secret nor consumes anything. Services must verify the supplied token digest and
+  execute consume/reissue plus revision changes atomically per Database §5.6. Two calls on unchanged fresh state can both
+  return true; only the transactional conditional write determines a winner.
+
+The safe error register implements INVALID_CREDENTIALS (401), GUEST_PROOF_REQUIRED (401), FORBIDDEN/CSRF_INVALID (403) and
+RATE_LIMITED (429) alongside existing envelope errors. Registered errors do not imply enforcement middleware exists.
+Tests verify exact wire schemas, pure replay preconditions and redacted Express error/envelope behavior; actual identity
+index races, token consumption, cookie/session rotation, CORS/CSRF enforcement and deployed-origin tests remain required by
+P03-004–014/P03-016. Guest request/proof/scoped-session persistence and order ownership remain P06-015, before dependent
+order actions; §9.2 is a future contract, not a live endpoint. No guest, provider or financial route is registered here.
+
 ## 10. Catalog, cart, promotions & reviews APIs
 
 ### 10.1 Public catalog and discovery
@@ -1471,6 +1521,7 @@ The following field allowlists define client inputs and server responses. `*Inpu
 | `RegisterInput` | `name:string!,email:string!,password:string!` | Lowercase normalized unique email; role forced customer |
 | `Credentials` | `email:string!,password:string!` | No role, privilege or session-type input |
 | `Account` | `id,name,email:string!,phone:string?,emailVerified:bool!,addresses:Address[],status:enum(active,suspended)` | Never password/session/token details |
+| `Address` | AddressInput fields plus `id:id!,isDefault:bool!` | Response-only stable embedded ID; maximum ten per account, distinct IDs, at most one default |
 | `CategoryCreateInput` | `name:string!,slug:string!,parentId:id?,status:enum(active,inactive)?,image:MediaRef?,sortOrder:int?` | Parent acyclic; active ancestry required for public use |
 | `CategoryPatch` | `name?,slug?,parentId:nullable<id>?,status?,image:nullable<MediaRef>?,sortOrder?` | Null parent makes root after hierarchy checks; null image removes reference safely; CAS required |
 | `AdminCategory` | `id!,name!,slug!,parentId?,status!,revision:int!,sortOrder:int!,image?` | `ETag` on read/edit; hidden categories admin-only |

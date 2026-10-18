@@ -82,3 +82,7 @@ and personal data from change entries.
 - Established P03-017 identity persistence contracts: conditional scopes, session CSRF verifier/context audience, exact index names/options, private projections, guarded proof/address transitions and additive rollout/retention rules. Reconciled API and Testing handoffs; executable identity models remain P03-004. [Evidence](docs/evidence/P03-017-identity-contracts.md).
 
 - Recorded project-owner acceptance of P03-017 identity persistence contract on 18 October 2026; task marked Done. Static contract checks passed; executable models and API/security behavior remain their owning implementation tasks.
+
+- Implemented P03-018 strict identity request/response contracts for 26 operations, explicit service-policy injection, pure challenge freshness preconditions and registered safe identity errors; reconciled browser protection/replay and future guest handoffs in API/Testing. No live identity routes enabled. [Evidence](docs/evidence/P03-018-api-contracts.md).
+
+- Recorded project-owner acceptance of P03-018 identity API contract on 18 October 2026; task marked Done with 73 new contract cases, 145 backend tests and all 20 CI commands passed. Runtime identity/session/security behavior remains with its owning tasks.

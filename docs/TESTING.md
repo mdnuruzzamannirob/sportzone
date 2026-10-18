@@ -427,7 +427,7 @@ These cases complement the UI matrices; verify real API/database state as well a
 | `ACC-01` | Customer updates own name/phone; second customer tampers with profile identifier or protected fields | Valid normalization persists once; another user's fields/role cannot be changed | FR-02; API §9 |
 | `ACC-02` | Request email change, submit expired/used/wrong proof, then valid proof | Old email remains authoritative until verification; proof single-use; identity uniqueness holds and session effects follow approved contract | FR-02; API §9 |
 | `ACC-03` | Add/edit/remove address; submit unsupported area/invalid phone | Owned address CRUD/default validation, bounded list, rejected input leaves no partial mutation | FR-02; API §9 |
-| `ACC-04` | Change default address, delete nondefault/default, attempt cross-customer update | Exactly one valid default when addresses exist per contract; owner isolation; default conflict handled deterministically | FR-02; API §9 |
+| `ACC-04` | Change default address, delete nondefault/default, attempt cross-customer update | At most one default under Database §5.5; owner isolation; concurrent default conflict handled deterministically without inventing an automatic replacement | FR-02; API §9 |
 | `ACC-05` | Place order, then modify/delete profile and delivery address | Stored order recipient/zone/charge/deadline-rule snapshots remain immutable; private order view stays scoped | FR-02, FR-11; Database §7 |
 | `SUP-01` | Customer creates complaint; anonymous/guest actor submits using allowed proof and order context | Minimal anonymous {contactName,contactEmail,issue} persists the exact normalized contact; missing/blank name or email fails without mutation. C/G omitted contact resolves from own principal/order only; forged order proof is denied. No fabricated contact or other reporter disclosure | PRD §3, FR-20, FR-26; API §14.4 |
 | `SUP-02` | Admin lists, investigates and resolves open complaint with documented response | Authorized status transition, durable response/contact outcome, audit, and appropriate customer-visible history; repeated command not duplicate | FR-26; API §14.4 |
@@ -564,6 +564,15 @@ The existing generic DB/runtime foundation tests do not prove these identity beh
 | SEC-06, DB-09 | Concurrent address/default writes preserve maximum ten, unique embedded IDs and at most one default; foreign address IDs cannot mutate an account | P03-008 |
 | SEC-10 | Default and explicit API projections omit verifiers/envelopes; reference-only notification payload, old-envelope removal, key/tamper failure and uncertain-send behavior | P03-009, P03-010, P03-018 |
 | DB-07, DB-08, DB-10 | Identity migration detects collisions without PII output; replay/backfill safe; rollback does not revive revoked credentials; deletion review retains financial snapshots/source balances | P03-004, P03-008; P10-011 for restore |
+
+**P03-018 executable contract checks:** `backend/tests/identity-contracts.test.ts` runs in backend `test:unit`.
+It compares all 26 identity method/path declarations with API §9.1, validates strict request/response/parameter shapes,
+password preservation and injected policy behavior, address/PII allowlists, explicit browser namespace metadata, pure
+challenge expiry/revision/consumed-state preconditions and repeat-logout response shapes. Supertest fixtures verify real
+Express validation/status/no-store/correlation/error envelopes; fixtures are never registered in the production router.
+These are schema/pure-state/transport checks, not proof of session security or atomic proof consumption. Actual security
+and DB race assertions remain with the owners in the handoff above; deployed origins, guest scope and real proof delivery
+remain Not Run until their implementations exist. See [P03-018 evidence](./evidence/P03-018-api-contracts.md).
 
 ### 9.2 Transaction outcome inspection
 
