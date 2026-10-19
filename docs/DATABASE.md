@@ -1206,6 +1206,21 @@ proof URL, session credential or password in this collection; email-verification
 Later notification event types require an explicit backward-compatible validator/model expansion before activation.
 Existing validators are checked, never silently replaced by startup or local bootstrap.
 
+P03-009 adds optional `claimId:string`, `claimExpiresAt:Date` and `lastAttemptAt:Date` to registration intents,
+plus `notifications_claim_expiry` on `{status:1,claimExpiresAt:1}`. A majority-acknowledged conditional queued/retry claim
+increments attemptCount before the provider call. Completion is fenced by claimId. Expired/missing-lease sending rows
+become delivery_uncertain, never automatically requeued; a late verified acceptance for the same retained claim can
+resolve uncertainty. Explicit provider rejection may enter bounded retry_wait or failed. sent records API provider
+acceptance with providerMessageId, not recipient inbox delivery. Account/business transaction state is never rolled back
+by the worker.
+
+The validator expansion is additive for existing registration records. Startup still verifies the exact expected
+validator/indexes. A separate reviewed migration upgrades only the known P03-007 validator; it does not drop data/indexes,
+reset delivery state or silently accept another schema. Local/test bootstrap can invoke this explicit migration; production
+rollout remains operator-controlled. Old binaries with exact prior-validator readiness checks require a compatible rollback
+build; never remove new lease/receipt data to make a prior validator pass. Other event payloads and secret-bearing proof
+renderers remain disabled until their owning tasks expand the contracts safely.
+
 ### 10.2 `complaints` — `support`
 
 | Field | Type | Constraints / notes |

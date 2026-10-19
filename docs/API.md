@@ -352,6 +352,33 @@ added. Existing terminal review evidence is not replaced by a new intake. No sel
 change, session revocation, anonymization or hard deletion occurs. Legal/financial retention review remains operator-owned;
 orders, receipt/payment/refund evidence, audit and immutable historical snapshots are never updated by these handlers.
 
+### 4.8 Registration notification delivery foundation
+
+P03-009 connects the existing transactional registration intent to a server-only Resend HTTP adapter and explicit
+one-batch worker. No notification HTTP route, arbitrary email submission or automatic email send from registration is
+added. The worker supports only `registration`/`registration-v1` with empty payload and server-owned plain-text content;
+proof-bearing and commerce templates remain disabled until their owning feature contracts/renderers exist.
+
+A majority-acknowledged conditional claim moves queued/retry_wait to sending, increments attemptCount and records a fresh
+claimId/expiry before any provider request. Only the active claim can settle it. Explicit rate-limit rejection may enter
+retry_wait with exponential delay capped by configured policy; permanent rejection or exhausted attempts becomes failed.
+Timeout, network failure, malformed acceptance, 5xx or ambiguous conflict becomes delivery_uncertain without automatic
+resend. Expired/missing-lease sending is likewise uncertain after worker interruption. Late verified provider acceptance
+may settle the same retained claim; stale prior-claim completion cannot overwrite a newer attempt. The repository's
+transaction context rejects worker/provider dispatch before any external effect.
+
+`sent` means Resend accepted the message and returned an identifier, not inbox delivery, email verification, or an
+exactly-once transport guarantee. The stable Idempotency-Key is SHA-256-derived from the logical eventKey; provider
+idempotency retention is bounded and never substitutes for durable local uncertainty. Account/business state stays
+committed independently of notification status. Internal status projection excludes recipient, payload, event key and
+claim token; no public or administrative retry/reconciliation endpoint is enabled by this foundation.
+
+Email is separately disabled by default. Production requires explicit live mode; local/test/staging require test mode
+with an approved test-recipient override, regardless of the intent's customer destination. Sender/API key and retry,
+timeout, lease and batch policy are explicit protected configuration. The fixed provider URL is HTTPS, redirects are
+rejected, responses are bounded and provider errors/credentials are never reflected. Verified sender/domain, provider
+activation and real mailbox acceptance remain operational gates.
+
 ## 5. Authorization & data exposure
 
 | Principal | Allowed resources | Denied by default |

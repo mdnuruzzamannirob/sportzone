@@ -35,6 +35,7 @@
       "test:smoke",
       "test:integration"
     ],
-    "phoneValidation": "libphonenumber-js/max 1.13.15; P03-008 unit/integration checks"
+    "phoneValidation": "libphonenumber-js/max 1.13.15; P03-008 unit/integration checks",
+    "notificationWorker": "P03-009 registration delivery; explicit migration/worker commands, unit and real MongoDB/local-provider checks"
   }
 }

@@ -103,7 +103,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | 01 — Requirements Finalization and Planning | 14 | 0 | 0 | 0 | 0 | 0 | 14 | 0 |
 | 02 — UI/UX Design | 11 | 0 | 0 | 0 | 0 | 0 | 11 | 0 |
-| 03 — Authentication and Core Backend | 18 | 8 | 0 | 0 | 0 | 0 | 10 | 0 |
+| 03 — Authentication and Core Backend | 18 | 7 | 0 | 0 | 0 | 0 | 11 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 06 — Checkout, Orders, and Delivery Rules | 20 | 20 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -113,7 +113,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **136** | **0** | **0** | **0** | **0** | **35** | **0** |
+| **Total** | **171** | **135** | **0** | **0** | **0** | **0** | **36** | **0** |
 
 ## 4. Milestone tracker
 
@@ -426,13 +426,13 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Acceptance:** Ownership enforced for nested addresses and account-deletion requests; requests cannot erase legally retained order/payment records, and account changes do not mutate historical snapshots; no unapproved self-service deletion UI is assumed.\
   **Evidence:** [Profile/address ownership verification](./evidence/P03-008-profile-addresses.md). Canonical Bangladesh phone/profile edits, transactional saved/default addresses, current delivery eligibility, verified deletion intake/status and historical-preservation boundary implemented; 21 new unit and 26 real ownership cases, all 164 integration cases and all 20 CI commands passed. Accepted by project owner on 19 October 2026: “Profile/address implementation গ্রহণ করছি”; operator retention processing, delivery master setup and frontend screens remain separate.
 
-- [ ] **P03-009 — Create transactional notification foundation**\
-  **Status:** `Not Started` · **Area:** Backend/notifications\
+- [x] **P03-009 — Create transactional notification foundation**\
+  **Status:** `Done` · **Area:** Backend/notifications · **Owner:** Codex\
   **Sources:** FR-20; Architecture §§6,10\
   **Depends on:** `P03-002`, `P03-003`, `P03-007`\
   **Deliverable:** Implement server-only email adapter, durable notification intents, bounded retries, status and deduplication keys; connect registration intent to the delivery/retry pipeline.\
   **Acceptance:** Delivery failure does not undo committed account changes; registration event intent can be delivered/retried independently; one logical event intent is guaranteed, with verified provider idempotency or explicit delivery uncertainty rather than an unsupported exactly-once-send claim.\
-  **Evidence to attach:** Adapter and retry tests with test provider.
+  **Evidence:** [Notification foundation verification](./evidence/P03-009-notifications.md). Fixed server-only adapter, independent registration delivery, fenced durable claims, bounded explicit-rejection retries, uncertain-outcome recovery and additive known-schema migration implemented. 28 new unit and 19 real local-provider cases, all 183 integration cases and all 20 CI commands passed. Accepted by project owner on 19 October 2026: “Notification foundation গ্রহণ করছি”; live sender/provider readiness and proof/commerce template activation remain separate.
 
 - [ ] **P03-010 — Implement customer password recovery and change**\
   **Status:** `Not Started` · **Area:** Backend/identity\
@@ -1752,6 +1752,8 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | 19 October 2026 | P03-007 | Not Started → In Progress → In Review → Done; owner approved password policy; customer registration/login/session/logout, strict registration notification intent, transactional context/session exchange and explicit ready-only activation implemented; 209 backend tests, 138 integration cases, 30 browser regressions and all 20 CI commands passed; project owner accepted: “Customer authentication implementation গ্রহণ করছি” | Codex / project owner | [Customer authentication evidence](./evidence/P03-007-customer-auth.md) | Proceed to P03-008 profile/address ownership |
 
 | 19 October 2026 | P03-008 | Not Started → In Progress → In Review → Done; strict own-profile/address APIs, pinned metadata phone policy, settings-owned coverage reads, transactional address/default limits and verified deletion intake/status delivered; 230 backend tests, 164 integration cases, 30 browser regressions and all 20 CI commands passed; clean locked install verified; project owner accepted: “Profile/address implementation গ্রহণ করছি” | Codex / project owner | [Profile/address evidence](./evidence/P03-008-profile-addresses.md) | Proceed to P03-009 notification foundation |
+
+| 19 October 2026 | P03-009 | Not Started → In Progress → In Review → Done; transactional registration intent connected to server-only adapter/worker; durable fenced claims, capped retry and no-resend uncertainty, additive known-validator migration and transaction external-effect guard delivered; 258 backend tests, 183 integration cases, 30 browser regressions and all 20 CI commands passed; project owner accepted: “Notification foundation গ্রহণ করছি” | Codex / project owner | [Notification foundation evidence](./evidence/P03-009-notifications.md) | Proceed to P03-010 password recovery/change |
 
 **18 October 2026 — UI foundation change:** The project owner selected HeroUI and delegated visual design within the approved specification. Dependency/theme integration, app-owned controls and working conventions are recorded in [HeroUI foundation review](./evidence/heroui-foundation.md). The follow-up [existing UI migration](./evidence/heroui-existing-ui.md) replaces the earlier native-control exceptions. These changes are In Review; they do not accept another numbered task or milestone.
 

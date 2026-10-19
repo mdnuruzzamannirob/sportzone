@@ -1545,3 +1545,41 @@ protected user record through approved operational tooling; do not expose a gene
 Keep original request/review evidence and legally retained order/payment/refund/audit records. Intake does not disable
 accounts, erase data or authorize retention changes; operator/legal processing remains governed by the retention runbook.
 Rollback removes route exposure while preserving user profile, addresses, review records and historical snapshots.
+
+### Registration notification worker and recovery
+
+Registration commits its intent without invoking email. Build the backend; use the common protected environment plus
+`EMAIL_DELIVERY_ENABLED=true`, `EMAIL_PROVIDER=resend`, EMAIL_MODE, RESEND_API_KEY, EMAIL_FROM, EMAIL_TIMEOUT_MS,
+EMAIL_MAX_ATTEMPTS, EMAIL_RETRY_BASE_MS, EMAIL_RETRY_MAX_MS, EMAIL_CLAIM_TTL_MS and EMAIL_BATCH_SIZE for the separate command
+`node --env-file=.env backend/tools/notification-worker.mjs`. Each invocation processes at most the configured batch;
+processed counts claims, not confirmed inbox deliveries. No background loop is implicitly started by HTTP startup.
+Keep the worker disabled until sender/domain and provider credentials are verified. No live send was performed here.
+
+Production requires EMAIL_MODE=live. Local/test/staging require EMAIL_MODE=test and an explicitly approved
+EMAIL_TEST_RECIPIENT; every outgoing recipient is redirected to that inbox. Sender/API keys remain separate per environment
+in protected config. Templates and original recipient addresses are not logged; CLI output contains counts or a generic
+failure. The outbox contains no plaintext proof/session/password or arbitrary email HTML; proof delivery's authenticated
+envelope/challenge checks remain required for later recovery/verification templates.
+
+Policy bounds: 1–10 attempts; 1–100 claims per batch; base delay 100–3600000 ms; maximum delay at least the base and at most
+86400000 ms; lease 1000–3600000 ms; HTTP timeout 1–60000 ms. Require lease strictly greater than timeout plus 1000 ms.
+All values are explicit; the sanitized template leaves them blank. Run cadence and concurrency must respect provider
+limits and deployment capacity. Only known HTTP 429 rejection automatically retries; permanent rejection fails and
+ambiguous/network/timeout/5xx outcomes stop in delivery_uncertain. Resend acceptance is not recipient delivery proof.
+
+For an existing owned local/test P03-007/008 database, explicitly run
+`node --env-file=.env backend/tools/migrate-notifications.mjs` before updated identity startup/worker readiness. It upgrades
+only the known strict predecessor validator and adds the claim-expiry index, preserving all records and statuses; repeat
+migration is safe. Fresh local/test bootstrap creates the current schema. Neither HTTP startup nor the worker migrates.
+Production migration needs normal operator change control; the convenience migration command refuses deployed environments.
+
+Expired/missing-lease sending becomes uncertain, never automatically requeued, even after provider idempotency retention.
+Inspect protected event/claim metadata and provider records; do not reset attempt counters or generate a new key merely
+because delivery timed out. A verified acceptance for the same retained claim can record providerMessageId/sentAt. Any
+manual retry or no-send conclusion needs authorized reconciliation outside this foundation's public API. The worker
+cannot undo customer creation or commerce state. Recovery never repeats the business transaction.
+
+Rollback: stop/disable the worker first, preserve notifications, accepted provider IDs, claims and business data. The
+schema expansion accepts prior registration data, but old binaries with exact old-validator readiness checks will refuse
+restart. Use a compatible rollback build; do not erase new lease/receipt fields or downgrade validation destructively.
+Production provider/recipient checks, reconciliation exercises and operator approval remain unrun release gates.

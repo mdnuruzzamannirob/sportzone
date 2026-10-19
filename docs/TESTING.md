@@ -1448,3 +1448,17 @@ retention/legal approval or production deletion tests. Delivery fixture masters 
 production coverage; P06-001 remains responsible for master write/migration behavior.
 
 [Profile/address execution evidence](./evidence/P03-008-profile-addresses.md) records final commands, environment, results and unrun release gates.
+
+### P03-009 notification delivery verification
+
+Adapter tests use synthetic fetch responses for fixed HTTPS endpoint/headers, provider idempotency key, strict inputs,
+response size/protocol checks, safe outcome mapping, test-recipient routing and explicit bounded configuration. Real
+MongoDB plus a local HTTP provider verifies committed registration delivery/retry independently of account state,
+conditional concurrent claims, bounded backoff/attempt/batch limits, timeout/5xx/conflict uncertainty without resend,
+crash recovery and late acceptance, stale-claim fencing, transaction-only enqueue, rollback, no external calls inside
+the repository transaction context, and additive known-validator/index migration without record/status loss. Unknown
+schemas are refused. These local fixtures do not prove Resend sender/domain activation, actual provider deduplication,
+recipient inbox delivery, production migration or legal/operator acceptance. Proof/commerce template suites remain with
+their owning features; current registration payloads cannot contain proofs or arbitrary HTML.
+
+[Notification execution evidence](./evidence/P03-009-notifications.md) records commands, fixture boundaries, migration/worker checks and unrun external gates.

@@ -4,8 +4,10 @@ import {
   type Connection,
   type Types,
 } from 'mongoose'
-import { mutableSchemaOptions } from '../../db/schema.js'
+import { randomUUID } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
+import { mutableSchemaOptions } from '../../db/schema.js'
+import type { DeliveryOutcome } from './email.js'
 
 const recipient = new Schema(
   { emailNormalized: { type: String, required: true }, displayName: String },
@@ -44,6 +46,9 @@ const schema = new Schema(
     providerMessageId: String,
     lastErrorCode: String,
     sentAt: Date,
+    claimId: String,
+    claimExpiresAt: Date,
+    lastAttemptAt: Date,
   },
   { ...mutableSchemaOptions, minimize: false },
 )
@@ -55,7 +60,14 @@ schema.index(
   { status: 1, nextAttemptAt: 1 },
   { name: 'notifications_retry_queue' },
 )
-export function createRegistrationNotifications(connection: Connection) {
+schema.index(
+  { status: 1, claimExpiresAt: 1 },
+  { name: 'notifications_claim_expiry' },
+)
+export function createRegistrationNotifications(
+  connection: Connection,
+  clock: () => Date = () => new Date(),
+) {
   const model = connection.model(
     'RegistrationNotification',
     schema,
@@ -73,7 +85,9 @@ export function createRegistrationNotifications(connection: Connection) {
         (!isDeepStrictEqual(
           existing.options?.validator,
           registrationNotificationValidator,
-        ) || existing.options?.validationLevel !== 'strict' || existing.options?.validationAction !== 'error')
+        ) ||
+          existing.options?.validationLevel !== 'strict' ||
+          existing.options?.validationAction !== 'error')
       )
         throw new Error('Notification collection requires reviewed migration.')
       if (!existing)
@@ -88,6 +102,8 @@ export function createRegistrationNotifications(connection: Connection) {
       input: { userId: Types.ObjectId; email: string; name: string },
       session: ClientSession,
     ) {
+      if (!session.inTransaction())
+        throw new Error('Notification intent requires business transaction.')
       await model.updateOne(
         { eventKey: `registration:${input.userId.toHexString()}:v1` },
         {
@@ -102,11 +118,224 @@ export function createRegistrationNotifications(connection: Connection) {
             payload: {},
             status: 'queued',
             attemptCount: 0,
-            nextAttemptAt: new Date(),
+            nextAttemptAt: clock(),
           },
         },
         { upsert: true, session, runValidators: true },
       )
+    },
+    async migrateFoundation() {
+      if (!connection.db) throw new Error('Notification database unavailable.')
+      const existing = await connection.db
+        .listCollections({ name: 'notifications' }, { nameOnly: false })
+        .next()
+      if (!existing) {
+        await this.initialize()
+        return
+      }
+      if (
+        existing.options?.validationLevel !== 'strict' ||
+        existing.options?.validationAction !== 'error'
+      )
+        throw new Error('Notification collection requires reviewed migration.')
+      if (
+        !isDeepStrictEqual(
+          existing.options?.validator,
+          registrationNotificationValidator,
+        )
+      ) {
+        if (
+          !isDeepStrictEqual(
+            existing.options?.validator,
+            legacyRegistrationNotificationValidator,
+          )
+        )
+          throw new Error(
+            'Notification collection requires reviewed migration.',
+          )
+        await connection.db.command({
+          collMod: 'notifications',
+          validator: registrationNotificationValidator,
+          validationLevel: 'strict',
+          validationAction: 'error',
+        })
+      }
+      await model.createIndexes()
+      await this.verifyIndexes()
+    },
+    async claim(now: Date, ttlMs: number, maxAttempts: number) {
+      const claimId = randomUUID()
+      const row = await model
+        .findOneAndUpdate(
+          {
+            eventType: 'registration',
+            templateVersion: 'registration-v1',
+            status: { $in: ['queued', 'retry_wait'] },
+            attemptCount: { $lt: maxAttempts },
+            nextAttemptAt: { $lte: now },
+          },
+          {
+            $set: {
+              status: 'sending',
+              claimId,
+              claimExpiresAt: new Date(now.getTime() + ttlMs),
+              lastAttemptAt: now,
+            },
+            $inc: { attemptCount: 1 },
+            $unset: { nextAttemptAt: 1 },
+          },
+          {
+            returnDocument: 'after',
+            sort: { nextAttemptAt: 1, _id: 1 },
+            writeConcern: { w: 'majority' },
+          },
+        )
+        .select('+recipient')
+      return row
+        ? {
+            id: row._id,
+            eventKey: row.eventKey,
+            recipient: row.recipient.emailNormalized,
+            attemptCount: row.attemptCount,
+            claimId,
+          }
+        : null
+    },
+    async currentClaim(id: Types.ObjectId, claimId: string, now: Date) {
+      return Boolean(
+        await model.exists({
+          _id: id,
+          claimId,
+          status: 'sending',
+          claimExpiresAt: { $gt: now },
+        }),
+      )
+    },
+    async finish(
+      id: Types.ObjectId,
+      claimId: string,
+      outcome: DeliveryOutcome,
+      now: Date,
+      maxAttempts: number,
+      delayMs: number,
+    ) {
+      if (outcome.kind === 'accepted') {
+        await model.updateOne(
+          {
+            _id: id,
+            claimId,
+            status: { $in: ['sending', 'delivery_uncertain'] },
+          },
+          {
+            $set: {
+              status: 'sent',
+              providerMessageId: outcome.providerMessageId,
+              sentAt: now,
+            },
+            $unset: { claimExpiresAt: 1, nextAttemptAt: 1, lastErrorCode: 1 },
+          },
+          { writeConcern: { w: 'majority' }, runValidators: true },
+        )
+        return
+      }
+      const row = await model.findOne({ _id: id, claimId, status: 'sending' })
+      if (!row) return
+      const expired = !row.claimExpiresAt || row.claimExpiresAt <= now
+      const uncertain = outcome.kind === 'uncertain' || expired
+      const retry =
+        !uncertain &&
+        outcome.kind === 'rejected' &&
+        outcome.retryable &&
+        row.attemptCount < maxAttempts
+      await model.updateOne(
+        { _id: id, claimId, status: 'sending' },
+        {
+          $set: {
+            status: uncertain
+              ? 'delivery_uncertain'
+              : retry
+                ? 'retry_wait'
+                : 'failed',
+            lastErrorCode: expired ? 'CLAIM_EXPIRED' : outcome.code,
+            ...(retry
+              ? { nextAttemptAt: new Date(now.getTime() + delayMs) }
+              : {}),
+          },
+          $unset: {
+            claimExpiresAt: 1,
+            ...(!retry ? { nextAttemptAt: 1 } : {}),
+          },
+        },
+        { writeConcern: { w: 'majority' }, runValidators: true },
+      )
+    },
+    async recover(now: Date, limit: number, maxAttempts: number) {
+      const stale = await model
+        .find({
+          status: 'sending',
+          $or: [
+            { claimExpiresAt: { $lte: now } },
+            { claimExpiresAt: { $exists: false } },
+          ],
+        })
+        .sort({ _id: 1 })
+        .limit(limit)
+      for (const row of stale)
+        await model.updateOne(
+          {
+            _id: row._id,
+            status: 'sending',
+            $or: [
+              { claimExpiresAt: { $lte: now } },
+              { claimExpiresAt: { $exists: false } },
+            ],
+          },
+          {
+            $set: {
+              status: 'delivery_uncertain',
+              lastErrorCode: 'WORKER_INTERRUPTED',
+            },
+            $unset: { nextAttemptAt: 1 },
+          },
+          { writeConcern: { w: 'majority' } },
+        )
+      const exhausted = await model
+        .find({
+          status: { $in: ['queued', 'retry_wait'] },
+          attemptCount: { $gte: maxAttempts },
+        })
+        .sort({ _id: 1 })
+        .limit(limit)
+      for (const row of exhausted)
+        await model.updateOne(
+          {
+            _id: row._id,
+            status: { $in: ['queued', 'retry_wait'] },
+            attemptCount: { $gte: maxAttempts },
+          },
+          {
+            $set: { status: 'failed', lastErrorCode: 'RETRIES_EXHAUSTED' },
+            $unset: { nextAttemptAt: 1 },
+          },
+          { writeConcern: { w: 'majority' } },
+        )
+    },
+    async status(id: Types.ObjectId) {
+      const row = await model
+        .findById(id)
+        .select('status attemptCount lastErrorCode sentAt providerMessageId')
+      return row
+        ? {
+            id: row._id.toHexString(),
+            status: row.status,
+            attemptCount: row.attemptCount,
+            ...(row.lastErrorCode ? { lastErrorCode: row.lastErrorCode } : {}),
+            ...(row.sentAt ? { sentAt: row.sentAt } : {}),
+            ...(row.providerMessageId
+              ? { providerMessageId: row.providerMessageId }
+              : {}),
+          }
+        : null
     },
     async verifyIndexes() {
       if (!connection.db) throw new Error('Notification database unavailable.')
@@ -133,7 +362,7 @@ export type RegistrationNotifications = ReturnType<
   typeof createRegistrationNotifications
 >
 
-export const registrationNotificationValidator = {
+export const legacyRegistrationNotificationValidator = {
   $jsonSchema: {
     bsonType: 'object',
     additionalProperties: false,
@@ -188,6 +417,19 @@ export const registrationNotificationValidator = {
       sentAt: { bsonType: 'date' },
       createdAt: { bsonType: 'date' },
       updatedAt: { bsonType: 'date' },
+    },
+  },
+}
+
+// Immutable known predecessor above; extend only the current validator for this additive migration.
+export const registrationNotificationValidator = {
+  $jsonSchema: {
+    ...legacyRegistrationNotificationValidator.$jsonSchema,
+    properties: {
+      ...legacyRegistrationNotificationValidator.$jsonSchema.properties,
+      claimId: { bsonType: 'string', minLength: 1, maxLength: 64 },
+      claimExpiresAt: { bsonType: 'date' },
+      lastAttemptAt: { bsonType: 'date' },
     },
   },
 }

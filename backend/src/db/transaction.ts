@@ -19,3 +19,7 @@ export async function inTransaction<T>(
   if (scope.getStore()) throw new DatabaseError('NESTED_TRANSACTION')
   return scope.run(true, () => connection.transaction(work, options))
 }
+
+export function assertOutsideTransaction() {
+  if (scope.getStore()) throw new DatabaseError('EXTERNAL_EFFECT_IN_TRANSACTION')
+}
