@@ -7,7 +7,7 @@ export type DeliveryOutcome =
   | {
       kind: 'rejected'
       retryable: boolean
-      code: 'PROVIDER_RATE_LIMIT' | 'PROVIDER_REJECTED'
+      code: 'PROVIDER_RATE_LIMIT' | 'PROVIDER_REJECTED' | 'PROOF_UNAVAILABLE'
     }
   | { kind: 'uncertain'; code: 'PROVIDER_UNCERTAIN' }
 export type EmailMessage = {

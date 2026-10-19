@@ -254,8 +254,8 @@ await durable logout before reporting server revocation, then perform P03-006's 
 The service's authenticate result is an explicit internal principal projection; never serialize a raw session document.
 The private lookup explicitly selects its CSRF verifier for the session service; ordinary model projections still exclude
 all credential verifiers. Guest sessions remain P06-015. Browser protection is implemented in §4.5 and customer credentials
-in §4.6; verification/recovery, administrator credentials, broader throttles/audit and integrated gates remain with
-P03-009–016.
+in §4.6. Customer password recovery/change is implemented under the P03-010 contract below; verification, administrator
+credentials, broader throttles/audit and integrated gates remain with their owning tasks.
 
 ### 4.5 Browser security implementation boundary
 
@@ -592,6 +592,13 @@ Administrator accounts are privately provisioned, never registered or privilege-
 Admin recovery uses the existing `password_reset` challenge purpose **bound to the admin `userId` and role checked on confirmation**; no challenge issued for a customer can reset an admin account.
 No new unapproved `authChallenges.purpose` enum is implied.
 Public responses stay enumeration-safe; account reactivation/recovery requires the approved operational security policy.
+
+#### Customer password recovery and change implementation
+
+Customer reset issuance returns the same `{accepted:true}` for missing, inactive and noncustomer identities. Reset confirmation uses a 32-byte base64url proof, returns `400 INVALID_REQUEST` for unavailable/expired/replayed proofs, and never creates a session. Confirmation changes password, increments security and password-reset scope revisions, revokes customer sessions and removes outstanding reset envelopes atomically. Authenticated password change verifies the current credential, invalidates reset challenges, revokes existing customer sessions and issues a replacement customer cookie and CSRF token in the same transaction. Neither path verifies email or changes account eligibility. Local IP rate limits cover all three routes; a per-account issuance cooldown silently suppresses repeated emails. The explicit common response floor (100–5000 ms) reduces ordinary timing differences; operators must size it above measured issuance latency and enforce distributed limits. It is not a constant-time network guarantee. Deployed distributed abuse controls remain an operational gate.
+
+Recovery activates only with explicit `PASSWORD_RECOVERY_ENABLED=true`, a bounded `PASSWORD_RESET_TTL_SECONDS` (60–1800), `PASSWORD_RESET_COOLDOWN_SECONDS` (60–3600), separate versioned 256-bit envelope keys and the fixed configured HTTPS storefront origin. No Host/request URL supplies email links. Proofs use the `/reset-password#token=…` fragment for the later frontend screen; the backend accepts tokens only in the confirmation JSON body. Key loss/tamper fails closed; expiry cleanup runs independently of MongoDB TTL in the notification worker.
+
 
 ### 9.2 Verified guest access
 

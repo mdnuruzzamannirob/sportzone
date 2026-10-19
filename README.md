@@ -295,3 +295,5 @@ and operator procedures. Populate the environment inventory during provisioning 
 
 Use each document for its stated subject. Keep related contracts synchronized when behavior changes and preserve the
 PRD's initial-release boundaries.
+
+Customer password recovery/change (P03-010) is an explicitly activated backend slice. Leave PASSWORD_RECOVERY_ENABLED=false until current persistence, an approved HTTPS storefront origin, bounded reset/cooldown/response-floor settings and protected versioned envelope keys are ready. The separate email worker then supports registration and password-reset templates. Use the existing local/test notification migration before upgrading an older database; never put proof keys in frontend configuration. See [recovery activation and key custody](docs/OPERATIONS.md#p03-010-recovery-activation-and-key-custody). Storefront recovery screens and live inbox acceptance remain separate from backend API tests.

@@ -1,3 +1,6 @@
+import { createIdentityModels } from '../dist/modules/auth/models.js'
+import { createResetDelivery } from '../dist/modules/auth/proof-delivery.js'
+import { loadRecoveryOptions } from '../dist/modules/auth/recovery.js'
 import { loadEnvironment } from '../dist/config/environment.js'
 import { openDatabase } from '../dist/db/connection.js'
 import { createRegistrationNotifications } from '../dist/modules/notifications/registration.js'
@@ -9,6 +12,9 @@ import {
 let connection
 try {
   const config = loadEnvironment(process.env)
+  const proofOptions = config.PASSWORD_RECOVERY_ENABLED
+    ? loadRecoveryOptions(process.env)
+    : undefined
   const { adapter, settings } = loadNotificationWorker(process.env)
   connection = await openDatabase(config.MONGODB_URI, config.MONGODB_DB_NAME)
   const store = createRegistrationNotifications(connection)
@@ -17,6 +23,10 @@ try {
     store,
     adapter,
     settings,
+    undefined,
+    proofOptions
+      ? createResetDelivery(createIdentityModels(connection), proofOptions)
+      : undefined,
   ).runBatch()
   console.log(
     JSON.stringify({

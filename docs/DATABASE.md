@@ -382,6 +382,11 @@ failure fail closed. Resend/reissue must increment `users.challengeRevisions[pur
 create a fresh proof/intent; do not extend an existing proof's expiry. Delivery retry reuses that challenge and event key;
 see API §16.3 for uncertain-send handling. No new session is granted by delivery. The chosen proof transport is a high-entropy secure link; supporting short numeric codes later requires a separately reviewed guessing/attempt-limit design. Security tests cover key access, nonce management, concurrency, redaction and restore invalidation.
 
+#### Password-reset implementation
+
+Existing identity fields/indexes remain authoritative. Issuance conditionally increments `users.challengeRevisions.password_reset` in a transaction, invalidates previous reset challenges and removes their envelopes, then inserts a fresh challenge and reference-only `password_reset` notification (`password-reset-v1`). Notification `payload` contains only `challengeId:ObjectId`. `deliveryNotificationId` binds the outbox row to the challenge. AES-256-GCM uses fresh 12-byte nonces and 16-byte tags; AAD binds challenge ID, purpose, customer ID, destination, expiry, scope revision and key version. The externally held key ring is never persisted. Reset consumption and authenticated password change update the user security revision and revoke sessions atomically; password change also invalidates pending reset proofs. Cleanup removes expired/inactive envelopes even if TTL deletion is delayed. A reviewed additive notification validator migration accepts registration-v1 and password-reset-v1 records; old notification validators are known predecessors, and older exact-validator binaries require a compatible rollback build.
+
+
 ### 5.4 `browserContexts` — pre-auth CSRF bootstrap
 
 | Field | Type | Constraints / notes |

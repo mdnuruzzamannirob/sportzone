@@ -26,10 +26,11 @@ export async function consumeUserChallenge<T>(
     challengeId: Types.ObjectId
   }) => Promise<T>,
   clock: () => Date = () => new Date(),
+  transaction?: ClientSession,
 ) {
   if (!Number.isSafeInteger(input.maxAttempts) || input.maxAttempts < 1)
     throw new ChallengeUnavailableError()
-  return inTransaction(connection, async (session) => {
+  const work = async (session: ClientSession) => {
     const now = clock()
     if (!Number.isFinite(now.getTime())) throw new ChallengeUnavailableError()
     const challenge = await models.challenges
@@ -58,7 +59,8 @@ export async function consumeUserChallenge<T>(
     )
     if (changed.modifiedCount !== 1) throw new ChallengeUnavailableError()
     const consumedAt = clock()
-    if (!Number.isFinite(consumedAt.getTime())) throw new ChallengeUnavailableError()
+    if (!Number.isFinite(consumedAt.getTime()))
+      throw new ChallengeUnavailableError()
     const consumed = await models.challenges.updateOne(
       {
         _id: challenge._id,
@@ -71,7 +73,10 @@ export async function consumeUserChallenge<T>(
     )
     if (consumed.modifiedCount !== 1) throw new ChallengeUnavailableError()
     return effect({ session, userId: input.userId, challengeId: challenge._id })
-  })
+  }
+  if (transaction && !transaction.inTransaction())
+    throw new ChallengeUnavailableError()
+  return transaction ? work(transaction) : inTransaction(connection, work)
 }
 
 // Credential lookup primitives, not cookie authentication or permission grants.
@@ -92,7 +97,8 @@ export async function findActiveUserSession(
       revokedAt: { $exists: false },
     })
     .select('+securityRevisionAtIssue +csrfSecretHash')
-  if (!session?.userId || typeof session.securityRevisionAtIssue !== 'number') return null
+  if (!session?.userId || typeof session.securityRevisionAtIssue !== 'number')
+    return null
   const user = await models.users.exists({
     _id: session.userId,
     role: input.kind,

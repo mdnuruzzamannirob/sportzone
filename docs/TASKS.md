@@ -103,7 +103,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | 01 — Requirements Finalization and Planning | 14 | 0 | 0 | 0 | 0 | 0 | 14 | 0 |
 | 02 — UI/UX Design | 11 | 0 | 0 | 0 | 0 | 0 | 11 | 0 |
-| 03 — Authentication and Core Backend | 18 | 7 | 0 | 0 | 0 | 0 | 11 | 0 |
+| 03 — Authentication and Core Backend | 18 | 6 | 0 | 0 | 0 | 0 | 12 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 06 — Checkout, Orders, and Delivery Rules | 20 | 20 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -113,7 +113,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **135** | **0** | **0** | **0** | **0** | **36** | **0** |
+| **Total** | **171** | **134** | **0** | **0** | **0** | **0** | **37** | **0** |
 
 ## 4. Milestone tracker
 
@@ -434,13 +434,13 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Acceptance:** Delivery failure does not undo committed account changes; registration event intent can be delivered/retried independently; one logical event intent is guaranteed, with verified provider idempotency or explicit delivery uncertainty rather than an unsupported exactly-once-send claim.\
   **Evidence:** [Notification foundation verification](./evidence/P03-009-notifications.md). Fixed server-only adapter, independent registration delivery, fenced durable claims, bounded explicit-rejection retries, uncertain-outcome recovery and additive known-schema migration implemented. 28 new unit and 19 real local-provider cases, all 183 integration cases and all 20 CI commands passed. Accepted by project owner on 19 October 2026: “Notification foundation গ্রহণ করছি”; live sender/provider readiness and proof/commerce template activation remain separate.
 
-- [ ] **P03-010 — Implement customer password recovery and change**\
-  **Status:** `Not Started` · **Area:** Backend/identity\
+- [x] **P03-010 — Implement customer password recovery and change**\
+  **Status:** `Done` · **Area:** Backend/identity · **Owner:** Codex\
   **Sources:** FR-01; FR-02; FR-20\
   **Depends on:** `P03-007`, `P03-009`\
   **Deliverable:** Implement time-limited single-use reset by email and authenticated password changes.\
   **Acceptance:** Token replay and user enumeration blocked; reset notifications are durable/retryable.\
-  **Evidence to attach:** Recovery and abuse test cases.
+  **Evidence:** [Password recovery/change verification](./evidence/P03-010-password-recovery.md). Customer-only reset issuance/confirmation, encrypted reference-only durable proof delivery, authenticated password change, session revocation/rotation and safe activation implemented. 25 new unit and 28 real replica/HTTP cases; all 283 backend tests, 211 integration cases, 30 browser regressions and 20 CI commands Passed. Accepted by project owner on 19 October 2026: “Password recovery/change implementation গ্রহণ করছি”; live sender, deployed security/key custody and frontend screen gates remain separate.
 
 - [ ] **P03-011 — Implement verified customer email change**\
   **Status:** `Not Started` · **Area:** Backend/identity\
@@ -1712,48 +1712,28 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | 17 October 2026 | P01-013 | Not Started → In Review → Done; coverage/static and local CI checks passed; project owner accepted the testing baseline | Codex / project owner | [Accepted testing baseline](./evidence/P01-013-testing-baseline.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P01-014 | Not Started → In Review → Done; operations/static checks passed; project owner accepted the operations baseline | Codex / project owner | [Accepted operations baseline](./evidence/P01-014-operations-baseline.md) | Proceed through declared task dependencies |
 | 17 October 2026 | P02-001 | Not Started → In Progress → In Review → Done; build, layout/production smoke and configured CI checks passed; project owner accepted the storefront scaffold | Codex / project owner | [Accepted storefront scaffold](./evidence/P02-001-storefront.md) | Proceed through declared task dependencies |
-
 | 17 October 2026 | P02-002 | Not Started → In Progress → In Review → Done; independent build, DOM navigation, HTTP smoke and configured CI checks passed; project owner accepted the admin scaffold | Codex / project owner | [Accepted admin scaffold](./evidence/P02-002-admin.md) | Proceed through declared task dependencies |
-
 | 17 October 2026 | P02-003 | Not Started → In Progress → In Review → Done; token/contrast, both builds and configured CI checks passed; project owner accepted the design tokens and rendered comparison | Codex / project owner | [Accepted design tokens](./evidence/P02-003-tokens.md) | Proceed through declared task dependencies |
-
 | 18 October 2026 | P02-004 | Not Started → In Progress → In Review → Done; font, dimension, BDT, both-build and configured CI checks passed; project owner accepted the typography/BDT foundation | Codex / project owner | [Accepted typography and BDT foundation](./evidence/P02-004-foundation.md) | Proceed through declared task dependencies |
-
 | 18 October 2026 | P02-005 | Not Started → In Progress → In Review → Done; theme interaction/hydration, bootstrap HTTP, both builds and configured CI checks passed; project owner accepted theme preference | Codex / project owner | [Accepted theme preference](./evidence/P02-005-theme.md) | Proceed through declared task dependencies |
-
 | 18 October 2026 | P02-006 | Not Started → In Progress → In Review → Done; shell interaction/recovery, destination/404, both-build and configured CI checks passed; project owner accepted the storefront shell | Codex / project owner | [Accepted storefront shell](./evidence/P02-006-storefront-shell.md) | Proceed through declared task dependencies |
-
 | 18 October 2026 | P02-007 | Not Started → In Progress → In Review → Done; admin navigation/Drawer, title/actions, signed-out and offline behavior implemented; 103 tests, both builds and configured CI checks passed; project owner accepted the admin shell | Codex / project owner | [Accepted admin shell](./evidence/P02-007-admin-shell.md) | Proceed through declared task dependencies; retain separate browser verification |
-
 | 18 October 2026 | P02-008 | Not Started → In Progress → In Review → Done; HeroUI form/feedback foundations, field-error associations, pending guards and draft/focus preservation implemented; 163 tests, both builds and all configured CI commands passed; project owner accepted the foundation | Codex / project owner | [Accepted form foundation](./evidence/P02-008-forms.md) | Proceed through declared task dependencies; retain separate browser/manual keyboard verification |
-
 | 18 October 2026 | P02-009 | Not Started → In Progress → In Review → Done; HeroUI commerce primitives implemented; 40 new both-theme cases, 203 total tests, both builds and all configured CI commands passed; project owner accepted the commerce primitives | Codex / project owner | [Commerce primitive evidence](./evidence/P02-009-commerce.md) | Proceed through declared task dependencies; retain separate browser verification |
-
 | 18 October 2026 | P02-010 | Not Started → In Progress → In Review → Done; HeroUI table/filter/pagination, upload and guarded-action foundations implemented; 20 new both-theme cases, 223 tests, both builds and all configured CI commands passed; project owner accepted the admin primitives | Codex / project owner | [Admin primitive evidence](./evidence/P02-010-admin-primitives.md) | Proceed through declared task dependencies; retain separate browser verification |
-
 | 18 October 2026 | P02-011 | Not Started → In Progress → In Review → Done; Chromium/Firefox/WebKit foundation audits, both themes and three viewports; accessible-name and foreground findings resolved; all 14 CI commands and 30 browser cases passed; project owner accepted the foundation audit | Codex / project owner | [Foundation audit evidence](./evidence/P02-011-accessibility.md) | Proceed through declared task dependencies; retain feature/release browser and assistive-technology checks |
-
 | 18 October 2026 | P03-001 | Not Started → In Progress → In Review → Done; modular Express bootstrap, safe errors/validation and bounded pagination implemented; backend activated in CI; 37 backend cases and all 19 configured commands passed; project owner accepted the backend scaffold | Codex / project owner | [Backend bootstrap evidence](./evidence/P03-001-backend.md) | Proceed through declared dependencies |
-
 | 18 October 2026 | P03-002 | Not Started → In Progress → In Review → Done; Mongoose/schema/index/transaction foundations and ephemeral local DB implemented; real MongoDB replica-set integration 24/24 and all 20 CI commands passed; project owner accepted the database foundation | Codex / project owner | [Database foundation evidence](./evidence/P03-002-database.md) | Proceed through declared task dependencies; retain deployment and domain-invariant gates |
-
 | 18 October 2026 | P03-003 | Not Started → In Progress → In Review → Done; validated runtime startup, operational health/readiness, secret-safe structured logs and graceful shutdown implemented; 72 backend cases, 29 DB integration cases and all 20 CI commands passed; project owner accepted the runtime/health foundation | Codex / project owner | [Runtime/health evidence](./evidence/P03-003-operations.md) | Proceed through declared task dependencies; retain deployed operational gates |
-
 | 18 October 2026 | P03-017 | Not Started → In Progress → In Review → Done; identity field/scope/index/projection and migration/retention contract reviewed; API and Testing handoffs reconciled; static checks passed; project owner accepted the identity persistence contract | Codex / project owner | [Identity contract evidence](./evidence/P03-017-identity-contracts.md) | Proceed to P03-018 before P03-004 |
-
 | 18 October 2026 | P03-018 | Not Started → In Progress → In Review → Done; 26-operation identity validators, response/error/replay preconditions and API/Testing reconciliation delivered; 73 new contract cases, 145 backend cases and all 20 CI commands passed; project owner accepted the identity API contract | Codex / project owner | [Identity API contract evidence](./evidence/P03-018-api-contracts.md) | Proceed to P03-004 model implementation |
-
 | 18 October 2026 | P03-004 | Not Started → In Progress → In Review → Done; strict identity models/BSON validators, ten indexes and expiry-aware persistence implemented; real proof-consumption/rollback/address races verified; 40 new MongoDB cases, 69 integration cases and all 20 CI commands passed; project owner accepted the identity persistence implementation | Codex / project owner | [Identity persistence evidence](./evidence/P03-004-identity-models.md) | Proceed to P03-005 session implementation |
-
 | 18 October 2026 | P03-005 | Not Started → In Progress → In Review → Done; opaque customer/admin session service and secure cookie boundary implemented; 36 new unit and 20 new real session cases, 89 integration cases and all 20 CI commands passed; browser transition/locator regression corrected; project owner accepted: “Session/cookie implementation গ্রহণ করছি” | Codex / project owner | [Session/cookie evidence](./evidence/P03-005-sessions.md) | Proceed to P03-006 Origin/CORS/CSRF |
-
 | 19 October 2026 | P03-006 | Not Started → In Progress → In Review → Done; exact audience Origin/CORS, context bootstrap, conditional session CSRF refresh and transactional consumption delivered; 17 new unit and 31 real security cases, 120 integration cases, 30 browser regressions and all 20 CI commands passed; temporary WebKit runtime restored without repository dependency changes; project owner accepted: “Origin/CORS/CSRF implementation গ্রহণ করছি” | Codex / project owner | [Browser security evidence](./evidence/P03-006-browser-security.md) | Proceed to P03-007 verified customer authentication |
-
 | 19 October 2026 | P03-007 | Not Started → In Progress → In Review → Done; owner approved password policy; customer registration/login/session/logout, strict registration notification intent, transactional context/session exchange and explicit ready-only activation implemented; 209 backend tests, 138 integration cases, 30 browser regressions and all 20 CI commands passed; project owner accepted: “Customer authentication implementation গ্রহণ করছি” | Codex / project owner | [Customer authentication evidence](./evidence/P03-007-customer-auth.md) | Proceed to P03-008 profile/address ownership |
-
 | 19 October 2026 | P03-008 | Not Started → In Progress → In Review → Done; strict own-profile/address APIs, pinned metadata phone policy, settings-owned coverage reads, transactional address/default limits and verified deletion intake/status delivered; 230 backend tests, 164 integration cases, 30 browser regressions and all 20 CI commands passed; clean locked install verified; project owner accepted: “Profile/address implementation গ্রহণ করছি” | Codex / project owner | [Profile/address evidence](./evidence/P03-008-profile-addresses.md) | Proceed to P03-009 notification foundation |
-
 | 19 October 2026 | P03-009 | Not Started → In Progress → In Review → Done; transactional registration intent connected to server-only adapter/worker; durable fenced claims, capped retry and no-resend uncertainty, additive known-validator migration and transaction external-effect guard delivered; 258 backend tests, 183 integration cases, 30 browser regressions and all 20 CI commands passed; project owner accepted: “Notification foundation গ্রহণ করছি” | Codex / project owner | [Notification foundation evidence](./evidence/P03-009-notifications.md) | Proceed to P03-010 password recovery/change |
+| 19 October 2026 | P03-010 | Not Started → In Progress → In Review → Done; customer password-reset issuance/atomic confirmation, authenticated password change, AES-GCM reference-only proof delivery, session revocation/rotation, bounded abuse controls and additive notification migration delivered; 283 backend tests, 211 integration cases, 30 browser regressions and all 20 CI commands Passed; project owner accepted: “Password recovery/change implementation গ্রহণ করছি” | Codex / project owner | [Password recovery evidence](./evidence/P03-010-password-recovery.md) | Proceed to P03-011 verified email change |
 
 **18 October 2026 — UI foundation change:** The project owner selected HeroUI and delegated visual design within the approved specification. Dependency/theme integration, app-owned controls and working conventions are recorded in [HeroUI foundation review](./evidence/heroui-foundation.md). The follow-up [existing UI migration](./evidence/heroui-existing-ui.md) replaces the earlier native-control exceptions. These changes are In Review; they do not accept another numbered task or milestone.
 

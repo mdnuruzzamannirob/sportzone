@@ -1,3 +1,5 @@
+import { createRecoveryService, loadRecoveryOptions } from './recovery.js'
+import { recoveryRoutes } from './recovery-routes.js'
 import { Router } from 'express'
 import { createAddressCoverage } from '../settings/coverage.js'
 import { createProfileService } from './profile.js'
@@ -46,6 +48,7 @@ export async function composeCustomerRoutes(
   const environment = {
     ...config,
     CUSTOMER_AUTH_ENABLED: String(config.CUSTOMER_AUTH_ENABLED),
+    PASSWORD_RECOVERY_ENABLED: String(config.PASSWORD_RECOVERY_ENABLED),
     PORT: String(config.PORT),
     CORS_ALLOWED_ORIGINS: config.CORS_ALLOWED_ORIGINS.join(','),
   }
@@ -69,6 +72,21 @@ export async function composeCustomerRoutes(
       sessions,
     ),
   )
+  if (config.PASSWORD_RECOVERY_ENABLED)
+    router.use(
+      recoveryRoutes(
+        createRecoveryService(
+          connection,
+          models,
+          sessions,
+          security,
+          notifications,
+          loadRecoveryOptions(environment),
+        ),
+        security,
+        sessions,
+      ),
+    )
   router.use(
     profileRoutes(
       createProfileService(

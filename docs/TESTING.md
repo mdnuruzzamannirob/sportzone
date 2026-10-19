@@ -1462,3 +1462,7 @@ recipient inbox delivery, production migration or legal/operator acceptance. Pro
 their owning features; current registration payloads cannot contain proofs or arbitrary HTML.
 
 [Notification execution evidence](./evidence/P03-009-notifications.md) records commands, fixture boundaries, migration/worker checks and unrun external gates.
+
+### P03-010 password recovery verification
+
+`backend/tests/recovery.test.ts` verifies authenticated encryption, nonce freshness, every AAD field, tamper/key-loss/rotation failures, digest shape and explicit safe activation policy. `backend/tests/integration/recovery.test.ts` uses actual isolated replica MongoDB and HTTP for OPV-007/008/014, FR-01/02/20 and SEC-01/03/05/10: ambiguous recovery responses, cooldown, Origin/CSRF/strict input/rate limits, password policy, single-use/reissue races, reset/change races, session revocation/replacement, rollback, protected projections, envelope cleanup and reference-only durable retries/uncertainty. It also checks supported predecessor migration and the real customer composition's disabled/active route boundary. Existing registration/notification/profile/session suites remain mandatory. Browser foundation regressions do not establish a recovery screen's acceptance. [Execution evidence](./evidence/P03-010-password-recovery.md) records exact commands, outcomes and external boundaries.

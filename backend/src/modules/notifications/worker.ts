@@ -6,7 +6,9 @@ import {
   createResendAdapter,
   validateEmailOptions,
   type EmailAdapter,
+  type EmailMessage,
 } from './email.js'
+import type { ResetDelivery } from '../auth/proof-delivery.js'
 import type { RegistrationNotifications } from './registration.js'
 
 const policy = z
@@ -70,6 +72,7 @@ export function createNotificationWorker(
   adapter: EmailAdapter,
   input: RetryPolicy,
   clock: () => Date = () => new Date(),
+  resetDelivery?: ResetDelivery,
 ) {
   const settings = validateRetryPolicy(input)
   return {
@@ -78,6 +81,7 @@ export function createNotificationWorker(
       const now = clock()
       if (!Number.isFinite(now.getTime()))
         throw new Error('Invalid notification clock.')
+      await resetDelivery?.cleanup(settings.batchSize)
       await store.recover(now, settings.batchSize, settings.maxAttempts)
       let processed = 0
       for (; processed < settings.batchSize; processed++) {
@@ -85,6 +89,7 @@ export function createNotificationWorker(
           clock(),
           settings.claimTtlMs,
           settings.maxAttempts,
+          Boolean(resetDelivery),
         )
         if (!claim) break
         if (!(await store.currentClaim(claim.id, claim.claimId, clock()))) {
@@ -92,14 +97,34 @@ export function createNotificationWorker(
           continue
         }
         const idempotencyKey = `sz-notification-${createHash('sha256').update(claim.eventKey).digest('hex')}`
-        // Only this server-owned template is enabled. No proof, URL or arbitrary HTML from the outbox.
+        let message: Omit<EmailMessage, 'idempotencyKey'> | undefined
+        try {
+          message =
+            claim.eventType === 'password_reset'
+              ? await resetDelivery?.message(claim)
+              : {
+                  to: claim.recipient,
+                  subject: 'Welcome to SportZone',
+                  text: 'Your SportZone account has been created. Email verification is a separate step.',
+                }
+        } catch {
+          /* Missing/tampered/expired proof fails closed without a provider call. */
+        }
+        if (!message) {
+          await store.finish(
+            claim.id,
+            claim.claimId,
+            { kind: 'rejected', retryable: false, code: 'PROOF_UNAVAILABLE' },
+            clock(),
+            settings.maxAttempts,
+            0,
+          )
+          continue
+        }
+        if (!(await store.currentClaim(claim.id, claim.claimId, clock())))
+          continue
         const outcome = await adapter
-          .send({
-            to: claim.recipient,
-            subject: 'Welcome to SportZone',
-            text: 'Your SportZone account has been created. Email verification is a separate step.',
-            idempotencyKey,
-          })
+          .send({ ...message, idempotencyKey })
           .catch(() => ({
             kind: 'uncertain' as const,
             code: 'PROVIDER_UNCERTAIN' as const,

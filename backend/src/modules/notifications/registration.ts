@@ -18,10 +18,17 @@ const schema = new Schema(
     eventKey: { type: String, required: true },
     userId: { type: Schema.Types.ObjectId, required: true },
     recipient: { type: recipient, required: true, select: false },
-    eventType: { type: String, enum: ['registration'], required: true },
+    eventType: {
+      type: String,
+      enum: ['registration', 'password_reset'],
+      required: true,
+    },
     templateVersion: { type: String, required: true },
     payload: {
-      type: new Schema({}, { _id: false, strict: 'throw' }),
+      type: new Schema(
+        { challengeId: Schema.Types.ObjectId },
+        { _id: false, strict: 'throw' },
+      ),
       required: true,
     },
     status: {
@@ -124,6 +131,30 @@ export function createRegistrationNotifications(
         { upsert: true, session, runValidators: true },
       )
     },
+    async enqueuePasswordReset(
+      input: {
+        id: Types.ObjectId
+        challengeId: Types.ObjectId
+        userId: Types.ObjectId
+        email: string
+      },
+      session: ClientSession,
+    ) {
+      if (!session.inTransaction())
+        throw new Error('Notification intent requires business transaction.')
+      await new model({
+        _id: input.id,
+        eventKey: `password_reset:${input.challengeId.toHexString()}:v1`,
+        userId: input.userId,
+        recipient: { emailNormalized: input.email },
+        eventType: 'password_reset',
+        templateVersion: 'password-reset-v1',
+        payload: { challengeId: input.challengeId },
+        status: 'queued',
+        attemptCount: 0,
+        nextAttemptAt: clock(),
+      }).save({ session })
+    },
     async migrateFoundation() {
       if (!connection.db) throw new Error('Notification database unavailable.')
       const existing = await connection.db
@@ -148,6 +179,10 @@ export function createRegistrationNotifications(
           !isDeepStrictEqual(
             existing.options?.validator,
             legacyRegistrationNotificationValidator,
+          ) &&
+          !isDeepStrictEqual(
+            existing.options?.validator,
+            foundationNotificationValidator,
           )
         )
           throw new Error(
@@ -163,13 +198,27 @@ export function createRegistrationNotifications(
       await model.createIndexes()
       await this.verifyIndexes()
     },
-    async claim(now: Date, ttlMs: number, maxAttempts: number) {
+    async claim(
+      now: Date,
+      ttlMs: number,
+      maxAttempts: number,
+      includeProofs = false,
+    ) {
       const claimId = randomUUID()
       const row = await model
         .findOneAndUpdate(
           {
-            eventType: 'registration',
-            templateVersion: 'registration-v1',
+            $or: [
+              { eventType: 'registration', templateVersion: 'registration-v1' },
+              ...(includeProofs
+                ? [
+                    {
+                      eventType: 'password_reset' as const,
+                      templateVersion: 'password-reset-v1',
+                    },
+                  ]
+                : []),
+            ],
             status: { $in: ['queued', 'retry_wait'] },
             attemptCount: { $lt: maxAttempts },
             nextAttemptAt: { $lte: now },
@@ -194,6 +243,9 @@ export function createRegistrationNotifications(
       return row
         ? {
             id: row._id,
+            userId: row.userId,
+            eventType: row.eventType,
+            challengeId: row.payload.challengeId,
             eventKey: row.eventKey,
             recipient: row.recipient.emailNormalized,
             attemptCount: row.attemptCount,
@@ -422,7 +474,7 @@ export const legacyRegistrationNotificationValidator = {
 }
 
 // Immutable known predecessor above; extend only the current validator for this additive migration.
-export const registrationNotificationValidator = {
+export const foundationNotificationValidator = {
   $jsonSchema: {
     ...legacyRegistrationNotificationValidator.$jsonSchema,
     properties: {
@@ -432,4 +484,39 @@ export const registrationNotificationValidator = {
       lastAttemptAt: { bsonType: 'date' },
     },
   },
+}
+
+// P03-010 additive event/payload contract; known foundation predecessor remains immutable.
+export const registrationNotificationValidator = {
+  $and: [
+    {
+      $jsonSchema: {
+        ...foundationNotificationValidator.$jsonSchema,
+        properties: {
+          ...foundationNotificationValidator.$jsonSchema.properties,
+          eventType: { enum: ['registration', 'password_reset'] },
+          templateVersion: { enum: ['registration-v1', 'password-reset-v1'] },
+          payload: {
+            bsonType: 'object',
+            additionalProperties: false,
+            properties: { challengeId: { bsonType: 'objectId' } },
+          },
+        },
+      },
+    },
+    {
+      $or: [
+        {
+          eventType: 'registration',
+          templateVersion: 'registration-v1',
+          'payload.challengeId': { $exists: false },
+        },
+        {
+          eventType: 'password_reset',
+          templateVersion: 'password-reset-v1',
+          'payload.challengeId': { $type: 'objectId' },
+        },
+      ],
+    },
+  ],
 }

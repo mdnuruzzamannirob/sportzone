@@ -1,3 +1,6 @@
+import { loadRecoveryOptions } from './recovery.js'
+import { ConfigurationError } from './errors.js'
+export { ConfigurationError } from './errors.js'
 import { z } from 'zod'
 
 const secret = z
@@ -48,6 +51,15 @@ const schema = z
       .enum(['true', 'false'])
       .default('false')
       .transform((value) => value === 'true'),
+    PASSWORD_RECOVERY_ENABLED: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((value) => value === 'true'),
+    PASSWORD_RESET_TTL_SECONDS: z.string().optional(),
+    PASSWORD_RESET_COOLDOWN_SECONDS: z.string().optional(),
+    PASSWORD_RESET_RESPONSE_FLOOR_MS: z.string().optional(),
+    AUTH_PROOF_ACTIVE_KEY_VERSION: z.string().optional(),
+    AUTH_PROOF_KEYS_JSON: z.string().optional(),
     CUSTOMER_SESSION_TTL_SECONDS: z.string().optional(),
     ADMIN_SESSION_TTL_SECONDS: z.string().optional(),
     SESSION_COOKIE_SAME_SITE: z.enum(['lax', 'strict']).optional(),
@@ -63,6 +75,29 @@ const schema = z
       .pipe(z.array(origin).length(2)),
   })
   .superRefine((value, ctx) => {
+    if (value.PASSWORD_RECOVERY_ENABLED) {
+      if (!value.CUSTOMER_AUTH_ENABLED)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['PASSWORD_RECOVERY_ENABLED'],
+          message: 'Customer authentication required',
+        })
+      try {
+        loadRecoveryOptions({
+          ...value,
+          PORT: String(value.PORT),
+          CUSTOMER_AUTH_ENABLED: String(value.CUSTOMER_AUTH_ENABLED),
+          PASSWORD_RECOVERY_ENABLED: 'true',
+          CORS_ALLOWED_ORIGINS: value.CORS_ALLOWED_ORIGINS.join(','),
+        })
+      } catch {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['password_recovery_configuration'],
+          message: 'Explicit secure recovery configuration required',
+        })
+      }
+    }
     if (value.CUSTOMER_AUTH_ENABLED) {
       for (const field of [
         'CUSTOMER_SESSION_TTL_SECONDS',
@@ -142,11 +177,6 @@ const schema = z
     }
   })
 export type RuntimeConfig = Readonly<z.output<typeof schema>>
-export class ConfigurationError extends Error {
-  constructor(readonly fields: readonly string[]) {
-    super('Invalid backend configuration.')
-  }
-}
 export function loadEnvironment(environment: NodeJS.ProcessEnv): RuntimeConfig {
   const parsed = schema.safeParse(environment)
   if (!parsed.success)
