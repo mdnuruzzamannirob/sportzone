@@ -1488,3 +1488,18 @@ A completed evidence form needs **real observations**, a traceable environment/v
 and an explicitly recorded decision. Placeholder text, checkbox presence, published runbook or synthetic gateway
 response is **not** completion evidence. Attach evidence to the corresponding stable task ID in `TASKS.md`;
 propagate accepted versions and remaining decisions to the handover record.
+
+### Browser security composition
+
+P03-006 provides the identity bootstrap router and route-selected Origin/CORS/CSRF controls; the health-only executable
+has no identity router enabled. At identity composition, call `loadBrowserSecurityOptions` with the protected environment
+and existing cookie policy. Set `BROWSER_CONTEXT_TTL_SECONDS` explicitly in 1–1800 seconds; its sanitized template is
+blank. `STOREFRONT_ORIGIN`, `ADMIN_ORIGIN` and `CORS_ALLOWED_ORIGINS` must agree exactly; frontend origins must be distinct.
+HTTPS is required with secure cookies; controlled loopback HTTP follows the existing local/test session policy.
+
+The separate `sz_browser_ctx` and `sz_admin_browser_ctx` cookies are API-host-only and grant no account permission.
+SESSION_SECRET rotation also invalidates all browser contexts; drain old-key processes as for sessions. CSRF errors
+remain generic `403 CSRF_INVALID`; do not log cookies, CSRF headers, context hashes or raw Origin values. Before deploying
+identity routes, verify real approved-origin browser cookies/preflights and logout/recovery composition. Provider routes
+stay segregated and require their own verified outcome handling. No live browser-origin deployment is asserted by the
+local MongoDB/HTTP suite.

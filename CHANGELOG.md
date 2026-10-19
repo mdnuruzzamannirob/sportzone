@@ -96,3 +96,7 @@ and personal data from change entries.
 - Stabilized the existing browser navigation regression by waiting for the Appearance popover to close and selecting the Admin navigation dialog by accessible name; retained keyboard/focus/axe assertions and zero automatic retries.
 
 - Recorded project-owner acceptance of P03-005 on 18 October 2026: “Session/cookie implementation গ্রহণ করছি”. Marked the task Done with its existing Passed evidence: 181 backend unit/contract tests, 89 MongoDB integration cases and all 20 CI commands. Public authentication and complete Origin/CSRF remain separate tasks. [Evidence](docs/evidence/P03-005-sessions.md).
+
+- Implemented P03-006 exact audience Origin/CORS controls, short-lived hashed browser contexts, non-cacheable CSRF bootstrap router, conditional session CSRF refresh and transactional context consumption. Added strict guest adapter boundaries and negative/concurrency/rollback tests; synchronized API/data/testing/operations and sanitized lifetime configuration. Identity route activation and verified credentials remain in their owning authentication tasks. [Evidence](docs/evidence/P03-006-browser-security.md).
+
+- Recorded project-owner acceptance of P03-006 on 19 October 2026: “Origin/CORS/CSRF implementation গ্রহণ করছি”. Marked the task Done with 198 backend tests, 120 MongoDB integration cases, 30 browser regressions and all 20 CI commands Passed. Verified credential routes, real guest persistence and deployed-origin verification remain with their owning tasks. [Evidence](docs/evidence/P03-006-browser-security.md).

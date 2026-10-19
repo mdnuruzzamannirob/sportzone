@@ -383,6 +383,13 @@ see API §16.3 for uncertain-send handling. No new session is granted by deliver
 
 **Rules:** no user/order permission is granted by this record; Origin verification is still required on protected browser mutations. Implementations may replace this persistence with an equally secure signed short-lived context only after documented Architecture/API alignment.
 
+The P03-006 browser-security service uses 32-byte opaque cookie/CSRF values and audience-separated HMAC-SHA-256
+verifiers (API §4.5); plaintext is never persisted. Bootstrap replacement and single-use successful exchange write
+`rotatedAt` conditionally in a transaction. Consumption and its owned durable effect commit together; failure rolls back
+both. Expired or rotated records remain unusable before TTL cleanup. Session CSRF refresh uses the existing private
+`csrfSecretHash` field and a conditional old-verifier update; it does not extend session lifetime. No index/schema change
+is introduced by these services.
+
 ### 5.5 Identity field and projection rules
 
 The four identity collections use explicit physical names and the mutable timestamp/strict-schema conventions in §2.

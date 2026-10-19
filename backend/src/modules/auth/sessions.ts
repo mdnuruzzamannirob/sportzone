@@ -228,6 +228,35 @@ export function createSessionService(
       )
       return expected.length === supplied.length && timingSafeEqual(expected, supplied)
     },
+    async refreshCsrf(
+      kind: SessionKind,
+      token: string,
+    ): Promise<{ csrfToken: string; expiresAt: Date }> {
+      const found = await resolve(kind, token)
+      if (!found?.csrfSecretHash) throw new ApiError('AUTH_REQUIRED')
+      const csrfToken = randomBytes(32).toString('base64url')
+      const changed = await models.sessions.updateOne(
+        {
+          _id: found._id,
+          kind,
+          csrfSecretHash: found.csrfSecretHash,
+          expiresAt: { $gt: now() },
+          revokedAt: { $exists: false },
+        },
+        {
+          $set: {
+            csrfSecretHash: hash(
+              kind,
+              'csrf',
+              csrfToken,
+              hash(kind, 'session', token),
+            ),
+          },
+        },
+      )
+      if (changed.modifiedCount !== 1) throw new ApiError('AUTH_REQUIRED')
+      return { csrfToken, expiresAt: found.expiresAt }
+    },
     async rotate(kind: SessionKind, token: string): Promise<IssuedSession> {
       kindCheck(kind)
       if (!tokenPattern.test(token)) throw new ApiError('AUTH_REQUIRED')

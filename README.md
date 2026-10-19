@@ -143,8 +143,10 @@ synthetic accounts/digests on an owned replica. No customer/admin authentication
 Customer/admin session service and cookie adapter are implemented in `backend/src/modules/auth/`. They require explicit
 session lifetime/SameSite settings through `loadSessionOptions` when authentication is composed; no values are supplied as
 defaults. Tokens are opaque and hashed at rest; issuance, rotation and revocation are verified with real MongoDB fixtures.
-The current runtime still exposes no login/logout route; full Origin/CSRF and verified-credential integration follow in
-their owning tasks. See [session evidence](docs/evidence/P03-005-sessions.md).
+The current runtime still exposes no login/logout route; verified-credential integration follows in
+its owning tasks. Origin/CORS/CSRF guards and bootstrap router are available through `createBrowserSecurity` and
+`browserSecurityRoutes`; identity composition must load explicit `BROWSER_CONTEXT_TTL_SECONDS` (1–1800), mount that router,
+and apply the route-selected protection before exposing mutations. Guest order persistence remains P06-015. See [session evidence](docs/evidence/P03-005-sessions.md).
 
 Backend startup validates configuration, connects to a transaction-capable MongoDB, then opens HTTP. The default bind is loopback (`API_BIND_HOST=127.0.0.1`), port 4000. Copy `.env.example` to a private root `.env`, supply your local replica URI/database, and generate separate random 32-byte hex values for `SESSION_SECRET` and `HEALTH_MONITOR_TOKEN`. No secret value is supplied by the repository. From the root, after building, `node --env-file=.env backend/dist/server.js` explicitly loads that local file; `npm run start --workspace=backend` reads already injected process variables. For editing, use `npm run build:watch --workspace=backend` alongside `node --env-file=.env --watch backend/dist/server.js`.
 

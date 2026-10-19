@@ -1405,3 +1405,20 @@ This register is derived from the **164 method+path entries** in `API.md` v1.0 A
 **Reconciliation rule:** Refresh this appendix from API Appendix D whenever that register changes; count and exact method/path sets must match. Operation rows with a source route lacking an explicit access profile must be reconciled against API §§4–5 and the canonical route table **before execution**. Any mismatch is `Blocked / Contract Pending`, not a passed test.
 
 **Minimum operation evidence record:** `OPV-ID`, runtime/OpenAPI `operationId`, executable test ID(s), role/owner and expected DTO, happy/negative/CSRF/replay results where applicable, request ID, side-effect snapshot, build, run artifact, environment, reviewer and disposition. No row in this edition has that evidence.
+
+### P03-006 browser security verification
+
+`backend/tests/browser-security.test.ts` checks exact-origin configuration, bounded explicit context lifetime,
+secret-safe configuration failures and strict audience cookie parsing. `backend/tests/integration/browser-security.test.ts`
+composes the real bootstrap router and guards with the P03-005 session service and strict identity persistence on an
+owned MongoDB replica set. API-01, SEC-04 and SEC-11 coverage includes missing/forged/cross-audience Origin, malformed or
+swapped CSRF/cookies, narrow credentialed preflights, retained expired records, context replacement, transactional
+single-use concurrent exchange and rollback after an actual database effect, session CSRF refresh/revocation, and
+POST/PUT/PATCH/DELETE rejection before fixture mutation. Admin recovery bootstrap remains available with an expired
+session cookie through explicit `sessionKind=context`; HEAD does not issue credentials.
+
+Guest tests verify strict cookie namespace and adapter handoff with a synthetic order-scoped adapter; they do not prove
+real guest proof consumption or order ownership (P06-015). The segregated provider fixture verifies only that browser
+middleware is not applied; real provider verification remains in its payment tasks. These local HTTP tests do not claim
+ENV-04 deployed-domain browser cookie acceptance, verified customer/admin credential flows, or M1 acceptance. See
+[execution evidence](./evidence/P03-006-browser-security.md).

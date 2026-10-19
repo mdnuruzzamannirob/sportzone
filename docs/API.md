@@ -171,7 +171,8 @@ Paths use `{id}` in examples, but Express implementations bind `:id`. Route pref
 | `sz_customer_sid` | Registered customer | Opaque, hashed at rest; `HttpOnly`, `Secure`, approved `SameSite`, path `/` |
 | `sz_admin_sid` | Privately provisioned admin | Separate credential and revocation path; never accepted by customer routes as customer identity |
 | `sz_guest_order_sid` | Verified single order | Contains no raw order/customer info; server binds exact `orderId` and expiry |
-| `sz_browser_ctx` | Pre-auth browser context | Short-lived; **no account or order authorization**; bound to CSRF token |
+| `sz_browser_ctx` | Storefront pre-auth browser context | Short-lived; **no account or order authorization**; bound to CSRF token |
+| `sz_admin_browser_ctx` | Admin pre-auth browser context | Separate audience and cookie; same host-only security attributes; no account authorization |
 
 Issue all cookies from the **API origin**, without a `Domain` attribute; environment-specific names/path prefixes may change only if security isolation is preserved.
 Only `Secure` HTTPS production cookies; local testing may use a controlled development exception.
@@ -252,8 +253,36 @@ await durable logout before reporting server revocation, then perform P03-006's 
 
 The service's authenticate result is an explicit internal principal projection; never serialize a raw session document.
 The private lookup explicitly selects its CSRF verifier for the session service; ordinary model projections still exclude
-all credential verifiers. Guest sessions remain P06-015. Password verification/provisioning/recovery, complete CSRF/CORS,
-endpoint throttles/audit and integrated browser security remain P03-006–016.
+all credential verifiers. Guest sessions remain P06-015. Browser protection is implemented in §4.5; credential verification,
+recovery, endpoint throttles/audit and integrated authentication flows remain P03-007–016.
+
+### 4.5 Browser security implementation boundary
+
+`browserSecurityRoutes` composes `GET /auth/csrf` and `GET /admin/auth/csrf` under `/api/v1` with
+`createBrowserSecurity` and the session service. The health-only executable does not yet compose identity routes;
+P03-007/012 must mount this router and apply the route-selected guards before enabling credential mutations.
+Bootstrap requires the exact corresponding frontend `Origin`, returns `{csrfToken,expiresAt}` with `no-store`, and
+sets only its audience's context cookie when anonymous. `HEAD` returns no content and creates no context.
+
+Storefront bootstrap accepts only optional `sessionKind=context|customer|guest`. Without it, a present customer cookie
+selects customer refresh; otherwise a new storefront context is issued. Invalid present session credentials return
+`401 AUTH_REQUIRED`, without anonymous fallback. `context` explicitly requests pre-auth protection for recovery/logout
+when the old session is expired. Context-only login/recovery/proof routes request that selector even if another session
+is present. Admin bootstrap permits only the explicit `context` selector; it provides pre-auth protection even with an expired
+admin cookie, so recovery and repeat logout remain usable. No client selector can request an admin
+principal from the storefront. Unknown/duplicate query parameters are invalid. Guest selection requires the exact
+`sz_guest_order_sid` cookie and a registered order-scoped adapter; otherwise `401 GUEST_PROOF_REQUIRED`.
+
+| Control | Required composition and behavior |
+| --- | --- |
+| Origins/CORS | Canonical exact storefront/admin origins, separately selected by route; no wildcard, reflected unapproved Origin or origin-less browser mutation. Approved credentialed preflight permits GET/HEAD/POST/PUT/PATCH/DELETE and Content-Type, X-CSRF-Token, Idempotency-Key, If-Match only; `Vary` includes Origin and preflight request headers/method. No bearer-Authorization browser preflight. |
+| Anonymous contexts | Independent 32-byte opaque cookie and CSRF; HMAC-SHA-256 at rest using SESSION_SECRET with `sportzone:browser:v1:<audience>:context::<cookie>` and `sportzone:browser:v1:<audience>:csrf:<contextHash>:<csrfToken>` domains. Audience, expiry and absent rotatedAt are checked before constant-time comparison. |
+| Lifetime/config | Explicit BROWSER_CONTEXT_TTL_SECONDS in 1–1800 seconds, no fallback; exact CORS_ALLOWED_ORIGINS must match the two approved distinct origins. Use the existing session service's fixed host-only HttpOnly/Secure/SameSite/path policy, never request-derived attributes. |
+| Bootstrap refresh | New anonymous context atomically invalidates the supplied same-audience predecessor. Authenticated refresh replaces only that session's CSRF verifier by conditional update, preserving session expiry and rejecting concurrent stale refresh. Previous CSRF fails. |
+| Mutation guard | Route selects context-only, customer-only, admin-only or customer-or-context; all unsafe methods require exact Origin and custom token header. Invalid customer cookie never falls back to anonymous checkout. These guards grant no account/order authorization; apply session/role/ownership guards as well. |
+| Successful exchange | The credential/proof service must use consumeContext with its durable effect in the same MongoDB transaction. One concurrent exchange wins; failed effect rolls back consumption. Do not perform provider/email calls in that callback or start a nested independent transaction. |
+| Guest handoff | P06-015 supplies an order-bound refresh/verify adapter; only an exact, single opaque guest cookie reaches it. Customer/admin/browser contexts cannot substitute. Its real proof/session persistence remains in that task. |
+| Provider segregation | Register provider notifications/returns outside browser guards and bootstrap. Their own verification and acknowledgment contracts remain mandatory; omission of browser CSRF never proves payment success. |
 
 ## 5. Authorization & data exposure
 
