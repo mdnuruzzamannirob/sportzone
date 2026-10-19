@@ -40,11 +40,19 @@ export function createRecoveryService(
   options: RecoveryOptions,
   clock: () => Date = () => new Date(),
 ) {
-  async function invalidate(userId: Types.ObjectId, session: ClientSession) {
+  async function invalidate(
+    userId: Types.ObjectId,
+    session: ClientSession,
+    allIdentity = false,
+  ) {
     await models.challenges.updateMany(
       {
         userId,
-        purpose: 'password_reset',
+        purpose: {
+          $in: allIdentity
+            ? ['password_reset', 'email_change', 'email_verify']
+            : ['password_reset'],
+        },
         consumedAt: { $exists: false },
         invalidatedAt: { $exists: false },
       },
@@ -185,12 +193,19 @@ export function createRecoveryService(
                     status: 'active',
                     emailNormalized: candidate.emailNormalized,
                   },
-                  { $set: { passwordHash }, $inc: { securityRevision: 1 } },
+                  {
+                    $set: { passwordHash },
+                    $inc: {
+                      securityRevision: 1,
+                      'challengeRevisions.email_change': 1,
+                      'challengeRevisions.email_verify': 1,
+                    },
+                  },
                   { session: transaction },
                 )
                 if (changed.modifiedCount !== 1)
                   throw new ChallengeUnavailableError()
-                await invalidate(userId, transaction)
+                await invalidate(userId, transaction, true)
                 await revoke(userId, transaction)
                 return { reset: true as const }
               },
@@ -249,13 +264,15 @@ export function createRecoveryService(
             $inc: {
               securityRevision: 1,
               'challengeRevisions.password_reset': 1,
+              'challengeRevisions.email_change': 1,
+              'challengeRevisions.email_verify': 1,
             },
           },
           { session },
         )
         if (changed.modifiedCount !== 1)
           throw new ApiError('INVALID_CREDENTIALS')
-        await invalidate(user._id, session)
+        await invalidate(user._id, session, true)
         await revoke(user._id, session)
         const issued = await sessions.issue(
           'customer',

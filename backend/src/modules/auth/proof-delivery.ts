@@ -3,10 +3,11 @@ import type { IdentityModels } from './models.js'
 import { proofHash, type ProofEnvelope } from './proof-envelope.js'
 import type { RecoveryOptions } from './recovery.js'
 
-export function createResetDelivery(
+function createDelivery(
   models: IdentityModels,
   options: RecoveryOptions,
-  clock: () => Date = () => new Date(),
+  clock: () => Date,
+  purpose: 'password_reset' | 'email_change',
 ) {
   if (
     new URL(options.storefrontOrigin).protocol !== 'https:' ||
@@ -49,9 +50,11 @@ export function createResetDelivery(
       const challenge = await models.challenges
         .findOne({
           _id: claim.challengeId,
-          purpose: 'password_reset',
+          purpose,
           userId: claim.userId,
-          emailNormalized: claim.recipient,
+          ...(purpose === 'password_reset'
+            ? { emailNormalized: claim.recipient }
+            : { targetEmailNormalized: claim.recipient }),
           deliveryNotificationId: claim.id,
           expiresAt: { $gt: clock() },
           consumedAt: { $exists: false },
@@ -67,6 +70,9 @@ export function createResetDelivery(
         email: challenge.emailNormalized,
         expiresAt: challenge.expiresAt,
         revision: challenge.scopeRevisionAtIssue,
+        ...(purpose === 'email_change'
+          ? { purpose, targetEmail: claim.recipient }
+          : {}),
       }
       const envelope: ProofEnvelope = {
         algorithm: 'AES-256-GCM',
@@ -76,24 +82,37 @@ export function createResetDelivery(
         authTag: Buffer.from(challenge.deliveryEnvelope.authTag),
       }
       const proof = options.encryption.decrypt(envelope, binding)
-      if (proofHash(proof) !== challenge.secretHash)
+      if (proofHash(proof, purpose) !== challenge.secretHash)
         throw new Error('Proof delivery unavailable.')
       const eligible = await models.users.exists({
         _id: claim.userId,
         role: 'customer',
         status: 'active',
-        emailNormalized: claim.recipient,
-        'challengeRevisions.password_reset': challenge.scopeRevisionAtIssue,
+        emailNormalized: challenge.emailNormalized,
+        [`challengeRevisions.${purpose}`]: challenge.scopeRevisionAtIssue,
       })
       if (!eligible || challenge.expiresAt <= clock())
         throw new Error('Proof delivery unavailable.')
       // Fragment keeps the proof out of HTTP request targets and referrer headers in the later UI.
       return {
         to: claim.recipient,
-        subject: 'Reset your SportZone password',
-        text: `Reset your password using this single-use link:\n${options.storefrontOrigin}/reset-password#token=${proof}\nThis link expires at ${challenge.expiresAt.toISOString()}. If you did not request it, ignore this email.`,
+        subject:
+          purpose === 'password_reset'
+            ? 'Reset your SportZone password'
+            : 'Verify your new SportZone email',
+        text: `${purpose === 'password_reset' ? 'Reset your password' : 'Verify your new email'} using this single-use link:\n${options.storefrontOrigin}${purpose === 'password_reset' ? '/reset-password' : '/account/email-change'}#token=${proof}\nThis link expires at ${challenge.expiresAt.toISOString()}. If you did not request it, ignore this email.`,
       }
     },
   }
 }
+export const createResetDelivery = (
+  models: IdentityModels,
+  options: RecoveryOptions,
+  clock: () => Date = () => new Date(),
+) => createDelivery(models, options, clock, 'password_reset')
+export const createEmailChangeDelivery = (
+  models: IdentityModels,
+  options: RecoveryOptions,
+  clock: () => Date = () => new Date(),
+) => createDelivery(models, options, clock, 'email_change')
 export type ResetDelivery = ReturnType<typeof createResetDelivery>

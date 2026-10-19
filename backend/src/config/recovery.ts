@@ -12,8 +12,9 @@ export type RecoveryOptions = {
   storefrontOrigin: string
   encryption: ProofEncryption
 }
-export function loadRecoveryOptions(
+function loadProofOptions(
   environment: NodeJS.ProcessEnv,
+  prefix: 'PASSWORD_RESET' | 'EMAIL_CHANGE',
 ): RecoveryOptions {
   try {
     const integer = (key: string, min: number, max: number) => {
@@ -47,9 +48,9 @@ export function loadRecoveryOptions(
     )
       throw new Error()
     return {
-      ttlSeconds: integer('PASSWORD_RESET_TTL_SECONDS', 60, 1800),
-      cooldownSeconds: integer('PASSWORD_RESET_COOLDOWN_SECONDS', 60, 3600),
-      responseFloorMs: integer('PASSWORD_RESET_RESPONSE_FLOOR_MS', 100, 5000),
+      ttlSeconds: integer(`${prefix}_TTL_SECONDS`, 60, 1800),
+      cooldownSeconds: integer(`${prefix}_COOLDOWN_SECONDS`, 60, 3600),
+      responseFloorMs: integer(`${prefix}_RESPONSE_FLOOR_MS`, 100, 5000),
       storefrontOrigin: origin.origin,
       encryption: createProofEncryption(
         environment.AUTH_PROOF_ACTIVE_KEY_VERSION ?? '',
@@ -57,6 +58,15 @@ export function loadRecoveryOptions(
       ),
     }
   } catch {
-    throw new ConfigurationError(['password_recovery_configuration'])
+    throw new ConfigurationError([
+      prefix === 'PASSWORD_RESET'
+        ? 'password_recovery_configuration'
+        : 'email_change_configuration',
+    ])
   }
 }
+
+export const loadRecoveryOptions = (environment: NodeJS.ProcessEnv) =>
+  loadProofOptions(environment, 'PASSWORD_RESET')
+export const loadEmailChangeOptions = (environment: NodeJS.ProcessEnv) =>
+  loadProofOptions(environment, 'EMAIL_CHANGE')

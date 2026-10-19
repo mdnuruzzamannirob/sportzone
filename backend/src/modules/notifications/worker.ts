@@ -73,6 +73,7 @@ export function createNotificationWorker(
   input: RetryPolicy,
   clock: () => Date = () => new Date(),
   resetDelivery?: ResetDelivery,
+  emailChangeDelivery?: ResetDelivery,
 ) {
   const settings = validateRetryPolicy(input)
   return {
@@ -81,7 +82,7 @@ export function createNotificationWorker(
       const now = clock()
       if (!Number.isFinite(now.getTime()))
         throw new Error('Invalid notification clock.')
-      await resetDelivery?.cleanup(settings.batchSize)
+      await (resetDelivery ?? emailChangeDelivery)?.cleanup(settings.batchSize)
       await store.recover(now, settings.batchSize, settings.maxAttempts)
       let processed = 0
       for (; processed < settings.batchSize; processed++) {
@@ -90,6 +91,7 @@ export function createNotificationWorker(
           settings.claimTtlMs,
           settings.maxAttempts,
           Boolean(resetDelivery),
+          Boolean(emailChangeDelivery),
         )
         if (!claim) break
         if (!(await store.currentClaim(claim.id, claim.claimId, clock()))) {
@@ -100,13 +102,15 @@ export function createNotificationWorker(
         let message: Omit<EmailMessage, 'idempotencyKey'> | undefined
         try {
           message =
-            claim.eventType === 'password_reset'
-              ? await resetDelivery?.message(claim)
-              : {
-                  to: claim.recipient,
-                  subject: 'Welcome to SportZone',
-                  text: 'Your SportZone account has been created. Email verification is a separate step.',
-                }
+            claim.eventType === 'email_change'
+              ? await emailChangeDelivery?.message(claim)
+              : claim.eventType === 'password_reset'
+                ? await resetDelivery?.message(claim)
+                : {
+                    to: claim.recipient,
+                    subject: 'Welcome to SportZone',
+                    text: 'Your SportZone account has been created. Email verification is a separate step.',
+                  }
         } catch {
           /* Missing/tampered/expired proof fails closed without a provider call. */
         }

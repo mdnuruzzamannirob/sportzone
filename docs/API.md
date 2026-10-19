@@ -356,8 +356,8 @@ orders, receipt/payment/refund evidence, audit and immutable historical snapshot
 
 P03-009 connects the existing transactional registration intent to a server-only Resend HTTP adapter and explicit
 one-batch worker. No notification HTTP route, arbitrary email submission or automatic email send from registration is
-added. The worker supports only `registration`/`registration-v1` with empty payload and server-owned plain-text content;
-proof-bearing and commerce templates remain disabled until their owning feature contracts/renderers exist.
+added. Registration uses `registration`/`registration-v1` with empty payload and server-owned plain-text content. P03-010/011 add
+explicitly activated password-reset/email-change proof renderers under §9.1; other proof/commerce templates remain disabled.
 
 A majority-acknowledged conditional claim moves queued/retry_wait to sending, increments attemptCount and records a fresh
 claimId/expiry before any provider request. Only the active claim can settle it. Explicit rate-limit rejection may enter
@@ -599,6 +599,14 @@ Customer reset issuance returns the same `{accepted:true}` for missing, inactive
 
 Recovery activates only with explicit `PASSWORD_RECOVERY_ENABLED=true`, a bounded `PASSWORD_RESET_TTL_SECONDS` (60–1800), `PASSWORD_RESET_COOLDOWN_SECONDS` (60–3600), separate versioned 256-bit envelope keys and the fixed configured HTTPS storefront origin. No Host/request URL supplies email links. Proofs use the `/reset-password#token=…` fragment for the later frontend screen; the backend accepts tokens only in the confirmation JSON body. Key loss/tamper fails closed; expiry cleanup runs independently of MongoDB TTL in the notification worker.
 
+
+#### Verified email-change implementation
+
+P03-011 implements customer-only `/me/email-changes` and `/me/email-changes/confirm` with Origin/session CSRF, strict JSON and local rate limits. Issuance persists a time-limited single-use proof for the normalized new destination without changing the account. Existing/occupied targets and cooldown suppression return the same `{verificationSent:true}`; this acknowledges handling, not inbox delivery or availability. A target equal to the current email returns `409 STATE_CONFLICT`. Confirmation requires both a current customer session owning the challenge and its proof. Wrong, expired, consumed, invalidated or stale proofs yield `400 INVALID_REQUEST`; a target claimed concurrently yields `409 STATE_CONFLICT` with the entire transaction rolled back.
+
+Confirmation atomically changes the unique email, marks that destination verified, advances security and challenge revisions, invalidates pending identity challenges and revokes all customer sessions. It returns the Account allowlist and clears the customer cookie; it does not silently sign in to the changed identity or return a new CSRF token. The customer must bootstrap/login again. Password reset/change also invalidates pending email-change/verification proofs. Existing order-time email/address snapshots and saved addresses remain untouched. Email-change delivery uses the fixed HTTPS storefront path `/account/email-change#token=…`; the later authenticated frontend submits proof only in the JSON body.
+
+EMAIL_CHANGE_ENABLED defaults false and is independent of PASSWORD_RECOVERY_ENABLED. Activation requires customer authentication, the existing protected versioned proof keys/HTTPS storefront origin, and explicit EMAIL_CHANGE_TTL_SECONDS (60–1800), EMAIL_CHANGE_COOLDOWN_SECONDS (60–3600), EMAIL_CHANGE_RESPONSE_FLOOR_MS (100–5000). Shared-ingress protection, measured response-floor sizing, sender readiness and frontend screens remain their owning gates.
 
 ### 9.2 Verified guest access
 

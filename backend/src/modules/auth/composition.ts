@@ -1,3 +1,6 @@
+import { loadEmailChangeOptions } from '../../config/recovery.js'
+import { createEmailChangeService } from './email-change.js'
+import { emailChangeRoutes } from './email-change-routes.js'
 import { createRecoveryService, loadRecoveryOptions } from './recovery.js'
 import { recoveryRoutes } from './recovery-routes.js'
 import { Router } from 'express'
@@ -49,6 +52,7 @@ export async function composeCustomerRoutes(
     ...config,
     CUSTOMER_AUTH_ENABLED: String(config.CUSTOMER_AUTH_ENABLED),
     PASSWORD_RECOVERY_ENABLED: String(config.PASSWORD_RECOVERY_ENABLED),
+    EMAIL_CHANGE_ENABLED: String(config.EMAIL_CHANGE_ENABLED),
     PORT: String(config.PORT),
     CORS_ALLOWED_ORIGINS: config.CORS_ALLOWED_ORIGINS.join(','),
   }
@@ -82,6 +86,20 @@ export async function composeCustomerRoutes(
           security,
           notifications,
           loadRecoveryOptions(environment),
+        ),
+        security,
+        sessions,
+      ),
+    )
+  if (config.EMAIL_CHANGE_ENABLED)
+    router.use(
+      emailChangeRoutes(
+        createEmailChangeService(
+          connection,
+          models,
+          sessions,
+          notifications,
+          loadEmailChangeOptions(environment),
         ),
         security,
         sessions,

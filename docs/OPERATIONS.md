@@ -1558,8 +1558,8 @@ Keep the worker disabled until sender/domain and provider credentials are verifi
 Production requires EMAIL_MODE=live. Local/test/staging require EMAIL_MODE=test and an explicitly approved
 EMAIL_TEST_RECIPIENT; every outgoing recipient is redirected to that inbox. Sender/API keys remain separate per environment
 in protected config. Templates and original recipient addresses are not logged; CLI output contains counts or a generic
-failure. The outbox contains no plaintext proof/session/password or arbitrary email HTML; proof delivery's authenticated
-envelope/challenge checks remain required for later recovery/verification templates.
+failure. The outbox contains no plaintext proof/session/password or arbitrary email HTML. P03-010/011 supply authenticated
+envelope/challenge checks for explicitly activated reset/email-change templates; other proof templates remain disabled.
 
 Policy bounds: 1–10 attempts; 1–100 claims per batch; base delay 100–3600000 ms; maximum delay at least the base and at most
 86400000 ms; lease 1000–3600000 ms; HTTP timeout 1–60000 ms. Require lease strictly greater than timeout plus 1000 ms.
@@ -1569,7 +1569,7 @@ ambiguous/network/timeout/5xx outcomes stop in delivery_uncertain. Resend accept
 
 For an existing owned local/test P03-007/008 database, explicitly run
 `node --env-file=.env backend/tools/migrate-notifications.mjs` before updated identity startup/worker readiness. It upgrades
-only the known strict predecessor validator and adds the claim-expiry index, preserving all records and statuses; repeat
+only the known strict P03-007/009/010 predecessor validators and ensures the claim-expiry index, preserving all records and statuses; repeat
 migration is safe. Fresh local/test bootstrap creates the current schema. Neither HTTP startup nor the worker migrates.
 Production migration needs normal operator change control; the convenience migration command refuses deployed environments.
 
@@ -1593,3 +1593,13 @@ Deploy the additive notification validator migration before new HTTP/worker proc
 The configured worker additionally delivers eligible password-reset challenges and removes expired/consumed/invalidated envelopes in bounded batches independently of TTL deletion. Schedule it often enough for the configured reset TTL. Provider rejection retries keep the same proof/link/event key; uncertain sends do not automatically retry. Explicit reissue after cooldown invalidates the predecessor. A mail already in flight may arrive after invalidation but cannot reset an account; proof consumption still checks the current scope. Missing/tampered envelopes fail without a provider call and record PROOF_UNAVAILABLE; restore key custody before requesting a fresh challenge, rather than blindly requeueing a failed row.
 
 Key rotation: distribute the new active key plus still-needed old versions to all API/worker processes before switching issuance. Retain old versions only until outstanding envelopes expire or are invalidated and cleaned; never reuse key bytes or reset versions. Key loss blocks delivery, not hash-based confirmation of already received proofs. After a restore, disable recovery/worker first, revoke restored sessions/challenges through the reviewed incident process, reconcile uncertain email records, remove inactive envelopes and provision a new active key before reopening. Do not replay restored intents or downgrade validators destructively. Disabling recovery leaves authenticated password-change routes unavailable with that slice; retain sessions and business records and use a compatible rollback build. Live sender, deployed timing/ingress, secret-store custody and storefront reset-screen acceptance are separate gates.
+
+### Verified email-change activation and recovery
+
+EMAIL_CHANGE_ENABLED defaults false and requires CUSTOMER_AUTH_ENABLED plus the existing protected proof key ring and approved HTTPS storefront origin. Explicit EMAIL_CHANGE_TTL_SECONDS (60–1800), EMAIL_CHANGE_COOLDOWN_SECONDS (60–3600) and EMAIL_CHANGE_RESPONSE_FLOOR_MS (100–5000) are independent of password-reset policy. Size the floor above measured issuance latency and enforce shared ingress limits; local process limits are foundation protection. Password recovery may remain disabled while email change is enabled, and vice versa. The separate notification worker must use matching activation/key/origin settings; only enabled event types are claimed.
+
+Upgrade the exact known notification validator before new HTTP/worker startup; owned local/test databases use `node --env-file=.env backend/tools/migrate-notifications.mjs`. It preserves registration/reset data and supports reference-only email-change-v1 intents. Production migration remains operator-controlled. Startup never migrates and unknown validators fail closed. Disable the worker before compatible rollback; retain expanded rows, provider receipts and claims, without destructive validator downgrade.
+
+Successful confirmation clears the customer cookie and revokes all customer sessions, so the customer must log in using the newly verified email. Pending identity challenges are invalidated atomically, including old-email resets. Successful password reset/change likewise invalidates pending email changes; merely requesting a reset email cannot cancel an authenticated email-change request. Suppressed occupied-target/cooldown requests do not replace the existing challenge. Do not manually switch identity to an unverified address or override unique-email failures. Historic order-time email/address snapshots remain immutable.
+
+For uncertain delivery, reconcile retained provider/event/claim identifiers; do not blindly resend or change the key. Authenticated reissue after cooldown supersedes the prior challenge. Key loss/tamper fails delivery closed; expiry/consumption/invalidation removes envelopes without relying on TTL. A previously dispatched but invalidated link cannot authorize a change. Use the recovery key rotation/restore procedures above for both proof purposes. Deployment sender/inbox tests, shared-ingress controls, protected secret-store custody and the authenticated frontend email-change screen remain separate gates.

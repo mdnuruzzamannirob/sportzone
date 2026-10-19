@@ -7,9 +7,14 @@ import {
 import { ConfigurationError } from '../../config/errors.js'
 
 export const proofPattern = /^[A-Za-z0-9_-]{43}$/
-export const proofHash = (proof: string) =>
+export const proofHash = (
+  proof: string,
+  purpose: 'password_reset' | 'email_change' = 'password_reset',
+) =>
   createHash('sha256')
-    .update(`sportzone:password-reset:v1:${proof}`)
+    .update(
+      `sportzone:${purpose === 'password_reset' ? 'password-reset' : 'email-change'}:v1:${proof}`,
+    )
     .digest('hex')
 export type ProofBinding = {
   id: string
@@ -17,6 +22,8 @@ export type ProofBinding = {
   email: string
   expiresAt: Date
   revision: number
+  purpose?: 'password_reset' | 'email_change'
+  targetEmail?: string
 }
 export type ProofEnvelope = {
   algorithm: 'AES-256-GCM'
@@ -49,18 +56,22 @@ export function createProofEncryption(
       Buffer.from(key, 'hex'),
     ]),
   )
-  const aad = (binding: ProofBinding, version: string) =>
-    Buffer.from(
+  const aad = (binding: ProofBinding, version: string) => {
+    if (binding.purpose === 'email_change' && !binding.targetEmail)
+      throw new Error('Invalid proof binding.')
+    return Buffer.from(
       JSON.stringify([
-        'sportzone:password_reset:v1',
+        `sportzone:${binding.purpose ?? 'password_reset'}:v1`,
         binding.id,
         binding.userId,
         binding.email,
         binding.expiresAt.toISOString(),
         binding.revision,
         version,
+        ...(binding.purpose === 'email_change' ? [binding.targetEmail] : []),
       ]),
     )
+  }
   return {
     encrypt(proof: string, binding: ProofBinding): ProofEnvelope {
       if (!proofPattern.test(proof)) throw new Error('Invalid proof material.')

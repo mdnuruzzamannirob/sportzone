@@ -20,7 +20,7 @@ const schema = new Schema(
     recipient: { type: recipient, required: true, select: false },
     eventType: {
       type: String,
-      enum: ['registration', 'password_reset'],
+      enum: ['registration', 'password_reset', 'email_change'],
       required: true,
     },
     templateVersion: { type: String, required: true },
@@ -155,6 +155,30 @@ export function createRegistrationNotifications(
         nextAttemptAt: clock(),
       }).save({ session })
     },
+    async enqueueEmailChange(
+      input: {
+        id: Types.ObjectId
+        challengeId: Types.ObjectId
+        userId: Types.ObjectId
+        email: string
+      },
+      session: ClientSession,
+    ) {
+      if (!session.inTransaction())
+        throw new Error('Notification intent requires business transaction.')
+      await new model({
+        _id: input.id,
+        eventKey: `email_change:${input.challengeId.toHexString()}:v1`,
+        userId: input.userId,
+        recipient: { emailNormalized: input.email },
+        eventType: 'email_change',
+        templateVersion: 'email-change-v1',
+        payload: { challengeId: input.challengeId },
+        status: 'queued',
+        attemptCount: 0,
+        nextAttemptAt: clock(),
+      }).save({ session })
+    },
     async migrateFoundation() {
       if (!connection.db) throw new Error('Notification database unavailable.')
       const existing = await connection.db
@@ -183,6 +207,10 @@ export function createRegistrationNotifications(
           !isDeepStrictEqual(
             existing.options?.validator,
             foundationNotificationValidator,
+          ) &&
+          !isDeepStrictEqual(
+            existing.options?.validator,
+            passwordResetNotificationValidator,
           )
         )
           throw new Error(
@@ -203,6 +231,7 @@ export function createRegistrationNotifications(
       ttlMs: number,
       maxAttempts: number,
       includeProofs = false,
+      includeEmailChanges = false,
     ) {
       const claimId = randomUUID()
       const row = await model
@@ -215,6 +244,14 @@ export function createRegistrationNotifications(
                     {
                       eventType: 'password_reset' as const,
                       templateVersion: 'password-reset-v1',
+                    },
+                  ]
+                : []),
+              ...(includeEmailChanges
+                ? [
+                    {
+                      eventType: 'email_change' as const,
+                      templateVersion: 'email-change-v1',
                     },
                   ]
                 : []),
@@ -487,7 +524,7 @@ export const foundationNotificationValidator = {
 }
 
 // P03-010 additive event/payload contract; known foundation predecessor remains immutable.
-export const registrationNotificationValidator = {
+export const passwordResetNotificationValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -514,6 +551,50 @@ export const registrationNotificationValidator = {
         {
           eventType: 'password_reset',
           templateVersion: 'password-reset-v1',
+          'payload.challengeId': { $type: 'objectId' },
+        },
+      ],
+    },
+  ],
+}
+
+// Additive P03-011 contract; preserve exact known predecessor validators above.
+export const registrationNotificationValidator = {
+  $and: [
+    {
+      $jsonSchema: {
+        ...foundationNotificationValidator.$jsonSchema,
+        properties: {
+          ...foundationNotificationValidator.$jsonSchema.properties,
+          eventType: {
+            enum: ['registration', 'password_reset', 'email_change'],
+          },
+          templateVersion: {
+            enum: ['registration-v1', 'password-reset-v1', 'email-change-v1'],
+          },
+          payload: {
+            bsonType: 'object',
+            additionalProperties: false,
+            properties: { challengeId: { bsonType: 'objectId' } },
+          },
+        },
+      },
+    },
+    {
+      $or: [
+        {
+          eventType: 'registration',
+          templateVersion: 'registration-v1',
+          'payload.challengeId': { $exists: false },
+        },
+        {
+          eventType: 'password_reset',
+          templateVersion: 'password-reset-v1',
+          'payload.challengeId': { $type: 'objectId' },
+        },
+        {
+          eventType: 'email_change',
+          templateVersion: 'email-change-v1',
           'payload.challengeId': { $type: 'objectId' },
         },
       ],

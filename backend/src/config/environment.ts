@@ -1,4 +1,4 @@
-import { loadRecoveryOptions } from './recovery.js'
+import { loadRecoveryOptions, loadEmailChangeOptions } from './recovery.js'
 import { ConfigurationError } from './errors.js'
 export { ConfigurationError } from './errors.js'
 import { z } from 'zod'
@@ -55,6 +55,13 @@ const schema = z
       .enum(['true', 'false'])
       .default('false')
       .transform((value) => value === 'true'),
+    EMAIL_CHANGE_ENABLED: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((value) => value === 'true'),
+    EMAIL_CHANGE_TTL_SECONDS: z.string().optional(),
+    EMAIL_CHANGE_COOLDOWN_SECONDS: z.string().optional(),
+    EMAIL_CHANGE_RESPONSE_FLOOR_MS: z.string().optional(),
     PASSWORD_RESET_TTL_SECONDS: z.string().optional(),
     PASSWORD_RESET_COOLDOWN_SECONDS: z.string().optional(),
     PASSWORD_RESET_RESPONSE_FLOOR_MS: z.string().optional(),
@@ -88,6 +95,7 @@ const schema = z
           PORT: String(value.PORT),
           CUSTOMER_AUTH_ENABLED: String(value.CUSTOMER_AUTH_ENABLED),
           PASSWORD_RECOVERY_ENABLED: 'true',
+          EMAIL_CHANGE_ENABLED: String(value.EMAIL_CHANGE_ENABLED),
           CORS_ALLOWED_ORIGINS: value.CORS_ALLOWED_ORIGINS.join(','),
         })
       } catch {
@@ -95,6 +103,30 @@ const schema = z
           code: 'custom',
           path: ['password_recovery_configuration'],
           message: 'Explicit secure recovery configuration required',
+        })
+      }
+    }
+    if (value.EMAIL_CHANGE_ENABLED) {
+      if (!value.CUSTOMER_AUTH_ENABLED)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['EMAIL_CHANGE_ENABLED'],
+          message: 'Customer authentication required',
+        })
+      try {
+        loadEmailChangeOptions({
+          ...value,
+          PORT: String(value.PORT),
+          CUSTOMER_AUTH_ENABLED: String(value.CUSTOMER_AUTH_ENABLED),
+          PASSWORD_RECOVERY_ENABLED: String(value.PASSWORD_RECOVERY_ENABLED),
+          EMAIL_CHANGE_ENABLED: 'true',
+          CORS_ALLOWED_ORIGINS: value.CORS_ALLOWED_ORIGINS.join(','),
+        })
+      } catch {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['email_change_configuration'],
+          message: 'Explicit secure email-change configuration required',
         })
       }
     }

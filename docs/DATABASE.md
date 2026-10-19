@@ -387,6 +387,12 @@ see API §16.3 for uncertain-send handling. No new session is granted by deliver
 Existing identity fields/indexes remain authoritative. Issuance conditionally increments `users.challengeRevisions.password_reset` in a transaction, invalidates previous reset challenges and removes their envelopes, then inserts a fresh challenge and reference-only `password_reset` notification (`password-reset-v1`). Notification `payload` contains only `challengeId:ObjectId`. `deliveryNotificationId` binds the outbox row to the challenge. AES-256-GCM uses fresh 12-byte nonces and 16-byte tags; AAD binds challenge ID, purpose, customer ID, destination, expiry, scope revision and key version. The externally held key ring is never persisted. Reset consumption and authenticated password change update the user security revision and revoke sessions atomically; password change also invalidates pending reset proofs. Cleanup removes expired/inactive envelopes even if TTL deletion is delayed. A reviewed additive notification validator migration accepts registration-v1 and password-reset-v1 records; old notification validators are known predecessors, and older exact-validator binaries require a compatible rollback build.
 
 
+#### Email-change implementation
+
+P03-011 reuses authChallenges with purpose `email_change`: userId is the current customer, emailNormalized is the current identity and targetEmailNormalized is the new destination. A transaction advances the user's email_change scope counter, invalidates/removes predecessor envelopes and creates one challenge plus an `email_change`/`email-change-v1` notification containing only challengeId. Delivery recipient is the target, not the former identity. The email-change verifier and AES-GCM AAD are purpose-separated from password reset; AAD additionally binds the target. Existing reset digests/envelopes remain compatible. Session checks are repeated and conditionally touched in the transaction to serialize with logout/revocation.
+
+Confirmation consumes the proof under its user/purpose revision, updates unique users.emailNormalized and emailVerifiedAt, increments securityRevision plus email_verify/password_reset scope counters, removes pending identity envelopes and revokes customer sessions atomically. Duplicate email indexes remain the final authority; duplicate races abort all effects. Password reset/change also advance email-change/verification counters and remove pending identity envelopes. No identity schema/index or historical order update is introduced. The additive notification validator accepts the exact P03-010 predecessor and the new supported email-change event/template/reference-only payload; old exact-validator binaries require compatible rollout/rollback builds.
+
 ### 5.4 `browserContexts` — pre-auth CSRF bootstrap
 
 | Field | Type | Constraints / notes |
@@ -500,8 +506,8 @@ principal purpose revision; it advances that revision, marks consumed and remove
 effect in one transaction. A fresh server clock is checked on every retry and before consumption; failure rolls everything
 back. Consumed/invalidated challenges cannot retain an envelope under the collection validator. P03-005 now implements
 customer/admin opaque issuance, HMAC storage, cookie controls and session-required middleware (API §4.4). Browser-context/
-Origin/CSRF composition, credential login, proof issuance/reissue, AEAD/key custody, password/recovery and guest-order
-consumption remain P03-006–014/P06-015. The proof helper grants no permission from a client-supplied digest or ObjectId.
+P03-006/007/010/011 implement Origin/CSRF, customer credentials, password-reset/email-change proof issuance/reissue,
+AEAD delivery and revision/session effects. Other identity gates and guest-order exchange remain with their owning tasks. The proof helper grants no permission from a client-supplied digest or ObjectId.
 No new public endpoint or live account is created by these models.
 
 Guest order references are schema-validated without claiming that the future orders collection exists. Other commerce
@@ -1207,7 +1213,7 @@ BSON validator permits `registration`/`registration-v1` with an empty payload, r
 fields, closed delivery statuses and safe nonnegative attempt counter. The physical indexes are
 `notifications_event_key_unique` (`{eventKey:1}`, unique) and `notifications_retry_queue` (`{status:1,nextAttemptAt:1}`).
 Delivery retry updates do not repeat account creation or reset existing delivery status. Registration stores no challenge,
-proof URL, session credential or password in this collection; email-verification challenge/delivery remains P03-009/010.
+proof URL, session credential or password in this collection; initial email-verification challenge/delivery remains with its owning feature. P03-010/011 add password-reset and verified email-change challenge delivery.
 Later notification event types require an explicit backward-compatible validator/model expansion before activation.
 Existing validators are checked, never silently replaced by startup or local bootstrap.
 
@@ -1220,7 +1226,7 @@ acceptance with providerMessageId, not recipient inbox delivery. Account/busines
 by the worker.
 
 The validator expansion is additive for existing registration records. Startup still verifies the exact expected
-validator/indexes. A separate reviewed migration upgrades only the known P03-007 validator; it does not drop data/indexes,
+validator/indexes. A separate reviewed migration upgrades only the known P03-007/009/010 validators; it does not drop data/indexes,
 reset delivery state or silently accept another schema. Local/test bootstrap can invoke this explicit migration; production
 rollout remains operator-controlled. Old binaries with exact prior-validator readiness checks require a compatible rollback
 build; never remove new lease/receipt data to make a prior validator pass. Other event payloads and secret-bearing proof

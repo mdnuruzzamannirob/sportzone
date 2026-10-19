@@ -103,7 +103,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | 01 — Requirements Finalization and Planning | 14 | 0 | 0 | 0 | 0 | 0 | 14 | 0 |
 | 02 — UI/UX Design | 11 | 0 | 0 | 0 | 0 | 0 | 11 | 0 |
-| 03 — Authentication and Core Backend | 18 | 6 | 0 | 0 | 0 | 0 | 12 | 0 |
+| 03 — Authentication and Core Backend | 18 | 5 | 0 | 0 | 0 | 0 | 13 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 06 — Checkout, Orders, and Delivery Rules | 20 | 20 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -113,7 +113,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **134** | **0** | **0** | **0** | **0** | **37** | **0** |
+| **Total** | **171** | **133** | **0** | **0** | **0** | **0** | **38** | **0** |
 
 ## 4. Milestone tracker
 
@@ -442,13 +442,13 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Acceptance:** Token replay and user enumeration blocked; reset notifications are durable/retryable.\
   **Evidence:** [Password recovery/change verification](./evidence/P03-010-password-recovery.md). Customer-only reset issuance/confirmation, encrypted reference-only durable proof delivery, authenticated password change, session revocation/rotation and safe activation implemented. 25 new unit and 28 real replica/HTTP cases; all 283 backend tests, 211 integration cases, 30 browser regressions and 20 CI commands Passed. Accepted by project owner on 19 October 2026: “Password recovery/change implementation গ্রহণ করছি”; live sender, deployed security/key custody and frontend screen gates remain separate.
 
-- [ ] **P03-011 — Implement verified customer email change**\
-  **Status:** `Not Started` · **Area:** Backend/identity\
+- [x] **P03-011 — Implement verified customer email change**\
+  **Status:** `Done` · **Area:** Backend/identity · **Owner:** Codex\
   **Sources:** FR-02\
   **Depends on:** `P03-008`, `P03-009`\
   **Deliverable:** Verify control of new email before switching account identity and enforce uniqueness.\
   **Acceptance:** Unverified addresses do not replace current email; concurrent duplicates are rejected.\
-  **Evidence to attach:** Email-change tests.
+  **Evidence:** [Verified email-change verification](./evidence/P03-011-email-change.md). Customer-owned single-use verification, unchanged identity before confirmation, transactional uniqueness/session revocation, encrypted reference-only email delivery and independent safe activation implemented. 17 new unit and 27 real replica/HTTP cases; all 300 backend tests, 238 integration cases, 30 browser regressions and 20 CI commands Passed. Accepted by project owner on 19 October 2026: “Verified email-change implementation গ্রহণ করছি”; live sender, deployed key custody/abuse controls and frontend screen gates remain separate.
 
 - [ ] **P03-012 — Implement private admin provisioning, login and recovery**\
   **Status:** `Not Started` · **Area:** Backend/security\
@@ -1734,6 +1734,7 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | 19 October 2026 | P03-008 | Not Started → In Progress → In Review → Done; strict own-profile/address APIs, pinned metadata phone policy, settings-owned coverage reads, transactional address/default limits and verified deletion intake/status delivered; 230 backend tests, 164 integration cases, 30 browser regressions and all 20 CI commands passed; clean locked install verified; project owner accepted: “Profile/address implementation গ্রহণ করছি” | Codex / project owner | [Profile/address evidence](./evidence/P03-008-profile-addresses.md) | Proceed to P03-009 notification foundation |
 | 19 October 2026 | P03-009 | Not Started → In Progress → In Review → Done; transactional registration intent connected to server-only adapter/worker; durable fenced claims, capped retry and no-resend uncertainty, additive known-validator migration and transaction external-effect guard delivered; 258 backend tests, 183 integration cases, 30 browser regressions and all 20 CI commands passed; project owner accepted: “Notification foundation গ্রহণ করছি” | Codex / project owner | [Notification foundation evidence](./evidence/P03-009-notifications.md) | Proceed to P03-010 password recovery/change |
 | 19 October 2026 | P03-010 | Not Started → In Progress → In Review → Done; customer password-reset issuance/atomic confirmation, authenticated password change, AES-GCM reference-only proof delivery, session revocation/rotation, bounded abuse controls and additive notification migration delivered; 283 backend tests, 211 integration cases, 30 browser regressions and all 20 CI commands Passed; project owner accepted: “Password recovery/change implementation গ্রহণ করছি” | Codex / project owner | [Password recovery evidence](./evidence/P03-010-password-recovery.md) | Proceed to P03-011 verified email change |
+| 19 October 2026 | P03-011 | Not Started → In Progress → In Review → Done; verified customer email-change request/atomic confirmation, unique-target conflict rollback, session revocation, purpose-separated durable proof delivery and credential-change invalidation delivered; 300 backend tests, 238 integration cases, 30 browser regressions and all 20 CI commands Passed; project owner accepted: “Verified email-change implementation গ্রহণ করছি” | Codex / project owner | [Email-change evidence](./evidence/P03-011-email-change.md) | Proceed to P03-012 private administrator authentication |
 
 **18 October 2026 — UI foundation change:** The project owner selected HeroUI and delegated visual design within the approved specification. Dependency/theme integration, app-owned controls and working conventions are recorded in [HeroUI foundation review](./evidence/heroui-foundation.md). The follow-up [existing UI migration](./evidence/heroui-existing-ui.md) replaces the earlier native-control exceptions. These changes are In Review; they do not accept another numbered task or milestone.
 
