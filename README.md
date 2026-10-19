@@ -152,7 +152,9 @@ Set the existing session TTL/SameSite and browser context settings, build the ba
 `node --env-file=.env backend/tools/bootstrap-identity.mjs`. This additive tool accepts only APP_ENV local/test;
 existing incompatible validators require a reviewed migration. Set the flag and start the normal server; startup verifies
 validators/indexes without modifying them. Registration/login/logout/session and CSRF bootstrap routes then run under
-`/api/v1`. The default flag is false. Admin credentials, verification email delivery, profile UI and distributed abuse
+`/api/v1`. The default flag is false. Profile/address/deletion-intake APIs share that activation. Current active delivery rules govern saved-address eligibility;
+missing coverage fails closed. Phone input is validated locally against Bangladesh numbering metadata and stored as E.164.
+Deletion intake requires verified email and never deletes an account or historical records. Admin credentials, verification email delivery, profile UI and distributed abuse
 controls remain with their owning tasks. New passwords follow the owner-approved 12–128-character/512-byte policy.
 
 Backend startup validates configuration, connects to a transaction-capable MongoDB, then opens HTTP. The default bind is loopback (`API_BIND_HOST=127.0.0.1`), port 4000. Copy `.env.example` to a private root `.env`, supply your local replica URI/database, and generate separate random 32-byte hex values for `SESSION_SECRET` and `HEALTH_MONITOR_TOKEN`. No secret value is supplied by the repository. From the root, after building, `node --env-file=.env backend/dist/server.js` explicitly loads that local file; `npm run start --workspace=backend` reads already injected process variables. For editing, use `npm run build:watch --workspace=backend` alongside `node --env-file=.env --watch backend/dist/server.js`.

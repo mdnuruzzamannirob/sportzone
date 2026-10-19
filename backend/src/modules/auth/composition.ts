@@ -1,4 +1,7 @@
 import { Router } from 'express'
+import { createAddressCoverage } from '../settings/coverage.js'
+import { createProfileService } from './profile.js'
+import { profileRoutes } from './profile-routes.js'
 import type { Connection } from 'mongoose'
 import { isDeepStrictEqual } from 'node:util'
 import type { RuntimeConfig } from '../../config/environment.js'
@@ -62,6 +65,18 @@ export async function composeCustomerRoutes(
   router.use(
     customerRoutes(
       createCustomerService(models, sessions, security, notifications),
+      security,
+      sessions,
+    ),
+  )
+  router.use(
+    profileRoutes(
+      createProfileService(
+        connection,
+        models,
+        sessions,
+        createAddressCoverage(connection),
+      ),
       security,
       sessions,
     ),

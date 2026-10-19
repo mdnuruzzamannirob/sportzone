@@ -1528,3 +1528,20 @@ Disable the activation flag to roll back HTTP exposure; do not remove accounts, 
 hash format compatibility; password/secret changes follow the identity rotation policy. Logout reports success only after
 revocation/context persistence; after an uncertain failure re-bootstrap and retry safely. Logs never include passwords,
 cookies, recipient records, raw network identity or credential hashes.
+
+### Profile/address and deletion intake operations
+
+Customer activation also composes `/me`, saved-address and deletion-intake routes; existing session/origin/CSRF policy
+still applies. Phone validation uses pinned `libphonenumber-js/max` metadata locally and makes no external lookup or
+verification call. Review package/metadata updates through the normal dependency/lockfile checks.
+
+Saved-address eligibility requires approved currently effective active delivery rules and active zones. Missing masters
+return UNSUPPORTED_DELIVERY_AREA; do not fix this by seeding guessed districts or charges. P06-001 owns master setup,
+indexes and global coverage revisions. Address acceptance does not reserve a rate; checkout must price current rules.
+Existing unserved addresses can be viewed/deleted. No new user schema, secret or environment setting is introduced.
+
+Deletion intake is a verified customer's review request only, and repeat POST returns its current status. Inspect the
+protected user record through approved operational tooling; do not expose a generic customer review/status mutation.
+Keep original request/review evidence and legally retained order/payment/refund/audit records. Intake does not disable
+accounts, erase data or authorize retention changes; operator/legal processing remains governed by the retention runbook.
+Rollback removes route exposure while preserving user profile, addresses, review records and historical snapshots.

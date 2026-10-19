@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { accountDto } from './account-dto.js'
 import { parseInput } from '../../middleware/validation.js'
 import { ApiError } from '../../shared/errors.js'
 import type { RegistrationNotifications } from '../notifications/registration.js'
@@ -30,24 +31,6 @@ export function createCustomerService(
   security: BrowserSecurity,
   notifications: RegistrationNotifications,
 ) {
-  const account = (user: InstanceType<typeof models.users>) => ({
-    id: user._id.toHexString(),
-    name: user.name,
-    email: user.emailNormalized,
-    ...(user.phone ? { phone: user.phone } : {}),
-    emailVerified: Boolean(user.emailVerifiedAt),
-    addresses: user.addresses.map((address) => ({
-      id: address.id.toHexString(),
-      recipient: address.recipient,
-      phone: address.phone,
-      districtKey: address.districtKey,
-      areaKey: address.areaKey,
-      street: address.street,
-      ...(address.addressLine2 ? { addressLine2: address.addressLine2 } : {}),
-      isDefault: address.isDefault,
-    })),
-    status: user.status,
-  })
   return {
     async register(raw: unknown, context: string, csrf: string) {
       const input = parseInput(registrationInput, raw)
@@ -70,7 +53,7 @@ export function createCustomerService(
               { userId: user._id, email: input.email, name: input.name },
               session,
             )
-            return { account: account(user), verificationRequired: true }
+            return { account: accountDto(user), verificationRequired: true }
           },
         )
       } catch (error) {
@@ -128,7 +111,7 @@ export function createCustomerService(
             previous,
             session,
           )
-          return { account: account(checked), issued }
+          return { account: accountDto(checked), issued }
         },
       )
     },
@@ -140,7 +123,7 @@ export function createCustomerService(
         status: 'active',
       })
       if (!user) throw new ApiError('AUTH_REQUIRED')
-      return { account: account(user) }
+      return { account: accountDto(user) }
     },
     async logout(token: string | undefined) {
       return sessions.logout('customer', token)

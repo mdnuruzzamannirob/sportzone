@@ -319,6 +319,39 @@ Register/login/logout share a per-process 10-attempt/60-second socket-address gu
 a bounded 10000-entry map and KDF concurrency cap. This local guard is not distributed abuse-control acceptance;
 P03-014 owns broader controls and deployed proxy policy. No credentials or raw network identity are logged.
 
+### 4.7 Customer profile, addresses and deletion intake
+
+With customer auth enabled, P03-008 exposes the existing §9.1 `/me`, address and deletion-request operations. All resolve
+only the active customer session; browser mutations additionally require storefront Origin and current customer CSRF.
+Query parameters and body/path fields outside their DTOs are rejected. Output uses the same account/address allowlists as
+session/login responses; internal review records, roles, revisions and credentials never enter Account.
+
+Profile patch permits only nonempty `name?`/`phone?`. The owning phone policy uses pinned `libphonenumber-js/max` metadata,
+strict full-input parsing with Bangladesh as the national default, valid country BD only, and no extensions. Mobile and
+fixed-line numbers are accepted when valid; output/storage is canonical E.164 `+880…`. Input is bounded at 64 characters;
+this validates formatting/numbering, not phone possession. Null/empty values cannot silently clear optional data.
+
+Address create never accepts client id/userId/isDefault/zone/price. It creates an opaque ObjectId, defaults isDefault to
+false, and enforces at most ten saved addresses. Explicit default selection clears other defaults atomically; clearing or
+deleting a default leaves zero defaults and never invents a replacement. Partial address edits merge with the customer's
+stored address and revalidate the entire result before writing. Ownership misses return `404 NOT_FOUND` without revealing
+whether a foreign address exists. User/address changes serialize in MongoDB transactions and re-read state on conflict.
+
+The settings-owned delivery coverage reader checks currently effective active `deliveryCharges` and active `deliveryZones` in the
+same transaction snapshot. Select exact `district:area` before approved `district:*`; ambiguous active rules, inactive
+exact zones, invalid charge metadata and absent coverage fail closed with `400 UNSUPPORTED_DELIVERY_AREA`. Clients cannot
+supply the wildcard or inject key separators. Saved address reads/deletion remain available after a service area ends;
+new addresses, edits and default selection require valid current coverage. This is address eligibility, not a delivery
+quote, reservation or charge snapshot; checkout must re-resolve the authoritative rule. No district list or charge is seeded.
+
+Deletion intake requires an active authenticated customer and existing verified email (`emailVerifiedAt`); otherwise
+`403 FORBIDDEN`. Record requestedAt/verifiedAt server-side at intake, reflecting those checks rather than a new email proof.
+Create one stable review request, retaining original reason/time and status on repeat/concurrent submissions. The existing
+POST with `{}` also returns the current own requestId/status; no unlisted status endpoint or foreign request selector is
+added. Existing terminal review evidence is not replaced by a new intake. No self-service review/approval, account status
+change, session revocation, anonymization or hard deletion occurs. Legal/financial retention review remains operator-owned;
+orders, receipt/payment/refund evidence, audit and immutable historical snapshots are never updated by these handlers.
+
 ## 5. Authorization & data exposure
 
 | Principal | Allowed resources | Denied by default |

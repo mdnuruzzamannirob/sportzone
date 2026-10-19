@@ -445,6 +445,7 @@ describe('customer credential routes with real MongoDB and adaptive passwords', 
       createLogger(config, () => {}),
     )
     try {
+      await request(runtime.server).get('/api/v1/me').expect(401)
       await request(runtime.server)
         .get('/api/v1/auth/csrf')
         .set('Origin', config.STOREFRONT_ORIGIN)
@@ -452,8 +453,18 @@ describe('customer credential routes with real MongoDB and adaptive passwords', 
     } finally {
       await runtime.close()
     }
-    await fixture.connection.db?.collection('notifications').dropIndex('notifications_retry_queue')
-    try { await expect(startServer(config, createLogger(config, () => {}))).rejects.toThrow() }
-    finally { await notifications.initialize() }
+    await fixture.connection.db
+      ?.collection('notifications')
+      .dropIndex('notifications_retry_queue')
+    try {
+      await expect(
+        startServer(
+          config,
+          createLogger(config, () => {}),
+        ),
+      ).rejects.toThrow()
+    } finally {
+      await notifications.initialize()
+    }
   })
 })

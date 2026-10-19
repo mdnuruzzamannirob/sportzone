@@ -1434,3 +1434,17 @@ rotation, single-context concurrent login, failed session insert rollback, suspe
 errors, current-account projection, stale/repeat logout, Origin/CSRF rejection, per-process rate limits and normal server
 activation against prepared persistence. Queued registration intent does not prove delivery. No real provider, admin
 login, deployed browser-origin or distributed abuse-control acceptance is claimed.
+
+### P03-008 profile/address ownership verification
+
+`backend/tests/profile.test.ts` checks Bangladesh mobile/fixed-line normalization, full-input/extension/country rejection,
+DTO allowlists/bounds and server-owned deletion fields. `backend/tests/integration/profile.test.ts` uses strict existing
+identity validators and a real owned replica to verify account/address ownership, explicit defaults, merged-address
+coverage, exact/wildcard precedence, missing/inactive/future/expired/ambiguous rules, concurrent tenth-address/default and
+profile writes, verified deletion intake/deduplication/status, terminal review preservation, private cache behavior and
+Origin/CSRF/session expiry/revocation/revision controls. Normal enabled server coverage verifies that `/me` is mounted.
+Historical order/payment sentinel records are synthetic preservation checks; they do not constitute real financial-flow,
+retention/legal approval or production deletion tests. Delivery fixture masters are isolated and not operator-approved
+production coverage; P06-001 remains responsible for master write/migration behavior.
+
+[Profile/address execution evidence](./evidence/P03-008-profile-addresses.md) records final commands, environment, results and unrun release gates.

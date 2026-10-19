@@ -314,6 +314,14 @@ Registration user + registration notification intent + browser-context consumpti
 credential/status/revision checks with context consumption and session issuance; password KDF work stays outside the
 transaction. Customer/admin identities remain separated.
 
+P03-008 profile/address mutations are scoped to the active session's userId, role and security revision and serialize
+through a transaction on that user document. Partial edits re-read and validate the merged state on retry; maximum ten
+addresses and at most one default remain BSON-enforced. Phone storage is canonical validated Bangladesh E.164 (API §4.7).
+No new user field, index or schema migration is required. The optional deletionRequest is written only after active
+session plus persisted email-verification checks. It preserves the first id/reason/requestedAt/verifiedAt and returns
+existing review status on retries, including terminal decisions. Intake does not set deletion_pending/deactivated or
+remove/anonymize accounts. Operational review/retention decisions are not exposed as customer mutations.
+
 ### 5.2 `sessions` — `auth` / `guest-access`
 
 | Field | Type | Constraints / notes |
@@ -819,6 +827,12 @@ coverage unavailable (checkout fails closed). Every master edit checks its `revi
 original rule ID and amount. If no precisely eligible active rule exists, **fail checkout closed** rather than guess a
 charge. Snapshot selected version/charge/deadline **rule basis**, not a confirmation-relative absolute date. Effective
 windows and legal deadlines are operator-approved, not invented.
+
+P03-008 uses a settings-owned read-only delivery coverage boundary for saved-address eligibility against these existing
+collections. It neither seeds delivery data nor creates/changes delivery indexes or master records. Its transaction reads
+exact eligible coverage before an eligible district wildcard; multiple active exact candidates or an inactive selected
+zone fail closed. P06-001 still owns validated delivery masters, index rollout, global revision serialization and admin
+changes. A saved address is not a quote or permission to reuse a historic charge at checkout.
 
 ### 7.7 `inventoryReservations` — `inventory`
 
