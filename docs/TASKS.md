@@ -103,7 +103,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | 01 — Requirements Finalization and Planning | 14 | 0 | 0 | 0 | 0 | 0 | 14 | 0 |
 | 02 — UI/UX Design | 11 | 0 | 0 | 0 | 0 | 0 | 11 | 0 |
-| 03 — Authentication and Core Backend | 18 | 10 | 0 | 0 | 0 | 0 | 8 | 0 |
+| 03 — Authentication and Core Backend | 18 | 9 | 0 | 0 | 0 | 0 | 9 | 0 |
 | 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 06 — Checkout, Orders, and Delivery Rules | 20 | 20 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -113,7 +113,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **138** | **0** | **0** | **0** | **0** | **33** | **0** |
+| **Total** | **171** | **137** | **0** | **0** | **0** | **0** | **34** | **0** |
 
 ## 4. Milestone tracker
 
@@ -410,13 +410,13 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Acceptance:** Rotated/expired session invalidates prior CSRF token; provider IPNs use independent checks.\
   **Evidence:** [Origin/CORS/CSRF verification](./evidence/P03-006-browser-security.md). Exact-origin guards, isolated context bootstrap, session CSRF refresh and transactional single-use exchange implemented; 17 new unit cases, 31 new real MongoDB/HTTP cases, all 120 integration cases and all 20 CI commands passed. Accepted by project owner on 19 October 2026: “Origin/CORS/CSRF implementation গ্রহণ করছি”; verified credential routes, real guest persistence and deployed-origin verification remain with their owning tasks.
 
-- [ ] **P03-007 — Implement customer registration, login and logout**\
-  **Status:** `Not Started` · **Area:** Backend/identity\
+- [x] **P03-007 — Implement customer registration, login and logout**\
+  **Status:** `Done` · **Area:** Backend/identity · **Owner:** Codex\
   **Sources:** FR-01\
   **Depends on:** `P03-005`, `P03-006`\
   **Deliverable:** Add normalized-email registration, adaptive password hashing, credential verification, safe errors, logout and durable registration notification intent for later email delivery.\
   **Acceptance:** Public registration grants customer only; suspended accounts cannot authenticate; successful registration persists a single retryable notification intent without making email delivery a prerequisite for account creation.\
-  **Evidence to attach:** Auth API tests.
+  **Evidence:** [Customer authentication verification](./evidence/P03-007-customer-auth.md). Owner-approved password policy, adaptive scrypt, strict customer-only DTOs, transactional registration intent/context/session exchange, logout and explicit ready-only runtime activation implemented. 11 new unit and 18 real credential cases, all 138 integration cases and all 20 CI commands passed. Accepted by project owner on 19 October 2026: “Customer authentication implementation গ্রহণ করছি”; email delivery, admin credentials and distributed/deployed security gates remain separate.
 
 - [ ] **P03-008 — Implement customer profile and address ownership**\
   **Status:** `Not Started` · **Area:** Backend/identity\
@@ -1748,6 +1748,8 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | 18 October 2026 | P03-005 | Not Started → In Progress → In Review → Done; opaque customer/admin session service and secure cookie boundary implemented; 36 new unit and 20 new real session cases, 89 integration cases and all 20 CI commands passed; browser transition/locator regression corrected; project owner accepted: “Session/cookie implementation গ্রহণ করছি” | Codex / project owner | [Session/cookie evidence](./evidence/P03-005-sessions.md) | Proceed to P03-006 Origin/CORS/CSRF |
 
 | 19 October 2026 | P03-006 | Not Started → In Progress → In Review → Done; exact audience Origin/CORS, context bootstrap, conditional session CSRF refresh and transactional consumption delivered; 17 new unit and 31 real security cases, 120 integration cases, 30 browser regressions and all 20 CI commands passed; temporary WebKit runtime restored without repository dependency changes; project owner accepted: “Origin/CORS/CSRF implementation গ্রহণ করছি” | Codex / project owner | [Browser security evidence](./evidence/P03-006-browser-security.md) | Proceed to P03-007 verified customer authentication |
+
+| 19 October 2026 | P03-007 | Not Started → In Progress → In Review → Done; owner approved password policy; customer registration/login/session/logout, strict registration notification intent, transactional context/session exchange and explicit ready-only activation implemented; 209 backend tests, 138 integration cases, 30 browser regressions and all 20 CI commands passed; project owner accepted: “Customer authentication implementation গ্রহণ করছি” | Codex / project owner | [Customer authentication evidence](./evidence/P03-007-customer-auth.md) | Proceed to P03-008 profile/address ownership |
 
 **18 October 2026 — UI foundation change:** The project owner selected HeroUI and delegated visual design within the approved specification. Dependency/theme integration, app-owned controls and working conventions are recorded in [HeroUI foundation review](./evidence/heroui-foundation.md). The follow-up [existing UI migration](./evidence/heroui-existing-ui.md) replaces the earlier native-control exceptions. These changes are In Review; they do not accept another numbered task or milestone.
 

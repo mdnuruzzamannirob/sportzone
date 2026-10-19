@@ -226,7 +226,7 @@ fields add no public DTO properties. Executable validators and protocol/replay t
 
 `backend/src/modules/auth/sessions.ts` implements the internal session lifecycle; `session-http.ts` supplies route-selected
 cookie parsing, set/clear controls and session-required middleware. The production router remains health-only until the
-owning login/authentication features compose credential verification with P03-006's Origin/CSRF defenses. No endpoint may
+Customer activation composes credential verification with P03-006's Origin/CSRF defenses; administrator login remains separate. No endpoint may
 issue a session from a client-supplied user ID alone. The internal issuer accepts only the verified principal selected by
 the owning customer/admin authentication flow and rechecks active role/status.
 
@@ -246,21 +246,22 @@ the owning customer/admin authentication flow and rechecks active role/status.
 | Secret rotation | New SESSION_SECRET immediately rejects old digests on processes using it; drain/restart all old-key processes before declaring revocation complete; no dual-key acceptance is implemented |
 
 `loadSessionOptions(process.env)` validates these session-specific settings when session composition is activated; no
-lifetime/SameSite fallback is supplied and the current health-only startup does not implicitly activate them. Configuration
+lifetime/SameSite fallback is supplied; explicit customer activation requires these settings. Configuration
 errors identify fields only. Operators must approve deployed values and verify real same-site domains/TLS/cookie behavior.
 Cookie expiry is advisory; server-side lookup remains authoritative. Set a cookie only after successful committed issuance;
 await durable logout before reporting server revocation, then perform P03-006's safe CSRF/context refresh.
 
 The service's authenticate result is an explicit internal principal projection; never serialize a raw session document.
 The private lookup explicitly selects its CSRF verifier for the session service; ordinary model projections still exclude
-all credential verifiers. Guest sessions remain P06-015. Browser protection is implemented in §4.5; credential verification,
-recovery, endpoint throttles/audit and integrated authentication flows remain P03-007–016.
+all credential verifiers. Guest sessions remain P06-015. Browser protection is implemented in §4.5 and customer credentials
+in §4.6; verification/recovery, administrator credentials, broader throttles/audit and integrated gates remain with
+P03-009–016.
 
 ### 4.5 Browser security implementation boundary
 
 `browserSecurityRoutes` composes `GET /auth/csrf` and `GET /admin/auth/csrf` under `/api/v1` with
-`createBrowserSecurity` and the session service. The health-only executable does not yet compose identity routes;
-P03-007/012 must mount this router and apply the route-selected guards before enabling credential mutations.
+`createBrowserSecurity` and the session service. The executable composes customer identity routes when `CUSTOMER_AUTH_ENABLED=true` after persistence readiness checks.
+The default remains health-only; administrator credential routes remain P03-012.
 Bootstrap requires the exact corresponding frontend `Origin`, returns `{csrfToken,expiresAt}` with `no-store`, and
 sets only its audience's context cookie when anonymous. `HEAD` returns no content and creates no context.
 
@@ -283,6 +284,40 @@ principal from the storefront. Unknown/duplicate query parameters are invalid. G
 | Successful exchange | The credential/proof service must use consumeContext with its durable effect in the same MongoDB transaction. One concurrent exchange wins; failed effect rolls back consumption. Do not perform provider/email calls in that callback or start a nested independent transaction. |
 | Guest handoff | P06-015 supplies an order-bound refresh/verify adapter; only an exact, single opaque guest cookie reaches it. Customer/admin/browser contexts cannot substitute. Its real proof/session persistence remains in that task. |
 | Provider segregation | Register provider notifications/returns outside browser guards and bootstrap. Their own verification and acknowledgment contracts remain mandatory; omission of browser CSRF never proves payment success. |
+
+### 4.6 Customer credentials and registration delivery intent
+
+P03-007 implements `/auth/register`, `/auth/login`, `/auth/session` and `/auth/logout` with the §9.1 DTOs.
+New passwords require 12–128 Unicode characters and at most 512 UTF-8 bytes; spaces are allowed and passwords are never
+trimmed or normalized. The owning `newPasswordPolicy`
+implements this rule. Login verifies the stored credential without applying today's new-password minimum; a 4096-byte
+transport safety cap prevents unbounded KDF input. Public role/status/userId fields remain invalid.
+
+Passwords use Node's asynchronous scrypt, N=131072/r=8/p=1, 16 random salt bytes, a 64-byte derived key and 256 MiB
+maxmem; stored encoding is `scrypt$v1$131072$8$1$<saltHex>$<keyHex>`. Only that exact version/cost/length is accepted;
+unknown/disabled/admin/wrong-password cases perform equal-cost dummy/actual verification and return the same
+`401 INVALID_CREDENTIALS`. At most two KDFs run per process; saturation is generic `503 SERVICE_UNAVAILABLE`.
+
+Registration transactionally consumes the supplied storefront context, inserts a customer/active user and one
+`registration:<userId>:v1` notification intent. Return `201 {account,verificationRequired:true}` after commit; do not issue
+an undocumented login or wait for email. A unique normalized-email race returns generic `409 STATE_CONFLICT`, including
+existing administrator/suspended addresses; no principal or record detail is returned. Failed outbox persistence rolls
+back account/context consumption. On success the client obtains a new anonymous context before another mutation.
+
+Login first verifies password outside the database transaction, then conditionally writes the same active customer with
+unchanged credential/revision/update timestamp inside single-use context consumption. Session issuance and same-owner
+predecessor revocation share that transaction. Set the fresh cookie only after commit. Failed credentials do not consume
+the context or create a session. Account changes concurrent with login reject or serialize; they never turn an old
+password into a current credential grant. Current-account reads resolve only a live customer session and project §9.1.
+
+Logout accepts either current customer session-bound CSRF or a fresh valid storefront context, including with an expired
+session cookie. It revokes only the supplied customer credential, clears that cookie with matching attributes, replaces
+the anonymous context and returns fresh CSRF after persistence succeeds. Failure during context replacement does not
+undo durable revocation; re-bootstrap before retry. Administrator/guest cookies are never cleared/revoked here.
+
+Register/login/logout share a per-process 10-attempt/60-second socket-address guard (forwarded headers are ignored),
+a bounded 10000-entry map and KDF concurrency cap. This local guard is not distributed abuse-control acceptance;
+P03-014 owns broader controls and deployed proxy policy. No credentials or raw network identity are logged.
 
 ## 5. Authorization & data exposure
 

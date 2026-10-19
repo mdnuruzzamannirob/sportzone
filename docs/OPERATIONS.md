@@ -303,7 +303,7 @@ APP_ENV is local/test/staging/production, paired with NODE_ENV development/test/
 Session composition additionally calls `loadSessionOptions`: require CUSTOMER_SESSION_TTL_SECONDS and
 ADMIN_SESSION_TTL_SECONDS as positive bounded seconds and SESSION_COOKIE_SAME_SITE as explicit lax/strict. Values require
 security/operator approval; none are supplied by the repository. Session options are validated at service composition,
-not silently defaulted by the current health-only server. Configured HTTPS produces Secure cookies in every environment;
+required for explicit customer activation and never silently defaulted. Configured HTTPS produces Secure cookies in every environment;
 only local/test loopback HTTP may omit Secure. Cookies remain host-only, HttpOnly and path /. Confirm actual deployed
 same-site origin/TLS behavior before activation; proxy headers cannot override configured cookie security.
 
@@ -1491,8 +1491,7 @@ propagate accepted versions and remaining decisions to the handover record.
 
 ### Browser security composition
 
-P03-006 provides the identity bootstrap router and route-selected Origin/CORS/CSRF controls; the health-only executable
-has no identity router enabled. At identity composition, call `loadBrowserSecurityOptions` with the protected environment
+P03-006 provides the identity bootstrap router and route-selected Origin/CORS/CSRF controls; the executable defaults to health-only and can activate customer routes through P03-007 as described below. At identity composition, call `loadBrowserSecurityOptions` with the protected environment
 and existing cookie policy. Set `BROWSER_CONTEXT_TTL_SECONDS` explicitly in 1–1800 seconds; its sanitized template is
 blank. `STOREFRONT_ORIGIN`, `ADMIN_ORIGIN` and `CORS_ALLOWED_ORIGINS` must agree exactly; frontend origins must be distinct.
 HTTPS is required with secure cookies; controlled loopback HTTP follows the existing local/test session policy.
@@ -1503,3 +1502,29 @@ remain generic `403 CSRF_INVALID`; do not log cookies, CSRF headers, context has
 identity routes, verify real approved-origin browser cookies/preflights and logout/recovery composition. Provider routes
 stay segregated and require their own verified outcome handling. No live browser-origin deployment is asserted by the
 local MongoDB/HTTP suite.
+
+### Customer identity activation and rollback
+
+`CUSTOMER_AUTH_ENABLED` defaults to false and accepts only true/false. Enable only with explicit
+CUSTOMER_SESSION_TTL_SECONDS, ADMIN_SESSION_TTL_SECONDS, SESSION_COOKIE_SAME_SITE and BROWSER_CONTEXT_TTL_SECONDS,
+the approved origins, private SESSION_SECRET and a transaction-capable database. Enabled startup checks all four identity
+validators/indexes plus registration notification validator/indexes before binding; it never creates or rewrites them.
+Configuration and readiness failures remain secret-safe and close the database connection.
+
+For an owned local/test database, build the backend and run
+`node --env-file=.env backend/tools/bootstrap-identity.mjs` explicitly. The additive bootstrap rejects non-local/test
+environments and incompatible existing validators. Production rollout requires the ordinary reviewed schema/index
+procedure; there is no automatic production migration. Registration notification validation currently accepts only the
+registration subset and must be expanded through reviewed migrations for later notification event types.
+
+Registration enqueues one retryable intent transactionally, without calling an email provider. Email verification and
+worker delivery remain P03-009/010 and notification tasks; queued is not delivered. Keep the intent across retries and
+application rollback. Password hashes use versioned scrypt with a per-process two-KDF concurrency cap; budget at least
+256 MiB plus application/headroom for concurrent derivations and benchmark deployed capacity. Per-process socket-IP
+limits are 10 attempts/minute across register/login/logout; trust proxy remains false and forwarded headers are ignored.
+Multi-replica/shared abuse controls, credential auditing and deployed-origin checks remain release gates in P03-014/016.
+
+Disable the activation flag to roll back HTTP exposure; do not remove accounts, intents, contexts or sessions. Preserve
+hash format compatibility; password/secret changes follow the identity rotation policy. Logout reports success only after
+revocation/context persistence; after an uncertain failure re-bootstrap and retry safely. Logs never include passwords,
+cookies, recipient records, raw network identity or credential hashes.

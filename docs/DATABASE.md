@@ -309,6 +309,11 @@ flowchart TD
 
 **Rules:** at most one default address; deleting a saved address never edits an order snapshot. Admin accounts have no public registration. User account deletion/anonymization requires verified review against retention obligations.
 
+The P03-007 customer service uses the owner-approved password policy and versioned adaptive scrypt encoding in API §4.6.
+Registration user + registration notification intent + browser-context consumption commit together. Login serializes
+credential/status/revision checks with context consumption and session issuance; password KDF work stays outside the
+transaction. Customer/admin identities remain separated.
+
 ### 5.2 `sessions` — `auth` / `guest-access`
 
 | Field | Type | Constraints / notes |
@@ -1177,6 +1182,15 @@ Confirmed transition; proof events reference a challenge ID, with no rendered se
 `delivery_uncertain` means a send may have succeeded; reconcile provider identity or explicitly reissue an invalidating
 proof, never blindly send an unrelated new token. Event uniqueness prevents duplicate intents, not a claim of exactly-once
 transport; use verified provider idempotency where available. Do not store credentials or full payment details in payloads.
+
+P03-007 implements the registration subset through the notifications-owned registration intent service. Its strict
+BSON validator permits `registration`/`registration-v1` with an empty payload, required user reference/recipient/base
+fields, closed delivery statuses and safe nonnegative attempt counter. The physical indexes are
+`notifications_event_key_unique` (`{eventKey:1}`, unique) and `notifications_retry_queue` (`{status:1,nextAttemptAt:1}`).
+Delivery retry updates do not repeat account creation or reset existing delivery status. Registration stores no challenge,
+proof URL, session credential or password in this collection; email-verification challenge/delivery remains P03-009/010.
+Later notification event types require an explicit backward-compatible validator/model expansion before activation.
+Existing validators are checked, never silently replaced by startup or local bootstrap.
 
 ### 10.2 `complaints` — `support`
 

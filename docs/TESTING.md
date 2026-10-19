@@ -1422,3 +1422,15 @@ real guest proof consumption or order ownership (P06-015). The segregated provid
 middleware is not applied; real provider verification remains in its payment tasks. These local HTTP tests do not claim
 ENV-04 deployed-domain browser cookie acceptance, verified customer/admin credential flows, or M1 acceptance. See
 [execution evidence](./evidence/P03-006-browser-security.md).
+
+### P03-007 customer credential verification
+
+The project owner accepted the new-password policy on 19 October 2026: “এই password policy গ্রহণ করছি”.
+`backend/tests/passwords.test.ts` verifies character/UTF-8 bounds, byte preservation, malformed Unicode rejection,
+random salts, versioned scrypt costs, dummy verification, KDF saturation and activation configuration. Customer HTTP
+integration uses actual scrypt and an isolated MongoDB replica with the strict registration outbox validator/indexes.
+Cases cover forced customer role, forbidden DTOs, normalized-email races, account/outbox/context rollback, context/session
+rotation, single-context concurrent login, failed session insert rollback, suspended/admin/missing/wrong credential
+errors, current-account projection, stale/repeat logout, Origin/CSRF rejection, per-process rate limits and normal server
+activation against prepared persistence. Queued registration intent does not prove delivery. No real provider, admin
+login, deployed browser-origin or distributed abuse-control acceptance is claimed.

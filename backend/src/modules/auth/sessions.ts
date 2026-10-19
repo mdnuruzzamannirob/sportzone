@@ -1,4 +1,4 @@
-import type { Types, Connection } from 'mongoose'
+import type { Types, Connection, ClientSession } from 'mongoose'
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
 import { z } from 'zod'
 import { ConfigurationError } from '../../config/environment.js'
@@ -161,9 +161,10 @@ export function createSessionService(
       kind: SessionKind,
       userId: Types.ObjectId,
       previousToken?: string,
+      transaction?: ClientSession,
     ): Promise<IssuedSession> {
       kindCheck(kind)
-      return inTransaction(connection, async (session) => {
+      const work = async (session: ClientSession): Promise<IssuedSession> => {
         const user = await models.users
           .findOne({ _id: userId, role: kind, status: 'active' })
           .select('+securityRevision')
@@ -198,7 +199,8 @@ export function createSessionService(
           kind,
           expiresAt: generated.expiresAt,
         }
-      })
+      }
+      return transaction ? work(transaction) : inTransaction(connection, work)
     },
     async authenticate(
       kind: SessionKind,

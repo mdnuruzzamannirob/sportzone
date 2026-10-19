@@ -2,13 +2,18 @@ import { createServer } from 'node:http'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { createApp } from './app.js'
+import { createApiRouter } from './routes.js'
+import { composeCustomerRoutes } from './modules/auth/composition.js'
 import {
   ConfigurationError,
   loadEnvironment,
   type RuntimeConfig,
 } from './config/environment.js'
 import { openDatabase } from './db/connection.js'
-import { createLogger, logConfigurationFailure } from './observability/logger.js'
+import {
+  createLogger,
+  logConfigurationFailure,
+} from './observability/logger.js'
 
 export async function startServer(
   config: RuntimeConfig,
@@ -19,7 +24,20 @@ export async function startServer(
   ]),
 ) {
   logger.lifecycle('starting')
-  const connection = await openDatabase(config.MONGODB_URI, config.MONGODB_DB_NAME)
+  const connection = await openDatabase(
+    config.MONGODB_URI,
+    config.MONGODB_DB_NAME,
+  )
+  let identityRouter:
+    | Awaited<ReturnType<typeof composeCustomerRoutes>>
+    | undefined
+  try {
+    if (config.CUSTOMER_AUTH_ENABLED)
+      identityRouter = await composeCustomerRoutes(connection, config)
+  } catch (error) {
+    await connection.destroy()
+    throw error
+  }
   let draining = false
   const disconnected = () => logger.lifecycle('database_disconnected')
   const connected = () => logger.lifecycle('database_connected')
@@ -28,19 +46,18 @@ export async function startServer(
   connection.on('connected', connected)
   connection.on('error', databaseError)
   logger.lifecycle('database_connected')
-  const server = createServer(
-    createApp({
-      logger,
-      health: {
-        monitorToken: config.HEALTH_MONITOR_TOKEN,
-        isReady: async () => {
-          if (draining || connection.readyState !== 1 || !connection.db) return false
-          await connection.db.command({ ping: 1 }, { timeoutMS: 1000 })
-          return !draining && connection.readyState === 1
-        },
-      },
-    }),
-  )
+  const health = {
+    monitorToken: config.HEALTH_MONITOR_TOKEN,
+    isReady: async () => {
+      if (draining || connection.readyState !== 1 || !connection.db)
+        return false
+      await connection.db.command({ ping: 1 }, { timeoutMS: 1000 })
+      return !draining && connection.readyState === 1
+    },
+  }
+  const apiRouter = createApiRouter(health)
+  if (identityRouter) apiRouter.use(identityRouter)
+  const server = createServer(createApp({ logger, apiRouter }))
   try {
     await new Promise<void>((resolve, reject) => {
       const failed = (error: Error) => reject(error)

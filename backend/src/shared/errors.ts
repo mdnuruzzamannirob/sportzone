@@ -1,4 +1,5 @@
 const definitions = {
+  STATE_CONFLICT: { status: 409, message: 'The request conflicts with current state.' },
   INVALID_CREDENTIALS: { status: 401, message: 'Invalid credentials.' },
   GUEST_PROOF_REQUIRED: { status: 401, message: 'Order verification is required.' },
   FORBIDDEN: { status: 403, message: 'Access is denied.' },
