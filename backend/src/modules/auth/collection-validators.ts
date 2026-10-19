@@ -1,6 +1,6 @@
 import type { Connection } from 'mongoose'
-import { z } from 'zod'
 import { isDeepStrictEqual } from 'node:util'
+import { z } from 'zod'
 import { verifyDeclaredIndexes } from '../../db/indexes.js'
 import type { IdentityModels } from './models.js'
 
@@ -59,7 +59,13 @@ const deletion = {
       id: oid,
       requestedAt: date,
       verifiedAt: date,
-      status: enumField('requested', 'under_review', 'approved', 'rejected', 'completed'),
+      status: enumField(
+        'requested',
+        'under_review',
+        'approved',
+        'rejected',
+        'completed',
+      ),
       reason: text(2000),
       decisionAt: date,
       decisionReason: text(2000),
@@ -93,7 +99,11 @@ const guest = (key: 'kind' | 'purpose', value: string, revision = false) => ({
   ...has('orderId'),
   ...lacks('userId', ...(revision ? ['securityRevisionAtIssue'] : [])),
 })
-const principal = (key: 'kind' | 'purpose', values: string[], revision = false) => ({
+const principal = (
+  key: 'kind' | 'purpose',
+  values: string[],
+  revision = false,
+) => ({
   properties: { [key]: { enum: values } },
   ...has('userId', ...(revision ? ['securityRevisionAtIssue'] : [])),
   ...lacks('orderId'),
@@ -110,7 +120,12 @@ export const identityCollectionValidators = {
         passwordHash: text(),
         phone: text(),
         role: enumField('customer', 'admin'),
-        status: enumField('active', 'suspended', 'deletion_pending', 'deactivated'),
+        status: enumField(
+          'active',
+          'suspended',
+          'deletion_pending',
+          'deactivated',
+        ),
         emailVerifiedAt: date,
         securityRevision: integer,
         challengeRevisions: revisions,
@@ -133,7 +148,10 @@ export const identityCollectionValidators = {
       $and: [
         normalized('emailNormalized'),
         {
-          $eq: [{ $size: '$addresses' }, { $size: { $setUnion: ['$addresses.id', []] } }],
+          $eq: [
+            { $size: '$addresses' },
+            { $size: { $setUnion: ['$addresses.id', []] } },
+          ],
         },
         {
           $lte: [
@@ -212,11 +230,20 @@ export const identityCollectionValidators = {
         ],
       ),
       allOf: [
-        { anyOf: [lacks('deliveryEnvelope'), lacks('consumedAt', 'invalidatedAt')] },
+        {
+          anyOf: [
+            lacks('deliveryEnvelope'),
+            lacks('consumedAt', 'invalidatedAt'),
+          ],
+        },
         {
           oneOf: [
             guest('purpose', 'guest_order_access'),
-            principal('purpose', ['email_verify', 'email_change', 'password_reset']),
+            principal('purpose', [
+              'email_verify',
+              'email_change',
+              'password_reset',
+            ]),
           ],
         },
         {
@@ -228,7 +255,11 @@ export const identityCollectionValidators = {
             {
               properties: {
                 purpose: {
-                  enum: ['email_verify', 'password_reset', 'guest_order_access'],
+                  enum: [
+                    'email_verify',
+                    'password_reset',
+                    'guest_order_access',
+                  ],
                 },
               },
               ...lacks('targetEmailNormalized'),
@@ -260,7 +291,13 @@ export const identityCollectionValidators = {
         expiresAt: date,
         rotatedAt: date,
       },
-      [...baseRequired, 'contextTokenHash', 'csrfSecretHash', 'audience', 'expiresAt'],
+      [
+        ...baseRequired,
+        'contextTokenHash',
+        'csrfSecretHash',
+        'audience',
+        'expiresAt',
+      ],
     ),
     $expr: issuanceExpiry,
   },
@@ -272,7 +309,9 @@ export async function initializeIdentityPersistence(
   models: IdentityModels,
 ) {
   if (!connection.db) throw new Error('Identity database is unavailable.')
-  for (const [name, validator] of Object.entries(identityCollectionValidators)) {
+  for (const [name, validator] of Object.entries(
+    identityCollectionValidators,
+  )) {
     const existing = await connection.db
       .listCollections({ name }, { nameOnly: false })
       .next()
@@ -298,4 +337,29 @@ export async function initializeIdentityPersistence(
   await verifyDeclaredIndexes(models.sessions)
   await verifyDeclaredIndexes(models.challenges)
   await verifyDeclaredIndexes(models.contexts)
+}
+
+// Read-only readiness: never creates collections/indexes or changes validators.
+export async function verifyIdentityPersistence(
+  connection: Connection,
+  models: IdentityModels,
+) {
+  if (!connection.db) throw new Error('Identity persistence unavailable.')
+  for (const [name, validator] of Object.entries(
+    identityCollectionValidators,
+  )) {
+    const existing = await connection.db
+      .listCollections({ name }, { nameOnly: false })
+      .next()
+    if (
+      !existing ||
+      !isDeepStrictEqual(existing.options?.validator, validator) ||
+      existing.options?.validationLevel !== 'strict' ||
+      existing.options?.validationAction !== 'error'
+    )
+      throw new Error(
+        'Identity persistence requires reviewed bootstrap/migration.',
+      )
+  }
+  for (const model of Object.values(models)) await verifyDeclaredIndexes(model)
 }

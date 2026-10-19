@@ -9,11 +9,14 @@ import { ConfigurationError } from '../../config/errors.js'
 export const proofPattern = /^[A-Za-z0-9_-]{43}$/
 export const proofHash = (
   proof: string,
-  purpose: 'password_reset' | 'email_change' = 'password_reset',
+  purpose:
+    | 'password_reset'
+    | 'email_change'
+    | 'admin_password_reset' = 'password_reset',
 ) =>
   createHash('sha256')
     .update(
-      `sportzone:${purpose === 'password_reset' ? 'password-reset' : 'email-change'}:v1:${proof}`,
+      `sportzone:${purpose === 'password_reset' ? 'password-reset' : purpose === 'email_change' ? 'email-change' : 'admin-password-reset'}:v1:${proof}`,
     )
     .digest('hex')
 export type ProofBinding = {
@@ -24,6 +27,7 @@ export type ProofBinding = {
   revision: number
   purpose?: 'password_reset' | 'email_change'
   targetEmail?: string
+  audience?: 'admin'
 }
 export type ProofEnvelope = {
   algorithm: 'AES-256-GCM'
@@ -69,6 +73,7 @@ export function createProofEncryption(
         binding.revision,
         version,
         ...(binding.purpose === 'email_change' ? [binding.targetEmail] : []),
+        ...(binding.audience === 'admin' ? ['admin'] : []),
       ]),
     )
   }

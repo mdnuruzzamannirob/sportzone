@@ -74,6 +74,7 @@ export function createNotificationWorker(
   clock: () => Date = () => new Date(),
   resetDelivery?: ResetDelivery,
   emailChangeDelivery?: ResetDelivery,
+  adminResetDelivery?: ResetDelivery,
 ) {
   const settings = validateRetryPolicy(input)
   return {
@@ -82,7 +83,11 @@ export function createNotificationWorker(
       const now = clock()
       if (!Number.isFinite(now.getTime()))
         throw new Error('Invalid notification clock.')
-      await (resetDelivery ?? emailChangeDelivery)?.cleanup(settings.batchSize)
+      await (
+        resetDelivery ??
+        emailChangeDelivery ??
+        adminResetDelivery
+      )?.cleanup(settings.batchSize)
       await store.recover(now, settings.batchSize, settings.maxAttempts)
       let processed = 0
       for (; processed < settings.batchSize; processed++) {
@@ -92,6 +97,7 @@ export function createNotificationWorker(
           settings.maxAttempts,
           Boolean(resetDelivery),
           Boolean(emailChangeDelivery),
+          Boolean(adminResetDelivery),
         )
         if (!claim) break
         if (!(await store.currentClaim(claim.id, claim.claimId, clock()))) {
@@ -102,15 +108,17 @@ export function createNotificationWorker(
         let message: Omit<EmailMessage, 'idempotencyKey'> | undefined
         try {
           message =
-            claim.eventType === 'email_change'
-              ? await emailChangeDelivery?.message(claim)
-              : claim.eventType === 'password_reset'
-                ? await resetDelivery?.message(claim)
-                : {
-                    to: claim.recipient,
-                    subject: 'Welcome to SportZone',
-                    text: 'Your SportZone account has been created. Email verification is a separate step.',
-                  }
+            claim.templateVersion === 'admin-password-reset-v1'
+              ? await adminResetDelivery?.message(claim)
+              : claim.eventType === 'email_change'
+                ? await emailChangeDelivery?.message(claim)
+                : claim.eventType === 'password_reset'
+                  ? await resetDelivery?.message(claim)
+                  : {
+                      to: claim.recipient,
+                      subject: 'Welcome to SportZone',
+                      text: 'Your SportZone account has been created. Email verification is a separate step.',
+                    }
         } catch {
           /* Missing/tampered/expired proof fails closed without a provider call. */
         }

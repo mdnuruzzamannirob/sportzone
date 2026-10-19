@@ -1,4 +1,8 @@
-import { loadRecoveryOptions, loadEmailChangeOptions } from './recovery.js'
+import {
+  loadRecoveryOptions,
+  loadEmailChangeOptions,
+  loadAdminRecoveryOptions,
+} from './recovery.js'
 import { ConfigurationError } from './errors.js'
 export { ConfigurationError } from './errors.js'
 import { z } from 'zod'
@@ -51,6 +55,13 @@ const schema = z
       .enum(['true', 'false'])
       .default('false')
       .transform((value) => value === 'true'),
+    ADMIN_AUTH_ENABLED: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((value) => value === 'true'),
+    ADMIN_PASSWORD_RESET_TTL_SECONDS: z.string().optional(),
+    ADMIN_PASSWORD_RESET_COOLDOWN_SECONDS: z.string().optional(),
+    ADMIN_PASSWORD_RESET_RESPONSE_FLOOR_MS: z.string().optional(),
     PASSWORD_RECOVERY_ENABLED: z
       .enum(['true', 'false'])
       .default('false')
@@ -94,6 +105,7 @@ const schema = z
           ...value,
           PORT: String(value.PORT),
           CUSTOMER_AUTH_ENABLED: String(value.CUSTOMER_AUTH_ENABLED),
+          ADMIN_AUTH_ENABLED: String(value.ADMIN_AUTH_ENABLED),
           PASSWORD_RECOVERY_ENABLED: 'true',
           EMAIL_CHANGE_ENABLED: String(value.EMAIL_CHANGE_ENABLED),
           CORS_ALLOWED_ORIGINS: value.CORS_ALLOWED_ORIGINS.join(','),
@@ -118,6 +130,7 @@ const schema = z
           ...value,
           PORT: String(value.PORT),
           CUSTOMER_AUTH_ENABLED: String(value.CUSTOMER_AUTH_ENABLED),
+          ADMIN_AUTH_ENABLED: String(value.ADMIN_AUTH_ENABLED),
           PASSWORD_RECOVERY_ENABLED: String(value.PASSWORD_RECOVERY_ENABLED),
           EMAIL_CHANGE_ENABLED: 'true',
           CORS_ALLOWED_ORIGINS: value.CORS_ALLOWED_ORIGINS.join(','),
@@ -130,7 +143,26 @@ const schema = z
         })
       }
     }
-    if (value.CUSTOMER_AUTH_ENABLED) {
+    if (value.ADMIN_AUTH_ENABLED) {
+      try {
+        loadAdminRecoveryOptions({
+          ...value,
+          PORT: String(value.PORT),
+          CUSTOMER_AUTH_ENABLED: String(value.CUSTOMER_AUTH_ENABLED),
+          PASSWORD_RECOVERY_ENABLED: String(value.PASSWORD_RECOVERY_ENABLED),
+          EMAIL_CHANGE_ENABLED: String(value.EMAIL_CHANGE_ENABLED),
+          ADMIN_AUTH_ENABLED: 'true',
+          CORS_ALLOWED_ORIGINS: value.CORS_ALLOWED_ORIGINS.join(','),
+        })
+      } catch {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['admin_recovery_configuration'],
+          message: 'Explicit secure administrator configuration required',
+        })
+      }
+    }
+    if (value.CUSTOMER_AUTH_ENABLED || value.ADMIN_AUTH_ENABLED) {
       for (const field of [
         'CUSTOMER_SESSION_TTL_SECONDS',
         'ADMIN_SESSION_TTL_SECONDS',

@@ -1,12 +1,16 @@
-import { loadEmailChangeOptions } from '../dist/config/recovery.js'
+import { loadEnvironment } from '../dist/config/environment.js'
+import {
+  loadAdminRecoveryOptions,
+  loadEmailChangeOptions,
+} from '../dist/config/recovery.js'
+import { openDatabase } from '../dist/db/connection.js'
 import { createIdentityModels } from '../dist/modules/auth/models.js'
 import {
-  createResetDelivery,
+  createAdminResetDelivery,
   createEmailChangeDelivery,
+  createResetDelivery,
 } from '../dist/modules/auth/proof-delivery.js'
 import { loadRecoveryOptions } from '../dist/modules/auth/recovery.js'
-import { loadEnvironment } from '../dist/config/environment.js'
-import { openDatabase } from '../dist/db/connection.js'
 import { createRegistrationNotifications } from '../dist/modules/notifications/registration.js'
 import {
   createNotificationWorker,
@@ -21,6 +25,9 @@ try {
     : undefined
   const emailChangeOptions = config.EMAIL_CHANGE_ENABLED
     ? loadEmailChangeOptions(process.env)
+    : undefined
+  const adminOptions = config.ADMIN_AUTH_ENABLED
+    ? loadAdminRecoveryOptions(process.env)
     : undefined
   const { adapter, settings } = loadNotificationWorker(process.env)
   connection = await openDatabase(config.MONGODB_URI, config.MONGODB_DB_NAME)
@@ -39,6 +46,9 @@ try {
           createIdentityModels(connection),
           emailChangeOptions,
         )
+      : undefined,
+    adminOptions
+      ? createAdminResetDelivery(createIdentityModels(connection), adminOptions)
       : undefined,
   ).runBatch()
   console.log(

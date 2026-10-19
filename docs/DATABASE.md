@@ -393,6 +393,12 @@ P03-011 reuses authChallenges with purpose `email_change`: userId is the current
 
 Confirmation consumes the proof under its user/purpose revision, updates unique users.emailNormalized and emailVerifiedAt, increments securityRevision plus email_verify/password_reset scope counters, removes pending identity envelopes and revokes customer sessions atomically. Duplicate email indexes remain the final authority; duplicate races abort all effects. Password reset/change also advance email-change/verification counters and remove pending identity envelopes. No identity schema/index or historical order update is introduced. The additive notification validator accepts the exact P03-010 predecessor and the new supported email-change event/template/reference-only payload; old exact-validator binaries require compatible rollout/rollback builds.
 
+#### Private administrator provisioning and recovery
+
+P03-012 initial provisioning inserts a new active administrator only; it never upgrades a customer, replaces an existing credential or exposes HTTP signup. Reserved initial-user ID `535a00000000000000000001` serializes concurrent bootstrap attempts through the existing unique _id index, even when proposed emails differ. Provisioning refuses an existing administrator/reserved ID/occupied email and uses the approved password hash. No identity schema/index change is required. The local/test CLI reads bounded private stdin and refuses deployed environments; production provisioning remains an authorized operator action.
+
+Admin reset retains purpose password_reset and current user scope counters. Its secretHash uses a distinct admin-password-reset domain and its AES-GCM AAD includes admin audience, preserving customer reset encoding. The notification uses event password_reset with template admin-password-reset-v1 and challengeId-only payload. Role, expiry, purpose, scope and admin verifier namespace are checked on consume; admin sessions alone are revoked. The additive notification migration accepts the exact P03-011 predecessor and supported admin template pair without changing previous records.
+
 ### 5.4 `browserContexts` — pre-auth CSRF bootstrap
 
 | Field | Type | Constraints / notes |
@@ -1226,7 +1232,7 @@ acceptance with providerMessageId, not recipient inbox delivery. Account/busines
 by the worker.
 
 The validator expansion is additive for existing registration records. Startup still verifies the exact expected
-validator/indexes. A separate reviewed migration upgrades only the known P03-007/009/010 validators; it does not drop data/indexes,
+validator/indexes. A separate reviewed migration upgrades only the known P03-007/009/010/011 validators; it does not drop data/indexes,
 reset delivery state or silently accept another schema. Local/test bootstrap can invoke this explicit migration; production
 rollout remains operator-controlled. Old binaries with exact prior-validator readiness checks require a compatible rollback
 build; never remove new lease/receipt data to make a prior validator pass. Other event payloads and secret-bearing proof

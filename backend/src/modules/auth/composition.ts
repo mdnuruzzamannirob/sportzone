@@ -1,3 +1,5 @@
+import { loadAdminRecoveryOptions } from '../../config/recovery.js'
+import { adminRoutes } from './admin-routes.js'
 import { loadEmailChangeOptions } from '../../config/recovery.js'
 import { createEmailChangeService } from './email-change.js'
 import { emailChangeRoutes } from './email-change-routes.js'
@@ -8,16 +10,14 @@ import { createAddressCoverage } from '../settings/coverage.js'
 import { createProfileService } from './profile.js'
 import { profileRoutes } from './profile-routes.js'
 import type { Connection } from 'mongoose'
-import { isDeepStrictEqual } from 'node:util'
 import type { RuntimeConfig } from '../../config/environment.js'
-import { verifyDeclaredIndexes } from '../../db/indexes.js'
 import { createRegistrationNotifications } from '../notifications/registration.js'
 import { browserSecurityRoutes } from './browser-routes.js'
 import {
   createBrowserSecurity,
   loadBrowserSecurityOptions,
 } from './browser-security.js'
-import { identityCollectionValidators } from './collection-validators.js'
+import { verifyIdentityPersistence } from './collection-validators.js'
 import { customerRoutes } from './customer-routes.js'
 import { createCustomerService } from './customer.js'
 import { createIdentityModels } from './models.js'
@@ -28,29 +28,13 @@ export async function composeCustomerRoutes(
   config: RuntimeConfig,
 ) {
   const models = createIdentityModels(connection)
-  if (!connection.db) throw new Error('Identity persistence unavailable.')
-  for (const [name, validator] of Object.entries(
-    identityCollectionValidators,
-  )) {
-    const existing = await connection.db
-      .listCollections({ name }, { nameOnly: false })
-      .next()
-    if (
-      !existing ||
-      !isDeepStrictEqual(existing.options?.validator, validator) ||
-      existing.options?.validationLevel !== 'strict' ||
-      existing.options?.validationAction !== 'error'
-    )
-      throw new Error(
-        'Identity persistence requires reviewed bootstrap/migration.',
-      )
-  }
-  for (const model of Object.values(models)) await verifyDeclaredIndexes(model)
+  await verifyIdentityPersistence(connection, models)
   const notifications = createRegistrationNotifications(connection)
   await notifications.verifyIndexes()
   const environment = {
     ...config,
     CUSTOMER_AUTH_ENABLED: String(config.CUSTOMER_AUTH_ENABLED),
+    ADMIN_AUTH_ENABLED: String(config.ADMIN_AUTH_ENABLED),
     PASSWORD_RECOVERY_ENABLED: String(config.PASSWORD_RECOVERY_ENABLED),
     EMAIL_CHANGE_ENABLED: String(config.EMAIL_CHANGE_ENABLED),
     PORT: String(config.PORT),
@@ -69,13 +53,14 @@ export async function composeCustomerRoutes(
   )
   const router = Router()
   router.use(browserSecurityRoutes(security, sessions))
-  router.use(
-    customerRoutes(
-      createCustomerService(models, sessions, security, notifications),
-      security,
-      sessions,
-    ),
-  )
+  if (config.CUSTOMER_AUTH_ENABLED)
+    router.use(
+      customerRoutes(
+        createCustomerService(models, sessions, security, notifications),
+        security,
+        sessions,
+      ),
+    )
   if (config.PASSWORD_RECOVERY_ENABLED)
     router.use(
       recoveryRoutes(
@@ -105,17 +90,42 @@ export async function composeCustomerRoutes(
         sessions,
       ),
     )
-  router.use(
-    profileRoutes(
-      createProfileService(
-        connection,
-        models,
+  if (config.CUSTOMER_AUTH_ENABLED)
+    router.use(
+      profileRoutes(
+        createProfileService(
+          connection,
+          models,
+          sessions,
+          createAddressCoverage(connection),
+        ),
+        security,
         sessions,
-        createAddressCoverage(connection),
       ),
-      security,
-      sessions,
-    ),
-  )
+    )
+  if (config.ADMIN_AUTH_ENABLED)
+    router.use(
+      adminRoutes(
+        createCustomerService(
+          models,
+          sessions,
+          security,
+          notifications,
+          'admin',
+        ),
+        createRecoveryService(
+          connection,
+          models,
+          sessions,
+          security,
+          notifications,
+          loadAdminRecoveryOptions(environment),
+          undefined,
+          'admin',
+        ),
+        security,
+        sessions,
+      ),
+    )
   return router
 }

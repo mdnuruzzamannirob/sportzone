@@ -121,13 +121,17 @@ export function customerRoutes(
   return router
 }
 
-function logoutProtection(security: BrowserSecurity): RequestHandler {
-  const sessionGuard = security.require('storefront', 'customer')
-  const contextGuard = security.require('storefront', 'context')
+export function logoutProtection(
+  security: BrowserSecurity,
+  audience: 'storefront' | 'admin' = 'storefront',
+  kind: 'customer' | 'admin' = 'customer',
+): RequestHandler {
+  const sessionGuard = security.require(audience, kind)
+  const contextGuard = security.require(audience, 'context')
   return async (req, res, next) => {
-    const token = readContextCookie(req.get('Cookie'), 'storefront')
+    const token = readContextCookie(req.get('Cookie'), audience)
     if (
-      await security.verifyContext('storefront', token, req.get('X-CSRF-Token'))
+      await security.verifyContext(audience, token, req.get('X-CSRF-Token'))
     ) {
       await contextGuard(req, res, next)
     } else await sessionGuard(req, res, next)

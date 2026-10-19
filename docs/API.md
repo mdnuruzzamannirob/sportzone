@@ -356,8 +356,8 @@ orders, receipt/payment/refund evidence, audit and immutable historical snapshot
 
 P03-009 connects the existing transactional registration intent to a server-only Resend HTTP adapter and explicit
 one-batch worker. No notification HTTP route, arbitrary email submission or automatic email send from registration is
-added. Registration uses `registration`/`registration-v1` with empty payload and server-owned plain-text content. P03-010/011 add
-explicitly activated password-reset/email-change proof renderers under §9.1; other proof/commerce templates remain disabled.
+added. Registration uses `registration`/`registration-v1` with empty payload and server-owned plain-text content. P03-010/011/012 add
+explicitly activated customer-reset/email-change/admin-reset proof renderers under §9.1; other proof/commerce templates remain disabled.
 
 A majority-acknowledged conditional claim moves queued/retry_wait to sending, increments attemptCount and records a fresh
 claimId/expiry before any provider request. Only the active claim can settle it. Explicit rate-limit rejection may enter
@@ -607,6 +607,12 @@ P03-011 implements customer-only `/me/email-changes` and `/me/email-changes/conf
 Confirmation atomically changes the unique email, marks that destination verified, advances security and challenge revisions, invalidates pending identity challenges and revokes all customer sessions. It returns the Account allowlist and clears the customer cookie; it does not silently sign in to the changed identity or return a new CSRF token. The customer must bootstrap/login again. Password reset/change also invalidates pending email-change/verification proofs. Existing order-time email/address snapshots and saved addresses remain untouched. Email-change delivery uses the fixed HTTPS storefront path `/account/email-change#token=…`; the later authenticated frontend submits proof only in the JSON body.
 
 EMAIL_CHANGE_ENABLED defaults false and is independent of PASSWORD_RECOVERY_ENABLED. Activation requires customer authentication, the existing protected versioned proof keys/HTTPS storefront origin, and explicit EMAIL_CHANGE_TTL_SECONDS (60–1800), EMAIL_CHANGE_COOLDOWN_SECONDS (60–3600), EMAIL_CHANGE_RESPONSE_FLOOR_MS (100–5000). Shared-ingress protection, measured response-floor sizing, sender readiness and frontend screens remain their owning gates.
+
+#### Administrator credential implementation
+
+P03-012 provides only the listed `/admin/auth/login`, `/session`, `/logout`, `/password-resets` and `/password-resets/confirm` operations, plus existing admin CSRF bootstrap. There is no administrator signup route. The backend selects admin role, Origin audience, cookie and proof namespace; clients cannot choose these fields. Admin login/current-session require an active admin and use the existing password policy, adaptive hash and session revision guards. Logout is repeatable with valid admin session CSRF or admin pre-auth context, including after expiry, and clears only the admin cookie.
+
+Admin reset uses the existing password_reset challenge purpose bound to the admin user, with an independent admin verifier domain, admin-bound AEAD and admin-password-reset-v1 delivery template. A customer-issued proof cannot become an admin proof after a role change. Confirmation consumes context/proof and updates password/security revisions/revokes admin sessions atomically; it grants no new session. Responses remain ambiguous about account existence. Admin recovery has independent TTL/cooldown/response-floor configuration and a fixed HTTPS ADMIN_ORIGIN reset link. ADMIN_AUTH_ENABLED defaults false, independently of CUSTOMER_AUTH_ENABLED; active admin configuration requires explicit session/context and ADMIN_PASSWORD_RESET policy plus protected proof keys. Existing shared-ingress/security audit/release gates remain separately owned.
 
 ### 9.2 Verified guest access
 

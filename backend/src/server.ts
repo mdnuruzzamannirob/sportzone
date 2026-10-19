@@ -32,7 +32,7 @@ export async function startServer(
     | Awaited<ReturnType<typeof composeCustomerRoutes>>
     | undefined
   try {
-    if (config.CUSTOMER_AUTH_ENABLED)
+    if (config.CUSTOMER_AUTH_ENABLED || config.ADMIN_AUTH_ENABLED)
       identityRouter = await composeCustomerRoutes(connection, config)
   } catch (error) {
     await connection.destroy()

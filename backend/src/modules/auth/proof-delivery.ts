@@ -8,6 +8,7 @@ function createDelivery(
   options: RecoveryOptions,
   clock: () => Date,
   purpose: 'password_reset' | 'email_change',
+  kind: 'customer' | 'admin' = 'customer',
 ) {
   if (
     new URL(options.storefrontOrigin).protocol !== 'https:' ||
@@ -70,6 +71,7 @@ function createDelivery(
         email: challenge.emailNormalized,
         expiresAt: challenge.expiresAt,
         revision: challenge.scopeRevisionAtIssue,
+        ...(kind === 'admin' ? { audience: 'admin' as const } : {}),
         ...(purpose === 'email_change'
           ? { purpose, targetEmail: claim.recipient }
           : {}),
@@ -82,11 +84,16 @@ function createDelivery(
         authTag: Buffer.from(challenge.deliveryEnvelope.authTag),
       }
       const proof = options.encryption.decrypt(envelope, binding)
-      if (proofHash(proof, purpose) !== challenge.secretHash)
+      if (
+        proofHash(
+          proof,
+          kind === 'admin' ? 'admin_password_reset' : purpose,
+        ) !== challenge.secretHash
+      )
         throw new Error('Proof delivery unavailable.')
       const eligible = await models.users.exists({
         _id: claim.userId,
-        role: 'customer',
+        role: kind,
         status: 'active',
         emailNormalized: challenge.emailNormalized,
         [`challengeRevisions.${purpose}`]: challenge.scopeRevisionAtIssue,
@@ -116,3 +123,9 @@ export const createEmailChangeDelivery = (
   clock: () => Date = () => new Date(),
 ) => createDelivery(models, options, clock, 'email_change')
 export type ResetDelivery = ReturnType<typeof createResetDelivery>
+
+export const createAdminResetDelivery = (
+  models: IdentityModels,
+  options: RecoveryOptions,
+  clock: () => Date = () => new Date(),
+) => createDelivery(models, options, clock, 'password_reset', 'admin')

@@ -20,7 +20,7 @@ import {
   consumeUserChallenge,
 } from './persistence.js'
 import { proofHash, proofPattern } from './proof-envelope.js'
-import type { SessionService } from './sessions.js'
+import type { SessionService, SessionKind } from './sessions.js'
 
 const issuance = loginInput.pick({ email: true })
 const confirmation = z.strictObject({
@@ -39,7 +39,11 @@ export function createRecoveryService(
   notifications: RegistrationNotifications,
   options: RecoveryOptions,
   clock: () => Date = () => new Date(),
+  kind: SessionKind = 'customer',
 ) {
+  const audience = kind === 'admin' ? 'admin' : 'storefront'
+  const hashPurpose =
+    kind === 'admin' ? 'admin_password_reset' : 'password_reset'
   async function invalidate(
     userId: Types.ObjectId,
     session: ClientSession,
@@ -62,7 +66,7 @@ export function createRecoveryService(
   }
   async function revoke(userId: Types.ObjectId, session: ClientSession) {
     await models.sessions.updateMany(
-      { userId, kind: 'customer', revokedAt: { $exists: false } },
+      { userId, kind, revokedAt: { $exists: false } },
       { $set: { revokedAt: clock() } },
       { session },
     )
@@ -77,14 +81,14 @@ export function createRecoveryService(
         notificationId = new Types.ObjectId()
       try {
         return await security.consumeContext(
-          'storefront',
+          audience,
           context,
           csrf,
           async (session) => {
             const user = await models.users
               .findOne({
                 emailNormalized: input.email,
-                role: 'customer',
+                role: kind,
                 status: 'active',
               })
               .select('+challengeRevisions')
@@ -106,7 +110,7 @@ export function createRecoveryService(
               .findOneAndUpdate(
                 {
                   _id: user._id,
-                  role: 'customer',
+                  role: kind,
                   status: 'active',
                   'challengeRevisions.password_reset':
                     user.challengeRevisions.password_reset,
@@ -126,11 +130,12 @@ export function createRecoveryService(
               email: input.email,
               expiresAt,
               revision,
+              ...(kind === 'admin' ? { audience: 'admin' as const } : {}),
             })
             await new models.challenges({
               _id: id,
               purpose: 'password_reset',
-              secretHash: proofHash(proof),
+              secretHash: proofHash(proof, hashPurpose),
               userId: user._id,
               emailNormalized: input.email,
               expiresAt,
@@ -148,6 +153,7 @@ export function createRecoveryService(
                 email: input.email,
               },
               session,
+              kind,
             )
             return { accepted: true as const }
           },
@@ -162,7 +168,7 @@ export function createRecoveryService(
       const input = parseInput(confirmation, raw)
       // Same KDF work for valid-shape unknown, expired and consumed tokens.
       const passwordHash = await hashPassword(input.newPassword)
-      const hash = proofHash(input.token)
+      const hash = proofHash(input.token, hashPurpose)
       const candidate = await models.challenges
         .findOne({ secretHash: hash, purpose: 'password_reset' })
         .select('userId emailNormalized')
@@ -171,7 +177,7 @@ export function createRecoveryService(
       try {
         // consumeContext owns the transaction; consumeUserChallenge cannot nest its transaction.
         return await security.consumeContext(
-          'storefront',
+          audience,
           context,
           csrf,
           async (session) => {
@@ -182,14 +188,14 @@ export function createRecoveryService(
                 secretHash: hash,
                 purpose: 'password_reset',
                 userId: candidateUserId,
-                role: 'customer',
+                role: kind,
                 maxAttempts: 1,
               },
               async ({ session: transaction, userId }) => {
                 const changed = await models.users.updateOne(
                   {
                     _id: userId,
-                    role: 'customer',
+                    role: kind,
                     status: 'active',
                     emailNormalized: candidate.emailNormalized,
                   },
@@ -221,10 +227,11 @@ export function createRecoveryService(
       }
     },
     async change(raw: unknown, token: string | undefined) {
+      if (kind !== 'customer') throw new ApiError('FORBIDDEN')
       const input = parseInput(changeInput, raw)
       const identity = await sessions.authenticate('customer', token)
       const user = await models.users
-        .findOne({ _id: identity.userId, role: 'customer', status: 'active' })
+        .findOne({ _id: identity.userId, role: kind, status: 'active' })
         .select('+passwordHash +securityRevision')
       if (
         !(await verifyPassword(input.currentPassword, user?.passwordHash)) ||
@@ -237,7 +244,7 @@ export function createRecoveryService(
           .findOne({
             _id: identity.sessionId,
             userId: user._id,
-            kind: 'customer',
+            kind,
             revokedAt: { $exists: false },
             expiresAt: { $gt: clock() },
             securityRevisionAtIssue: user.securityRevision,
@@ -254,7 +261,7 @@ export function createRecoveryService(
         const changed = await models.users.updateOne(
           {
             _id: user._id,
-            role: 'customer',
+            role: kind,
             status: 'active',
             securityRevision: user.securityRevision,
             passwordHash: user.passwordHash,

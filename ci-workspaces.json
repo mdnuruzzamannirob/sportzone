@@ -36,6 +36,6 @@
       "test:integration"
     ],
     "phoneValidation": "libphonenumber-js/max 1.13.15; P03-008 unit/integration checks",
-    "notificationWorker": "P03-009 registration, P03-010 password-reset and P03-011 email-change delivery; explicit migration/worker commands, unit and real MongoDB/HTTP checks"
+    "notificationWorker": "P03-009–012 registration, customer-reset, email-change and administrator-reset delivery; explicit migration/worker commands, unit and real MongoDB/HTTP checks"
   }
 }

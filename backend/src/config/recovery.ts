@@ -14,7 +14,7 @@ export type RecoveryOptions = {
 }
 function loadProofOptions(
   environment: NodeJS.ProcessEnv,
-  prefix: 'PASSWORD_RESET' | 'EMAIL_CHANGE',
+  prefix: 'PASSWORD_RESET' | 'EMAIL_CHANGE' | 'ADMIN_PASSWORD_RESET',
 ): RecoveryOptions {
   try {
     const integer = (key: string, min: number, max: number) => {
@@ -29,10 +29,14 @@ function loadProofOptions(
         throw new Error()
       return value
     }
-    const origin = new URL(environment.STOREFRONT_ORIGIN ?? '')
+    const configuredOrigin =
+      prefix === 'ADMIN_PASSWORD_RESET'
+        ? environment.ADMIN_ORIGIN
+        : environment.STOREFRONT_ORIGIN
+    const origin = new URL(configuredOrigin ?? '')
     if (
       origin.protocol !== 'https:' ||
-      origin.origin !== environment.STOREFRONT_ORIGIN ||
+      origin.origin !== configuredOrigin ||
       origin.username ||
       origin.password
     )
@@ -61,7 +65,9 @@ function loadProofOptions(
     throw new ConfigurationError([
       prefix === 'PASSWORD_RESET'
         ? 'password_recovery_configuration'
-        : 'email_change_configuration',
+        : prefix === 'EMAIL_CHANGE'
+          ? 'email_change_configuration'
+          : 'admin_recovery_configuration',
     ])
   }
 }
@@ -70,3 +76,6 @@ export const loadRecoveryOptions = (environment: NodeJS.ProcessEnv) =>
   loadProofOptions(environment, 'PASSWORD_RESET')
 export const loadEmailChangeOptions = (environment: NodeJS.ProcessEnv) =>
   loadProofOptions(environment, 'EMAIL_CHANGE')
+
+export const loadAdminRecoveryOptions = (environment: NodeJS.ProcessEnv) =>
+  loadProofOptions(environment, 'ADMIN_PASSWORD_RESET')

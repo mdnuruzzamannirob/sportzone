@@ -1558,8 +1558,8 @@ Keep the worker disabled until sender/domain and provider credentials are verifi
 Production requires EMAIL_MODE=live. Local/test/staging require EMAIL_MODE=test and an explicitly approved
 EMAIL_TEST_RECIPIENT; every outgoing recipient is redirected to that inbox. Sender/API keys remain separate per environment
 in protected config. Templates and original recipient addresses are not logged; CLI output contains counts or a generic
-failure. The outbox contains no plaintext proof/session/password or arbitrary email HTML. P03-010/011 supply authenticated
-envelope/challenge checks for explicitly activated reset/email-change templates; other proof templates remain disabled.
+failure. The outbox contains no plaintext proof/session/password or arbitrary email HTML. P03-010/011/012 supply authenticated
+envelope/challenge checks for explicitly activated customer-reset/email-change/admin-reset templates; other proof templates remain disabled.
 
 Policy bounds: 1–10 attempts; 1–100 claims per batch; base delay 100–3600000 ms; maximum delay at least the base and at most
 86400000 ms; lease 1000–3600000 ms; HTTP timeout 1–60000 ms. Require lease strictly greater than timeout plus 1000 ms.
@@ -1569,7 +1569,7 @@ ambiguous/network/timeout/5xx outcomes stop in delivery_uncertain. Resend accept
 
 For an existing owned local/test P03-007/008 database, explicitly run
 `node --env-file=.env backend/tools/migrate-notifications.mjs` before updated identity startup/worker readiness. It upgrades
-only the known strict P03-007/009/010 predecessor validators and ensures the claim-expiry index, preserving all records and statuses; repeat
+only the known strict P03-007/009/010/011 predecessor validators and ensures the claim-expiry index, preserving all records and statuses; repeat
 migration is safe. Fresh local/test bootstrap creates the current schema. Neither HTTP startup nor the worker migrates.
 Production migration needs normal operator change control; the convenience migration command refuses deployed environments.
 
@@ -1603,3 +1603,13 @@ Upgrade the exact known notification validator before new HTTP/worker startup; o
 Successful confirmation clears the customer cookie and revokes all customer sessions, so the customer must log in using the newly verified email. Pending identity challenges are invalidated atomically, including old-email resets. Successful password reset/change likewise invalidates pending email changes; merely requesting a reset email cannot cancel an authenticated email-change request. Suppressed occupied-target/cooldown requests do not replace the existing challenge. Do not manually switch identity to an unverified address or override unique-email failures. Historic order-time email/address snapshots remain immutable.
 
 For uncertain delivery, reconcile retained provider/event/claim identifiers; do not blindly resend or change the key. Authenticated reissue after cooldown supersedes the prior challenge. Key loss/tamper fails delivery closed; expiry/consumption/invalidation removes envelopes without relying on TTL. A previously dispatched but invalidated link cannot authorize a change. Use the recovery key rotation/restore procedures above for both proof purposes. Deployment sender/inbox tests, shared-ingress controls, protected secret-store custody and the authenticated frontend email-change screen remain separate gates.
+
+### Private administrator provisioning and recovery
+
+ADMIN_AUTH_ENABLED defaults false and is independent of CUSTOMER_AUTH_ENABLED. Activation requires explicit CUSTOMER_SESSION_TTL_SECONDS/ADMIN_SESSION_TTL_SECONDS, BROWSER_CONTEXT_TTL_SECONDS, SESSION_COOKIE_SAME_SITE, existing protected proof keys and approved HTTPS ADMIN_ORIGIN, plus ADMIN_PASSWORD_RESET_TTL_SECONDS (60–1800), ADMIN_PASSWORD_RESET_COOLDOWN_SECONDS (60–3600), ADMIN_PASSWORD_RESET_RESPONSE_FLOOR_MS (100–5000). No public administrator signup exists. Per-process admin rate limits and existing protected request logs are foundation controls; shared ingress and comprehensive audit infrastructure remain with their owning security/operations tasks.
+
+Build the backend and bootstrap owned local/test identity persistence through the existing explicit command; migrate notifications through `node --env-file=.env backend/tools/migrate-notifications.mjs`. The additive migration now accepts the exact P03-011 predecessor and admin-password-reset-v1 reference-only intents. HTTP startup never migrates. Operator-controlled production rollout and a compatible rollback build must preserve expanded records, claims and provider receipts.
+
+For owned local/test initial provisioning, pipe a protected secret-source JSON object `{name,email,password}` into `node --env-file=.env backend/tools/provision-admin.mjs`. Input is noninteractive and limited to 8192 bytes; the command prints only generic success/failure and never credentials. Do not type passwords in process arguments, commit an input file, use a shared default credential or expose this function as an HTTP route. The command verifies existing strict persistence without creating collections/indexes, inserts the reserved initial administrator and refuses replay, existing admins, occupied identities and customer upgrades. Concurrent attempts serialize through the reserved _id. Staging/production are refused by this convenience command. Production initial provisioning requires an authorized operator to review the same service against verified persistence, privately inject credentials, record a secret-free change record and verify namespace/role/session behavior; no production action is claimed here.
+
+Admin recovery uses the same one-batch email worker with admin activation/key/origin policy supplied. Only the admin-specific template is claimed by the enabled admin renderer. Admin links use the configured admin HTTPS origin; customer proof/cookie/context cannot substitute, including after a role change. Known provider rejection retains stable challenge/event identity; uncertainty stops automatic resend. Bounded cleanup, key rotation, restore invalidation and reconciliation follow the existing proof procedures. Successful reset revokes admin sessions, consumes the proof and creates no session. Repeat logout requires fresh admin context when the session is unavailable. Suspended/ineligible accounts remain inaccessible; recovery cannot reactivate or privilege-upgrade them. Live inbox, deployed ingress/browser/TLS, secret-store, audit rollout and milestone approvals remain separate gates.

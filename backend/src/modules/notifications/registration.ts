@@ -139,6 +139,7 @@ export function createRegistrationNotifications(
         email: string
       },
       session: ClientSession,
+      kind: 'customer' | 'admin' = 'customer',
     ) {
       if (!session.inTransaction())
         throw new Error('Notification intent requires business transaction.')
@@ -148,7 +149,8 @@ export function createRegistrationNotifications(
         userId: input.userId,
         recipient: { emailNormalized: input.email },
         eventType: 'password_reset',
-        templateVersion: 'password-reset-v1',
+        templateVersion:
+          kind === 'admin' ? 'admin-password-reset-v1' : 'password-reset-v1',
         payload: { challengeId: input.challengeId },
         status: 'queued',
         attemptCount: 0,
@@ -211,6 +213,10 @@ export function createRegistrationNotifications(
           !isDeepStrictEqual(
             existing.options?.validator,
             passwordResetNotificationValidator,
+          ) &&
+          !isDeepStrictEqual(
+            existing.options?.validator,
+            emailChangeNotificationValidator,
           )
         )
           throw new Error(
@@ -232,6 +238,7 @@ export function createRegistrationNotifications(
       maxAttempts: number,
       includeProofs = false,
       includeEmailChanges = false,
+      includeAdminResets = false,
     ) {
       const claimId = randomUUID()
       const row = await model
@@ -252,6 +259,14 @@ export function createRegistrationNotifications(
                     {
                       eventType: 'email_change' as const,
                       templateVersion: 'email-change-v1',
+                    },
+                  ]
+                : []),
+              ...(includeAdminResets
+                ? [
+                    {
+                      eventType: 'password_reset' as const,
+                      templateVersion: 'admin-password-reset-v1',
                     },
                   ]
                 : []),
@@ -282,6 +297,7 @@ export function createRegistrationNotifications(
             id: row._id,
             userId: row.userId,
             eventType: row.eventType,
+            templateVersion: row.templateVersion,
             challengeId: row.payload.challengeId,
             eventKey: row.eventKey,
             recipient: row.recipient.emailNormalized,
@@ -559,7 +575,7 @@ export const passwordResetNotificationValidator = {
 }
 
 // Additive P03-011 contract; preserve exact known predecessor validators above.
-export const registrationNotificationValidator = {
+export const emailChangeNotificationValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -590,6 +606,57 @@ export const registrationNotificationValidator = {
         {
           eventType: 'password_reset',
           templateVersion: 'password-reset-v1',
+          'payload.challengeId': { $type: 'objectId' },
+        },
+        {
+          eventType: 'email_change',
+          templateVersion: 'email-change-v1',
+          'payload.challengeId': { $type: 'objectId' },
+        },
+      ],
+    },
+  ],
+}
+
+// P03-012 adds an admin-specific reset template without changing challenge purpose.
+export const registrationNotificationValidator = {
+  $and: [
+    {
+      $jsonSchema: {
+        ...foundationNotificationValidator.$jsonSchema,
+        properties: {
+          ...foundationNotificationValidator.$jsonSchema.properties,
+          eventType: {
+            enum: ['registration', 'password_reset', 'email_change'],
+          },
+          templateVersion: {
+            enum: [
+              'registration-v1',
+              'password-reset-v1',
+              'email-change-v1',
+              'admin-password-reset-v1',
+            ],
+          },
+          payload: {
+            bsonType: 'object',
+            additionalProperties: false,
+            properties: { challengeId: { bsonType: 'objectId' } },
+          },
+        },
+      },
+    },
+    {
+      $or: [
+        {
+          eventType: 'registration',
+          templateVersion: 'registration-v1',
+          'payload.challengeId': { $exists: false },
+        },
+        {
+          eventType: 'password_reset',
+          templateVersion: {
+            $in: ['password-reset-v1', 'admin-password-reset-v1'],
+          },
           'payload.challengeId': { $type: 'objectId' },
         },
         {
