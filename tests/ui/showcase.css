@@ -10,7 +10,7 @@ body { margin: 0; font-family: var(--font-sans, system-ui, sans-serif); backgrou
 .native-nav { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
 .native-nav > button { justify-content: flex-start; }
 .native-content { min-width: 0; }
-.native-content h2 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+.native-content > h2 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
 .native-note { color: var(--foreground); font-size: 14px; margin-bottom: 28px; line-height: 1.6; }
 .native-row { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-bottom: 24px; }
 .native-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,240px),1fr)); gap: 28px; align-items: start; }
@@ -24,3 +24,8 @@ body { margin: 0; font-family: var(--font-sans, system-ui, sans-serif); backgrou
  .native-layout { grid-template-columns: 1fr; gap: 24px; }
  .native-nav { flex-direction: row; flex-wrap: wrap; }
 }
+
+.preview-sample { min-width: 0; padding: 24px; border: 1px solid var(--separator); border-radius: var(--radius-lg); }
+.preview-sample > h3 { margin-bottom: 20px; font-size: 14px; font-weight: 600; color: var(--muted); }
+.preview-stack { display: flex; flex-direction: column; gap: 20px; }
+.preview-wide { grid-column: 1 / -1; }

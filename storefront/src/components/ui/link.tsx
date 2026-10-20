@@ -14,7 +14,7 @@ export function Link({ href, children, className = '', onClick, ref, ...rest }: 
     <HeroLink
       href={href}
       ref={ref}
-      className={` ${className}`}
+      className={className}
       render={(props) => (
         <NextLink
           {...props}

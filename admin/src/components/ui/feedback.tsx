@@ -68,7 +68,7 @@ export function EmptyState({
 }) {
   const id = useId()
   return (
-    <Card aria-labelledby={id} className="">
+    <Card aria-labelledby={id}>
       <Card.Header>
         <h2 id={id} className="text-xl">
           {title}

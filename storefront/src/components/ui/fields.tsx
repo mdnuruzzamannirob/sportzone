@@ -39,7 +39,6 @@ export function TextInput({
     >
       <Label>
         {label}
-
       </Label>
       {multiline ? <TextArea rows={rows} /> : <Input />}
       {description && <Description>{description}</Description>}
@@ -82,7 +81,6 @@ export function SelectField({
     >
       <Label>
         {label}
-
       </Label>
       <Select.Trigger>
         <Select.Value />
@@ -112,13 +110,12 @@ export function CheckboxField({
 }: Omit<CheckboxProps, 'children' | 'className'> & FieldContent) {
   return (
     <Checkbox {...props} isInvalid={error ? true : props.isInvalid}>
-      <Checkbox.Content >
+      <Checkbox.Content>
         <Checkbox.Control>
           <Checkbox.Indicator />
         </Checkbox.Control>
         <Label>
           {label}
-
         </Label>
       </Checkbox.Content>
       {description && <Description>{description}</Description>}
@@ -139,11 +136,10 @@ export function RadioChoices({
     <RadioGroup {...props} isInvalid={error ? true : props.isInvalid}>
       <Label>
         {label}
-
       </Label>
       {options.map((option) => (
         <Radio key={option.value} value={option.value} isDisabled={option.disabled}>
-          <Radio.Content >
+          <Radio.Content>
             <Radio.Control>
               <Radio.Indicator />
             </Radio.Control>

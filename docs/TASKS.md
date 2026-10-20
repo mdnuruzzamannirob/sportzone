@@ -413,7 +413,7 @@ owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
   **Depends on:** `P02-012`, `P02-013`\
   **Deliverable:** Research installed/official HeroUI defaults; centralize primitive/theme imports in each app’s UI directory; remove custom palette/fonts/skin and obsolete tests; provide one actual-app preview with Admin/Storefront and Light/Dark toggles.\
   **Acceptance:** Both frontend types/lint/necessary interaction/display checks and builds/smoke verified; import boundary enforced; one preview uses real app modules; accessibility findings retained and explicitly dispositioned without waiving PRD gates; independent owner review.\
-  **Evidence:** [Decision, research, implementation and verification](./evidence/P02-014-default-heroui.md). Implementation and focused functional checks passed; native contrast findings and owner review remain open. No new milestone acceptance.
+  **Evidence:** [Decision, research, implementation and verification](./evidence/P02-014-default-heroui.md). Implementation and focused functional checks passed; owner accepted the UI review corrections on 20 October 2026 (“এই সংশোধনগুলো accept করছি”). Native contrast findings remain open, so the task stays In Review. No new milestone acceptance.
 
 ### Phase 03 — Authentication and core backend
 

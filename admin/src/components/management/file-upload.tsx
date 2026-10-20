@@ -1,4 +1,4 @@
-import { Input } from '../ui/index'
+import { FileInput } from '../ui/file-input'
 import { useEffect, useId, useState } from 'react'
 import { Button } from '../ui/button'
 import { Notice } from '../ui/feedback'
@@ -58,17 +58,14 @@ export function FileUpload({
         {label}
       </label>
       <p id={`${id}-help`} className="break-words text-sm text-muted">
-        Types: {acceptedTypes.join(', ')}. Maximum {maxBytes} bytes. Files are checked
-        again by the server.
+        {acceptedTypes.map(type => type.split('/')[1].toUpperCase()).join(', ')} · Up to {Math.round(maxBytes / 1024)} KB
       </p>
-      <Input
+      <FileInput
         id={id}
-        type="file"
         accept={acceptedTypes.join(',')}
         disabled={disabled}
         aria-describedby={`${id}-help${issue ? ` ${id}-error` : ''}`}
         aria-invalid={!!issue}
-        className="block  w-full min-w-0 border border-border p-2 focus-visible:outline-2 focus-visible:outline-accent"
         onChange={(event) => {
           const candidate = event.currentTarget.files?.[0]
           event.currentTarget.value = ''

@@ -129,3 +129,10 @@ The actual-app preview and focused browser checks live in `tests/ui/`. `npm run 
 P02-014 records owner authorization, research and cleanup. The single local `showcase.html` loads the actual selected app UI facade and theme, with Admin/Storefront and Light/Dark controls. It exposes native variant axes, app fields/feedback/dialogs/theme and commerce/management compositions. It is not a separately styled mock. Theme switching preserves mounted drafts; app switching reloads the CSS boundary.
 
 Native Button variants/sizes are no longer narrowed by the app wrapper. Optional `pendingLabel` remains an explicit behavior composition. Required-field indication uses native labels/ARIA rather than appended text. Dialog/drawer Cancel uses the native close slot, with no positioning override. CSS palette/asset snapshots and duplicate DOM theme runs were retired; functional/negative tests, BDT correctness, theme lifecycle, browser interaction and explicit accessibility checks remain. Historical evidence is not rewritten as new acceptance.
+
+
+### Owner review refinements
+
+Link and Breadcrumb hover use the native accent token without underlines. Invalid RadioGroup controls use danger colors, including selected controls. Disclosure triggers keep their indicator on one line; wrap a potentially long title in a span so it truncates with ellipsis. Both app UI theme entries explicitly scan their own source so the single preview includes real app layout utilities.
+
+Admin `components/ui/file-input.tsx` centralizes a native, keyboard-accessible file picker behind a modern upload surface. It forwards native input props (including accept/capture/disabled/ref) and accepts `prompt` and wrapper `className`; `management/FileUpload` still owns file-policy checks, progress, selected file state, retries and object-URL cleanup. The surface does not claim drag-and-drop support. App fields/feedback/management preview specimens have independent labelled sections and mobile reflow. No production routes or upload APIs are added.

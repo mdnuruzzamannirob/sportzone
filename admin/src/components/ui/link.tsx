@@ -12,7 +12,7 @@ export function Link({ to, children, className = '', onClick, ref, ...rest }: Pr
     <HeroLink
       href={to}
       ref={ref}
-      className={` ${className}`}
+      className={className}
       render={(props) => (
         <RouterLink
           {...props}

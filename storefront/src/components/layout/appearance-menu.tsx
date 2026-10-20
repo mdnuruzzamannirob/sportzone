@@ -8,7 +8,7 @@ export function AppearanceMenu() {
     <Disclosure className="my-2 max-w-xs">
       <Disclosure.Heading>
         <Disclosure.Trigger className="flex w-full items-center gap-3 py-3 text-sm">
-          Appearance
+          <span>Appearance</span>
           <Disclosure.Indicator />
         </Disclosure.Trigger>
       </Disclosure.Heading>

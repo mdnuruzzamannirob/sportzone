@@ -143,7 +143,7 @@ export function AdminShell({
             <Disclosure className="w-56 max-w-full">
               <Disclosure.Heading>
                 <Disclosure.Trigger className="flex w-full items-center gap-2 py-3 text-sm">
-                  Appearance
+                  <span>Appearance</span>
                   <Disclosure.Indicator />
                 </Disclosure.Trigger>
               </Disclosure.Heading>

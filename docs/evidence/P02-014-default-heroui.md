@@ -62,3 +62,26 @@ Current audit confirms native stock palette contrast findings under PRD §12.7. 
 Disposition: findings remain open; keep P02-014 In Review. A follow-up owner decision is required before altering native palette colors to resolve contrast while preserving the desired design. This does not authorize hiding findings or weakening PRD acceptance. The zero-violation axe gate is retained; do not suppress contrast, claim automatic accessibility or accept a milestone based on library defaults. Report design/functional review separately from release accessibility.
 
 Code/style rollback uses the prior compatible frontend build; no database migration or external financial effect. Owner acceptance is requested after implementation/evidence. No task checkbox or milestone is self-approved.
+
+
+## Owner review corrections — 20 October 2026
+
+Owner requested accent hover without underline for Link/Breadcrumbs, a modern flexible file picker, checkbox-consistent red invalid radios, single-line/truncated disclosure headers, and repaired fields/feedback/management previews. Implemented these refinements in app-owned UI CSS and the admin file-input facade. No custom palette, new dependencies or alternate theme controller was introduced.
+
+Root cause of preview layout defects: the isolated Vite preview did not discover all application Tailwind classes, and its broad heading selector affected nested component headings. Each theme now explicitly scans its app source; app Biome parsers enable Tailwind directives so this CSS remains lintable. Catalogue heading styles target only the outer heading. Examples are grouped into labelled specimens with spacing; management tables retain local horizontal scrolling.
+
+Verification on the changed scope:
+
+- Passed: both app lint/types; showcase TypeScript/Biome; source boundaries (111 files).
+- Passed: 25 affected admin management/form tests; after the final picker presentation change, the ten management cases were rerun.
+- Passed: both production builds and existing smoke checks. Admin smoke initially could not bind a local server inside the sandbox (`EPERM`); rerun with local-listener permission passed. Existing admin bundle advisory remains.
+- Passed: focused Chromium inspection for both apps × both themes: accent/underline hover, disclosure indicator alignment and truncation, invalid selected radio color, file selection/removal, and fields/feedback/management layout at 1280/375px. Management mobile overflow was reproduced and fixed by the source-discovery correction, then affected views rerun. Final picker visuals and keyboard access checked separately.
+- Visual screenshots: local `test-results/p02-014-review/`. No new permanent test matrix was added. Existing necessary state, policy, focus, theme, boundary and security tests remain; obsolete custom-token/font tests and duplicate galleries were already removed in the migration. Removed empty UI classes and stale JSX spacing; no unrelated files were deleted merely to reduce file count.
+- Full CI, other engines and a new broad accessibility audit: Not Run for this localized correction. Earlier stock-palette contrast findings remain open; these changes do not certify WCAG compliance.
+
+Status remains In Review pending owner review; no checkbox or milestone accepted.
+
+
+### Owner acceptance of review corrections
+
+On 20 October 2026, the owner explicitly accepted the listed UI corrections through the review popup: “এই সংশোধনগুলো accept করছি”. This accepts Link/Breadcrumb hover, the modern file picker, invalid radio styling, disclosure truncation and repaired preview layouts. It does not resolve the previously disclosed native-palette contrast findings or accept a milestone. P02-014 remains In Review until its remaining acceptance conditions are satisfied.

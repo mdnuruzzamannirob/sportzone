@@ -1,6 +1,8 @@
 /* App-owned theme entry. Keep HeroUI defaults; approved customization starts here. */
 @import "tailwindcss";
 @import "@heroui/styles";
+/* Include actual app compositions when this entry is built by the preview. */
+@source "../..";
 
 @layer base {
   body {
@@ -10,3 +12,29 @@
     font-family: var(--font-sans);
   }
 }
+
+/* Owner-approved interaction fixes; native tokens and focus treatment remain. */
+.link, .breadcrumbs__link { text-decoration: none; }
+.link:not([aria-disabled="true"]):is(:hover, [data-hovered="true"], :active, [data-pressed="true"]),
+.breadcrumbs__link:not([data-current="true"]):is(:hover, [data-hovered="true"]) {
+  color: var(--accent);
+  text-decoration: none;
+}
+.disclosure__trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.disclosure__trigger > :not(.disclosure__indicator) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.disclosure__indicator { flex-shrink: 0; }
+.radio-group[data-invalid="true"] .radio__control { border-color: var(--danger); }
+.radio-group[data-invalid="true"] .radio:has(input:checked) .radio__control { background: var(--danger); }
+.radio-group[data-invalid="true"] .radio:has(input:checked) .radio__indicator::before { background: var(--danger-foreground); }

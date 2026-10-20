@@ -65,7 +65,7 @@ The storefront serves guests and registered customers; the admin portal serves t
 
 **Owner decision, 20 October 2026:** Both frontends use the installed HeroUI v3 default design system exactly: native colors, system fonts, spacing, radii, sizes, shadows, variants, focus and motion. This supersedes the earlier monochrome/blue palette, fixed Inter/Jakarta/Bengali font stack, custom radius/control tokens and shared CSS adapter. The owner explicitly requested centralized app-owned `components/ui/` boundaries, a single Admin/Storefront light/dark preview and removal of obsolete design-specific tests.
 
-Do not reskin library components or copy the documentation website’s chrome. App-owned UI modules are the customization boundary; features, routes, layouts and commerce/management compositions consume those modules instead of importing HeroUI directly. Keep native generic/compound APIs intact. No new shared runtime UI package is introduced.
+Keep native styles except explicit owner-approved refinements. The current refinements are accent-colored, underline-free Link/Breadcrumb hover; a flexible native file picker surface; invalid RadioGroup controls matching checkbox danger colors; and single-line disclosure labels with truncation. Do not copy the documentation website’s chrome. App-owned UI modules are the customization boundary; features, routes, layouts and commerce/management compositions consume those modules instead of importing HeroUI directly. Keep native generic/compound APIs intact. No new shared runtime UI package is introduced.
 
 ### 2.2 Light and dark color system
 

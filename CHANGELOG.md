@@ -8,6 +8,10 @@ This changelog tracks the documentation baseline. Application releases are recor
 
 ## Development changes — 20 October 2026
 
+- Recorded owner acceptance of P02-014 UI review corrections through the popup. The task remains In Review because disclosed native-palette contrast findings are unresolved; no milestone accepted. [Acceptance](docs/evidence/P02-014-default-heroui.md#owner-acceptance-of-review-corrections).
+
+- Applied P02-014 owner review corrections: accent/no-underline links and breadcrumbs, modern native file picker facade, invalid radio colors, disclosure truncation and clean responsive preview specimens. Fixed app Tailwind source discovery in the preview; retained necessary tests and open contrast findings. [Evidence](docs/evidence/P02-014-default-heroui.md#owner-review-corrections--20-october-2026).
+
 - Implemented the owner-requested P02-014 migration to native HeroUI defaults in both apps, centralized UI/theme facades with enforced import boundaries, and one actual-app preview. Removed obsolete custom palette/font assets, duplicate galleries and redundant style/theme tests while preserving behavioral and accessibility gates. Independent review and native contrast findings remain open. [Evidence](docs/evidence/P02-014-default-heroui.md).
 
 - Replaced the default review entry with an isolated original-HeroUI reference after owner rejection/clarification: 22 used component families, complete supported visual variant axes, direct library imports and no project CSS/wrappers. Kept app compositions separate. Removed forced app control/card/dialog radii while preserving production theme/accessibility contracts. Native reference contrast findings are recorded, not certified as production acceptance. In Review. [Evidence](docs/evidence/ui-component-showcase.md#revised-owner-scope--original-heroui-reference).

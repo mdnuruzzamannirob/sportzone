@@ -593,7 +593,7 @@ function Examples({ name }: { name: ComponentName }) {
             <H.Disclosure defaultExpanded={state === 'open'} isDisabled={state === 'disabled'}>
               <H.Disclosure.Heading>
                 <H.Disclosure.Trigger>
-                  Native disclosure
+                  <span>Native disclosure with a long title that truncates when space is limited</span>
                   <H.Disclosure.Indicator />
                 </H.Disclosure.Trigger>
               </H.Disclosure.Heading>
