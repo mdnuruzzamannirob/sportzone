@@ -8,6 +8,10 @@ This changelog tracks the documentation baseline. Application releases are recor
 
 ## Development changes — 20 October 2026
 
+- Recorded explicit project-owner acceptance of the verified Phase 01 result (“onumoti dilam”); marked P01-016 Done, completing Phase 01 at 17/17 tasks. Updated overall totals to 42 Done and 136 Not Started. Milestone acceptance is unchanged. [Acceptance](docs/evidence/phase-01-reconciliation.md#owner-acceptance).
+
+- Submitted Phase 01 for final owner acceptance after hosted run 39414507457 passed all 23 checks and 846 cases, including 30 browser and 260 real MongoDB cases; zero secret findings/advisories. Verified protected-main enforcement and resolved audit timing without weakening coverage. P01-016 is In Review; no milestone accepted. [Evidence](docs/evidence/phase-01-reconciliation.md#final-hosted-verification-and-review-handoff).
+
 - Applied and read back protected-main required CI/review rules under owner authorization. Hosted Phase 01 verification exposed a WebKit desktop contrast failure; changed the audit to initialize the real stored theme preference before navigation and assert the desktop label's computed foreground before axe, retaining all contrast checks.
 
 - Reconciled all seventeen Phase 01 tasks with the revised architecture; preserved sixteen existing acceptances and the P01-016 remote-evidence blocker. Added synthetic tooling-fixture failure diagnostics and corrected API-only local environment-loading guidance. Owner acceptance remains pending for phase closure. [Review record](docs/evidence/phase-01-reconciliation.md).

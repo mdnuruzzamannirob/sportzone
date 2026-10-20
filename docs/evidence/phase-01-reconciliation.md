@@ -1,9 +1,9 @@
 # Phase 01 — Current architecture reconciliation
 
-Date: 20 October 2026 (Asia/Dhaka). Executor: Codex. Review status: submitted for owner review;
-P01-016 is In Progress with authenticated protection verified; hosted success remains pending. No new acceptance is recorded.
+Date: 20 October 2026 (Asia/Dhaka). Executor: Codex. Review status: accepted by the project owner.
+P01-016 is Done; Phase 01 is 17/17 Done. Hosted success and authenticated protection are verified; see Owner acceptance below.
 
-## Scope and retained acceptance
+## Initial review scope and retained acceptance
 
 The owner requested completing Phase 01 against the revised architecture, then asking permission
 before marking remaining tasks Done. Existing acceptance of sixteen tasks is preserved. Historical
@@ -141,3 +141,59 @@ Current disposition: P01-016 In Progress; authentication and settings blockers r
 hosted execution of the final correction and the owner's final acceptance are still required. This
 section supersedes earlier descriptions of unperformed submission/protection; historical records above
 remain dated evidence of their earlier state.
+
+## Final hosted verification and review handoff
+
+Date: 20 October 2026 (Asia/Dhaka). Executor: Codex. Owner authorized implementation, submission
+and protection by requesting completion of Phase 01. Final task acceptance is still requested separately
+as instructed; no approval or milestone acceptance is fabricated. This section supersedes earlier
+current/blocker descriptions above, which remain the historical investigation record.
+
+[Hosted run 39414507457](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/39414507457)
+Passed for commit ac607b6b0e750967a2fc641065c9ea89bc71620e, branch refactor. Required job
+CI required result completed in 5m21s. [Native artifact ci-1](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/39414507457/artifacts/12261325886)
+is present and unexpired at inspection. Downloaded reports were inspected, not inferred from a green badge.
+
+| Verification | Observed final result |
+| --- | --- |
+| Full hosted npm run ci | Passed — all 23 required commands |
+| Repository/tooling | 31/31 Passed; lint, workspace discovery, boundaries and scoped formatting Passed |
+| Storefront | 114/114 unit/component cases; lint/typecheck/build/smoke Passed |
+| Admin | 97/97 unit/component cases; lint/typecheck/build/smoke Passed |
+| Backend | 314/314 unit/contract cases; lint/typecheck/build/smoke Passed |
+| Real MongoDB replica-set integration | 260/260 Passed, zero failed/pending |
+| Browser/axe | 30/30 Passed across Chromium, Firefox and WebKit; zero skips, unexpected or flaky cases |
+| Supply chain | Passed — zero Gitleaks findings and zero npm advisories |
+| Main protection read-back | Required CI app 15368, strict true, one review, stale-dismissal/admin enforcement true, force/deletion false |
+| Additional local security verification | Passed — zero findings/advisories |
+
+Total executed case counts across native runners: 846 passed. Counts describe the listed suites, not
+product or milestone completion. The final report bundle contains ci.json, database.json, ui-report.json
+and security.json. A nonblocking upload-artifact Node runtime deprecation warning remains; the pinned
+action executed and uploaded reports successfully, so no speculative action upgrade was included.
+
+Technical Phase 01 work is complete and submitted for final owner acceptance: sixteen previously
+accepted tasks remain Done; P01-016 is In Review and unchecked. Dashboard totals: 41 Done, 1 In Review,
+0 Blocked, 136 Not Started. M1 remains Not Accepted. Application refactors retain their own task owners.
+
+Final review-record edits are local documentation changes after the tested implementation commit. They
+are not claimed as already hosted-tested or pushed; lint/link/whitespace checks apply to this handoff.
+After the owner accepts the concrete result, record the acceptance and update Done/checkbox/totals
+in one documentation commit. No additional implementation or protection change is needed for acceptance.
+
+## Owner acceptance
+
+Date: 20 October 2026 (Asia/Dhaka). Reviewer/approver: project owner. Executor: Codex.
+Following the concrete final handoff of hosted run 39414507457, 23 passing checks/846 passing cases
+and verified main protection, the owner explicitly replied “onumoti dilam” to the request to mark
+P01-016 Done and record all seventeen Phase 01 tasks completed. The repeated confirmation carries
+the same approval; it does not create another task or acceptance requirement.
+
+Decision: accept P01-016; In Review → Done. Phase 01: 17/17 Done. Overall: 42 Done,
+136 Not Started, zero In Review/Blocked. M1 remains Not Accepted; no application refactor,
+production/provider gate or main merge is accepted by this planning/tooling closure. Earlier pending
+acceptance statements are the historical handoff, superseded by this decision.
+
+This acceptance update changes documentation only. Repository lint/local-link checks, task/checkbox
+counts and whitespace review apply; application suites are not rerun for unchanged implementation.
+The accepted implementation remains ac607b6, with its successful hosted run linked above.

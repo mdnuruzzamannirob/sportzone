@@ -1,11 +1,11 @@
 # P01-016 — CI scope and required-result verification
 
 Latest Phase 01 revalidation: [current architecture reconciliation and closure procedure](./phase-01-reconciliation.md).
-Authenticated follow-up resolved login access but found main unprotected and no repository rulesets;
-successful hosted execution and actual required-check enforcement remain outstanding. See the linked
-report for the proposed submission/protection change awaiting owner authorization.
+Final authenticated verification resolved login, hosted execution and main protection requirements.
+See the linked report's final handoff for run/artifact identity, native results and settings read-back.
+Final owner acceptance was recorded on 20 October 2026; P01-016 is Done.
 
-Date: 20 October 2026 (Asia/Dhaka). Status: **In Progress**. Executor: Codex. Owner authorized submission and protection; authenticated settings verification is complete and hosted browser corrections are under validation. See the latest reconciliation for current state; blocker descriptions below are historical.
+Date: 20 October 2026 (Asia/Dhaka). Status: **Done**. Executor: Codex. Hosted run 39414507457 Passed for ac607b6; required main protection applied and read back. Accepted by the project owner on 20 October 2026: “onumoti dilam”. Earlier blocker descriptions below are historical.
 
 ## Historical implementation (superseded by simplification below)
 
@@ -141,3 +141,18 @@ No workflow rewrite was necessary. The runner now uses GitHub's documented
 to identify future failed npm checks without exposing configuration values. The historical hosted failure
 cause remains unverified. Current priority is the P03-019 backend composition refactor; remote CI closure
 remains a separate follow-up under its existing acceptance requirements.
+
+## Final hosted acceptance evidence
+
+[Final Phase 01 handoff](./phase-01-reconciliation.md#final-hosted-verification-and-review-handoff)
+records successful hosted run 39414507457 at ac607b6, 23 required checks, 846 passing cases,
+zero skips/findings/advisories and authenticated main protection read-back. The owner authorized
+submission/protection; all technical blockers are resolved. P01-016 is In Review pending the requested
+final independent owner acceptance, not Blocked. No milestone or main merge is implied.
+
+## Owner acceptance
+
+The project owner approved the final evidence/Done request on 20 October 2026: “onumoti dilam”.
+P01-016 In Review → Done. [Phase 01 acceptance](./phase-01-reconciliation.md#owner-acceptance)
+records the independent approver, evidence and unchanged milestone boundaries. Prior pending/blocker
+statements are historical; no current blocker remains.

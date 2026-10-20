@@ -105,7 +105,7 @@ The register contains 178 tasks across twelve phases, including seven engineerin
 
 | Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |   Done | Deferred |
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
-| 01 — Requirements Finalization and Planning   |      17 |           0 |     0 |           1 |       0 |         0 |     16 |        0 |
+| 01 — Requirements Finalization and Planning   |      17 |           0 |     0 |           0 |       0 |         0 |     17 |        0 |
 | 02 — UI/UX Design                             |      13 |           2 |     0 |           0 |       0 |         0 |     11 |        0 |
 | 03 — Authentication and Core Backend          |      20 |           6 |     0 |           0 |       0 |         0 |     14 |        0 |
 | 04 — Product Catalog and Inventory            |      15 |          15 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -117,7 +117,7 @@ The register contains 178 tasks across twelve phases, including seven engineerin
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **178** |     **136** | **0** |       **1** |   **0** |     **0** | **41** |    **0** |
+| **Total**                                     | **178** |     **136** | **0** |       **0** |   **0** |     **0** | **42** |    **0** |
 
 ## 4. Milestone tracker
 
@@ -145,8 +145,8 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 01. **Associated gate:** M1. **Tasks:** 17.
 
 Current architecture reconciliation: [Phase 01 review and remaining closure evidence](./evidence/phase-01-reconciliation.md).
-Sixteen tasks retain their recorded acceptance; P01-016 is In Progress following authenticated
-settings verification, pending successful hosted execution and subsequent owner acceptance. Application structure changes remain
+All seventeen tasks are Done following recorded owner acceptance on 20 October 2026, successful hosted
+execution and authenticated protection verification. M1 remains Not Accepted. Application structure changes remain
 owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
 
 - [x] **P01-001 — Verify approved document baseline and paths**\
@@ -283,13 +283,13 @@ owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
   **Acceptance:** Related contracts and links agree; target paths/dependencies are distinguished from current implementation; no acceptance/milestone or runtime change is fabricated; independent owner review recorded.\
   **Evidence:** [Structure decision and documentation verification](./evidence/P01-015-structure-decision.md). Project owner accepted on 20 October 2026 following document review; implementation tasks retain their own acceptance requirements.
 
-- [ ] **P01-016 — Simplify inventory-driven CI and required verification**\
-  **Status:** `In Progress` · **Area:** CI/repository · **Owner:** Codex\
+- [x] **P01-016 — Simplify inventory-driven CI and required verification**\
+  **Status:** `Done` · **Area:** CI/repository · **Owner:** Codex\
   **Sources:** Architecture §§4.2,14; Operations §§5.5–5.6; Testing §15\
   **Depends on:** `P01-015`, `P01-010`\
   **Deliverable:** Keep one hosted CI job and shared check inventory; install once, reuse frontend builds, retain application checks and sanitized reports, and use change-based local verification. Document and verify required branch checks without claiming unavailable remote settings.\
   **Acceptance:** Application checks/cases retained, browser build dependencies correct, command failures stop execution, scoped runs avoid unrelated checks, locked installs and action/secret controls preserved; actual hosted run and repository-settings evidence before acceptance.\
-  **Evidence:** [CI implementation and historical verification](./evidence/P01-016-ci-governance.md); [current Phase 01 reconciliation](./evidence/phase-01-reconciliation.md). Owner authorized submission and main protection on 20 October 2026. Authentication is resolved; required CI, strict up-to-date branch, one approving review, stale-review dismissal, administrator enforcement and no force pushes/deletion were applied and read back. Hosted browser-audit timing failures are being corrected without removing checks. Successful hosted execution and final owner acceptance remain pending.
+  **Evidence:** [CI implementation and historical verification](./evidence/P01-016-ci-governance.md); [final Phase 01 verification](./evidence/phase-01-reconciliation.md#final-hosted-verification-and-review-handoff). Hosted run [39414507457](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/39414507457) Passed at ac607b6: all 23 inventory commands, 31 tooling/114 storefront/97 admin/314 backend unit cases, 260 MongoDB integration and 30 browser cases; no skips, secret findings or dependency advisories. Main protection applied under owner authorization and read back: strict required CI, one approving review, stale-review dismissal, admin enforcement, force pushes/deletion disabled. Accepted by the project owner on 20 October 2026: “onumoti dilam”, in response to the final evidence/Done request. Technical blockers resolved; no milestone acceptance implied.
 
 - [x] **P01-017 — Establish coordinated development commands and source-quality guards**\
   **Status:** `Done` · **Area:** Developer tooling · **Owner:** Codex\
@@ -1820,3 +1820,7 @@ Record task execution, material blockers, acceptance and milestone decisions her
 
 When execution starts, update the task status and attach evidence. Change a checkbox to `[x]` only after acceptance.
 Preserve IDs and dependency references; update phase totals and record milestone acceptance separately.
+
+**20 October 2026 — Phase 01 final verification:** P01-016 Blocked → In Progress → In Review after owner-authorized submission/protection, correction of browser-audit theme/transition timing, and successful hosted run 39414507457 for ac607b6. All 23 checks passed; required main protection read back. Phase 01: 16 Done, 1 In Review; overall: 41 Done, 1 In Review, 0 Blocked, 136 Not Started. Owner final acceptance remains pending under the requested review sequence; no milestone or main merge accepted. [Final evidence](./evidence/phase-01-reconciliation.md#final-hosted-verification-and-review-handoff).
+
+**20 October 2026 — Phase 01 owner acceptance:** The project owner replied “onumoti dilam” to the final evidence handoff and explicit request to mark P01-016 Done. P01-016 In Review → Done; checkbox checked. Phase 01: 17/17 Done. Overall: 42 Done, 136 Not Started, zero In Review/Blocked. Hosted run 39414507457 and authenticated protection read-back support acceptance; M1 remains Not Accepted. Executor: Codex; independent reviewer/approver: project owner. [Acceptance record](./evidence/phase-01-reconciliation.md#owner-acceptance).
