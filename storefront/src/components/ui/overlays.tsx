@@ -33,7 +33,6 @@ export function FormDialog({
         <Modal.Container placement="center" scroll="inside">
           <Modal.Dialog
             aria-describedby={description ? id : undefined}
-            className="rounded-dialog"
           >
             <Modal.Header>
               <Modal.Heading>{title}</Modal.Heading>

@@ -82,6 +82,22 @@ Zod with compatible locked versions. [Verification record](docs/evidence/P01-015
 
 ## 4. Development workflow
 
+### Local UI component showcase
+
+Run `npm run ui:showcase`, then open the [original HeroUI catalogue](http://127.0.0.1:5180/showcase.html).
+It renders the installed HeroUI v3.2.6 components directly, using only native library CSS:
+no app wrappers, SportZone color/font tokens or component overrides. Choose a component
+in the navigation to inspect its supported variants, sizes and states; Modal/Drawer
+expose controls for their visual options. Light/dark switching uses the native theme.
+The scope is all HeroUI component families currently used across the two frontends,
+including compound parts. It does not claim to catalogue unused library components.
+
+The [app composition gallery](http://127.0.0.1:5180/app-showcase.html) remains separately
+available for commerce/management compositions with project styling. Both tools are local,
+use synthetic data and require no database, API, sign-in or application build. Stop the
+server before running automated browser suites that reserve port 5180. Neither gallery
+is included in the production app trees.
+
 1. Read [AGENTS](AGENTS.md), the assigned [task](docs/TASKS.md) and its owning contracts.
 2. Install the workspace with the toolchain below; inspect implemented code and target refactor tasks before moving existing foundations.
 3. Configure isolated local/test resources, a transaction-capable MongoDB replica set and sandbox integrations.

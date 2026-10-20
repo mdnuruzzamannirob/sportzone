@@ -12,7 +12,7 @@ export function PublicLayout() {
       <div className="mb-6">
         <ThemePreferenceSelect />
       </div>
-      <Card className="rounded-card border border-border p-6 sm:p-8">
+      <Card className="border border-border p-6 sm:p-8">
         <Card.Content>
           <Outlet />
         </Card.Content>

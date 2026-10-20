@@ -8,6 +8,10 @@ This changelog tracks the documentation baseline. Application releases are recor
 
 ## Development changes — 20 October 2026
 
+- Replaced the default review entry with an isolated original-HeroUI reference after owner rejection/clarification: 22 used component families, complete supported visual variant axes, direct library imports and no project CSS/wrappers. Kept app compositions separate. Removed forced app control/card/dialog radii while preserving production theme/accessibility contracts. Native reference contrast findings are recorded, not certified as production acceptance. In Review. [Evidence](docs/evidence/ui-component-showcase.md#revised-owner-scope--original-heroui-reference).
+
+- Added a local UI component showcase with separate Storefront/Admin views, actual app controls, interactive states and Light/Dark/System appearance. Added `npm run ui:showcase` and README links; production routes/dependencies unchanged. Eight focused Chromium views and showcase types/accessibility checks passed. In Review pending owner acceptance. [Evidence](docs/evidence/ui-component-showcase.md).
+
 - Recorded explicit project-owner review/acceptance of P02-013 through the popup; marked it Done and synchronized evidence and totals. Phase 02 is 13/13 Done; overall: 44 Done, 134 Not Started. M1 remains Not Accepted. [Acceptance](docs/evidence/P02-013-admin-refactor.md#owner-acceptance).
 
 - Implemented P02-013 admin router/providers, layout/navigation, auth feature and stylesheet placement; retained lazy denied-access routes and added safe chunk/render-error reload recovery. Updated source links and shared fixture/test consumers. Corrected a reproduced audit-only CSS-transition wait; 99 admin tests, 23 shared-helper consumer tests and 72 browser cases passed, alongside build/smoke/lint/types. In Review pending owner acceptance. [Evidence](docs/evidence/P02-013-admin-refactor.md).

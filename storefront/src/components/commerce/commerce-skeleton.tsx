@@ -16,7 +16,7 @@ export function CommerceSkeleton({
             ? 'Loading cart item…'
             : 'Loading order summary…'}
       </p>
-      <Card aria-hidden="true" className="rounded-card border border-border p-4">
+      <Card aria-hidden="true" className="border border-border p-4">
         <Card.Content className="space-y-4">
           {kind === 'product' && (
             <Skeleton className="aspect-square w-full rounded-card" />

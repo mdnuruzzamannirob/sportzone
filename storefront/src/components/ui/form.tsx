@@ -43,7 +43,7 @@ export function FormErrorSummary({
       tabIndex={-1}
       role="alert"
       aria-labelledby={titleId}
-      className="rounded-card border border-danger p-4"
+      className="border border-danger p-4"
     >
       <Alert.Content>
         <h2 id={titleId} className="font-semibold text-danger">

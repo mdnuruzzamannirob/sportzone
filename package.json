@@ -21,6 +21,7 @@
     "test:security": "node scripts/security.mjs",
     "test:ui": "tsc --project tests/ui/tsconfig.json && playwright test --config tests/ui/playwright.config.mts",
     "dev": "node scripts/dev.mjs",
+    "ui:showcase": "node node_modules/vite/bin/vite.js --config tests/ui/vite.config.mts",
     "lint:boundaries": "node scripts/check-boundaries.mjs",
     "format:check": "biome format scripts/dev.mjs scripts/dev-backend.mjs scripts/check-boundaries.mjs tests/tooling.test.mjs",
     "format": "biome format --write scripts/dev.mjs scripts/dev-backend.mjs scripts/check-boundaries.mjs tests/tooling.test.mjs"

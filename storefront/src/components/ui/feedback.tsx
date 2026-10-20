@@ -24,8 +24,9 @@ export function Notice({
     <Alert
       status={statuses[tone]}
       role={tone === 'error' ? 'alert' : 'status'}
-      className="rounded-card border border-control-border"
+      className="border border-border"
     >
+      <Alert.Indicator />
       <Alert.Content>
         <Alert.Title>{title}</Alert.Title>
         {children && <Alert.Description>{children}</Alert.Description>}
@@ -67,7 +68,7 @@ export function EmptyState({
 }) {
   const id = useId()
   return (
-    <Card aria-labelledby={id} className="rounded-card border border-border p-6">
+    <Card aria-labelledby={id} className="border border-border p-6">
       <Card.Header>
         <h2 id={id} className="text-xl">
           {title}

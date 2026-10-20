@@ -68,7 +68,7 @@ export function FileUpload({
         disabled={disabled}
         aria-describedby={`${id}-help${issue ? ` ${id}-error` : ''}`}
         aria-invalid={!!issue}
-        className="block min-h-control w-full min-w-0 rounded-control border border-control-border p-2 focus-visible:outline-2 focus-visible:outline-focus"
+        className="block min-h-control w-full min-w-0 border border-control-border p-2 focus-visible:outline-2 focus-visible:outline-focus"
         onChange={(event) => {
           const candidate = event.currentTarget.files?.[0]
           event.currentTarget.value = ''
@@ -93,7 +93,7 @@ export function FileUpload({
             <img
               src={preview}
               alt={`Local preview of ${file.name}`}
-              className="h-32 w-32 rounded-card object-contain"
+              className="h-32 w-32 object-contain"
             />
           )}
           <p className="break-all">

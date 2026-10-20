@@ -114,7 +114,7 @@ Use the same **brand blue `#2563EB` in light and dark modes**, including primary
 - Set `color-scheme` appropriately and style native controls, skeletons, overlays, icons, and charts for each mode. Do not invert product photographs; use theme-appropriate logo assets if necessary.
 - Respect `prefers-reduced-motion`. Verify WCAG 2.2 AA text contrast, non-text contrast, and visible focus in **both** modes.
 
-Both apps expose a native labelled Appearance select. Browser-local `sportzone.theme` stores Light/Dark/System per
+Both apps expose a labelled HeroUI Appearance select. Browser-local `sportzone.theme` stores Light/Dark/System per
 origin; same-origin tabs synchronize changes. A blocking same-origin `/theme-bootstrap.js` in the document head applies
 explicit choices before body content. System remains CSS media-driven, including OS changes. Storage failures preserve
 a usable page-local selection. Theme state is independent of route/form state; reduced-motion rules apply in both apps.
@@ -141,14 +141,16 @@ a usable page-local selection. Theme state is independent of route/form state; r
 | Spacing scale | 4, 8, 12, 16, 24, 32, 40, 48, 64px |
 | Content width | Storefront max 1280px; centered with responsive gutters |
 | Form/control height | Minimum 44px for primary interactive controls |
-| Card radius | 12px |
-| Input/button radius | 8px |
-| Dialog radius | 16px |
+| Card radius | 20px |
+| Input/button radius | 12px |
+| Dialog radius | 24px |
 | Borders | 1px subtle neutral; stronger for selected/error states |
 | Shadows | Minimal; use primarily for elevated dialogs, menus, and sticky surfaces |
 | Icon sizes | 16, 20, or 24px according to context |
 
 Use responsive spacing rather than fixed heights for content. Product imagery should have stable aspect ratios to avoid layout shifts. Keep animation subtle and respect `prefers-reduced-motion`.
+
+**20 October 2026 owner direction:** After rejecting the first showcase, the owner explicitly selected HeroUI v3’s original component design and requested simplicity/professionalism. Retain native HeroUI shapes, typography, spacing, variants and elevation rather than a custom component skin. Semantic blue/neutral colors, project fonts, minimum 44px interactive targets, contrast, focus and reduced-motion requirements remain. Radius tokens above remain available for app-owned non-library compositions; do not force them over HeroUI controls/cards/dialogs. All current app-owned UI and commerce/management components must be accessible in the local gallery, including state examples and isolated layout previews. Visual acceptance remains pending owner review. The owner subsequently clarified that the reference preview must show direct HeroUI components used by the project with their supported variants, entirely without project CSS or wrappers. Serve that reference in its own document; keep the app composition gallery separate. Native reference colors are not approval to replace production palette/contrast requirements.
 
 ### 2.5 Core visual rules
 

@@ -16,7 +16,7 @@ export function MissingPage() {
 
 export function LoadingPage() {
   return (
-    <Card className="rounded-card border border-border bg-surface p-6">
+    <Card className="border border-border bg-surface p-6">
       <CardContent>
         <LoadingState label="Loading page…" />
         <p className="mt-2 text-sm text-text-muted">Please wait.</p>

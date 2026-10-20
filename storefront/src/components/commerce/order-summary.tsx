@@ -50,7 +50,7 @@ export function OrderSummary({
     ],
   ]
   return (
-    <Card aria-labelledby={id} className="rounded-card border border-border p-6 text-text">
+    <Card aria-labelledby={id} className="border border-border p-6 text-text">
       <Card.Header>
         <h2 id={id} className="text-xl">
           Order summary

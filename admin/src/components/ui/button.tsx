@@ -22,11 +22,11 @@ export function Button({
       {...props}
       variant={variant}
       isPending={isPending}
-      className={`min-h-control rounded-control ${className}`}
+      className={`min-h-control ${className}`}
     >
       {isPending ? (
         <>
-          <Spinner role="presentation" aria-hidden="true" size="sm" />
+          <Spinner role="presentation" aria-hidden="true" size="sm" color="current" />
           {pendingLabel}
         </>
       ) : (

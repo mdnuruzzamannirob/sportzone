@@ -53,7 +53,7 @@ export function CartLine({
     )
   const disabled = isPending || availability !== 'available' || maxQuantity === 0
   return (
-    <Card className="min-w-0 rounded-card border border-border p-4">
+    <Card className="min-w-0 border border-border p-4">
       <Card.Content className="grid min-w-0 gap-4 sm:grid-cols-[6rem_minmax(0,1fr)]">
         <div className="w-24">
           <ProductImage key={image?.src ?? 'missing'} image={image} sizes="96px" />

@@ -55,7 +55,7 @@ export function DataTable<T extends { id: string }>({
         Scroll within the table to view all columns. Use arrow keys to move between
         cells.
       </p>
-      <Table className="min-w-0 max-w-full rounded-card border border-border">
+      <Table className="min-w-0 max-w-full border border-border">
         <Table.ScrollContainer
           role="region"
           aria-label={`${label} columns`}

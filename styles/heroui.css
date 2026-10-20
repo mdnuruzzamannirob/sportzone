@@ -26,7 +26,7 @@
   --field-placeholder: var(--text-muted);
   --field-border: var(--control-border);
   --field-border-width: 1px;
-  --field-radius: var(--radius-control);
+  --border-width-field: 1px;
   --segment: var(--surface);
   --segment-foreground: var(--text);
   --separator: var(--border);
@@ -34,12 +34,12 @@
   --success-foreground: var(--canvas);
   --warning-foreground: var(--canvas);
   --danger-foreground: var(--canvas);
-  --radius: var(--radius-control);
 }
 
+/* Keep HeroUI's original shape, spacing, typography, shadows and variants.
+ * Only preserve project theme/accessibility and compositional correctness. */
 .button {
   min-height: var(--spacing-control);
-  border-radius: var(--radius-control);
 }
 
 .button--outline {
@@ -51,39 +51,45 @@
   outline-offset: 4px;
 }
 
-/* Project sizing applies to library-managed controls as well as Buttons. */
-.select__trigger,
-.disclosure__trigger {
-  min-height: var(--spacing-control);
-}
-
-.select__trigger {
-  border-radius: var(--radius-control);
-  border: 1px solid var(--control-border);
-}
-
-.card,
-.alert,
-.select__popover {
-  border-radius: var(--radius-card);
-}
-
 .input,
-.textarea {
+.textarea,
+.select__trigger,
+.disclosure__trigger,
+.list-box-item {
   min-height: var(--spacing-control);
-  border-radius: var(--radius-control);
 }
 
-.modal__dialog {
-  border-radius: var(--radius-dialog);
+.field-error {
+  color: var(--danger);
 }
 
 .alert--success .alert__title,
-.alert--success .alert__indicator { color: var(--success); }
-.alert--warning .alert__title,
-.alert--warning .alert__indicator { color: var(--warning); }
-.alert--danger .alert__title,
-.alert--danger .alert__indicator { color: var(--danger); }
+.alert--success .alert__indicator {
+  color: var(--success);
+}
 
-.list-box-item { min-height: var(--spacing-control); }
-.field-error { color: var(--danger); }
+.alert--warning .alert__title,
+.alert--warning .alert__indicator {
+  color: var(--warning);
+}
+
+.alert--danger .alert__title,
+.alert--danger .alert__indicator {
+  color: var(--danger);
+}
+
+/* CloseTrigger's stock absolute placement is for a header icon. In a footer
+ * it must participate in the action row, retaining native dismissal behavior. */
+.modal__footer .modal__close-trigger,
+.drawer__footer .drawer__close-trigger {
+  position: static;
+}
+
+/* App labels spell out required; do not duplicate the indicator. */
+.textfield>.label::after,
+.select>.label::after,
+.radio-group>.label::after,
+.radio .label::after,
+.checkbox .label::after {
+  content: none;
+}

@@ -23,7 +23,7 @@ function Navigation({ label, onNavigate }: { label: string; onNavigate?: () => v
                   to={href}
                   onClick={onNavigate}
                   aria-current={current?.[1] === href ? 'page' : undefined}
-                  className={`flex w-full min-w-0 rounded-control border-s-2 px-3 py-2 no-underline ${current?.[1] === href ? 'border-brand bg-selected-surface font-semibold' : 'border-transparent'}`}
+                  className={`flex w-full min-w-0 border-s-2 px-3 py-2 no-underline ${current?.[1] === href ? 'border-brand bg-selected-surface font-semibold' : 'border-transparent'}`}
                 >
                   {title}
                 </Link>
