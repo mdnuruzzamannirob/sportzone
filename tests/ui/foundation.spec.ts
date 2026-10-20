@@ -12,6 +12,11 @@ for (const theme of ['light', 'dark'] as const) {
       })
       await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' })
       await page.setViewportSize({ width, height: 900 })
+      // Establish the preference before bootstrap/hydration instead of racing
+      // the Appearance effect by overriding its root attribute after rendering.
+      await page.addInitScript((theme) => {
+        localStorage.setItem('sportzone.theme', theme)
+      }, theme)
       for (const [name, url] of [
         ['storefront', 'http://127.0.0.1:3100'],
         ['admin', 'http://127.0.0.1:5273/login'],
@@ -19,11 +24,13 @@ for (const theme of ['light', 'dark'] as const) {
       ] as const) {
         await page.goto(url)
         await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-        await page.evaluate(
-          (theme) => (document.documentElement.dataset.theme = theme),
-          theme,
-        )
+        await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
         await page.evaluate(() => document.fonts.ready)
+        if (name === 'fixture' && width === 1440)
+          await expect(page.locator('aside p').first()).toHaveCSS(
+            'color',
+            theme === 'dark' ? 'rgb(250, 250, 250)' : 'rgb(10, 10, 10)',
+          )
         expect(
           await page.evaluate(
             () => document.documentElement.scrollWidth <= innerWidth + 1,
