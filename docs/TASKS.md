@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 17 October 2026
+**Updated:** 20 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -101,13 +101,13 @@ retain their own approver, environment, artifacts, blockers and explicit decisio
 
 ## 3. Project progress dashboard
 
-The register contains 171 tasks across twelve phases. Update phase totals when tasks are added or statuses change.
+The register contains 176 tasks across twelve phases, including five incremental organization/refactor tasks added on 20 October 2026. Update phase totals when tasks are added or statuses change.
 
 | Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |   Done | Deferred |
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
-| 01 — Requirements Finalization and Planning   |      14 |           0 |     0 |           0 |       0 |         0 |     14 |        0 |
-| 02 — UI/UX Design                             |      11 |           0 |     0 |           0 |       0 |         0 |     11 |        0 |
-| 03 — Authentication and Core Backend          |      18 |           4 |     0 |           0 |       0 |         0 |     14 |        0 |
+| 01 — Requirements Finalization and Planning   |      15 |           0 |     0 |           0 |       0 |         1 |     14 |        0 |
+| 02 — UI/UX Design                             |      13 |           2 |     0 |           0 |       0 |         0 |     11 |        0 |
+| 03 — Authentication and Core Backend          |      20 |           6 |     0 |           0 |       0 |         0 |     14 |        0 |
 | 04 — Product Catalog and Inventory            |      15 |          15 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      20 |          20 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -117,7 +117,7 @@ The register contains 171 tasks across twelve phases. Update phase totals when t
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **171** |     **132** | **0** |       **0** |   **0** |     **0** | **39** |    **0** |
+| **Total**                                     | **176** |     **136** | **0** |       **0** |   **0** |     **1** | **39** |    **0** |
 
 ## 4. Milestone tracker
 
@@ -142,7 +142,7 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
 
 ### Phase 01 — Requirements finalization and planning
 
-**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 01. **Associated gate:** M1. **Tasks:** 14.
+**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 01. **Associated gate:** M1. **Tasks:** 15.
 
 - [x] **P01-001 — Verify approved document baseline and paths**\
   **Status:** `Done` · **Area:** Planning · **Owner:** Codex\
@@ -270,9 +270,17 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Evidence:** [Operations baseline, configuration reconciliation, runbook owners and decision gates](./evidence/P01-014-operations-baseline.md).\
   **Accepted:** Project owner, 17 October 2026 — “Operations baseline গ্রহণ করছি”.
 
+- [ ] **P01-015 — Reconcile selected structure and incremental refactor contracts**\
+  **Status:** `In Review` · **Area:** Documentation/architecture · **Owner:** Codex\
+  **Sources:** PRD §13; Architecture §§4–6; Implementation Plan §3.6\
+  **Depends on:** `P01-011`, `P01-012`\
+  **Deliverable:** Document the owner-selected feature-based UIs, concrete backend modules, six-file convention, data/API ownership mapping and staged parity/recovery plan.\
+  **Acceptance:** Related contracts and links agree; target paths/dependencies are distinguished from current implementation; no acceptance/milestone or runtime change is fabricated; independent owner review recorded.\
+  **Evidence:** [Structure decision and documentation verification](./evidence/P01-015-structure-decision.md). Implementation tasks below remain Not Started.
+
 ### Phase 02 — UI/UX design
 
-**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 02. **Associated gate:** M1. **Tasks:** 11.
+**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 02. **Associated gate:** M1. **Tasks:** 13.
 
 - [x] **P02-001 — Scaffold Next.js storefront workspace**\
   **Status:** `Done` · **Area:** Frontend/storefront · **Owner:** Codex\
@@ -362,9 +370,25 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Acceptance:** Focus, contrast, reflow and theme persistence findings resolved or documented as blockers.\
   **Evidence:** [Three-engine responsive/accessibility audit](./evidence/P02-011-accessibility.md). All 14 CI commands, 223 unit/component tests, 30 browser cases, both builds and six HTTP smoke groups passed. Accessible-name and foreground findings resolved; accepted by project owner on 18 October 2026: “Foundation audit গ্রহণ করছি”. Real-device/screen-reader and complete release-journey verification remains with feature/release tasks.
 
+- [ ] **P02-012 — Refactor storefront routes, layouts and feature placement**\
+  **Status:** `Not Started` · **Area:** Storefront structure · **Owner:** Codex\
+  **Sources:** Architecture §§4,5; Design; UI Components\
+  **Depends on:** `P01-015`, `P02-011`\
+  **Deliverable:** Move shell to components/layout, establish feature ownership and route groups incrementally, preserve reusable commerce/UI primitives, themes, URLs and unavailable/private states.\
+  **Acceptance:** Import/test discovery parity; lint/typecheck/unit/build/smoke and affected responsive/keyboard/both-theme browser checks; no new dependencies or authenticated access implied by a folder move.\
+  **Evidence:** Not Run; no code moved by documentation task.
+
+- [ ] **P02-013 — Refactor admin composition, layouts and feature placement**\
+  **Status:** `Not Started` · **Area:** Admin structure · **Owner:** Codex\
+  **Sources:** Architecture §§4,5; Design; UI Components\
+  **Depends on:** `P01-015`, `P02-011`\
+  **Deliverable:** Organize router/providers, components/layout and feature pages; retain reusable management/UI compositions, lazy loading and fail-closed access states.\
+  **Acceptance:** Lint/typecheck/unit/build/smoke and affected accessibility/browser checks; deep links, loading/errors, themes and navigation remain correct; query integration belongs to its actual API feature.\
+  **Evidence:** Not Run; no code moved by documentation task.
+
 ### Phase 03 — Authentication and core backend
 
-**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 03. **Associated gate:** M1. **Tasks:** 18.
+**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 03. **Associated gate:** M1. **Tasks:** 20.
 
 - [x] **P03-001 — Bootstrap modular Express API and shared middleware**\
   **Status:** `Done` · **Area:** Backend/core · **Owner:** Codex\
@@ -509,6 +533,22 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Deliverable:** Apply docs/API.md to identity endpoints, browser-context/CSRF bootstrap, customer/admin sessions and recovery; implement validators and contract tests for request/response/error and replay behavior.\
   **Acceptance:** Pre-authentication and authenticated mutations have explicit protection; future guest/order-scoped contracts are tracked and completed before those feature tasks.\
   **Evidence:** [Reviewed identity API contracts](./evidence/P03-018-api-contracts.md). Strict validators for 26 operations, browser/replay obligations and safe errors implemented; 73 new contract cases, 145 backend tests and all 20 CI commands passed. Accepted by project owner on 18 October 2026: “Identity API contract গ্রহণ করছি”; real identity/session/CSRF implementations remain their owning tasks.
+
+- [ ] **P03-019 — Refactor typed backend composition and runtime entry points**\
+  **Status:** `Not Started` · **Area:** Backend foundation · **Owner:** Codex\
+  **Sources:** Architecture §§4,6; API §2; Operations\
+  **Depends on:** `P01-015`, `P03-012`\
+  **Deliverable:** Centralize typed configuration/composition, HTTP registration and common technical utilities while preserving lifecycle, health and existing worker/operator entry points.\
+  **Acceptance:** No re-serialization of parsed config, no secret exposure, parity across HTTP/worker/tools; lint/typecheck/unit/build/smoke/integration checks and updated import/tooling references.\
+  **Evidence:** Not Run; implementation not started.
+
+- [ ] **P03-020 — Refactor module ownership and file conventions without data migration**\
+  **Status:** `Not Started` · **Area:** Identity/modules/integrations · **Owner:** Codex\
+  **Sources:** Architecture §6; Database §4.2; API §2.2\
+  **Depends on:** `P03-019`\
+  **Deliverable:** Separate auth/customer/delivery operations, adopt cohesive entity-prefixed files and provider adapters, preserve canonical schemas and public capability boundaries.\
+  **Acceptance:** Real replica-set and HTTP parity for sessions, CSRF, profile/address, recovery and notification claims; exact validators/indexes and external-effect guards retained; update operation/runbook paths with moves. No bulk renames of unimplemented features.\
+  **Evidence:** Not Run; implementation not started.
 
 ### Phase 04 — Product catalog and inventory
 
@@ -1742,6 +1782,8 @@ Record task execution, material blockers, acceptance and milestone decisions her
 | 19 October 2026 | P03-012 | Not Started → In Progress → In Review → Done; private initial administrator provisioning, independent admin credential/session/logout/recovery and proof/template isolation delivered; 314 backend tests, 260 integration cases, 30 browser regressions and all 20 CI commands Passed; project owner accepted: “Private admin authentication implementation গ্রহণ করছি” | Codex / project owner | [Administrator evidence](./evidence/P03-012-admin-auth.md) | Proceed to P03-013 ownership and role guards |
 
 **18 October 2026 — UI foundation change:** The project owner selected HeroUI and delegated visual design within the approved specification. Dependency/theme integration, app-owned controls and working conventions are recorded in [HeroUI foundation review](./evidence/heroui-foundation.md). The follow-up [existing UI migration](./evidence/heroui-existing-ui.md) replaces the earlier native-control exceptions. These changes are In Review; they do not accept another numbered task or milestone.
+
+**20 October 2026 — Selected structure and staged refactor:** The project owner requested documentation updates to the agreed architecture before gradually refactoring applications. Added P01-015 (In Review) and P02-012–013/P03-019–020 (Not Started); register 171 → 176 tasks, accepted history retained. [Decision/evidence](./evidence/P01-015-structure-decision.md). Next action: review documentation, then take one refactor slice; this entry accepts no implementation or milestone.
 
 When execution starts, update the task status and attach evidence. Change a checkbox to `[x]` only after acceptance.
 Preserve IDs and dependency references; update phase totals and record milestone acceptance separately.

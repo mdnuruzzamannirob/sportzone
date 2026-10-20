@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 17 October 2026
+**Updated:** 20 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical references:** [Architecture](./ARCHITECTURE.md) · [Database](./DATABASE.md)\
@@ -50,14 +50,14 @@ The PRD governs product rules, Architecture governs system boundaries, and Datab
 
 ### 1.1 Responsibility and precedence
 
-| Source | Authoritative for | API obligation |
-| --- | --- | --- |
-| `PRD.md` | FR-01–FR-34, product/consumer rules and acceptance | Expose only approved capabilities; preserve payment/return policies |
-| `ARCHITECTURE.md` | One Express business authority, auth boundaries, retry/state invariants | No business writes in Next.js or admin; verify server-side |
-| `DATABASE.md` | Data models, enums, unique references, accounting and transaction guards | Map allowlisted DTOs to persistence; never return raw models |
-| `DESIGN.md` | UI flows, loading/uncertain/error states, accessible feedback | Provide enough status and stable errors for each view |
-| `IMPLEMENTATION_PLAN.md` / `TASKS.md` | Sequence, dependencies, verification evidence | Contract precedes each feature slice; not an implementation claim |
-| **`API.md`** | HTTP methods/routes, DTOs, permissions, failures, retries, webhook responses | Follow each source within its subject authority |
+| Source                                | Authoritative for                                                            | API obligation                                                      |
+| ------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `PRD.md`                              | FR-01–FR-34, product/consumer rules and acceptance                           | Expose only approved capabilities; preserve payment/return policies |
+| `ARCHITECTURE.md`                     | One Express business authority, auth boundaries, retry/state invariants      | No business writes in Next.js or admin; verify server-side          |
+| `DATABASE.md`                         | Data models, enums, unique references, accounting and transaction guards     | Map allowlisted DTOs to persistence; never return raw models        |
+| `DESIGN.md`                           | UI flows, loading/uncertain/error states, accessible feedback                | Provide enough status and stable errors for each view               |
+| `IMPLEMENTATION_PLAN.md` / `TASKS.md` | Sequence, dependencies, verification evidence                                | Contract precedes each feature slice; not an implementation claim   |
+| **`API.md`**                          | HTTP methods/routes, DTOs, permissions, failures, retries, webhook responses | Follow each source within its subject authority                     |
 
 **Included:** guest/customer shopping, one admin role, Bangladesh delivery, BDT, COD and enabled SSLCOMMERZ hosted
 bKash/Nagad/Rocket channels, after-sales, notifications, support, and essential operations. **Excluded:** multi-vendor,
@@ -94,34 +94,36 @@ gateway. Scheduled jobs call shared services without bypassing invariants.
 
 ### 2.2 Module ownership
 
-| Module | Primary route namespace(s) | Ownership |
-| --- | --- | --- |
-| `auth`, `customers`, `guest-access` | `/auth`, `/me`, `/guest-access`, `/admin/auth` | Identity, scoped access and sessions |
-| `catalog`, `inventory` | `/products`, `/categories`, `/admin/products`, `/admin/inventory` | Visibility, SKUs, stock movement |
-| `shopping`, `promotions`, `reviews` | `/cart`, `/wishlist`, `/coupons`, `/reviews`, `/admin/coupons` | Cart, quotas, verification, moderation |
-| `checkout`, `orders`, `settings` | `/checkout`, `/orders`, `/delivery`, `/admin/orders`, `/admin/delivery` | Snapshots, submissions, fulfillment, charge rules |
-| `payments`, `refunds`, `returns` | `/orders/{id}/payments`, `/payments`, `/claims`, `/refunds`, `/admin/...` | Verification, collections, claims, payouts |
-| `notifications`, `support`, `admin-operations` | `/complaints`, `/admin/notifications`, `/admin/reports`, `/admin/settings` | Service correspondence, reporting, configuration |
+| Module                                                                        | Primary route namespace(s)                                                             | Ownership                                                             |
+| ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `auth`, `customers`, `guest-access`                                           | `/auth`, `/me`, `/guest-access`, `/admin/auth`                                         | Identity, scoped access and sessions                                  |
+| `products`, `categories`, `inventory`                                         | `/products`, `/categories`, `/admin/products`, `/admin/categories`, `/admin/inventory` | Visibility, SKUs, stock movement                                      |
+| `carts`, `wishlists`, `coupons`, `reviews`                                    | `/cart`, `/wishlist`, `/coupons`, `/reviews`, `/admin/coupons`                         | Cart, quotas, verification, moderation                                |
+| `checkout`, `orders`, `delivery`                                              | `/checkout`, `/orders`, `/delivery`, `/admin/orders`, `/admin/delivery`                | Snapshots, submissions, fulfillment, charge rules                     |
+| `payments`, `refunds`, `returns`                                              | `/orders/{id}/payments`, `/payments`, `/claims`, `/refunds`, `/admin/...`              | Verification, collections, claims, payouts                            |
+| `notifications`, `support`, `admin-operations`, `settings`, `media`, `health` | Existing operations in §§14, 16 and Appendix D only                                    | Correspondence, reporting, configuration, authorized media and health |
 
 Domain services coordinate cross-module mutations within MongoDB transactions. No external HTTP call occurs while a database transaction remains open.
+
+**20 October 2026 structure decision:** Architecture §§4–6 define target filenames and feature ownership. Legacy `catalog`/`shopping`/`promotions` references below name business domains, mapping to products/categories, carts/wishlists and coupons. Delivery rules move from settings to delivery; asset lifecycle uses media. This mapping changes no URL, operation ID, DTO, response/error, cookie, CSRF, idempotency or authorization contract. Historical implemented-path descriptions remain evidence of the current code until refactored. Controllers map HTTP inputs/results; services enforce business rules through public module capabilities. Frontend server/client transports and query caching follow Architecture §§5.4–5.6; they do not create alternate API authority. Notification worker organization does not authorize a new send-email endpoint or administration screen.
 
 ## 3. HTTP conventions & versioning
 
 ### 3.1 Transport and representation
 
-| Item | Contract |
-| --- | --- |
-| Root | `https://<configured-api-host>/api/v1` (deployment host configurable) |
-| Format | UTF-8 JSON (`Content-Type: application/json`), except documented multipart uploads and gateway form POSTs |
-| Resource names | Lowercase plural, hyphenated paths; JSON names `camelCase`; IDs serialized strings |
-| Time | ISO 8601 UTC instants ending `Z`; Bangladesh display derived from `Asia/Dhaka` |
-| Currency | Always `BDT`; **integer poisha** on every business API and internally; no floating-point money |
-| Status values | Persisted `snake_case` enum values from Database v1.0; UI labels are presentation only |
-| Creation | `201 Created` + `Location` where appropriate; replay may return `200 OK` with same logical result |
-| Deletion | Use `204 No Content` only where deletion/deactivation is an approved operation; no body |
-| Concurrency | `If-Match`/strong ETag for approved editable master records; backed by the `revision` CAS fields on category, product, variant, delivery-zone and charge-rule documents (Database v1.0); domain CAS for financial/stock operations |
-| Request correlation | Server-issued `X-Request-Id` returned on every response; incoming value never trusted as evidence |
-| API evolution | Additive compatible fields within `/api/v1`; incompatible changes require version review and consumer migration |
+| Item                | Contract                                                                                                                                                                                                                           |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Root                | `https://<configured-api-host>/api/v1` (deployment host configurable)                                                                                                                                                              |
+| Format              | UTF-8 JSON (`Content-Type: application/json`), except documented multipart uploads and gateway form POSTs                                                                                                                          |
+| Resource names      | Lowercase plural, hyphenated paths; JSON names `camelCase`; IDs serialized strings                                                                                                                                                 |
+| Time                | ISO 8601 UTC instants ending `Z`; Bangladesh display derived from `Asia/Dhaka`                                                                                                                                                     |
+| Currency            | Always `BDT`; **integer poisha** on every business API and internally; no floating-point money                                                                                                                                     |
+| Status values       | Persisted `snake_case` enum values from Database v1.0; UI labels are presentation only                                                                                                                                             |
+| Creation            | `201 Created` + `Location` where appropriate; replay may return `200 OK` with same logical result                                                                                                                                  |
+| Deletion            | Use `204 No Content` only where deletion/deactivation is an approved operation; no body                                                                                                                                            |
+| Concurrency         | `If-Match`/strong ETag for approved editable master records; backed by the `revision` CAS fields on category, product, variant, delivery-zone and charge-rule documents (Database v1.0); domain CAS for financial/stock operations |
+| Request correlation | Server-issued `X-Request-Id` returned on every response; incoming value never trusted as evidence                                                                                                                                  |
+| API evolution       | Additive compatible fields within `/api/v1`; incompatible changes require version review and consumer migration                                                                                                                    |
 
 `GET` never mutates commerce state, and provider browser returns are not payment approvals. `POST` denotes
 submissions/actions, `PATCH` limited updates, `PUT` idempotent item replacements where stated, `DELETE` removal of an
@@ -129,14 +131,14 @@ allowed customer-owned item—not financial evidence deletion. An endpoint not l
 
 ### 3.2 Headers
 
-| Header | Direction | Rule |
-| --- | --- | --- |
-| `Cookie` | Browser → API | Host-only session/context cookie; use `credentials: 'include'` on browser fetch |
-| `X-CSRF-Token` | Browser → API | Required for every browser mutation including guest/auth submissions; not for provider IPNs |
-| `Idempotency-Key` | Client → API | Required where indicated for checkout, payment retry, payout actions and replay-sensitive operations |
-| `If-Match` | Admin → API | Required for declared revision-based master-record updates; strong ETag form `"<revision>"` |
-| `Cache-Control` | API → caller | `no-store` for identity, private, cart, order, payments, refunds and token/bootstrap responses |
-| `Retry-After` | API → caller | Optional integer seconds on throttling/transient service unavailability |
+| Header            | Direction     | Rule                                                                                                 |
+| ----------------- | ------------- | ---------------------------------------------------------------------------------------------------- |
+| `Cookie`          | Browser → API | Host-only session/context cookie; use `credentials: 'include'` on browser fetch                      |
+| `X-CSRF-Token`    | Browser → API | Required for every browser mutation including guest/auth submissions; not for provider IPNs          |
+| `Idempotency-Key` | Client → API  | Required where indicated for checkout, payment retry, payout actions and replay-sensitive operations |
+| `If-Match`        | Admin → API   | Required for declared revision-based master-record updates; strong ETag form `"<revision>"`          |
+| `Cache-Control`   | API → caller  | `no-store` for identity, private, cart, order, payments, refunds and token/bootstrap responses       |
+| `Retry-After`     | API → caller  | Optional integer seconds on throttling/transient service unavailability                              |
 
 Paths use `{id}` in examples, but Express implementations bind `:id`. Route prefixes carry no entitlement: authentication and ownership checks are enforced independently.
 
@@ -166,13 +168,13 @@ Paths use `{id}` in examples, but Express implementations bind `:id`. Route pref
 
 ### 4.1 Session and cookie contract
 
-| Cookie (host-only names) | Principal | Rules |
-| --- | --- | --- |
-| `sz_customer_sid` | Registered customer | Opaque, hashed at rest; `HttpOnly`, `Secure`, approved `SameSite`, path `/` |
-| `sz_admin_sid` | Privately provisioned admin | Separate credential and revocation path; never accepted by customer routes as customer identity |
-| `sz_guest_order_sid` | Verified single order | Contains no raw order/customer info; server binds exact `orderId` and expiry |
-| `sz_browser_ctx` | Storefront pre-auth browser context | Short-lived; **no account or order authorization**; bound to CSRF token |
-| `sz_admin_browser_ctx` | Admin pre-auth browser context | Separate audience and cookie; same host-only security attributes; no account authorization |
+| Cookie (host-only names) | Principal                           | Rules                                                                                           |
+| ------------------------ | ----------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `sz_customer_sid`        | Registered customer                 | Opaque, hashed at rest; `HttpOnly`, `Secure`, approved `SameSite`, path `/`                     |
+| `sz_admin_sid`           | Privately provisioned admin         | Separate credential and revocation path; never accepted by customer routes as customer identity |
+| `sz_guest_order_sid`     | Verified single order               | Contains no raw order/customer info; server binds exact `orderId` and expiry                    |
+| `sz_browser_ctx`         | Storefront pre-auth browser context | Short-lived; **no account or order authorization**; bound to CSRF token                         |
+| `sz_admin_browser_ctx`   | Admin pre-auth browser context      | Separate audience and cookie; same host-only security attributes; no account authorization      |
 
 Issue all cookies from the **API origin**, without a `Domain` attribute; environment-specific names/path prefixes may change only if security isolation is preserved.
 Only `Secure` HTTPS production cookies; local testing may use a controlled development exception.
@@ -212,15 +214,15 @@ fields add no public DTO properties. Executable validators and protocol/replay t
 
 ### 4.3 Authentication lifecycle expectations
 
-| Scenario | Response / side effect |
-| --- | --- |
-| Authenticated `GET /auth/session` | Return `{account:Account}` from the current valid customer session (§9.1) |
-| Unauthenticated session | `401 AUTH_REQUIRED`, no user details |
-| Successful login | Rotate token; invalidate prior pre-auth context; issue session cookie plus new CSRF |
-| Failed login or suspended identity | Same generic `401 INVALID_CREDENTIALS` response where enumeration would be possible |
-| Logout | Idempotently revoke only the route's session type; clear cookie |
-| Password reset/change | Single-use challenge consumption; advance security revision and invalidate affected sessions |
-| Guest proof | Single-use challenge grants **one order** and explicitly expires; cannot be used as general customer identity |
+| Scenario                           | Response / side effect                                                                                        |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Authenticated `GET /auth/session`  | Return `{account:Account}` from the current valid customer session (§9.1)                                     |
+| Unauthenticated session            | `401 AUTH_REQUIRED`, no user details                                                                          |
+| Successful login                   | Rotate token; invalidate prior pre-auth context; issue session cookie plus new CSRF                           |
+| Failed login or suspended identity | Same generic `401 INVALID_CREDENTIALS` response where enumeration would be possible                           |
+| Logout                             | Idempotently revoke only the route's session type; clear cookie                                               |
+| Password reset/change              | Single-use challenge consumption; advance security revision and invalidate affected sessions                  |
+| Guest proof                        | Single-use challenge grants **one order** and explicitly expires; cannot be used as general customer identity |
 
 ### 4.4 Implemented customer/admin session boundary
 
@@ -230,20 +232,20 @@ Customer activation composes credential verification with P03-006's Origin/CSRF 
 issue a session from a client-supplied user ID alone. The internal issuer accepts only the verified principal selected by
 the owning customer/admin authentication flow and rechecks active role/status.
 
-| Concern | Implemented contract |
-| --- | --- |
-| Opaque credentials | Independent CSPRNG 32-byte session and CSRF values, unpadded base64url (43 characters); no user/order/role claims in either token |
-| Session storage | HMAC-SHA-256 using the decoded 32-byte SESSION_SECRET; lowercase hex digest; message `sportzone:session:v1:<kind>::<token>`; kind is route-selected customer/admin |
-| CSRF material | HMAC message `sportzone:csrf:v1:<kind>:<tokenHash>:<csrfToken>`; binds verifier to exactly one session credential; comparison uses fixed-length timing-safe bytes; this material check alone is not complete Origin/CSRF middleware |
-| Lifetime | Explicit CUSTOMER_SESSION_TTL_SECONDS/ADMIN_SESSION_TTL_SECONDS; positive safe seconds, finite absolute Date expiry; reads do not extend expiry; reject at expiresAt even if TTL record remains |
-| Cookie policy | Exact names from §4.1; host-only (no Domain), HttpOnly, path /; SESSION_COOKIE_SAME_SITE explicitly lax or strict; HTTPS always Secure; HTTP exception only configured local/test loopback origin; request Host/proxy headers cannot weaken it |
-| Cookie parsing | Only the route's cookie name accepted; missing, malformed or duplicate credentials fail closed; no query, Bearer, client role, guest cookie or other namespace fallback |
-| Session authorization | Correct kind, live expiry, absent revokedAt, existing active principal with matching role and securityRevisionAtIssue; absence/ineligibility yields generic 401 AUTH_REQUIRED |
-| Rotation | Fresh session/CSRF plus revocation of the old credential in one transaction; concurrent rotation has one winner; insert failure rolls back old revocation; stale/expired/revoked credential cannot rotate |
-| Fresh login | Always create fresh random values; optional predecessor revocation is conditional on same user/kind; an unrelated account/namespace credential is never revoked by replacement |
-| Logout | Idempotently revoke only supplied route-kind credential and clear only that cookie using matching attributes; repeated/expired/missing credential does not revoke another session; public logout still requires §4.2's valid Origin/CSRF and fresh context response |
-| Principal revocation | Atomically advance principal securityRevision and mark its route-kind sessions revoked; other principals unaffected; status/role/revision changes deny old access even before cleanup |
-| Secret rotation | New SESSION_SECRET immediately rejects old digests on processes using it; drain/restart all old-key processes before declaring revocation complete; no dual-key acceptance is implemented |
+| Concern               | Implemented contract                                                                                                                                                                                                                                                |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Opaque credentials    | Independent CSPRNG 32-byte session and CSRF values, unpadded base64url (43 characters); no user/order/role claims in either token                                                                                                                                   |
+| Session storage       | HMAC-SHA-256 using the decoded 32-byte SESSION_SECRET; lowercase hex digest; message `sportzone:session:v1:<kind>::<token>`; kind is route-selected customer/admin                                                                                                  |
+| CSRF material         | HMAC message `sportzone:csrf:v1:<kind>:<tokenHash>:<csrfToken>`; binds verifier to exactly one session credential; comparison uses fixed-length timing-safe bytes; this material check alone is not complete Origin/CSRF middleware                                 |
+| Lifetime              | Explicit CUSTOMER_SESSION_TTL_SECONDS/ADMIN_SESSION_TTL_SECONDS; positive safe seconds, finite absolute Date expiry; reads do not extend expiry; reject at expiresAt even if TTL record remains                                                                     |
+| Cookie policy         | Exact names from §4.1; host-only (no Domain), HttpOnly, path /; SESSION_COOKIE_SAME_SITE explicitly lax or strict; HTTPS always Secure; HTTP exception only configured local/test loopback origin; request Host/proxy headers cannot weaken it                      |
+| Cookie parsing        | Only the route's cookie name accepted; missing, malformed or duplicate credentials fail closed; no query, Bearer, client role, guest cookie or other namespace fallback                                                                                             |
+| Session authorization | Correct kind, live expiry, absent revokedAt, existing active principal with matching role and securityRevisionAtIssue; absence/ineligibility yields generic 401 AUTH_REQUIRED                                                                                       |
+| Rotation              | Fresh session/CSRF plus revocation of the old credential in one transaction; concurrent rotation has one winner; insert failure rolls back old revocation; stale/expired/revoked credential cannot rotate                                                           |
+| Fresh login           | Always create fresh random values; optional predecessor revocation is conditional on same user/kind; an unrelated account/namespace credential is never revoked by replacement                                                                                      |
+| Logout                | Idempotently revoke only supplied route-kind credential and clear only that cookie using matching attributes; repeated/expired/missing credential does not revoke another session; public logout still requires §4.2's valid Origin/CSRF and fresh context response |
+| Principal revocation  | Atomically advance principal securityRevision and mark its route-kind sessions revoked; other principals unaffected; status/role/revision changes deny old access even before cleanup                                                                               |
+| Secret rotation       | New SESSION_SECRET immediately rejects old digests on processes using it; drain/restart all old-key processes before declaring revocation complete; no dual-key acceptance is implemented                                                                           |
 
 `loadSessionOptions(process.env)` validates these session-specific settings when session composition is activated; no
 lifetime/SameSite fallback is supplied; explicit customer activation requires these settings. Configuration
@@ -274,16 +276,16 @@ admin cookie, so recovery and repeat logout remain usable. No client selector ca
 principal from the storefront. Unknown/duplicate query parameters are invalid. Guest selection requires the exact
 `sz_guest_order_sid` cookie and a registered order-scoped adapter; otherwise `401 GUEST_PROOF_REQUIRED`.
 
-| Control | Required composition and behavior |
-| --- | --- |
-| Origins/CORS | Canonical exact storefront/admin origins, separately selected by route; no wildcard, reflected unapproved Origin or origin-less browser mutation. Approved credentialed preflight permits GET/HEAD/POST/PUT/PATCH/DELETE and Content-Type, X-CSRF-Token, Idempotency-Key, If-Match only; `Vary` includes Origin and preflight request headers/method. No bearer-Authorization browser preflight. |
-| Anonymous contexts | Independent 32-byte opaque cookie and CSRF; HMAC-SHA-256 at rest using SESSION_SECRET with `sportzone:browser:v1:<audience>:context::<cookie>` and `sportzone:browser:v1:<audience>:csrf:<contextHash>:<csrfToken>` domains. Audience, expiry and absent rotatedAt are checked before constant-time comparison. |
-| Lifetime/config | Explicit BROWSER_CONTEXT_TTL_SECONDS in 1–1800 seconds, no fallback; exact CORS_ALLOWED_ORIGINS must match the two approved distinct origins. Use the existing session service's fixed host-only HttpOnly/Secure/SameSite/path policy, never request-derived attributes. |
-| Bootstrap refresh | New anonymous context atomically invalidates the supplied same-audience predecessor. Authenticated refresh replaces only that session's CSRF verifier by conditional update, preserving session expiry and rejecting concurrent stale refresh. Previous CSRF fails. |
-| Mutation guard | Route selects context-only, customer-only, admin-only or customer-or-context; all unsafe methods require exact Origin and custom token header. Invalid customer cookie never falls back to anonymous checkout. These guards grant no account/order authorization; apply session/role/ownership guards as well. |
-| Successful exchange | The credential/proof service must use consumeContext with its durable effect in the same MongoDB transaction. One concurrent exchange wins; failed effect rolls back consumption. Do not perform provider/email calls in that callback or start a nested independent transaction. |
-| Guest handoff | P06-015 supplies an order-bound refresh/verify adapter; only an exact, single opaque guest cookie reaches it. Customer/admin/browser contexts cannot substitute. Its real proof/session persistence remains in that task. |
-| Provider segregation | Register provider notifications/returns outside browser guards and bootstrap. Their own verification and acknowledgment contracts remain mandatory; omission of browser CSRF never proves payment success. |
+| Control              | Required composition and behavior                                                                                                                                                                                                                                                                                                                                                                |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Origins/CORS         | Canonical exact storefront/admin origins, separately selected by route; no wildcard, reflected unapproved Origin or origin-less browser mutation. Approved credentialed preflight permits GET/HEAD/POST/PUT/PATCH/DELETE and Content-Type, X-CSRF-Token, Idempotency-Key, If-Match only; `Vary` includes Origin and preflight request headers/method. No bearer-Authorization browser preflight. |
+| Anonymous contexts   | Independent 32-byte opaque cookie and CSRF; HMAC-SHA-256 at rest using SESSION_SECRET with `sportzone:browser:v1:<audience>:context::<cookie>` and `sportzone:browser:v1:<audience>:csrf:<contextHash>:<csrfToken>` domains. Audience, expiry and absent rotatedAt are checked before constant-time comparison.                                                                                  |
+| Lifetime/config      | Explicit BROWSER_CONTEXT_TTL_SECONDS in 1–1800 seconds, no fallback; exact CORS_ALLOWED_ORIGINS must match the two approved distinct origins. Use the existing session service's fixed host-only HttpOnly/Secure/SameSite/path policy, never request-derived attributes.                                                                                                                         |
+| Bootstrap refresh    | New anonymous context atomically invalidates the supplied same-audience predecessor. Authenticated refresh replaces only that session's CSRF verifier by conditional update, preserving session expiry and rejecting concurrent stale refresh. Previous CSRF fails.                                                                                                                              |
+| Mutation guard       | Route selects context-only, customer-only, admin-only or customer-or-context; all unsafe methods require exact Origin and custom token header. Invalid customer cookie never falls back to anonymous checkout. These guards grant no account/order authorization; apply session/role/ownership guards as well.                                                                                   |
+| Successful exchange  | The credential/proof service must use consumeContext with its durable effect in the same MongoDB transaction. One concurrent exchange wins; failed effect rolls back consumption. Do not perform provider/email calls in that callback or start a nested independent transaction.                                                                                                                |
+| Guest handoff        | P06-015 supplies an order-bound refresh/verify adapter; only an exact, single opaque guest cookie reaches it. Customer/admin/browser contexts cannot substitute. Its real proof/session persistence remains in that task.                                                                                                                                                                        |
+| Provider segregation | Register provider notifications/returns outside browser guards and bootstrap. Their own verification and acknowledgment contracts remain mandatory; omission of browser CSRF never proves payment success.                                                                                                                                                                                       |
 
 ### 4.6 Customer credentials and registration delivery intent
 
@@ -381,13 +383,13 @@ activation and real mailbox acceptance remain operational gates.
 
 ## 5. Authorization & data exposure
 
-| Principal | Allowed resources | Denied by default |
-| --- | --- | --- |
-| Anonymous | Public catalog/categories/reviews/policies, guest cart locally, checkout with approved CSRF context, request guest proof | Order details or financial records by number/email alone |
-| Customer (`C`) | Own profile, addresses, server cart/wishlist, purchases, reviews, returns, refunds, support tickets | Other users' orders and admin-only actions |
-| Verified guest (`G`) | **Only the verified order**: details, cancellation, claims and refunds/status allowed by the same eligibility rules | Account, wishlist, unrelated orders, other guest orders |
-| Admin (`A`) | Admin operations and authorized financial decisions after all state checks | Arbitrary evidence alteration, unapproved payout, bypassing policy |
-| Provider (`P`) | Only signed/independently verified workflow callback intake endpoints | Customer/admin session APIs |
+| Principal            | Allowed resources                                                                                                        | Denied by default                                                  |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| Anonymous            | Public catalog/categories/reviews/policies, guest cart locally, checkout with approved CSRF context, request guest proof | Order details or financial records by number/email alone           |
+| Customer (`C`)       | Own profile, addresses, server cart/wishlist, purchases, reviews, returns, refunds, support tickets                      | Other users' orders and admin-only actions                         |
+| Verified guest (`G`) | **Only the verified order**: details, cancellation, claims and refunds/status allowed by the same eligibility rules      | Account, wishlist, unrelated orders, other guest orders            |
+| Admin (`A`)          | Admin operations and authorized financial decisions after all state checks                                               | Arbitrary evidence alteration, unapproved payout, bypassing policy |
+| Provider (`P`)       | Only signed/independently verified workflow callback intake endpoints                                                    | Customer/admin session APIs                                        |
 
 **Ownership contract:** check resolved session identity against stored `userId` or exact guest-session `orderId` for
 *every* nested resource including order item, cancellation, claim, payment and refund. Do not trust `userId`, arbitrary
@@ -403,38 +405,38 @@ scoped operational fields; external provider evidence is redacted even to admini
 
 ### 6.1 Scalar types and standard objects
 
-| Type | JSON contract | Notes |
-| --- | --- | --- |
-| `Id` | Nonempty string | Stringified server ObjectId; never proof of permission |
-| `MoneyPoisha` | Nonnegative safe integer | Business amounts, allocations and refund capacities; never JSON decimal BDT |
-| `SignedMoneyPoisha` | Signed safe integer | Derived net cash-flow reporting only; a period with more payouts than collections is negative |
-| `Instant` | ISO UTC string, e.g. `2026-10-16T00:00:00Z` | Reject ambiguous timezone formats in writes |
-| `Channel` | `cod` / `bkash` / `nagad` / `rocket` | Business choice; actual online provider display/availability subject to verified activation |
-| `AddressInput` | `{recipient,phone,districtKey,areaKey,street,addressLine2?}` | Bangladesh-supported area keys, no arbitrary delivery-zone ID |
-| `CartLineInput` | `{variantId,quantity}` | Bounded positive integer qty, unique variant |
-| `PageMeta` | `{page,pageSize,totalItems,totalPages}` | Current snapshot estimate; deterministic sort on stable ID tie-break |
-| `PolicyRef` | `{type,version,effectiveAt}` | Approved version used for terms/checkout snapshot |
-| `Revision` | Nonnegative integer | Required to prevent overwriting concurrent administrative edits |
+| Type                | JSON contract                                                | Notes                                                                                         |
+| ------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `Id`                | Nonempty string                                              | Stringified server ObjectId; never proof of permission                                        |
+| `MoneyPoisha`       | Nonnegative safe integer                                     | Business amounts, allocations and refund capacities; never JSON decimal BDT                   |
+| `SignedMoneyPoisha` | Signed safe integer                                          | Derived net cash-flow reporting only; a period with more payouts than collections is negative |
+| `Instant`           | ISO UTC string, e.g. `2026-10-16T00:00:00Z`                  | Reject ambiguous timezone formats in writes                                                   |
+| `Channel`           | `cod` / `bkash` / `nagad` / `rocket`                         | Business choice; actual online provider display/availability subject to verified activation   |
+| `AddressInput`      | `{recipient,phone,districtKey,areaKey,street,addressLine2?}` | Bangladesh-supported area keys, no arbitrary delivery-zone ID                                 |
+| `CartLineInput`     | `{variantId,quantity}`                                       | Bounded positive integer qty, unique variant                                                  |
+| `PageMeta`          | `{page,pageSize,totalItems,totalPages}`                      | Current snapshot estimate; deterministic sort on stable ID tie-break                          |
+| `PolicyRef`         | `{type,version,effectiveAt}`                                 | Approved version used for terms/checkout snapshot                                             |
+| `Revision`          | Nonnegative integer                                          | Required to prevent overwriting concurrent administrative edits                               |
 
 `?` in tables means optional and omitted, not an empty string or accidental `null`. Values of DB nullable fields (e.g. guest order `userId`) are never assumed present. Database §2.2 defines the field, string and array bounds shared by API validators and UI controls.
 
 ### 6.2 DTO registry
 
-| DTO | Public or private contract (allowlist) | Excluded by design |
-| --- | --- | --- |
-| `ProductCard` | `id,slug,name,thumbnail,regularPricePoisha,effectivePricePoisha,rating,availability` | Internal stock counters, media credentials |
-| `ProductDetail` | Card + `description,categories,images,variants[{id,sku,attributes,regularPricePoisha,effectivePricePoisha,availableQty?}]` | Inventory movement and hidden draft data |
-| `Account` | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry) | `passwordHash`, challenge/session tokens, other accounts |
-| `Cart` | `items[{variantId,quantity,product,estimatedUnitPoisha,availability}],estimatedSubtotalPoisha,revision` | Reservation claims; cart does **not** reserve stock |
-| `CheckoutQuote` | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry) | A guaranteed confirmation-relative absolute deadline before the confirmation event, payment guarantee, or reservation |
-| `OrderSummary` | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry) | Guest email/phone to unauthorized clients |
-| `OrderDetail` | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry) | Gateway raw payload, session secrets |
-| `PaymentSummary` | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry) | `fundingContext` is derived `normal` or `correction_only`; never interchangeable with the six payment statuses |
-| `CollectionSummary` | `id,amountPoisha,collectedAt,sourceKind,merchandiseAllocatedPoisha,correctionAllocatedPoisha,unassignedAllocatedPoisha,merchandiseRefundHeldPoisha,merchandiseRefundCompletedPoisha,correctionRefundHeldPoisha,correctionRefundCompletedPoisha` | Full bank/card data and provider secrets |
-| `Claim` | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry) | Cross-user evidence; raw protected storage URL |
-| `Refund` | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry) | Transfer credentials / unmasked payout destination |
-| `Complaint` | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry) | Third-party contact details |
-| `AdminAudit` | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry) | Raw before/after sensitive PII or passwords |
+| DTO                 | Public or private contract (allowlist)                                                                                                                                                                                                          | Excluded by design                                                                                                    |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `ProductCard`       | `id,slug,name,thumbnail,regularPricePoisha,effectivePricePoisha,rating,availability`                                                                                                                                                            | Internal stock counters, media credentials                                                                            |
+| `ProductDetail`     | Card + `description,categories,images,variants[{id,sku,attributes,regularPricePoisha,effectivePricePoisha,availableQty?}]`                                                                                                                      | Inventory movement and hidden draft data                                                                              |
+| `Account`           | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry)                                                                                                                                                     | `passwordHash`, challenge/session tokens, other accounts                                                              |
+| `Cart`              | `items[{variantId,quantity,product,estimatedUnitPoisha,availability}],estimatedSubtotalPoisha,revision`                                                                                                                                         | Reservation claims; cart does **not** reserve stock                                                                   |
+| `CheckoutQuote`     | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry)                                                                                                                                                     | A guaranteed confirmation-relative absolute deadline before the confirmation event, payment guarantee, or reservation |
+| `OrderSummary`      | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry)                                                                                                                                                     | Guest email/phone to unauthorized clients                                                                             |
+| `OrderDetail`       | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry)                                                                                                                                                     | Gateway raw payload, session secrets                                                                                  |
+| `PaymentSummary`    | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry)                                                                                                                                                     | `fundingContext` is derived `normal` or `correction_only`; never interchangeable with the six payment statuses        |
+| `CollectionSummary` | `id,amountPoisha,collectedAt,sourceKind,merchandiseAllocatedPoisha,correctionAllocatedPoisha,unassignedAllocatedPoisha,merchandiseRefundHeldPoisha,merchandiseRefundCompletedPoisha,correctionRefundHeldPoisha,correctionRefundCompletedPoisha` | Full bank/card data and provider secrets                                                                              |
+| `Claim`             | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry)                                                                                                                                                     | Cross-user evidence; raw protected storage URL                                                                        |
+| `Refund`            | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry)                                                                                                                                                     | Transfer credentials / unmasked payout destination                                                                    |
+| `Complaint`         | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry)                                                                                                                                                     | Third-party contact details                                                                                           |
+| `AdminAudit`        | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry)                                                                                                                                                     | Raw before/after sensitive PII or passwords                                                                           |
 
 **DTO naming:** `OrderDetail.items[]` retains historical line IDs; `PaymentSummary` displays correction/unassigned and
 merchandise funding as **separate amounts**, not a single “paid” badge. `CollectionSummary` uses the exact monetary field
@@ -482,36 +484,36 @@ cannot create state by setting them. `OrderSummary.finalTotalPoisha` is purchase
 
 ### 7.2 Error code register
 
-| HTTP | Stable code | When returned / recovery |
-| --- | --- | --- |
-| `400` | `INVALID_REQUEST` | Malformed JSON, invalid path/query/input shape |
-| `400` | `VALIDATION_FAILED` | Safe field-level `details[]`; fix input |
-| `400` | `UNSUPPORTED_DELIVERY_AREA` | Zone not served; choose available address |
-| `401` | `AUTH_REQUIRED` | Missing/expired required session |
-| `401` | `INVALID_CREDENTIALS` | Wrong credentials / enumeration-safe login failure |
-| `401` | `GUEST_PROOF_REQUIRED` | No valid order-scoped proof session |
-| `403` | `FORBIDDEN` | Role/ownership/state access denied |
-| `403` | `CSRF_INVALID` | Missing/stale context/token or invalid Origin |
-| `404` | `NOT_FOUND` | Hidden/inactive/out-of-scope resource or unknown route |
-| `409` | `STATE_CONFLICT` | Invalid lifecycle transition or concurrent conflict |
-| `409` | `QUOTE_CHANGED` | Fresh server terms differ from buyer-confirmed quote; obtain and explicitly confirm a new quote |
-| `409` | `QUOTE_EXPIRED` | Quote expired before a new intent committed; same-key committed replay still returns existing result |
-| `409` | `IDEMPOTENCY_CONFLICT` | Same key, different canonical payload |
-| `409` | `IDEMPOTENCY_KEY_RETIRED` | Key too old for replay, retained tombstone prevents new order |
-| `409` | `REVISION_CONFLICT` | Client/admin update based on stale revision |
-| `409` | `OUT_OF_STOCK` | Cannot obtain requested available stock |
-| `409` | `COUPON_UNAVAILABLE` | Invalid eligibility, expired or exhausted capacity; safe reason if appropriate |
-| `409` | `REFUND_BALANCE_EXCEEDED` | Source or order/class/unit refund cap reached |
-| `409` | `PAYMENT_UNCERTAIN` | Prior attempt not safely resolved; reconcile before new charge |
-| `409` | `FULFILLMENT_ON_HOLD` | Paid/collected, but risk or allocation/policy review blocks action |
-| `412` | `PRECONDITION_FAILED` | Required `If-Match` mismatch; refresh edit |
-| `428` | `PRECONDITION_REQUIRED` | Missing mandatory revision precondition; refetch record |
-| `422` | `BUSINESS_RULE_VIOLATION` | Domain eligibility fails, with safe `details` |
+| HTTP  | Stable code                  | When returned / recovery                                                                                    |
+| ----- | ---------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `400` | `INVALID_REQUEST`            | Malformed JSON, invalid path/query/input shape                                                              |
+| `400` | `VALIDATION_FAILED`          | Safe field-level `details[]`; fix input                                                                     |
+| `400` | `UNSUPPORTED_DELIVERY_AREA`  | Zone not served; choose available address                                                                   |
+| `401` | `AUTH_REQUIRED`              | Missing/expired required session                                                                            |
+| `401` | `INVALID_CREDENTIALS`        | Wrong credentials / enumeration-safe login failure                                                          |
+| `401` | `GUEST_PROOF_REQUIRED`       | No valid order-scoped proof session                                                                         |
+| `403` | `FORBIDDEN`                  | Role/ownership/state access denied                                                                          |
+| `403` | `CSRF_INVALID`               | Missing/stale context/token or invalid Origin                                                               |
+| `404` | `NOT_FOUND`                  | Hidden/inactive/out-of-scope resource or unknown route                                                      |
+| `409` | `STATE_CONFLICT`             | Invalid lifecycle transition or concurrent conflict                                                         |
+| `409` | `QUOTE_CHANGED`              | Fresh server terms differ from buyer-confirmed quote; obtain and explicitly confirm a new quote             |
+| `409` | `QUOTE_EXPIRED`              | Quote expired before a new intent committed; same-key committed replay still returns existing result        |
+| `409` | `IDEMPOTENCY_CONFLICT`       | Same key, different canonical payload                                                                       |
+| `409` | `IDEMPOTENCY_KEY_RETIRED`    | Key too old for replay, retained tombstone prevents new order                                               |
+| `409` | `REVISION_CONFLICT`          | Client/admin update based on stale revision                                                                 |
+| `409` | `OUT_OF_STOCK`               | Cannot obtain requested available stock                                                                     |
+| `409` | `COUPON_UNAVAILABLE`         | Invalid eligibility, expired or exhausted capacity; safe reason if appropriate                              |
+| `409` | `REFUND_BALANCE_EXCEEDED`    | Source or order/class/unit refund cap reached                                                               |
+| `409` | `PAYMENT_UNCERTAIN`          | Prior attempt not safely resolved; reconcile before new charge                                              |
+| `409` | `FULFILLMENT_ON_HOLD`        | Paid/collected, but risk or allocation/policy review blocks action                                          |
+| `412` | `PRECONDITION_FAILED`        | Required `If-Match` mismatch; refresh edit                                                                  |
+| `428` | `PRECONDITION_REQUIRED`      | Missing mandatory revision precondition; refetch record                                                     |
+| `422` | `BUSINESS_RULE_VIOLATION`    | Domain eligibility fails, with safe `details`                                                               |
 | `422` | `PAYMENT_AMOUNT_UNSUPPORTED` | Attempt amount below/above verified provider/merchant range; choose COD or resolve balance without charging |
-| `429` | `RATE_LIMITED` | Enforce per-route abuse limits; optional `Retry-After` |
-| `502` | `PROVIDER_ERROR` | Verified upstream hard failure; **no inferred financial outcome** |
-| `503` | `SERVICE_UNAVAILABLE` | DB/provider dependency unavailable; client may query operation status |
-| `500` | `INTERNAL_ERROR` | Redacted unexpected fault with request ID |
+| `429` | `RATE_LIMITED`               | Enforce per-route abuse limits; optional `Retry-After`                                                      |
+| `502` | `PROVIDER_ERROR`             | Verified upstream hard failure; **no inferred financial outcome**                                           |
+| `503` | `SERVICE_UNAVAILABLE`        | DB/provider dependency unavailable; client may query operation status                                       |
+| `500` | `INTERNAL_ERROR`             | Redacted unexpected fault with request ID                                                                   |
 
 Validation errors distinguish *bad input* from *current state*: an eligible but exhausted coupon is `409`, not “invalid
 JSON”. On external timeout, do not report definitive `failed`; return pending/uncertain status when a durable operation
@@ -520,16 +522,16 @@ successful refund request is **not** confirmed payout.
 
 ## 8. Pagination, search & caching
 
-| Concern | Rule |
-| --- | --- |
-| Pagination | `page` starts at `1`; `pageSize` defaults `20`, maximum `100`; no unbounded lists |
-| Sorting | Explicit endpoint allowlist, e.g. `newest`, `price_asc`, `price_desc`; stable ID tie-break |
-| Public search | `q` trimmed and length-bounded; only active products/categories eligible for public discovery |
-| Catalog filtering | `category`, `minPricePoisha`, `maxPricePoisha`, `inStock`, with server type and range checks |
-| Admin filtering | Allowlisted status/date/customer references; no arbitrary client query operators |
-| Result | `{data:[...],meta:{page,pageSize,totalItems,totalPages,requestId}}` |
-| Public cache | Optional controlled ETag/revalidation; stale display is possible; checkout requotes live stock/prices |
-| Private cache | `Cache-Control: no-store`; prevent CDN/SSR shared caching for auth, account, cart, orders and money |
+| Concern           | Rule                                                                                                  |
+| ----------------- | ----------------------------------------------------------------------------------------------------- |
+| Pagination        | `page` starts at `1`; `pageSize` defaults `20`, maximum `100`; no unbounded lists                     |
+| Sorting           | Explicit endpoint allowlist, e.g. `newest`, `price_asc`, `price_desc`; stable ID tie-break            |
+| Public search     | `q` trimmed and length-bounded; only active products/categories eligible for public discovery         |
+| Catalog filtering | `category`, `minPricePoisha`, `maxPricePoisha`, `inStock`, with server type and range checks          |
+| Admin filtering   | Allowlisted status/date/customer references; no arbitrary client query operators                      |
+| Result            | `{data:[...],meta:{page,pageSize,totalItems,totalPages,requestId}}`                                   |
+| Public cache      | Optional controlled ETag/revalidation; stale display is possible; checkout requotes live stock/prices |
+| Private cache     | `Cache-Control: no-store`; prevent CDN/SSR shared caching for auth, account, cart, orders and money   |
 
 For large audit/financial histories, use an opaque cursor with stable ordering **if approved by query profiling**; do not
 invent offset pagination where it risks missing/duplicating mutations. Query and index selection must agree with Database
@@ -541,44 +543,44 @@ invent offset pagination where it risks missing/duplicating mutations. Query and
 
 **All browser mutations** require approved Origin, `X-CSRF-Token` and cookie context/session. Notation: `Public+CSRF` means unauthenticated request with valid browser context; `C` customer-only, `A` admin-only.
 
-| Method | Path (`/api/v1` prefix omitted) | Access | Request → response | Primary FR |
-| --- | --- | --- | --- | --- |
-| `GET` | `/auth/csrf` | Public | `— → {csrfToken,expiresAt}` + context/session cookie | 01, 21 |
-| `POST` | `/auth/register` | Public+CSRF | `RegisterInput → {account,verificationRequired}` | 01 |
-| `POST` | `/auth/login` | Public+CSRF | `Credentials → {account,csrfToken}` + rotated customer cookie | 01 |
-| `GET` | `/auth/session` | C | `— → {account}` | 01 |
-| `POST` | `/auth/logout` | Public+CSRF | `— → {revoked:true,csrfToken}` + cleared cookie | 01 |
-| `POST` | `/auth/email-verifications` | Public+CSRF | `{email} → {accepted:true}` (ambiguous) | 01 |
-| `POST` | `/auth/email-verifications/confirm` | Public+CSRF | `{token} → {verified:true}` | 01 |
-| `POST` | `/auth/password-resets` | Public+CSRF | `{email} → {accepted:true}` (ambiguous) | 01 |
-| `POST` | `/auth/password-resets/confirm` | Public+CSRF | `{token,newPassword} → {reset:true}` | 01 |
-| `GET` | `/me` | C | `— → Account` | 02 |
-| `PATCH` | `/me` | C | `{name?,phone?} → Account` | 02 |
-| `POST` | `/me/email-changes` | C | `{newEmail} → {verificationSent:true}` | 02 |
-| `POST` | `/me/email-changes/confirm` | C + proof | `{token} → Account` | 02 |
-| `POST` | `/me/password-change` | C | `{currentPassword,newPassword} → {changed:true,csrfToken}` | 02 |
-| `GET` | `/me/addresses` | C | `— → Address[]` | 02 |
-| `POST` | `/me/addresses` | C | `AddressInput → Address` | 02 |
-| `PATCH` | `/me/addresses/{addressId}` | C | `AddressPatch → Address` | 02 |
-| `DELETE` | `/me/addresses/{addressId}` | C | `— → 204` | 02 |
-| `POST` | `/me/addresses/{addressId}/default` | C | `— → Address` | 02 |
-| `POST` | `/me/deletion-requests` | C | `{reason?} → {requestId,status}` | PRD §12.8 |
-| `GET` | `/admin/auth/csrf` | Public | `— → {csrfToken,expiresAt}` scoped to admin context | 21 |
-| `POST` | `/admin/auth/login` | Public+CSRF | `Credentials → {account,csrfToken}` + distinct admin cookie | 21 |
-| `GET` | `/admin/auth/session` | A | `— → {account}` | 21 |
-| `POST` | `/admin/auth/logout` | Public+CSRF (admin context) | `— → {revoked:true,csrfToken}` | 21 |
-| `POST` | `/admin/auth/password-resets` | Public+CSRF (admin context) | `{email} → {accepted:true}` (ambiguous) | 21 |
-| `POST` | `/admin/auth/password-resets/confirm` | Public+CSRF (admin context) | `{token,newPassword} → {reset:true}` | 21 |
+| Method   | Path (`/api/v1` prefix omitted)       | Access                      | Request → response                                            | Primary FR |
+| -------- | ------------------------------------- | --------------------------- | ------------------------------------------------------------- | ---------- |
+| `GET`    | `/auth/csrf`                          | Public                      | `— → {csrfToken,expiresAt}` + context/session cookie          | 01, 21     |
+| `POST`   | `/auth/register`                      | Public+CSRF                 | `RegisterInput → {account,verificationRequired}`              | 01         |
+| `POST`   | `/auth/login`                         | Public+CSRF                 | `Credentials → {account,csrfToken}` + rotated customer cookie | 01         |
+| `GET`    | `/auth/session`                       | C                           | `— → {account}`                                               | 01         |
+| `POST`   | `/auth/logout`                        | Public+CSRF                 | `— → {revoked:true,csrfToken}` + cleared cookie               | 01         |
+| `POST`   | `/auth/email-verifications`           | Public+CSRF                 | `{email} → {accepted:true}` (ambiguous)                       | 01         |
+| `POST`   | `/auth/email-verifications/confirm`   | Public+CSRF                 | `{token} → {verified:true}`                                   | 01         |
+| `POST`   | `/auth/password-resets`               | Public+CSRF                 | `{email} → {accepted:true}` (ambiguous)                       | 01         |
+| `POST`   | `/auth/password-resets/confirm`       | Public+CSRF                 | `{token,newPassword} → {reset:true}`                          | 01         |
+| `GET`    | `/me`                                 | C                           | `— → Account`                                                 | 02         |
+| `PATCH`  | `/me`                                 | C                           | `{name?,phone?} → Account`                                    | 02         |
+| `POST`   | `/me/email-changes`                   | C                           | `{newEmail} → {verificationSent:true}`                        | 02         |
+| `POST`   | `/me/email-changes/confirm`           | C + proof                   | `{token} → Account`                                           | 02         |
+| `POST`   | `/me/password-change`                 | C                           | `{currentPassword,newPassword} → {changed:true,csrfToken}`    | 02         |
+| `GET`    | `/me/addresses`                       | C                           | `— → Address[]`                                               | 02         |
+| `POST`   | `/me/addresses`                       | C                           | `AddressInput → Address`                                      | 02         |
+| `PATCH`  | `/me/addresses/{addressId}`           | C                           | `AddressPatch → Address`                                      | 02         |
+| `DELETE` | `/me/addresses/{addressId}`           | C                           | `— → 204`                                                     | 02         |
+| `POST`   | `/me/addresses/{addressId}/default`   | C                           | `— → Address`                                                 | 02         |
+| `POST`   | `/me/deletion-requests`               | C                           | `{reason?} → {requestId,status}`                              | PRD §12.8  |
+| `GET`    | `/admin/auth/csrf`                    | Public                      | `— → {csrfToken,expiresAt}` scoped to admin context           | 21         |
+| `POST`   | `/admin/auth/login`                   | Public+CSRF                 | `Credentials → {account,csrfToken}` + distinct admin cookie   | 21         |
+| `GET`    | `/admin/auth/session`                 | A                           | `— → {account}`                                               | 21         |
+| `POST`   | `/admin/auth/logout`                  | Public+CSRF (admin context) | `— → {revoked:true,csrfToken}`                                | 21         |
+| `POST`   | `/admin/auth/password-resets`         | Public+CSRF (admin context) | `{email} → {accepted:true}` (ambiguous)                       | 21         |
+| `POST`   | `/admin/auth/password-resets/confirm` | Public+CSRF (admin context) | `{token,newPassword} → {reset:true}`                          | 21         |
 
 **Identity input registry**
 
-| DTO | Fields / important constraints |
-| --- | --- |
-| `RegisterInput` | `name,email,password`; public role omitted and forced `customer`; enforce approved password policy |
-| `Credentials` | `email,password`; client may **not** supply role or cookie scope |
-| `AddressPatch` | Optional editable `recipient,phone,districtKey,areaKey,street,addressLine2,isDefault` only; explicit fields, no arbitrary object merge |
-| `Account` | Database §5.1 allowlist: `id,name,email,phone?,emailVerified,addresses,status`; no hashes/security revision details |
-| `DeletionRequest` | Verified customer identity and approved retention/review process; **not** immediate hard deletion of financial records |
+| DTO               | Fields / important constraints                                                                                                         |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `RegisterInput`   | `name,email,password`; public role omitted and forced `customer`; enforce approved password policy                                     |
+| `Credentials`     | `email,password`; client may **not** supply role or cookie scope                                                                       |
+| `AddressPatch`    | Optional editable `recipient,phone,districtKey,areaKey,street,addressLine2,isDefault` only; explicit fields, no arbitrary object merge |
+| `Account`         | Database §5.1 allowlist: `id,name,email,phone?,emailVerified,addresses,status`; no hashes/security revision details                    |
+| `DeletionRequest` | Verified customer identity and approved retention/review process; **not** immediate hard deletion of financial records                 |
 
 **Repeat logout:** logout is `Public+CSRF` within the correct host/context scope, even when its former session has already
 expired or been revoked. A valid CSRF bootstrap/Origin is still required; revoke an active session if present, clear the
@@ -616,12 +618,12 @@ Admin reset uses the existing password_reset challenge purpose bound to the admi
 
 ### 9.2 Verified guest access
 
-| Method | Path | Access | Request → response |
-| --- | --- | --- | --- |
-| `POST` | `/guest-access/challenges` | Public+CSRF | `{orderNumber,email} → {accepted:true}` with indistinguishable valid/invalid responses |
-| `POST` | `/guest-access/sessions` | Public+CSRF | `{challengeToken} → {orderId,expiresAt,csrfToken}` + rotated guest cookie |
-| `GET` | `/guest-access/session` | G | `— → {orderId,expiresAt}` |
-| `POST` | `/guest-access/logout` | Public+CSRF (guest context) | `— → {revoked:true,csrfToken}` |
+| Method | Path                       | Access                      | Request → response                                                                     |
+| ------ | -------------------------- | --------------------------- | -------------------------------------------------------------------------------------- |
+| `POST` | `/guest-access/challenges` | Public+CSRF                 | `{orderNumber,email} → {accepted:true}` with indistinguishable valid/invalid responses |
+| `POST` | `/guest-access/sessions`   | Public+CSRF                 | `{challengeToken} → {orderId,expiresAt,csrfToken}` + rotated guest cookie              |
+| `GET`  | `/guest-access/session`    | G                           | `— → {orderId,expiresAt}`                                                              |
+| `POST` | `/guest-access/logout`     | Public+CSRF (guest context) | `— → {revoked:true,csrfToken}`                                                         |
 
 Guest proof is email-delivered as one-time code or secure link, issued against **both** order number and checkout email, rate-limited and never exposed in an API response or logs.
 Proof exchange atomically consumes `authChallenges` and grants only the verified `orders._id` through a `guest_order` session (Database §§5.2–5.3).
@@ -636,18 +638,18 @@ operations. It is a contract module, not an Express router: no authentication/ac
 importing it. Controllers must validate requests before service delegation and validate/allowlist outputs before the
 success envelope. Internal invalid output is a server fault, never a client validation failure; no raw document is returned.
 
-| Boundary | Exact validation / protection contract |
-| --- | --- |
-| Email/name | Email trimmed/lowercased and validated up to 254 characters; names trimmed/nonempty, maximum 120 Unicode characters; no silent truncation |
-| Password | Credentials nonempty and never normalized; register/reset/change additionally require the owning service's explicit password-policy schema; a policy that transforms the supplied password is rejected; no guessed password policy is installed |
-| Proof/CSRF token wire shape | Nonempty URL-safe ASCII `[A-Za-z0-9_-]`, at most 128 characters; no whitespace/URL/object coercion; issuing services must generate approved high-entropy opaque values, not treat shape as entropy proof |
-| ID/time | ObjectId wire strings are 24 lowercase hexadecimal characters; response instants are ISO UTC ending Z; persistence uses BSON Date/ObjectId; neither string validation nor a known ID authorizes a resource |
-| Address | Required input matches AddressInput; recipient at most 120 characters, street/addressLine2 at most 300, districtKey/areaKey at most 64; supplied phone and coverage policies validate canonical phone/served pair; keys alone are not caller-selected delivery charges |
-| Partial edits | Nonempty profile/address patch; unknown fields and null rejected; merge partial location with the authorized stored address and revalidate the complete address before writing; explicit supported removal semantics require an owning contract update |
-| Response | Exact field allowlists; maximum ten addresses, distinct IDs, at most one default; no role/hash/revision/envelope leakage; internal deletion_pending/deactivated are not silently mapped to active |
-| No-input operations | GET body absent; bodyless mutations accept absent body or exact empty object; query empty; only addressId is accepted for address path parameters |
-| Acknowledgements | accepted/verified/reset/revoked/verificationSent/changed must be literal true where specified; ambiguous request acknowledgements never include account existence; DELETE address returns 204 without a JSON body |
-| Deletion intake | Optional bounded reason only; response requestId and Database §5.5 review status; no immediate deletion or retention waiver |
+| Boundary                    | Exact validation / protection contract                                                                                                                                                                                                                                 |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Email/name                  | Email trimmed/lowercased and validated up to 254 characters; names trimmed/nonempty, maximum 120 Unicode characters; no silent truncation                                                                                                                              |
+| Password                    | Credentials nonempty and never normalized; register/reset/change additionally require the owning service's explicit password-policy schema; a policy that transforms the supplied password is rejected; no guessed password policy is installed                        |
+| Proof/CSRF token wire shape | Nonempty URL-safe ASCII `[A-Za-z0-9_-]`, at most 128 characters; no whitespace/URL/object coercion; issuing services must generate approved high-entropy opaque values, not treat shape as entropy proof                                                               |
+| ID/time                     | ObjectId wire strings are 24 lowercase hexadecimal characters; response instants are ISO UTC ending Z; persistence uses BSON Date/ObjectId; neither string validation nor a known ID authorizes a resource                                                             |
+| Address                     | Required input matches AddressInput; recipient at most 120 characters, street/addressLine2 at most 300, districtKey/areaKey at most 64; supplied phone and coverage policies validate canonical phone/served pair; keys alone are not caller-selected delivery charges |
+| Partial edits               | Nonempty profile/address patch; unknown fields and null rejected; merge partial location with the authorized stored address and revalidate the complete address before writing; explicit supported removal semantics require an owning contract update                 |
+| Response                    | Exact field allowlists; maximum ten addresses, distinct IDs, at most one default; no role/hash/revision/envelope leakage; internal deletion_pending/deactivated are not silently mapped to active                                                                      |
+| No-input operations         | GET body absent; bodyless mutations accept absent body or exact empty object; query empty; only addressId is accepted for address path parameters                                                                                                                      |
+| Acknowledgements            | accepted/verified/reset/revoked/verificationSent/changed must be literal true where specified; ambiguous request acknowledgements never include account existence; DELETE address returns 204 without a JSON body                                                      |
+| Deletion intake             | Optional bounded reason only; response requestId and Database §5.5 review status; no immediate deletion or retention waiver                                                                                                                                            |
 
 The contract factory requires new-password, phone and coverage policies from the owning service; tests supply synthetic
 policies. This avoids an implicit production password policy or invented national coverage dataset. No default policy,
@@ -683,16 +685,16 @@ order actions; §9.2 is a future contract, not a live endpoint. No guest, provid
 
 ### 10.1 Public catalog and discovery
 
-| Method | Path | Access | Query / request → response | FR |
-| --- | --- | --- | --- | --- |
-| `GET` | `/storefront/home` | Public | `— → {featured[],newArrivals[],discounted[],categories[],banner?}` | 03 |
-| `GET` | `/categories` | Public | `parent?,page?,pageSize? → Category[]` | 04 |
-| `GET` | `/categories/{slug}` | Public | `— → CategoryDetail` | 04 |
-| `GET` | `/products` | Public | `q?,category?,minPricePoisha?,maxPricePoisha?,inStock?,sort?,page?,pageSize? → ProductCard[]` | 04 |
-| `GET` | `/products/{slug}` | Public | `— → ProductDetail` | 05, 06 |
-| `GET` | `/products/{productId}/reviews` | Public | `page?,pageSize?,sort? → approved Review[] + rating summary` | 10 |
-| `GET` | `/storefront/policies/{type}` | Public | Approved published policy `type → {version,content,effectiveAt}` | 20, 34 |
-| `GET` | `/storefront/contact` | Public | `— → {contact,complaintContact}` (approved only) | 03, 20 |
+| Method | Path                            | Access | Query / request → response                                                                    | FR     |
+| ------ | ------------------------------- | ------ | --------------------------------------------------------------------------------------------- | ------ |
+| `GET`  | `/storefront/home`              | Public | `— → {featured[],newArrivals[],discounted[],categories[],banner?}`                            | 03     |
+| `GET`  | `/categories`                   | Public | `parent?,page?,pageSize? → Category[]`                                                        | 04     |
+| `GET`  | `/categories/{slug}`            | Public | `— → CategoryDetail`                                                                          | 04     |
+| `GET`  | `/products`                     | Public | `q?,category?,minPricePoisha?,maxPricePoisha?,inStock?,sort?,page?,pageSize? → ProductCard[]` | 04     |
+| `GET`  | `/products/{slug}`              | Public | `— → ProductDetail`                                                                           | 05, 06 |
+| `GET`  | `/products/{productId}/reviews` | Public | `page?,pageSize?,sort? → approved Review[] + rating summary`                                  | 10     |
+| `GET`  | `/storefront/policies/{type}`   | Public | Approved published policy `type → {version,content,effectiveAt}`                              | 20, 34 |
+| `GET`  | `/storefront/contact`           | Public | `— → {contact,complaintContact}` (approved only)                                              | 03, 20 |
 
 Inactive products/categories (including inactive ancestors) are excluded; out-of-stock products may remain visible but cannot be purchased.
 `variants` include one default SKU when a product has no selectable options.
@@ -702,15 +704,15 @@ The homepage `banner` maps to `storeSettings.homepageBanner` with a validated pu
 
 ### 10.2 Cart and wishlist
 
-| Method | Path | Access | Request → response | FR |
-| --- | --- | --- | --- | --- |
-| `GET` | `/cart` | C | `— → Cart` | 07 |
-| `PUT` | `/cart/items/{variantId}` | C | `{quantity} → Cart` | 07 |
-| `DELETE` | `/cart/items/{variantId}` | C | `— → Cart` | 07 |
-| `POST` | `/cart/merge` | C | `{items:CartLineInput[]} → Cart` | 07 |
-| `GET` | `/wishlist` | C | `— → {products:ProductCard[]}` | 08 |
-| `PUT` | `/wishlist/products/{productId}` | C | `— → {saved:true}` | 08 |
-| `DELETE` | `/wishlist/products/{productId}` | C | `— → {saved:false}` | 08 |
+| Method   | Path                             | Access | Request → response               | FR  |
+| -------- | -------------------------------- | ------ | -------------------------------- | --- |
+| `GET`    | `/cart`                          | C      | `— → Cart`                       | 07  |
+| `PUT`    | `/cart/items/{variantId}`        | C      | `{quantity} → Cart`              | 07  |
+| `DELETE` | `/cart/items/{variantId}`        | C      | `— → Cart`                       | 07  |
+| `POST`   | `/cart/merge`                    | C      | `{items:CartLineInput[]} → Cart` | 07  |
+| `GET`    | `/wishlist`                      | C      | `— → {products:ProductCard[]}`   | 08  |
+| `PUT`    | `/wishlist/products/{productId}` | C      | `— → {saved:true}`               | 08  |
+| `DELETE` | `/wishlist/products/{productId}` | C      | `— → {saved:false}`              | 08  |
 
 Guest cart is **browser-local** and is not created server-side by an anonymous `/cart` route. A merge deduplicates on
 `variantId`, applies an approved bounded quantity rule (do not double-count on replay), and excludes invalid/inactive
@@ -719,12 +721,12 @@ availability remain estimates until `POST /checkout/quotes`.
 
 ### 10.3 Coupon and review contracts
 
-| Method | Path | Access | Request → response | FR |
-| --- | --- | --- | --- | --- |
-| `POST` | `/coupons/preview` | C or Public+CSRF | `{code,items:CartLineInput[],deliveryArea?} → {eligible,discountPoisha,reasonCode?}` | 09 |
-| `POST` | `/products/{productId}/reviews` | C | `{rating,comment,qualifyingOrderItemId} → Review` (`pending`) | 10 |
-| `PATCH` | `/reviews/{reviewId}` | C owner | `{rating?,comment?} → Review` (moderation reset when needed) | 10 |
-| `GET` | `/me/reviews` | C | `page?,pageSize? → Review[]` | 02, 10 |
+| Method  | Path                            | Access           | Request → response                                                                   | FR     |
+| ------- | ------------------------------- | ---------------- | ------------------------------------------------------------------------------------ | ------ |
+| `POST`  | `/coupons/preview`              | C or Public+CSRF | `{code,items:CartLineInput[],deliveryArea?} → {eligible,discountPoisha,reasonCode?}` | 09     |
+| `POST`  | `/products/{productId}/reviews` | C                | `{rating,comment,qualifyingOrderItemId} → Review` (`pending`)                        | 10     |
+| `PATCH` | `/reviews/{reviewId}`           | C owner          | `{rating?,comment?} → Review` (moderation reset when needed)                         | 10     |
+| `GET`   | `/me/reviews`                   | C                | `page?,pageSize? → Review[]`                                                         | 02, 10 |
 
 Coupon preview **does not consume quota** or lock price/stock; final checkout evaluates current terms, overall and per-customer capacity, and one coupon per order.
 `code` is normalized case-insensitively, percentage uses integer basis points and line allocation from Database §§2.3, 8.1–8.3.
@@ -758,17 +760,17 @@ The cart example is not a final payable quote. Catalog and public reviews use `2
 
 ### 11.1 Checkout request/quote/submission
 
-| Method | Path | Access | Request → response | FR |
-| --- | --- | --- | --- | --- |
-| `GET` | `/delivery/areas` | Public | `district? → {supportedAreas[],zoneKeys[]}` | 16 |
-| `POST` | `/checkout/quotes` | C or Public+CSRF | `CheckoutQuoteInput → CheckoutQuote` (no reservation) | 11 |
-| `POST` | `/checkout/orders` | C or Public+CSRF | `CheckoutSubmitInput + Idempotency-Key → {order,onlinePayment?}` | 11, 12, 13 |
-| `GET` | `/orders` | C | `page?,pageSize?,status? → OrderSummary[]` for own user only | 14 |
-| `GET` | `/orders/{orderId}` | C owner or G-scoped | `— → OrderDetail` | 14, 19 |
-| `GET` | `/orders/{orderId}/status` | C owner or G-scoped | `— → {fulfillmentStatus,fulfillmentHold?,paymentSummary,deliveryEstimate?,deliveryDeadline}` | 14, 19 |
-| `POST` | `/orders/{orderId}/cancellation-requests` | C owner or G-scoped | `{reason} → CancellationRequest` | 15, 19 |
-| `GET` | `/orders/{orderId}/cancellation-requests` | C owner or G-scoped | `— → CancellationRequest[]` | 15, 19 |
-| `GET` | `/orders/{orderId}/delivery-events` | C owner or G-scoped | `— → {status,estimate,deadline,exceptionSummary?,events[]}` | 16, 19 |
+| Method | Path                                      | Access              | Request → response                                                                           | FR         |
+| ------ | ----------------------------------------- | ------------------- | -------------------------------------------------------------------------------------------- | ---------- |
+| `GET`  | `/delivery/areas`                         | Public              | `district? → {supportedAreas[],zoneKeys[]}`                                                  | 16         |
+| `POST` | `/checkout/quotes`                        | C or Public+CSRF    | `CheckoutQuoteInput → CheckoutQuote` (no reservation)                                        | 11         |
+| `POST` | `/checkout/orders`                        | C or Public+CSRF    | `CheckoutSubmitInput + Idempotency-Key → {order,onlinePayment?}`                             | 11, 12, 13 |
+| `GET`  | `/orders`                                 | C                   | `page?,pageSize?,status? → OrderSummary[]` for own user only                                 | 14         |
+| `GET`  | `/orders/{orderId}`                       | C owner or G-scoped | `— → OrderDetail`                                                                            | 14, 19     |
+| `GET`  | `/orders/{orderId}/status`                | C owner or G-scoped | `— → {fulfillmentStatus,fulfillmentHold?,paymentSummary,deliveryEstimate?,deliveryDeadline}` | 14, 19     |
+| `POST` | `/orders/{orderId}/cancellation-requests` | C owner or G-scoped | `{reason} → CancellationRequest`                                                             | 15, 19     |
+| `GET`  | `/orders/{orderId}/cancellation-requests` | C owner or G-scoped | `— → CancellationRequest[]`                                                                  | 15, 19     |
+| `GET`  | `/orders/{orderId}/delivery-events`       | C owner or G-scoped | `— → {status,estimate,deadline,exceptionSummary?,events[]}`                                  | 16, 19     |
 
 **`CheckoutQuoteInput`** is a full, typed draft transaction request: `items:CartLineInput[]`, `recipient:AddressInput` (or
 `savedAddressId` for C only), `couponCode?`, `method:Channel`; `email` and `recipient.phone` are required for G checkout;
@@ -825,16 +827,16 @@ Send the `CheckoutSubmitInput` body with a separate `Idempotency-Key` header. Ex
 
 ### 11.2 Price, hold and order response rules
 
-| Step | Backend effect | HTTP/API effect |
-| --- | --- | --- |
-| Validation fails | No order, no stock/coupon mutation | `400`, `409` or `422` as applicable |
-| COD accepted | Commit inventory and coupon immediately; order fulfillment **`pending`** | `201` order, payment `pending`; admin confirmation later |
-| Online accepted | New order pending + 15-minute reservation and coupon hold | `201` order; payment initialization may follow and be uncertain |
-| Gateway session ready | Payment attempt persisted; hosted URL obtained | `201/200` `onlinePayment:{attemptId,redirectUrl,expiresAt?}` |
-| Gateway session not obtained | **Order remains durable** with recoverable payment state | `202` `operationStatus:'payment_initialization_pending'`, poll/retry existing order |
-| Replay identical request | No new order, coupon or stock effect | `200` same order ID + current safe operation status |
-| Replay altered body | No new order | `409 IDEMPOTENCY_CONFLICT` |
-| Retired key | No new order | `409 IDEMPOTENCY_KEY_RETIRED` or safe linked status |
+| Step                         | Backend effect                                                           | HTTP/API effect                                                                     |
+| ---------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| Validation fails             | No order, no stock/coupon mutation                                       | `400`, `409` or `422` as applicable                                                 |
+| COD accepted                 | Commit inventory and coupon immediately; order fulfillment **`pending`** | `201` order, payment `pending`; admin confirmation later                            |
+| Online accepted              | New order pending + 15-minute reservation and coupon hold                | `201` order; payment initialization may follow and be uncertain                     |
+| Gateway session ready        | Payment attempt persisted; hosted URL obtained                           | `201/200` `onlinePayment:{attemptId,redirectUrl,expiresAt?}`                        |
+| Gateway session not obtained | **Order remains durable** with recoverable payment state                 | `202` `operationStatus:'payment_initialization_pending'`, poll/retry existing order |
+| Replay identical request     | No new order, coupon or stock effect                                     | `200` same order ID + current safe operation status                                 |
+| Replay altered body          | No new order                                                             | `409 IDEMPOTENCY_CONFLICT`                                                          |
+| Retired key                  | No new order                                                             | `409 IDEMPOTENCY_KEY_RETIRED` or safe linked status                                 |
 
 **Response requirement:** for guest checkout, the immediate `201/202` response may return a minimal order
 reference/next-step status **only to the originating verified browser context**; it must not grant durable cross-browser
@@ -861,23 +863,23 @@ The admin accepts/rejects after checking `pending/confirmed`, or `processing` wi
 
 ### 12.1 Payment surfaces and statuses
 
-| Method | Path | Access | Request → response | FR |
-| --- | --- | --- | --- | --- |
-| `GET` | `/checkout/payment-methods` | Public | `amountPoisha?,orderId? (owned if supplied) → {methods:[{channel,active,eligible,reasonCode?,minPoisha?,maxPoisha?}]}` | 12 |
-| `GET` | `/orders/{orderId}/payments` | C owner or G-scoped | `— → {payment:PaymentSummary,attempts:PaymentAttemptPublic[]}` | 12, 19 |
-| `POST` | `/orders/{orderId}/payment-attempts` | C owner or G-scoped | `{requestedChannel} + Idempotency-Key → {attemptId,expectedAmountPoisha,state,redirectUrl?,expiresAt?}` | 12 |
-| `GET` | `/orders/{orderId}/payment-attempts/{attemptId}` | C owner or G-scoped | `— → {id,state,riskStatus?,lastCheckedAt?}` | 12 |
-| `POST` | `/webhooks/sslcommerz/ipn` | P-untrusted intake | Provider form fields → HTTP acknowledgment; **never** client payment DTO | 12 |
-| `GET` | `/payment-returns/sslcommerz/{result}` | Provider/browser untrusted | Redirect to safe storefront result page; no payment mutation | 12 |
-| `POST` | `/payment-returns/sslcommerz/{result}` | Provider/browser untrusted | Accept configured provider form redirect and redirect safely; no payment mutation | 12 |
-| `GET` | `/admin/payments` | A | Filters → PaymentSummary[] / reconciliation view | 29 |
-| `GET` | `/admin/payments/{paymentId}` | A | `— → scoped attempts, linked collections, corrections, risk and audit` | 29 |
-| `POST` | `/admin/payments/{paymentId}/reconcile` | A | `{reason} + Idempotency-Key → {state,verifiedAt?}` | 29 |
-| `POST` | `/admin/payments/{paymentId}/risk-decisions` | A | `{decision:enum(approve,reject),reason} + Idempotency-Key → {riskStatus,fulfillmentHold}` | 29 |
-| `POST` | `/admin/payments/{paymentId}/cod-collections` | A | `{amountPoisha,collectionReference,evidenceRef,reason} + Idempotency-Key → CollectionSummary` | 29 |
-| `GET` | `/admin/provider-receipts` | A | `matchingStatus?,page? → redacted verified receipt intake[]` | 29 |
-| `POST` | `/admin/provider-receipts/{intakeId}/link` | A | `{orderId,attemptId?,reason,matchingEvidenceRef} + Idempotency-Key → {linkedCollectionId,matchingStatus}` | 29 |
-| `POST` | `/admin/payment-collections/{collectionId}/allocate` | A | `{merchandisePoisha,correctionPoisha,unassignedPoisha,reason,matchingEvidenceRef} + If-Match + Idempotency-Key → CollectionSummary` | 29 |
+| Method | Path                                                 | Access                     | Request → response                                                                                                                  | FR     |
+| ------ | ---------------------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| `GET`  | `/checkout/payment-methods`                          | Public                     | `amountPoisha?,orderId? (owned if supplied) → {methods:[{channel,active,eligible,reasonCode?,minPoisha?,maxPoisha?}]}`              | 12     |
+| `GET`  | `/orders/{orderId}/payments`                         | C owner or G-scoped        | `— → {payment:PaymentSummary,attempts:PaymentAttemptPublic[]}`                                                                      | 12, 19 |
+| `POST` | `/orders/{orderId}/payment-attempts`                 | C owner or G-scoped        | `{requestedChannel} + Idempotency-Key → {attemptId,expectedAmountPoisha,state,redirectUrl?,expiresAt?}`                             | 12     |
+| `GET`  | `/orders/{orderId}/payment-attempts/{attemptId}`     | C owner or G-scoped        | `— → {id,state,riskStatus?,lastCheckedAt?}`                                                                                         | 12     |
+| `POST` | `/webhooks/sslcommerz/ipn`                           | P-untrusted intake         | Provider form fields → HTTP acknowledgment; **never** client payment DTO                                                            | 12     |
+| `GET`  | `/payment-returns/sslcommerz/{result}`               | Provider/browser untrusted | Redirect to safe storefront result page; no payment mutation                                                                        | 12     |
+| `POST` | `/payment-returns/sslcommerz/{result}`               | Provider/browser untrusted | Accept configured provider form redirect and redirect safely; no payment mutation                                                   | 12     |
+| `GET`  | `/admin/payments`                                    | A                          | Filters → PaymentSummary[] / reconciliation view                                                                                    | 29     |
+| `GET`  | `/admin/payments/{paymentId}`                        | A                          | `— → scoped attempts, linked collections, corrections, risk and audit`                                                              | 29     |
+| `POST` | `/admin/payments/{paymentId}/reconcile`              | A                          | `{reason} + Idempotency-Key → {state,verifiedAt?}`                                                                                  | 29     |
+| `POST` | `/admin/payments/{paymentId}/risk-decisions`         | A                          | `{decision:enum(approve,reject),reason} + Idempotency-Key → {riskStatus,fulfillmentHold}`                                           | 29     |
+| `POST` | `/admin/payments/{paymentId}/cod-collections`        | A                          | `{amountPoisha,collectionReference,evidenceRef,reason} + Idempotency-Key → CollectionSummary`                                       | 29     |
+| `GET`  | `/admin/provider-receipts`                           | A                          | `matchingStatus?,page? → redacted verified receipt intake[]`                                                                        | 29     |
+| `POST` | `/admin/provider-receipts/{intakeId}/link`           | A                          | `{orderId,attemptId?,reason,matchingEvidenceRef} + Idempotency-Key → {linkedCollectionId,matchingStatus}`                           | 29     |
+| `POST` | `/admin/payment-collections/{collectionId}/allocate` | A                          | `{merchandisePoisha,correctionPoisha,unassignedPoisha,reason,matchingEvidenceRef} + If-Match + Idempotency-Key → CollectionSummary` | 29     |
 
 The public payment-method response reflects **verified merchant enablement** and, when a trustworthy quote/order amount is
 available, amount eligibility. Client-supplied `amountPoisha` is advisory only: always recalculate on quote and attempt
@@ -965,14 +967,14 @@ repeat financial effects. A provider callback may legitimately be delivered more
 
 **IPN acknowledgment and replay matrix:**
 
-| Validated outcome | Durable action | Response / safe retry |
-| --- | --- | --- |
-| Verified paid receipt, known mapping | Unique provider intake, linked collection/allocation or audited quarantine | `200` only after commit; duplicate is `200` with no new effect |
-| Verified paid but unmatched or amount discrepancy | Persist immutable receipt in `providerReceiptIntake` as unmatched/quarantined | `200` after durable quarantine; never mark order Paid by guess |
-| Independently verified terminal nonpayment (`FAILED`, `CANCELLED`, `EXPIRED`, or confirmed equivalent) | Persist attempt state; **no** payment collection; never overwrite a later paid proof | `200` after commit; repeat `200` without side effects |
-| Authenticated/form-valid notification but provider outcome still pending | Persist attempt as pending/uncertain plus durable reconciliation job | `200` only when reliable poll/reconciliation can recover; otherwise `503` |
-| Malformed, oversized, unknown merchant / invalid reference | Reject, rate limit and record redacted security fingerprint | `400` / `403`; do not allocate funds |
-| Validation service unavailable, database commit failed | Preserve retryability; avoid acknowledging unpersisted business effects | `503` / `500`; scheduled polling supplements provider retry |
+| Validated outcome                                                                                      | Durable action                                                                       | Response / safe retry                                                     |
+| ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| Verified paid receipt, known mapping                                                                   | Unique provider intake, linked collection/allocation or audited quarantine           | `200` only after commit; duplicate is `200` with no new effect            |
+| Verified paid but unmatched or amount discrepancy                                                      | Persist immutable receipt in `providerReceiptIntake` as unmatched/quarantined        | `200` after durable quarantine; never mark order Paid by guess            |
+| Independently verified terminal nonpayment (`FAILED`, `CANCELLED`, `EXPIRED`, or confirmed equivalent) | Persist attempt state; **no** payment collection; never overwrite a later paid proof | `200` after commit; repeat `200` without side effects                     |
+| Authenticated/form-valid notification but provider outcome still pending                               | Persist attempt as pending/uncertain plus durable reconciliation job                 | `200` only when reliable poll/reconciliation can recover; otherwise `503` |
+| Malformed, oversized, unknown merchant / invalid reference                                             | Reject, rate limit and record redacted security fingerprint                          | `400` / `403`; do not allocate funds                                      |
+| Validation service unavailable, database commit failed                                                 | Preserve retryability; avoid acknowledging unpersisted business effects              | `503` / `500`; scheduled polling supplements provider retry               |
 
 Sandbox verification must confirm exact provider statuses, transport, retry behavior and acceptable acknowledgment body (API §12.3); this table does not assert a provider delivery SLA.
 
@@ -997,18 +999,18 @@ correction and unassigned; money and refund counters remain within Database §8.
 
 ### 12.4 Financial projection and correction contract
 
-| Situation | API projection / permitted action |
-| --- | --- |
-| First partial collection | `payment.status='pending'`, `verifiedCollectedPoisha > 0`, merchandise funded below original total; no automatic fulfillment |
-| Fully funded, all stock/coupon/risk conditions pass | `payment.status='paid'`; one guarded stock/coupon commitment, order confirmation remains separate authorized transition |
-| Distinct excess/duplicate collection | `correctionCollectedPoisha > 0`; same order/fulfillment, correction refund eligibility; no duplicate dispatch |
-| Cancelled order with only linked correction money | Financial projection can remain `paid` with `fundingContext:'correction_only'` derived when correction allocations exist without active merchandise funding; **never** reopen fulfilment (Database §13.2) |
-| Fully verified late after order cancellation | Fulfillment stays `cancelled`; newly verified amount classed correction and queued for authorized resolution |
-| Linked but disputed receipt | Reflect `unassignedCollectedPoisha` and `riskStatus='review'`; do not claim fulfilled payment |
-| Unmatched verified provider funds | Admin reconciliation only; absent from every order's `PaymentSummary` |
-| High-risk verified payment (including provider `risk_level=1`) | Keep financial collection, set fulfillment hold pending risk review; never delete receipt |
-| COD accepted without collection | Fulfillment may be `pending`/later `confirmed`; payment stays `pending` until verified collection evidence |
-| Correction-class payout completed | Increase `correctionRefundCompletedPoisha`, **not** merchandise refund progress |
+| Situation                                                      | API projection / permitted action                                                                                                                                                                         |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| First partial collection                                       | `payment.status='pending'`, `verifiedCollectedPoisha > 0`, merchandise funded below original total; no automatic fulfillment                                                                              |
+| Fully funded, all stock/coupon/risk conditions pass            | `payment.status='paid'`; one guarded stock/coupon commitment, order confirmation remains separate authorized transition                                                                                   |
+| Distinct excess/duplicate collection                           | `correctionCollectedPoisha > 0`; same order/fulfillment, correction refund eligibility; no duplicate dispatch                                                                                             |
+| Cancelled order with only linked correction money              | Financial projection can remain `paid` with `fundingContext:'correction_only'` derived when correction allocations exist without active merchandise funding; **never** reopen fulfilment (Database §13.2) |
+| Fully verified late after order cancellation                   | Fulfillment stays `cancelled`; newly verified amount classed correction and queued for authorized resolution                                                                                              |
+| Linked but disputed receipt                                    | Reflect `unassignedCollectedPoisha` and `riskStatus='review'`; do not claim fulfilled payment                                                                                                             |
+| Unmatched verified provider funds                              | Admin reconciliation only; absent from every order's `PaymentSummary`                                                                                                                                     |
+| High-risk verified payment (including provider `risk_level=1`) | Keep financial collection, set fulfillment hold pending risk review; never delete receipt                                                                                                                 |
+| COD accepted without collection                                | Fulfillment may be `pending`/later `confirmed`; payment stays `pending` until verified collection evidence                                                                                                |
+| Correction-class payout completed                              | Increase `correctionRefundCompletedPoisha`, **not** merchandise refund progress                                                                                                                           |
 
 Do **not** accept a client PATCH for `payments.paymentStatus`, `riskStatus`, collection splits, stock commitment or refund
 counters. All changes use audited specialized service actions and Database §§8.4–8.7/12. Gateway validation success does
@@ -1026,17 +1028,17 @@ Manual evidence is access-controlled and redacted in APIs.
 
 ### 13.1 Customer/guest claims and refund visibility
 
-| Method | Path | Access | Request → response | FR |
-| --- | --- | --- | --- | --- |
-| `GET` | `/me/claims` | C | `page?,pageSize?,status?,claimType? → paginated Claim[]` across owned orders | 02, 17 |
-| `GET` | `/me/refunds` | C | `page?,pageSize?,status?,classification? → paginated Refund[]` across owned orders | 02, 18 |
-| `GET` | `/orders/{orderId}/claim-eligibility` | C owner or G-scoped | `— → {items[],eligibleTypes,policyVersion,requestDeadlineAt?}` | 17, 19 |
-| `POST` | `/orders/{orderId}/claims` | C owner or G-scoped | `ClaimInput + Idempotency-Key → Claim` | 17, 19 |
-| `GET` | `/orders/{orderId}/claims` | C owner or G-scoped | `— → Claim[]` | 17, 19 |
-| `GET` | `/claims/{claimId}` | C owner or G-scoped | `— → Claim` | 17, 19 |
-| `GET` | `/orders/{orderId}/refunds` | C owner or G-scoped | `— → {refunds:Refund[],merchandiseSummary,correctionSummary}` | 18, 19 |
-| `POST` | `/orders/{orderId}/refund-requests` | C owner or G-scoped | `{basis,basisRefId?,reason} + Idempotency-Key → {requestStatus,refundGroupKey?}` | 18, 19 |
-| `GET` | `/refunds/{refundId}` | C owner or G-scoped | `— → Refund with source-masked status and payout timeline` | 18, 19 |
+| Method | Path                                  | Access              | Request → response                                                                 | FR     |
+| ------ | ------------------------------------- | ------------------- | ---------------------------------------------------------------------------------- | ------ |
+| `GET`  | `/me/claims`                          | C                   | `page?,pageSize?,status?,claimType? → paginated Claim[]` across owned orders       | 02, 17 |
+| `GET`  | `/me/refunds`                         | C                   | `page?,pageSize?,status?,classification? → paginated Refund[]` across owned orders | 02, 18 |
+| `GET`  | `/orders/{orderId}/claim-eligibility` | C owner or G-scoped | `— → {items[],eligibleTypes,policyVersion,requestDeadlineAt?}`                     | 17, 19 |
+| `POST` | `/orders/{orderId}/claims`            | C owner or G-scoped | `ClaimInput + Idempotency-Key → Claim`                                             | 17, 19 |
+| `GET`  | `/orders/{orderId}/claims`            | C owner or G-scoped | `— → Claim[]`                                                                      | 17, 19 |
+| `GET`  | `/claims/{claimId}`                   | C owner or G-scoped | `— → Claim`                                                                        | 17, 19 |
+| `GET`  | `/orders/{orderId}/refunds`           | C owner or G-scoped | `— → {refunds:Refund[],merchandiseSummary,correctionSummary}`                      | 18, 19 |
+| `POST` | `/orders/{orderId}/refund-requests`   | C owner or G-scoped | `{basis,basisRefId?,reason} + Idempotency-Key → {requestStatus,refundGroupKey?}`   | 18, 19 |
+| `GET`  | `/refunds/{refundId}`                 | C owner or G-scoped | `— → Refund with source-masked status and payout timeline`                         | 18, 19 |
 
 **History visibility:** `/me/claims` and `/me/refunds` are authenticated customer-only, sorted by created date + stable ID,
 paginated with the standard envelope. Guests must continue to use **exact order-scoped** `/orders/{orderId}/...` routes
@@ -1062,14 +1064,14 @@ return must still be inspected before refund approval.
 
 ### 13.2 Admin claim and return processing
 
-| Method | Path | Access | Request → response | FR |
-| --- | --- | --- | --- | --- |
-| `GET` | `/admin/claims` | A | `claimType?,status?,page? → Claim[]` | 32 |
-| `GET` | `/admin/claims/{claimId}` | A | `— → Claim + redacted evidence and eligibility` | 32 |
-| `POST` | `/admin/claims/{claimId}/review` | A | `{decision:enum(approve,reject),approvedItems?,reason} + Idempotency-Key → Claim` | 32 |
-| `POST` | `/admin/claims/{claimId}/receipt` | A | `{receivedItems,receiptReference,notes?} + Idempotency-Key → Claim` | 32 |
-| `POST` | `/admin/claims/{claimId}/inspection` | A | `{items:[{orderItemId,acceptedQty,resellableQty,reason}],notes?} + Idempotency-Key → Claim` | 32 |
-| `POST` | `/admin/claims/{claimId}/complete` | A | `{reason?} + Idempotency-Key → Claim` | 32 |
+| Method | Path                                 | Access | Request → response                                                                          | FR  |
+| ------ | ------------------------------------ | ------ | ------------------------------------------------------------------------------------------- | --- |
+| `GET`  | `/admin/claims`                      | A      | `claimType?,status?,page? → Claim[]`                                                        | 32  |
+| `GET`  | `/admin/claims/{claimId}`            | A      | `— → Claim + redacted evidence and eligibility`                                             | 32  |
+| `POST` | `/admin/claims/{claimId}/review`     | A      | `{decision:enum(approve,reject),approvedItems?,reason} + Idempotency-Key → Claim`           | 32  |
+| `POST` | `/admin/claims/{claimId}/receipt`    | A      | `{receivedItems,receiptReference,notes?} + Idempotency-Key → Claim`                         | 32  |
+| `POST` | `/admin/claims/{claimId}/inspection` | A      | `{items:[{orderItemId,acceptedQty,resellableQty,reason}],notes?} + Idempotency-Key → Claim` | 32  |
+| `POST` | `/admin/claims/{claimId}/complete`   | A      | `{reason?} + Idempotency-Key → Claim`                                                       | 32  |
 
 Only **physical returns** may receive `receipt` and `inspection`. Receipt/inspection requires prior approved state,
 quantities within approved claim, and audit evidence; restocking only occurs after confirmed inspection and dedicated
@@ -1078,15 +1080,15 @@ a refund basis without return receipt. Completing a claim **never** asserts a pa
 
 ### 13.3 Refund obligation and payment execution
 
-| Method | Path | Access | Request → response | FR |
-| --- | --- | --- | --- | --- |
-| `GET` | `/admin/refunds` | A | `status?,classification?,sourceCollectionId?,page? → Refund[]` | 33 |
-| `GET` | `/admin/refunds/{refundId}` | A | `— → Refund + source capacity, attempts, decisions` | 33 |
-| `POST` | `/admin/refund-groups` | A | `RefundGroupInput + Idempotency-Key → {refundGroupKey,refunds[],status}` | 33 |
-| `POST` | `/admin/refunds/{refundId}/review` | A | `{decision:enum(approve,reject),reason,method?,consentEvidenceRef?} + Idempotency-Key → Refund` | 33 |
-| `POST` | `/admin/refunds/{refundId}/payout-attempts` | A | `{method,reason} + Idempotency-Key → {attemptId,state}` | 33 |
-| `POST` | `/admin/refunds/{refundId}/reconcile` | A | `{reason} + Idempotency-Key → {status,attemptState}` | 33 |
-| `POST` | `/admin/refunds/{refundId}/manual-confirmations` | A | `{transferReference,evidenceRef,reason} + Idempotency-Key → Refund` | 33 |
+| Method | Path                                             | Access | Request → response                                                                              | FR  |
+| ------ | ------------------------------------------------ | ------ | ----------------------------------------------------------------------------------------------- | --- |
+| `GET`  | `/admin/refunds`                                 | A      | `status?,classification?,sourceCollectionId?,page? → Refund[]`                                  | 33  |
+| `GET`  | `/admin/refunds/{refundId}`                      | A      | `— → Refund + source capacity, attempts, decisions`                                             | 33  |
+| `POST` | `/admin/refund-groups`                           | A      | `RefundGroupInput + Idempotency-Key → {refundGroupKey,refunds[],status}`                        | 33  |
+| `POST` | `/admin/refunds/{refundId}/review`               | A      | `{decision:enum(approve,reject),reason,method?,consentEvidenceRef?} + Idempotency-Key → Refund` | 33  |
+| `POST` | `/admin/refunds/{refundId}/payout-attempts`      | A      | `{method,reason} + Idempotency-Key → {attemptId,state}`                                         | 33  |
+| `POST` | `/admin/refunds/{refundId}/reconcile`            | A      | `{reason} + Idempotency-Key → {status,attemptState}`                                            | 33  |
+| `POST` | `/admin/refunds/{refundId}/manual-confirmations` | A      | `{transferReference,evidenceRef,reason} + Idempotency-Key → Refund`                             | 33  |
 
 **RefundGroupInput (admin):**
 `{orderId,basis,basisRefId?,classification,requestedItems?:[{orderItemId,quantity}],deliveryChargeRequestedPoisha?,correctionCollectionId?,reason}`.
@@ -1186,23 +1188,23 @@ Every route below is **A only** and requires session, Origin, CSRF and audit for
 Database v1.0 defines CAS `revision` for every affected master; every successful edit increments it, while server-only `storeSettings.deliveryCoverageRevision` serializes delivery changes across all zones; `deliveryZones.coverageRevision` is only a per-zone sequence (API §14.1).
 No public endpoint can mutate base/sale prices, SKU identity or stock.
 
-| Method | Path | Request → response | FR |
-| --- | --- | --- | --- |
-| `GET` | `/admin/products` | `q?,status?,page? → AdminProduct[]` | 23 |
-| `POST` | `/admin/products` | `ProductCreateInput → AdminProduct` | 23 |
-| `GET` | `/admin/products/{productId}` | `— → AdminProduct` | 23 |
-| `PATCH` | `/admin/products/{productId}` | `ProductPatch + If-Match → AdminProduct` | 23 |
-| `POST` | `/admin/products/{productId}/deactivate` | `{reason} + If-Match → AdminProduct` | 23 |
-| `GET` | `/admin/categories` | `status?,page? → AdminCategory[]` | 24 |
-| `POST` | `/admin/categories` | `CategoryCreateInput → AdminCategory` | 24 |
-| `PATCH` | `/admin/categories/{categoryId}` | `CategoryPatch + If-Match → AdminCategory` | 24 |
-| `POST` | `/admin/categories/{categoryId}/deactivate` | `{reason} + If-Match → AdminCategory` | 24 |
-| `POST` | `/admin/products/{productId}/variants` | `VariantCreateInput → AdminVariant` | 23 |
-| `PATCH` | `/admin/variants/{variantId}` | `VariantPatch + If-Match → AdminVariant` | 23 |
-| `POST` | `/admin/variants/{variantId}/deactivate` | `{reason} + If-Match → AdminVariant` | 23 |
-| `GET` | `/admin/inventory` | `q?,lowStock?,page? → {variants[],physical,reserved,committed,available}` | 25 |
-| `GET` | `/admin/inventory/{variantId}/movements` | `page?,from?,to? → InventoryMovement[]` | 25 |
-| `POST` | `/admin/inventory/{variantId}/adjustments` | `{deltaPhysical,reason} + Idempotency-Key → {stock,movementId}` | 25 |
+| Method  | Path                                        | Request → response                                                        | FR  |
+| ------- | ------------------------------------------- | ------------------------------------------------------------------------- | --- |
+| `GET`   | `/admin/products`                           | `q?,status?,page? → AdminProduct[]`                                       | 23  |
+| `POST`  | `/admin/products`                           | `ProductCreateInput → AdminProduct`                                       | 23  |
+| `GET`   | `/admin/products/{productId}`               | `— → AdminProduct`                                                        | 23  |
+| `PATCH` | `/admin/products/{productId}`               | `ProductPatch + If-Match → AdminProduct`                                  | 23  |
+| `POST`  | `/admin/products/{productId}/deactivate`    | `{reason} + If-Match → AdminProduct`                                      | 23  |
+| `GET`   | `/admin/categories`                         | `status?,page? → AdminCategory[]`                                         | 24  |
+| `POST`  | `/admin/categories`                         | `CategoryCreateInput → AdminCategory`                                     | 24  |
+| `PATCH` | `/admin/categories/{categoryId}`            | `CategoryPatch + If-Match → AdminCategory`                                | 24  |
+| `POST`  | `/admin/categories/{categoryId}/deactivate` | `{reason} + If-Match → AdminCategory`                                     | 24  |
+| `POST`  | `/admin/products/{productId}/variants`      | `VariantCreateInput → AdminVariant`                                       | 23  |
+| `PATCH` | `/admin/variants/{variantId}`               | `VariantPatch + If-Match → AdminVariant`                                  | 23  |
+| `POST`  | `/admin/variants/{variantId}/deactivate`    | `{reason} + If-Match → AdminVariant`                                      | 23  |
+| `GET`   | `/admin/inventory`                          | `q?,lowStock?,page? → {variants[],physical,reserved,committed,available}` | 25  |
+| `GET`   | `/admin/inventory/{variantId}/movements`    | `page?,from?,to? → InventoryMovement[]`                                   | 25  |
+| `POST`  | `/admin/inventory/{variantId}/adjustments`  | `{deltaPhysical,reason} + Idempotency-Key → {stock,movementId}`           | 25  |
 
 **Admin projections:** [Appendix D.2](#d2-typed-request-and-response-schema-registry) owns the `AdminProduct`, `AdminVariant` and `AdminCategory` allowlists. Responses carry the strong `ETag` **header** derived from the durable revision; do not create a competing body-only `etag` authority. `AdminVariant.stock.available` is derived from physical, reserved and committed stock. Inventory movements expose `id,variantId,type,deltaPhysical,deltaReserved,deltaCommitted,occurredAt,reason,actor`, with no connection or secret metadata. Field updates use explicit allowlists and backend service ownership. The CAS source must be approved and verified (API §14.1).
 
@@ -1213,14 +1215,14 @@ prices and protected fields. Empty bounded arrays replace a list only where the 
 
 **Master record schemas:**
 
-| Input | Validated field allowlist / guard |
-| --- | --- |
-| `ProductCreateInput` | `name,slug,description,categoryIds[],images[],keywords?,featured?,status?`; activate only with valid category and purchasable variant |
-| `ProductPatch` | Same editable fields; cannot edit immutable order snapshots or internal rating counters |
-| `VariantCreateInput` | `sku,attributes,regularPricePoisha,salePricePoisha?,status?`; default SKU required for no-options product |
-| `VariantPatch` | `regularPricePoisha?,salePricePoisha:nullable<money>?,status?,lowStockThreshold:nullable<int>?`; **no stock fields** |
-| `CategoryCreateInput` | `name,slug,parentId?,status?,image?,sortOrder?`; reject cycles and invalid parents |
-| `CategoryPatch` | Editable metadata/status; reassignment required before prohibited destructive changes |
+| Input                 | Validated field allowlist / guard                                                                                                     |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `ProductCreateInput`  | `name,slug,description,categoryIds[],images[],keywords?,featured?,status?`; activate only with valid category and purchasable variant |
+| `ProductPatch`        | Same editable fields; cannot edit immutable order snapshots or internal rating counters                                               |
+| `VariantCreateInput`  | `sku,attributes,regularPricePoisha,salePricePoisha?,status?`; default SKU required for no-options product                             |
+| `VariantPatch`        | `regularPricePoisha?,salePricePoisha:nullable<money>?,status?,lowStockThreshold:nullable<int>?`; **no stock fields**                  |
+| `CategoryCreateInput` | `name,slug,parentId?,status?,image?,sortOrder?`; reject cycles and invalid parents                                                    |
+| `CategoryPatch`       | Editable metadata/status; reassignment required before prohibited destructive changes                                                 |
 
 SKU and slug normalization and uniqueness are Database §§6.1–6.3. An `adjustments` call changes only verified physical
 stock through an inventory service and appends `inventoryMovements` in one transaction; reject any adjustment leaving
@@ -1229,24 +1231,24 @@ stock through an inventory service and appends `inventoryMovements` in one trans
 
 ### 14.2 Orders, delivery, customers and review moderation (admin)
 
-| Method | Path | Request → response | FR |
-| --- | --- | --- | --- |
-| `GET` | `/admin/orders` | `orderNumber?,customerId?,fulfillmentStatus?,paymentStatus?,page? → AdminOrderSummary[]` | 26 |
-| `GET` | `/admin/orders/{orderId}` | `— → AdminOrderDetail` | 26 |
-| `POST` | `/admin/orders/{orderId}/fulfillment-transitions` | `{to,reason,dispatchReference?,carrierLabel?} + Idempotency-Key → AdminOrderDetail` | 26 |
-| `GET` | `/admin/cancellation-requests` | `status?,page? → CancellationRequest[]` | 26 |
-| `POST` | `/admin/cancellation-requests/{requestId}/decision` | `{decision:enum(approve,reject),reason,dispatchNotStartedConfirmed?} + Idempotency-Key → CancellationRequest` | 26 |
-| `GET` | `/admin/orders/{orderId}/delivery-exceptions` | `— → DeliveryException[]` | 26 |
-| `POST` | `/admin/orders/{orderId}/delivery-exceptions` | `{type,reason,contact?} + Idempotency-Key → DeliveryException` | 26 |
-| `POST` | `/admin/delivery-exceptions/{exceptionId}/resolve` | `{resolution,disposition?,contactOutcome?} + Idempotency-Key → DeliveryException` | 26 |
-| `GET` | `/admin/customers` | `q?,status?,page? → CustomerAdminSummary[]` | 27 |
-| `GET` | `/admin/customers/{customerId}` | `— → masked CustomerAdminDetail` (bounded profile/status, no unbounded histories) | 27 |
-| `GET` | `/admin/customers/{customerId}/orders` | `page?,pageSize?,status? → paginated AdminOrderSummary[]` | 27 |
-| `GET` | `/admin/customers/{customerId}/claims` | `page?,pageSize?,status? → paginated Claim[]` | 27 |
-| `GET` | `/admin/customers/{customerId}/refunds` | `page?,pageSize?,status? → paginated Refund[]` (masked payout sources) | 27 |
-| `POST` | `/admin/customers/{customerId}/status-decisions` | `{to:enum(active,suspended),reason} + Idempotency-Key → {status}` | 27 |
-| `GET` | `/admin/reviews` | `status?,productId?,page? → AdminReview[]` | 31 |
-| `POST` | `/admin/reviews/{reviewId}/moderation` | `{decision:enum(approve,reject,hide),reason} + Idempotency-Key → AdminReview` | 31 |
+| Method | Path                                                | Request → response                                                                                            | FR  |
+| ------ | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | --- |
+| `GET`  | `/admin/orders`                                     | `orderNumber?,customerId?,fulfillmentStatus?,paymentStatus?,page? → AdminOrderSummary[]`                      | 26  |
+| `GET`  | `/admin/orders/{orderId}`                           | `— → AdminOrderDetail`                                                                                        | 26  |
+| `POST` | `/admin/orders/{orderId}/fulfillment-transitions`   | `{to,reason,dispatchReference?,carrierLabel?} + Idempotency-Key → AdminOrderDetail`                           | 26  |
+| `GET`  | `/admin/cancellation-requests`                      | `status?,page? → CancellationRequest[]`                                                                       | 26  |
+| `POST` | `/admin/cancellation-requests/{requestId}/decision` | `{decision:enum(approve,reject),reason,dispatchNotStartedConfirmed?} + Idempotency-Key → CancellationRequest` | 26  |
+| `GET`  | `/admin/orders/{orderId}/delivery-exceptions`       | `— → DeliveryException[]`                                                                                     | 26  |
+| `POST` | `/admin/orders/{orderId}/delivery-exceptions`       | `{type,reason,contact?} + Idempotency-Key → DeliveryException`                                                | 26  |
+| `POST` | `/admin/delivery-exceptions/{exceptionId}/resolve`  | `{resolution,disposition?,contactOutcome?} + Idempotency-Key → DeliveryException`                             | 26  |
+| `GET`  | `/admin/customers`                                  | `q?,status?,page? → CustomerAdminSummary[]`                                                                   | 27  |
+| `GET`  | `/admin/customers/{customerId}`                     | `— → masked CustomerAdminDetail` (bounded profile/status, no unbounded histories)                             | 27  |
+| `GET`  | `/admin/customers/{customerId}/orders`              | `page?,pageSize?,status? → paginated AdminOrderSummary[]`                                                     | 27  |
+| `GET`  | `/admin/customers/{customerId}/claims`              | `page?,pageSize?,status? → paginated Claim[]`                                                                 | 27  |
+| `GET`  | `/admin/customers/{customerId}/refunds`             | `page?,pageSize?,status? → paginated Refund[]` (masked payout sources)                                        | 27  |
+| `POST` | `/admin/customers/{customerId}/status-decisions`    | `{to:enum(active,suspended),reason} + Idempotency-Key → {status}`                                             | 27  |
+| `GET`  | `/admin/reviews`                                    | `status?,productId?,page? → AdminReview[]`                                                                    | 31  |
+| `POST` | `/admin/reviews/{reviewId}/moderation`              | `{decision:enum(approve,reject,hide),reason} + Idempotency-Key → AdminReview`                                 | 31  |
 
 **Fulfillment transition rules:** `pending → confirmed → processing → shipped → delivered`, with eligible early `→
 cancelled` after admin-approved cancellation. A COD acceptance stays `pending` until admin confirmation; unpaid COD can be
@@ -1262,29 +1264,29 @@ rating or unfairly suppress valid negative feedback. Always audit decisions/reas
 
 ### 14.3 Delivery, promotions, content and settings
 
-| Method | Path | Request → response | FR |
-| --- | --- | --- | --- |
-| `GET` | `/admin/delivery/zones` | `— → DeliveryZone[]` | 28 |
-| `POST` | `/admin/delivery/zones` | `DeliveryZoneInput → DeliveryZone` | 28 |
-| `PATCH` | `/admin/delivery/zones/{zoneId}` | `DeliveryZonePatch + If-Match → DeliveryZone` | 28 |
-| `GET` | `/admin/delivery/charges` | `zoneId?,status? → DeliveryChargeRule[]` | 28 |
-| `POST` | `/admin/delivery/charges` | `DeliveryChargeInput → DeliveryChargeRule` | 28 |
-| `POST` | `/admin/delivery/charges/{chargeId}/activate` | `{reason,effectiveAt?} + If-Match + Idempotency-Key → DeliveryChargeRule` | 28 |
-| `POST` | `/admin/delivery/charges/{chargeId}/supersede` | `{replacement:DeliveryChargeInput,effectiveAt,reason} + If-Match + Idempotency-Key → {previous:DeliveryChargeRule,replacement:DeliveryChargeRule}` | 28 |
-| `POST` | `/admin/delivery/charges/{chargeId}/deactivate` | `{effectiveAt,reason} + If-Match + Idempotency-Key → DeliveryChargeRule` | 28 |
-| `GET` | `/admin/coupons` | `status?,page? → CouponAdmin[]` | 30 |
-| `POST` | `/admin/coupons` | `CouponInput → CouponAdmin` | 30 |
-| `PATCH` | `/admin/coupons/{couponId}` | `CouponPatch + If-Match → CouponAdmin` | 30 |
-| `POST` | `/admin/coupons/{couponId}/deactivate` | `{reason} + If-Match → CouponAdmin` | 30 |
-| `GET` | `/admin/coupons/{couponId}/redemptions` | `page? → CouponRedemptionSummary[]` | 30 |
-| `GET` | `/admin/settings` | `— → StoreSettings (allowlisted)` | 34 |
-| `PATCH` | `/admin/settings` | `SettingsPatch + If-Match → StoreSettings` | 34 |
-| `GET` | `/admin/settings/policies` | `type?,status?,page?,pageSize? → paginated PolicyDocumentSummary[]` | 34 |
-| `POST` | `/admin/settings/policies` | `PolicyDraftInput → {policyId,version,status:'draft',revision}` | 34 |
-| `GET` | `/admin/settings/policies/{policyId}` | `— → PolicyDocument` (approved admin content, not public draft) | 34 |
-| `PATCH` | `/admin/settings/policies/{policyId}` | `PolicyDraftPatch + If-Match → PolicyDocument` (draft only) | 34 |
-| `POST` | `/admin/settings/policies/{policyId}/approve` | `{approvalEvidenceRef,reason} + If-Match + Idempotency-Key → PolicyDocument` | 34 |
-| `POST` | `/admin/settings/policies/{policyId}/publish` | `{effectiveAt,reason} + If-Match + Idempotency-Key → {version,effectiveAt,status:enum(scheduled,published)}` | 34 |
+| Method  | Path                                            | Request → response                                                                                                                                 | FR  |
+| ------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
+| `GET`   | `/admin/delivery/zones`                         | `— → DeliveryZone[]`                                                                                                                               | 28  |
+| `POST`  | `/admin/delivery/zones`                         | `DeliveryZoneInput → DeliveryZone`                                                                                                                 | 28  |
+| `PATCH` | `/admin/delivery/zones/{zoneId}`                | `DeliveryZonePatch + If-Match → DeliveryZone`                                                                                                      | 28  |
+| `GET`   | `/admin/delivery/charges`                       | `zoneId?,status? → DeliveryChargeRule[]`                                                                                                           | 28  |
+| `POST`  | `/admin/delivery/charges`                       | `DeliveryChargeInput → DeliveryChargeRule`                                                                                                         | 28  |
+| `POST`  | `/admin/delivery/charges/{chargeId}/activate`   | `{reason,effectiveAt?} + If-Match + Idempotency-Key → DeliveryChargeRule`                                                                          | 28  |
+| `POST`  | `/admin/delivery/charges/{chargeId}/supersede`  | `{replacement:DeliveryChargeInput,effectiveAt,reason} + If-Match + Idempotency-Key → {previous:DeliveryChargeRule,replacement:DeliveryChargeRule}` | 28  |
+| `POST`  | `/admin/delivery/charges/{chargeId}/deactivate` | `{effectiveAt,reason} + If-Match + Idempotency-Key → DeliveryChargeRule`                                                                           | 28  |
+| `GET`   | `/admin/coupons`                                | `status?,page? → CouponAdmin[]`                                                                                                                    | 30  |
+| `POST`  | `/admin/coupons`                                | `CouponInput → CouponAdmin`                                                                                                                        | 30  |
+| `PATCH` | `/admin/coupons/{couponId}`                     | `CouponPatch + If-Match → CouponAdmin`                                                                                                             | 30  |
+| `POST`  | `/admin/coupons/{couponId}/deactivate`          | `{reason} + If-Match → CouponAdmin`                                                                                                                | 30  |
+| `GET`   | `/admin/coupons/{couponId}/redemptions`         | `page? → CouponRedemptionSummary[]`                                                                                                                | 30  |
+| `GET`   | `/admin/settings`                               | `— → StoreSettings (allowlisted)`                                                                                                                  | 34  |
+| `PATCH` | `/admin/settings`                               | `SettingsPatch + If-Match → StoreSettings`                                                                                                         | 34  |
+| `GET`   | `/admin/settings/policies`                      | `type?,status?,page?,pageSize? → paginated PolicyDocumentSummary[]`                                                                                | 34  |
+| `POST`  | `/admin/settings/policies`                      | `PolicyDraftInput → {policyId,version,status:'draft',revision}`                                                                                    | 34  |
+| `GET`   | `/admin/settings/policies/{policyId}`           | `— → PolicyDocument` (approved admin content, not public draft)                                                                                    | 34  |
+| `PATCH` | `/admin/settings/policies/{policyId}`           | `PolicyDraftPatch + If-Match → PolicyDocument` (draft only)                                                                                        | 34  |
+| `POST`  | `/admin/settings/policies/{policyId}/approve`   | `{approvalEvidenceRef,reason} + If-Match + Idempotency-Key → PolicyDocument`                                                                       | 34  |
+| `POST`  | `/admin/settings/policies/{policyId}/publish`   | `{effectiveAt,reason} + If-Match + Idempotency-Key → {version,effectiveAt,status:enum(scheduled,published)}`                                       | 34  |
 
 **Delivery inputs and versioned administration:**
 
@@ -1317,20 +1319,20 @@ deadline.
 
 ### 14.4 Dashboard, complaints and audit
 
-| Method | Path | Access | Request → response | FR |
-| --- | --- | --- | --- | --- |
-| `GET` | `/admin/dashboard` | A | `from?,to?,asOf? → DashboardMetrics` | 22 |
-| `GET` | `/admin/reports/sales` | A | `from,to,groupBy? → SalesReport` | 22 |
-| `GET` | `/admin/reports/collections` | A | `from,to,classification? → CollectionReport` | 22, 29 |
-| `GET` | `/admin/reports/refunds` | A | `from,to,classification? → RefundReport` | 22, 33 |
-| `POST` | `/complaints` | Public+CSRF or C or G | `ComplaintInput → {reference,status:'open'}` | 20 / PRD §3 |
-| `GET` | `/me/complaints` | C | `page? → Complaint[]` (own) | 20 |
-| `GET` | `/orders/{orderId}/complaints` | C owner or G-scoped | `— → Complaint[]` (exact own order) | 19, 20 |
-| `GET` | `/admin/complaints` | A | `status?,page? → Complaint[]` | 20, 26 |
-| `POST` | `/admin/complaints/{complaintId}/resolve` | A | `{status,resolution,contactOutcome?} + Idempotency-Key → Complaint` | 20, 26 |
-| `GET` | `/admin/audit-logs` | A | `targetType?,targetId?,from?,to?,page? → AdminAudit[]` | PRD §10 |
-| `GET` | `/admin/notifications` | A | `status?,eventType?,page? → NotificationSummary[]` | 20 |
-| `POST` | `/admin/notifications/{notificationId}/retry` | A | `{reason} + Idempotency-Key → {status}` (send intent only) | 20 |
+| Method | Path                                          | Access                | Request → response                                                  | FR          |
+| ------ | --------------------------------------------- | --------------------- | ------------------------------------------------------------------- | ----------- |
+| `GET`  | `/admin/dashboard`                            | A                     | `from?,to?,asOf? → DashboardMetrics`                                | 22          |
+| `GET`  | `/admin/reports/sales`                        | A                     | `from,to,groupBy? → SalesReport`                                    | 22          |
+| `GET`  | `/admin/reports/collections`                  | A                     | `from,to,classification? → CollectionReport`                        | 22, 29      |
+| `GET`  | `/admin/reports/refunds`                      | A                     | `from,to,classification? → RefundReport`                            | 22, 33      |
+| `POST` | `/complaints`                                 | Public+CSRF or C or G | `ComplaintInput → {reference,status:'open'}`                        | 20 / PRD §3 |
+| `GET`  | `/me/complaints`                              | C                     | `page? → Complaint[]` (own)                                         | 20          |
+| `GET`  | `/orders/{orderId}/complaints`                | C owner or G-scoped   | `— → Complaint[]` (exact own order)                                 | 19, 20      |
+| `GET`  | `/admin/complaints`                           | A                     | `status?,page? → Complaint[]`                                       | 20, 26      |
+| `POST` | `/admin/complaints/{complaintId}/resolve`     | A                     | `{status,resolution,contactOutcome?} + Idempotency-Key → Complaint` | 20, 26      |
+| `GET`  | `/admin/audit-logs`                           | A                     | `targetType?,targetId?,from?,to?,page? → AdminAudit[]`              | PRD §10     |
+| `GET`  | `/admin/notifications`                        | A                     | `status?,eventType?,page? → NotificationSummary[]`                  | 20          |
+| `POST` | `/admin/notifications/{notificationId}/retry` | A                     | `{reason} + Idempotency-Key → {status}` (send intent only)          | 20          |
 
 **Complaint access:** anonymous contact submissions require `contactName` and `contactEmail` and may omit `orderId` and must be rate-limited/spam-guarded; they receive
 a safe reference, **not** a public arbitrary-reference lookup. To link an order, the caller must have C/G ownership of that
@@ -1339,20 +1341,20 @@ before launch.
 
 **Reporting field definitions (`DashboardMetrics` and export DTOs):**
 
-| Metric | Calculation & time basis |
-| --- | --- |
-| `grossMerchandiseValuePoisha` | Purchase-time regular pre-discount item values for **accepted non-cancelled** orders by `placedAt` in range |
-| `productDiscountPoisha`, `couponDiscountPoisha` | Original price allocations, reported separately by order placement |
-| `paidCollectionsPoisha` | Sum of unique verified linked collection receipts **by collectedAt**; separate overpayments/corrections |
-| `unattributedProviderCashPoisha` | Verified **unmatched** provider intake, admin reconciliation only, never a customer's payment |
-| `completedMerchandiseRefundsPoisha` | Verified merchandise-class payout completions **by completedAt** |
-| `completedCorrectionRefundsPoisha` | Verified correction-class payout completions **by completedAt** |
-| `netLinkedCashFlowPoisha` | `SignedMoneyPoisha`: verified **linked** receipts by `collectedAt` minus completed merchandise/correction payouts by `completedAt` within `[from,to)`; signed cash movement, **not revenue** |
-| `netAcceptedOrderSalesPoisha` | Accepted non-cancelled original orders by `placedAt`: sale subtotal − coupon discounts + delivery charge (before returns); **order sales indicator**, not recognized accounting revenue |
-| `outstandingCodPoisha` | Verified still-uncollected COD balance **as of** snapshot cutoff |
-| `pendingRefundLiabilityPoisha` | Active reserved (held) refund amounts, **not** already completed payouts |
-| `unassignedLinkedCashPoisha` | Linked but unresolved allocations separately; not both cash flow and new sale |
-| `lowStockVariants` | Available count below approved threshold at report cutoff |
+| Metric                                          | Calculation & time basis                                                                                                                                                                     |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `grossMerchandiseValuePoisha`                   | Purchase-time regular pre-discount item values for **accepted non-cancelled** orders by `placedAt` in range                                                                                  |
+| `productDiscountPoisha`, `couponDiscountPoisha` | Original price allocations, reported separately by order placement                                                                                                                           |
+| `paidCollectionsPoisha`                         | Sum of unique verified linked collection receipts **by collectedAt**; separate overpayments/corrections                                                                                      |
+| `unattributedProviderCashPoisha`                | Verified **unmatched** provider intake, admin reconciliation only, never a customer's payment                                                                                                |
+| `completedMerchandiseRefundsPoisha`             | Verified merchandise-class payout completions **by completedAt**                                                                                                                             |
+| `completedCorrectionRefundsPoisha`              | Verified correction-class payout completions **by completedAt**                                                                                                                              |
+| `netLinkedCashFlowPoisha`                       | `SignedMoneyPoisha`: verified **linked** receipts by `collectedAt` minus completed merchandise/correction payouts by `completedAt` within `[from,to)`; signed cash movement, **not revenue** |
+| `netAcceptedOrderSalesPoisha`                   | Accepted non-cancelled original orders by `placedAt`: sale subtotal − coupon discounts + delivery charge (before returns); **order sales indicator**, not recognized accounting revenue      |
+| `outstandingCodPoisha`                          | Verified still-uncollected COD balance **as of** snapshot cutoff                                                                                                                             |
+| `pendingRefundLiabilityPoisha`                  | Active reserved (held) refund amounts, **not** already completed payouts                                                                                                                     |
+| `unassignedLinkedCashPoisha`                    | Linked but unresolved allocations separately; not both cash flow and new sale                                                                                                                |
+| `lowStockVariants`                              | Available count below approved threshold at report cutoff                                                                                                                                    |
 
 **Dashboard shape/time basis:** `DashboardMetrics` returns `from,to,asOf,timezone:'Asia/Dhaka',dateBasis` and the
 canonical fields in Appendix D.2. `counts` contains nonnegative integers `activeProducts,registeredCustomers,totalOrders,
@@ -1374,17 +1376,17 @@ Do not label `netLinkedCashFlowPoisha` as revenue or profit; report unmatched in
 
 ### 15.1 Operation key ownership
 
-| Operation | Idempotency scope / source | Required replay behavior |
-| --- | --- | --- |
-| Checkout submission | `(scopeType,scopeKeyHash,idempotencyKeyHash)` in `checkoutIntents` | Same fingerprint → same order; changed → conflict; retired → existing/retired, **never new order** |
-| Payment retry initiation | Order, principal scope and idempotency key; persistent attempt lineage | Replay same attempt; uncertain earlier attempt reconciled before new charge |
-| Verified IPN/collection | Provider + merchant account + independently verified unique receipt reference | Repeated callback causes zero extra money/stock/coupon effects |
-| Inventory adjustments / stock movement | Variant, movement type, stable operation key | Movement and counter update once, in one transaction |
-| Coupon hold/commit/release | Order, coupon, generation, guarded state | No duplicate quota updates; no second coupon on same order |
-| Claim/cancel/fulfillment | Resource, actor decision, operation key | Exact transition at most once; stale transition `409` |
-| Refund obligation/group | Order + source-specific `decisionKey` / group key | Reserve amounts once; separate disjoint source-funded obligations |
-| Refund payout attempt | Existing obligation + unique persisted gateway merchant `refund_trans_id` | Unknown outcome reconciled; do not issue a fresh payout merely on timeout |
-| Notification delivery intent | `notifications.eventKey` | Duplicate business event produces one durable notification intent |
+| Operation                              | Idempotency scope / source                                                    | Required replay behavior                                                                           |
+| -------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Checkout submission                    | `(scopeType,scopeKeyHash,idempotencyKeyHash)` in `checkoutIntents`            | Same fingerprint → same order; changed → conflict; retired → existing/retired, **never new order** |
+| Payment retry initiation               | Order, principal scope and idempotency key; persistent attempt lineage        | Replay same attempt; uncertain earlier attempt reconciled before new charge                        |
+| Verified IPN/collection                | Provider + merchant account + independently verified unique receipt reference | Repeated callback causes zero extra money/stock/coupon effects                                     |
+| Inventory adjustments / stock movement | Variant, movement type, stable operation key                                  | Movement and counter update once, in one transaction                                               |
+| Coupon hold/commit/release             | Order, coupon, generation, guarded state                                      | No duplicate quota updates; no second coupon on same order                                         |
+| Claim/cancel/fulfillment               | Resource, actor decision, operation key                                       | Exact transition at most once; stale transition `409`                                              |
+| Refund obligation/group                | Order + source-specific `decisionKey` / group key                             | Reserve amounts once; separate disjoint source-funded obligations                                  |
+| Refund payout attempt                  | Existing obligation + unique persisted gateway merchant `refund_trans_id`     | Unknown outcome reconciled; do not issue a fresh payout merely on timeout                          |
+| Notification delivery intent           | `notifications.eventKey`                                                      | Duplicate business event produces one durable notification intent                                  |
 
 `Idempotency-Key` is a client-generated opaque, bounded random key; hash before durable comparison where required. Do not
 imply client requests with unique keys are automatically safe when **business identity** differs; enforce database
@@ -1410,17 +1412,17 @@ This is the generic entry-point decision. Provider payouts additionally require 
 
 ### 15.3 Transaction boundaries
 
-| Transaction | Atomic responsibilities |
-| --- | --- |
-| `submitCheckout` | Intent/order identity, immutable snapshots, line balances, COD commitments or online holds, coupon capacity, notification intent when applicable |
-| `commitVerifiedFunding` | Independently verified receipt link, allocation projection, valid risk/stock/coupon transitions and once-only effects |
-| `expireHold` | Reservation state, stock counters, coupon hold and movement; do not release if active paid/uncertain attempt retains legitimate allocation |
-| `cancelBeforeDispatch` | Recheck eligibility/dispatch, status, release committed allocation and qualifying coupon redemption, refund eligibility/outbox |
-| `dispatch` | Guard fulfillment status, stock physical & committed delta, movement, audit; never twice |
-| `claimSpecificOrdinals` | Validate remaining unit entitlement, protect ordinals and create one claim; conflicts reject rather than overclaim |
-| `approveRefund` | Exact source class capacity, order/class cap, unit ordinals and delivery entitlement; create source-funded reserved obligation |
-| `confirmRefundPayout` | Independent payout evidence, refund attempt status and source/order/unit balances; never infer from gateway initiation |
-| `linkProviderReceipt` | Independently verified intake ownership + one linked collection + matching-status update/audit |
+| Transaction             | Atomic responsibilities                                                                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `submitCheckout`        | Intent/order identity, immutable snapshots, line balances, COD commitments or online holds, coupon capacity, notification intent when applicable |
+| `commitVerifiedFunding` | Independently verified receipt link, allocation projection, valid risk/stock/coupon transitions and once-only effects                            |
+| `expireHold`            | Reservation state, stock counters, coupon hold and movement; do not release if active paid/uncertain attempt retains legitimate allocation       |
+| `cancelBeforeDispatch`  | Recheck eligibility/dispatch, status, release committed allocation and qualifying coupon redemption, refund eligibility/outbox                   |
+| `dispatch`              | Guard fulfillment status, stock physical & committed delta, movement, audit; never twice                                                         |
+| `claimSpecificOrdinals` | Validate remaining unit entitlement, protect ordinals and create one claim; conflicts reject rather than overclaim                               |
+| `approveRefund`         | Exact source class capacity, order/class cap, unit ordinals and delivery entitlement; create source-funded reserved obligation                   |
+| `confirmRefundPayout`   | Independent payout evidence, refund attempt status and source/order/unit balances; never infer from gateway initiation                           |
+| `linkProviderReceipt`   | Independently verified intake ownership + one linked collection + matching-status update/audit                                                   |
 
 External gateway/refund/media/email calls run **outside** database transactions. Financial operations do not rely on TTL
 deletions. Use transaction-capable MongoDB replica sets as required by Architecture/Database, guarded conditional writes,
@@ -1428,20 +1430,20 @@ unique references and explicit compensating recovery paths.
 
 ### 15.4 Operational failure matrix
 
-| Trigger | API-visible result | Safe continuation |
-| --- | --- | --- |
-| Double checkout click | Identical order key and resource | Replay same order; reject different payload |
-| Last SKU sold concurrently | One valid allocation; other returns `409 OUT_OF_STOCK` | Change quantity/variant; no negative stock |
-| Two customers exhaust coupon | At most available quota allocated | `409 COUPON_UNAVAILABLE`, no double redemption |
-| Payment callback missing | Attempt `pending/uncertain`; user sees no false success | Background status verification, authorized admin reconciliation |
-| Old failure after verified paid | Verified collection persists; stale failure ignored | Audit inconsistent signals, no reversal of receipt |
-| Paid after expired hold | Receipt recorded; fulfillment held until stock **and coupon** reacquisition plus risk clearance | Authorized allocation or refund resolution |
-| Paid after cancelled order | Cancelled stays closed; collection class correction | Payment-correction refund, no new stock/coupon |
-| Duplicate/excess money | Each independently verified collection logged, no second order | Source-specific correction allocation/refund |
-| Provider refund timeout | Refund `processing`, attempt `uncertain`, balance reserved | Query refund status before safe retry |
-| COD not collected | Payment `pending`, collectible outstanding | Admin verified collection only |
-| Notification failure | Business transaction remains committed | Retry event delivery from durable queue |
-| Customer session suspended mid-request | Reject authorization or recheck at commit boundary | Do not complete unauthorized mutation |
+| Trigger                                | API-visible result                                                                              | Safe continuation                                               |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Double checkout click                  | Identical order key and resource                                                                | Replay same order; reject different payload                     |
+| Last SKU sold concurrently             | One valid allocation; other returns `409 OUT_OF_STOCK`                                          | Change quantity/variant; no negative stock                      |
+| Two customers exhaust coupon           | At most available quota allocated                                                               | `409 COUPON_UNAVAILABLE`, no double redemption                  |
+| Payment callback missing               | Attempt `pending/uncertain`; user sees no false success                                         | Background status verification, authorized admin reconciliation |
+| Old failure after verified paid        | Verified collection persists; stale failure ignored                                             | Audit inconsistent signals, no reversal of receipt              |
+| Paid after expired hold                | Receipt recorded; fulfillment held until stock **and coupon** reacquisition plus risk clearance | Authorized allocation or refund resolution                      |
+| Paid after cancelled order             | Cancelled stays closed; collection class correction                                             | Payment-correction refund, no new stock/coupon                  |
+| Duplicate/excess money                 | Each independently verified collection logged, no second order                                  | Source-specific correction allocation/refund                    |
+| Provider refund timeout                | Refund `processing`, attempt `uncertain`, balance reserved                                      | Query refund status before safe retry                           |
+| COD not collected                      | Payment `pending`, collectible outstanding                                                      | Admin verified collection only                                  |
+| Notification failure                   | Business transaction remains committed                                                          | Retry event delivery from durable queue                         |
+| Customer session suspended mid-request | Reject authorization or recheck at commit boundary                                              | Do not complete unauthorized mutation                           |
 
 ## 16. External integrations & notifications
 
@@ -1457,11 +1459,11 @@ Provider reference: [SSLCOMMERZ developer documentation v4](https://developer.ss
 
 ### 16.2 Media upload contract
 
-| Method | Path | Access | Request → response |
-| --- | --- | --- | --- |
-| `POST` | `/admin/media/uploads` | A | Approved `multipart/form-data` product/store asset → `{assetId,publicId,url,alt?,mimeType,size}` |
-| `POST` | `/orders/{orderId}/claims/evidence-uploads` | C owner or G-scoped to that exact order | `multipart/form-data {file,claimType,orderItemIds[]}` → `{assetId,orderId,status:'private',expiresAt?}` |
-| `DELETE` | `/admin/media/{assetId}` | A | Safe deletion only if unreferenced/policy permits → `204` |
+| Method   | Path                                        | Access                                  | Request → response                                                                                      |
+| -------- | ------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `POST`   | `/admin/media/uploads`                      | A                                       | Approved `multipart/form-data` product/store asset → `{assetId,publicId,url,alt?,mimeType,size}`        |
+| `POST`   | `/orders/{orderId}/claims/evidence-uploads` | C owner or G-scoped to that exact order | `multipart/form-data {file,claimType,orderItemIds[]}` → `{assetId,orderId,status:'private',expiresAt?}` |
+| `DELETE` | `/admin/media/{assetId}`                    | A                                       | Safe deletion only if unreferenced/policy permits → `204`                                               |
 
 Validate file type, extension, true content type, maximum size, malware/security scanning policy and server-generated object identifiers; never accept arbitrary external URLs as approved Cloudinary files.
 Claim uploads require the **path `orderId`** to match current C owner or G-scoped session, validated `claimType` and `orderItemIds[]` belonging to that order; the upload is a temporary, expiring reference that can only be attached to that same order’s eligible claim.
@@ -1498,10 +1500,10 @@ No marketing consent workflows are implied by transactional messaging.
 
 ### 16.4 Health endpoints
 
-| Method | Path | Access | Behavior |
-| --- | --- | --- | --- |
-| `GET` | `/health/live` | Internal/operational | `200` when server process responds; no sensitive dependency details |
-| `GET` | `/health/ready` | Restricted monitor | `200` only when essential services ready, otherwise `503`; no credentials, topology or DB data in body |
+| Method | Path            | Access               | Behavior                                                                                               |
+| ------ | --------------- | -------------------- | ------------------------------------------------------------------------------------------------------ |
+| `GET`  | `/health/live`  | Internal/operational | `200` when server process responds; no sensitive dependency details                                    |
+| `GET`  | `/health/ready` | Restricted monitor   | `200` only when essential services ready, otherwise `503`; no credentials, topology or DB data in body |
 
 Implemented operational probe contract (P03-003): liveness returns `{data:{status:"live"},meta:{requestId}}`. Readiness requires `Authorization: Bearer <HEALTH_MONITOR_TOKEN>` with the separately configured 32-byte hex monitor credential; session cookies, query parameters and user-supplied correlation IDs do not authenticate it. Missing/invalid monitor proof returns `401 AUTH_REQUIRED` with `WWW-Authenticate: Bearer`. Authorized readiness returns `{data:{status:"ready"},meta:{requestId}}` only while serving with a connected MongoDB and successful bounded ping; otherwise `503 SERVICE_UNAVAILABLE` with a generic message. No readiness response reveals which dependency, topology, URI or secret failed. Both endpoints use `no-store`. This credential authorizes only the operational probe and grants no customer/admin/business access. Protect operational ingress and TLS under Operations; credential provisioning/rotation is an operator responsibility.
 
@@ -1509,21 +1511,21 @@ Health endpoints may be served outside `/api/v1` by infrastructure **only if con
 
 ## 17. Security, performance & compatibility
 
-| Area | Enforced API contract |
-| --- | --- |
-| HTTPS and cookie isolation | TLS, host-only hashed opaque sessions, dedicated customer/admin/guest cookies and rotation |
-| Cross-origin requests | Exact approved credentialed origins, `Vary: Origin` where appropriate, no wildcard CORS |
-| CSRF | Non-cacheable pre-auth context token and session-bound custom header on all browser mutations; approved Origin |
-| Role and ownership | Re-authorize inside every protected service, including nested order item/claim/refund paths |
-| Throttling | Abuse protection on login, recovery, guest proof, complaint, checkout, payments, sensitive admin operations |
-| Sensitive payloads | No raw provider transactions, complete financial instruments, secret tokens or unrestricted PII in client JSON/logs |
-| File uploads | Size/type/access restrictions, private claim attachments, safe cleanup and access logs |
-| Request bounds | Limit body size, field lengths, page size, search complexity and timeouts; protect provider callbacks separately |
-| Provider security | Server-only credential validation, independent verification, constant operation identity and reconciliation |
-| Observability | Request ID, event/attempt IDs and safe redacted logs; audit admin financial and stock decisions |
-| Cache | Private endpoints and auth/bootstrap `no-store`; public catalog cache invalidated on approved changes |
-| Performance | Indexed bounded queries, stable sorting, no N+1 sensitive fanout, measured budgets from PRD NFRs |
-| API change | OpenAPI/typed contract parity, backwards-compatible additive evolution in `/api/v1`, planned deprecation only |
+| Area                       | Enforced API contract                                                                                               |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| HTTPS and cookie isolation | TLS, host-only hashed opaque sessions, dedicated customer/admin/guest cookies and rotation                          |
+| Cross-origin requests      | Exact approved credentialed origins, `Vary: Origin` where appropriate, no wildcard CORS                             |
+| CSRF                       | Non-cacheable pre-auth context token and session-bound custom header on all browser mutations; approved Origin      |
+| Role and ownership         | Re-authorize inside every protected service, including nested order item/claim/refund paths                         |
+| Throttling                 | Abuse protection on login, recovery, guest proof, complaint, checkout, payments, sensitive admin operations         |
+| Sensitive payloads         | No raw provider transactions, complete financial instruments, secret tokens or unrestricted PII in client JSON/logs |
+| File uploads               | Size/type/access restrictions, private claim attachments, safe cleanup and access logs                              |
+| Request bounds             | Limit body size, field lengths, page size, search complexity and timeouts; protect provider callbacks separately    |
+| Provider security          | Server-only credential validation, independent verification, constant operation identity and reconciliation         |
+| Observability              | Request ID, event/attempt IDs and safe redacted logs; audit admin financial and stock decisions                     |
+| Cache                      | Private endpoints and auth/bootstrap `no-store`; public catalog cache invalidated on approved changes               |
+| Performance                | Indexed bounded queries, stable sorting, no N+1 sensitive fanout, measured budgets from PRD NFRs                    |
+| API change                 | OpenAPI/typed contract parity, backwards-compatible additive evolution in `/api/v1`, planned deprecation only       |
 
 **Concrete targets:** PRD §12 performance/accessibility/reliability requirements govern acceptance. Do not invent new
 response-time or uptime guarantees without approval. Error fallback for slow internet must preserve form intent and never
@@ -1534,43 +1536,43 @@ arbitrary redirect URL from request input.
 
 ### 18.1 Contract acceptance matrix
 
-| Verification layer | Required evidence |
-| --- | --- |
-| Static quality | All route names unique by method/path; ToC links, tables, Mermaid syntax and DTO references valid |
-| Request/response contract | Runtime schema validation, representative valid/error payloads, integer poisha, status enum parity |
-| Auth/CSRF/ownership | Pre-auth token, login rotation, session separation, guest scope, cross-order denial, Origin rejection |
-| Catalog and cart | Visibility/indexed filters, SKU and variant mapping, cart merge, no phantom reservation |
-| Checkout | Correct server totals, 15-min holds, COD commitment, same-key replay and changed-key conflict |
-| Financial scenarios | Late/duplicate/partial/excess/unmatched provider collections, risks, COD evidence and reconciliation |
-| Refund and claims | Physical vs shortage paths, ordinal cap, original snapshots, per-collection funds, uncertain payout |
-| Admin actions | Revision CAS, state transition matrix, stock movement, policy version, audit event integrity |
-| External integrations | SSLCOMMERZ merchant/sandbox evidence, Cloudinary media access and notification retry/duplicate tests |
-| Security/operations | Rate limits, bounded search/body, private cache headers, redacted logs, recovery paths |
-| Source alignment | PRD FR-01–FR-34, Architecture §§8–11, Database §§5–14 and phase/task IDs mapped |
+| Verification layer        | Required evidence                                                                                     |
+| ------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Static quality            | All route names unique by method/path; ToC links, tables, Mermaid syntax and DTO references valid     |
+| Request/response contract | Runtime schema validation, representative valid/error payloads, integer poisha, status enum parity    |
+| Auth/CSRF/ownership       | Pre-auth token, login rotation, session separation, guest scope, cross-order denial, Origin rejection |
+| Catalog and cart          | Visibility/indexed filters, SKU and variant mapping, cart merge, no phantom reservation               |
+| Checkout                  | Correct server totals, 15-min holds, COD commitment, same-key replay and changed-key conflict         |
+| Financial scenarios       | Late/duplicate/partial/excess/unmatched provider collections, risks, COD evidence and reconciliation  |
+| Refund and claims         | Physical vs shortage paths, ordinal cap, original snapshots, per-collection funds, uncertain payout   |
+| Admin actions             | Revision CAS, state transition matrix, stock movement, policy version, audit event integrity          |
+| External integrations     | SSLCOMMERZ merchant/sandbox evidence, Cloudinary media access and notification retry/duplicate tests  |
+| Security/operations       | Rate limits, bounded search/body, private cache headers, redacted logs, recovery paths                |
+| Source alignment          | PRD FR-01–FR-34, Architecture §§8–11, Database §§5–14 and phase/task IDs mapped                       |
 
 ### 18.2 Functional requirement traceability
 
-| PRD requirement(s) | API section(s) |
-| --- | --- |
-| FR-01, FR-02, FR-21 | §9 auth, customer, admin session |
-| FR-03–FR-06 | §10.1 public home/catalog/variants |
-| FR-07–FR-08 | §10.2 cart/wishlist |
-| FR-09, FR-10 | §10.3; §14.3 coupon and §14.2 moderation |
-| FR-11 | §11 checkout |
-| FR-12 | §12 hosted methods, retry, IPN, COD, risk |
-| FR-13 | §§11–12, 14.1, 15 stock guards |
-| FR-14–FR-16 | §11 orders, cancellation, delivery; §14.2 admin |
-| FR-17–FR-18 | §13 claims/refunds |
-| FR-19 | §9.2 guest challenge/session; scoped §§11–13 |
-| FR-20 | §§14.4, 16 notifications, contact/complaints |
-| FR-22 | §14.4 dashboard, reports |
-| FR-23–FR-25 | §14.1 product/category/inventory administration |
-| FR-26–FR-27 | §14.2 orders/customers |
-| FR-28 | §14.3 delivery settings |
-| FR-29 | §12 admin payments/reconciliation |
-| FR-30–FR-31 | §§14.2–14.3 promotions/moderation |
-| FR-32–FR-33 | §13 admin claims/refunds |
-| FR-34 | §14.3 settings/policy versioning |
+| PRD requirement(s)  | API section(s)                                  |
+| ------------------- | ----------------------------------------------- |
+| FR-01, FR-02, FR-21 | §9 auth, customer, admin session                |
+| FR-03–FR-06         | §10.1 public home/catalog/variants              |
+| FR-07–FR-08         | §10.2 cart/wishlist                             |
+| FR-09, FR-10        | §10.3; §14.3 coupon and §14.2 moderation        |
+| FR-11               | §11 checkout                                    |
+| FR-12               | §12 hosted methods, retry, IPN, COD, risk       |
+| FR-13               | §§11–12, 14.1, 15 stock guards                  |
+| FR-14–FR-16         | §11 orders, cancellation, delivery; §14.2 admin |
+| FR-17–FR-18         | §13 claims/refunds                              |
+| FR-19               | §9.2 guest challenge/session; scoped §§11–13    |
+| FR-20               | §§14.4, 16 notifications, contact/complaints    |
+| FR-22               | §14.4 dashboard, reports                        |
+| FR-23–FR-25         | §14.1 product/category/inventory administration |
+| FR-26–FR-27         | §14.2 orders/customers                          |
+| FR-28               | §14.3 delivery settings                         |
+| FR-29               | §12 admin payments/reconciliation               |
+| FR-30–FR-31         | §§14.2–14.3 promotions/moderation               |
+| FR-32–FR-33         | §13 admin claims/refunds                        |
+| FR-34               | §14.3 settings/policy versioning                |
 
 Use this mapping to implement contract tests with each feature slice. Apply PRD §14 acceptance criteria, follow
 Implementation Plan §6 sequencing and attach execution evidence in `TASKS.md`. Keep the delivered OpenAPI/types aligned
@@ -1590,20 +1592,20 @@ with this specification.
 
 The canonical route definitions, access roles and request/response contracts appear in **§§9–14 and §16**, rather than a second competing route list. This index gives reviewers one place to find every group; count validation is part of the static review.
 
-| Area | Canonical definition | Resource families |
-| --- | --- | --- |
-| Identity and sessions | §9.1 | Customer auth, admin auth, recovery, self-service account and addresses |
-| Guest verification | §9.2 | Email challenge, single-use exchange, scoped session |
-| Public discovery | §10.1 | Homepage, categories, products, reviews, public policies/contact |
-| Shopping | §§10.2–10.3 | Cart, wishlist, coupon preview, verified reviews |
-| Checkout/orders | §11.1 | Delivery areas, quote/submit, own order read, cancellation requests, delivery status |
-| Money collection | §12.1 | Enabled channels, payment attempts, IPN, browser returns, risk, COD, intake, reconciliation |
-| Returns/refunds | §§13.1–13.3 | Claim eligibility, claim creation, review/inspection, refund groups, payout attempts |
-| Admin catalog/stock | §14.1 | Products, categories, variants, inventory adjustment and movements |
-| Admin commerce | §14.2 | Orders, fulfillment, cancellations, delivery exceptions, customers, review moderation |
-| Admin configuration | §14.3 | Delivery rules, coupons, settings and versioned policies |
-| Admin reporting/support | §14.4 | Dashboard, cash-flow reports, complaints, audit and notification state |
-| Media and health | §§16.2–16.4 | Controlled uploads, private evidence, readiness/liveness |
+| Area                    | Canonical definition | Resource families                                                                           |
+| ----------------------- | -------------------- | ------------------------------------------------------------------------------------------- |
+| Identity and sessions   | §9.1                 | Customer auth, admin auth, recovery, self-service account and addresses                     |
+| Guest verification      | §9.2                 | Email challenge, single-use exchange, scoped session                                        |
+| Public discovery        | §10.1                | Homepage, categories, products, reviews, public policies/contact                            |
+| Shopping                | §§10.2–10.3          | Cart, wishlist, coupon preview, verified reviews                                            |
+| Checkout/orders         | §11.1                | Delivery areas, quote/submit, own order read, cancellation requests, delivery status        |
+| Money collection        | §12.1                | Enabled channels, payment attempts, IPN, browser returns, risk, COD, intake, reconciliation |
+| Returns/refunds         | §§13.1–13.3          | Claim eligibility, claim creation, review/inspection, refund groups, payout attempts        |
+| Admin catalog/stock     | §14.1                | Products, categories, variants, inventory adjustment and movements                          |
+| Admin commerce          | §14.2                | Orders, fulfillment, cancellations, delivery exceptions, customers, review moderation       |
+| Admin configuration     | §14.3                | Delivery rules, coupons, settings and versioned policies                                    |
+| Admin reporting/support | §14.4                | Dashboard, cash-flow reports, complaints, audit and notification state                      |
+| Media and health        | §§16.2–16.4          | Controlled uploads, private evidence, readiness/liveness                                    |
 
 A later OpenAPI file should be generated/maintained against **the same contracts**, not introduced as a contradictory
 independent source. Every path listed in the main tables is a v1 route; externally triggered callback methods
@@ -1611,15 +1613,15 @@ and operational endpoints require deployment-specific adapter tests.
 
 ## Appendix B — Integration configuration
 
-| Area | Required configuration | Owner |
-| --- | --- | --- |
-| Browser security | Exact frontend/API origins, host-only cookie settings, session/challenge lifetimes and per-route rate limits | Security / platform engineering |
-| Checkout | Quote lifetime, replay-response horizon and persistent intent retention | Backend / data engineering |
-| Gateway | Environment, merchant identity, activated channels, transaction limits, callback transport and verified provider statuses | Merchant / backend engineering |
-| Refunds | Supported original-channel refund/status mechanism, source identifiers and manual-transfer verification procedure | Merchant / finance |
-| Delivery and policies | Coverage keys, charges/effective windows, published policy versions, business calendar and applicable legal start events | Store operations |
-| Media | Allowed MIME/size limits, scanning, temporary upload lifetime, private delivery and retention | Security / store operations |
-| Deployment | Restricted health access, secret-store references, request/body limits and API compatibility policy | Platform engineering |
+| Area                  | Required configuration                                                                                                    | Owner                           |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| Browser security      | Exact frontend/API origins, host-only cookie settings, session/challenge lifetimes and per-route rate limits              | Security / platform engineering |
+| Checkout              | Quote lifetime, replay-response horizon and persistent intent retention                                                   | Backend / data engineering      |
+| Gateway               | Environment, merchant identity, activated channels, transaction limits, callback transport and verified provider statuses | Merchant / backend engineering  |
+| Refunds               | Supported original-channel refund/status mechanism, source identifiers and manual-transfer verification procedure         | Merchant / finance              |
+| Delivery and policies | Coverage keys, charges/effective windows, published policy versions, business calendar and applicable legal start events  | Store operations                |
+| Media                 | Allowed MIME/size limits, scanning, temporary upload lifetime, private delivery and retention                             | Security / store operations     |
+| Deployment            | Restricted health access, secret-store references, request/body limits and API compatibility policy                       | Platform engineering            |
 
 [Operations Appendix B](./OPERATIONS.md#appendix-b--configuration-inventory) owns deployment values and secret references.
 Route, DTO, storage and financial behavior follow this specification and [Database](./DATABASE.md).
@@ -1628,16 +1630,16 @@ Route, DTO, storage and financial behavior follow this specification and [Databa
 
 Use this compact template when the team adds or changes any route:
 
-| Field | Required entry |
-| --- | --- |
-| Identity | Method, exact path, owning backend module, PRD FR and execution task |
-| Access | Anonymous/context/customer/admin/guest-scoped/provider; server-side ownership checks |
-| Input | Path/query/header/body types; allowed keys, normalization, limits; CSRF and idempotency requirements |
-| Output | DTO name, example JSON, success HTTP code, cache headers and redaction rules |
-| Failure | Explicit stable error codes, validation fields, unauthorized and invalid-state behavior |
-| Data changes | Transaction boundary, guarded states, required indexes, audit/outbox side effects |
-| Recovery | Retry behavior, duplicate callback action, timeout/uncertain state and safe polling |
-| Verification | Unit/contract/integration/E2E/security/provider tests and execution evidence |
+| Field        | Required entry                                                                                       |
+| ------------ | ---------------------------------------------------------------------------------------------------- |
+| Identity     | Method, exact path, owning backend module, PRD FR and execution task                                 |
+| Access       | Anonymous/context/customer/admin/guest-scoped/provider; server-side ownership checks                 |
+| Input        | Path/query/header/body types; allowed keys, normalization, limits; CSRF and idempotency requirements |
+| Output       | DTO name, example JSON, success HTTP code, cache headers and redaction rules                         |
+| Failure      | Explicit stable error codes, validation fields, unauthorized and invalid-state behavior              |
+| Data changes | Transaction boundary, guarded states, required indexes, audit/outbox side effects                    |
+| Recovery     | Retry behavior, duplicate callback action, timeout/uncertain state and safe polling                  |
+| Verification | Unit/contract/integration/E2E/security/provider tests and execution evidence                         |
 
 **Implementation acceptance checks**
 
@@ -1658,18 +1660,18 @@ route-level failure families and response profile. Use it to implement OpenAPI c
 
 ### D.1 Schema notation and mandatory response rules
 
-| Notation | Meaning |
-| --- | --- |
-| `string!`, `string?` | Required/optional UTF-8 bounded string; no implicit `null`; reject unlisted keys |
-| `nullable<T>` | Explicit request-only clear value: `T` or JSON `null`; omission leaves current value unchanged; server persists absence with `$unset`, never accidental BSON null |
-| `id!`, `id[]` | Opaque serialized MongoDB ID, server-authorized and validated for ownership |
-| `money!` | Nonnegative **integer poisha**; signed stock adjustment uses `int` instead |
-| `date!` | UTC ISO 8601 instant ending `Z`; date arithmetic only on approved server events |
-| `enum(a,b)` | Exactly listed wire values; source Database enum wins if narrower |
-| `T[]` | Bounded array of typed `T`, server-max enforced; pageable lists use `Page<T>` |
-| `Page<T>` | `{data:T[],meta:{page,pageSize,totalItems,totalPages,requestId}}`; default 20, max 100, stable tie-break |
-| `Mutation<T>` | `{data:T,meta?:{requestId}}`; `201` includes `Location` where a resource URI exists |
-| `ETag<T>` | Body `T` plus strong `ETag:"<revision>"`; admin PATCH/action requires matching `If-Match` and atomic increment |
+| Notation             | Meaning                                                                                                                                                           |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `string!`, `string?` | Required/optional UTF-8 bounded string; no implicit `null`; reject unlisted keys                                                                                  |
+| `nullable<T>`        | Explicit request-only clear value: `T` or JSON `null`; omission leaves current value unchanged; server persists absence with `$unset`, never accidental BSON null |
+| `id!`, `id[]`        | Opaque serialized MongoDB ID, server-authorized and validated for ownership                                                                                       |
+| `money!`             | Nonnegative **integer poisha**; signed stock adjustment uses `int` instead                                                                                        |
+| `date!`              | UTC ISO 8601 instant ending `Z`; date arithmetic only on approved server events                                                                                   |
+| `enum(a,b)`          | Exactly listed wire values; source Database enum wins if narrower                                                                                                 |
+| `T[]`                | Bounded array of typed `T`, server-max enforced; pageable lists use `Page<T>`                                                                                     |
+| `Page<T>`            | `{data:T[],meta:{page,pageSize,totalItems,totalPages,requestId}}`; default 20, max 100, stable tie-break                                                          |
+| `Mutation<T>`        | `{data:T,meta?:{requestId}}`; `201` includes `Location` where a resource URI exists                                                                               |
+| `ETag<T>`            | Body `T` plus strong `ETag:"<revision>"`; admin PATCH/action requires matching `If-Match` and atomic increment                                                    |
 
 **Request defaults:** JSON except multipart and provider form routes. Required path/query IDs must be valid and authorized.
 `GET` and `HEAD` never require CSRF; every **browser mutation**, including repeat logout, requires Origin and valid CSRF
@@ -1694,60 +1696,60 @@ body with a hidden failure.
 
 The following field allowlists define client inputs and server responses. `*Input` means client-writable fields only; `*` response fields are backend-produced. Fields inherited from an existing immutable snapshot are read-only even when their names appear in a response.
 
-| Schema | Fields (required `!`; optional `?`) | Validity and behavior |
-| --- | --- | --- |
-| `AddressInput` | `recipient:string!,phone:string!,districtKey:string!,areaKey:string!,street:string!,addressLine2:string?` | Supported Bangladesh delivery keys; no client `zoneId` |
-| `RegisterInput` | `name:string!,email:string!,password:string!` | Lowercase normalized unique email; role forced customer |
-| `Credentials` | `email:string!,password:string!` | No role, privilege or session-type input |
-| `Account` | `id,name,email:string!,phone:string?,emailVerified:bool!,addresses:Address[],status:enum(active,suspended)` | Never password/session/token details |
-| `Address` | AddressInput fields plus `id:id!,isDefault:bool!` | Response-only stable embedded ID; maximum ten per account, distinct IDs, at most one default |
-| `CategoryCreateInput` | `name:string!,slug:string!,parentId:id?,status:enum(active,inactive)?,image:MediaRef?,sortOrder:int?` | Parent acyclic; active ancestry required for public use |
-| `CategoryPatch` | `name?,slug?,parentId:nullable<id>?,status?,image:nullable<MediaRef>?,sortOrder?` | Null parent makes root after hierarchy checks; null image removes reference safely; CAS required |
-| `AdminCategory` | `id!,name!,slug!,parentId?,status!,revision:int!,sortOrder:int!,image?` | `ETag` on read/edit; hidden categories admin-only |
-| `ProductCreateInput` | `name:string!,slug:string!,description:string!,categoryIds:id[]!,images:MediaRef[]?,keywords:string[]?,featured:bool?,status:enum(draft,active,inactive)?` | No direct stock or variant price object |
-| `ProductPatch` | `name?,slug?,description?,categoryIds?,images?,keywords?,featured?,status?` | Approved fields only; CAS and audit |
-| `AdminProduct` | `id!,name!,slug!,description!,categoryIds:id[]!,status!,featured!,images:MediaRef[]!,createdAt:date!,updatedAt:date!,revision:int!` | Variants separate; no raw Mongoose shape |
-| `VariantCreateInput` | `sku:string!,attributes:map<string,string>!,regularPricePoisha:money!,salePricePoisha:money?,status:enum(active,inactive)?` | Owning `productId` comes from the authorized path, never a conflicting body field; stock assigned by inventory service |
-| `VariantPatch` | `regularPricePoisha:money?,salePricePoisha:nullable<money>?,status:enum(active,inactive)?,lowStockThreshold:nullable<int>?` | Null clears sale/threshold override; omission unchanged; same allowlist as §14.1; no stock, SKU or attribute writes; every change increments the record revision |
-| `AdminVariant` | `id!,productId!,sku!,attributes!,regularPricePoisha!,salePricePoisha?,status!,stock:{physical,reserved,committed,available},revision:int!` | Available stock derived, never client-writable |
-| `CartLineInput` | `variantId:id!,quantity:int!` | Positive quantity; duplicate variant rejected/merged once |
-| `CheckoutQuoteInput` | `items:CartLineInput[]!,recipient:AddressInput! XOR savedAddressId:id!,email:string? (required guest),contactPhone:string?,couponCode:string?,method:enum(cod,bkash,nagad,rocket)!` | Contact phone defaults to `recipient.phone`; guest recipient phone required; no client money totals |
-| `CheckoutSubmitInput` | All quote fields plus `quoteId:id!,acceptedTermsVersion:string!,acceptedPolicyVersionIds:string[]!,notes:string?` | Same normalization as quote; request `Idempotency-Key` mandatory |
-| `DeliveryDeadline` | `status:enum(awaiting_start,calculated,under_review)!,startEvent:string!,startEventAt:date?,targetDeadlineAt:date?,legalCapAt:date?,effectiveAt:date?,ruleVersion:string!` | Actual 14-calendar-day target starts at recorded confirmation, not submission |
-| `CheckoutQuote` | `quoteId:id!,items:QuoteItem[]!,regularSubtotalPoisha:money!,productDiscountPoisha:money!,saleSubtotalPoisha:money!,couponDiscountPoisha:money!,deliveryChargePoisha:money!,finalTotalPoisha:money!,currency:enum(BDT)!,deliveryEstimate:date?,quoteExpiresAt:date!,deliveryDeadline:DeliveryDeadline!,availableMethods:PaymentMethodEligibility[]!,policyVersions:PolicyRef[]!` | Scope-bound immutable consent terms; expiry enforced on new submission, no stock/coupon reservation |
-| `OrderSummary` | `id!,orderNumber!,fulfillmentStatus!,paymentStatus!,finalTotalPoisha!,currency!,placedAt:date!,deliveryEstimate?,fulfillmentHold?` | Stable order source, no PII leakage |
-| `OrderDetail` | `OrderSummary` plus `items:OrderLineSnapshot[]!,pricingSnapshot!,deliverySnapshot!,deliveryDeadline:DeliveryDeadline!,termsSnapshot!,policyVersions:PolicyRef[]!,statusHistory:StatusEvent[]!,paymentSummary:PaymentSummary!,cancellationEligibility!,claimEligibility!` | Immutable amounts/charge/rule; derived operational delivery commitment |
-| `PaymentMethodEligibility` | `channel:enum(cod,bkash,nagad,rocket)!,active:bool!,eligible:bool!,reasonCode:string?,minPoisha:money?,maxPoisha:money?` | Merchant activation and attempt amount both required for `eligible` |
-| `PaymentAttemptPublic` | `id!,state!,expectedAmountPoisha:money!,verifiedReceiptAmountPoisha:money?,amountDisposition!,riskStatus?,lastCheckedAt:date?,expiresAt:date?` | No provider credentials, PAN or validation payload |
-| `PaymentSummary` | `status!,fundingContext:enum(normal,correction_only)!,expectedPoisha!,verifiedCollectedPoisha!,merchandiseFundedPoisha!,correctionCollectedPoisha!,unassignedCollectedPoisha!,riskStatus!,merchandiseRefundHeldPoisha!,merchandiseRefundCompletedPoisha!,correctionRefundHeldPoisha!,correctionRefundCompletedPoisha!` | All numeric fields `money`; distinct from fulfillment status |
-| `DeliveryZoneInput` | `name:string!,description:string?,status:enum(active,inactive)!` | Coverage assignments are versioned charge-rule records |
-| `DeliveryZonePatch` | `name?,description?,status?` | Master revision and zone-wide coverage revision distinct |
-| `DeliveryZone` | `id!,name!,description?,status!,revision:int!,coverageRevision:int!` | `ETag` refers to `revision`, not `coverageRevision` |
-| `DeliveryChargeInput` | `zoneId:id!,coverageKey:string!,amountPoisha:money!,effectiveFrom:date!,effectiveTo:date?` | Admin approved, no conflicting windows |
-| `DeliveryChargeRule` | `id!,zoneId!,coverageKey!,amountPoisha!,ruleVersion:int!,status:enum(scheduled,active,inactive)!,effectiveFrom!,effectiveTo?,revision:int!,supersedesChargeId?` | Historic charge amount/coverage write-once; deactivation only closes window |
-| `SettingsPatch` | `storeName?,branding?:MediaRef,contact?:ContactInfo,address?:ContactInfo,homepageBanner:nullable<HomepageBannerInput>?,lowStockThreshold?:int,paymentChannels?:{bkashEnabled?,nagadEnabled?,rocketEnabled?,codEnabled?}` | No credentials; channel flag alone cannot assert live activation; CAS required |
-| `StoreSettings` | Resolved settings read form (homepageBanner includes verified image; nullable clear inputs become omitted optional fields) plus `key:'primary',activePolicyVersions:Partial<Record<PolicyType,string>>,revision:int!,updatedBy:id?` | Admin only; published policies external `policyDocuments` |
-| `HomepageBanner` | `assetId:id!,title:string!,alt:string!,href:string?,image:MediaRef!` | Resolved approved public projection; image supplied by server from mediaAssets |
-| `HomepageBannerInput` | `assetId:id!,title:string!,alt:string!,href:string?` | Validated public media asset; relative internal destination; null in SettingsPatch removes banner safely |
-| `PolicyDraftInput` | `type:enum(shipping,cancellation,returns,refunds,privacy,terms,complaints)!,content:string!,proposedEffectiveAt:date?` | Server generates version and ID; content length/sanitization enforced |
-| `PolicyDraftPatch` | `content:string?,proposedEffectiveAt:date?` | Draft only, revision CAS; cannot edit approved/published content |
-| `PolicyDocument` | `id!,type!,version!,status:enum(draft,approved,scheduled,published,superseded,withdrawn)!,content!,contentDigest!,revision:int!,effectiveAt?,approvalEvidenceRef?,approvedAt?,publishedAt?` | Admin only until published; immutable content after approval |
-| `PolicyDocumentSummary` | `id!,type!,version!,status!,effectiveAt?,revision!` | Excludes unpublished content in public endpoints |
-| `CustomerAdminDetail` | `id!,name!,emailMasked!,phoneMasked?,status!,emailVerified!,createdAt:date!` | Historic orders/claims/refunds via paginated scoped subroutes; not embedded |
-| `AdminOrderDetail` | `OrderDetail` plus `customerContactMasked?,allocationSummary,fulfillmentActions[],auditRefs[]` | Fields operationally necessary only; protected admin view |
-| `ClaimInput` | `claimType:enum(physical_return,shortage)!,items:[{orderItemId:id!,quantity:int!,reason:string!,evidenceAssetIds:id[]?}]!,description?` | Reject overlapping protected item ordinals; backend owns amounts/ordinal selection |
-| `Claim` | `id!,orderId!,claimType!,items:[{orderItemId,requestedQty,approvedQty?,reason}]!,status!,requestedAt:date!,evidence[]` | Claim evidence private; only masked metadata/authorized links |
-| `Refund` | `id!,orderId!,refundGroupKey:string?,classification:enum(merchandise,payment_correction)!,basis!,sourceCollectionId!,amountPoisha!,method!,status!,capacityStatus!,requestedAt:date!,approvedAt:date?,completedAt:date?,items:[{orderItemId,amountPoisha}]!,timing:RefundTiming!,timeline:RefundStatusEvent[]!` | Source caps enforced; item totals reconcile; timing from approval snapshot, timeline max 40 public status facts |
-| `RefundStatusEvent` | `status:enum(requested,under_review,approved,processing,completed,failed,rejected)!,at:date!,reasonCode:string?` | Public status fact only; no actor identifiers, internal notes or transfer evidence |
-| `RefundTiming` | `status:enum(awaiting_approval,calculated,under_review)!,targetBusinessDays:int!,timezone:enum(Asia/Dhaka)!,policyVersion:string!,calendarVersion:string?,targetAt:date?` | Standard target 7 business days; approved shorter rule prevails; absent date when basis missing |
-| `ComplaintInput` | `orderId:id?,issue:string!,contactName:string? (required anonymous),contactEmail:string? (required anonymous),contactPhone:string?,description:string?` | Order ID only with verified owner/guest proof; anti-spam limits |
-| `Complaint` | `id!,orderId?,status!,issue!,createdAt:date!,response?,resolvedAt?` | Customer sees only own/submitted authorized complaints |
-| `Review` | `id!,productId!,rating:int!,comment:string!,status!,createdAt:date!,verifiedPurchase:bool!` | `verifiedPurchase` server-derived from delivered qualifying order |
-| `DashboardMetrics` | `from:date!,to:date!,asOf:date!,timezone:enum(Asia/Dhaka)!,dateBasis!,counts:DashboardCounts!,recentOrders:AdminOrderSummary[]!,lowStockItems:LowStockSummary[]!,grossMerchandiseValuePoisha!,productDiscountPoisha!,couponDiscountPoisha!,netAcceptedOrderSalesPoisha!,paidCollectionsPoisha!,netLinkedCashFlowPoisha:SignedMoneyPoisha!,unattributedProviderCashPoisha!,completedMerchandiseRefundsPoisha!,completedCorrectionRefundsPoisha!,pendingRefundLiabilityPoisha!,outstandingCodPoisha!,unassignedLinkedCashPoisha!` | Counts and balances at cutoff; period cash uses event dates; lists max 20 each; all other money fields nonnegative integers |
-| `DashboardCounts` | `activeProducts:int!,registeredCustomers:int!,totalOrders:int!,pendingOrders:int!,confirmedOrders:int!,processingOrders:int!,shippedOrders:int!,deliveredOrders:int!,cancelledOrders:int!,lowStockVariants:int!,pendingReturnRequests:int!` | Nonnegative cutoff counts; fulfillment-status counts sum to totalOrders |
-| `LowStockSummary` | `variantId:id!,productId:id!,sku:string!,available:int!,threshold:int!` | Admin-only; nonnegative counters and approved threshold |
-| `MediaRef` | `publicId:string!,url:string!,alt:string?` | Server resolves publicId through an eligible public mediaAssets record before attachment; client URL alone is never ownership/approval proof |
-| `AdminAudit` | `action!,actor!,subject!,occurredAt:date!,reason?,requestId?` | Redact secret/raw PII before output |
+| Schema                     | Fields (required `!`; optional `?`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Validity and behavior                                                                                                                                            |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AddressInput`             | `recipient:string!,phone:string!,districtKey:string!,areaKey:string!,street:string!,addressLine2:string?`                                                                                                                                                                                                                                                                                                                                                                                                                       | Supported Bangladesh delivery keys; no client `zoneId`                                                                                                           |
+| `RegisterInput`            | `name:string!,email:string!,password:string!`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Lowercase normalized unique email; role forced customer                                                                                                          |
+| `Credentials`              | `email:string!,password:string!`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | No role, privilege or session-type input                                                                                                                         |
+| `Account`                  | `id,name,email:string!,phone:string?,emailVerified:bool!,addresses:Address[],status:enum(active,suspended)`                                                                                                                                                                                                                                                                                                                                                                                                                     | Never password/session/token details                                                                                                                             |
+| `Address`                  | AddressInput fields plus `id:id!,isDefault:bool!`                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Response-only stable embedded ID; maximum ten per account, distinct IDs, at most one default                                                                     |
+| `CategoryCreateInput`      | `name:string!,slug:string!,parentId:id?,status:enum(active,inactive)?,image:MediaRef?,sortOrder:int?`                                                                                                                                                                                                                                                                                                                                                                                                                           | Parent acyclic; active ancestry required for public use                                                                                                          |
+| `CategoryPatch`            | `name?,slug?,parentId:nullable<id>?,status?,image:nullable<MediaRef>?,sortOrder?`                                                                                                                                                                                                                                                                                                                                                                                                                                               | Null parent makes root after hierarchy checks; null image removes reference safely; CAS required                                                                 |
+| `AdminCategory`            | `id!,name!,slug!,parentId?,status!,revision:int!,sortOrder:int!,image?`                                                                                                                                                                                                                                                                                                                                                                                                                                                         | `ETag` on read/edit; hidden categories admin-only                                                                                                                |
+| `ProductCreateInput`       | `name:string!,slug:string!,description:string!,categoryIds:id[]!,images:MediaRef[]?,keywords:string[]?,featured:bool?,status:enum(draft,active,inactive)?`                                                                                                                                                                                                                                                                                                                                                                      | No direct stock or variant price object                                                                                                                          |
+| `ProductPatch`             | `name?,slug?,description?,categoryIds?,images?,keywords?,featured?,status?`                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Approved fields only; CAS and audit                                                                                                                              |
+| `AdminProduct`             | `id!,name!,slug!,description!,categoryIds:id[]!,status!,featured!,images:MediaRef[]!,createdAt:date!,updatedAt:date!,revision:int!`                                                                                                                                                                                                                                                                                                                                                                                             | Variants separate; no raw Mongoose shape                                                                                                                         |
+| `VariantCreateInput`       | `sku:string!,attributes:map<string,string>!,regularPricePoisha:money!,salePricePoisha:money?,status:enum(active,inactive)?`                                                                                                                                                                                                                                                                                                                                                                                                     | Owning `productId` comes from the authorized path, never a conflicting body field; stock assigned by inventory service                                           |
+| `VariantPatch`             | `regularPricePoisha:money?,salePricePoisha:nullable<money>?,status:enum(active,inactive)?,lowStockThreshold:nullable<int>?`                                                                                                                                                                                                                                                                                                                                                                                                     | Null clears sale/threshold override; omission unchanged; same allowlist as §14.1; no stock, SKU or attribute writes; every change increments the record revision |
+| `AdminVariant`             | `id!,productId!,sku!,attributes!,regularPricePoisha!,salePricePoisha?,status!,stock:{physical,reserved,committed,available},revision:int!`                                                                                                                                                                                                                                                                                                                                                                                      | Available stock derived, never client-writable                                                                                                                   |
+| `CartLineInput`            | `variantId:id!,quantity:int!`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Positive quantity; duplicate variant rejected/merged once                                                                                                        |
+| `CheckoutQuoteInput`       | `items:CartLineInput[]!,recipient:AddressInput! XOR savedAddressId:id!,email:string? (required guest),contactPhone:string?,couponCode:string?,method:enum(cod,bkash,nagad,rocket)!`                                                                                                                                                                                                                                                                                                                                             | Contact phone defaults to `recipient.phone`; guest recipient phone required; no client money totals                                                              |
+| `CheckoutSubmitInput`      | All quote fields plus `quoteId:id!,acceptedTermsVersion:string!,acceptedPolicyVersionIds:string[]!,notes:string?`                                                                                                                                                                                                                                                                                                                                                                                                               | Same normalization as quote; request `Idempotency-Key` mandatory                                                                                                 |
+| `DeliveryDeadline`         | `status:enum(awaiting_start,calculated,under_review)!,startEvent:string!,startEventAt:date?,targetDeadlineAt:date?,legalCapAt:date?,effectiveAt:date?,ruleVersion:string!`                                                                                                                                                                                                                                                                                                                                                      | Actual 14-calendar-day target starts at recorded confirmation, not submission                                                                                    |
+| `CheckoutQuote`            | `quoteId:id!,items:QuoteItem[]!,regularSubtotalPoisha:money!,productDiscountPoisha:money!,saleSubtotalPoisha:money!,couponDiscountPoisha:money!,deliveryChargePoisha:money!,finalTotalPoisha:money!,currency:enum(BDT)!,deliveryEstimate:date?,quoteExpiresAt:date!,deliveryDeadline:DeliveryDeadline!,availableMethods:PaymentMethodEligibility[]!,policyVersions:PolicyRef[]!`                                                                                                                                                | Scope-bound immutable consent terms; expiry enforced on new submission, no stock/coupon reservation                                                              |
+| `OrderSummary`             | `id!,orderNumber!,fulfillmentStatus!,paymentStatus!,finalTotalPoisha!,currency!,placedAt:date!,deliveryEstimate?,fulfillmentHold?`                                                                                                                                                                                                                                                                                                                                                                                              | Stable order source, no PII leakage                                                                                                                              |
+| `OrderDetail`              | `OrderSummary` plus `items:OrderLineSnapshot[]!,pricingSnapshot!,deliverySnapshot!,deliveryDeadline:DeliveryDeadline!,termsSnapshot!,policyVersions:PolicyRef[]!,statusHistory:StatusEvent[]!,paymentSummary:PaymentSummary!,cancellationEligibility!,claimEligibility!`                                                                                                                                                                                                                                                        | Immutable amounts/charge/rule; derived operational delivery commitment                                                                                           |
+| `PaymentMethodEligibility` | `channel:enum(cod,bkash,nagad,rocket)!,active:bool!,eligible:bool!,reasonCode:string?,minPoisha:money?,maxPoisha:money?`                                                                                                                                                                                                                                                                                                                                                                                                        | Merchant activation and attempt amount both required for `eligible`                                                                                              |
+| `PaymentAttemptPublic`     | `id!,state!,expectedAmountPoisha:money!,verifiedReceiptAmountPoisha:money?,amountDisposition!,riskStatus?,lastCheckedAt:date?,expiresAt:date?`                                                                                                                                                                                                                                                                                                                                                                                  | No provider credentials, PAN or validation payload                                                                                                               |
+| `PaymentSummary`           | `status!,fundingContext:enum(normal,correction_only)!,expectedPoisha!,verifiedCollectedPoisha!,merchandiseFundedPoisha!,correctionCollectedPoisha!,unassignedCollectedPoisha!,riskStatus!,merchandiseRefundHeldPoisha!,merchandiseRefundCompletedPoisha!,correctionRefundHeldPoisha!,correctionRefundCompletedPoisha!`                                                                                                                                                                                                          | All numeric fields `money`; distinct from fulfillment status                                                                                                     |
+| `DeliveryZoneInput`        | `name:string!,description:string?,status:enum(active,inactive)!`                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Coverage assignments are versioned charge-rule records                                                                                                           |
+| `DeliveryZonePatch`        | `name?,description?,status?`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Master revision and zone-wide coverage revision distinct                                                                                                         |
+| `DeliveryZone`             | `id!,name!,description?,status!,revision:int!,coverageRevision:int!`                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `ETag` refers to `revision`, not `coverageRevision`                                                                                                              |
+| `DeliveryChargeInput`      | `zoneId:id!,coverageKey:string!,amountPoisha:money!,effectiveFrom:date!,effectiveTo:date?`                                                                                                                                                                                                                                                                                                                                                                                                                                      | Admin approved, no conflicting windows                                                                                                                           |
+| `DeliveryChargeRule`       | `id!,zoneId!,coverageKey!,amountPoisha!,ruleVersion:int!,status:enum(scheduled,active,inactive)!,effectiveFrom!,effectiveTo?,revision:int!,supersedesChargeId?`                                                                                                                                                                                                                                                                                                                                                                 | Historic charge amount/coverage write-once; deactivation only closes window                                                                                      |
+| `SettingsPatch`            | `storeName?,branding?:MediaRef,contact?:ContactInfo,address?:ContactInfo,homepageBanner:nullable<HomepageBannerInput>?,lowStockThreshold?:int,paymentChannels?:{bkashEnabled?,nagadEnabled?,rocketEnabled?,codEnabled?}`                                                                                                                                                                                                                                                                                                        | No credentials; channel flag alone cannot assert live activation; CAS required                                                                                   |
+| `StoreSettings`            | Resolved settings read form (homepageBanner includes verified image; nullable clear inputs become omitted optional fields) plus `key:'primary',activePolicyVersions:Partial<Record<PolicyType,string>>,revision:int!,updatedBy:id?`                                                                                                                                                                                                                                                                                             | Admin only; published policies external `policyDocuments`                                                                                                        |
+| `HomepageBanner`           | `assetId:id!,title:string!,alt:string!,href:string?,image:MediaRef!`                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Resolved approved public projection; image supplied by server from mediaAssets                                                                                   |
+| `HomepageBannerInput`      | `assetId:id!,title:string!,alt:string!,href:string?`                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Validated public media asset; relative internal destination; null in SettingsPatch removes banner safely                                                         |
+| `PolicyDraftInput`         | `type:enum(shipping,cancellation,returns,refunds,privacy,terms,complaints)!,content:string!,proposedEffectiveAt:date?`                                                                                                                                                                                                                                                                                                                                                                                                          | Server generates version and ID; content length/sanitization enforced                                                                                            |
+| `PolicyDraftPatch`         | `content:string?,proposedEffectiveAt:date?`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Draft only, revision CAS; cannot edit approved/published content                                                                                                 |
+| `PolicyDocument`           | `id!,type!,version!,status:enum(draft,approved,scheduled,published,superseded,withdrawn)!,content!,contentDigest!,revision:int!,effectiveAt?,approvalEvidenceRef?,approvedAt?,publishedAt?`                                                                                                                                                                                                                                                                                                                                     | Admin only until published; immutable content after approval                                                                                                     |
+| `PolicyDocumentSummary`    | `id!,type!,version!,status!,effectiveAt?,revision!`                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Excludes unpublished content in public endpoints                                                                                                                 |
+| `CustomerAdminDetail`      | `id!,name!,emailMasked!,phoneMasked?,status!,emailVerified!,createdAt:date!`                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Historic orders/claims/refunds via paginated scoped subroutes; not embedded                                                                                      |
+| `AdminOrderDetail`         | `OrderDetail` plus `customerContactMasked?,allocationSummary,fulfillmentActions[],auditRefs[]`                                                                                                                                                                                                                                                                                                                                                                                                                                  | Fields operationally necessary only; protected admin view                                                                                                        |
+| `ClaimInput`               | `claimType:enum(physical_return,shortage)!,items:[{orderItemId:id!,quantity:int!,reason:string!,evidenceAssetIds:id[]?}]!,description?`                                                                                                                                                                                                                                                                                                                                                                                         | Reject overlapping protected item ordinals; backend owns amounts/ordinal selection                                                                               |
+| `Claim`                    | `id!,orderId!,claimType!,items:[{orderItemId,requestedQty,approvedQty?,reason}]!,status!,requestedAt:date!,evidence[]`                                                                                                                                                                                                                                                                                                                                                                                                          | Claim evidence private; only masked metadata/authorized links                                                                                                    |
+| `Refund`                   | `id!,orderId!,refundGroupKey:string?,classification:enum(merchandise,payment_correction)!,basis!,sourceCollectionId!,amountPoisha!,method!,status!,capacityStatus!,requestedAt:date!,approvedAt:date?,completedAt:date?,items:[{orderItemId,amountPoisha}]!,timing:RefundTiming!,timeline:RefundStatusEvent[]!`                                                                                                                                                                                                                 | Source caps enforced; item totals reconcile; timing from approval snapshot, timeline max 40 public status facts                                                  |
+| `RefundStatusEvent`        | `status:enum(requested,under_review,approved,processing,completed,failed,rejected)!,at:date!,reasonCode:string?`                                                                                                                                                                                                                                                                                                                                                                                                                | Public status fact only; no actor identifiers, internal notes or transfer evidence                                                                               |
+| `RefundTiming`             | `status:enum(awaiting_approval,calculated,under_review)!,targetBusinessDays:int!,timezone:enum(Asia/Dhaka)!,policyVersion:string!,calendarVersion:string?,targetAt:date?`                                                                                                                                                                                                                                                                                                                                                       | Standard target 7 business days; approved shorter rule prevails; absent date when basis missing                                                                  |
+| `ComplaintInput`           | `orderId:id?,issue:string!,contactName:string? (required anonymous),contactEmail:string? (required anonymous),contactPhone:string?,description:string?`                                                                                                                                                                                                                                                                                                                                                                         | Order ID only with verified owner/guest proof; anti-spam limits                                                                                                  |
+| `Complaint`                | `id!,orderId?,status!,issue!,createdAt:date!,response?,resolvedAt?`                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Customer sees only own/submitted authorized complaints                                                                                                           |
+| `Review`                   | `id!,productId!,rating:int!,comment:string!,status!,createdAt:date!,verifiedPurchase:bool!`                                                                                                                                                                                                                                                                                                                                                                                                                                     | `verifiedPurchase` server-derived from delivered qualifying order                                                                                                |
+| `DashboardMetrics`         | `from:date!,to:date!,asOf:date!,timezone:enum(Asia/Dhaka)!,dateBasis!,counts:DashboardCounts!,recentOrders:AdminOrderSummary[]!,lowStockItems:LowStockSummary[]!,grossMerchandiseValuePoisha!,productDiscountPoisha!,couponDiscountPoisha!,netAcceptedOrderSalesPoisha!,paidCollectionsPoisha!,netLinkedCashFlowPoisha:SignedMoneyPoisha!,unattributedProviderCashPoisha!,completedMerchandiseRefundsPoisha!,completedCorrectionRefundsPoisha!,pendingRefundLiabilityPoisha!,outstandingCodPoisha!,unassignedLinkedCashPoisha!` | Counts and balances at cutoff; period cash uses event dates; lists max 20 each; all other money fields nonnegative integers                                      |
+| `DashboardCounts`          | `activeProducts:int!,registeredCustomers:int!,totalOrders:int!,pendingOrders:int!,confirmedOrders:int!,processingOrders:int!,shippedOrders:int!,deliveredOrders:int!,cancelledOrders:int!,lowStockVariants:int!,pendingReturnRequests:int!`                                                                                                                                                                                                                                                                                     | Nonnegative cutoff counts; fulfillment-status counts sum to totalOrders                                                                                          |
+| `LowStockSummary`          | `variantId:id!,productId:id!,sku:string!,available:int!,threshold:int!`                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Admin-only; nonnegative counters and approved threshold                                                                                                          |
+| `MediaRef`                 | `publicId:string!,url:string!,alt:string?`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Server resolves publicId through an eligible public mediaAssets record before attachment; client URL alone is never ownership/approval proof                     |
+| `AdminAudit`               | `action!,actor!,subject!,occurredAt:date!,reason?,requestId?`                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Redact secret/raw PII before output                                                                                                                              |
 
 **Canonical schema ownership:** §6.1 defines scalar types; Appendix D.2 defines named DTO allowlists; §§9–14 and §16 define operation-specific inputs and access. Earlier DTO summaries are navigation aids. Keep shared fields synchronized rather than allowing either copy to redefine a contract. `PolicyType` is the seven-value enum in `PolicyDraftInput`, including `privacy`.
 
@@ -1762,187 +1764,187 @@ The main endpoint tables are authoritative for path, ownership and request shape
 method/path exactly once** and supplies its nominal success status and additional error families. `Base` means the
 mandatory failure set in D.1; the abbreviations below add targeted failures.
 
-| Error family | Added codes |
-| --- | --- |
-| `OWN` | `AUTH_REQUIRED`, `GUEST_PROOF_REQUIRED`, `FORBIDDEN`, `NOT_FOUND` (scope-safe) |
-| `CAS` | `PRECONDITION_REQUIRED` (`428`), `PRECONDITION_FAILED` (`412`) |
-| `STATE` | `STATE_CONFLICT`, `BUSINESS_RULE_VIOLATION`, `QUOTE_CHANGED`/`QUOTE_EXPIRED` for checkout submission |
-| `STOCK` | `OUT_OF_STOCK`, `COUPON_UNAVAILABLE` |
-| `MONEY` | `PAYMENT_UNCERTAIN`, `PAYMENT_AMOUNT_UNSUPPORTED`, `PROVIDER_ERROR` |
-| `REFUND` | `REFUND_BALANCE_EXCEEDED`, `PAYMENT_UNCERTAIN` |
-| `REPLAY` | `IDEMPOTENCY_CONFLICT`, `IDEMPOTENCY_KEY_RETIRED` where checkout retention applies |
+| Error family | Added codes                                                                                          |
+| ------------ | ---------------------------------------------------------------------------------------------------- |
+| `OWN`        | `AUTH_REQUIRED`, `GUEST_PROOF_REQUIRED`, `FORBIDDEN`, `NOT_FOUND` (scope-safe)                       |
+| `CAS`        | `PRECONDITION_REQUIRED` (`428`), `PRECONDITION_FAILED` (`412`)                                       |
+| `STATE`      | `STATE_CONFLICT`, `BUSINESS_RULE_VIOLATION`, `QUOTE_CHANGED`/`QUOTE_EXPIRED` for checkout submission |
+| `STOCK`      | `OUT_OF_STOCK`, `COUPON_UNAVAILABLE`                                                                 |
+| `MONEY`      | `PAYMENT_UNCERTAIN`, `PAYMENT_AMOUNT_UNSUPPORTED`, `PROVIDER_ERROR`                                  |
+| `REFUND`     | `REFUND_BALANCE_EXCEEDED`, `PAYMENT_UNCERTAIN`                                                       |
+| `REPLAY`     | `IDEMPOTENCY_CONFLICT`, `IDEMPOTENCY_KEY_RETIRED` where checkout retention applies                   |
 
 The `IPN` route is intentionally special: its `200`/`400`/`403`/`5xx` statuses are governed by §12.3, not the ordinary request envelope.
 Provider browser returns use `303 See Other` to a fixed internal storefront result route, never payment approval.
 `GET` list routes use `Page<T>` except deliberately bounded personal subresources.
 Any difference between this matrix and the route's own explicitly stated `201`/`202`/`204` behavior is resolved in favor of the **specific operation's explicit rule** rather than a generic default.
 
-| Method | Path | Nominal success | Additional error families |
-| --- | --- | --- | --- |
-| `GET` | `/auth/csrf` | `200` | Base |
-| `POST` | `/auth/register` | `201` | Base |
-| `POST` | `/auth/login` | `200` | Base |
-| `GET` | `/auth/session` | `200` | Base |
-| `POST` | `/auth/logout` | `200` | Base |
-| `POST` | `/auth/email-verifications` | `200` | Base |
-| `POST` | `/auth/email-verifications/confirm` | `200` | Base |
-| `POST` | `/auth/password-resets` | `200` | Base |
-| `POST` | `/auth/password-resets/confirm` | `200` | Base |
-| `GET` | `/me` | `200` | Base |
-| `PATCH` | `/me` | `200` | Base |
-| `POST` | `/me/email-changes` | `200` | Base + OWN |
-| `POST` | `/me/email-changes/confirm` | `200` | Base + OWN |
-| `POST` | `/me/password-change` | `200` | Base + OWN |
-| `GET` | `/me/addresses` | `200` | Base + OWN |
-| `POST` | `/me/addresses` | `201` | Base + OWN |
-| `PATCH` | `/me/addresses/{addressId}` | `200` | Base + OWN |
-| `DELETE` | `/me/addresses/{addressId}` | `204` | Base + OWN |
-| `POST` | `/me/addresses/{addressId}/default` | `200` | Base + OWN |
-| `POST` | `/me/deletion-requests` | `200` | Base + OWN |
-| `GET` | `/admin/auth/csrf` | `200` | Base + OWN |
-| `POST` | `/admin/auth/login` | `200` | Base + OWN |
-| `GET` | `/admin/auth/session` | `200` | Base + OWN |
-| `POST` | `/admin/auth/logout` | `200` | Base + OWN |
-| `POST` | `/admin/auth/password-resets` | `200` | Base + OWN |
-| `POST` | `/admin/auth/password-resets/confirm` | `200` | Base + OWN |
-| `POST` | `/guest-access/challenges` | `200` | Base |
-| `POST` | `/guest-access/sessions` | `200` | Base + OWN |
-| `GET` | `/guest-access/session` | `200` | Base + OWN |
-| `POST` | `/guest-access/logout` | `200` | Base |
-| `GET` | `/storefront/home` | `200` | Base |
-| `GET` | `/categories` | `200` | Base |
-| `GET` | `/categories/{slug}` | `200` | Base |
-| `GET` | `/products` | `200` | Base |
-| `GET` | `/products/{slug}` | `200` | Base |
-| `GET` | `/products/{productId}/reviews` | `200` | Base |
-| `GET` | `/storefront/policies/{type}` | `200` | Base |
-| `GET` | `/storefront/contact` | `200` | Base |
-| `GET` | `/cart` | `200` | Base + OWN |
-| `PUT` | `/cart/items/{variantId}` | `200` | Base + OWN + STOCK |
-| `DELETE` | `/cart/items/{variantId}` | `200` | Base + OWN + STOCK |
-| `POST` | `/cart/merge` | `200` | Base + OWN + STOCK |
-| `GET` | `/wishlist` | `200` | Base + OWN |
-| `PUT` | `/wishlist/products/{productId}` | `200` | Base + OWN |
-| `DELETE` | `/wishlist/products/{productId}` | `200` | Base + OWN |
-| `POST` | `/coupons/preview` | `200` | Base + STATE + STOCK |
-| `POST` | `/products/{productId}/reviews` | `201` | Base |
-| `PATCH` | `/reviews/{reviewId}` | `200` | Base |
-| `GET` | `/me/reviews` | `200` | Base + OWN |
-| `GET` | `/delivery/areas` | `200` | Base |
-| `POST` | `/checkout/quotes` | `200` | Base + STATE + STOCK |
-| `POST` | `/checkout/orders` | `201 (replay 200)` | Base + STATE + STOCK + REPLAY |
-| `GET` | `/orders` | `200` | Base |
-| `GET` | `/orders/{orderId}` | `200` | Base + OWN |
-| `GET` | `/orders/{orderId}/status` | `200` | Base + OWN |
-| `POST` | `/orders/{orderId}/cancellation-requests` | `201` | Base + OWN + STATE + REPLAY |
-| `GET` | `/orders/{orderId}/cancellation-requests` | `200` | Base + OWN |
-| `GET` | `/orders/{orderId}/delivery-events` | `200` | Base + OWN |
-| `GET` | `/checkout/payment-methods` | `200` | Base |
-| `GET` | `/orders/{orderId}/payments` | `200` | Base + OWN + MONEY |
-| `POST` | `/orders/{orderId}/payment-attempts` | `200 / 202` | Base + OWN + STATE + MONEY + REPLAY |
-| `GET` | `/orders/{orderId}/payment-attempts/{attemptId}` | `200` | Base + OWN + MONEY |
-| `POST` | `/webhooks/sslcommerz/ipn` | `200 / 4xx / 5xx` | §12.3 matrix |
-| `GET` | `/payment-returns/sslcommerz/{result}` | `303` | Base |
-| `POST` | `/payment-returns/sslcommerz/{result}` | `303` | Base |
-| `GET` | `/admin/payments` | `200` | Base + OWN + MONEY |
-| `GET` | `/admin/payments/{paymentId}` | `200` | Base + OWN + MONEY |
-| `POST` | `/admin/payments/{paymentId}/reconcile` | `200 / 202` | Base + OWN + MONEY + REPLAY |
-| `POST` | `/admin/payments/{paymentId}/risk-decisions` | `200` | Base + OWN + MONEY + REPLAY |
-| `POST` | `/admin/payments/{paymentId}/cod-collections` | `200` | Base + OWN + MONEY + REPLAY |
-| `GET` | `/admin/provider-receipts` | `200` | Base + OWN + MONEY |
-| `POST` | `/admin/provider-receipts/{intakeId}/link` | `200` | Base + OWN + MONEY + REPLAY |
-| `POST` | `/admin/payment-collections/{collectionId}/allocate` | `200` | Base + OWN + CAS + MONEY + REPLAY |
-| `GET` | `/me/claims` | `200` | Base + OWN |
-| `GET` | `/me/refunds` | `200` | Base + OWN + REFUND |
-| `GET` | `/orders/{orderId}/claim-eligibility` | `200` | Base + OWN |
-| `POST` | `/orders/{orderId}/claims` | `201` | Base + OWN + STATE + REPLAY |
-| `GET` | `/orders/{orderId}/claims` | `200` | Base + OWN |
-| `GET` | `/claims/{claimId}` | `200` | Base + OWN |
-| `GET` | `/orders/{orderId}/refunds` | `200` | Base + OWN + REFUND |
-| `POST` | `/orders/{orderId}/refund-requests` | `200` | Base + OWN + STATE + REFUND + REPLAY |
-| `GET` | `/refunds/{refundId}` | `200` | Base + OWN + REFUND |
-| `GET` | `/admin/claims` | `200` | Base + OWN |
-| `GET` | `/admin/claims/{claimId}` | `200` | Base + OWN |
-| `POST` | `/admin/claims/{claimId}/review` | `200` | Base + OWN + STATE + REPLAY |
-| `POST` | `/admin/claims/{claimId}/receipt` | `200` | Base + OWN + STATE + REPLAY |
-| `POST` | `/admin/claims/{claimId}/inspection` | `200` | Base + OWN + STATE + REPLAY |
-| `POST` | `/admin/claims/{claimId}/complete` | `200` | Base + OWN + STATE + REPLAY |
-| `GET` | `/admin/refunds` | `200` | Base + OWN + REFUND |
-| `GET` | `/admin/refunds/{refundId}` | `200` | Base + OWN + REFUND |
-| `POST` | `/admin/refund-groups` | `201` | Base + OWN + REFUND + REPLAY |
-| `POST` | `/admin/refunds/{refundId}/review` | `200` | Base + OWN + STATE + REFUND + REPLAY |
-| `POST` | `/admin/refunds/{refundId}/payout-attempts` | `200 / 202` | Base + OWN + STATE + REFUND + REPLAY |
-| `POST` | `/admin/refunds/{refundId}/reconcile` | `200 / 202` | Base + OWN + STATE + REFUND + REPLAY |
-| `POST` | `/admin/refunds/{refundId}/manual-confirmations` | `200` | Base + OWN + STATE + REFUND + REPLAY |
-| `GET` | `/admin/products` | `200` | Base + OWN |
-| `POST` | `/admin/products` | `201` | Base + OWN |
-| `GET` | `/admin/products/{productId}` | `200` | Base + OWN |
-| `PATCH` | `/admin/products/{productId}` | `200` | Base + OWN + CAS |
-| `POST` | `/admin/products/{productId}/deactivate` | `200` | Base + OWN + CAS |
-| `GET` | `/admin/categories` | `200` | Base + OWN |
-| `POST` | `/admin/categories` | `201` | Base + OWN |
-| `PATCH` | `/admin/categories/{categoryId}` | `200` | Base + OWN + CAS |
-| `POST` | `/admin/categories/{categoryId}/deactivate` | `200` | Base + OWN + CAS |
-| `POST` | `/admin/products/{productId}/variants` | `201` | Base + OWN |
-| `PATCH` | `/admin/variants/{variantId}` | `200` | Base + OWN + CAS |
-| `POST` | `/admin/variants/{variantId}/deactivate` | `200` | Base + OWN + CAS |
-| `GET` | `/admin/inventory` | `200` | Base + OWN |
-| `GET` | `/admin/inventory/{variantId}/movements` | `200` | Base + OWN |
-| `POST` | `/admin/inventory/{variantId}/adjustments` | `200` | Base + OWN + STOCK + REPLAY |
-| `GET` | `/admin/orders` | `200` | Base + OWN |
-| `GET` | `/admin/orders/{orderId}` | `200` | Base + OWN |
-| `POST` | `/admin/orders/{orderId}/fulfillment-transitions` | `200` | Base + OWN + STATE + REPLAY |
-| `GET` | `/admin/cancellation-requests` | `200` | Base + OWN |
-| `POST` | `/admin/cancellation-requests/{requestId}/decision` | `200` | Base + OWN + REPLAY |
-| `GET` | `/admin/orders/{orderId}/delivery-exceptions` | `200` | Base + OWN |
-| `POST` | `/admin/orders/{orderId}/delivery-exceptions` | `201` | Base + OWN + STATE + REPLAY |
-| `POST` | `/admin/delivery-exceptions/{exceptionId}/resolve` | `200` | Base + OWN + REPLAY |
-| `GET` | `/admin/customers` | `200` | Base + OWN |
-| `GET` | `/admin/customers/{customerId}` | `200` | Base + OWN |
-| `GET` | `/admin/customers/{customerId}/orders` | `200` | Base + OWN |
-| `GET` | `/admin/customers/{customerId}/claims` | `200` | Base + OWN |
-| `GET` | `/admin/customers/{customerId}/refunds` | `200` | Base + OWN + REFUND |
-| `POST` | `/admin/customers/{customerId}/status-decisions` | `200` | Base + OWN + REPLAY |
-| `GET` | `/admin/reviews` | `200` | Base + OWN |
-| `POST` | `/admin/reviews/{reviewId}/moderation` | `200` | Base + OWN + REPLAY |
-| `GET` | `/admin/delivery/zones` | `200` | Base + OWN |
-| `POST` | `/admin/delivery/zones` | `201` | Base + OWN |
-| `PATCH` | `/admin/delivery/zones/{zoneId}` | `200` | Base + OWN + CAS |
-| `GET` | `/admin/delivery/charges` | `200` | Base + OWN |
-| `POST` | `/admin/delivery/charges` | `201` | Base + OWN + STATE |
-| `POST` | `/admin/delivery/charges/{chargeId}/activate` | `200` | Base + OWN + CAS + STATE + REPLAY |
-| `POST` | `/admin/delivery/charges/{chargeId}/supersede` | `200` | Base + OWN + CAS + STATE + REPLAY |
-| `POST` | `/admin/delivery/charges/{chargeId}/deactivate` | `200` | Base + OWN + CAS + STATE + REPLAY |
-| `GET` | `/admin/coupons` | `200` | Base + OWN |
-| `POST` | `/admin/coupons` | `201` | Base + OWN + STATE |
-| `PATCH` | `/admin/coupons/{couponId}` | `200` | Base + OWN + CAS + STATE + STOCK |
-| `POST` | `/admin/coupons/{couponId}/deactivate` | `200` | Base + OWN + CAS + STATE + STOCK |
-| `GET` | `/admin/coupons/{couponId}/redemptions` | `200` | Base + OWN |
-| `GET` | `/admin/settings` | `200` | Base + OWN |
-| `PATCH` | `/admin/settings` | `200` | Base + OWN + CAS |
-| `GET` | `/admin/settings/policies` | `200` | Base + OWN |
-| `POST` | `/admin/settings/policies` | `201` | Base + OWN |
-| `GET` | `/admin/settings/policies/{policyId}` | `200` | Base + OWN |
-| `PATCH` | `/admin/settings/policies/{policyId}` | `200` | Base + OWN + CAS |
-| `POST` | `/admin/settings/policies/{policyId}/approve` | `200` | Base + OWN + CAS + REPLAY |
-| `POST` | `/admin/settings/policies/{policyId}/publish` | `200` | Base + OWN + CAS + REPLAY |
-| `GET` | `/admin/dashboard` | `200` | Base + OWN |
-| `GET` | `/admin/reports/sales` | `200` | Base + OWN |
-| `GET` | `/admin/reports/collections` | `200` | Base + OWN |
-| `GET` | `/admin/reports/refunds` | `200` | Base + OWN + REFUND |
-| `POST` | `/complaints` | `201` | Base |
-| `GET` | `/me/complaints` | `200` | Base + OWN |
-| `GET` | `/orders/{orderId}/complaints` | `200` | Base + OWN |
-| `GET` | `/admin/complaints` | `200` | Base + OWN |
-| `POST` | `/admin/complaints/{complaintId}/resolve` | `200` | Base + OWN + REPLAY |
-| `GET` | `/admin/audit-logs` | `200` | Base + OWN |
-| `GET` | `/admin/notifications` | `200` | Base + OWN |
-| `POST` | `/admin/notifications/{notificationId}/retry` | `200` | Base + OWN + REPLAY |
-| `POST` | `/admin/media/uploads` | `200` | Base + OWN |
-| `POST` | `/orders/{orderId}/claims/evidence-uploads` | `200` | Base + OWN + STATE |
-| `DELETE` | `/admin/media/{assetId}` | `204` | Base + OWN |
-| `GET` | `/health/live` | `200` | Base |
-| `GET` | `/health/ready` | `200 / 503` | Restricted monitor; §16.4 |
+| Method   | Path                                                 | Nominal success    | Additional error families            |
+| -------- | ---------------------------------------------------- | ------------------ | ------------------------------------ |
+| `GET`    | `/auth/csrf`                                         | `200`              | Base                                 |
+| `POST`   | `/auth/register`                                     | `201`              | Base                                 |
+| `POST`   | `/auth/login`                                        | `200`              | Base                                 |
+| `GET`    | `/auth/session`                                      | `200`              | Base                                 |
+| `POST`   | `/auth/logout`                                       | `200`              | Base                                 |
+| `POST`   | `/auth/email-verifications`                          | `200`              | Base                                 |
+| `POST`   | `/auth/email-verifications/confirm`                  | `200`              | Base                                 |
+| `POST`   | `/auth/password-resets`                              | `200`              | Base                                 |
+| `POST`   | `/auth/password-resets/confirm`                      | `200`              | Base                                 |
+| `GET`    | `/me`                                                | `200`              | Base                                 |
+| `PATCH`  | `/me`                                                | `200`              | Base                                 |
+| `POST`   | `/me/email-changes`                                  | `200`              | Base + OWN                           |
+| `POST`   | `/me/email-changes/confirm`                          | `200`              | Base + OWN                           |
+| `POST`   | `/me/password-change`                                | `200`              | Base + OWN                           |
+| `GET`    | `/me/addresses`                                      | `200`              | Base + OWN                           |
+| `POST`   | `/me/addresses`                                      | `201`              | Base + OWN                           |
+| `PATCH`  | `/me/addresses/{addressId}`                          | `200`              | Base + OWN                           |
+| `DELETE` | `/me/addresses/{addressId}`                          | `204`              | Base + OWN                           |
+| `POST`   | `/me/addresses/{addressId}/default`                  | `200`              | Base + OWN                           |
+| `POST`   | `/me/deletion-requests`                              | `200`              | Base + OWN                           |
+| `GET`    | `/admin/auth/csrf`                                   | `200`              | Base + OWN                           |
+| `POST`   | `/admin/auth/login`                                  | `200`              | Base + OWN                           |
+| `GET`    | `/admin/auth/session`                                | `200`              | Base + OWN                           |
+| `POST`   | `/admin/auth/logout`                                 | `200`              | Base + OWN                           |
+| `POST`   | `/admin/auth/password-resets`                        | `200`              | Base + OWN                           |
+| `POST`   | `/admin/auth/password-resets/confirm`                | `200`              | Base + OWN                           |
+| `POST`   | `/guest-access/challenges`                           | `200`              | Base                                 |
+| `POST`   | `/guest-access/sessions`                             | `200`              | Base + OWN                           |
+| `GET`    | `/guest-access/session`                              | `200`              | Base + OWN                           |
+| `POST`   | `/guest-access/logout`                               | `200`              | Base                                 |
+| `GET`    | `/storefront/home`                                   | `200`              | Base                                 |
+| `GET`    | `/categories`                                        | `200`              | Base                                 |
+| `GET`    | `/categories/{slug}`                                 | `200`              | Base                                 |
+| `GET`    | `/products`                                          | `200`              | Base                                 |
+| `GET`    | `/products/{slug}`                                   | `200`              | Base                                 |
+| `GET`    | `/products/{productId}/reviews`                      | `200`              | Base                                 |
+| `GET`    | `/storefront/policies/{type}`                        | `200`              | Base                                 |
+| `GET`    | `/storefront/contact`                                | `200`              | Base                                 |
+| `GET`    | `/cart`                                              | `200`              | Base + OWN                           |
+| `PUT`    | `/cart/items/{variantId}`                            | `200`              | Base + OWN + STOCK                   |
+| `DELETE` | `/cart/items/{variantId}`                            | `200`              | Base + OWN + STOCK                   |
+| `POST`   | `/cart/merge`                                        | `200`              | Base + OWN + STOCK                   |
+| `GET`    | `/wishlist`                                          | `200`              | Base + OWN                           |
+| `PUT`    | `/wishlist/products/{productId}`                     | `200`              | Base + OWN                           |
+| `DELETE` | `/wishlist/products/{productId}`                     | `200`              | Base + OWN                           |
+| `POST`   | `/coupons/preview`                                   | `200`              | Base + STATE + STOCK                 |
+| `POST`   | `/products/{productId}/reviews`                      | `201`              | Base                                 |
+| `PATCH`  | `/reviews/{reviewId}`                                | `200`              | Base                                 |
+| `GET`    | `/me/reviews`                                        | `200`              | Base + OWN                           |
+| `GET`    | `/delivery/areas`                                    | `200`              | Base                                 |
+| `POST`   | `/checkout/quotes`                                   | `200`              | Base + STATE + STOCK                 |
+| `POST`   | `/checkout/orders`                                   | `201 (replay 200)` | Base + STATE + STOCK + REPLAY        |
+| `GET`    | `/orders`                                            | `200`              | Base                                 |
+| `GET`    | `/orders/{orderId}`                                  | `200`              | Base + OWN                           |
+| `GET`    | `/orders/{orderId}/status`                           | `200`              | Base + OWN                           |
+| `POST`   | `/orders/{orderId}/cancellation-requests`            | `201`              | Base + OWN + STATE + REPLAY          |
+| `GET`    | `/orders/{orderId}/cancellation-requests`            | `200`              | Base + OWN                           |
+| `GET`    | `/orders/{orderId}/delivery-events`                  | `200`              | Base + OWN                           |
+| `GET`    | `/checkout/payment-methods`                          | `200`              | Base                                 |
+| `GET`    | `/orders/{orderId}/payments`                         | `200`              | Base + OWN + MONEY                   |
+| `POST`   | `/orders/{orderId}/payment-attempts`                 | `200 / 202`        | Base + OWN + STATE + MONEY + REPLAY  |
+| `GET`    | `/orders/{orderId}/payment-attempts/{attemptId}`     | `200`              | Base + OWN + MONEY                   |
+| `POST`   | `/webhooks/sslcommerz/ipn`                           | `200 / 4xx / 5xx`  | §12.3 matrix                         |
+| `GET`    | `/payment-returns/sslcommerz/{result}`               | `303`              | Base                                 |
+| `POST`   | `/payment-returns/sslcommerz/{result}`               | `303`              | Base                                 |
+| `GET`    | `/admin/payments`                                    | `200`              | Base + OWN + MONEY                   |
+| `GET`    | `/admin/payments/{paymentId}`                        | `200`              | Base + OWN + MONEY                   |
+| `POST`   | `/admin/payments/{paymentId}/reconcile`              | `200 / 202`        | Base + OWN + MONEY + REPLAY          |
+| `POST`   | `/admin/payments/{paymentId}/risk-decisions`         | `200`              | Base + OWN + MONEY + REPLAY          |
+| `POST`   | `/admin/payments/{paymentId}/cod-collections`        | `200`              | Base + OWN + MONEY + REPLAY          |
+| `GET`    | `/admin/provider-receipts`                           | `200`              | Base + OWN + MONEY                   |
+| `POST`   | `/admin/provider-receipts/{intakeId}/link`           | `200`              | Base + OWN + MONEY + REPLAY          |
+| `POST`   | `/admin/payment-collections/{collectionId}/allocate` | `200`              | Base + OWN + CAS + MONEY + REPLAY    |
+| `GET`    | `/me/claims`                                         | `200`              | Base + OWN                           |
+| `GET`    | `/me/refunds`                                        | `200`              | Base + OWN + REFUND                  |
+| `GET`    | `/orders/{orderId}/claim-eligibility`                | `200`              | Base + OWN                           |
+| `POST`   | `/orders/{orderId}/claims`                           | `201`              | Base + OWN + STATE + REPLAY          |
+| `GET`    | `/orders/{orderId}/claims`                           | `200`              | Base + OWN                           |
+| `GET`    | `/claims/{claimId}`                                  | `200`              | Base + OWN                           |
+| `GET`    | `/orders/{orderId}/refunds`                          | `200`              | Base + OWN + REFUND                  |
+| `POST`   | `/orders/{orderId}/refund-requests`                  | `200`              | Base + OWN + STATE + REFUND + REPLAY |
+| `GET`    | `/refunds/{refundId}`                                | `200`              | Base + OWN + REFUND                  |
+| `GET`    | `/admin/claims`                                      | `200`              | Base + OWN                           |
+| `GET`    | `/admin/claims/{claimId}`                            | `200`              | Base + OWN                           |
+| `POST`   | `/admin/claims/{claimId}/review`                     | `200`              | Base + OWN + STATE + REPLAY          |
+| `POST`   | `/admin/claims/{claimId}/receipt`                    | `200`              | Base + OWN + STATE + REPLAY          |
+| `POST`   | `/admin/claims/{claimId}/inspection`                 | `200`              | Base + OWN + STATE + REPLAY          |
+| `POST`   | `/admin/claims/{claimId}/complete`                   | `200`              | Base + OWN + STATE + REPLAY          |
+| `GET`    | `/admin/refunds`                                     | `200`              | Base + OWN + REFUND                  |
+| `GET`    | `/admin/refunds/{refundId}`                          | `200`              | Base + OWN + REFUND                  |
+| `POST`   | `/admin/refund-groups`                               | `201`              | Base + OWN + REFUND + REPLAY         |
+| `POST`   | `/admin/refunds/{refundId}/review`                   | `200`              | Base + OWN + STATE + REFUND + REPLAY |
+| `POST`   | `/admin/refunds/{refundId}/payout-attempts`          | `200 / 202`        | Base + OWN + STATE + REFUND + REPLAY |
+| `POST`   | `/admin/refunds/{refundId}/reconcile`                | `200 / 202`        | Base + OWN + STATE + REFUND + REPLAY |
+| `POST`   | `/admin/refunds/{refundId}/manual-confirmations`     | `200`              | Base + OWN + STATE + REFUND + REPLAY |
+| `GET`    | `/admin/products`                                    | `200`              | Base + OWN                           |
+| `POST`   | `/admin/products`                                    | `201`              | Base + OWN                           |
+| `GET`    | `/admin/products/{productId}`                        | `200`              | Base + OWN                           |
+| `PATCH`  | `/admin/products/{productId}`                        | `200`              | Base + OWN + CAS                     |
+| `POST`   | `/admin/products/{productId}/deactivate`             | `200`              | Base + OWN + CAS                     |
+| `GET`    | `/admin/categories`                                  | `200`              | Base + OWN                           |
+| `POST`   | `/admin/categories`                                  | `201`              | Base + OWN                           |
+| `PATCH`  | `/admin/categories/{categoryId}`                     | `200`              | Base + OWN + CAS                     |
+| `POST`   | `/admin/categories/{categoryId}/deactivate`          | `200`              | Base + OWN + CAS                     |
+| `POST`   | `/admin/products/{productId}/variants`               | `201`              | Base + OWN                           |
+| `PATCH`  | `/admin/variants/{variantId}`                        | `200`              | Base + OWN + CAS                     |
+| `POST`   | `/admin/variants/{variantId}/deactivate`             | `200`              | Base + OWN + CAS                     |
+| `GET`    | `/admin/inventory`                                   | `200`              | Base + OWN                           |
+| `GET`    | `/admin/inventory/{variantId}/movements`             | `200`              | Base + OWN                           |
+| `POST`   | `/admin/inventory/{variantId}/adjustments`           | `200`              | Base + OWN + STOCK + REPLAY          |
+| `GET`    | `/admin/orders`                                      | `200`              | Base + OWN                           |
+| `GET`    | `/admin/orders/{orderId}`                            | `200`              | Base + OWN                           |
+| `POST`   | `/admin/orders/{orderId}/fulfillment-transitions`    | `200`              | Base + OWN + STATE + REPLAY          |
+| `GET`    | `/admin/cancellation-requests`                       | `200`              | Base + OWN                           |
+| `POST`   | `/admin/cancellation-requests/{requestId}/decision`  | `200`              | Base + OWN + REPLAY                  |
+| `GET`    | `/admin/orders/{orderId}/delivery-exceptions`        | `200`              | Base + OWN                           |
+| `POST`   | `/admin/orders/{orderId}/delivery-exceptions`        | `201`              | Base + OWN + STATE + REPLAY          |
+| `POST`   | `/admin/delivery-exceptions/{exceptionId}/resolve`   | `200`              | Base + OWN + REPLAY                  |
+| `GET`    | `/admin/customers`                                   | `200`              | Base + OWN                           |
+| `GET`    | `/admin/customers/{customerId}`                      | `200`              | Base + OWN                           |
+| `GET`    | `/admin/customers/{customerId}/orders`               | `200`              | Base + OWN                           |
+| `GET`    | `/admin/customers/{customerId}/claims`               | `200`              | Base + OWN                           |
+| `GET`    | `/admin/customers/{customerId}/refunds`              | `200`              | Base + OWN + REFUND                  |
+| `POST`   | `/admin/customers/{customerId}/status-decisions`     | `200`              | Base + OWN + REPLAY                  |
+| `GET`    | `/admin/reviews`                                     | `200`              | Base + OWN                           |
+| `POST`   | `/admin/reviews/{reviewId}/moderation`               | `200`              | Base + OWN + REPLAY                  |
+| `GET`    | `/admin/delivery/zones`                              | `200`              | Base + OWN                           |
+| `POST`   | `/admin/delivery/zones`                              | `201`              | Base + OWN                           |
+| `PATCH`  | `/admin/delivery/zones/{zoneId}`                     | `200`              | Base + OWN + CAS                     |
+| `GET`    | `/admin/delivery/charges`                            | `200`              | Base + OWN                           |
+| `POST`   | `/admin/delivery/charges`                            | `201`              | Base + OWN + STATE                   |
+| `POST`   | `/admin/delivery/charges/{chargeId}/activate`        | `200`              | Base + OWN + CAS + STATE + REPLAY    |
+| `POST`   | `/admin/delivery/charges/{chargeId}/supersede`       | `200`              | Base + OWN + CAS + STATE + REPLAY    |
+| `POST`   | `/admin/delivery/charges/{chargeId}/deactivate`      | `200`              | Base + OWN + CAS + STATE + REPLAY    |
+| `GET`    | `/admin/coupons`                                     | `200`              | Base + OWN                           |
+| `POST`   | `/admin/coupons`                                     | `201`              | Base + OWN + STATE                   |
+| `PATCH`  | `/admin/coupons/{couponId}`                          | `200`              | Base + OWN + CAS + STATE + STOCK     |
+| `POST`   | `/admin/coupons/{couponId}/deactivate`               | `200`              | Base + OWN + CAS + STATE + STOCK     |
+| `GET`    | `/admin/coupons/{couponId}/redemptions`              | `200`              | Base + OWN                           |
+| `GET`    | `/admin/settings`                                    | `200`              | Base + OWN                           |
+| `PATCH`  | `/admin/settings`                                    | `200`              | Base + OWN + CAS                     |
+| `GET`    | `/admin/settings/policies`                           | `200`              | Base + OWN                           |
+| `POST`   | `/admin/settings/policies`                           | `201`              | Base + OWN                           |
+| `GET`    | `/admin/settings/policies/{policyId}`                | `200`              | Base + OWN                           |
+| `PATCH`  | `/admin/settings/policies/{policyId}`                | `200`              | Base + OWN + CAS                     |
+| `POST`   | `/admin/settings/policies/{policyId}/approve`        | `200`              | Base + OWN + CAS + REPLAY            |
+| `POST`   | `/admin/settings/policies/{policyId}/publish`        | `200`              | Base + OWN + CAS + REPLAY            |
+| `GET`    | `/admin/dashboard`                                   | `200`              | Base + OWN                           |
+| `GET`    | `/admin/reports/sales`                               | `200`              | Base + OWN                           |
+| `GET`    | `/admin/reports/collections`                         | `200`              | Base + OWN                           |
+| `GET`    | `/admin/reports/refunds`                             | `200`              | Base + OWN + REFUND                  |
+| `POST`   | `/complaints`                                        | `201`              | Base                                 |
+| `GET`    | `/me/complaints`                                     | `200`              | Base + OWN                           |
+| `GET`    | `/orders/{orderId}/complaints`                       | `200`              | Base + OWN                           |
+| `GET`    | `/admin/complaints`                                  | `200`              | Base + OWN                           |
+| `POST`   | `/admin/complaints/{complaintId}/resolve`            | `200`              | Base + OWN + REPLAY                  |
+| `GET`    | `/admin/audit-logs`                                  | `200`              | Base + OWN                           |
+| `GET`    | `/admin/notifications`                               | `200`              | Base + OWN                           |
+| `POST`   | `/admin/notifications/{notificationId}/retry`        | `200`              | Base + OWN + REPLAY                  |
+| `POST`   | `/admin/media/uploads`                               | `200`              | Base + OWN                           |
+| `POST`   | `/orders/{orderId}/claims/evidence-uploads`          | `200`              | Base + OWN + STATE                   |
+| `DELETE` | `/admin/media/{assetId}`                             | `204`              | Base + OWN                           |
+| `GET`    | `/health/live`                                       | `200`              | Base                                 |
+| `GET`    | `/health/ready`                                      | `200 / 503`        | Restricted monitor; §16.4            |
 
 **Registry maintenance:** Keep every method/path, response status, DTO and error profile aligned with OpenAPI, runtime
 validation and contract tests. Add an operation entry, DTO mapping and test coverage slot in the same change as a new route.

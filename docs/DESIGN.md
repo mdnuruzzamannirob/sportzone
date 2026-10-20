@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 17 October 2026
+**Updated:** 20 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -70,6 +70,8 @@ SportZone uses a **black-and-white foundation with a restrained blue brand accen
 **Design delivery:** The project owner delegates visual design within this specification; no separate Figma file is required. Use clear product-focused layouts, generous consistent spacing, restrained blue actions and grayscale surfaces. Storefront layouts prioritize discovery and purchase; admin layouts prioritize readable data and explicit actions. Review actual responsive screens and both themes, then incorporate owner feedback. Earlier scaffold acceptance does not approve every future screen's appearance.
 
 **Implementation ownership:** Keep layout/composition in routes, repeated UI defaults in app-owned `components/ui/`, feature-specific components with their feature, pure shared behavior in `shared/` and cross-app design values in `styles/`. Avoid speculative abstractions, a shared UI package and additional component libraries. Remove superseded code/styles as components migrate.
+
+**20 October 2026 placement decision:** Architecture §§4–5 specify thin route composition, shells/navigation in `components/layout/`, feature-owned views/forms and retained reusable commerce/management compositions. Target route groups organize layouts without changing URL or access rules. Existing current-shell/component links below remain current implementation references until P02-012/P02-013 migrate them. This organization change preserves HeroUI v3, semantic tokens, Appearance behavior and all responsive/accessibility requirements; each move needs affected browser verification.
 
 ### 2.2 Light and dark color system
 

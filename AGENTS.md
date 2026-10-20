@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 17 October 2026
+**Updated:** 20 October 2026
 
 **Project:** Single-store sports e-commerce platform for Bangladesh (BDT)\
 **Scope:** Repository-root instructions for coding agents working in `sportzone/`\
@@ -94,6 +94,8 @@ Inspect the live repository before using paths or commands from this target layo
 
 **MUST NOT** import Mongoose models or backend runtime services into either frontend. Shared pure types/contracts are optional only when justified by real duplication; do not introduce a shared UI library or new service without a demonstrated need.
 
+**20 October 2026 organization decision:** Follow the target structures in [Architecture §§4–6](docs/ARCHITECTURE.md#4-project-structure) and staged tasks P01-015, P02-012–013, P03-019–020. Frontends use feature-owned API/components/hooks/schemas/types with thin routes; backend modules use `<entity>.model/validation/service/controller/routes/types.ts` as needed. Current paths remain valid until their owning refactor verifies the move. Do not create empty template files, duplicate models or infer a new API namespace from a folder name. Preserve existing pure `shared/` utilities and HeroUI foundations. Model sharing for users/variant counters follows Database §4.2's narrow capabilities.
+
 ## 4. Agent workflow & task execution
 
 Apply this sequence to each assigned change:
@@ -123,6 +125,7 @@ For higher-risk mutations, write state-transition and concurrency tests before e
 
 - Use TypeScript types and narrow interfaces at module boundaries; avoid `any`, unsafe casts and `@ts-ignore` that conceal errors.
 - Match the repository’s actual linter, formatter, naming and import conventions. Do not invent tools, versions or commands.
+- Keep Biome, TypeScript, Vitest and existing browser tooling. Any refactor moving tests/config/tool entry points must update imports, test discovery and CI inventory together; retain NodeNext `.js` backend import specifiers.
 - Keep code cohesive and explicit; validate external input; handle failures without leaking internal details.
 - Keep side effects in appropriately owned services; prefer pure calculations for monetary and business rules.
 - Do not introduce packages, generated code, shared abstractions or broad refactors without task-level justification.
@@ -134,6 +137,8 @@ For higher-risk mutations, write state-transition and concurrency tests before e
 **Storefront (`storefront/`):** Follow Next.js App Router patterns for public product/category rendering and metadata. Public catalog data may use controlled caching; sessions, carts, checkout and private order/payment data **MUST NOT** enter shared caches. Re-fetch authoritative prices and availability from Express before purchase.
 
 **Admin (`admin/`):** Follow React/Vite client-side routing and API-backed management forms. Enforce permission and ownership again on every backend mutation; route hiding is only a usability measure.
+
+Use `components/layout/` for shells, `components/ui/` for HeroUI defaults, and owning features for feature-only views. Keep reusable commerce/management compositions and existing theme behavior. Introduce target TanStack Query/frontend Zod only with the actual API/form integration task, pinned dependencies and checks; documentation does not establish installation. Clear private caches on identity change, enforce server/client import boundaries and prohibit automatic financial-mutation retries. Route groups and UI guards do not authorize data access.
 
 **UI implementation convention:** Use HeroUI v3 for new reusable interactive controls in both apps, with app-owned defaults in `src/components/ui/`. Keep components needed only by one feature with that feature; keep route files focused on composition and navigation. Import HeroUI directly when no repeated project defaults are needed. Existing Appearance controls, disclosures, links, alerts and panels use HeroUI. Preserve Next.js/React Router navigation through app-owned Link adapters. Native headings, text and page landmarks remain semantic HTML; use HeroUI for the corresponding interactive or visual primitive rather than maintaining a second custom implementation. Do not add another component library, theme store or a generic wrapper without a concrete need.
 

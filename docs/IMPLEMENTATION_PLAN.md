@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 17 October 2026
+**Updated:** 20 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -131,6 +131,37 @@ Convert approved work packages into `TASKS.md` entries with a stable ID, short o
 ### 3.5 Timeline and estimation
 
 Do not assign arbitrary completion dates. Estimate work after evaluating developer capacity, approved hosting, gateway/refund feasibility, operator content, and integration access. Record milestone dates separately in task tracking once agreed. A missing merchant capability may block online-payment acceptance without blocking COD-oriented development.
+
+### 3.6 Incremental structure refactor — 20 October 2026
+
+The project owner selected Architecture §§4–6's feature-based frontends and module-based layered backend, then requested documentation first and gradual code refactoring. This is source organization/ownership work over the existing MongoDB stack, not a replacement implementation or waiver of any gate.
+
+| Step | Task | Outcome and prerequisite |
+| --- | --- | --- |
+| 1 | P01-015 | Reconcile target architecture, API/data ownership, UI conventions, verification and operations; documentation In Review pending acceptance |
+| 2 | P03-019 | Extract typed composition/configuration and route registration; preserve runtime/worker/tool behavior |
+| 3 | P03-020 | Separate auth/customer/delivery boundaries, standardize cohesive backend files and provider adapters; depends on P03-019 |
+| 4 | P02-012 / P02-013 | Refactor storefront/admin routes, layouts and feature placement independently after P01-015 acceptance |
+| 5 | Existing feature tasks | Integrate customer/admin auth, then admin catalog → public catalog → inventory/cart → quote/COD order/admin processing; honor declared prerequisites |
+| 6 | Existing P07/P08 tasks | Verified online payment/reconciliation and after-sales; required channels and launch gates unchanged |
+
+Do not start a bulk rename across all apps. For each slice, record current-to-target paths, preserve public URLs, error/DTO/session/CSRF contracts and collection/index identities, move/update imports and operational entry points together, then run the owning checks. Refactor tasks do not recreate already accepted foundations or mark dependent business features complete. Pre-existing accepted evidence is retained as historical evidence; new behavior/parity evidence accompanies refactored code.
+
+Initial current-to-target inventory (not executed):
+
+| Current code | Target responsibility | Task |
+| --- | --- | --- |
+| `backend/src/server.ts`, `modules/auth/composition.ts` | Process lifecycle plus root `composition.ts` and typed options | P03-019 |
+| `backend/src/config/environment.ts`, `routes.ts`, `middleware/`, `shared/` | `config/env.ts`, `routes/index.ts`, cohesive `common/` utilities | P03-019 |
+| `backend/src/modules/auth/profile.ts`, `profile-routes.ts`, `account-dto.ts` | Customer validation/service/controller/routes/DTO ownership; canonical identity persistence retained | P03-020 |
+| `backend/src/modules/settings/coverage.ts` | Delivery coverage read service | P03-020 |
+| `backend/src/modules/notifications/email.ts` | Email provider integration; intent/claims stay in notifications | P03-020 |
+| `storefront/src/app/(public)`, `(private)`, root shell/header components | Target route groups, components/layout and consuming features, keeping URLs/cache rules | P02-012 |
+| `admin/src/app/routes.tsx`, `components/admin/`, `styles.css` | Router/providers, components/layout, feature auth guard and styles/globals.css | P02-013 |
+
+Keep `db/`, `observability/`, reusable UI/management/commerce foundations, pure root shared utilities and operator tools unless a specific dependency requires a verified move. Do not implement planned products/inventory models solely to complete a refactor checklist.
+
+TanStack Query/frontend Zod are selected target dependencies for later integrated API/forms work, not dependencies to add during layout-only moves. Add compatible locked versions and CI checks with their consuming feature. Do not reorganize the phase roadmap to hide incomplete prerequisites. Recovery for a code-only move is the prior compatible build after shutdown/lease handling; migrations and external financial retries require their own contracts and safeguards.
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 17 October 2026
+**Updated:** 20 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -26,6 +26,14 @@ responsibilities, configuration inventories, alerting, backup/restore decisions 
 change those authoritative contracts.
 
 ---
+
+## Structure-refactor operating constraints — 20 October 2026
+
+The owner-selected source organization in Architecture §§4–6 is a target, with code work tracked by P02-012–013/P03-019–020. Current commands, tool entry points, environment names and runbooks remain operational references until their implementing task changes and verifies them. This documentation decision does not provision services, install dependencies, execute migrations or change deployed origins/cookies/provider activation.
+
+For every slice, inventory build/runtime imports, worker launch commands, bootstrap/migration/provisioning tools, CI paths and monitoring/logging before moving code. Deploy API/worker artifacts from compatible backend code and preserve typed startup validation, shutdown/draining, protected readiness, lease fencing and uncertain-effect reconciliation. Stop/drain old runners as appropriate before switching entry points; do not accidentally start two independent schedulers without durable claim protection.
+
+Code-only organization changes keep MongoDB collections/indexes/ObjectIds, stored sessions/proof keys, provider identities, API namespaces and env contracts intact. Rollback uses the prior compatible build, preserving durable intents/audit and reconciling outstanding external effects. Any genuine persistence/config change requires an additive reviewed migration and updated configuration/restore procedure before deployment; do not infer permission for destructive data work from a file move. Update current runbook commands/links with each move, and retain historical evidence paths as historical.
 
 ## Contents
 

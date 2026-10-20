@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 17 October 2026
+**Updated:** 20 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -17,6 +17,20 @@
 This document defines SportZone's **test strategy, reproducible verification procedures, expected invariants, traceability, evidence conventions and release-quality gates**. It defines verification procedures; §17 defines execution records. The PRD controls acceptance and business policy; Architecture controls system boundaries; Database and API control persistence and HTTP contracts; Design controls UI behavior. This file never treats a passing mock, undocumented assumption or draft acceptance matrix as proof that software or an external service works.
 
 ---
+
+## Structure-refactor verification — 20 October 2026
+
+Architecture §§4–6 and Implementation Plan §3.6 define the target; P02-012–013/P03-019–020 are pending code work. Preserve existing scenario IDs, task evidence and test coverage while reorganizing. The documentation task P01-015 requires local-link/repository guards, Markdown/diff review and task-count/dependency consistency, not runtime acceptance.
+
+| Refactor scope | Required parity evidence before acceptance |
+| --- | --- |
+| Backend composition/config/routes | Existing lint/typecheck/unit/build/smoke/integration checks; config activation/fail-closed behavior, health, startup/shutdown, exact public contracts, secret-safe logs, worker/tool entry points |
+| Auth/customer/delivery/media boundaries | HTTP ownership/session/CSRF/recovery checks and real replica-set rollback/race tests; one canonical validator/index set, scoped write allowlists, outbox claims and external-effect guards |
+| Storefront routes/layouts/features | Existing lint/typecheck/unit/build/smoke; unchanged URL/404/private/noindex behavior, theme bootstrap and client/server import boundaries; affected responsive/keyboard/both-theme browser cases |
+| Admin routes/layouts/features | Existing lint/typecheck/unit/build/smoke/a11y; deep links/lazy pending/error/denied states and navigation; affected both-theme browser cases |
+| Later query/API integration | Cache clearing on logout/identity expiry, CSRF refresh, controlled retries, financial retry prohibition, invalidation/input preservation, guest-cart merge and authoritative prices |
+
+Tests remain outside production `src/`. Update Vitest include patterns, TypeScript test projects, fixtures, smoke entry points and browser imports when moving files; a green run that silently drops cases is a failure. Record before/after discovered cases and exact commands. Keep `ci-workspaces.json` synchronized if checks/scripts/dependencies change, with no passing placeholders. Documentation selection does not install TanStack Query/frontend Zod. No existing behavioral scenario or milestone gate is waived.
 
 ## Contents
 

@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 17 October 2026
+**Updated:** 20 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -258,6 +258,23 @@ flowchart LR
 ```
 
 Both controllers and scheduled jobs invoke shared backend **domain services**, never each other's HTTP endpoint. Cross-module transaction coordination remains inside backend-controlled services (Architecture §§3, 6).
+
+**Target implementation ownership — 20 October 2026:** Domain labels in this document are retained for traceability. The following maps them to concrete modules under Architecture §6.1; this is a code-boundary refactor, not a schema/index/collection migration.
+
+| Records | Canonical registration / permitted operations |
+| --- | --- |
+| `users` | Auth owns the single schema/index/validator registration and credential/security writes; customers uses narrow public profile/address operations. Guest-order access remains independently scoped |
+| `sessions`, `authChallenges`, `browserContexts` | Auth; guest-access uses the approved scoped guest boundary |
+| `products`, `productVariants` | Products registers schemas; inventory receives a stock-only persistence capability for variant counters. Product updates cannot overwrite counters |
+| `categories` | Categories |
+| `carts`, `wishlists` | Carts, wishlists respectively |
+| `coupons`, `couponRedemptions`, `couponCustomerCounters` | Coupons (the promotions domain) |
+| `deliveryZones`, `deliveryCharges` | Delivery; current settings coverage reader is a transitional implementation |
+| `mediaAssets` | Media owns registration, scoped attachment/reference-ledger/cleanup operations; products/categories/returns/settings coordinate attachments through that boundary |
+| `storeSettings`, `policyDocuments` | Settings |
+| Other records | Retain the domain ownership and invariants specified in their collection sections |
+
+Composition wires narrow public operations, never a second mutable schema for the same collection or unrestricted foreign-model access. Public capabilities accept the coordinating transaction session; participants must not start nested transactions or parallel operations in the same session. Preserve ObjectIds, snapshots, integer-poisha arithmetic, unique identities, BSON validation and all existing indexes. Raw model, validator and bootstrap path moves require updated tooling and parity tests; a filename change is not permission to change durable data or mark a migration executed.
 
 ### 4.3 Atomic allocation and verified-payment flow
 

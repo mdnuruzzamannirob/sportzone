@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 17 October 2026
+**Updated:** 20 October 2026
 
 Single-store sports e-commerce platform for Bangladesh, using BDT. SportZone combines a customer storefront, a separate
 administration portal and one authoritative backend API.
@@ -52,7 +52,7 @@ The repository contains the documentation set, runnable Next.js storefront, Reac
 sportzone/
 ├── storefront/                 # Next.js App Router scaffold, styles and tests
 ├── admin/                      # React/Vite SPA scaffold, styles and tests
-├── backend/package.json        # Backend workspace
+├── backend/                    # Express API, identity/notification implementations and tests
 ├── styles/                     # Shared colors, typography, dimensions and licensed fonts
 ├── shared/format-bdt.ts         # Pure integer-poisha display formatter
 ├── docs/                       # Product and engineering specifications
@@ -69,10 +69,22 @@ sportzone/
 
 [Architecture §4](docs/ARCHITECTURE.md#4-project-structure) defines application/module boundaries.
 
+The owner selected a feature-based storefront/admin and module-based layered backend on 20 October 2026. Architecture
+§§4–6 contain the target paths and ownership; current code is being retained for incremental refactoring, not presented
+as already moved. MongoDB/Mongoose and all public API/session/data contracts remain in place. The selected backend
+module convention is `<entity>.model/validation/service/controller/routes/types.ts`, with extra cohesive files only as needed.
+UI shells target `components/layout/`, feature-only UI/API/hooks/schemas/types target `features/`, and existing reusable
+HeroUI/commerce/management primitives stay reusable. Current CLI commands below remain the executable setup reference.
+
+[Implementation Plan §3.6](docs/IMPLEMENTATION_PLAN.md#36-incremental-structure-refactor--20-october-2026) sequences
+P01-015 documentation review, P03-019–020 backend refactoring and P02-012–013 UI refactoring before/alongside their
+dependent feature work. TanStack Query/frontend Zod are selected for subsequent integrated API/forms work; they are
+not installed by the documentation decision. See [decision evidence](docs/evidence/P01-015-structure-decision.md).
+
 ## 4. Development workflow
 
 1. Read [AGENTS](AGENTS.md), the assigned [task](docs/TASKS.md) and its owning contracts.
-2. Install the workspace with the toolchain below, then scaffold the frontends and backend in Phases 02–03.
+2. Install the workspace with the toolchain below; inspect implemented code and target refactor tasks before moving existing foundations.
 3. Configure isolated local/test resources, a transaction-capable MongoDB replica set and sandbox integrations.
 4. Implement each feature with its API/data contracts, required UI states, tests and operating controls.
 5. Run applicable checks, review the diff and attach evidence before task acceptance.

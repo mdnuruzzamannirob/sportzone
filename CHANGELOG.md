@@ -2,9 +2,15 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 17 October 2026
+**Updated:** 20 October 2026
 
 This changelog tracks the documentation baseline. Application releases are recorded separately when software is released.
+
+## Documentation structure decision — 20 October 2026
+
+- Recorded the project owner's selection of feature-based Next.js/Vite UIs and concrete Express modular-monolith modules with entity-prefixed model/validation/service/controller/routes/types files; retained MongoDB/Mongoose and existing security/financial contracts.
+- Reconciled target/current path distinctions, auth/customer/variant/delivery/media ownership, UI composition/state/transport conventions, later TanStack Query/frontend Zod adoption, verification and operational recovery responsibilities across owning documents.
+- Added P01-015 (In Review) and P02-012–013/P03-019–020 (Not Started); retained accepted task/milestone history. No application code, dependencies, data or deployments changed. [Decision and verification](docs/evidence/P01-015-structure-decision.md).
 
 ## [1.0] — 17 October 2026
 
