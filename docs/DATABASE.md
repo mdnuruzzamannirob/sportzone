@@ -87,6 +87,8 @@ product and policy rules; `ARCHITECTURE.md` governs system boundaries and integr
 | External calls | Never hold an open DB transaction across payment, Cloudinary, or email HTTP calls |
 | Boundaries | Public APIs return allowlisted DTOs, never raw Mongoose documents |
 
+The implemented foundation in `backend/src/db/` supplies an explicit bounded connection factory with replica-set/session checks, mutable-schema options, strict integer/optional-reference helpers, additive index creation/verification and a session-aware transaction boundary. See [P03-002 implementation evidence](./evidence/P03-002-database.md). These primitives do not create the business collections below. Each feature still owns its exact fields, BSON/collection validators, indexes, protected update allowlists and DTO mappings; schema validators alone do not authorize arbitrary update operators.
+
 ### 2.2 Field standards
 
 | Convention | Definition |
@@ -301,11 +303,24 @@ flowchart TD
 | `addresses[]` | embedded[] | `{id,recipient,phone,districtKey,areaKey,street,addressLine2?,isDefault}`; bounded per customer |
 | `securityRevision`! | int | Increment when passwords, privileges, suspension, or security posture changes |
 | `challengeRevisions`! | embedded | Per-purpose nonnegative counters for email verification/change/reset; issuance/reissue and consumption serialize on the same principal/purpose counter |
-| `deletionRequest`? | embedded | `{requestedAt,verifiedAt,status,decisionAt?,decisionReason?}`; approval/retention-controlled |
+| `deletionRequest`? | embedded | `{id,requestedAt,verifiedAt,status,reason?,decisionAt?,decisionReason?}`; approval/retention-controlled (§5.5) |
 
 **Indexes:** unique `{emailNormalized:1}`; `{role:1,status:1,createdAt:-1}` for admin customer views.
 
 **Rules:** at most one default address; deleting a saved address never edits an order snapshot. Admin accounts have no public registration. User account deletion/anonymization requires verified review against retention obligations.
+
+The P03-007 customer service uses the owner-approved password policy and versioned adaptive scrypt encoding in API §4.6.
+Registration user + registration notification intent + browser-context consumption commit together. Login serializes
+credential/status/revision checks with context consumption and session issuance; password KDF work stays outside the
+transaction. Customer/admin identities remain separated.
+
+P03-008 profile/address mutations are scoped to the active session's userId, role and security revision and serialize
+through a transaction on that user document. Partial edits re-read and validate the merged state on retry; maximum ten
+addresses and at most one default remain BSON-enforced. Phone storage is canonical validated Bangladesh E.164 (API §4.7).
+No new user field, index or schema migration is required. The optional deletionRequest is written only after active
+session plus persisted email-verification checks. It preserves the first id/reason/requestedAt/verifiedAt and returns
+existing review status on retries, including terminal decisions. Intake does not set deletion_pending/deactivated or
+remove/anonymize accounts. Operational review/retention decisions are not exposed as customer mutations.
 
 ### 5.2 `sessions` — `auth` / `guest-access`
 
@@ -315,7 +330,8 @@ flowchart TD
 | `kind`! | enum(`customer`,`admin`,`guest_order`) | Separate credential/cookie namespaces |
 | `userId`? | ObjectId | Required for customer/admin; absent for guest-order |
 | `orderId`? | ObjectId | Required only for guest-order scope |
-| `securityRevisionAtIssue`? | int | Principal security revision to detect invalidation |
+| `securityRevisionAtIssue`? | int | Required for customer/admin; absent for guest-order; principal security revision to detect invalidation |
+| `csrfSecretHash`! | string | Session-bound CSRF verifier; private projection; rotate with the session (API §4) |
 | `expiresAt`! | Date | Enforced during each request, independent of TTL |
 | `revokedAt`? | Date | Revocation takes effect immediately |
 | `lastUsedAt`? | Date | Minimal retained metadata; avoid storing full IP by default |
@@ -323,6 +339,15 @@ flowchart TD
 **Indexes:** unique `{tokenHash:1}`; `{userId:1,kind:1,revokedAt:1}`; TTL `{expiresAt:1}`.
 
 **Rules:** rotate after login, proof exchange or privilege changes; revoke on logout/suspension; do not treat physical TTL deletion as authentication expiry. A guest session cannot access other orders or admin/customer routes.
+
+The implemented customer/admin lifecycle in `sessions.ts` stores HMAC-SHA-256 digests with route-kind/domain separation
+under SESSION_SECRET; API §4.4 defines the exact session/CSRF encoding. Fresh issuance/rotation creates independent
+32-byte opaque session/CSRF values; only digests persist. Rotation revokes the predecessor and writes the replacement
+transactionally. Active lookup checks current role/status/security revision independently of TTL; principal revocation
+increments securityRevision and marks matching sessions in one transaction. Raw tokens are returned only inside the
+backend issuance result for cookie/private CSRF response composition, never in a session DTO or log. Browser-context,
+challenge and guest digest issuance remain with their owning later services; their placeholder schema strings do not
+constitute a cryptographic implementation. No session is minted by HTTP startup or by simply knowing an ObjectId.
 
 ### 5.3 `authChallenges` — verification and recovery
 
@@ -357,11 +382,29 @@ failure fail closed. Resend/reissue must increment `users.challengeRevisions[pur
 create a fresh proof/intent; do not extend an existing proof's expiry. Delivery retry reuses that challenge and event key;
 see API §16.3 for uncertain-send handling. No new session is granted by delivery. The chosen proof transport is a high-entropy secure link; supporting short numeric codes later requires a separately reviewed guessing/attempt-limit design. Security tests cover key access, nonce management, concurrency, redaction and restore invalidation.
 
+#### Password-reset implementation
+
+Existing identity fields/indexes remain authoritative. Issuance conditionally increments `users.challengeRevisions.password_reset` in a transaction, invalidates previous reset challenges and removes their envelopes, then inserts a fresh challenge and reference-only `password_reset` notification (`password-reset-v1`). Notification `payload` contains only `challengeId:ObjectId`. `deliveryNotificationId` binds the outbox row to the challenge. AES-256-GCM uses fresh 12-byte nonces and 16-byte tags; AAD binds challenge ID, purpose, customer ID, destination, expiry, scope revision and key version. The externally held key ring is never persisted. Reset consumption and authenticated password change update the user security revision and revoke sessions atomically; password change also invalidates pending reset proofs. Cleanup removes expired/inactive envelopes even if TTL deletion is delayed. A reviewed additive notification validator migration accepts registration-v1 and password-reset-v1 records; old notification validators are known predecessors, and older exact-validator binaries require a compatible rollback build.
+
+
+#### Email-change implementation
+
+P03-011 reuses authChallenges with purpose `email_change`: userId is the current customer, emailNormalized is the current identity and targetEmailNormalized is the new destination. A transaction advances the user's email_change scope counter, invalidates/removes predecessor envelopes and creates one challenge plus an `email_change`/`email-change-v1` notification containing only challengeId. Delivery recipient is the target, not the former identity. The email-change verifier and AES-GCM AAD are purpose-separated from password reset; AAD additionally binds the target. Existing reset digests/envelopes remain compatible. Session checks are repeated and conditionally touched in the transaction to serialize with logout/revocation.
+
+Confirmation consumes the proof under its user/purpose revision, updates unique users.emailNormalized and emailVerifiedAt, increments securityRevision plus email_verify/password_reset scope counters, removes pending identity envelopes and revokes customer sessions atomically. Duplicate email indexes remain the final authority; duplicate races abort all effects. Password reset/change also advance email-change/verification counters and remove pending identity envelopes. No identity schema/index or historical order update is introduced. The additive notification validator accepts the exact P03-010 predecessor and the new supported email-change event/template/reference-only payload; old exact-validator binaries require compatible rollout/rollback builds.
+
+#### Private administrator provisioning and recovery
+
+P03-012 initial provisioning inserts a new active administrator only; it never upgrades a customer, replaces an existing credential or exposes HTTP signup. Reserved initial-user ID `535a00000000000000000001` serializes concurrent bootstrap attempts through the existing unique _id index, even when proposed emails differ. Provisioning refuses an existing administrator/reserved ID/occupied email and uses the approved password hash. No identity schema/index change is required. The local/test CLI reads bounded private stdin and refuses deployed environments; production provisioning remains an authorized operator action.
+
+Admin reset retains purpose password_reset and current user scope counters. Its secretHash uses a distinct admin-password-reset domain and its AES-GCM AAD includes admin audience, preserving customer reset encoding. The notification uses event password_reset with template admin-password-reset-v1 and challengeId-only payload. Role, expiry, purpose, scope and admin verifier namespace are checked on consume; admin sessions alone are revoked. The additive notification migration accepts the exact P03-011 predecessor and supported admin template pair without changing previous records.
+
 ### 5.4 `browserContexts` — pre-auth CSRF bootstrap
 
 | Field | Type | Constraints / notes |
 | --- | --- | --- |
 | `contextTokenHash`! | string | Unique hash of short-lived opaque browser-context cookie |
+| `audience`! | enum(`storefront`,`admin`) | Bind bootstrap to its approved frontend/route namespace; never selected by an untrusted role field |
 | `csrfSecretHash`! | string | Server-verifiable session/context-bound CSRF token material |
 | `expiresAt`! | Date | Short-lived and independently checked |
 | `rotatedAt`? | Date | Rotate after authentication/proof exchange |
@@ -369,6 +412,133 @@ see API §16.3 for uncertain-send handling. No new session is granted by deliver
 **Indexes:** unique `{contextTokenHash:1}`; TTL `{expiresAt:1}`.
 
 **Rules:** no user/order permission is granted by this record; Origin verification is still required on protected browser mutations. Implementations may replace this persistence with an equally secure signed short-lived context only after documented Architecture/API alignment.
+
+The P03-006 browser-security service uses 32-byte opaque cookie/CSRF values and audience-separated HMAC-SHA-256
+verifiers (API §4.5); plaintext is never persisted. Bootstrap replacement and single-use successful exchange write
+`rotatedAt` conditionally in a transaction. Consumption and its owned durable effect commit together; failure rolls back
+both. Expired or rotated records remain unusable before TTL cleanup. Session CSRF refresh uses the existing private
+`csrfSecretHash` field and a conditional old-verifier update; it does not extend session lifetime. No index/schema change
+is introduced by these services.
+
+### 5.5 Identity field and projection rules
+
+The four identity collections use explicit physical names and the mutable timestamp/strict-schema conventions in §2.
+`_id`, `createdAt` and `updatedAt` are required server-owned fields. Embedded records disable Mongoose's implicit `_id`;
+saved addresses and deletion requests instead use the explicit stable `id` ObjectId. Optional values are absent, not
+`null`; nested records reject unknown keys. Counters use nonnegative safe integers without string/boolean coercion.
+
+| Record / field family | Persistence validation and write ownership |
+| --- | --- |
+| `users.emailNormalized` | Valid email, at most 254 characters, equal to its trimmed lowercase form; unique across customer/admin and all account statuses; never release an identity by suspension |
+| `users.name`, `addresses.recipient` | Trimmed, nonempty, at most 120 Unicode characters; do not silently truncate |
+| `users.passwordHash` | Nonempty encoded adaptive password hash, never a password or generic unsalted digest; credential service owns algorithm/parameters in P03-007; default queries exclude it |
+| `users.phone`, `addresses.phone` | Normalize and validate Bangladesh phone at the service boundary; optional user phone absent when unset; address phone required; never use phone as ownership proof |
+| `users.role`, `users.status` | Required closed enums from §5.1; public registration supplies neither and writes `customer`/`active`; private provisioning owns admin creation |
+| `users.securityRevision` | Required, initial `0`; security changes increment atomically; clients cannot choose/reset it |
+| `users.challengeRevisions` | Required exact object `{email_verify,email_change,password_reset}`, each initial `0`; the keys deliberately match challenge purposes, not notification event names |
+| `users.addresses` | Required array, initial `[]`, maximum 10; distinct ObjectId `id`; required recipient/phone/districtKey/areaKey/street/isDefault; street and optional addressLine2 at most 300 characters; keys validated against supported coverage; zero or one default |
+| `users.deletionRequest` | Optional exact object; required `id:ObjectId`, UTC requestedAt/verifiedAt, status enum(`requested`,`under_review`,`approved`,`rejected`,`completed`); optional nonempty reason/decisionReason at most 2,000 characters and UTC decisionAt; terminal decisions require decisionAt; review approval alone does not erase data |
+| Token/CSRF/context digests | Required nonempty one-way verifier strings, backend-only and excluded from default projections; token generation/digest encoding belongs to P03-005/006 and must be consistent between issuer and verifier; schema acceptance alone cannot prove a string is a hash |
+| `sessions.kind` and references | Customer/admin: userId and securityRevisionAtIssue required, orderId absent; guest_order: orderId required, userId and securityRevisionAtIssue absent; no dual-principal record |
+| `authChallenges` scope | email_verify/email_change/password_reset: userId required, orderId absent; guest_order_access: orderId required, userId absent; targetEmailNormalized required only for email_change and absent otherwise |
+| Challenge destination/counters | emailNormalized and targetEmailNormalized use the same email rules as users; attemptCount initially `0`; scopeRevisionAtIssue is required; issuedContextHash/deliveryNotificationId absent until applicable |
+| Optional instants | emailVerifiedAt/revokedAt/lastUsedAt/consumedAt/invalidatedAt/rotatedAt and decision dates are BSON Date instants when present; no string, invalid Date or null persistence |
+| Expiry | expiresAt required BSON Date, later than createdAt on issuance; persisted expired artifacts remain structurally valid but cannot authorize; lifetimes are validated positive configuration owned by security/operations, not invented schema constants |
+| Delivery envelope | Exact all-or-none object from §5.3; algorithm exactly AES-256-GCM, nonempty external keyVersion, binary nonce/ciphertext/authTag; bytes are server-created, never a public input or outbox payload; nonce/tag validation and encryption are P03-009/010 responsibilities |
+
+A customer/admin session's user must exist, match its kind and be eligible under the owning authentication service;
+ObjectId shape validation is not a foreign-key or authorization check. `deactivated` and `deletion_pending` are internal
+persistence states, not additional values silently added to API's Account status enum; the identity API task must deny
+ineligible self-session access and explicitly reconcile any administrative projection. P03-008 owns deletion request
+transitions/retention review; no deletion endpoint is enabled by this contract.
+
+Only credential services select password/token/CSRF verifiers. Delivery workers explicitly select the encrypted envelope;
+normal account and notification queries cannot. Lean/raw-driver queries still require explicit allowlists—Mongoose
+`select:false` alone is not an API security boundary. Account/address output follows API §9.1/Appendix D.2; never serialize
+security revisions, challenges, context audience internals, digests or delivery envelopes to account DTOs.
+
+### 5.6 Identity indexes and eligibility predicates
+
+Use explicit stable index names below; directions and options are part of the contract. All indexes are additive,
+non-sparse and non-partial unless specified; `_id` has MongoDB's ordinary unique index. TTL uses `expireAfterSeconds:0`
+on the absolute BSON Date, not a guessed duration. No TTL index belongs on users or financial records.
+
+| Collection | Index name | Ordered key | Options |
+| --- | --- | --- | --- |
+| users | `users_email_unique` | `{emailNormalized:1}` | unique |
+| users | `users_role_status_created` | `{role:1,status:1,createdAt:-1}` | ordinary |
+| sessions | `sessions_token_unique` | `{tokenHash:1}` | unique |
+| sessions | `sessions_user_kind_revoked` | `{userId:1,kind:1,revokedAt:1}` | ordinary |
+| sessions | `sessions_expiry` | `{expiresAt:1}` | TTL, expireAfterSeconds:0 |
+| authChallenges | `auth_challenges_secret_unique` | `{secretHash:1}` | unique |
+| authChallenges | `auth_challenges_purpose_order_expiry` | `{purpose:1,orderId:1,expiresAt:1}` | ordinary |
+| authChallenges | `auth_challenges_expiry` | `{expiresAt:1}` | TTL, expireAfterSeconds:0 |
+| browserContexts | `browser_contexts_token_unique` | `{contextTokenHash:1}` | unique |
+| browserContexts | `browser_contexts_expiry` | `{expiresAt:1}` | TTL, expireAfterSeconds:0 |
+
+- **Session:** matching digest and route-selected kind, `expiresAt > now`, revokedAt absent; customer/admin additionally
+  require current eligible role/status and matching securityRevision. Scoped guests additionally match the exact order.
+- **Browser context:** matching digest and route-selected audience, `expiresAt > now`, rotatedAt absent; compare bound
+  CSRF verifier and exact approved Origin independently. A valid context grants no account/order permission.
+- **Challenge:** matching purpose/digest/principal, `expiresAt > now`, consumedAt and invalidatedAt absent, attempts within
+  the approved bound and current scope revision equal to scopeRevisionAtIssue. Email-change also checks the bound target.
+- **Consumption/reissue:** use a transaction and conditional writes on the same principal/purpose revision; one winner
+  advances the revision. Consumption sets consumedAt and removes deliveryEnvelope with the associated password/email/
+  session effect in that transaction. Reissue invalidates/removes the predecessor envelope and creates a fresh challenge
+  plus notification intent; retries must not extend expiry. Never verify via a read followed by an unconditional write.
+- **Addresses:** create/delete/default changes use guarded user-document writes; concurrent requests preserve the ten-address
+  bound, distinct IDs and at-most-one-default rule. A saved-address edit cannot rewrite orders.
+
+The query paths above supplement §11's global index register; a future measured additional index is an additive reviewed
+change, not permission to drop these indexes or create business collections during server startup.
+
+### 5.7 Identity implementation and rollout gates
+
+P03-017 established this contract. P03-004 now supplies connection-owned User, Session, AuthChallenge and BrowserContext
+models in `backend/src/modules/auth/models.ts`, with collection-level validators and ten named indexes in
+`collection-validators.ts`. Private verifiers/envelopes are excluded from default queries. Shared `backend/src/db/`
+helpers still own connection/schema/index/transaction mechanics; index verification accepts only its required
+`diffIndexes` interface so inferred strict models need no type casts.
+
+`initializeIdentityPersistence(connection, models)` explicitly bootstraps empty collections and verifies existing
+validator/validation-level/action compatibility before additive index creation. It does not silently use collMod, replace
+validators, drop indexes or repair duplicate identities. Existing mismatches require the reviewed migration below; a
+failed bootstrap may leave already-created empty collections and must be resumed/reconciled explicitly. HTTP startup
+never runs this initializer or enables an identity writer automatically.
+
+`persistence.ts` supplies internal active user-session/browser-context lookups and transactional user-challenge
+consumption. Consumption matches purpose, verified-digest lookup, user/role, active status, expiry/attempt bounds and
+principal purpose revision; it advances that revision, marks consumed and removes the envelope with the caller's DB-only
+effect in one transaction. A fresh server clock is checked on every retry and before consumption; failure rolls everything
+back. Consumed/invalidated challenges cannot retain an envelope under the collection validator. P03-005 now implements
+customer/admin opaque issuance, HMAC storage, cookie controls and session-required middleware (API §4.4). Browser-context/
+P03-006/007/010/011 implement Origin/CSRF, customer credentials, password-reset/email-change proof issuance/reissue,
+AEAD delivery and revision/session effects. Other identity gates and guest-order exchange remain with their owning tasks. The proof helper grants no permission from a client-supplied digest or ObjectId.
+No new public endpoint or live account is created by these models.
+
+Guest order references are schema-validated without claiming that the future orders collection exists. Other commerce
+collections in §§6–10 remain specifications until their owning feature implementations. See
+[P03-004 evidence](./evidence/P03-004-identity-models.md) for actual model/index/transaction verification.
+
+Before enabling an identity writer, apply §15.1 with a migration ID and independent environment approval:
+
+1. Inventory existing documents/indexes and serving code. On an empty owned test database, bootstrap explicitly; do not
+   assume staging/production are empty. Verify backup/restore and operator authority before deployed changes.
+2. Report invalid/duplicate normalized email, digest, scope, timestamp and counter records without printing PII/secrets.
+   Stop on collisions; do not merge identities, drop indexes or normalize duplicates silently.
+3. Expand compatible fields/readers, then checkpoint any bounded resumable backfill. Records without provable credential
+   provenance are revoked/invalidated through an approved security procedure, never upgraded into valid access by defaults.
+4. Explicitly create and verify named unique/query/TTL indexes and collection validators before new writes. BSON validators
+   enforce types/enums/required conditional scope and strict fields; service guards enforce ownership and atomic transitions.
+   Mongoose update validation alone does not make arbitrary update operators safe.
+5. Verify duplicate races, TTL-lag expiry, single-use/reissue races, scope separation, revision invalidation and recovery on
+   a real isolated replica set; link model and API evidence. Synthetic fixtures contain no live identity or secret.
+6. Cut over only when old/new readers and writers agree. Preserve migration run evidence and protected conflict reports;
+   rollback must keep revocations, consumed proofs and advanced revisions. Never restore an old credential's validity.
+
+Retention remains §14.2/Operations OP-PRIV-01. Expired envelopes are stripped independently of TTL; legally held records
+and immutable order/collection/refund history survive account review. Every refund obligation still references verified
+source collections and preserves classification/unit caps (§§8.6, 9, 12.5); identity deletion cannot weaken those rules.
 
 ## 6. Catalog and shopping collections
 
@@ -674,6 +844,12 @@ coverage unavailable (checkout fails closed). Every master edit checks its `revi
 original rule ID and amount. If no precisely eligible active rule exists, **fail checkout closed** rather than guess a
 charge. Snapshot selected version/charge/deadline **rule basis**, not a confirmation-relative absolute date. Effective
 windows and legal deadlines are operator-approved, not invented.
+
+P03-008 uses a settings-owned read-only delivery coverage boundary for saved-address eligibility against these existing
+collections. It neither seeds delivery data nor creates/changes delivery indexes or master records. Its transaction reads
+exact eligible coverage before an eligible district wildcard; multiple active exact candidates or an inactive selected
+zone fail closed. P06-001 still owns validated delivery masters, index rollout, global revision serialization and admin
+changes. A saved address is not a quote or permission to reuse a historic charge at checkout.
 
 ### 7.7 `inventoryReservations` — `inventory`
 
@@ -1037,6 +1213,30 @@ Confirmed transition; proof events reference a challenge ID, with no rendered se
 `delivery_uncertain` means a send may have succeeded; reconcile provider identity or explicitly reissue an invalidating
 proof, never blindly send an unrelated new token. Event uniqueness prevents duplicate intents, not a claim of exactly-once
 transport; use verified provider idempotency where available. Do not store credentials or full payment details in payloads.
+
+P03-007 implements the registration subset through the notifications-owned registration intent service. Its strict
+BSON validator permits `registration`/`registration-v1` with an empty payload, required user reference/recipient/base
+fields, closed delivery statuses and safe nonnegative attempt counter. The physical indexes are
+`notifications_event_key_unique` (`{eventKey:1}`, unique) and `notifications_retry_queue` (`{status:1,nextAttemptAt:1}`).
+Delivery retry updates do not repeat account creation or reset existing delivery status. Registration stores no challenge,
+proof URL, session credential or password in this collection; initial email-verification challenge/delivery remains with its owning feature. P03-010/011 add password-reset and verified email-change challenge delivery.
+Later notification event types require an explicit backward-compatible validator/model expansion before activation.
+Existing validators are checked, never silently replaced by startup or local bootstrap.
+
+P03-009 adds optional `claimId:string`, `claimExpiresAt:Date` and `lastAttemptAt:Date` to registration intents,
+plus `notifications_claim_expiry` on `{status:1,claimExpiresAt:1}`. A majority-acknowledged conditional queued/retry claim
+increments attemptCount before the provider call. Completion is fenced by claimId. Expired/missing-lease sending rows
+become delivery_uncertain, never automatically requeued; a late verified acceptance for the same retained claim can
+resolve uncertainty. Explicit provider rejection may enter bounded retry_wait or failed. sent records API provider
+acceptance with providerMessageId, not recipient inbox delivery. Account/business transaction state is never rolled back
+by the worker.
+
+The validator expansion is additive for existing registration records. Startup still verifies the exact expected
+validator/indexes. A separate reviewed migration upgrades only the known P03-007/009/010/011 validators; it does not drop data/indexes,
+reset delivery state or silently accept another schema. Local/test bootstrap can invoke this explicit migration; production
+rollout remains operator-controlled. Old binaries with exact prior-validator readiness checks require a compatible rollback
+build; never remove new lease/receipt data to make a prior validator pass. Other event payloads and secret-bearing proof
+renderers remain disabled until their owning tasks expand the contracts safely.
 
 ### 10.2 `complaints` — `support`
 
@@ -1542,7 +1742,7 @@ must remain aligned with `ARCHITECTURE.md` §4 rather than silently inventing an
 
 ### 16.3 Schema implementation requirements
 
-- Implement all 37 physical collections with their owners, field validation and indexes.
+- Implement the 37 physical collections incrementally in their owning feature tasks, with field validation and indexes; the contract inventory is not evidence that these models exist.
 - Verify each money, stock, coupon, claim and refund transition with atomicity and recovery tests.
 - Match API DTOs to allowlisted persistence fields and immutable snapshots.
 - Validate diagrams, migration compatibility, index predicates and historical records.
@@ -1569,7 +1769,8 @@ must remain aligned with `ARCHITECTURE.md` §4 rather than silently inventing an
 
 | Stage | Expected code/review artifact | Source gate |
 | --- | --- | --- |
-| Identity foundation | `users`, sessions, contexts/challenges, index bootstrap, single-use proofs | Tasks P03-003, P03-004, P03-017 |
+| Identity contract | Reviewed fields, conditional scopes, exact indexes, retention and rollout gates (§§5.5–5.7) | Task P03-017; executable models and security behavior remain below |
+| Identity implementation | `users`, sessions, contexts/challenges, index bootstrap, single-use proofs and API reconciliation | Tasks P03-004–014, P03-018; scoped guest behavior P06-015 |
 | Catalog | Category/product/variant models, SKU/index tests and stock counters | Implementation Plan Phase 04 |
 | Shopping and promotion | Cart/wishlist/review, coupon global+per-user capacity and holds | Phases 04–05 |
 | Checkout/COD | Orders and snapshots, item balances, intent uniqueness, COD allocation/delivery rules | Phase 06 |

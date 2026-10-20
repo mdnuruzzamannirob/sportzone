@@ -25,13 +25,17 @@
     "uiLibrary": "HeroUI v3"
   },
   "backend": {
-    "state": "manifest-only",
+    "state": "active",
     "ownerTask": "P03-001",
     "checks": [
       "lint",
       "typecheck",
       "test:unit",
-      "build"
-    ]
+      "build",
+      "test:smoke",
+      "test:integration"
+    ],
+    "phoneValidation": "libphonenumber-js/max 1.13.15; P03-008 unit/integration checks",
+    "notificationWorker": "P03-009–012 registration, customer-reset, email-change and administrator-reset delivery; explicit migration/worker commands, unit and real MongoDB/HTTP checks"
   }
 }

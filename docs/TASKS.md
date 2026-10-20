@@ -17,27 +17,31 @@ This document decomposes the approved implementation plan into independently ver
 
 **Contents**
 
-- [1. Overview & execution rules](#1-overview--execution-rules)
-- [2. Task management conventions](#2-task-management-conventions)
-- [3. Project progress dashboard](#3-project-progress-dashboard)
-- [4. Milestone tracker](#4-milestone-tracker)
-- [5. Phase-by-phase task register](#5-phase-by-phase-task-register)
-  - [Phase 01 — Requirements finalization and planning](#phase-01--requirements-finalization-and-planning)
-  - [Phase 02 — UI/UX design](#phase-02--uiux-design)
-  - [Phase 03 — Authentication and core backend](#phase-03--authentication-and-core-backend)
-  - [Phase 04 — Product catalog and inventory](#phase-04--product-catalog-and-inventory)
-  - [Phase 05 — Cart, wishlist, coupons, and reviews](#phase-05--cart-wishlist-coupons-and-reviews)
-  - [Phase 06 — Checkout, orders, and delivery rules](#phase-06--checkout-orders-and-delivery-rules)
-  - [Phase 07 — Payment integration and verification](#phase-07--payment-integration-and-verification)
-  - [Phase 08 — Returns and refunds](#phase-08--returns-and-refunds)
-  - [Phase 09 — Admin management and reports](#phase-09--admin-management-and-reports)
-  - [Phase 10 — Testing, security review, and bug fixing](#phase-10--testing-security-review-and-bug-fixing)
-  - [Phase 11 — Deployment and production verification](#phase-11--deployment-and-production-verification)
-  - [Phase 12 — Documentation and handover](#phase-12--documentation-and-handover)
-- [6. Dependencies & blockers](#6-dependencies--blockers)
-- [7. Requirements coverage matrix](#7-requirements-coverage-matrix)
-- [8. Verification & completion rules](#8-verification--completion-rules)
-- [9. Change & execution log](#9-change--execution-log)
+- [SportZone — Development tasks](#sportzone--development-tasks)
+  - [1. Overview \& execution rules](#1-overview--execution-rules)
+  - [2. Task management conventions](#2-task-management-conventions)
+  - [3. Project progress dashboard](#3-project-progress-dashboard)
+  - [4. Milestone tracker](#4-milestone-tracker)
+  - [5. Phase-by-phase task register](#5-phase-by-phase-task-register)
+    - [Phase 01 — Requirements finalization and planning](#phase-01--requirements-finalization-and-planning)
+    - [Phase 02 — UI/UX design](#phase-02--uiux-design)
+    - [Phase 03 — Authentication and core backend](#phase-03--authentication-and-core-backend)
+    - [Phase 04 — Product catalog and inventory](#phase-04--product-catalog-and-inventory)
+    - [Phase 05 — Cart, wishlist, coupons, and reviews](#phase-05--cart-wishlist-coupons-and-reviews)
+    - [Phase 06 — Checkout, orders, and delivery rules](#phase-06--checkout-orders-and-delivery-rules)
+    - [Phase 07 — Payment integration and verification](#phase-07--payment-integration-and-verification)
+    - [Phase 08 — Returns and refunds](#phase-08--returns-and-refunds)
+    - [Phase 09 — Admin management and reports](#phase-09--admin-management-and-reports)
+    - [Phase 10 — Testing, security review, and bug fixing](#phase-10--testing-security-review-and-bug-fixing)
+    - [Phase 11 — Deployment and production verification](#phase-11--deployment-and-production-verification)
+    - [Phase 12 — Documentation and handover](#phase-12--documentation-and-handover)
+  - [6. Dependencies \& blockers](#6-dependencies--blockers)
+    - [6.1 External readiness and blocker register](#61-external-readiness-and-blocker-register)
+  - [7. Requirements coverage matrix](#7-requirements-coverage-matrix)
+    - [7.1 Non-functional and cross-cutting coverage](#71-non-functional-and-cross-cutting-coverage)
+    - [7.2 Page and end-to-end coverage](#72-page-and-end-to-end-coverage)
+  - [8. Verification \& completion rules](#8-verification--completion-rules)
+  - [9. Change \& execution log](#9-change--execution-log)
 
 ---
 
@@ -55,31 +59,31 @@ This document decomposes the approved implementation plan into independently ver
 
 ## 2. Task management conventions
 
-| Field | Rule |
-| --- | --- |
-| Task ID | `PXX-NNN` with stable phase number and monotonically allocated ID; never renumber an existing task |
-| Checkbox | `[ ]` while not accepted; `[x]` only when status is `Done` and all applicable acceptance checks pass |
-| Status | `Not Started`, `Ready`, `In Progress`, `Blocked`, `In Review`, `Done`, or `Deferred` |
-| Owner | Assign during execution; no owner is fabricated in this planning baseline |
-| Sources | Task-level FR/section pointers plus inherited references to its phase in Implementation Plan §6 |
-| Depends on | Concrete task IDs that must be accepted before this task is considered ready; some external prerequisites also apply |
-| Deliverable | The specific product/code/process outcome expected from the task |
-| Acceptance | Observable pass conditions, supplemented by all applicable PRD and Design requirements |
-| Evidence | Test report, committed artifact, screenshot/record, provider validation or approver sign-off; add actual link after execution |
-| Blocked | Capture missing prerequisite, owner, impact, permitted parallel work and next verification step |
-| Deferred | Requires explicit scope/launch disposition; a mandatory safety or release criterion cannot be waived by status alone |
+| Field       | Rule                                                                                                                          |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Task ID     | `PXX-NNN` with stable phase number and monotonically allocated ID; never renumber an existing task                            |
+| Checkbox    | `[ ]` while not accepted; `[x]` only when status is `Done` and all applicable acceptance checks pass                          |
+| Status      | `Not Started`, `Ready`, `In Progress`, `Blocked`, `In Review`, `Done`, or `Deferred`                                          |
+| Owner       | Assign during execution; no owner is fabricated in this planning baseline                                                     |
+| Sources     | Task-level FR/section pointers plus inherited references to its phase in Implementation Plan §6                               |
+| Depends on  | Concrete task IDs that must be accepted before this task is considered ready; some external prerequisites also apply          |
+| Deliverable | The specific product/code/process outcome expected from the task                                                              |
+| Acceptance  | Observable pass conditions, supplemented by all applicable PRD and Design requirements                                        |
+| Evidence    | Test report, committed artifact, screenshot/record, provider validation or approver sign-off; add actual link after execution |
+| Blocked     | Capture missing prerequisite, owner, impact, permitted parallel work and next verification step                               |
+| Deferred    | Requires explicit scope/launch disposition; a mandatory safety or release criterion cannot be waived by status alone          |
 
 **Status changes:** Start each task as `Not Started`. Move to `Ready` only after dependencies and required external prerequisites are satisfied; `In Progress` indicates active work; `In Review` indicates submitted evidence awaiting verification. Mark `Done` and check the box only after independent acceptance. A blocked external provider or policy gate cannot be cleared by a mock. Task metadata may be updated as execution proceeds, while source-approved requirements stay unchanged.
 
-| Status | Required record / exit condition |
-| --- | --- |
-| `Not Started` | No accepted implementation or task evidence is implied; keep the checkbox unchecked |
-| `Ready` | Declared task prerequisites are Done and required external inputs for this work are available |
-| `In Progress` | Actual work has started; record the executor, scope and applicable verification needs |
-| `Blocked` | Record the failed prerequisite, accountable function, affected acceptance, evidence and next action; resume affected work only after its prerequisite is resolved |
-| `In Review` | Deliverable and applicable observed verification results are attached; independent acceptance is pending |
-| `Done` | Applicable Definition of Done is met; record actual independent reviewer, date, decision and evidence; check the box |
-| `Deferred` | Record authorized scope/release disposition, rationale and impact; mandatory safety/launch gates cannot be waived by this status |
+| Status        | Required record / exit condition                                                                                                                                  |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Not Started` | No accepted implementation or task evidence is implied; keep the checkbox unchecked                                                                               |
+| `Ready`       | Declared task prerequisites are Done and required external inputs for this work are available                                                                     |
+| `In Progress` | Actual work has started; record the executor, scope and applicable verification needs                                                                             |
+| `Blocked`     | Record the failed prerequisite, accountable function, affected acceptance, evidence and next action; resume affected work only after its prerequisite is resolved |
+| `In Review`   | Deliverable and applicable observed verification results are attached; independent acceptance is pending                                                          |
+| `Done`        | Applicable Definition of Done is met; record actual independent reviewer, date, decision and evidence; check the box                                              |
+| `Deferred`    | Record authorized scope/release disposition, rationale and impact; mandatory safety/launch gates cannot be waived by this status                                  |
 
 **Evidence record:** Link the exact task/deliverable revision or commit, source references, verification command/procedure,
 environment and fixture, observed result, artifact, executor and actual reviewer decision. Use
@@ -99,34 +103,34 @@ retain their own approver, environment, artifacts, blockers and explicit decisio
 
 The register contains 171 tasks across twelve phases. Update phase totals when tasks are added or statuses change.
 
-| Phase | Total | Not Started | Ready | In Progress | Blocked | In Review | Done | Deferred |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 01 — Requirements Finalization and Planning | 14 | 0 | 0 | 0 | 0 | 0 | 14 | 0 |
-| 02 — UI/UX Design | 11 | 0 | 0 | 0 | 0 | 0 | 11 | 0 |
-| 03 — Authentication and Core Backend | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 0 |
-| 04 — Product Catalog and Inventory | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
-| 05 — Cart, Wishlist, Coupons, and Reviews | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
-| 06 — Checkout, Orders, and Delivery Rules | 20 | 20 | 0 | 0 | 0 | 0 | 0 | 0 |
-| 07 — Payment Integration and Verification | 17 | 17 | 0 | 0 | 0 | 0 | 0 | 0 |
-| 08 — Returns and Refunds | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 0 |
-| 09 — Admin Management and Reports | 12 | 12 | 0 | 0 | 0 | 0 | 0 | 0 |
-| 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
-| 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
-| 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **171** | **146** | **0** | **0** | **0** | **0** | **25** | **0** |
+| Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |   Done | Deferred |
+| --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
+| 01 — Requirements Finalization and Planning   |      14 |           0 |     0 |           0 |       0 |         0 |     14 |        0 |
+| 02 — UI/UX Design                             |      11 |           0 |     0 |           0 |       0 |         0 |     11 |        0 |
+| 03 — Authentication and Core Backend          |      18 |           4 |     0 |           0 |       0 |         0 |     14 |        0 |
+| 04 — Product Catalog and Inventory            |      15 |          15 |     0 |           0 |       0 |         0 |      0 |        0 |
+| 05 — Cart, Wishlist, Coupons, and Reviews     |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
+| 06 — Checkout, Orders, and Delivery Rules     |      20 |          20 |     0 |           0 |       0 |         0 |      0 |        0 |
+| 07 — Payment Integration and Verification     |      17 |          17 |     0 |           0 |       0 |         0 |      0 |        0 |
+| 08 — Returns and Refunds                      |      18 |          18 |     0 |           0 |       0 |         0 |      0 |        0 |
+| 09 — Admin Management and Reports             |      12 |          12 |     0 |           0 |       0 |         0 |      0 |        0 |
+| 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
+| 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
+| 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
+| **Total**                                     | **171** |     **132** | **0** |       **0** |   **0** |     **0** | **39** |    **0** |
 
 ## 4. Milestone tracker
 
-| Gate | Required task evidence | Initial status |
-| --- | --- | --- |
-| M1 — Foundation Ready | P01–P03 setup/auth/API/session/CI/theme checks; Implementation Plan §11 | Not Accepted |
-| M2 — Catalog Ready | P04 admin catalog, public browsing, variant and atomic stock evidence | Not Accepted |
-| M3 — COD Commerce Ready | P05–P06 cart/pricing, COD, checkout idempotency, order/guest/delivery tests | Not Accepted |
-| M4 — Payment Ready | P07 sandbox provider validation, callbacks, retries, late payment, risk, overpayment | Not Accepted |
-| M5 — After-Sales Ready | P08 claim/inspection, refund caps, confirmed payout and review qualification | Not Accepted |
-| M6 — Feature Complete / Release Candidate | P09 admin/staging integration plus P10 PRD/NFR/security/UX regression | Not Accepted |
-| M7 — Production Ready | P11 operational, policy, merchant, deployment, live-safe validation and launch approval | Not Accepted |
-| M8 — Handover Accepted | P12 documented ownership, runbooks, evidence reconciliation and sign-off | Not Accepted |
+| Gate                                      | Required task evidence                                                                  | Initial status |
+| ----------------------------------------- | --------------------------------------------------------------------------------------- | -------------- |
+| M1 — Foundation Ready                     | P01–P03 setup/auth/API/session/CI/theme checks; Implementation Plan §11                 | Not Accepted   |
+| M2 — Catalog Ready                        | P04 admin catalog, public browsing, variant and atomic stock evidence                   | Not Accepted   |
+| M3 — COD Commerce Ready                   | P05–P06 cart/pricing, COD, checkout idempotency, order/guest/delivery tests             | Not Accepted   |
+| M4 — Payment Ready                        | P07 sandbox provider validation, callbacks, retries, late payment, risk, overpayment    | Not Accepted   |
+| M5 — After-Sales Ready                    | P08 claim/inspection, refund caps, confirmed payout and review qualification            | Not Accepted   |
+| M6 — Feature Complete / Release Candidate | P09 admin/staging integration plus P10 PRD/NFR/security/UX regression                   | Not Accepted   |
+| M7 — Production Ready                     | P11 operational, policy, merchant, deployment, live-safe validation and launch approval | Not Accepted   |
+| M8 — Handover Accepted                    | P12 documented ownership, runbooks, evidence reconciliation and sign-off                | Not Accepted   |
 
 Milestone acceptance follows the prerequisites in Implementation Plan §11. Gate tasks explicitly depend on prior verification tasks; the milestone tracker separately records human acceptance. Independent engineering work may proceed when its own contracts and dependencies are ready.
 
@@ -362,101 +366,101 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
 
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 03. **Associated gate:** M1. **Tasks:** 18.
 
-- [ ] **P03-001 — Bootstrap modular Express API and shared middleware**\
-  **Status:** `Not Started` · **Area:** Backend/core\
+- [x] **P03-001 — Bootstrap modular Express API and shared middleware**\
+  **Status:** `Done` · **Area:** Backend/core · **Owner:** Codex\
   **Sources:** Architecture §§4,6,8\
   **Depends on:** `P01-009`\
   **Deliverable:** Initialize TypeScript Express backend, /api/v1 envelopes, error handling, validation, pagination and test bootstrap.\
   **Acceptance:** Independently builds; validated errors do not leak internals; controllers delegate to services.\
-  **Evidence to attach:** API lint/type/build and request tests.
+  **Evidence:** [Express transport and request verification](./evidence/P03-001-backend.md). All 19 CI commands, 37 backend cases, independent build and compiled-server smoke passed. Full pipeline: 260 unit/component tests and 30 browser cases. Accepted by project owner on 18 October 2026: “Backend scaffold গ্রহণ করছি”; persistence, identity and deployed health remain their owning tasks.
 
-- [ ] **P03-002 — Configure MongoDB/Mongoose and transactional test environment**\
-  **Status:** `Not Started` · **Area:** Backend/data\
+- [x] **P03-002 — Configure MongoDB/Mongoose and transactional test environment**\
+  **Status:** `Done` · **Area:** Backend/data · **Owner:** Codex\
   **Sources:** Architecture §§7,13\
   **Depends on:** `P03-001`, `P01-005`\
   **Deliverable:** Configure connection lifecycle, schema conventions, indexes, replica-set-capable local/test DB and safe fixtures.\
   **Acceptance:** Required transactions run on supported deployment; unique indexes are verifiable.\
-  **Evidence to attach:** DB integration and index test evidence.
+  **Evidence:** [Real replica-set connection/index/transaction verification](./evidence/P03-002-database.md). All 24 MongoDB integration cases and 20 CI commands passed; unique/partial indexes, commit/rollback/concurrency, lifecycle and safe fixtures verified. Accepted by project owner on 18 October 2026: “Database foundation গ্রহণ করছি”; production/failover/restore and domain financial flows remain their owning tasks.
 
-- [ ] **P03-003 — Add environment validation, health checks and observability base**\
-  **Status:** `Not Started` · **Area:** Backend/core\
+- [x] **P03-003 — Add environment validation, health checks and observability base**\
+  **Status:** `Done` · **Area:** Backend/core · **Owner:** Codex\
   **Sources:** Architecture §§11-13\
   **Depends on:** `P03-001`, `P03-002`\
   **Deliverable:** Add startup variable validation, health/readiness probes, request IDs and secret-safe structured logs.\
   **Acceptance:** Missing secrets fail safely; responses/logs disclose no sensitive values.\
-  **Evidence to attach:** Configuration and health test results.
+  **Evidence:** [Environment, health and observability verification](./evidence/P03-003-operations.md). Startup validation, restricted readiness, safe logging and shutdown verified; 72 backend unit/request cases, 29 real MongoDB integration cases and all 20 configured CI commands passed. Accepted by project owner on 18 October 2026: “Runtime/health foundation গ্রহণ করছি”; deployment/operator gates remain separate.
 
-- [ ] **P03-004 — Implement customer/session/address and verification schemas**\
-  **Status:** `Not Started` · **Area:** Backend/identity\
+- [x] **P03-004 — Implement customer/session/address and verification schemas**\
+  **Status:** `Done` · **Area:** Backend/identity · **Owner:** Codex\
   **Sources:** FR-01; FR-02; FR-21\
   **Depends on:** `P03-002`, `P03-017`, `P03-018`\
   **Deliverable:** Define normalized identities, unique email indexes, session token hashes, revocation and expiring recovery artifacts.\
   **Acceptance:** Expired/single-use tokens cannot be reused and duplicate identity is rejected.\
-  **Evidence to attach:** Model/index tests.
+  **Evidence:** [Identity model/index/transaction verification](./evidence/P03-004-identity-models.md). Four collections, ten exact indexes, private projections and expiry/revocation guards implemented; 40 new real MongoDB cases, all 69 integration cases and all 20 CI commands passed. Accepted by project owner on 18 October 2026: “Identity persistence implementation গ্রহণ করছি”; public cookie/authentication/CSRF and recovery services remain their owning tasks.
 
-- [ ] **P03-005 — Implement opaque customer/admin sessions and cookie controls**\
-  **Status:** `Not Started` · **Area:** Backend/security\
+- [x] **P03-005 — Implement opaque customer/admin sessions and cookie controls**\
+  **Status:** `Done` · **Area:** Backend/security · **Owner:** Codex\
   **Sources:** FR-01; FR-21; Architecture §9\
   **Depends on:** `P03-004`, `P03-003`\
   **Deliverable:** Issue separate host-only secure HttpOnly cookies and implement rotation, expiration, logout and revocation.\
   **Acceptance:** Customer/admin session types are isolated and cannot cross-authorize.\
-  **Evidence to attach:** Session lifecycle security tests.
+  **Evidence:** [Opaque session/cookie verification](./evidence/P03-005-sessions.md). Customer/admin credential/cookie isolation, rotation, expiry, logout/revocation and rollback implemented; 36 new unit cases, 20 new real session cases, all 89 MongoDB integration cases and all 20 CI commands passed. Browser locator timing corrected without weakening assertions. Accepted by project owner on 18 October 2026: “Session/cookie implementation গ্রহণ করছি”; public login/complete Origin/CSRF remain their owning tasks.
 
-- [ ] **P03-006 — Implement origin, CORS and CSRF protection**\
-  **Status:** `Not Started` · **Area:** Backend/security\
+- [x] **P03-006 — Implement origin, CORS and CSRF protection**\
+  **Status:** `Done` · **Area:** Backend/security · **Owner:** Codex\
   **Sources:** Architecture §§9,11\
   **Depends on:** `P03-005`\
   **Deliverable:** Bootstrap short-lived browser-context CSRF before authentication, then rotate into separate customer/admin/order-scoped contexts. Require custom token header and approved Origin for login, registration, recovery, guest checkout, proof exchange, and authenticated mutations.\
   **Acceptance:** Rotated/expired session invalidates prior CSRF token; provider IPNs use independent checks.\
-  **Evidence to attach:** CSRF/CORS integration tests.
+  **Evidence:** [Origin/CORS/CSRF verification](./evidence/P03-006-browser-security.md). Exact-origin guards, isolated context bootstrap, session CSRF refresh and transactional single-use exchange implemented; 17 new unit cases, 31 new real MongoDB/HTTP cases, all 120 integration cases and all 20 CI commands passed. Accepted by project owner on 19 October 2026: “Origin/CORS/CSRF implementation গ্রহণ করছি”; verified credential routes, real guest persistence and deployed-origin verification remain with their owning tasks.
 
-- [ ] **P03-007 — Implement customer registration, login and logout**\
-  **Status:** `Not Started` · **Area:** Backend/identity\
+- [x] **P03-007 — Implement customer registration, login and logout**\
+  **Status:** `Done` · **Area:** Backend/identity · **Owner:** Codex\
   **Sources:** FR-01\
   **Depends on:** `P03-005`, `P03-006`\
   **Deliverable:** Add normalized-email registration, adaptive password hashing, credential verification, safe errors, logout and durable registration notification intent for later email delivery.\
   **Acceptance:** Public registration grants customer only; suspended accounts cannot authenticate; successful registration persists a single retryable notification intent without making email delivery a prerequisite for account creation.\
-  **Evidence to attach:** Auth API tests.
+  **Evidence:** [Customer authentication verification](./evidence/P03-007-customer-auth.md). Owner-approved password policy, adaptive scrypt, strict customer-only DTOs, transactional registration intent/context/session exchange, logout and explicit ready-only runtime activation implemented. 11 new unit and 18 real credential cases, all 138 integration cases and all 20 CI commands passed. Accepted by project owner on 19 October 2026: “Customer authentication implementation গ্রহণ করছি”; email delivery, admin credentials and distributed/deployed security gates remain separate.
 
-- [ ] **P03-008 — Implement customer profile and address ownership**\
-  **Status:** `Not Started` · **Area:** Backend/identity\
+- [x] **P03-008 — Implement customer profile and address ownership**\
+  **Status:** `Done` · **Area:** Backend/identity · **Owner:** Codex\
   **Sources:** FR-02; PRD §10.2; Architecture §7.5\
   **Depends on:** `P03-007`\
   **Deliverable:** Add profile/phone edits, saved/default addresses, verified account-deletion request intake/status and the immutable historical-order/retention boundary.\
   **Acceptance:** Ownership enforced for nested addresses and account-deletion requests; requests cannot erase legally retained order/payment records, and account changes do not mutate historical snapshots; no unapproved self-service deletion UI is assumed.\
-  **Evidence to attach:** Profile/address ownership tests.
+  **Evidence:** [Profile/address ownership verification](./evidence/P03-008-profile-addresses.md). Canonical Bangladesh phone/profile edits, transactional saved/default addresses, current delivery eligibility, verified deletion intake/status and historical-preservation boundary implemented; 21 new unit and 26 real ownership cases, all 164 integration cases and all 20 CI commands passed. Accepted by project owner on 19 October 2026: “Profile/address implementation গ্রহণ করছি”; operator retention processing, delivery master setup and frontend screens remain separate.
 
-- [ ] **P03-009 — Create transactional notification foundation**\
-  **Status:** `Not Started` · **Area:** Backend/notifications\
+- [x] **P03-009 — Create transactional notification foundation**\
+  **Status:** `Done` · **Area:** Backend/notifications · **Owner:** Codex\
   **Sources:** FR-20; Architecture §§6,10\
   **Depends on:** `P03-002`, `P03-003`, `P03-007`\
   **Deliverable:** Implement server-only email adapter, durable notification intents, bounded retries, status and deduplication keys; connect registration intent to the delivery/retry pipeline.\
   **Acceptance:** Delivery failure does not undo committed account changes; registration event intent can be delivered/retried independently; one logical event intent is guaranteed, with verified provider idempotency or explicit delivery uncertainty rather than an unsupported exactly-once-send claim.\
-  **Evidence to attach:** Adapter and retry tests with test provider.
+  **Evidence:** [Notification foundation verification](./evidence/P03-009-notifications.md). Fixed server-only adapter, independent registration delivery, fenced durable claims, bounded explicit-rejection retries, uncertain-outcome recovery and additive known-schema migration implemented. 28 new unit and 19 real local-provider cases, all 183 integration cases and all 20 CI commands passed. Accepted by project owner on 19 October 2026: “Notification foundation গ্রহণ করছি”; live sender/provider readiness and proof/commerce template activation remain separate.
 
-- [ ] **P03-010 — Implement customer password recovery and change**\
-  **Status:** `Not Started` · **Area:** Backend/identity\
+- [x] **P03-010 — Implement customer password recovery and change**\
+  **Status:** `Done` · **Area:** Backend/identity · **Owner:** Codex\
   **Sources:** FR-01; FR-02; FR-20\
   **Depends on:** `P03-007`, `P03-009`\
   **Deliverable:** Implement time-limited single-use reset by email and authenticated password changes.\
   **Acceptance:** Token replay and user enumeration blocked; reset notifications are durable/retryable.\
-  **Evidence to attach:** Recovery and abuse test cases.
+  **Evidence:** [Password recovery/change verification](./evidence/P03-010-password-recovery.md). Customer-only reset issuance/confirmation, encrypted reference-only durable proof delivery, authenticated password change, session revocation/rotation and safe activation implemented. 25 new unit and 28 real replica/HTTP cases; all 283 backend tests, 211 integration cases, 30 browser regressions and 20 CI commands Passed. Accepted by project owner on 19 October 2026: “Password recovery/change implementation গ্রহণ করছি”; live sender, deployed security/key custody and frontend screen gates remain separate.
 
-- [ ] **P03-011 — Implement verified customer email change**\
-  **Status:** `Not Started` · **Area:** Backend/identity\
+- [x] **P03-011 — Implement verified customer email change**\
+  **Status:** `Done` · **Area:** Backend/identity · **Owner:** Codex\
   **Sources:** FR-02\
   **Depends on:** `P03-008`, `P03-009`\
   **Deliverable:** Verify control of new email before switching account identity and enforce uniqueness.\
   **Acceptance:** Unverified addresses do not replace current email; concurrent duplicates are rejected.\
-  **Evidence to attach:** Email-change tests.
+  **Evidence:** [Verified email-change verification](./evidence/P03-011-email-change.md). Customer-owned single-use verification, unchanged identity before confirmation, transactional uniqueness/session revocation, encrypted reference-only email delivery and independent safe activation implemented. 17 new unit and 27 real replica/HTTP cases; all 300 backend tests, 238 integration cases, 30 browser regressions and 20 CI commands Passed. Accepted by project owner on 19 October 2026: “Verified email-change implementation গ্রহণ করছি”; live sender, deployed key custody/abuse controls and frontend screen gates remain separate.
 
-- [ ] **P03-012 — Implement private admin provisioning, login and recovery**\
-  **Status:** `Not Started` · **Area:** Backend/security\
+- [x] **P03-012 — Implement private admin provisioning, login and recovery**\
+  **Status:** `Done` · **Area:** Backend/security · **Owner:** Codex\
   **Sources:** FR-21\
   **Depends on:** `P03-005`, `P03-006`, `P03-009`\
   **Deliverable:** Provision initial administrator privately with independent login/recovery and logout.\
   **Acceptance:** No public admin signup; admin access requires active admin session.\
-  **Evidence to attach:** Provisioning and admin-auth tests.
+  **Evidence:** [Private administrator verification](./evidence/P03-012-admin-auth.md). Private one-time provisioning, isolated admin login/session/logout/recovery, admin-bound proof delivery and independent safe activation implemented. 14 new unit and 22 real replica/HTTP/CLI cases; all 314 backend tests, 260 integration cases, 30 browser regressions and 20 CI commands Passed. Accepted by project owner on 19 October 2026: “Private admin authentication implementation গ্রহণ করছি”; production provisioning, live sender, deployed security/audit and frontend gates remain separate.
 
 - [ ] **P03-013 — Enforce ownership and role guards**\
   **Status:** `Not Started` · **Area:** Backend/security\
@@ -490,21 +494,21 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Acceptance:** M1 foundation evidence includes CI, agent instructions, FR/NFR coverage protocol, responsive/accessibility foundation and identity/security checks before dependent milestone acceptance.\
   **Evidence to attach:** M1 auth/API security report.
 
-- [ ] **P03-017 — Establish `DATABASE.md` identity and persistence contracts**\
-  **Status:** `Not Started` · **Area:** Documentation/data\
+- [x] **P03-017 — Establish `DATABASE.md` identity and persistence contracts**\
+  **Status:** `Done` · **Area:** Documentation/data · **Owner:** Codex\
   **Sources:** PRD §10; Architecture §7; Implementation Plan §4.3\
   **Depends on:** `P03-002`, `P01-003`\
   **Deliverable:** Apply docs/DATABASE.md to the identity/session/context/verification models, exact schemas/indexes, timestamp and money conventions, retention boundaries and migration procedure; reconcile executable models with the specification.\
   **Acceptance:** Current contracts are implementable; future commerce schemas remain planned until designed. Model choices preserve PRD/Architecture invariants and support source-collection refund accounting.\
-  **Evidence to attach:** Reviewed `DATABASE.md` baseline.
+  **Evidence:** [Reviewed identity persistence contract](./evidence/P03-017-identity-contracts.md). Four identity collections, ten exact indexes, conditional scope/projection rules, retention/rollout gates and eight test handoffs reconciled. Static checks passed; accepted by project owner on 18 October 2026: “Identity persistence contract গ্রহণ করছি”; executable identity models remain P03-004.
 
-- [ ] **P03-018 — Establish `API.md` identity and browser security contracts**\
-  **Status:** `Not Started` · **Area:** Documentation/API\
+- [x] **P03-018 — Establish `API.md` identity and browser security contracts**\
+  **Status:** `Done` · **Area:** Documentation/API · **Owner:** Codex\
   **Sources:** PRD FR-01, FR-02, FR-19, FR-21; Architecture §§8–9\
   **Depends on:** `P03-001`, `P03-017`\
   **Deliverable:** Apply docs/API.md to identity endpoints, browser-context/CSRF bootstrap, customer/admin sessions and recovery; implement validators and contract tests for request/response/error and replay behavior.\
   **Acceptance:** Pre-authentication and authenticated mutations have explicit protection; future guest/order-scoped contracts are tracked and completed before those feature tasks.\
-  **Evidence to attach:** Reviewed `API.md` baseline.
+  **Evidence:** [Reviewed identity API contracts](./evidence/P03-018-api-contracts.md). Strict validators for 26 operations, browser/replay obligations and safe errors implemented; 73 new contract cases, 145 backend tests and all 20 CI commands passed. Accepted by project owner on 18 October 2026: “Identity API contract গ্রহণ করছি”; real identity/session/CSRF implementations remain their owning tasks.
 
 ### Phase 04 — Product catalog and inventory
 
@@ -1590,17 +1594,17 @@ account-specific verification needs for EXT-01/02/09; it does not establish merc
 [P01-007 policy gates](./evidence/P01-007-policy-gates.md) assign the launch verification role and record required
 qualified/operator approvals, source evidence and publication checks; draft policies are not legally certified.
 
-| ID | Dependency / gate | First affected tasks | Resolution evidence |
-| --- | --- | --- | --- |
-| EXT-01 | SSLCOMMERZ sandbox, live activation and enabled bKash/Nagad/Rocket channels | P01 gateway readiness; P07; P11 | Merchant account activation, test and live-channel verification |
-| EXT-02 | SSLCOMMERZ supported refund/status procedure and limits | P01 gateway readiness; P08; P11 | Provider documentation/account-specific supported method and sandbox outcome |
-| EXT-03 | MongoDB transaction-capable deployment and backup/restore infrastructure | P03; P06; P09–P11 | Replica-set test, indexes and restore result |
-| EXT-04 | Cloudinary account, media credentials, upload policy and approved assets | P04 | Credentials/access verification and media security test |
-| EXT-05 | Email provider, approved sender identity and delivery testing | P03; P06–P08; P11 | Sender verification and email delivery/retry results |
-| EXT-06 | Approved product images/prices/SKUs/stock and store identity/support contact | P04; P09; P11 | Operator-approved catalog/configuration evidence |
-| EXT-07 | Approved delivery zones/charges, fulfillment policy and operational contacts | P06; P11 | Delivery configuration and operational approval |
-| EXT-08 | Current legal verification and approved policy/terms/privacy content | P06; P08; P09; P11 | Dated legal/owner review and published copy approval |
-| EXT-09 | Hosting, approved origins/DNS, staging and production credentials | P09; P11 | Deployment, HTTPS, cookies/CORS/CSRF and backup evidence |
+| ID     | Dependency / gate                                                            | First affected tasks            | Resolution evidence                                                          |
+| ------ | ---------------------------------------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------------- |
+| EXT-01 | SSLCOMMERZ sandbox, live activation and enabled bKash/Nagad/Rocket channels  | P01 gateway readiness; P07; P11 | Merchant account activation, test and live-channel verification              |
+| EXT-02 | SSLCOMMERZ supported refund/status procedure and limits                      | P01 gateway readiness; P08; P11 | Provider documentation/account-specific supported method and sandbox outcome |
+| EXT-03 | MongoDB transaction-capable deployment and backup/restore infrastructure     | P03; P06; P09–P11               | Replica-set test, indexes and restore result                                 |
+| EXT-04 | Cloudinary account, media credentials, upload policy and approved assets     | P04                             | Credentials/access verification and media security test                      |
+| EXT-05 | Email provider, approved sender identity and delivery testing                | P03; P06–P08; P11               | Sender verification and email delivery/retry results                         |
+| EXT-06 | Approved product images/prices/SKUs/stock and store identity/support contact | P04; P09; P11                   | Operator-approved catalog/configuration evidence                             |
+| EXT-07 | Approved delivery zones/charges, fulfillment policy and operational contacts | P06; P11                        | Delivery configuration and operational approval                              |
+| EXT-08 | Current legal verification and approved policy/terms/privacy content         | P06; P08; P09; P11              | Dated legal/owner review and published copy approval                         |
+| EXT-09 | Hosting, approved origins/DNS, staging and production credentials            | P09; P11                        | Deployment, HTTPS, cookies/CORS/CSRF and backup evidence                     |
 
 Record readiness evidence against each EXT ID during provisioning and integration. When an input blocks execution,
 set the affected task to `Blocked` and record its owner, acceptance impact and next verification action. Continue safe
@@ -1614,57 +1618,57 @@ The matrix assigns implementation ownership. Record requirement-level evidence d
 accountable task, shared UI/API context and planned verification/evidence slot. The summary below retains the original
 owners and includes additional cross-domain owners identified by that mapping.
 
-| PRD requirement | Owning tasks (and key follow-through) |
-| --- | --- |
-| FR-01 | `P03-004`, `P03-005`, `P03-007`, `P03-010`, `P03-013`, `P03-014`, `P03-015`, `P03-016`, `P10-005`, `P11-003`, `P09-003` |
-| FR-02 | `P03-004`, `P03-008`, `P03-010`, `P03-011`, `P03-013`, `P03-015`, `P03-016`, `P06-014`, `P05-004`, `P05-012`, `P08-012`, `P06-005`, `P08-013` |
-| FR-03 | `P04-012`, `P04-015`, `P09-008`, `P11-006`, `P02-006`, `P09-005` |
-| FR-04 | `P04-001`, `P04-009`, `P04-011`, `P04-013`, `P04-015`, `P10-009`, `P04-002` |
-| FR-05 | `P04-002`, `P04-003`, `P04-010`, `P04-011`, `P04-014`, `P04-015`, `P10-009`, `P05-001`, `P05-004`, `P05-010`, `P06-004` |
-| FR-06 | `P04-002`, `P04-005`, `P04-010`, `P04-014`, `P04-015`, `P04-006`, `P06-005` |
-| FR-07 | `P05-001`, `P05-002`, `P05-003`, `P05-011`, `P05-013`, `P06-004` |
-| FR-08 | `P05-004`, `P05-012`, `P05-013` |
-| FR-09 | `P05-005`, `P05-006`, `P05-007`, `P05-011`, `P05-013`, `P06-004`, `P06-007`, `P06-009`, `P06-010`, `P06-020`, `P07-008`, `P07-009`, `P10-002`, `P05-008`, `P06-008`, `P07-013` |
-| FR-10 | `P05-009`, `P05-010`, `P05-012`, `P05-013`, `P08-016`, `P08-017`, `P08-018`, `P09-006` |
-| FR-11 | `P06-004`, `P06-005`, `P06-006`, `P06-008`, `P06-009`, `P06-018`, `P06-020`, `P07-004`, `P10-002`, `P11-008`, `P06-001` |
-| FR-12 | `P01-006`, `P06-008`, `P06-012`, `P07-001`, `P07-002`, `P07-003`, `P07-004`, `P07-005`, `P07-006`, `P07-007`, `P07-008`, `P07-009`, `P07-010`, `P07-011`, `P07-012`, `P07-013`, `P07-014`, `P07-015`, `P07-017`, `P10-003`, `P11-004`, `P11-005`, `P11-009`, `P12-005`, `P06-010` |
-| FR-13 | `P04-006`, `P04-008`, `P04-015`, `P06-007`, `P06-008`, `P06-009`, `P06-010`, `P06-020`, `P07-008`, `P07-009`, `P07-017`, `P08-004`, `P10-002`, `P06-013`, `P07-011`, `P06-011` |
-| FR-14 | `P06-005`, `P06-011`, `P06-014`, `P06-019`, `P06-020`, `P06-013`, `P08-012`, `P08-013`, `P06-003`, `P06-017`, `P07-011` |
-| FR-15 | `P06-013`, `P06-019`, `P06-020`, `P08-018`, `P08-005`, `P06-016` |
-| FR-16 | `P01-007`, `P06-001`, `P06-002`, `P06-003`, `P06-011`, `P06-017`, `P06-018`, `P06-020`, `P09-004`, `P09-008`, `P11-006`, `P11-007`, `P06-016` |
-| FR-17 | `P01-007`, `P08-001`, `P08-002`, `P08-003`, `P08-004`, `P08-011`, `P08-012`, `P08-018`, `P11-007` |
-| FR-18 | `P01-006`, `P01-007`, `P07-011`, `P08-005`, `P08-006`, `P08-007`, `P08-008`, `P08-009`, `P08-010`, `P08-011`, `P08-013`, `P08-018`, `P10-004`, `P11-004`, `P11-005`, `P11-007`, `P11-009`, `P12-005` |
-| FR-19 | `P06-015`, `P06-019`, `P06-020`, `P10-005`, `P11-008`, `P06-013`, `P08-012`, `P08-013` |
-| FR-20 | `P03-009`, `P03-010`, `P06-016`, `P06-020`, `P07-016`, `P08-011`, `P10-010`, `P11-004` |
-| FR-21 | `P03-004`, `P03-005`, `P03-012`, `P03-013`, `P03-014`, `P03-015`, `P03-016`, `P09-010`, `P10-005`, `P11-003`, `P11-008` |
-| FR-22 | `P09-001`, `P09-002`, `P09-009`, `P09-010` |
-| FR-23 | `P04-002`, `P04-003`, `P04-005`, `P04-015`, `P09-010`, `P11-006` |
-| FR-24 | `P04-001`, `P04-004`, `P04-015`, `P09-010`, `P04-003` |
-| FR-25 | `P04-006`, `P04-007`, `P04-015`, `P09-007`, `P09-010`, `P08-004` |
-| FR-26 | `P06-003`, `P06-011`, `P06-012`, `P06-013`, `P06-017`, `P06-019`, `P06-020`, `P09-004`, `P09-007`, `P09-010`, `P11-008`, `P12-004`, `P07-015`, `P08-015` |
-| FR-27 | `P09-003`, `P09-009`, `P09-010` |
-| FR-28 | `P06-001`, `P06-002`, `P06-020`, `P09-005`, `P09-010`, `P11-006` |
-| FR-29 | `P06-012`, `P06-020`, `P07-002`, `P07-010`, `P07-012`, `P07-015`, `P07-017`, `P09-002`, `P09-007`, `P09-010`, `P10-003`, `P11-009`, `P12-005`, `P08-015` |
-| FR-30 | `P05-008`, `P05-013`, `P09-010` |
-| FR-31 | `P05-009`, `P05-010`, `P05-013`, `P08-016`, `P08-017`, `P09-006`, `P09-010` |
-| FR-32 | `P08-001`, `P08-003`, `P08-004`, `P08-014`, `P08-018`, `P09-010`, `P08-002`, `P08-005` |
-| FR-33 | `P08-005`, `P08-006`, `P08-008`, `P08-009`, `P08-010`, `P08-015`, `P08-018`, `P09-007`, `P09-010`, `P10-004`, `P11-009`, `P12-004`, `P08-011`, `P08-007` |
-| FR-34 | `P01-007`, `P06-017`, `P09-004`, `P09-005`, `P09-008`, `P09-010`, `P11-006`, `P11-007`, `P06-001` |
+| PRD requirement | Owning tasks (and key follow-through)                                                                                                                                                                                                                                             |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-01           | `P03-004`, `P03-005`, `P03-007`, `P03-010`, `P03-013`, `P03-014`, `P03-015`, `P03-016`, `P10-005`, `P11-003`, `P09-003`                                                                                                                                                           |
+| FR-02           | `P03-004`, `P03-008`, `P03-010`, `P03-011`, `P03-013`, `P03-015`, `P03-016`, `P06-014`, `P05-004`, `P05-012`, `P08-012`, `P06-005`, `P08-013`                                                                                                                                     |
+| FR-03           | `P04-012`, `P04-015`, `P09-008`, `P11-006`, `P02-006`, `P09-005`                                                                                                                                                                                                                  |
+| FR-04           | `P04-001`, `P04-009`, `P04-011`, `P04-013`, `P04-015`, `P10-009`, `P04-002`                                                                                                                                                                                                       |
+| FR-05           | `P04-002`, `P04-003`, `P04-010`, `P04-011`, `P04-014`, `P04-015`, `P10-009`, `P05-001`, `P05-004`, `P05-010`, `P06-004`                                                                                                                                                           |
+| FR-06           | `P04-002`, `P04-005`, `P04-010`, `P04-014`, `P04-015`, `P04-006`, `P06-005`                                                                                                                                                                                                       |
+| FR-07           | `P05-001`, `P05-002`, `P05-003`, `P05-011`, `P05-013`, `P06-004`                                                                                                                                                                                                                  |
+| FR-08           | `P05-004`, `P05-012`, `P05-013`                                                                                                                                                                                                                                                   |
+| FR-09           | `P05-005`, `P05-006`, `P05-007`, `P05-011`, `P05-013`, `P06-004`, `P06-007`, `P06-009`, `P06-010`, `P06-020`, `P07-008`, `P07-009`, `P10-002`, `P05-008`, `P06-008`, `P07-013`                                                                                                    |
+| FR-10           | `P05-009`, `P05-010`, `P05-012`, `P05-013`, `P08-016`, `P08-017`, `P08-018`, `P09-006`                                                                                                                                                                                            |
+| FR-11           | `P06-004`, `P06-005`, `P06-006`, `P06-008`, `P06-009`, `P06-018`, `P06-020`, `P07-004`, `P10-002`, `P11-008`, `P06-001`                                                                                                                                                           |
+| FR-12           | `P01-006`, `P06-008`, `P06-012`, `P07-001`, `P07-002`, `P07-003`, `P07-004`, `P07-005`, `P07-006`, `P07-007`, `P07-008`, `P07-009`, `P07-010`, `P07-011`, `P07-012`, `P07-013`, `P07-014`, `P07-015`, `P07-017`, `P10-003`, `P11-004`, `P11-005`, `P11-009`, `P12-005`, `P06-010` |
+| FR-13           | `P04-006`, `P04-008`, `P04-015`, `P06-007`, `P06-008`, `P06-009`, `P06-010`, `P06-020`, `P07-008`, `P07-009`, `P07-017`, `P08-004`, `P10-002`, `P06-013`, `P07-011`, `P06-011`                                                                                                    |
+| FR-14           | `P06-005`, `P06-011`, `P06-014`, `P06-019`, `P06-020`, `P06-013`, `P08-012`, `P08-013`, `P06-003`, `P06-017`, `P07-011`                                                                                                                                                           |
+| FR-15           | `P06-013`, `P06-019`, `P06-020`, `P08-018`, `P08-005`, `P06-016`                                                                                                                                                                                                                  |
+| FR-16           | `P01-007`, `P06-001`, `P06-002`, `P06-003`, `P06-011`, `P06-017`, `P06-018`, `P06-020`, `P09-004`, `P09-008`, `P11-006`, `P11-007`, `P06-016`                                                                                                                                     |
+| FR-17           | `P01-007`, `P08-001`, `P08-002`, `P08-003`, `P08-004`, `P08-011`, `P08-012`, `P08-018`, `P11-007`                                                                                                                                                                                 |
+| FR-18           | `P01-006`, `P01-007`, `P07-011`, `P08-005`, `P08-006`, `P08-007`, `P08-008`, `P08-009`, `P08-010`, `P08-011`, `P08-013`, `P08-018`, `P10-004`, `P11-004`, `P11-005`, `P11-007`, `P11-009`, `P12-005`                                                                              |
+| FR-19           | `P06-015`, `P06-019`, `P06-020`, `P10-005`, `P11-008`, `P06-013`, `P08-012`, `P08-013`                                                                                                                                                                                            |
+| FR-20           | `P03-009`, `P03-010`, `P06-016`, `P06-020`, `P07-016`, `P08-011`, `P10-010`, `P11-004`                                                                                                                                                                                            |
+| FR-21           | `P03-004`, `P03-005`, `P03-012`, `P03-013`, `P03-014`, `P03-015`, `P03-016`, `P09-010`, `P10-005`, `P11-003`, `P11-008`                                                                                                                                                           |
+| FR-22           | `P09-001`, `P09-002`, `P09-009`, `P09-010`                                                                                                                                                                                                                                        |
+| FR-23           | `P04-002`, `P04-003`, `P04-005`, `P04-015`, `P09-010`, `P11-006`                                                                                                                                                                                                                  |
+| FR-24           | `P04-001`, `P04-004`, `P04-015`, `P09-010`, `P04-003`                                                                                                                                                                                                                             |
+| FR-25           | `P04-006`, `P04-007`, `P04-015`, `P09-007`, `P09-010`, `P08-004`                                                                                                                                                                                                                  |
+| FR-26           | `P06-003`, `P06-011`, `P06-012`, `P06-013`, `P06-017`, `P06-019`, `P06-020`, `P09-004`, `P09-007`, `P09-010`, `P11-008`, `P12-004`, `P07-015`, `P08-015`                                                                                                                          |
+| FR-27           | `P09-003`, `P09-009`, `P09-010`                                                                                                                                                                                                                                                   |
+| FR-28           | `P06-001`, `P06-002`, `P06-020`, `P09-005`, `P09-010`, `P11-006`                                                                                                                                                                                                                  |
+| FR-29           | `P06-012`, `P06-020`, `P07-002`, `P07-010`, `P07-012`, `P07-015`, `P07-017`, `P09-002`, `P09-007`, `P09-010`, `P10-003`, `P11-009`, `P12-005`, `P08-015`                                                                                                                          |
+| FR-30           | `P05-008`, `P05-013`, `P09-010`                                                                                                                                                                                                                                                   |
+| FR-31           | `P05-009`, `P05-010`, `P05-013`, `P08-016`, `P08-017`, `P09-006`, `P09-010`                                                                                                                                                                                                       |
+| FR-32           | `P08-001`, `P08-003`, `P08-004`, `P08-014`, `P08-018`, `P09-010`, `P08-002`, `P08-005`                                                                                                                                                                                            |
+| FR-33           | `P08-005`, `P08-006`, `P08-008`, `P08-009`, `P08-010`, `P08-015`, `P08-018`, `P09-007`, `P09-010`, `P10-004`, `P11-009`, `P12-004`, `P08-011`, `P08-007`                                                                                                                          |
+| FR-34           | `P01-007`, `P06-017`, `P09-004`, `P09-005`, `P09-008`, `P09-010`, `P11-006`, `P11-007`, `P06-001`                                                                                                                                                                                 |
 
 ### 7.1 Non-functional and cross-cutting coverage
 
 [P01-004 detailed coverage](./evidence/P01-004-nfr-release.md) assigns each PRD §12 and §18 requirement, every existing
 AC check, QA/operations release checklist item and M1–M8 gate a task owner and planned verification/evidence slot.
 
-| Area | Owning task groups and release evidence |
-| --- | --- |
-| Authentication, security, authorization and privacy | P03 identity/security; P06 guest proof; P10 security regression; P11 production-origin verification |
-| Financial, coupon and inventory integrity | P04 stock foundation; P05 promotions; P06 allocation; P07 payment; P08 refund; P10 concurrency/fault injection |
-| Public search, SEO, performance and private caching | P04 catalog/metadata; P10 performance and cache audit |
-| Responsive, theme and accessibility | P02 UI foundation; feature UI tasks in P03–P09; P10 both-theme/browser acceptance |
-| Notifications, scheduled work and recovery | P03 email core; P06/P07/P08 events; P07/P08 reconciliation; P10 restart and backup; P11 monitoring |
-| Delivery, complaints, customer rights and publication | P01 readiness; P06 deadlines/complaints; P08 eligible returns; P09 policies; P11 authority/owner approval |
-| Operational and release readiness | P09 staging; P10 PRD acceptance/restore; P11 live safe checks; P12 handover |
+| Area                                                  | Owning task groups and release evidence                                                                        |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Authentication, security, authorization and privacy   | P03 identity/security; P06 guest proof; P10 security regression; P11 production-origin verification            |
+| Financial, coupon and inventory integrity             | P04 stock foundation; P05 promotions; P06 allocation; P07 payment; P08 refund; P10 concurrency/fault injection |
+| Public search, SEO, performance and private caching   | P04 catalog/metadata; P10 performance and cache audit                                                          |
+| Responsive, theme and accessibility                   | P02 UI foundation; feature UI tasks in P03–P09; P10 both-theme/browser acceptance                              |
+| Notifications, scheduled work and recovery            | P03 email core; P06/P07/P08 events; P07/P08 reconciliation; P10 restart and backup; P11 monitoring             |
+| Delivery, complaints, customer rights and publication | P01 readiness; P06 deadlines/complaints; P08 eligible returns; P09 policies; P11 authority/owner approval      |
+| Operational and release readiness                     | P09 staging; P10 PRD acceptance/restore; P11 live safe checks; P12 handover                                    |
 
 ### 7.2 Page and end-to-end coverage
 
@@ -1695,43 +1699,47 @@ Before checking a task, ensure its applicable code/configuration exists, builds 
 Record task execution, material blockers, acceptance and milestone decisions here. Documentation revisions belong in
 [CHANGELOG](../CHANGELOG.md).
 
-| Date (Asia/Dhaka) | Task / milestone | Change or result | Owner / reviewer | Evidence | Next action |
-| --- | --- | --- | --- | --- | --- |
-| 17 October 2026 | P01-001 | Baseline verification passed; project owner accepted the checklist; status Done | Codex / project owner | [Accepted baseline verification](./evidence/P01-001-baseline.md) | Proceed through declared task dependencies |
-| 17 October 2026 | P01-002 | Scope and exclusion review passed; project owner accepted the checklist; status Done | Codex / project owner | [Accepted scope verification](./evidence/P01-002-scope.md) | Proceed through declared task dependencies |
-| 17 October 2026 | P01-003 | Traceability verification passed; project owner accepted the register; status Done | Codex / project owner | [Accepted traceability register](./evidence/P01-003-traceability.md) | Proceed through declared task dependencies |
-| 17 October 2026 | P01-004 | NFR/release coverage verification passed; project owner accepted the register; status Done | Codex / project owner | [Accepted NFR/release register](./evidence/P01-004-nfr-release.md) | Proceed through declared task dependencies |
-| 17 October 2026 | P01-005 | Readiness-register verification passed; project owner accepted the register; status Done; external readiness remains separately Pending | Codex / project owner | [Accepted readiness register](./evidence/P01-005-readiness.md) | Proceed through declared task dependencies |
-| 17 October 2026 | P01-006 | Gateway/refund planning assessment passed; project owner accepted the assessment; status Done; merchant-specific activation/payout gates remain separate | Codex / project owner | [Accepted gateway/refund feasibility](./evidence/P01-006-gateway-feasibility.md) | Proceed through declared task dependencies |
-| 17 October 2026 | P01-007 | Policy-gate verification passed; project owner accepted the record; status Done; actual legal/publication approvals remain separate | Codex / project owner | [Policy/customer-rights gates](./evidence/P01-007-policy-gates.md) | Proceed through declared task dependencies |
-| 17 October 2026 | P01-008 | Critical-scenario and dependency checks passed; project owner accepted the planning record; status Done; runtime verification remains separate | Codex / project owner | [Critical-scenario map](./evidence/P01-008-critical-scenarios.md) | Proceed through declared task dependencies |
-| 17 October 2026 | P01-009 | Workspace clean-install/discovery and safety checks passed; project owner accepted the foundation; status Done | Codex / project owner | [Workspace foundation](./evidence/P01-009-workspace.md) | Proceed through declared task dependencies |
-| 17 October 2026 | P01-010 | Local pipeline and 12 tooling regressions passed; hosted run 39039353486 Passed; project owner accepted baseline; status Done | Codex / project owner | [Accepted CI baseline evidence](./evidence/P01-010-ci.md) | Proceed through declared task dependencies |
-| 17 October 2026 | P01-011 | Agent-rule review and static checks passed; project owner accepted the reviewed instructions; status Done | Codex / project owner | [Accepted agent-rule review](./evidence/P01-011-agent-rules.md) | Proceed through declared task dependencies |
-| 17 October 2026 | P01-012 | Not Started → In Review → Done; protocol/register checks passed; project owner accepted the task/status/evidence protocol | Codex / project owner | [Accepted task-protocol review](./evidence/P01-012-task-protocol.md) | Proceed through declared task dependencies |
-| 17 October 2026 | P01-013 | Not Started → In Review → Done; coverage/static and local CI checks passed; project owner accepted the testing baseline | Codex / project owner | [Accepted testing baseline](./evidence/P01-013-testing-baseline.md) | Proceed through declared task dependencies |
-| 17 October 2026 | P01-014 | Not Started → In Review → Done; operations/static checks passed; project owner accepted the operations baseline | Codex / project owner | [Accepted operations baseline](./evidence/P01-014-operations-baseline.md) | Proceed through declared task dependencies |
-| 17 October 2026 | P02-001 | Not Started → In Progress → In Review → Done; build, layout/production smoke and configured CI checks passed; project owner accepted the storefront scaffold | Codex / project owner | [Accepted storefront scaffold](./evidence/P02-001-storefront.md) | Proceed through declared task dependencies |
-
-| 17 October 2026 | P02-002 | Not Started → In Progress → In Review → Done; independent build, DOM navigation, HTTP smoke and configured CI checks passed; project owner accepted the admin scaffold | Codex / project owner | [Accepted admin scaffold](./evidence/P02-002-admin.md) | Proceed through declared task dependencies |
-
-| 17 October 2026 | P02-003 | Not Started → In Progress → In Review → Done; token/contrast, both builds and configured CI checks passed; project owner accepted the design tokens and rendered comparison | Codex / project owner | [Accepted design tokens](./evidence/P02-003-tokens.md) | Proceed through declared task dependencies |
-
-| 18 October 2026 | P02-004 | Not Started → In Progress → In Review → Done; font, dimension, BDT, both-build and configured CI checks passed; project owner accepted the typography/BDT foundation | Codex / project owner | [Accepted typography and BDT foundation](./evidence/P02-004-foundation.md) | Proceed through declared task dependencies |
-
-| 18 October 2026 | P02-005 | Not Started → In Progress → In Review → Done; theme interaction/hydration, bootstrap HTTP, both builds and configured CI checks passed; project owner accepted theme preference | Codex / project owner | [Accepted theme preference](./evidence/P02-005-theme.md) | Proceed through declared task dependencies |
-
-| 18 October 2026 | P02-006 | Not Started → In Progress → In Review → Done; shell interaction/recovery, destination/404, both-build and configured CI checks passed; project owner accepted the storefront shell | Codex / project owner | [Accepted storefront shell](./evidence/P02-006-storefront-shell.md) | Proceed through declared task dependencies |
-
-| 18 October 2026 | P02-007 | Not Started → In Progress → In Review → Done; admin navigation/Drawer, title/actions, signed-out and offline behavior implemented; 103 tests, both builds and configured CI checks passed; project owner accepted the admin shell | Codex / project owner | [Accepted admin shell](./evidence/P02-007-admin-shell.md) | Proceed through declared task dependencies; retain separate browser verification |
-
-| 18 October 2026 | P02-008 | Not Started → In Progress → In Review → Done; HeroUI form/feedback foundations, field-error associations, pending guards and draft/focus preservation implemented; 163 tests, both builds and all configured CI commands passed; project owner accepted the foundation | Codex / project owner | [Accepted form foundation](./evidence/P02-008-forms.md) | Proceed through declared task dependencies; retain separate browser/manual keyboard verification |
-
-| 18 October 2026 | P02-009 | Not Started → In Progress → In Review → Done; HeroUI commerce primitives implemented; 40 new both-theme cases, 203 total tests, both builds and all configured CI commands passed; project owner accepted the commerce primitives | Codex / project owner | [Commerce primitive evidence](./evidence/P02-009-commerce.md) | Proceed through declared task dependencies; retain separate browser verification |
-
-| 18 October 2026 | P02-010 | Not Started → In Progress → In Review → Done; HeroUI table/filter/pagination, upload and guarded-action foundations implemented; 20 new both-theme cases, 223 tests, both builds and all configured CI commands passed; project owner accepted the admin primitives | Codex / project owner | [Admin primitive evidence](./evidence/P02-010-admin-primitives.md) | Proceed through declared task dependencies; retain separate browser verification |
-
-| 18 October 2026 | P02-011 | Not Started → In Progress → In Review → Done; Chromium/Firefox/WebKit foundation audits, both themes and three viewports; accessible-name and foreground findings resolved; all 14 CI commands and 30 browser cases passed; project owner accepted the foundation audit | Codex / project owner | [Foundation audit evidence](./evidence/P02-011-accessibility.md) | Proceed through declared task dependencies; retain feature/release browser and assistive-technology checks |
+| Date (Asia/Dhaka) | Task / milestone | Change or result                                                                                                                                                                                                                                                                                                                                                                                                                                        | Owner / reviewer      | Evidence                                                                         | Next action                                                                                                |
+| ----------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| 17 October 2026   | P01-001          | Baseline verification passed; project owner accepted the checklist; status Done                                                                                                                                                                                                                                                                                                                                                                         | Codex / project owner | [Accepted baseline verification](./evidence/P01-001-baseline.md)                 | Proceed through declared task dependencies                                                                 |
+| 17 October 2026   | P01-002          | Scope and exclusion review passed; project owner accepted the checklist; status Done                                                                                                                                                                                                                                                                                                                                                                    | Codex / project owner | [Accepted scope verification](./evidence/P01-002-scope.md)                       | Proceed through declared task dependencies                                                                 |
+| 17 October 2026   | P01-003          | Traceability verification passed; project owner accepted the register; status Done                                                                                                                                                                                                                                                                                                                                                                      | Codex / project owner | [Accepted traceability register](./evidence/P01-003-traceability.md)             | Proceed through declared task dependencies                                                                 |
+| 17 October 2026   | P01-004          | NFR/release coverage verification passed; project owner accepted the register; status Done                                                                                                                                                                                                                                                                                                                                                              | Codex / project owner | [Accepted NFR/release register](./evidence/P01-004-nfr-release.md)               | Proceed through declared task dependencies                                                                 |
+| 17 October 2026   | P01-005          | Readiness-register verification passed; project owner accepted the register; status Done; external readiness remains separately Pending                                                                                                                                                                                                                                                                                                                 | Codex / project owner | [Accepted readiness register](./evidence/P01-005-readiness.md)                   | Proceed through declared task dependencies                                                                 |
+| 17 October 2026   | P01-006          | Gateway/refund planning assessment passed; project owner accepted the assessment; status Done; merchant-specific activation/payout gates remain separate                                                                                                                                                                                                                                                                                                | Codex / project owner | [Accepted gateway/refund feasibility](./evidence/P01-006-gateway-feasibility.md) | Proceed through declared task dependencies                                                                 |
+| 17 October 2026   | P01-007          | Policy-gate verification passed; project owner accepted the record; status Done; actual legal/publication approvals remain separate                                                                                                                                                                                                                                                                                                                     | Codex / project owner | [Policy/customer-rights gates](./evidence/P01-007-policy-gates.md)               | Proceed through declared task dependencies                                                                 |
+| 17 October 2026   | P01-008          | Critical-scenario and dependency checks passed; project owner accepted the planning record; status Done; runtime verification remains separate                                                                                                                                                                                                                                                                                                          | Codex / project owner | [Critical-scenario map](./evidence/P01-008-critical-scenarios.md)                | Proceed through declared task dependencies                                                                 |
+| 17 October 2026   | P01-009          | Workspace clean-install/discovery and safety checks passed; project owner accepted the foundation; status Done                                                                                                                                                                                                                                                                                                                                          | Codex / project owner | [Workspace foundation](./evidence/P01-009-workspace.md)                          | Proceed through declared task dependencies                                                                 |
+| 17 October 2026   | P01-010          | Local pipeline and 12 tooling regressions passed; hosted run 39039353486 Passed; project owner accepted baseline; status Done                                                                                                                                                                                                                                                                                                                           | Codex / project owner | [Accepted CI baseline evidence](./evidence/P01-010-ci.md)                        | Proceed through declared task dependencies                                                                 |
+| 17 October 2026   | P01-011          | Agent-rule review and static checks passed; project owner accepted the reviewed instructions; status Done                                                                                                                                                                                                                                                                                                                                               | Codex / project owner | [Accepted agent-rule review](./evidence/P01-011-agent-rules.md)                  | Proceed through declared task dependencies                                                                 |
+| 17 October 2026   | P01-012          | Not Started → In Review → Done; protocol/register checks passed; project owner accepted the task/status/evidence protocol                                                                                                                                                                                                                                                                                                                               | Codex / project owner | [Accepted task-protocol review](./evidence/P01-012-task-protocol.md)             | Proceed through declared task dependencies                                                                 |
+| 17 October 2026   | P01-013          | Not Started → In Review → Done; coverage/static and local CI checks passed; project owner accepted the testing baseline                                                                                                                                                                                                                                                                                                                                 | Codex / project owner | [Accepted testing baseline](./evidence/P01-013-testing-baseline.md)              | Proceed through declared task dependencies                                                                 |
+| 17 October 2026   | P01-014          | Not Started → In Review → Done; operations/static checks passed; project owner accepted the operations baseline                                                                                                                                                                                                                                                                                                                                         | Codex / project owner | [Accepted operations baseline](./evidence/P01-014-operations-baseline.md)        | Proceed through declared task dependencies                                                                 |
+| 17 October 2026   | P02-001          | Not Started → In Progress → In Review → Done; build, layout/production smoke and configured CI checks passed; project owner accepted the storefront scaffold                                                                                                                                                                                                                                                                                            | Codex / project owner | [Accepted storefront scaffold](./evidence/P02-001-storefront.md)                 | Proceed through declared task dependencies                                                                 |
+| 17 October 2026   | P02-002          | Not Started → In Progress → In Review → Done; independent build, DOM navigation, HTTP smoke and configured CI checks passed; project owner accepted the admin scaffold                                                                                                                                                                                                                                                                                  | Codex / project owner | [Accepted admin scaffold](./evidence/P02-002-admin.md)                           | Proceed through declared task dependencies                                                                 |
+| 17 October 2026   | P02-003          | Not Started → In Progress → In Review → Done; token/contrast, both builds and configured CI checks passed; project owner accepted the design tokens and rendered comparison                                                                                                                                                                                                                                                                             | Codex / project owner | [Accepted design tokens](./evidence/P02-003-tokens.md)                           | Proceed through declared task dependencies                                                                 |
+| 18 October 2026   | P02-004          | Not Started → In Progress → In Review → Done; font, dimension, BDT, both-build and configured CI checks passed; project owner accepted the typography/BDT foundation                                                                                                                                                                                                                                                                                    | Codex / project owner | [Accepted typography and BDT foundation](./evidence/P02-004-foundation.md)       | Proceed through declared task dependencies                                                                 |
+| 18 October 2026   | P02-005          | Not Started → In Progress → In Review → Done; theme interaction/hydration, bootstrap HTTP, both builds and configured CI checks passed; project owner accepted theme preference                                                                                                                                                                                                                                                                         | Codex / project owner | [Accepted theme preference](./evidence/P02-005-theme.md)                         | Proceed through declared task dependencies                                                                 |
+| 18 October 2026   | P02-006          | Not Started → In Progress → In Review → Done; shell interaction/recovery, destination/404, both-build and configured CI checks passed; project owner accepted the storefront shell                                                                                                                                                                                                                                                                      | Codex / project owner | [Accepted storefront shell](./evidence/P02-006-storefront-shell.md)              | Proceed through declared task dependencies                                                                 |
+| 18 October 2026   | P02-007          | Not Started → In Progress → In Review → Done; admin navigation/Drawer, title/actions, signed-out and offline behavior implemented; 103 tests, both builds and configured CI checks passed; project owner accepted the admin shell                                                                                                                                                                                                                       | Codex / project owner | [Accepted admin shell](./evidence/P02-007-admin-shell.md)                        | Proceed through declared task dependencies; retain separate browser verification                           |
+| 18 October 2026   | P02-008          | Not Started → In Progress → In Review → Done; HeroUI form/feedback foundations, field-error associations, pending guards and draft/focus preservation implemented; 163 tests, both builds and all configured CI commands passed; project owner accepted the foundation                                                                                                                                                                                  | Codex / project owner | [Accepted form foundation](./evidence/P02-008-forms.md)                          | Proceed through declared task dependencies; retain separate browser/manual keyboard verification           |
+| 18 October 2026   | P02-009          | Not Started → In Progress → In Review → Done; HeroUI commerce primitives implemented; 40 new both-theme cases, 203 total tests, both builds and all configured CI commands passed; project owner accepted the commerce primitives                                                                                                                                                                                                                       | Codex / project owner | [Commerce primitive evidence](./evidence/P02-009-commerce.md)                    | Proceed through declared task dependencies; retain separate browser verification                           |
+| 18 October 2026   | P02-010          | Not Started → In Progress → In Review → Done; HeroUI table/filter/pagination, upload and guarded-action foundations implemented; 20 new both-theme cases, 223 tests, both builds and all configured CI commands passed; project owner accepted the admin primitives                                                                                                                                                                                     | Codex / project owner | [Admin primitive evidence](./evidence/P02-010-admin-primitives.md)               | Proceed through declared task dependencies; retain separate browser verification                           |
+| 18 October 2026   | P02-011          | Not Started → In Progress → In Review → Done; Chromium/Firefox/WebKit foundation audits, both themes and three viewports; accessible-name and foreground findings resolved; all 14 CI commands and 30 browser cases passed; project owner accepted the foundation audit                                                                                                                                                                                 | Codex / project owner | [Foundation audit evidence](./evidence/P02-011-accessibility.md)                 | Proceed through declared task dependencies; retain feature/release browser and assistive-technology checks |
+| 18 October 2026   | P03-001          | Not Started → In Progress → In Review → Done; modular Express bootstrap, safe errors/validation and bounded pagination implemented; backend activated in CI; 37 backend cases and all 19 configured commands passed; project owner accepted the backend scaffold                                                                                                                                                                                        | Codex / project owner | [Backend bootstrap evidence](./evidence/P03-001-backend.md)                      | Proceed through declared dependencies                                                                      |
+| 18 October 2026   | P03-002          | Not Started → In Progress → In Review → Done; Mongoose/schema/index/transaction foundations and ephemeral local DB implemented; real MongoDB replica-set integration 24/24 and all 20 CI commands passed; project owner accepted the database foundation                                                                                                                                                                                                | Codex / project owner | [Database foundation evidence](./evidence/P03-002-database.md)                   | Proceed through declared task dependencies; retain deployment and domain-invariant gates                   |
+| 18 October 2026   | P03-003          | Not Started → In Progress → In Review → Done; validated runtime startup, operational health/readiness, secret-safe structured logs and graceful shutdown implemented; 72 backend cases, 29 DB integration cases and all 20 CI commands passed; project owner accepted the runtime/health foundation                                                                                                                                                     | Codex / project owner | [Runtime/health evidence](./evidence/P03-003-operations.md)                      | Proceed through declared task dependencies; retain deployed operational gates                              |
+| 18 October 2026   | P03-017          | Not Started → In Progress → In Review → Done; identity field/scope/index/projection and migration/retention contract reviewed; API and Testing handoffs reconciled; static checks passed; project owner accepted the identity persistence contract                                                                                                                                                                                                      | Codex / project owner | [Identity contract evidence](./evidence/P03-017-identity-contracts.md)           | Proceed to P03-018 before P03-004                                                                          |
+| 18 October 2026   | P03-018          | Not Started → In Progress → In Review → Done; 26-operation identity validators, response/error/replay preconditions and API/Testing reconciliation delivered; 73 new contract cases, 145 backend cases and all 20 CI commands passed; project owner accepted the identity API contract                                                                                                                                                                  | Codex / project owner | [Identity API contract evidence](./evidence/P03-018-api-contracts.md)            | Proceed to P03-004 model implementation                                                                    |
+| 18 October 2026   | P03-004          | Not Started → In Progress → In Review → Done; strict identity models/BSON validators, ten indexes and expiry-aware persistence implemented; real proof-consumption/rollback/address races verified; 40 new MongoDB cases, 69 integration cases and all 20 CI commands passed; project owner accepted the identity persistence implementation                                                                                                            | Codex / project owner | [Identity persistence evidence](./evidence/P03-004-identity-models.md)           | Proceed to P03-005 session implementation                                                                  |
+| 18 October 2026   | P03-005          | Not Started → In Progress → In Review → Done; opaque customer/admin session service and secure cookie boundary implemented; 36 new unit and 20 new real session cases, 89 integration cases and all 20 CI commands passed; browser transition/locator regression corrected; project owner accepted: “Session/cookie implementation গ্রহণ করছি”                                                                                                            | Codex / project owner | [Session/cookie evidence](./evidence/P03-005-sessions.md)                        | Proceed to P03-006 Origin/CORS/CSRF                                                                        |
+| 19 October 2026   | P03-006          | Not Started → In Progress → In Review → Done; exact audience Origin/CORS, context bootstrap, conditional session CSRF refresh and transactional consumption delivered; 17 new unit and 31 real security cases, 120 integration cases, 30 browser regressions and all 20 CI commands passed; temporary WebKit runtime restored without repository dependency changes; project owner accepted: “Origin/CORS/CSRF implementation গ্রহণ করছি”                 | Codex / project owner | [Browser security evidence](./evidence/P03-006-browser-security.md)              | Proceed to P03-007 verified customer authentication                                                        |
+| 19 October 2026   | P03-007          | Not Started → In Progress → In Review → Done; owner approved password policy; customer registration/login/session/logout, strict registration notification intent, transactional context/session exchange and explicit ready-only activation implemented; 209 backend tests, 138 integration cases, 30 browser regressions and all 20 CI commands passed; project owner accepted: “Customer authentication implementation গ্রহণ করছি”                     | Codex / project owner | [Customer authentication evidence](./evidence/P03-007-customer-auth.md)          | Proceed to P03-008 profile/address ownership                                                               |
+| 19 October 2026   | P03-008          | Not Started → In Progress → In Review → Done; strict own-profile/address APIs, pinned metadata phone policy, settings-owned coverage reads, transactional address/default limits and verified deletion intake/status delivered; 230 backend tests, 164 integration cases, 30 browser regressions and all 20 CI commands passed; clean locked install verified; project owner accepted: “Profile/address implementation গ্রহণ করছি”                        | Codex / project owner | [Profile/address evidence](./evidence/P03-008-profile-addresses.md)              | Proceed to P03-009 notification foundation                                                                 |
+| 19 October 2026   | P03-009          | Not Started → In Progress → In Review → Done; transactional registration intent connected to server-only adapter/worker; durable fenced claims, capped retry and no-resend uncertainty, additive known-validator migration and transaction external-effect guard delivered; 258 backend tests, 183 integration cases, 30 browser regressions and all 20 CI commands passed; project owner accepted: “Notification foundation গ্রহণ করছি”                  | Codex / project owner | [Notification foundation evidence](./evidence/P03-009-notifications.md)          | Proceed to P03-010 password recovery/change                                                                |
+| 19 October 2026   | P03-010          | Not Started → In Progress → In Review → Done; customer password-reset issuance/atomic confirmation, authenticated password change, AES-GCM reference-only proof delivery, session revocation/rotation, bounded abuse controls and additive notification migration delivered; 283 backend tests, 211 integration cases, 30 browser regressions and all 20 CI commands Passed; project owner accepted: “Password recovery/change implementation গ্রহণ করছি” | Codex / project owner | [Password recovery evidence](./evidence/P03-010-password-recovery.md)            | Proceed to P03-011 verified email change                                                                   |
+| 19 October 2026   | P03-011          | Not Started → In Progress → In Review → Done; verified customer email-change request/atomic confirmation, unique-target conflict rollback, session revocation, purpose-separated durable proof delivery and credential-change invalidation delivered; 300 backend tests, 238 integration cases, 30 browser regressions and all 20 CI commands Passed; project owner accepted: “Verified email-change implementation গ্রহণ করছি”                           | Codex / project owner | [Email-change evidence](./evidence/P03-011-email-change.md)                      | Proceed to P03-012 private administrator authentication                                                    |
+| 19 October 2026 | P03-012 | Not Started → In Progress → In Review → Done; private initial administrator provisioning, independent admin credential/session/logout/recovery and proof/template isolation delivered; 314 backend tests, 260 integration cases, 30 browser regressions and all 20 CI commands Passed; project owner accepted: “Private admin authentication implementation গ্রহণ করছি” | Codex / project owner | [Administrator evidence](./evidence/P03-012-admin-auth.md) | Proceed to P03-013 ownership and role guards |
 
 **18 October 2026 — UI foundation change:** The project owner selected HeroUI and delegated visual design within the approved specification. Dependency/theme integration, app-owned controls and working conventions are recorded in [HeroUI foundation review](./evidence/heroui-foundation.md). The follow-up [existing UI migration](./evidence/heroui-existing-ui.md) replaces the earlier native-control exceptions. These changes are In Review; they do not accept another numbered task or milestone.
 

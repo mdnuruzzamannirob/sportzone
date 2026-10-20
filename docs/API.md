@@ -171,7 +171,8 @@ Paths use `{id}` in examples, but Express implementations bind `:id`. Route pref
 | `sz_customer_sid` | Registered customer | Opaque, hashed at rest; `HttpOnly`, `Secure`, approved `SameSite`, path `/` |
 | `sz_admin_sid` | Privately provisioned admin | Separate credential and revocation path; never accepted by customer routes as customer identity |
 | `sz_guest_order_sid` | Verified single order | Contains no raw order/customer info; server binds exact `orderId` and expiry |
-| `sz_browser_ctx` | Pre-auth browser context | Short-lived; **no account or order authorization**; bound to CSRF token |
+| `sz_browser_ctx` | Storefront pre-auth browser context | Short-lived; **no account or order authorization**; bound to CSRF token |
+| `sz_admin_browser_ctx` | Admin pre-auth browser context | Separate audience and cookie; same host-only security attributes; no account authorization |
 
 Issue all cookies from the **API origin**, without a `Domain` attribute; environment-specific names/path prefixes may change only if security isolation is preserved.
 Only `Secure` HTTPS production cookies; local testing may use a controlled development exception.
@@ -204,6 +205,11 @@ sequenceDiagram
 - The backend chooses the applicable cookie namespace from the **route and principal type**, not from a user-supplied role. Public registration always creates `customer`.
 - IPN/provider returns are on explicitly segregated routes with no browser CSRF/Origin prerequisite; they **never** establish authenticated sessions or directly mark payments paid.
 
+Persistence maps to Database §§5.2–5.6: authenticated sessions retain a private `csrfSecretHash`; pre-auth
+`browserContexts.audience` is server-selected `storefront` or `admin`. Bootstrap/verification must preserve that audience
+and route-selected session kind; neither a body role nor an unrelated valid context can switch namespaces. These private
+fields add no public DTO properties. Executable validators and protocol/replay tests are owned by P03-018/005/006.
+
 ### 4.3 Authentication lifecycle expectations
 
 | Scenario | Response / side effect |
@@ -215,6 +221,163 @@ sequenceDiagram
 | Logout | Idempotently revoke only the route's session type; clear cookie |
 | Password reset/change | Single-use challenge consumption; advance security revision and invalidate affected sessions |
 | Guest proof | Single-use challenge grants **one order** and explicitly expires; cannot be used as general customer identity |
+
+### 4.4 Implemented customer/admin session boundary
+
+`backend/src/modules/auth/sessions.ts` implements the internal session lifecycle; `session-http.ts` supplies route-selected
+cookie parsing, set/clear controls and session-required middleware. The production router remains health-only until the
+Customer activation composes credential verification with P03-006's Origin/CSRF defenses; administrator login remains separate. No endpoint may
+issue a session from a client-supplied user ID alone. The internal issuer accepts only the verified principal selected by
+the owning customer/admin authentication flow and rechecks active role/status.
+
+| Concern | Implemented contract |
+| --- | --- |
+| Opaque credentials | Independent CSPRNG 32-byte session and CSRF values, unpadded base64url (43 characters); no user/order/role claims in either token |
+| Session storage | HMAC-SHA-256 using the decoded 32-byte SESSION_SECRET; lowercase hex digest; message `sportzone:session:v1:<kind>::<token>`; kind is route-selected customer/admin |
+| CSRF material | HMAC message `sportzone:csrf:v1:<kind>:<tokenHash>:<csrfToken>`; binds verifier to exactly one session credential; comparison uses fixed-length timing-safe bytes; this material check alone is not complete Origin/CSRF middleware |
+| Lifetime | Explicit CUSTOMER_SESSION_TTL_SECONDS/ADMIN_SESSION_TTL_SECONDS; positive safe seconds, finite absolute Date expiry; reads do not extend expiry; reject at expiresAt even if TTL record remains |
+| Cookie policy | Exact names from §4.1; host-only (no Domain), HttpOnly, path /; SESSION_COOKIE_SAME_SITE explicitly lax or strict; HTTPS always Secure; HTTP exception only configured local/test loopback origin; request Host/proxy headers cannot weaken it |
+| Cookie parsing | Only the route's cookie name accepted; missing, malformed or duplicate credentials fail closed; no query, Bearer, client role, guest cookie or other namespace fallback |
+| Session authorization | Correct kind, live expiry, absent revokedAt, existing active principal with matching role and securityRevisionAtIssue; absence/ineligibility yields generic 401 AUTH_REQUIRED |
+| Rotation | Fresh session/CSRF plus revocation of the old credential in one transaction; concurrent rotation has one winner; insert failure rolls back old revocation; stale/expired/revoked credential cannot rotate |
+| Fresh login | Always create fresh random values; optional predecessor revocation is conditional on same user/kind; an unrelated account/namespace credential is never revoked by replacement |
+| Logout | Idempotently revoke only supplied route-kind credential and clear only that cookie using matching attributes; repeated/expired/missing credential does not revoke another session; public logout still requires §4.2's valid Origin/CSRF and fresh context response |
+| Principal revocation | Atomically advance principal securityRevision and mark its route-kind sessions revoked; other principals unaffected; status/role/revision changes deny old access even before cleanup |
+| Secret rotation | New SESSION_SECRET immediately rejects old digests on processes using it; drain/restart all old-key processes before declaring revocation complete; no dual-key acceptance is implemented |
+
+`loadSessionOptions(process.env)` validates these session-specific settings when session composition is activated; no
+lifetime/SameSite fallback is supplied; explicit customer activation requires these settings. Configuration
+errors identify fields only. Operators must approve deployed values and verify real same-site domains/TLS/cookie behavior.
+Cookie expiry is advisory; server-side lookup remains authoritative. Set a cookie only after successful committed issuance;
+await durable logout before reporting server revocation, then perform P03-006's safe CSRF/context refresh.
+
+The service's authenticate result is an explicit internal principal projection; never serialize a raw session document.
+The private lookup explicitly selects its CSRF verifier for the session service; ordinary model projections still exclude
+all credential verifiers. Guest sessions remain P06-015. Browser protection is implemented in §4.5 and customer credentials
+in §4.6. Customer password recovery/change is implemented under the P03-010 contract below; verification, administrator
+credentials, broader throttles/audit and integrated gates remain with their owning tasks.
+
+### 4.5 Browser security implementation boundary
+
+`browserSecurityRoutes` composes `GET /auth/csrf` and `GET /admin/auth/csrf` under `/api/v1` with
+`createBrowserSecurity` and the session service. The executable composes customer identity routes when `CUSTOMER_AUTH_ENABLED=true` after persistence readiness checks.
+The default remains health-only; administrator credential routes remain P03-012.
+Bootstrap requires the exact corresponding frontend `Origin`, returns `{csrfToken,expiresAt}` with `no-store`, and
+sets only its audience's context cookie when anonymous. `HEAD` returns no content and creates no context.
+
+Storefront bootstrap accepts only optional `sessionKind=context|customer|guest`. Without it, a present customer cookie
+selects customer refresh; otherwise a new storefront context is issued. Invalid present session credentials return
+`401 AUTH_REQUIRED`, without anonymous fallback. `context` explicitly requests pre-auth protection for recovery/logout
+when the old session is expired. Context-only login/recovery/proof routes request that selector even if another session
+is present. Admin bootstrap permits only the explicit `context` selector; it provides pre-auth protection even with an expired
+admin cookie, so recovery and repeat logout remain usable. No client selector can request an admin
+principal from the storefront. Unknown/duplicate query parameters are invalid. Guest selection requires the exact
+`sz_guest_order_sid` cookie and a registered order-scoped adapter; otherwise `401 GUEST_PROOF_REQUIRED`.
+
+| Control | Required composition and behavior |
+| --- | --- |
+| Origins/CORS | Canonical exact storefront/admin origins, separately selected by route; no wildcard, reflected unapproved Origin or origin-less browser mutation. Approved credentialed preflight permits GET/HEAD/POST/PUT/PATCH/DELETE and Content-Type, X-CSRF-Token, Idempotency-Key, If-Match only; `Vary` includes Origin and preflight request headers/method. No bearer-Authorization browser preflight. |
+| Anonymous contexts | Independent 32-byte opaque cookie and CSRF; HMAC-SHA-256 at rest using SESSION_SECRET with `sportzone:browser:v1:<audience>:context::<cookie>` and `sportzone:browser:v1:<audience>:csrf:<contextHash>:<csrfToken>` domains. Audience, expiry and absent rotatedAt are checked before constant-time comparison. |
+| Lifetime/config | Explicit BROWSER_CONTEXT_TTL_SECONDS in 1–1800 seconds, no fallback; exact CORS_ALLOWED_ORIGINS must match the two approved distinct origins. Use the existing session service's fixed host-only HttpOnly/Secure/SameSite/path policy, never request-derived attributes. |
+| Bootstrap refresh | New anonymous context atomically invalidates the supplied same-audience predecessor. Authenticated refresh replaces only that session's CSRF verifier by conditional update, preserving session expiry and rejecting concurrent stale refresh. Previous CSRF fails. |
+| Mutation guard | Route selects context-only, customer-only, admin-only or customer-or-context; all unsafe methods require exact Origin and custom token header. Invalid customer cookie never falls back to anonymous checkout. These guards grant no account/order authorization; apply session/role/ownership guards as well. |
+| Successful exchange | The credential/proof service must use consumeContext with its durable effect in the same MongoDB transaction. One concurrent exchange wins; failed effect rolls back consumption. Do not perform provider/email calls in that callback or start a nested independent transaction. |
+| Guest handoff | P06-015 supplies an order-bound refresh/verify adapter; only an exact, single opaque guest cookie reaches it. Customer/admin/browser contexts cannot substitute. Its real proof/session persistence remains in that task. |
+| Provider segregation | Register provider notifications/returns outside browser guards and bootstrap. Their own verification and acknowledgment contracts remain mandatory; omission of browser CSRF never proves payment success. |
+
+### 4.6 Customer credentials and registration delivery intent
+
+P03-007 implements `/auth/register`, `/auth/login`, `/auth/session` and `/auth/logout` with the §9.1 DTOs.
+New passwords require 12–128 Unicode characters and at most 512 UTF-8 bytes; spaces are allowed and passwords are never
+trimmed or normalized. The owning `newPasswordPolicy`
+implements this rule. Login verifies the stored credential without applying today's new-password minimum; a 4096-byte
+transport safety cap prevents unbounded KDF input. Public role/status/userId fields remain invalid.
+
+Passwords use Node's asynchronous scrypt, N=131072/r=8/p=1, 16 random salt bytes, a 64-byte derived key and 256 MiB
+maxmem; stored encoding is `scrypt$v1$131072$8$1$<saltHex>$<keyHex>`. Only that exact version/cost/length is accepted;
+unknown/disabled/admin/wrong-password cases perform equal-cost dummy/actual verification and return the same
+`401 INVALID_CREDENTIALS`. At most two KDFs run per process; saturation is generic `503 SERVICE_UNAVAILABLE`.
+
+Registration transactionally consumes the supplied storefront context, inserts a customer/active user and one
+`registration:<userId>:v1` notification intent. Return `201 {account,verificationRequired:true}` after commit; do not issue
+an undocumented login or wait for email. A unique normalized-email race returns generic `409 STATE_CONFLICT`, including
+existing administrator/suspended addresses; no principal or record detail is returned. Failed outbox persistence rolls
+back account/context consumption. On success the client obtains a new anonymous context before another mutation.
+
+Login first verifies password outside the database transaction, then conditionally writes the same active customer with
+unchanged credential/revision/update timestamp inside single-use context consumption. Session issuance and same-owner
+predecessor revocation share that transaction. Set the fresh cookie only after commit. Failed credentials do not consume
+the context or create a session. Account changes concurrent with login reject or serialize; they never turn an old
+password into a current credential grant. Current-account reads resolve only a live customer session and project §9.1.
+
+Logout accepts either current customer session-bound CSRF or a fresh valid storefront context, including with an expired
+session cookie. It revokes only the supplied customer credential, clears that cookie with matching attributes, replaces
+the anonymous context and returns fresh CSRF after persistence succeeds. Failure during context replacement does not
+undo durable revocation; re-bootstrap before retry. Administrator/guest cookies are never cleared/revoked here.
+
+Register/login/logout share a per-process 10-attempt/60-second socket-address guard (forwarded headers are ignored),
+a bounded 10000-entry map and KDF concurrency cap. This local guard is not distributed abuse-control acceptance;
+P03-014 owns broader controls and deployed proxy policy. No credentials or raw network identity are logged.
+
+### 4.7 Customer profile, addresses and deletion intake
+
+With customer auth enabled, P03-008 exposes the existing §9.1 `/me`, address and deletion-request operations. All resolve
+only the active customer session; browser mutations additionally require storefront Origin and current customer CSRF.
+Query parameters and body/path fields outside their DTOs are rejected. Output uses the same account/address allowlists as
+session/login responses; internal review records, roles, revisions and credentials never enter Account.
+
+Profile patch permits only nonempty `name?`/`phone?`. The owning phone policy uses pinned `libphonenumber-js/max` metadata,
+strict full-input parsing with Bangladesh as the national default, valid country BD only, and no extensions. Mobile and
+fixed-line numbers are accepted when valid; output/storage is canonical E.164 `+880…`. Input is bounded at 64 characters;
+this validates formatting/numbering, not phone possession. Null/empty values cannot silently clear optional data.
+
+Address create never accepts client id/userId/isDefault/zone/price. It creates an opaque ObjectId, defaults isDefault to
+false, and enforces at most ten saved addresses. Explicit default selection clears other defaults atomically; clearing or
+deleting a default leaves zero defaults and never invents a replacement. Partial address edits merge with the customer's
+stored address and revalidate the entire result before writing. Ownership misses return `404 NOT_FOUND` without revealing
+whether a foreign address exists. User/address changes serialize in MongoDB transactions and re-read state on conflict.
+
+The settings-owned delivery coverage reader checks currently effective active `deliveryCharges` and active `deliveryZones` in the
+same transaction snapshot. Select exact `district:area` before approved `district:*`; ambiguous active rules, inactive
+exact zones, invalid charge metadata and absent coverage fail closed with `400 UNSUPPORTED_DELIVERY_AREA`. Clients cannot
+supply the wildcard or inject key separators. Saved address reads/deletion remain available after a service area ends;
+new addresses, edits and default selection require valid current coverage. This is address eligibility, not a delivery
+quote, reservation or charge snapshot; checkout must re-resolve the authoritative rule. No district list or charge is seeded.
+
+Deletion intake requires an active authenticated customer and existing verified email (`emailVerifiedAt`); otherwise
+`403 FORBIDDEN`. Record requestedAt/verifiedAt server-side at intake, reflecting those checks rather than a new email proof.
+Create one stable review request, retaining original reason/time and status on repeat/concurrent submissions. The existing
+POST with `{}` also returns the current own requestId/status; no unlisted status endpoint or foreign request selector is
+added. Existing terminal review evidence is not replaced by a new intake. No self-service review/approval, account status
+change, session revocation, anonymization or hard deletion occurs. Legal/financial retention review remains operator-owned;
+orders, receipt/payment/refund evidence, audit and immutable historical snapshots are never updated by these handlers.
+
+### 4.8 Registration notification delivery foundation
+
+P03-009 connects the existing transactional registration intent to a server-only Resend HTTP adapter and explicit
+one-batch worker. No notification HTTP route, arbitrary email submission or automatic email send from registration is
+added. Registration uses `registration`/`registration-v1` with empty payload and server-owned plain-text content. P03-010/011/012 add
+explicitly activated customer-reset/email-change/admin-reset proof renderers under §9.1; other proof/commerce templates remain disabled.
+
+A majority-acknowledged conditional claim moves queued/retry_wait to sending, increments attemptCount and records a fresh
+claimId/expiry before any provider request. Only the active claim can settle it. Explicit rate-limit rejection may enter
+retry_wait with exponential delay capped by configured policy; permanent rejection or exhausted attempts becomes failed.
+Timeout, network failure, malformed acceptance, 5xx or ambiguous conflict becomes delivery_uncertain without automatic
+resend. Expired/missing-lease sending is likewise uncertain after worker interruption. Late verified provider acceptance
+may settle the same retained claim; stale prior-claim completion cannot overwrite a newer attempt. The repository's
+transaction context rejects worker/provider dispatch before any external effect.
+
+`sent` means Resend accepted the message and returned an identifier, not inbox delivery, email verification, or an
+exactly-once transport guarantee. The stable Idempotency-Key is SHA-256-derived from the logical eventKey; provider
+idempotency retention is bounded and never substitutes for durable local uncertainty. Account/business state stays
+committed independently of notification status. Internal status projection excludes recipient, payload, event key and
+claim token; no public or administrative retry/reconciliation endpoint is enabled by this foundation.
+
+Email is separately disabled by default. Production requires explicit live mode; local/test/staging require test mode
+with an approved test-recipient override, regardless of the intent's customer destination. Sender/API key and retry,
+timeout, lease and batch policy are explicit protected configuration. The fixed provider URL is HTTPS, redirects are
+rejected, responses are bounded and provider errors/credentials are never reflected. Verified sender/domain, provider
+activation and real mailbox acceptance remain operational gates.
 
 ## 5. Authorization & data exposure
 
@@ -430,6 +593,27 @@ Admin recovery uses the existing `password_reset` challenge purpose **bound to t
 No new unapproved `authChallenges.purpose` enum is implied.
 Public responses stay enumeration-safe; account reactivation/recovery requires the approved operational security policy.
 
+#### Customer password recovery and change implementation
+
+Customer reset issuance returns the same `{accepted:true}` for missing, inactive and noncustomer identities. Reset confirmation uses a 32-byte base64url proof, returns `400 INVALID_REQUEST` for unavailable/expired/replayed proofs, and never creates a session. Confirmation changes password, increments security and password-reset scope revisions, revokes customer sessions and removes outstanding reset envelopes atomically. Authenticated password change verifies the current credential, invalidates reset challenges, revokes existing customer sessions and issues a replacement customer cookie and CSRF token in the same transaction. Neither path verifies email or changes account eligibility. Local IP rate limits cover all three routes; a per-account issuance cooldown silently suppresses repeated emails. The explicit common response floor (100–5000 ms) reduces ordinary timing differences; operators must size it above measured issuance latency and enforce distributed limits. It is not a constant-time network guarantee. Deployed distributed abuse controls remain an operational gate.
+
+Recovery activates only with explicit `PASSWORD_RECOVERY_ENABLED=true`, a bounded `PASSWORD_RESET_TTL_SECONDS` (60–1800), `PASSWORD_RESET_COOLDOWN_SECONDS` (60–3600), separate versioned 256-bit envelope keys and the fixed configured HTTPS storefront origin. No Host/request URL supplies email links. Proofs use the `/reset-password#token=…` fragment for the later frontend screen; the backend accepts tokens only in the confirmation JSON body. Key loss/tamper fails closed; expiry cleanup runs independently of MongoDB TTL in the notification worker.
+
+
+#### Verified email-change implementation
+
+P03-011 implements customer-only `/me/email-changes` and `/me/email-changes/confirm` with Origin/session CSRF, strict JSON and local rate limits. Issuance persists a time-limited single-use proof for the normalized new destination without changing the account. Existing/occupied targets and cooldown suppression return the same `{verificationSent:true}`; this acknowledges handling, not inbox delivery or availability. A target equal to the current email returns `409 STATE_CONFLICT`. Confirmation requires both a current customer session owning the challenge and its proof. Wrong, expired, consumed, invalidated or stale proofs yield `400 INVALID_REQUEST`; a target claimed concurrently yields `409 STATE_CONFLICT` with the entire transaction rolled back.
+
+Confirmation atomically changes the unique email, marks that destination verified, advances security and challenge revisions, invalidates pending identity challenges and revokes all customer sessions. It returns the Account allowlist and clears the customer cookie; it does not silently sign in to the changed identity or return a new CSRF token. The customer must bootstrap/login again. Password reset/change also invalidates pending email-change/verification proofs. Existing order-time email/address snapshots and saved addresses remain untouched. Email-change delivery uses the fixed HTTPS storefront path `/account/email-change#token=…`; the later authenticated frontend submits proof only in the JSON body.
+
+EMAIL_CHANGE_ENABLED defaults false and is independent of PASSWORD_RECOVERY_ENABLED. Activation requires customer authentication, the existing protected versioned proof keys/HTTPS storefront origin, and explicit EMAIL_CHANGE_TTL_SECONDS (60–1800), EMAIL_CHANGE_COOLDOWN_SECONDS (60–3600), EMAIL_CHANGE_RESPONSE_FLOOR_MS (100–5000). Shared-ingress protection, measured response-floor sizing, sender readiness and frontend screens remain their owning gates.
+
+#### Administrator credential implementation
+
+P03-012 provides only the listed `/admin/auth/login`, `/session`, `/logout`, `/password-resets` and `/password-resets/confirm` operations, plus existing admin CSRF bootstrap. There is no administrator signup route. The backend selects admin role, Origin audience, cookie and proof namespace; clients cannot choose these fields. Admin login/current-session require an active admin and use the existing password policy, adaptive hash and session revision guards. Logout is repeatable with valid admin session CSRF or admin pre-auth context, including after expiry, and clears only the admin cookie.
+
+Admin reset uses the existing password_reset challenge purpose bound to the admin user, with an independent admin verifier domain, admin-bound AEAD and admin-password-reset-v1 delivery template. A customer-issued proof cannot become an admin proof after a role change. Confirmation consumes context/proof and updates password/security revisions/revokes admin sessions atomically; it grants no new session. Responses remain ambiguous about account existence. Admin recovery has independent TTL/cooldown/response-floor configuration and a fixed HTTPS ADMIN_ORIGIN reset link. ADMIN_AUTH_ENABLED defaults false, independently of CUSTOMER_AUTH_ENABLED; active admin configuration requires explicit session/context and ADMIN_PASSWORD_RESET policy plus protected proof keys. Existing shared-ingress/security audit/release gates remain separately owned.
+
 ### 9.2 Verified guest access
 
 | Method | Path | Access | Request → response |
@@ -444,6 +628,56 @@ Proof exchange atomically consumes `authChallenges` and grants only the verified
 An attacker cannot enumerate orders by timing, HTTP status or message differences.
 Subsequent guest order actions use the same `/orders/{orderId}` routes as a customer, but with *exact* bound order ID checks.
 Do not include a public `GET /orders?email=...` endpoint.
+
+### 9.3 Executable identity contract baseline
+
+`backend/src/modules/auth/contracts.ts` defines strict request, path/query and response schemas for all 26 §9.1
+operations. It is a contract module, not an Express router: no authentication/account route becomes available merely by
+importing it. Controllers must validate requests before service delegation and validate/allowlist outputs before the
+success envelope. Internal invalid output is a server fault, never a client validation failure; no raw document is returned.
+
+| Boundary | Exact validation / protection contract |
+| --- | --- |
+| Email/name | Email trimmed/lowercased and validated up to 254 characters; names trimmed/nonempty, maximum 120 Unicode characters; no silent truncation |
+| Password | Credentials nonempty and never normalized; register/reset/change additionally require the owning service's explicit password-policy schema; a policy that transforms the supplied password is rejected; no guessed password policy is installed |
+| Proof/CSRF token wire shape | Nonempty URL-safe ASCII `[A-Za-z0-9_-]`, at most 128 characters; no whitespace/URL/object coercion; issuing services must generate approved high-entropy opaque values, not treat shape as entropy proof |
+| ID/time | ObjectId wire strings are 24 lowercase hexadecimal characters; response instants are ISO UTC ending Z; persistence uses BSON Date/ObjectId; neither string validation nor a known ID authorizes a resource |
+| Address | Required input matches AddressInput; recipient at most 120 characters, street/addressLine2 at most 300, districtKey/areaKey at most 64; supplied phone and coverage policies validate canonical phone/served pair; keys alone are not caller-selected delivery charges |
+| Partial edits | Nonempty profile/address patch; unknown fields and null rejected; merge partial location with the authorized stored address and revalidate the complete address before writing; explicit supported removal semantics require an owning contract update |
+| Response | Exact field allowlists; maximum ten addresses, distinct IDs, at most one default; no role/hash/revision/envelope leakage; internal deletion_pending/deactivated are not silently mapped to active |
+| No-input operations | GET body absent; bodyless mutations accept absent body or exact empty object; query empty; only addressId is accepted for address path parameters |
+| Acknowledgements | accepted/verified/reset/revoked/verificationSent/changed must be literal true where specified; ambiguous request acknowledgements never include account existence; DELETE address returns 204 without a JSON body |
+| Deletion intake | Optional bounded reason only; response requestId and Database §5.5 review status; no immediate deletion or retention waiver |
+
+The contract factory requires new-password, phone and coverage policies from the owning service; tests supply synthetic
+policies. This avoids an implicit production password policy or invented national coverage dataset. No default policy,
+private credential or live customer data is provisioned here. Login must continue to verify the exact supplied credential
+rather than rejecting a historic password merely because new-password rules changed.
+
+**Browser protection and replay:** all §9.1 mutations require the route's approved Origin and bound CSRF, including
+register/login/recovery and repeat logout. Customer routes resolve only customer sessions; admin routes resolve only admin
+sessions/contexts; browser context alone grants no account access. The registry records the route namespace and protection
+obligations; it does not replace session lookup, Origin/CORS/CSRF middleware, hashing, role/ownership checks or rate limits.
+
+- Bootstrap: non-cacheable GET, exact approved frontend origin; admin and storefront contexts cannot be interchanged.
+- Login/proof success: rotate the applicable credential/context and CSRF; old tokens fail. Registration returns only its
+  documented account/verificationRequired shape and does not imply successful email delivery or an undocumented login.
+- Logout: repeated valid-context requests return the same revoked:true shape while each may return fresh CSRF; missing/
+  stale context or invalid Origin remains 403 CSRF_INVALID, even when the session has expired. No other namespace is revoked.
+- Challenge confirmation: expired, consumed, invalidated, revision-stale, attempt-exhausted, wrong-purpose or wrong-principal
+  proof is rejected. Map invalid proof to generic 400 VALIDATION_FAILED with token/INVALID_PROOF detail, without revealing
+  which condition failed. Password-reset admin/customer role/principal binding is checked independently.
+- `isChallengeCurrent` checks only expiry, lifecycle, scope/purpose/revision and attempt-bound preconditions after trusted
+  record lookup; it neither verifies a secret nor consumes anything. Services must verify the supplied token digest and
+  execute consume/reissue plus revision changes atomically per Database §5.6. Two calls on unchanged fresh state can both
+  return true; only the transactional conditional write determines a winner.
+
+The safe error register implements INVALID_CREDENTIALS (401), GUEST_PROOF_REQUIRED (401), FORBIDDEN/CSRF_INVALID (403) and
+RATE_LIMITED (429) alongside existing envelope errors. Registered errors do not imply enforcement middleware exists.
+Tests verify exact wire schemas, pure replay preconditions and redacted Express error/envelope behavior; actual identity
+index races, token consumption, cookie/session rotation, CORS/CSRF enforcement and deployed-origin tests remain required by
+P03-004–014/P03-016. Guest request/proof/scoped-session persistence and order ownership remain P06-015, before dependent
+order actions; §9.2 is a future contract, not a live endpoint. No guest, provider or financial route is registered here.
 
 ## 10. Catalog, cart, promotions & reviews APIs
 
@@ -1269,6 +1503,8 @@ No marketing consent workflows are implied by transactional messaging.
 | `GET` | `/health/live` | Internal/operational | `200` when server process responds; no sensitive dependency details |
 | `GET` | `/health/ready` | Restricted monitor | `200` only when essential services ready, otherwise `503`; no credentials, topology or DB data in body |
 
+Implemented operational probe contract (P03-003): liveness returns `{data:{status:"live"},meta:{requestId}}`. Readiness requires `Authorization: Bearer <HEALTH_MONITOR_TOKEN>` with the separately configured 32-byte hex monitor credential; session cookies, query parameters and user-supplied correlation IDs do not authenticate it. Missing/invalid monitor proof returns `401 AUTH_REQUIRED` with `WWW-Authenticate: Bearer`. Authorized readiness returns `{data:{status:"ready"},meta:{requestId}}` only while serving with a connected MongoDB and successful bounded ping; otherwise `503 SERVICE_UNAVAILABLE` with a generic message. No readiness response reveals which dependency, topology, URI or secret failed. Both endpoints use `no-store`. This credential authorizes only the operational probe and grants no customer/admin/business access. Protect operational ingress and TLS under Operations; credential provisioning/rotation is an operator responsibility.
+
 Health endpoints may be served outside `/api/v1` by infrastructure **only if consistently configured and documented**; the baseline here uses `/api/v1/health/*`. Do not make a public readiness endpoint reveal internal deployment information.
 
 ## 17. Security, performance & compatibility
@@ -1464,6 +1700,7 @@ The following field allowlists define client inputs and server responses. `*Inpu
 | `RegisterInput` | `name:string!,email:string!,password:string!` | Lowercase normalized unique email; role forced customer |
 | `Credentials` | `email:string!,password:string!` | No role, privilege or session-type input |
 | `Account` | `id,name,email:string!,phone:string?,emailVerified:bool!,addresses:Address[],status:enum(active,suspended)` | Never password/session/token details |
+| `Address` | AddressInput fields plus `id:id!,isDefault:bool!` | Response-only stable embedded ID; maximum ten per account, distinct IDs, at most one default |
 | `CategoryCreateInput` | `name:string!,slug:string!,parentId:id?,status:enum(active,inactive)?,image:MediaRef?,sortOrder:int?` | Parent acyclic; active ancestry required for public use |
 | `CategoryPatch` | `name?,slug?,parentId:nullable<id>?,status?,image:nullable<MediaRef>?,sortOrder?` | Null parent makes root after hierarchy checks; null image removes reference safely; CAS required |
 | `AdminCategory` | `id!,name!,slug!,parentId?,status!,revision:int!,sortOrder:int!,image?` | `ETag` on read/edit; hidden categories admin-only |

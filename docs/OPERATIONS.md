@@ -286,11 +286,36 @@ npm run build --workspace=backend
 ```
 
 The current repository foundation supports `npm ci`, `npm run workspaces:check`, `npm run lint`, `npm run test:unit`
-and `npm run ci`. Storefront and admin have independent lint/type/unit/build and HTTP smoke commands; only backend
-remains manifest-only in [ci-workspaces.json](../ci-workspaces.json). Admin Vite preview verifies local SPA fallback,
+and `npm run ci`. All three workspaces have independent lint/type/unit/build and HTTP smoke commands in [ci-workspaces.json](../ci-workspaces.json). Admin Vite preview verifies local SPA fallback,
 not production static hosting; configure fallback and noindex/private document headers at the deployment host. No deployment, migration or restore
 command exists yet; local storefront build/start is not a production deployment procedure. See
 [Testing §5.3](./TESTING.md#53-standard-execution-interface) for current coverage and the complete required interface.
+The database foundation exports `openDatabase(uri, dbName)` and P03-003 startup now calls it after configuration validation, before binding HTTP. Use an isolated explicit database name; `admin`, `local` and `config` are rejected. Pools are bounded to ten connections, with five-second selection/connect/queue waits and a fifteen-second socket timeout. Startup failures return static database codes without URI/driver text; failed connections are destroyed. Connections require replica-set topology and logical sessions. Automatic collection/index creation and command buffering are disabled.
+
+`npm run db:local --workspace=backend` starts a single-member, loopback-only, ephemeral MongoDB 8.0.16 replica set and prints its credential-free local URI. Its data disappears on shutdown; never use it for real/customer data or durability/backup acceptance. Integration tests generate their own random database on their own replica and never read external `MONGODB_URI`. `MONGOMS_DISTRO=ubuntu-24.04` selects the compatible official binary on this Ubuntu 26 host; supported Ubuntu 24 CI resolves it normally. First use downloads the pinned binary and requires network access; there is no mock/standalone fallback. Close the local tool with SIGINT/SIGTERM to clean its owned processes/data.
+
+Index changes are explicit/additive through `createDeclaredIndexes` and checked by `verifyDeclaredIndexes`; extra indexes are reported and preserved. No `syncIndexes`, global drop or automatic destructive migration is added. Domain models/index plans remain owned by their feature tasks. Transactions use primary/snapshot/majority with a ten-second driver retry deadline and five-second commit limit. Work may rerun: only sequential database effects belong in the callback, every write must carry its session, and external effects must stay outside. Nested independent transactions are rejected. Retain deployment-grade failover/restore/replication evidence for staging/operations gates.
+
+The compiled backend starts with `npm run start --workspace=backend` after build, using injected process variables. Local files are loaded only by an explicit Node flag, e.g. root command `node --env-file=.env backend/dist/server.js`. The environment validator requires NODE_ENV, APP_ENV, RELEASE_ID, MongoDB URI/name, API/storefront/admin origins and exact allowed-origin pair, plus separate SESSION_SECRET and HEALTH_MONITOR_TOKEN. Secrets use 64 lowercase hex characters representing 32 cryptographically random bytes; provision them privately with a cryptographic generator, never committed examples. The session secret is now used by the P03-005 customer/admin session service for domain-separated HMAC digests; public login/CSRF composition is not activated by health-only startup. Unknown environment keys are ignored so inactive provider adapters do not become fake startup dependencies.
+
+APP_ENV is local/test/staging/production, paired with NODE_ENV development/test/production respectively (staging uses production). Staging/production origins require HTTPS and reject localhost/loopback conventions. RELEASE_ID is bounded nonsecret deployment metadata. PORT defaults to 4000 and must be 1–65535. API_BIND_HOST defaults to 127.0.0.1 and permits only documented loopback/wildcard bind addresses. Production/wildcard listeners require the approved TLS proxy/firewall/operational ingress; a bind option is not deployment acceptance. Missing/invalid values fail before DB/network access and emit only safe configuration key names, never values.
+
+Session composition additionally calls `loadSessionOptions`: require CUSTOMER_SESSION_TTL_SECONDS and
+ADMIN_SESSION_TTL_SECONDS as positive bounded seconds and SESSION_COOKIE_SAME_SITE as explicit lax/strict. Values require
+security/operator approval; none are supplied by the repository. Session options are validated at service composition,
+required for explicit customer activation and never silently defaulted. Configured HTTPS produces Secure cookies in every environment;
+only local/test loopback HTTP may omit Secure. Cookies remain host-only, HttpOnly and path /. Confirm actual deployed
+same-site origin/TLS behavior before activation; proxy headers cannot override configured cookie security.
+
+SESSION_SECRET rotation invalidates old customer/admin token/CSRF digests on new-key processes. Drain/restart all old-key
+processes before declaring revocation; no compatibility key ring or plaintext token migration exists. Credential/security
+incidents may also use per-principal revision/revocation through the authorized identity service. Preserve audit/incident
+evidence without raw tokens; do not log Set-Cookie/Cookie/CSRF headers. TTL cleanup is not expiry or revocation authority.
+
+Startup verifies MongoDB replica/session capability before opening HTTP. Runtime disconnect/error events emit static codes; readiness checks connection state and a primary DB ping bounded to one second. SIGTERM/SIGINT mark draining before closing HTTP, allow at most ten seconds before force-closing HTTP connections, then destroy the DB connection. Repeated close calls share one shutdown operation. In-flight business effects in later features still require durable intent/reconciliation; shutdown is not rollback of financial effects. Logs are JSON with UTC/environment/service/release/level/event metadata, generated request or lifecycle operation IDs, status, error code and request duration. Request route labels use registered templates only; unmatched paths are labelled `unmatched`, with no original URL/query/params/headers/body or raw exception text. Known configured secrets are also scrubbed from emitted metadata. Liveness is independent of a runtime DB outage; restricted readiness is not financial correctness.
+
+Every application response retains a fresh server UUID, no-store and nosniff; private errors remain generic. Ordinary JSON parsing is strict, uncompressed and limited to 102400 bytes by default. Unsupported media/parser/limit input maps to API 400 INVALID_REQUEST. Provider/media parsers must be added under their owning contracts. Customer/admin sessions, browser CORS/CSRF, external-provider capability gates and deployed telemetry/alerts remain their owning tasks.
+
 Successful foundation CI is evidence for its configured checks only, not application deployment or operational readiness. Browser audit setup now requires `npx playwright install --with-deps chromium firefox webkit` after locked installation. The audit is mandatory through admin `test:a11y` in the CI inventory and starts only loopback test servers on 3100/5273/5180 after both builds. `test-results/ui-report.json` and `test-results/ui/` are CI artifacts; the fixture is not a deployment asset. Missing engines/libraries fail the audit rather than silently skip it. Local engine-wrapper overrides are test-machine configuration only; see [P02-011 environment evidence](./evidence/P02-011-accessibility.md).
 
 CI must reject missing required scripts rather than silently skip checks. Pin compatible runtime/tool versions and
@@ -387,6 +412,15 @@ MongoDB/Mongoose is the only persistence backend. **Only backend services and au
 business records. Transaction-capable deployment and unique indexes are required before financial/inventory write
 traffic. Database §11–§15 controls exact index keys, schema changes, state transitions and recovery invariants;
 this section governs safe execution.
+
+Identity collection bootstrap is explicit in `backend/src/modules/auth/collection-validators.ts`, not HTTP startup.
+`initializeIdentityPersistence` creates missing empty collections with strict/error validators and additive named indexes;
+it rejects existing validator mismatches without collMod/drop. Before a deployed invocation, follow Database §15.1:
+record migration/environment authority, duplicate/invalid-data preflight, backup/recovery compatibility and index results.
+A partial empty bootstrap must be inventoried and resumed safely; do not infer that an existing environment is empty or
+relax a validator to make startup pass. Real customer/credential migrations and production provisioning were not executed
+by P03-004. The test-only TTL-monitor override is confined to the owned ephemeral replica.
+
 
 ### 7.2 Index and migration runbook (OP-DB-01)
 
@@ -499,6 +533,8 @@ Record each deployed job's exact cadence, batch size, lease duration, retry limi
   are no unmatched receipts, stalled refund attempts or missing worker executions.
 - For a provider outage, distinguish traffic-serving safety from payment-capability availability. Fail closed on
   unsafe new payment initiation when verification cannot be completed, without presenting paid success.
+
+The readiness monitor must send the configured `Authorization: Bearer` credential over protected HTTPS (or loopback in isolated local tests); cookies/query tokens are not accepted. Missing/incorrect credentials return 401 before any dependency check. An authorized healthy probe returns only status `ready`; failure returns generic 503. Rotate the monitor credential independently from session secrets and restart the service to revoke the old value. Restrict operational ingress, including liveness, in the deployment proxy/network. The service's minimal liveness payload is not an authorization or launch-readiness signal. JSON logs go to stdout; invalid-configuration diagnostics go to stderr. The deployed collector, retention/access controls, dashboards and alert exercises still require operational acceptance.
 
 ### 9.2 Required signal catalog
 
@@ -1289,12 +1325,13 @@ implementation and per-key validation; complete all applicable categories below 
 
 | Configuration category | Identifiers / contents | Exposure / validation |
 | --- | --- | --- |
-| Runtime | `NODE_ENV`, `PORT`, service/app release ID | Server runtime, allowlisted env and valid port |
+| Runtime | `NODE_ENV`, `APP_ENV`, `PORT`, `API_BIND_HOST`, `RELEASE_ID` | Server runtime, allowlisted env and valid port |
 | Backend URL/origins | `API_PUBLIC_ORIGIN`, `STOREFRONT_ORIGIN`, `ADMIN_ORIGIN`, `CORS_ALLOWED_ORIGINS` | Server, exact HTTPS origins in prod; avoid wildcard credentials |
-| MongoDB | `MONGODB_URI`, database name, optional TLS/CA path | **Secret** URI; replica set and transaction capability checks |
-| Sessions | `SESSION_SECRET` or server-side signing/pepper key, cookie config | **Secret**; hash/opaque cookie policy, separated contexts |
+| MongoDB | `MONGODB_URI`, `MONGODB_DB_NAME`, optional TLS/CA path | **Secret** URI; replica set and transaction capability checks |
+| Operational monitor | `HEALTH_MONITOR_TOKEN` | **Secret**; separate 32-byte hex Bearer credential for restricted readiness only; rotate by protected config update/restart; never send in URLs/logs/browser bundles |
+| Sessions | `SESSION_SECRET`, CUSTOMER_SESSION_TTL_SECONDS, ADMIN_SESSION_TTL_SECONDS, SESSION_COOKIE_SAME_SITE | SESSION_SECRET is **secret**; separate kind/domain HMAC digests; lifetimes/SameSite explicitly approved and validated at session composition; no fallback |
 | CSRF and guest access | CSRF signing secret/context and one-time guest-token secret if implemented | **Secret**; expiry, rotation, no log/public bundle |
-| Proof delivery (API §16.3) | PROOF_DELIVERY_KEY_VERSION and protected versioned key-store references | Encryption keys outside MongoDB/backups; worker-only decrypt, AEAD nonce/tamper checks, no plaintext/outbox envelope; fail closed if unavailable |
+| Proof delivery (API §16.3) | AUTH_PROOF_ACTIVE_KEY_VERSION / AUTH_PROOF_KEYS_JSON injected from the protected key store | Encryption keys outside MongoDB/backups; worker-only decrypt, AEAD nonce/tamper checks, no plaintext/outbox envelope; fail closed if unavailable |
 | Quote/upload lifetimes | CHECKOUT_QUOTE_TTL_SECONDS, MEDIA_TEMP_TTL_SECONDS | Positive bounded server configuration approved by owners; enforce expiry, no runtime fallback guessed here |
 | Refund business calendar | Approved versioned calendar/holiday and policy-rule references | Compute target from actual approvedAt; shorter applicable basis wins; under_review without guessed date |
 | Gateway | `SSLCOMMERZ_MODE`, merchant/store identity, store password, validation URLs/callback URLs | Mode-specific **secrets**, enabled channels approved by merchant |
@@ -1451,3 +1488,128 @@ A completed evidence form needs **real observations**, a traceable environment/v
 and an explicitly recorded decision. Placeholder text, checkbox presence, published runbook or synthetic gateway
 response is **not** completion evidence. Attach evidence to the corresponding stable task ID in `TASKS.md`;
 propagate accepted versions and remaining decisions to the handover record.
+
+### Browser security composition
+
+P03-006 provides the identity bootstrap router and route-selected Origin/CORS/CSRF controls; the executable defaults to health-only and can activate customer routes through P03-007 as described below. At identity composition, call `loadBrowserSecurityOptions` with the protected environment
+and existing cookie policy. Set `BROWSER_CONTEXT_TTL_SECONDS` explicitly in 1–1800 seconds; its sanitized template is
+blank. `STOREFRONT_ORIGIN`, `ADMIN_ORIGIN` and `CORS_ALLOWED_ORIGINS` must agree exactly; frontend origins must be distinct.
+HTTPS is required with secure cookies; controlled loopback HTTP follows the existing local/test session policy.
+
+The separate `sz_browser_ctx` and `sz_admin_browser_ctx` cookies are API-host-only and grant no account permission.
+SESSION_SECRET rotation also invalidates all browser contexts; drain old-key processes as for sessions. CSRF errors
+remain generic `403 CSRF_INVALID`; do not log cookies, CSRF headers, context hashes or raw Origin values. Before deploying
+identity routes, verify real approved-origin browser cookies/preflights and logout/recovery composition. Provider routes
+stay segregated and require their own verified outcome handling. No live browser-origin deployment is asserted by the
+local MongoDB/HTTP suite.
+
+### Customer identity activation and rollback
+
+`CUSTOMER_AUTH_ENABLED` defaults to false and accepts only true/false. Enable only with explicit
+CUSTOMER_SESSION_TTL_SECONDS, ADMIN_SESSION_TTL_SECONDS, SESSION_COOKIE_SAME_SITE and BROWSER_CONTEXT_TTL_SECONDS,
+the approved origins, private SESSION_SECRET and a transaction-capable database. Enabled startup checks all four identity
+validators/indexes plus registration notification validator/indexes before binding; it never creates or rewrites them.
+Configuration and readiness failures remain secret-safe and close the database connection.
+
+For an owned local/test database, build the backend and run
+`node --env-file=.env backend/tools/bootstrap-identity.mjs` explicitly. The additive bootstrap rejects non-local/test
+environments and incompatible existing validators. Production rollout requires the ordinary reviewed schema/index
+procedure; there is no automatic production migration. Registration notification validation currently accepts only the
+registration subset and must be expanded through reviewed migrations for later notification event types.
+
+Registration enqueues one retryable intent transactionally, without calling an email provider. Email verification and
+worker delivery remain P03-009/010 and notification tasks; queued is not delivered. Keep the intent across retries and
+application rollback. Password hashes use versioned scrypt with a per-process two-KDF concurrency cap; budget at least
+256 MiB plus application/headroom for concurrent derivations and benchmark deployed capacity. Per-process socket-IP
+limits are 10 attempts/minute across register/login/logout; trust proxy remains false and forwarded headers are ignored.
+Multi-replica/shared abuse controls, credential auditing and deployed-origin checks remain release gates in P03-014/016.
+
+Disable the activation flag to roll back HTTP exposure; do not remove accounts, intents, contexts or sessions. Preserve
+hash format compatibility; password/secret changes follow the identity rotation policy. Logout reports success only after
+revocation/context persistence; after an uncertain failure re-bootstrap and retry safely. Logs never include passwords,
+cookies, recipient records, raw network identity or credential hashes.
+
+### Profile/address and deletion intake operations
+
+Customer activation also composes `/me`, saved-address and deletion-intake routes; existing session/origin/CSRF policy
+still applies. Phone validation uses pinned `libphonenumber-js/max` metadata locally and makes no external lookup or
+verification call. Review package/metadata updates through the normal dependency/lockfile checks.
+
+Saved-address eligibility requires approved currently effective active delivery rules and active zones. Missing masters
+return UNSUPPORTED_DELIVERY_AREA; do not fix this by seeding guessed districts or charges. P06-001 owns master setup,
+indexes and global coverage revisions. Address acceptance does not reserve a rate; checkout must price current rules.
+Existing unserved addresses can be viewed/deleted. No new user schema, secret or environment setting is introduced.
+
+Deletion intake is a verified customer's review request only, and repeat POST returns its current status. Inspect the
+protected user record through approved operational tooling; do not expose a generic customer review/status mutation.
+Keep original request/review evidence and legally retained order/payment/refund/audit records. Intake does not disable
+accounts, erase data or authorize retention changes; operator/legal processing remains governed by the retention runbook.
+Rollback removes route exposure while preserving user profile, addresses, review records and historical snapshots.
+
+### Registration notification worker and recovery
+
+Registration commits its intent without invoking email. Build the backend; use the common protected environment plus
+`EMAIL_DELIVERY_ENABLED=true`, `EMAIL_PROVIDER=resend`, EMAIL_MODE, RESEND_API_KEY, EMAIL_FROM, EMAIL_TIMEOUT_MS,
+EMAIL_MAX_ATTEMPTS, EMAIL_RETRY_BASE_MS, EMAIL_RETRY_MAX_MS, EMAIL_CLAIM_TTL_MS and EMAIL_BATCH_SIZE for the separate command
+`node --env-file=.env backend/tools/notification-worker.mjs`. Each invocation processes at most the configured batch;
+processed counts claims, not confirmed inbox deliveries. No background loop is implicitly started by HTTP startup.
+Keep the worker disabled until sender/domain and provider credentials are verified. No live send was performed here.
+
+Production requires EMAIL_MODE=live. Local/test/staging require EMAIL_MODE=test and an explicitly approved
+EMAIL_TEST_RECIPIENT; every outgoing recipient is redirected to that inbox. Sender/API keys remain separate per environment
+in protected config. Templates and original recipient addresses are not logged; CLI output contains counts or a generic
+failure. The outbox contains no plaintext proof/session/password or arbitrary email HTML. P03-010/011/012 supply authenticated
+envelope/challenge checks for explicitly activated customer-reset/email-change/admin-reset templates; other proof templates remain disabled.
+
+Policy bounds: 1–10 attempts; 1–100 claims per batch; base delay 100–3600000 ms; maximum delay at least the base and at most
+86400000 ms; lease 1000–3600000 ms; HTTP timeout 1–60000 ms. Require lease strictly greater than timeout plus 1000 ms.
+All values are explicit; the sanitized template leaves them blank. Run cadence and concurrency must respect provider
+limits and deployment capacity. Only known HTTP 429 rejection automatically retries; permanent rejection fails and
+ambiguous/network/timeout/5xx outcomes stop in delivery_uncertain. Resend acceptance is not recipient delivery proof.
+
+For an existing owned local/test P03-007/008 database, explicitly run
+`node --env-file=.env backend/tools/migrate-notifications.mjs` before updated identity startup/worker readiness. It upgrades
+only the known strict P03-007/009/010/011 predecessor validators and ensures the claim-expiry index, preserving all records and statuses; repeat
+migration is safe. Fresh local/test bootstrap creates the current schema. Neither HTTP startup nor the worker migrates.
+Production migration needs normal operator change control; the convenience migration command refuses deployed environments.
+
+Expired/missing-lease sending becomes uncertain, never automatically requeued, even after provider idempotency retention.
+Inspect protected event/claim metadata and provider records; do not reset attempt counters or generate a new key merely
+because delivery timed out. A verified acceptance for the same retained claim can record providerMessageId/sentAt. Any
+manual retry or no-send conclusion needs authorized reconciliation outside this foundation's public API. The worker
+cannot undo customer creation or commerce state. Recovery never repeats the business transaction.
+
+Rollback: stop/disable the worker first, preserve notifications, accepted provider IDs, claims and business data. The
+schema expansion accepts prior registration data, but old binaries with exact old-validator readiness checks will refuse
+restart. Use a compatible rollback build; do not erase new lease/receipt fields or downgrade validation destructively.
+Production provider/recipient checks, reconciliation exercises and operator approval remain unrun release gates.
+
+### P03-010 recovery activation and key custody
+
+`PASSWORD_RECOVERY_ENABLED=false` is the sanitized default. Activation requires customer authentication, current identity/notification persistence, an approved HTTPS STOREFRONT_ORIGIN and explicit PASSWORD_RESET_TTL_SECONDS (60–1800), PASSWORD_RESET_COOLDOWN_SECONDS (60–3600) and PASSWORD_RESET_RESPONSE_FLOOR_MS (100–5000). Size the response floor above measured issuance latency; it reduces routine account timing differences, without promising constant-time network responses. Per-process IP limits do not substitute for deployed shared ingress abuse controls. Only the backend and separate email worker receive AUTH_PROOF_ACTIVE_KEY_VERSION and AUTH_PROOF_KEYS_JSON, a private JSON map of version to independent random 32-byte lowercase hex keys (1–8 versions). No key may duplicate the session, monitor or another proof key. Never commit/log this JSON or place it in frontend variables or MongoDB/backups.
+
+Deploy the additive notification validator migration before new HTTP/worker processes. Existing local/test databases use `node --env-file=.env backend/tools/migrate-notifications.mjs`; fresh owned databases use the documented identity bootstrap. No identity schema/index change is required. Production migration remains an operator-controlled action; the convenience command refuses deployed environments. Unknown validators are refused. The expanded validator preserves registration records and accepts password-reset-v1 reference-only intents. Older exact-validator binaries need a compatible rollback build.
+
+The configured worker additionally delivers eligible password-reset challenges and removes expired/consumed/invalidated envelopes in bounded batches independently of TTL deletion. Schedule it often enough for the configured reset TTL. Provider rejection retries keep the same proof/link/event key; uncertain sends do not automatically retry. Explicit reissue after cooldown invalidates the predecessor. A mail already in flight may arrive after invalidation but cannot reset an account; proof consumption still checks the current scope. Missing/tampered envelopes fail without a provider call and record PROOF_UNAVAILABLE; restore key custody before requesting a fresh challenge, rather than blindly requeueing a failed row.
+
+Key rotation: distribute the new active key plus still-needed old versions to all API/worker processes before switching issuance. Retain old versions only until outstanding envelopes expire or are invalidated and cleaned; never reuse key bytes or reset versions. Key loss blocks delivery, not hash-based confirmation of already received proofs. After a restore, disable recovery/worker first, revoke restored sessions/challenges through the reviewed incident process, reconcile uncertain email records, remove inactive envelopes and provision a new active key before reopening. Do not replay restored intents or downgrade validators destructively. Disabling recovery leaves authenticated password-change routes unavailable with that slice; retain sessions and business records and use a compatible rollback build. Live sender, deployed timing/ingress, secret-store custody and storefront reset-screen acceptance are separate gates.
+
+### Verified email-change activation and recovery
+
+EMAIL_CHANGE_ENABLED defaults false and requires CUSTOMER_AUTH_ENABLED plus the existing protected proof key ring and approved HTTPS storefront origin. Explicit EMAIL_CHANGE_TTL_SECONDS (60–1800), EMAIL_CHANGE_COOLDOWN_SECONDS (60–3600) and EMAIL_CHANGE_RESPONSE_FLOOR_MS (100–5000) are independent of password-reset policy. Size the floor above measured issuance latency and enforce shared ingress limits; local process limits are foundation protection. Password recovery may remain disabled while email change is enabled, and vice versa. The separate notification worker must use matching activation/key/origin settings; only enabled event types are claimed.
+
+Upgrade the exact known notification validator before new HTTP/worker startup; owned local/test databases use `node --env-file=.env backend/tools/migrate-notifications.mjs`. It preserves registration/reset data and supports reference-only email-change-v1 intents. Production migration remains operator-controlled. Startup never migrates and unknown validators fail closed. Disable the worker before compatible rollback; retain expanded rows, provider receipts and claims, without destructive validator downgrade.
+
+Successful confirmation clears the customer cookie and revokes all customer sessions, so the customer must log in using the newly verified email. Pending identity challenges are invalidated atomically, including old-email resets. Successful password reset/change likewise invalidates pending email changes; merely requesting a reset email cannot cancel an authenticated email-change request. Suppressed occupied-target/cooldown requests do not replace the existing challenge. Do not manually switch identity to an unverified address or override unique-email failures. Historic order-time email/address snapshots remain immutable.
+
+For uncertain delivery, reconcile retained provider/event/claim identifiers; do not blindly resend or change the key. Authenticated reissue after cooldown supersedes the prior challenge. Key loss/tamper fails delivery closed; expiry/consumption/invalidation removes envelopes without relying on TTL. A previously dispatched but invalidated link cannot authorize a change. Use the recovery key rotation/restore procedures above for both proof purposes. Deployment sender/inbox tests, shared-ingress controls, protected secret-store custody and the authenticated frontend email-change screen remain separate gates.
+
+### Private administrator provisioning and recovery
+
+ADMIN_AUTH_ENABLED defaults false and is independent of CUSTOMER_AUTH_ENABLED. Activation requires explicit CUSTOMER_SESSION_TTL_SECONDS/ADMIN_SESSION_TTL_SECONDS, BROWSER_CONTEXT_TTL_SECONDS, SESSION_COOKIE_SAME_SITE, existing protected proof keys and approved HTTPS ADMIN_ORIGIN, plus ADMIN_PASSWORD_RESET_TTL_SECONDS (60–1800), ADMIN_PASSWORD_RESET_COOLDOWN_SECONDS (60–3600), ADMIN_PASSWORD_RESET_RESPONSE_FLOOR_MS (100–5000). No public administrator signup exists. Per-process admin rate limits and existing protected request logs are foundation controls; shared ingress and comprehensive audit infrastructure remain with their owning security/operations tasks.
+
+Build the backend and bootstrap owned local/test identity persistence through the existing explicit command; migrate notifications through `node --env-file=.env backend/tools/migrate-notifications.mjs`. The additive migration now accepts the exact P03-011 predecessor and admin-password-reset-v1 reference-only intents. HTTP startup never migrates. Operator-controlled production rollout and a compatible rollback build must preserve expanded records, claims and provider receipts.
+
+For owned local/test initial provisioning, pipe a protected secret-source JSON object `{name,email,password}` into `node --env-file=.env backend/tools/provision-admin.mjs`. Input is noninteractive and limited to 8192 bytes; the command prints only generic success/failure and never credentials. Do not type passwords in process arguments, commit an input file, use a shared default credential or expose this function as an HTTP route. The command verifies existing strict persistence without creating collections/indexes, inserts the reserved initial administrator and refuses replay, existing admins, occupied identities and customer upgrades. Concurrent attempts serialize through the reserved _id. Staging/production are refused by this convenience command. Production initial provisioning requires an authorized operator to review the same service against verified persistence, privately inject credentials, record a secret-free change record and verify namespace/role/session behavior; no production action is claimed here.
+
+Admin recovery uses the same one-batch email worker with admin activation/key/origin policy supplied. Only the admin-specific template is claimed by the enabled admin renderer. Admin links use the configured admin HTTPS origin; customer proof/cookie/context cannot substitute, including after a role change. Known provider rejection retains stable challenge/event identity; uncertainty stops automatic resend. Bounded cleanup, key rotation, restore invalidation and reconciliation follow the existing proof procedures. Successful reset revokes admin sessions, consumes the proof and creates no session. Repeat logout requires fresh admin context when the session is unavailable. Suspended/ineligible accounts remain inaccessible; recovery cannot reactivate or privilege-upgrade them. Live inbox, deployed ingress/browser/TLS, secret-store, audit rollout and milestone approvals remain separate gates.

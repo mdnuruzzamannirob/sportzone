@@ -46,8 +46,7 @@ consume allowlisted DTOs. Private sessions, carts, checkout, orders and financia
 
 ## 3. Repository structure
 
-The repository contains the documentation set, runnable Next.js storefront and React/Vite admin scaffolds, and a private
-backend workspace manifest. The Express runtime follows in Phase 03.
+The repository contains the documentation set, runnable Next.js storefront, React/Vite admin and TypeScript Express API scaffolds. Business APIs and persistence follow their Phase 03–09 tasks.
 
 ```text
 sportzone/
@@ -123,7 +122,60 @@ npm run ci
 `lint` checks source JavaScript syntax, JSON, whitespace, Markdown tables/local links and targeted credential patterns.
 `test:unit` runs the CI guard regression tests using Node's test runner. `ci` runs workspace discovery, repository lint,
 tooling tests and every configured application check; it writes `test-results/ci.json`, including explicit workspace states.
-Storefront and admin are active in CI; backend app checks remain Not Configured until P03-001.
+All three workspaces are active in CI. Backend checks cover transport, builds and isolated database/identity persistence primitives; they do not establish integrated authentication, commerce or release readiness.
+
+Backend commands, from the repository root:
+
+```sh
+npm run lint --workspace=backend
+npm run typecheck --workspace=backend
+npm run test:unit --workspace=backend
+npm run build --workspace=backend
+npm run test:smoke --workspace=backend
+npm run start --workspace=backend
+```
+
+Identity models and persistence primitives live in `backend/src/modules/auth/`. Collection validators/index bootstrap is
+explicit, never automatic HTTP startup; existing database changes require the documented migration process. Tests use
+synthetic accounts/digests on an owned replica. Customer activation is described below; administrator credentials remain separate. See
+[identity persistence evidence](docs/evidence/P03-004-identity-models.md).
+
+Customer/admin session service and cookie adapter are implemented in `backend/src/modules/auth/`. They require explicit
+session lifetime/SameSite settings through `loadSessionOptions` when authentication is composed; no values are supplied as
+defaults. Tokens are opaque and hashed at rest; issuance, rotation and revocation are verified with real MongoDB fixtures.
+Customer credential routes can be activated as described below; administrator credential integration remains separate. Origin/CORS/CSRF guards and bootstrap router are available through `createBrowserSecurity` and
+`browserSecurityRoutes`; customer composition loads explicit `BROWSER_CONTEXT_TTL_SECONDS` (1–1800), mount that router,
+and apply the route-selected protection before exposing mutations. Guest order persistence remains P06-015. See [session evidence](docs/evidence/P03-005-sessions.md).
+
+Customer authentication is available with `CUSTOMER_AUTH_ENABLED=true` after explicit local/test persistence setup.
+Set the existing session TTL/SameSite and browser context settings, build the backend, then run
+`node --env-file=.env backend/tools/bootstrap-identity.mjs`. This additive tool accepts only APP_ENV local/test;
+existing incompatible validators require a reviewed migration. Set the flag and start the normal server; startup verifies
+validators/indexes without modifying them. Registration/login/logout/session and CSRF bootstrap routes then run under
+`/api/v1`. The default flag is false. Profile/address/deletion-intake APIs share that activation. Current active delivery rules govern saved-address eligibility;
+missing coverage fails closed. Phone input is validated locally against Bangladesh numbering metadata and stored as E.164.
+Deletion intake requires verified email and never deletes an account or historical records. Admin credentials, verification email delivery, profile UI and distributed abuse
+controls remain with their owning tasks. New passwords follow the owner-approved 12–128-character/512-byte policy.
+
+Registration email delivery has a separate, disabled-by-default worker. After building, use
+`node --env-file=.env backend/tools/notification-worker.mjs` with the explicit protected email/retry configuration.
+Existing local/test notification collections require the explicit additive command
+`node --env-file=.env backend/tools/migrate-notifications.mjs`; startup does not migrate. Nonproduction sends are redirected
+to an approved test inbox; no real email was sent by implementation tests. Unknown delivery outcomes stay uncertain.
+See [Operations](docs/OPERATIONS.md#registration-notification-worker-and-recovery) for activation, migration and recovery.
+
+Backend startup validates configuration, connects to a transaction-capable MongoDB, then opens HTTP. The default bind is loopback (`API_BIND_HOST=127.0.0.1`), port 4000. Copy `.env.example` to a private root `.env`, supply your local replica URI/database, and generate separate random 32-byte hex values for `SESSION_SECRET` and `HEALTH_MONITOR_TOKEN`. No secret value is supplied by the repository. From the root, after building, `node --env-file=.env backend/dist/server.js` explicitly loads that local file; `npm run start --workspace=backend` reads already injected process variables. For editing, use `npm run build:watch --workspace=backend` alongside `node --env-file=.env --watch backend/dist/server.js`.
+
+`/api/v1/health/live` reports process liveness; `/api/v1/health/ready` requires the operational Bearer token. Readiness covers the current API/Mongo serving state, not completed commerce features or launch acceptance. Logs contain allowlisted metadata and server-generated correlation IDs. See [runtime configuration and health evidence](docs/evidence/P03-003-operations.md). Session service/cookie controls are delivered by P03-005; public credential routes and complete browser Origin/CORS/CSRF remain their owning integration tasks.
+
+Database foundation commands:
+
+```sh
+npm run db:local --workspace=backend
+npm run test:integration --workspace=backend
+```
+
+The local tool runs an ephemeral real MongoDB 8.0.16 replica set on loopback; stop it to discard its synthetic data. Integration tests start their own isolated replica and never use your `MONGODB_URI`. On Ubuntu 26, prefix these commands with `MONGOMS_DISTRO=ubuntu-24.04` to select the compatible binary. The first run downloads the pinned binary. Report: `test-results/database.json`. See [database foundation evidence](docs/evidence/P03-002-database.md). HTTP startup now uses these database primitives; see the runtime configuration section above.
 
 Storefront commands, from the repository root:
 
@@ -243,3 +295,9 @@ and operator procedures. Populate the environment inventory during provisioning 
 
 Use each document for its stated subject. Keep related contracts synchronized when behavior changes and preserve the
 PRD's initial-release boundaries.
+
+Customer password recovery/change (P03-010) is an explicitly activated backend slice. Leave PASSWORD_RECOVERY_ENABLED=false until current persistence, an approved HTTPS storefront origin, bounded reset/cooldown/response-floor settings and protected versioned envelope keys are ready. The separate email worker then supports registration and password-reset templates. Use the existing local/test notification migration before upgrading an older database; never put proof keys in frontend configuration. See [recovery activation and key custody](docs/OPERATIONS.md#p03-010-recovery-activation-and-key-custody). Storefront recovery screens and live inbox acceptance remain separate from backend API tests.
+
+Verified customer email change (P03-011) uses EMAIL_CHANGE_ENABLED with explicit email-change TTL/cooldown/response-floor settings and the same protected proof keys/HTTPS storefront origin. Run the existing local/test notification migration before upgrading. Email stays unchanged until proof confirmation; confirmation revokes customer sessions and requires login with the verified new address. Password recovery and email-change activation are independent. See [email-change operations](docs/OPERATIONS.md#verified-email-change-activation-and-recovery).
+
+Private administrator credentials (P03-012) activate with ADMIN_AUTH_ENABLED independently of customer auth. Supply explicit session/context policy, bounded ADMIN_PASSWORD_RESET TTL/cooldown/response-floor values, protected proof keys and approved HTTPS ADMIN_ORIGIN. Bootstrap/migrate owned persistence first. The local/test `node --env-file=.env backend/tools/provision-admin.mjs` command reads one bounded `{name,email,password}` JSON object from a protected noninteractive stdin source; never put passwords in command arguments or shell history. It refuses existing administrators, customer upgrades, overwrites and deployed environments. Production provisioning requires the reviewed operator procedure. See [administrator operations](docs/OPERATIONS.md#private-administrator-provisioning-and-recovery).

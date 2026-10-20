@@ -255,7 +255,7 @@ recovery and load checks have separately approved commands/workflows, not mandat
 
 | Root command | Current coverage / setup state |
 | --- | --- |
-| `npm run workspaces:check` | Three local workspace links; storefront/admin active, backend manifest-only |
+| `npm run workspaces:check` | Three local workspace links; storefront, admin and backend active |
 | `npm run lint` | Repository JavaScript syntax, JSON, whitespace, Markdown structure/links and targeted credential checks |
 | `npm run test:unit` | Twelve repository/CI guard regressions; no application tests are implied |
 | `npm run ci` | Root checks plus every activated workspace check, including the cross-app browser audit through admin `test:a11y`; machine-readable summary includes Not Configured app states |
@@ -267,6 +267,12 @@ Storefront workspace commands now implement `lint` (Biome), `typecheck` (Next ro
 checks). Run them with `npm run <command> --workspace=storefront`; smoke requires the build and manages its own temporary
 server. The active CI inventory runs all five checks. These scaffold checks do not establish customer authentication,
 backend ownership, real browser accessibility or commerce acceptance. Browser/theme/interaction suites extend with the UI tasks.
+
+Backend implements Biome lint, strict NodeNext TypeScript (including test/config type checks), Vitest/Supertest request tests, independent `tsc` build and a compiled-listener smoke check. Run `npm run <command> --workspace=backend`. The active CI inventory requires all five. The 37 scaffold cases cover envelopes/request IDs, service handoff, shape/media/parser/size failures, safe sync/async/serialization errors, nested field paths and bounded/duplicate/operator/unknown query rejection. The smoke check verifies redacted invalid PORT, actual compiled HTTP 404/no-store/correlation and graceful SIGTERM. Synthetic test routes are never registered in the production router; no persistence, session, concurrency or provider result is implied. See [P03-001 evidence](./evidence/P03-001-backend.md).
+
+Backend `test:integration` is now a separate mandatory CI entry. It starts actual MongoDB 8.0.16/WiredTiger via mongodb-memory-server-core, with a single-member replica set, random owned database and synthetic fixture-only collections. It never reads or drops an externally configured database. Tests cover connection topology/lifecycle/failures, explicit additive/full/partial unique indexes, strict schemas and integer/reference conventions, multi-document commit/rollback/duplicate failure, concurrent transaction increments, session cleanup, document rollback state and nested transaction rejection. A process test verifies the ephemeral local tool starts/stops without using a supplied external URI. JSON results are at `test-results/database.json` and preserved by CI. No fixture collection represents a real product/customer/financial implementation; single-member replica evidence does not prove failover or production recovery. Binary download and startup failures fail the suite rather than skip it. See [P03-002 evidence](./evidence/P03-002-database.md).
+
+P03-003 adds configuration/health/logging request tests and real runtime integration. Cases validate missing secrets, environment/origin/port rules, operational token rejection before dependency work, liveness independent of dependency state, minimal authorized ready/unready responses, request-ID correlation, route-template-only logs and suppression of sensitive request/exception/config values. Real MongoDB runtime cases exercise successful startup/ping, occupied port cleanup, failed DB startup before binding, DB disconnect with live/503 semantics and idempotent shutdown. Compiled-server smoke supplies only generated test credentials and an owned replica, then checks the real endpoints and SIGTERM. It never loads a developer/production `.env` or external database. Monitor authentication is not customer/admin session acceptance. See [P03-003 evidence](./evidence/P03-003-operations.md).
 
 Admin commands use the same workspace-qualified lint/typecheck/unit/build/smoke interface with `--workspace=admin`.
 Biome, strict TypeScript, Vitest/jsdom client navigation and Vite builds are configured. HTTP smoke checks verify built
@@ -421,7 +427,7 @@ These cases complement the UI matrices; verify real API/database state as well a
 | `ACC-01` | Customer updates own name/phone; second customer tampers with profile identifier or protected fields | Valid normalization persists once; another user's fields/role cannot be changed | FR-02; API §9 |
 | `ACC-02` | Request email change, submit expired/used/wrong proof, then valid proof | Old email remains authoritative until verification; proof single-use; identity uniqueness holds and session effects follow approved contract | FR-02; API §9 |
 | `ACC-03` | Add/edit/remove address; submit unsupported area/invalid phone | Owned address CRUD/default validation, bounded list, rejected input leaves no partial mutation | FR-02; API §9 |
-| `ACC-04` | Change default address, delete nondefault/default, attempt cross-customer update | Exactly one valid default when addresses exist per contract; owner isolation; default conflict handled deterministically | FR-02; API §9 |
+| `ACC-04` | Change default address, delete nondefault/default, attempt cross-customer update | At most one default under Database §5.5; owner isolation; concurrent default conflict handled deterministically without inventing an automatic replacement | FR-02; API §9 |
 | `ACC-05` | Place order, then modify/delete profile and delivery address | Stored order recipient/zone/charge/deadline-rule snapshots remain immutable; private order view stays scoped | FR-02, FR-11; Database §7 |
 | `SUP-01` | Customer creates complaint; anonymous/guest actor submits using allowed proof and order context | Minimal anonymous {contactName,contactEmail,issue} persists the exact normalized contact; missing/blank name or email fails without mutation. C/G omitted contact resolves from own principal/order only; forged order proof is denied. No fabricated contact or other reporter disclosure | PRD §3, FR-20, FR-26; API §14.4 |
 | `SUP-02` | Admin lists, investigates and resolves open complaint with documented response | Authorized status transition, durable response/contact outcome, audit, and appropriate customer-visible history; repeated command not duplicate | FR-26; API §14.4 |
@@ -543,6 +549,52 @@ Keep the operation inventory synchronized with API changes and attach actual res
 | `DB-10` | Versioned migration and restore compatibility | Apply/restart/rollback-or-forward-repair with representative historic snapshots; indexes validated |
 | `DB-11` | Claim quantity/ordinal guards | Same purchased unit cannot be claimed/refunded twice through concurrent physical/shortage paths |
 | `DB-12` | Refund source and order counters | Pending plus completed obligations never exceed verified collection capacity or permitted merchandise entitlement |
+
+**Identity contract handoff (P03-017):** Database §§5.5–5.7 define the following concrete assertions within the existing
+case IDs. Assertions remain **Not Run** until their owning tasks deliver actual evidence; P03-004 model/persistence results are distinguished below.
+The existing generic DB/runtime foundation tests do not prove these identity behaviors.
+
+| Existing cases | Required identity assertion | Implementation owner |
+| --- | --- | --- |
+| DB-01, API-06 | Exact conditional session/challenge scopes; required private CSRF verifier/context audience; closed enums, BSON dates, absent-only optionals and safe counters; unknown-key rejection | P03-004, P03-018 |
+| DB-02, DB-04 | All ten named identity indexes have the declared keys/options; concurrent normalized-email/digest duplicates have one winner; inspect access paths with representative fixtures | P03-004; P10-009 for measured plans |
+| API-02, SEC-03 | Expired/revoked/revision-stale session rejected while its record still exists; correct customer/admin kind and eligible principal required | P03-005, P03-007, P03-012 |
+| API-01, SEC-04 | Storefront context cannot authorize admin bootstrap/mutation; rotation/expiry invalidates old CSRF; exact Origin independently checked | P03-006, P03-018 |
+| SEC-01, SEC-05 | Two simultaneous consume/reissue operations serialize on the same scope revision; stale/expired/consumed/invalidated proof fails; guest scope cannot reset a user | P03-010, P03-011, P03-012, P06-015 |
+| SEC-06, DB-09 | Concurrent address/default writes preserve maximum ten, unique embedded IDs and at most one default; foreign address IDs cannot mutate an account | P03-008 |
+| SEC-10 | Default and explicit API projections omit verifiers/envelopes; reference-only notification payload, old-envelope removal, key/tamper failure and uncertain-send behavior | P03-009, P03-010, P03-011, P03-018 |
+| DB-07, DB-08, DB-10 | Identity migration detects collisions without PII output; replay/backfill safe; rollback does not revive revoked credentials; deletion review retains financial snapshots/source balances | P03-004, P03-008; P10-011 for restore |
+
+**P03-018 executable contract checks:** `backend/tests/identity-contracts.test.ts` runs in backend `test:unit`.
+It compares all 26 identity method/path declarations with API §9.1, validates strict request/response/parameter shapes,
+password preservation and injected policy behavior, address/PII allowlists, explicit browser namespace metadata, pure
+challenge expiry/revision/consumed-state preconditions and repeat-logout response shapes. Supertest fixtures verify real
+Express validation/status/no-store/correlation/error envelopes; fixtures are never registered in the production router.
+These are schema/pure-state/transport checks, not proof of session security or atomic proof consumption. Actual security
+and DB race assertions remain with the owners in the handoff above; deployed origins, guest scope and real proof delivery
+remain Not Run until their implementations exist. See [P03-018 evidence](./evidence/P03-018-api-contracts.md).
+
+**P03-004 identity persistence checks:** `backend/tests/integration/identity.test.ts` runs under mandatory backend
+`test:integration` on its own real replica set. It verifies all four BSON collection validators and ten exact indexes
+against Database §5.6, strict/default/private model fields, unique email/digest constraints, scope/target/optional/date/
+reference rules, raw-driver invalid-write rejection and concurrent address/default constraints. Real transactions prove
+one proof-consumption winner, replay/expiry/revision/role/principal/attempt denial, envelope removal and rollback of both
+consumption/revision/effect. Active-session/context lookups reject expiry/revocation/security revision/role/audience and
+rotation while records remain. TTL monitoring is disabled **only on that owned test mongod** to prove timestamp enforcement;
+no deployed TTL setting is changed. Validator mismatch is rejected without silently relaxing the deployed collection.
+See [P03-004 evidence](./evidence/P03-004-identity-models.md). Synthetic digest/hash/envelope fixtures do not prove password
+hashing, token provenance, AEAD encryption, email delivery or public cookie/CSRF authentication. Those service and deployed
+checks remain with P03-005–016/P06-015.
+
+**P03-005 session verification:** `backend/tests/sessions.test.ts` covers explicit policy validation and route-selected
+malformed/duplicate cookie rejection in backend test:unit. `backend/tests/integration/sessions.test.ts` uses real MongoDB
+for opaque issuance/hash-at-rest, kind/role separation, bound CSRF material, absolute expiry with retained records,
+rotation/replay/concurrent winners, logout/revocation/status/revision denial, key rotation and rollback on actual replacement
+insert failure. Fixture-only HTTP routes verify real Express cookie attributes/set/clear, route-pinned authorization,
+no query/Bearer fallback and safe logs. The rollback fault changes only its owned fixture validator and restores it in
+finally; TTL monitoring is disabled only on that fixture's mongod. Public auth routes remain absent.
+This does not prove credential login, complete Origin/CORS/CSRF, actual deployed-domain/browser cookie acceptance or guest
+access; those remain the owning feature/security/operator gates. See [P03-005 evidence](./evidence/P03-005-sessions.md).
 
 ### 9.2 Transaction outcome inspection
 
@@ -1353,3 +1405,72 @@ This register is derived from the **164 method+path entries** in `API.md` v1.0 A
 **Reconciliation rule:** Refresh this appendix from API Appendix D whenever that register changes; count and exact method/path sets must match. Operation rows with a source route lacking an explicit access profile must be reconciled against API §§4–5 and the canonical route table **before execution**. Any mismatch is `Blocked / Contract Pending`, not a passed test.
 
 **Minimum operation evidence record:** `OPV-ID`, runtime/OpenAPI `operationId`, executable test ID(s), role/owner and expected DTO, happy/negative/CSRF/replay results where applicable, request ID, side-effect snapshot, build, run artifact, environment, reviewer and disposition. No row in this edition has that evidence.
+
+### P03-006 browser security verification
+
+`backend/tests/browser-security.test.ts` checks exact-origin configuration, bounded explicit context lifetime,
+secret-safe configuration failures and strict audience cookie parsing. `backend/tests/integration/browser-security.test.ts`
+composes the real bootstrap router and guards with the P03-005 session service and strict identity persistence on an
+owned MongoDB replica set. API-01, SEC-04 and SEC-11 coverage includes missing/forged/cross-audience Origin, malformed or
+swapped CSRF/cookies, narrow credentialed preflights, retained expired records, context replacement, transactional
+single-use concurrent exchange and rollback after an actual database effect, session CSRF refresh/revocation, and
+POST/PUT/PATCH/DELETE rejection before fixture mutation. Admin recovery bootstrap remains available with an expired
+session cookie through explicit `sessionKind=context`; HEAD does not issue credentials.
+
+Guest tests verify strict cookie namespace and adapter handoff with a synthetic order-scoped adapter; they do not prove
+real guest proof consumption or order ownership (P06-015). The segregated provider fixture verifies only that browser
+middleware is not applied; real provider verification remains in its payment tasks. These local HTTP tests do not claim
+ENV-04 deployed-domain browser cookie acceptance, verified customer/admin credential flows, or M1 acceptance. See
+[execution evidence](./evidence/P03-006-browser-security.md).
+
+### P03-007 customer credential verification
+
+The project owner accepted the new-password policy on 19 October 2026: “এই password policy গ্রহণ করছি”.
+`backend/tests/passwords.test.ts` verifies character/UTF-8 bounds, byte preservation, malformed Unicode rejection,
+random salts, versioned scrypt costs, dummy verification, KDF saturation and activation configuration. Customer HTTP
+integration uses actual scrypt and an isolated MongoDB replica with the strict registration outbox validator/indexes.
+Cases cover forced customer role, forbidden DTOs, normalized-email races, account/outbox/context rollback, context/session
+rotation, single-context concurrent login, failed session insert rollback, suspended/admin/missing/wrong credential
+errors, current-account projection, stale/repeat logout, Origin/CSRF rejection, per-process rate limits and normal server
+activation against prepared persistence. Queued registration intent does not prove delivery. No real provider, admin
+login, deployed browser-origin or distributed abuse-control acceptance is claimed.
+
+### P03-008 profile/address ownership verification
+
+`backend/tests/profile.test.ts` checks Bangladesh mobile/fixed-line normalization, full-input/extension/country rejection,
+DTO allowlists/bounds and server-owned deletion fields. `backend/tests/integration/profile.test.ts` uses strict existing
+identity validators and a real owned replica to verify account/address ownership, explicit defaults, merged-address
+coverage, exact/wildcard precedence, missing/inactive/future/expired/ambiguous rules, concurrent tenth-address/default and
+profile writes, verified deletion intake/deduplication/status, terminal review preservation, private cache behavior and
+Origin/CSRF/session expiry/revocation/revision controls. Normal enabled server coverage verifies that `/me` is mounted.
+Historical order/payment sentinel records are synthetic preservation checks; they do not constitute real financial-flow,
+retention/legal approval or production deletion tests. Delivery fixture masters are isolated and not operator-approved
+production coverage; P06-001 remains responsible for master write/migration behavior.
+
+[Profile/address execution evidence](./evidence/P03-008-profile-addresses.md) records final commands, environment, results and unrun release gates.
+
+### P03-009 notification delivery verification
+
+Adapter tests use synthetic fetch responses for fixed HTTPS endpoint/headers, provider idempotency key, strict inputs,
+response size/protocol checks, safe outcome mapping, test-recipient routing and explicit bounded configuration. Real
+MongoDB plus a local HTTP provider verifies committed registration delivery/retry independently of account state,
+conditional concurrent claims, bounded backoff/attempt/batch limits, timeout/5xx/conflict uncertainty without resend,
+crash recovery and late acceptance, stale-claim fencing, transaction-only enqueue, rollback, no external calls inside
+the repository transaction context, and additive known-validator/index migration without record/status loss. Unknown
+schemas are refused. These local fixtures do not prove Resend sender/domain activation, actual provider deduplication,
+recipient inbox delivery, production migration or legal/operator acceptance. Proof/commerce template suites remain with
+their owning features; current registration payloads cannot contain proofs or arbitrary HTML.
+
+[Notification execution evidence](./evidence/P03-009-notifications.md) records commands, fixture boundaries, migration/worker checks and unrun external gates.
+
+### P03-010 password recovery verification
+
+`backend/tests/recovery.test.ts` verifies authenticated encryption, nonce freshness, every AAD field, tamper/key-loss/rotation failures, digest shape and explicit safe activation policy. `backend/tests/integration/recovery.test.ts` uses actual isolated replica MongoDB and HTTP for OPV-007/008/014, FR-01/02/20 and SEC-01/03/05/10: ambiguous recovery responses, cooldown, Origin/CSRF/strict input/rate limits, password policy, single-use/reissue races, reset/change races, session revocation/replacement, rollback, protected projections, envelope cleanup and reference-only durable retries/uncertainty. It also checks supported predecessor migration and the real customer composition's disabled/active route boundary. Existing registration/notification/profile/session suites remain mandatory. Browser foundation regressions do not establish a recovery screen's acceptance. [Execution evidence](./evidence/P03-010-password-recovery.md) records exact commands, outcomes and external boundaries.
+
+### P03-011 verified email-change verification
+
+`backend/tests/email-change.test.ts` checks purpose/target binding, exact previous reset encoding and independent fail-closed email-change activation. `backend/tests/integration/email-change.test.ts` covers OPV-012/013, ACC-02 and SEC-03/05/10 with real isolated MongoDB/HTTP: current identity unchanged before verification, normalized target/unique-index races, owning-session single-use consumption, duplicate/conflict rollback, session revocation/cookie clearing, login switch and saved-address preservation, cooldown/reissue, invalid owner/purpose/expiry, outbox and post-write revocation failure, reference-only retry/uncertainty and invalid-envelope delivery refusal. Cross-purpose tests verify that reset issuance does not invalidate email change, successful credential changes do, and email confirmation invalidates earlier resets. Concurrent confirmation versus logout/reset/reissue, exact-predecessor migration and actual disabled/active route composition are exercised. Existing recovery/session/profile/notification suites remain required. [Execution evidence](./evidence/P03-011-email-change.md) distinguishes backend checks from live delivery, deployed controls and frontend acceptance.
+
+### P03-012 administrator credential verification
+
+`backend/tests/admin-auth.test.ts` checks independent fail-closed admin activation, policy bounds and customer/admin verifier/AEAD separation. `backend/tests/integration/admin-auth.test.ts` covers FR-21 and SEC-01/03/04/05/10 using real isolated MongoDB/HTTP: private initial provisioning and concurrent duplicate guards, no signup/upgrade/overwrite, separate login/session/logout/context/cookie behavior, generic recovery, proof replay/expiry/role-change isolation, session revocation, login/reset/reissue concurrency, rollback, stable durable delivery/uncertainty, disabled renderer exclusion and actual independent router composition. Compiled stdin-only CLI tests exercise success/replay/oversize/production refusal without exposing input. Existing customer/recovery/email-change/session suites remain mandatory. [Execution evidence](./evidence/P03-012-admin-auth.md) separates backend foundation results from live provider, production/operator/audit and frontend gates.
