@@ -18,20 +18,6 @@ This document defines SportZone's **test strategy, reproducible verification pro
 
 ---
 
-## Structure-refactor verification — 20 October 2026
-
-Architecture §§4–6 and Implementation Plan §3.6 define the target; P02-012–013/P03-019–020 are pending code work. Preserve existing scenario IDs, task evidence and test coverage while reorganizing. The documentation task P01-015 requires local-link/repository guards, Markdown/diff review and task-count/dependency consistency, not runtime acceptance.
-
-| Refactor scope | Required parity evidence before acceptance |
-| --- | --- |
-| Backend composition/config/routes | Existing lint/typecheck/unit/build/smoke/integration checks; config activation/fail-closed behavior, health, startup/shutdown, exact public contracts, secret-safe logs, worker/tool entry points |
-| Auth/customer/delivery/media boundaries | HTTP ownership/session/CSRF/recovery checks and real replica-set rollback/race tests; one canonical validator/index set, scoped write allowlists, outbox claims and external-effect guards |
-| Storefront routes/layouts/features | Existing lint/typecheck/unit/build/smoke; unchanged URL/404/private/noindex behavior, theme bootstrap and client/server import boundaries; affected responsive/keyboard/both-theme browser cases |
-| Admin routes/layouts/features | Existing lint/typecheck/unit/build/smoke/a11y; deep links/lazy pending/error/denied states and navigation; affected both-theme browser cases |
-| Later query/API integration | Cache clearing on logout/identity expiry, CSRF refresh, controlled retries, financial retry prohibition, invalidation/input preservation, guest-cart merge and authoritative prices |
-
-Tests remain outside production `src/`. Update Vitest include patterns, TypeScript test projects, fixtures, smoke entry points and browser imports when moving files; a green run that silently drops cases is a failure. Record before/after discovered cases and exact commands. Keep `ci-workspaces.json` synchronized if checks/scripts/dependencies change, with no passing placeholders. Documentation selection does not install TanStack Query/frontend Zod. No existing behavioral scenario or milestone gate is waived.
-
 ## Contents
 
 - [1. Purpose, scope & quality objectives](#1-purpose-scope--quality-objectives)
@@ -872,19 +858,22 @@ Automated accessibility scan is **supplementary**; keyboard review and at least 
 
 ```mermaid
 flowchart LR
-    Commit[Change / pull request] --> Static[Lint + type checks + secret scan]
-    Static --> Build[Storefront + Admin + API builds]
-    Build --> Fast[Unit + component tests]
-    Fast --> DB[Transactional DB + API integration]
-    DB --> Contract[API/schema contract checks]
-    Contract --> Smoke[Selective browser smoke]
-    Smoke --> Evidence[Reports and signed artifacts]
-    Evidence --> Review{Applicable gates pass?}
-    Review -->|Yes| Stage[Eligible for staging review]
-    Review -->|No| Block[Block acceptance; triage]
+    Commit[Change / pull request] --> Repo[Repository checks]
+    Repo --> Store[Storefront checks, build, smoke]
+    Repo --> Admin[Admin checks, build, smoke]
+    Repo --> API[Backend checks, replica-set integration]
+    Repo --> Supply[Dependency advisory and secret checks]
+    Store --> Browser[Cross-app browser/accessibility]
+    Admin --> Browser
+    Store --> Result[Required result: all required jobs succeed]
+    Admin --> Result
+    API --> Result
+    Supply --> Result
+    Browser --> Result
+    Result --> Review[Eligible for staging review]
 ```
 
-Implement the pipeline during foundation setup. For independent changes, execute the relevant subset plus mandatory cross-cutting guards; gate an affected financial slice on its concurrency test suite.
+Operations §5.5 owns pipeline execution/caching/security and §5.6 owns promotion. The current single-job runner is the transitional implementation; P01-016 establishes job separation with equivalent inventory coverage. Run the full required suite initially. Dependency-aware subsets require separate verification that contract/shared/lockfile changes and skipped/missing checks cannot bypass acceptance. Real-API browser journeys add their backend/runtime prerequisite when implemented. This graph concerns CI evidence, not merchant or production acceptance.
 
 ### 15.2 Trigger and quality matrix
 
@@ -905,6 +894,20 @@ Implement the pipeline during foundation setup. For independent changes, execute
 - Publish JUnit or equivalent machine-readable results, coverage artifact, failing traces/screenshots with redaction, and test-run metadata.
 - Coverage percentages are **diagnostic measurements**, not a made-up global pass threshold. Set thresholds after module risk and baseline are evaluated; zero unverified critical invariants is mandatory.
 - Secret access must be scoped to jobs; fork PRs and test artifacts must not expose gateway credentials or personal data.
+
+### 15.4 Refactor regression and pipeline verification
+
+P02-012–013/P03-019–020 preserve existing scenario IDs and accepted historical evidence. Record before/after discovered cases when changing test paths; update Vitest globs, test TypeScript projects, browser fixture imports and smoke entry points together. A green run that silently drops tests fails acceptance. Tests remain outside production src; enforce feature/server/client/backend import direction as an automated guard. Biome source-format checks are introduced with P01-017 after a scoped baseline; formatting is separate from behavior changes.
+
+| Scope | Required parity evidence |
+| --- | --- |
+| Backend composition and boundaries | All existing workspace checks; config activation, lifecycle, exact HTTP/session/CSRF/ownership/recovery contracts, replica-set races/rollback, canonical validators/indexes, notification claim and external-effect guards |
+| Storefront placement | Lint/types/unit/build/smoke, unchanged URL/404/cache/noindex behavior, server/client boundaries, affected responsive/keyboard/both-theme browser cases |
+| Admin placement | Lint/types/unit/build/smoke, root-owned cross-app browser coverage after migration, deep links/lazy pending/errors/denied states and both-theme navigation |
+| Query/API integration | Identity-expiry/logout cache clearing, CSRF refresh, controlled read retries, financial retry prohibition, input retention/invalidation and guest-cart merge |
+| Pipeline replacement | Baseline command/case coverage; successful run plus injected failure, cancelled/skipped dependency, missing report and root/shared-change cases; aggregate fails closed and artifacts remain attributable |
+
+Test pipeline failure semantics using isolated fixtures, not intentionally broken protected branches or live providers. Retain the current browser engine/theme/viewport matrix and real replica-set suite; new implementation adds business journey coverage. No blanket coverage percentage, automatic retry or quarantine policy may hide a mandatory financial/security regression. Documentation checks comprise local links, ownership/reference consistency, task-register totals/dependencies and diff review; runtime suites are Not Run for documentation-only changes.
 
 ---
 

@@ -132,18 +132,19 @@ Convert approved work packages into `TASKS.md` entries with a stable ID, short o
 
 Do not assign arbitrary completion dates. Estimate work after evaluating developer capacity, approved hosting, gateway/refund feasibility, operator content, and integration access. Record milestone dates separately in task tracking once agreed. A missing merchant capability may block online-payment acceptance without blocking COD-oriented development.
 
-### 3.6 Incremental structure refactor — 20 October 2026
+### 3.6 Engineering foundation and incremental refactor
 
-The project owner selected Architecture §§4–6's feature-based frontends and module-based layered backend, then requested documentation first and gradual code refactoring. This is source organization/ownership work over the existing MongoDB stack, not a replacement implementation or waiver of any gate.
+Architecture §§4–6,14 define application organization and engineering decisions; Operations §§5.5–5.7 define CI, source control and promotion, and Testing §15 defines verification. Reconcile these contracts before implementation. Source reorganization preserves the existing stack, business behavior and release gates.
 
 | Step | Task | Outcome and prerequisite |
 | --- | --- | --- |
-| 1 | P01-015 | Reconcile target architecture, API/data ownership, UI conventions, verification and operations; documentation In Review pending acceptance |
-| 2 | P03-019 | Extract typed composition/configuration and route registration; preserve runtime/worker/tool behavior |
-| 3 | P03-020 | Separate auth/customer/delivery boundaries, standardize cohesive backend files and provider adapters; depends on P03-019 |
-| 4 | P02-012 / P02-013 | Refactor storefront/admin routes, layouts and feature placement independently after P01-015 acceptance |
-| 5 | Existing feature tasks | Integrate customer/admin auth, then admin catalog → public catalog → inventory/cart → quote/COD order/admin processing; honor declared prerequisites |
-| 6 | Existing P07/P08 tasks | Verified online payment/reconciliation and after-sales; required channels and launch gates unchanged |
+| 1 | P01-015 | Reconcile engineering contracts and submit documentation verification for independent acceptance |
+| 2 | P01-016 / P01-017 | Implement inventory-driven CI/job aggregation and development/quality tooling; validate failure and cleanup behavior |
+| 3 | P03-019 | Extract typed composition/configuration and route registration; preserve runtime/worker/tool behavior |
+| 4 | P03-020 | Separate auth/customer/delivery boundaries, standardize cohesive backend files and provider adapters; depends on P03-019 |
+| 5 | P02-012 / P02-013 | Refactor storefront/admin routes, layouts and feature placement independently after documentation acceptance |
+| 6 | Existing feature tasks | Integrate customer/admin auth, then admin catalog → public catalog → inventory/cart → quote/COD order/admin processing; honor declared prerequisites |
+| 7 | Existing P07/P08 tasks | Verified online payment/reconciliation and after-sales; required channels and launch gates unchanged |
 
 Do not start a bulk rename across all apps. For each slice, record current-to-target paths, preserve public URLs, error/DTO/session/CSRF contracts and collection/index identities, move/update imports and operational entry points together, then run the owning checks. Refactor tasks do not recreate already accepted foundations or mark dependent business features complete. Pre-existing accepted evidence is retained as historical evidence; new behavior/parity evidence accompanies refactored code.
 
@@ -162,6 +163,8 @@ Initial current-to-target inventory (not executed):
 Keep `db/`, `observability/`, reusable UI/management/commerce foundations, pure root shared utilities and operator tools unless a specific dependency requires a verified move. Do not implement planned products/inventory models solely to complete a refactor checklist.
 
 TanStack Query/frontend Zod are selected target dependencies for later integrated API/forms work, not dependencies to add during layout-only moves. Add compatible locked versions and CI checks with their consuming feature. Do not reorganize the phase roadmap to hide incomplete prerequisites. Recovery for a code-only move is the prior compatible build after shutdown/lease handling; migrations and external financial retries require their own contracts and safeguards.
+
+Tooling work may proceed independently where its inputs are stable, but a source move must update the current runner/inventory rather than depend on an unimplemented CI design. Application/container deployment, migration jobs and protected environment configuration remain within the existing Phase 11 implementation work; specification does not imply deployed infrastructure. New automation runs no production financial activity.
 
 ---
 

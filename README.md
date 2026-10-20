@@ -69,17 +69,16 @@ sportzone/
 
 [Architecture §4](docs/ARCHITECTURE.md#4-project-structure) defines application/module boundaries.
 
-The owner selected a feature-based storefront/admin and module-based layered backend on 20 October 2026. Architecture
-§§4–6 contain the target paths and ownership; current code is being retained for incremental refactoring, not presented
-as already moved. MongoDB/Mongoose and all public API/session/data contracts remain in place. The selected backend
-module convention is `<entity>.model/validation/service/controller/routes/types.ts`, with extra cohesive files only as needed.
-UI shells target `components/layout/`, feature-only UI/API/hooks/schemas/types target `features/`, and existing reusable
-HeroUI/commerce/management primitives stay reusable. Current CLI commands below remain the executable setup reference.
+Architecture §§4–6,14 define feature-based UIs, a module-based layered backend and npm-workspaces engineering policy.
+Target backend modules use `<entity>.model/validation/service/controller/routes/types.ts`; UI shells belong to
+`components/layout/`, feature behavior to `features/`, and reusable HeroUI/commerce/management compositions retain
+their shared ownership. Current code is migrated incrementally; the CLI commands below describe implemented setup.
 
-[Implementation Plan §3.6](docs/IMPLEMENTATION_PLAN.md#36-incremental-structure-refactor--20-october-2026) sequences
-P01-015 documentation review, P03-019–020 backend refactoring and P02-012–013 UI refactoring before/alongside their
-dependent feature work. TanStack Query/frontend Zod are selected for subsequent integrated API/forms work; they are
-not installed by the documentation decision. See [decision evidence](docs/evidence/P01-015-structure-decision.md).
+[Implementation Plan §3.6](docs/IMPLEMENTATION_PLAN.md#36-engineering-foundation-and-incremental-refactor) sequences
+P01-015 contract review, P01-016–017 tooling, P03-019–020 backend and P02-012–013 UI refactors.
+[Operations §5](docs/OPERATIONS.md#5-cicd--deployment-procedures) defines target CI/release controls; the existing workflow
+remains the operational reference until verified replacement. Future API/form tasks introduce TanStack Query/frontend
+Zod with compatible locked versions. [Verification record](docs/evidence/P01-015-structure-decision.md).
 
 ## 4. Development workflow
 

@@ -101,11 +101,11 @@ retain their own approver, environment, artifacts, blockers and explicit decisio
 
 ## 3. Project progress dashboard
 
-The register contains 176 tasks across twelve phases, including five incremental organization/refactor tasks added on 20 October 2026. Update phase totals when tasks are added or statuses change.
+The register contains 178 tasks across twelve phases, including seven engineering-foundation/refactor tasks added on 20 October 2026. Update phase totals when tasks are added or statuses change.
 
 | Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |   Done | Deferred |
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
-| 01 — Requirements Finalization and Planning   |      15 |           0 |     0 |           0 |       0 |         1 |     14 |        0 |
+| 01 — Requirements Finalization and Planning   |      17 |           2 |     0 |           0 |       0 |         1 |     14 |        0 |
 | 02 — UI/UX Design                             |      13 |           2 |     0 |           0 |       0 |         0 |     11 |        0 |
 | 03 — Authentication and Core Backend          |      20 |           6 |     0 |           0 |       0 |         0 |     14 |        0 |
 | 04 — Product Catalog and Inventory            |      15 |          15 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -117,7 +117,7 @@ The register contains 176 tasks across twelve phases, including five incremental
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **176** |     **136** | **0** |       **0** |   **0** |     **1** | **39** |    **0** |
+| **Total**                                     | **178** |     **138** | **0** |       **0** |   **0** |     **1** | **39** |    **0** |
 
 ## 4. Milestone tracker
 
@@ -142,7 +142,7 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
 
 ### Phase 01 — Requirements finalization and planning
 
-**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 01. **Associated gate:** M1. **Tasks:** 15.
+**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 01. **Associated gate:** M1. **Tasks:** 17.
 
 - [x] **P01-001 — Verify approved document baseline and paths**\
   **Status:** `Done` · **Area:** Planning · **Owner:** Codex\
@@ -270,13 +270,29 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Evidence:** [Operations baseline, configuration reconciliation, runbook owners and decision gates](./evidence/P01-014-operations-baseline.md).\
   **Accepted:** Project owner, 17 October 2026 — “Operations baseline গ্রহণ করছি”.
 
-- [ ] **P01-015 — Reconcile selected structure and incremental refactor contracts**\
+- [ ] **P01-015 — Establish engineering architecture and refactor contracts**\
   **Status:** `In Review` · **Area:** Documentation/architecture · **Owner:** Codex\
-  **Sources:** PRD §13; Architecture §§4–6; Implementation Plan §3.6\
+  **Sources:** PRD §13; Architecture §§4–6,14; Operations §5; Testing §15; Implementation Plan §3.6\
   **Depends on:** `P01-011`, `P01-012`\
-  **Deliverable:** Document the owner-selected feature-based UIs, concrete backend modules, six-file convention, data/API ownership mapping and staged parity/recovery plan.\
+  **Deliverable:** Reconcile application organization, module/data/API ownership, monorepo/tooling, CI/source-control/release policy, deployment constraints and staged verification/recovery.\
   **Acceptance:** Related contracts and links agree; target paths/dependencies are distinguished from current implementation; no acceptance/milestone or runtime change is fabricated; independent owner review recorded.\
   **Evidence:** [Structure decision and documentation verification](./evidence/P01-015-structure-decision.md). Implementation tasks below remain Not Started.
+
+- [ ] **P01-016 — Implement inventory-driven CI jobs and required-result governance**\
+  **Status:** `Not Started` · **Area:** CI/repository · **Owner:** Codex\
+  **Sources:** Architecture §§4.2,14; Operations §§5.5–5.6; Testing §15\
+  **Depends on:** `P01-015`, `P01-010`\
+  **Deliverable:** Extend the shared inventory/runner for repository and cross-app ownership; split hosted workspace/browser jobs, retain equivalent local checks, sanitize reports and implement explicit aggregate status and dependency/security review. Document and verify required branch checks without claiming unavailable remote settings.\
+  **Acceptance:** All existing checks/cases retained, browser build dependencies correct, failure/cancel/skip/missing-report tests fail closed, locked installs and action/secret controls preserved; actual hosted run and repository-settings evidence before acceptance.\
+  **Evidence:** Not Run; current single-job workflow remains supported.
+
+- [ ] **P01-017 — Establish coordinated development commands and source-quality guards**\
+  **Status:** `Not Started` · **Area:** Developer tooling · **Owner:** Codex\
+  **Sources:** Architecture §4.2; Operations §5.2; Testing §15.4\
+  **Depends on:** `P01-015`, `P01-009`\
+  **Deliverable:** Provide documented root development orchestration over existing app/compiler commands with coordinated signal/failure cleanup; add import-boundary guards and scoped Biome source-format checks.\
+  **Acceptance:** Child failure/termination leaves no owned orphan servers; declared workspace dependencies and server/client/backend boundaries are checked; relevant tooling checks pass, test discovery preserved and actual scripts/inventory/README synchronized. Optional containers do not replace replica-set fixtures.\
+  **Evidence:** Not Run; no command or configuration added by documentation.
 
 ### Phase 02 — UI/UX design
 
@@ -1784,6 +1800,8 @@ Record task execution, material blockers, acceptance and milestone decisions her
 **18 October 2026 — UI foundation change:** The project owner selected HeroUI and delegated visual design within the approved specification. Dependency/theme integration, app-owned controls and working conventions are recorded in [HeroUI foundation review](./evidence/heroui-foundation.md). The follow-up [existing UI migration](./evidence/heroui-existing-ui.md) replaces the earlier native-control exceptions. These changes are In Review; they do not accept another numbered task or milestone.
 
 **20 October 2026 — Selected structure and staged refactor:** The project owner requested documentation updates to the agreed architecture before gradually refactoring applications. Added P01-015 (In Review) and P02-012–013/P03-019–020 (Not Started); register 171 → 176 tasks, accepted history retained. [Decision/evidence](./evidence/P01-015-structure-decision.md). Next action: review documentation, then take one refactor slice; this entry accepts no implementation or milestone.
+
+**20 October 2026 — Engineering foundation reconciliation:** Expanded P01-015 to cover monorepo, CI, source-control/release and operational constraints; added P01-016/P01-017 as Not Started (176 → 178 tasks). Documentation remains In Review; all accepted statuses retained. Implementation starts with verified tooling or a bounded refactor under Implementation Plan §3.6.
 
 When execution starts, update the task status and attach evidence. Change a checkbox to `[x]` only after acceptance.
 Preserve IDs and dependency references; update phase totals and record milestone acceptance separately.

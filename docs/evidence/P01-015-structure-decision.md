@@ -1,54 +1,68 @@
-# P01-015 — Structure decision and documentation reconciliation
+# P01-015 — Engineering baseline verification
 
-Date: 20 October 2026 (Asia/Dhaka). Status: **In Review**. Executor: Codex. Reviewer/acceptance owner: project owner; acceptance of this resulting document change is not yet recorded.
+Date: 20 October 2026 (Asia/Dhaka). Status: **In Review**. Executor: Codex. Independent acceptance: pending.
 
-## Authority and scope
+## Scope and decision status
 
-The owner supplied concrete frontend/backend feature structures, reviewed the resulting architecture proposal, and instructed: “now docs gula update kore felo then amra aste aste current projects gulaw refactor kore felbo”. This authorizes documenting the selected direction and planning gradual refactors. It does not assert completed code moves, database migration, provider readiness or milestone acceptance.
+This revision specifies the engineering baseline for subsequent tooling and application refactoring. Normative requirements belong to the owning specifications listed below. Task acceptance, implemented capabilities and environment readiness require their own evidence.
 
-Selected direction: Next.js storefront, React/Vite admin, Express modular monolith, MongoDB/Mongoose, HeroUI and npm workspaces. Feature-based UIs; entity-prefixed backend model/validation/service/controller/routes/types; typed composition; public module capabilities; existing durable transaction/job safeguards. No PostgreSQL migration is selected.
+The baseline retains Next.js, React/Vite, Express, MongoDB/Mongoose, HeroUI and npm workspaces. It defines feature-based UIs, entity-prefixed backend layers, narrow module capabilities, one locked dependency graph, inventory-driven CI, reviewed source control and traceable artifact promotion. Engineering choices are specified; hosting accounts/budget, merchant capability, legal policy, recovery targets and operational appointments remain environment inputs under Operations Appendix C and EXT-01–09.
 
-## Reconciled documents
+## Document reconciliation
 
-| Document | Reconciliation |
+| Owner | Revision |
 | --- | --- |
-| [Architecture](../ARCHITECTURE.md) §§4–6,14 | Target trees, naming, placement, module ownership, fetching/state/validation, canonical models and composition |
-| [Database](../DATABASE.md) §4.2 | Concrete owner mapping for users/variants/delivery/media; no collection/schema/index change |
-| [API](../API.md) §2.2 | Concrete module mapping while preserving operation/URL/DTO/session/CSRF contracts |
-| [Design](../DESIGN.md), [UI Components](../UI_COMPONENTS.md) | Layout/feature/reusable component ownership with current-path transition notes |
-| [Implementation Plan](../IMPLEMENTATION_PLAN.md) §3.6, [Tasks](../TASKS.md) | Incremental work and five added stable IDs, correct counts/statuses; old acceptance retained |
-| [Testing](../TESTING.md), [Operations](../OPERATIONS.md) | Import/test-discovery parity, worker/tool/runbook compatibility and recovery requirements |
-| [README](../../README.md), [AGENTS](../../AGENTS.md), [Changelog](../../CHANGELOG.md) | Orientation, execution rules and documentation-only change record |
+| [Architecture](../ARCHITECTURE.md) §§4–6,14 | Application structures, naming, monorepo/dependencies, module boundaries and engineering rationale |
+| [Database](../DATABASE.md) §4.2 | Canonical model registration and restricted shared-collection writes |
+| [API](../API.md) §2.2 | Concrete module mapping; existing HTTP and security contracts preserved |
+| [Design](../DESIGN.md), [UI Components](../UI_COMPONENTS.md) | Component placement and implementation transition |
+| [Implementation Plan](../IMPLEMENTATION_PLAN.md) §3.6, [Tasks](../TASKS.md) | Tooling/refactor sequence, stable IDs, dependencies and actual statuses |
+| [Testing](../TESTING.md) §15 | Regression parity, discovery, CI failure/skip/cancellation and evidence requirements |
+| [Operations](../OPERATIONS.md) §§5,11, Appendix C | CI execution/security/caching, Git policy, artifact/deployment compatibility and environment acceptance |
+| [README](../../README.md), [AGENTS](../../AGENTS.md), [Changelog](../../CHANGELOG.md) | Setup orientation, execution rules and revision record |
 
-PRD requirements did not change. Manifests, lockfile, CI scripts/inventory, app sources and database data were not modified. TanStack Query/frontend Zod are selected for future consuming features; installation and compatibility checks remain their implementation work.
+Requirements are placed in their owning numbered sections; conversational rationale and repeated introductory supplements have been removed. Historical task/evidence records remain historical. PRD product scope, financial rules and existing acceptance gates are unchanged.
 
-## Planned implementation and verification limits
+## Implementation boundary
 
-- P03-019: typed composition/config/runtime registration; P03-020: cohesive backend boundaries/file conventions and provider adapters.
-- P02-012: storefront layout/route/feature placement; P02-013: admin composition/layout/feature placement.
-- All four implementation tasks are **Not Started**. Documentation task is **In Review**, with no checkbox or milestone self-approval.
-- Existing accepted auth/database/UI evidence remains historical evidence. Future changes require the affected runtime, replica-set, HTTP and browser parity checks; silent test-discovery loss is unacceptable.
+- P01-016: CI inventory/jobs, cross-app ownership, reports and required-result governance.
+- P01-017: coordinated development processes, import-boundary guards and source-format checks.
+- P03-019/P03-020: backend composition and cohesive module boundaries.
+- P02-012/P02-013: storefront/admin placement.
+- All six implementation tasks are **Not Started**. P01-015 remains **In Review** pending independent acceptance.
+- Manifests, lockfile, workflow/runner, application source, database and deployments are unchanged by this revision. New commands, scanners, dependencies, containers and remote protection settings are specified targets, not verified installation/configuration.
 
-## Verification
+## Research and technical conclusions
 
-Working tree was clean at the start of this documentation task. Repository baseline, package scripts, current source paths and owning specification sections were inspected before editing.
+Official sources accessed 20 October 2026:
 
-| Check | Environment | Result |
+| Source | Supported mechanism and project application |
+| --- | --- |
+| [npm workspaces](https://docs.npmjs.com/cli/v11/using-npm/workspaces/) and [locked installation](https://docs.npmjs.com/cli/v11/commands/npm-ci/) | Workspace dependency/install behavior; retain one root lock and consuming-package declarations |
+| [GitHub workflow syntax](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax) and [dependency results](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts) | Explicit job dependencies and success/failure/cancelled/skipped results; aggregate required checks must evaluate actual results |
+| [GitHub secure use](https://docs.github.com/en/actions/reference/security/secure-use) | Immutable action references and scoped credentials; retain SHA pinning and unprivileged PR execution |
+| [npm audit](https://docs.npmjs.com/cli/v11/commands/npm-audit/), [Gitleaks](https://github.com/gitleaks/gitleaks), [Dependabot configuration](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference) | Dependency advisory reports, repository secret detection and controlled update PRs; pin and verify implementing tool versions |
+| [GitHub deployment environments](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments) | Protection controls and account/plan-dependent availability; verify remote enforcement before claiming it |
+| [Playwright CI](https://playwright.dev/docs/ci) | Explicit browser/dependency installation and limited value of browser-binary caching; preserve required engines |
+| [Next.js self-hosting](https://nextjs.org/docs/app/guides/self-hosting) | Runtime/reverse-proxy and build-time configuration considerations; record environment-bound frontend artifact identity |
+| [Next.js organization](https://nextjs.org/docs/app/getting-started/project-structure) and [server/client boundaries](https://nextjs.org/docs/app/getting-started/server-and-client-components) | Route organization and enforced server-only imports |
+| [React state](https://react.dev/learn/choosing-the-state-structure), [React Router modes](https://reactrouter.com/start/modes), [TanStack Query defaults](https://tanstack.com/query/latest/docs/framework/react/guides/important-defaults) | State ownership, existing router mode and explicit query retry/cache configuration |
+| [Mongoose transactions](https://mongoosejs.com/docs/transactions.html) | Session-aware transactional behavior; avoid nested and parallel operations within a transaction |
+
+The repository-specific choices are engineering judgments, not vendor certifications or measured performance claims. No load benchmark, hosting quote, provider transaction or deployed acceptance check was performed.
+
+## Verification record
+
+The initial structure revision passed repository guards (258 files, 1,101 local links), whitespace checks and a 176-task register audit. Final engineering reconciliation extends the staged documentation; its results below supersede those counts for the current revision.
+
+| Check | Environment | Current revision result |
 | --- | --- | --- |
-| `npm run lint` | Local repository documentation guards | Passed — 258 files, 1,101 local links, 0 errors; repeated after diff review |
-| `git diff --check` | Local working tree | Passed — no whitespace errors |
-| Task register audit (IDs, statuses, dependencies, phase/dashboard totals) | Read-only `node --input-type=module -e` audit | Passed — 176 unique tasks across 12 phases; 39 Done, 1 In Review, 136 Not Started; no checkbox/header/dashboard or missing dependency mismatch |
-| Compare existing tasks against `git show HEAD:docs/TASKS.md`; traverse dependency graph | Read-only Git output piped into Node audit | Passed — all 171 existing task checkboxes/statuses preserved, 5 tasks added, dependency graph acyclic |
-| Application builds/unit/integration/browser/provider checks | No runtime changes | Not Run — outside this documentation-only task; no runtime acceptance claimed |
+| `npm run lint` | Local repository/documentation guards | Passed — 258 files, 1,102 local links, zero errors |
+| `git diff --check` and `git diff --cached --check` | Unstaged and staged documentation | Passed — no whitespace errors |
+| Register audit | Read-only Node: IDs, statuses, phase/dashboard totals, dependencies and cycles | Passed — 178 unique tasks, 12 phases, 39 Done, 1 In Review, 138 Not Started; totals consistent and dependencies acyclic |
+| Preservation review | Staged task/API baseline compared with working files; Markdown-only scope and local anchors | Passed — all 176 prior task statuses preserved, 2 new tasks; API §3 onward unchanged after excluding table alignment; 29 local document anchors checked with no errors; only Markdown edited |
+| Application/unit/integration/browser/deployment/provider checks | No implementation changes | Not Run — outside documentation scope; no runtime acceptance claimed |
 
-Supplemental audit initially hit sandbox `spawnSync git EPERM` when Git was launched inside Node. Running Git directly and piping its read-only output into Node completed the same audit successfully; no escalation or application mutation was required. Diff review confirmed only Markdown changes plus this new Markdown evidence record.
+## Acceptance and remaining work
 
-Concurrent table alignment appeared in API.md during final review and was preserved. A read-only normalized comparison against `HEAD:docs/API.md` verified that contract content from §3 onward is unchanged after excluding whitespace/table separators; the architecture edits are confined to date and §2 ownership/transition text.
-
-## Research basis
-
-The preceding analysis used official [Next.js organization](https://nextjs.org/docs/app/getting-started/project-structure), [server/client boundaries](https://nextjs.org/docs/app/getting-started/server-and-client-components), [React state](https://react.dev/learn/choosing-the-state-structure), [React Router modes](https://reactrouter.com/start/modes), [TanStack Query defaults](https://tanstack.com/query/latest/docs/framework/react/guides/important-defaults) and [Mongoose transactions](https://mongoosejs.com/docs/transactions.html), accessed 20 October 2026. Those sources explain mechanisms; the owner-selected structure is a project design decision. No performance benchmark, live merchant check or external deployment was performed.
-
-## Acceptance
-
-Pending independent project-owner review of the resulting documentation diff. No unresolved product/financial contract conflict identified; physical path migration and dependency installation remain explicitly future work.
+Independent review covers document consistency and verification evidence. Existing accepted task statuses and milestone records are retained; this revision does not self-approve them. Operational inputs remain tracked in their existing readiness register, with no fabricated credentials, resource selections, numerical recovery guarantees or provider activation.

@@ -259,7 +259,7 @@ flowchart LR
 
 Both controllers and scheduled jobs invoke shared backend **domain services**, never each other's HTTP endpoint. Cross-module transaction coordination remains inside backend-controlled services (Architecture §§3, 6).
 
-**Target implementation ownership — 20 October 2026:** Domain labels in this document are retained for traceability. The following maps them to concrete modules under Architecture §6.1; this is a code-boundary refactor, not a schema/index/collection migration.
+**Implementation ownership:** The following maps domain labels to concrete modules under Architecture §6.1. Source-boundary changes preserve schemas, indexes and collection identities.
 
 | Records | Canonical registration / permitted operations |
 | --- | --- |

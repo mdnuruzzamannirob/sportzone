@@ -1,8 +1,8 @@
 # UI component implementation guide
 
-## Target placement and transition — 20 October 2026
+## Component ownership
 
-[Architecture §§4–5](./ARCHITECTURE.md#4-project-structure) defines selected placement. P02-012/P02-013 migrate code incrementally; paths in the existing usage sections describe current components until those tasks update imports, tests and links.
+[Architecture §§4–5](./ARCHITECTURE.md#4-project-structure) defines placement. P02-012/P02-013 migrate code incrementally; paths in the usage sections describe current components until those tasks update imports, tests and links.
 
 | Component responsibility                                        | Target                                                                       |
 | --------------------------------------------------------------- | ---------------------------------------------------------------------------- |

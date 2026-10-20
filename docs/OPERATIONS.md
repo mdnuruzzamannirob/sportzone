@@ -27,14 +27,6 @@ change those authoritative contracts.
 
 ---
 
-## Structure-refactor operating constraints — 20 October 2026
-
-The owner-selected source organization in Architecture §§4–6 is a target, with code work tracked by P02-012–013/P03-019–020. Current commands, tool entry points, environment names and runbooks remain operational references until their implementing task changes and verifies them. This documentation decision does not provision services, install dependencies, execute migrations or change deployed origins/cookies/provider activation.
-
-For every slice, inventory build/runtime imports, worker launch commands, bootstrap/migration/provisioning tools, CI paths and monitoring/logging before moving code. Deploy API/worker artifacts from compatible backend code and preserve typed startup validation, shutdown/draining, protected readiness, lease fencing and uncertain-effect reconciliation. Stop/drain old runners as appropriate before switching entry points; do not accidentally start two independent schedulers without durable claim protection.
-
-Code-only organization changes keep MongoDB collections/indexes/ObjectIds, stored sessions/proof keys, provider identities, API namespaces and env contracts intact. Rollback uses the prior compatible build, preserving durable intents/audit and reconciling outstanding external effects. Any genuine persistence/config change requires an additive reviewed migration and updated configuration/restore procedure before deployment; do not infer permission for destructive data work from a file move. Update current runbook commands/links with each move, and retain historical evidence paths as historical.
-
 ## Contents
 
 - [1. Operations overview & objectives](#1-operations-overview--objectives)
@@ -366,6 +358,44 @@ or affected feature; use OP-REL-02 and OP-FIN-* instead of ad hoc manual ledger 
 - Staged rollout or maintenance-mode choices require the actual platform's capabilities and operator approval.
   Avoid having two incompatible worker versions process the same job queue.
 
+### 5.5 CI execution and supply-chain controls
+
+GitHub Actions is the hosted CI executor. `ci-workspaces.json` is the application check inventory, and the local `npm run ci` runner must execute the same required checks as hosted CI. Repository/cross-app checks require explicit inventory ownership when the runner is extended. The current single-job workflow remains supported until P01-016 implements and verifies this target:
+
+| Job | Dependencies and required outcome |
+| --- | --- |
+| Repository | Locked setup, workspace/inventory validation, documentation/source guards and tooling regressions |
+| Supply chain | Repository setup; locked-tree npm advisory review and pinned Gitleaks CLI secret scan with redacted reports |
+| Storefront | Repository setup/guards; storefront lint, types, unit/component tests, production build and smoke |
+| Admin | Repository setup/guards; admin lint, types, unit/component tests, production build and smoke |
+| Backend | Repository setup/guards; backend lint, types, unit, build, smoke and isolated replica-set integration |
+| Browser | Verified storefront/admin builds from the same revision/configuration; cross-app accessibility/browser tests. Add backend dependency when real-API journeys require it |
+| Required result | Runs after all required jobs even when a dependency fails; accepts only explicit success from each required job |
+
+Independent workspace jobs may run concurrently; share no mutable database fixtures or report paths. Build artifacts may be transferred to dependent jobs with matching revision, runtime, lockfile and build-configuration identity, or rebuilt deterministically in that job. Do not assume installed dependencies/native binaries can move across incompatible runners. During migration, move cross-app `test:a11y` ownership from admin to the repository inventory without dropping, duplicating or silently skipping the suite. Validate fixture startup/build dependencies before enabling concurrency.
+
+Initially run the complete required suite for PRs and pushes; selective/path-based skipping is deferred until dependency-aware rules and required-status behavior are tested. Root lockfiles, shared code/styles, contracts, test fixtures and CI changes affect multiple consumers. Required result aggregation must distinguish success, failure, cancelled, skipped and missing reports; use explicit dependency-result evaluation. Never use `--if-present`, `continue-on-error` or a skipped aggregate to turn missing checks green. Preserve stable required-check names when changing branch protection.
+
+Use the recorded Node/npm versions and root `npm ci --ignore-scripts --no-audit --no-fund` installation policy. Review any required dependency lifecycle step explicitly; never enable all install scripts to fix an unexplained failure. Cache package downloads, keyed by runner/runtime/lockfile, rather than treating cached node_modules as installation. Install pinned Playwright engines/system dependencies in browser jobs; browser binary caching and remote task-result caches are not initial requirements. Tests using time, databases or providers must not be accepted solely from cached results.
+
+Pin external actions to full commit SHAs, use read-only permissions by default and keep checkout credentials unpersisted. PR code receives no deployment/merchant secrets; do not run untrusted PR source under privileged pull_request_target/workflow_run contexts. Scope release credentials to protected deployment environments. Prefer short-lived provider identity when supported. CI cancels superseded validation runs; deployment serialization is separate and must not interrupt an in-flight migration or financial operation blindly.
+
+Collect job-unique reports with source SHA, runtime, lock digest, executed/discovered cases, result and build identity. Upload sanitized failure diagnostics on failure as well as success; enforce restricted access/retention for traces containing private data. Use npm audit for locked dependency advisories and Gitleaks CLI for repository secret detection, with an explicitly pinned/checksummed release and bounded reviewable exclusions. Scan the working tree and relevant Git history; redact matches from public logs/artifacts. These tools are introduced by P01-016, not assumed installed. Scanner/network unavailability is not a clean result. High/critical advisories require remediation or an explicit reviewed non-applicability exception; actual secrets or exploitable high-impact findings block acceptance. Exceptions record affected versions, rationale, reviewer, expiry and remediation without waiving product/security invariants. Use Dependabot for npm/GitHub Actions update PRs, grouping compatible maintenance updates and separating majors; no unreviewed auto-merge or automatic audit fix/force upgrade.
+
+### 5.6 Source control and artifact promotion
+
+Use protected `main`, short task branches and reviewed squash merges; a persistent develop branch is not required. PRs identify task IDs, behavioral scope, test evidence and compatibility/recovery impact. Require the aggregate CI result and independent review; changes to security/financial paths include their owning negative/concurrency tests. Repository protection/environment settings must be inspected and verified during implementation; local YAML is not proof they are enabled or available on the selected account plan. Retain the equivalent release approval record if a platform protection feature is unavailable.
+
+Applications are private workspaces with a coordinated release record; no public package publication or Changesets workflow is required. Release IDs trace immutable commit and artifact digests. Build backend images once per candidate using locked dependencies, excluding source secrets and running without privileged identity; API and worker use the same compatible image with distinct entry commands. Image/container setup remains a deployment implementation task, not an existing command. Admin is a static artifact; storefront is a supported Next.js runtime artifact. Frontend public env values may be compiled into bundles: record environment/build-config identity and rebuild/reverify for a different environment when necessary. Never promote a staging-baked API origin as a production artifact by assumption.
+
+Eligible candidates may deploy to isolated staging after CI. Production promotion requires the existing milestone/provider/policy gates and a recorded release approval. Run additive schema/index operations as explicit controlled jobs, not from every API replica startup. Preserve API/worker compatibility during rollout and follow §6 for rollback. Managed runtime/static hosting and transaction-capable managed MongoDB are the deployment class; exact vendor, region, resources and billable plan are selected against the environment inventory before provisioning.
+
+### 5.7 Refactor deployment compatibility
+
+P02-012–013/P03-019–020 change source organization incrementally. Inventory runtime/build imports, tool/worker launch commands, CI paths and runbook references with each move. Preserve env names, activation, process draining, protected readiness, logs and fenced job claims. No folder move authorizes a schema change, deployed-origin/cookie change or destructive data operation. Drain incompatible runners before replacing entry points; do not create a second uncontrolled scheduler.
+
+Restore a compatible prior build for code-only recovery while retaining durable intents/audit and reconciling uncertain external effects. Update runbook commands when actually implemented; planned script names are not executable instructions. Any persistence/config change needs its additive migration and restore assessment before deployment.
+
 ## 6. Release management & rollback
 
 ### 6.1 Release record
@@ -664,6 +694,8 @@ maintains the following environment-specific recovery policy and verifies it thr
 | Retention and encryption/key custody | Retention/legal-hold policy, protected storage, independent key custody and deletion controls | Privacy / security / data owner |
 | Restore drill cadence | Scheduled isolated exercises, responsible operator and retained results | Data owner |
 | Cross-region/offsite protection | Recovery location, residency constraints, threat coverage and provider capability | Platform / privacy owner |
+
+Production database selection must support encrypted managed backups and the approved recovery window; select PITR capability when required to meet that target. Verify actual service-tier capability, access separation and isolated restore before acceptance. Runtime replication is not a backup policy. Monitoring retains structured stdout/stderr with redaction and separate owned alerts for API availability, transaction integrity, financial/notification backlog and backup freshness; vendor selection belongs to environment provisioning.
 
 **RPO/RTO are targets, not inferred guarantees.** A successful database snapshot can still omit activity after its
 capture and cannot reverse settled external payments/refunds or reconstruct every missing local action.
@@ -1388,6 +1420,8 @@ production fallback to sandbox credentials or localhost.
 | Privacy and media | Retention/legal holds, private asset access, scanning and deletion procedure | Privacy / security owner |
 | Disaster cutover | Old-writer fencing, callback handoff, restored-session rejection and controlled reopening | Incident commander |
 | Handover | Account ownership, support coverage, service costs and signed operating inventory | Store owner |
+
+These are environment acceptance inputs, not alternatives to the engineering architecture. Keep each record linked to its EXT-01–09 dependency, accountable named individual, verified capability, evidence, acceptance deadline and next action. Hosting/vendor/region and budget selection must establish Next.js runtime compatibility, static SPA routing, durable worker support, network/session behavior, data residency, backup/recovery capability and account ownership before provisioning. Select monitoring access/retention and recovery objectives against measured operator needs; do not populate arbitrary numbers or legal claims to close a register.
 
 Maintain environment-specific records in the protected operating inventory. Verify them at M6/M7 and transfer them at M8.
 

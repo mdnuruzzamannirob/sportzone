@@ -71,7 +71,7 @@ SportZone uses a **black-and-white foundation with a restrained blue brand accen
 
 **Implementation ownership:** Keep layout/composition in routes, repeated UI defaults in app-owned `components/ui/`, feature-specific components with their feature, pure shared behavior in `shared/` and cross-app design values in `styles/`. Avoid speculative abstractions, a shared UI package and additional component libraries. Remove superseded code/styles as components migrate.
 
-**20 October 2026 placement decision:** Architecture §§4–5 specify thin route composition, shells/navigation in `components/layout/`, feature-owned views/forms and retained reusable commerce/management compositions. Target route groups organize layouts without changing URL or access rules. Existing current-shell/component links below remain current implementation references until P02-012/P02-013 migrate them. This organization change preserves HeroUI v3, semantic tokens, Appearance behavior and all responsive/accessibility requirements; each move needs affected browser verification.
+**Component placement:** Architecture §§4–5 specify thin route composition, shells/navigation in `components/layout/`, feature-owned views/forms and reusable commerce/management compositions. Route groups organize layouts without changing URL or access rules. Current-shell/component links below remain implementation references until P02-012/P02-013 migrate them. Preserve HeroUI v3, semantic tokens, Appearance behavior and responsive/accessibility requirements; moves require affected browser verification.
 
 ### 2.2 Light and dark color system
 

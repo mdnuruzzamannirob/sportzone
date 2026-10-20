@@ -118,7 +118,7 @@ Public category and product pages use Next.js server rendering or controlled rev
 
 ## 4. Project structure
 
-The project owner selected the structure below on 20 October 2026. It is the **target for incremental refactoring**, not a claim that these paths already exist. Existing runtime paths, scripts and accepted evidence remain valid until their owning refactor task migrates and verifies them. Keep Next.js, Vite, Express, MongoDB/Mongoose, HeroUI v3 and npm workspaces. This decision introduces no database migration, new public API or release-scope change.
+The following structure defines the target organization for incremental refactoring. Existing paths remain supported until migrated and verified under Implementation Plan §3.6. Source organization changes preserve database schemas, public contracts and release scope; task evidence distinguishes target design from implemented behavior.
 
 ```text
 sportzone/
@@ -190,6 +190,14 @@ Use kebab-case basenames and dot-separated backend responsibilities: `product.se
 `components/ui/` contains app-owned HeroUI defaults and navigation adapters; `components/layout/` contains shells/navigation. Storefront `components/commerce/` and admin `components/management/` retain genuinely reusable presentation compositions. A feature-only product card, order form or filter lives in its feature; do not relocate reusable primitives merely to fill a template. Do not add a second `layouts/` tree or an ambiguous `components/shared/` bucket. Root hooks/types/utilities contain only actual cross-feature code. Existing pure root `shared/` utilities are retained, without adding a shared UI or backend-runtime package.
 
 Folders and files are created when a feature needs them, not as empty scaffolding. Tests stay outside production `src/` in each workspace's `tests/`; organize by feature under unit/integration/helpers as applicable and update runner globs with moves.
+
+### 4.2 Monorepo and dependency management
+
+Use npm workspaces with the existing three root application directories and one root `package-lock.json`. Declare runtime dependencies in the consuming workspace, repository/cross-app tools at the root, and do not rely on incidental hoisting to supply undeclared imports. Install from the root using the recorded Node/npm versions and locked dependencies. Keep `.nvmrc`, `packageManager`, engines and CI toolchain synchronized; upgrades are separate compatible, tested changes.
+
+Use the existing task inventory and Node orchestration scripts. Additional build orchestrators, remote task caches, an `apps/` relocation and publishable shared packages are not part of the initial architecture. Reconsider task caching only against measured repeated-build cost, invalidation requirements and operational ownership. Pure shared utilities and styles do not grant frontend access to backend runtime code. Enforce import direction in automated repository checks during tooling implementation.
+
+Development orchestration must start the two UIs, backend compiler/watch process and API with coordinated termination and visible failures. Retain the isolated replica-set database tool. Optional local containers supplement this setup; they must not replace transaction-capable fixtures with standalone MongoDB. Commands are documented as executable only after their implementing task provides them.
 
 ---
 
@@ -314,7 +322,7 @@ Create/edit pages reuse the feature form. Server DTOs, editable form values and 
 | Appearance | Existing browser-local preference and shared semantic styles |
 | Validation | Existing backend Zod; feature-owned frontend Zod for complex forms/filter inputs |
 
-TanStack Query and frontend Zod are target dependencies, **not installed by this documentation change**. Add compatible pinned dependencies/lockfile and real checks in the implementing task. Do not mandate another form library or global state store. Clear private query caches on logout, identity change and expired-session resolution; do not persist them in browser storage. Configure bounded read retries excluding auth/validation failures, explicit invalidation and no automatic financial-mutation retries. HTTP no-store/private policy still applies independently of in-memory query caching. Idempotency/If-Match and uncertain-result recovery remain API-owned contracts. Server-only and client-only modules must not be accidentally combined in barrel exports.
+Introduce TanStack Query and frontend Zod with their consuming API/form features, using compatible pinned dependencies and relevant verification. No additional form library or global state store is required. Clear private query caches on logout, identity change and expired-session resolution; do not persist them in browser storage. Configure bounded read retries excluding auth/validation failures, explicit invalidation and no automatic financial-mutation retries. HTTP no-store/private policy still applies independently of in-memory query caching. Idempotency/If-Match and uncertain-result recovery remain API-owned contracts. Server-only and client-only modules must not be accidentally combined in barrel exports. Installed versions and implementation status are recorded by manifests and task evidence.
 
 ---
 
@@ -765,6 +773,8 @@ Run lint, type checks, tests, and application builds before deployment. Apply an
 | Application model | Separate Next.js storefront and React + Vite admin |
 | Backend model | One modular Express API; server-authoritative business rules |
 | Repository | npm workspaces monorepo; independent application builds |
+| Task orchestration | Existing Node runner and shared CI inventory; independent CI jobs with a fail-closed aggregate result |
+| Source control | Protected main, short task branches, reviewed squash merges; operational enforcement in Operations §5.6 |
 | Source organization | Feature-based UIs; concrete backend modules with model/validation/service/controller/routes/types naming; staged refactor under Implementation Plan §3.6 |
 | Client server state | TanStack Query for interactive server data; Server Components for public rendering; feature-owned Zod inputs |
 | Database | MongoDB + Mongoose with atomic writes and transactions where necessary |
@@ -777,6 +787,21 @@ Run lint, type checks, tests, and application builds before deployment. Apply an
 | Media and messaging | Cloudinary and transactional email through backend adapters |
 | Delivery | Admin-managed zones/charges and manual fulfillment updates |
 | Deployment | Next.js runtime, static admin hosting, Express service, transactional MongoDB deployment |
+
+### 14.1 Engineering decision rationale
+
+| Decision | Rationale and implementation boundary |
+| --- | --- |
+| Retain npm workspaces and root layout | Three applications already have working locked builds; avoid migration work without a demonstrated build/dependency benefit |
+| Keep one modular backend and MongoDB | Reuse verified session/transaction foundations and preserve domain invariants; no independent scaling requirement justifies service extraction |
+| Separate feature ownership from reusable presentation | Keep change locality while preserving tested HeroUI, commerce and management primitives |
+| Single canonical model registration | Users and variant counters have shared storage but restricted write capabilities; duplicate schema definitions would permit drift |
+| One check inventory for local and hosted CI | Prevent YAML and local-runner checks from diverging; cross-app browser checks require explicit build dependencies |
+| Explicit API contracts plus executable validators/tests | API.md remains the HTTP authority; any later OpenAPI representation must be derived/reconciled rather than independently handwritten |
+| Immutable release artifacts and separate worker process | Trace deployed behavior to source/configuration and recover jobs without inventing a second business API |
+| Managed hosting and database capabilities | Reduce infrastructure administration; provider/region selection must satisfy verified runtime, backup and access requirements under Operations, not assumptions about a vendor |
+
+GitHub Actions implements CI; Operations §5.5 specifies topology, caching and supply-chain controls, and Testing §15 specifies evidence and acceptance. Keep the current single-job workflow supported until its replacement is verified. Hosting accounts, budget, recovery objectives and provider activation are environment prerequisites with named roles and evidence requirements, not unresolved application-architecture alternatives.
 
 **Document ownership:** PRD owns product rules; Design owns UI behavior; Architecture owns component, security, and consistency decisions. `DATABASE.md` and `API.md` own detailed data and HTTP contracts. `TESTING.md` owns verification procedures; `OPERATIONS.md` owns deployment and operating procedures. Implement these contracts with each feature slice and verify them against code and test evidence. Root README and AGENTS own setup/navigation and agent execution instructions.
 
