@@ -1,0 +1,43 @@
+name: CI scope
+on:
+  workflow_call:
+    inputs:
+      scope:
+        required: true
+        type: string
+      prepare:
+        default: false
+        type: boolean
+permissions:
+  contents: read
+jobs:
+  check:
+    name: ${{ inputs.scope }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: ./.github/actions/ci-setup
+      - name: Install browser audit engines
+        if: ${{ inputs.scope == 'browser' }}
+        run: npx --no-install playwright install --with-deps chromium firefox webkit
+      - name: Run inventory scope
+        env:
+          CI_SCOPE: ${{ inputs.scope }}
+          CI_PREPARE: ${{ inputs.prepare }}
+        run: |
+          if [ "$CI_PREPARE" = "true" ]; then
+            npm run ci -- --scope="$CI_SCOPE" --prepare
+          else
+            npm run ci -- --scope="$CI_SCOPE"
+          fi
+      - name: Preserve scope report and diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ci-${{ inputs.scope }}-${{ github.run_attempt }}
+          path: test-results/
+          if-no-files-found: error

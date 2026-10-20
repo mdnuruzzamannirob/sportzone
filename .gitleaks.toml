@@ -1,0 +1,8 @@
+title = "SportZone secret scanning"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Generated dependencies, builds, caches and test reports; source and history remain scanned"
+paths = ['''(^|/)(node_modules|\.next|dist|coverage|test-results|\.cache|\.git)/''']

@@ -105,7 +105,7 @@ The register contains 178 tasks across twelve phases, including seven engineerin
 
 | Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |   Done | Deferred |
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
-| 01 — Requirements Finalization and Planning   |      17 |           2 |     0 |           0 |       0 |         1 |     14 |        0 |
+| 01 — Requirements Finalization and Planning   |      17 |           1 |     0 |           0 |       0 |         2 |     14 |        0 |
 | 02 — UI/UX Design                             |      13 |           2 |     0 |           0 |       0 |         0 |     11 |        0 |
 | 03 — Authentication and Core Backend          |      20 |           6 |     0 |           0 |       0 |         0 |     14 |        0 |
 | 04 — Product Catalog and Inventory            |      15 |          15 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -117,7 +117,7 @@ The register contains 178 tasks across twelve phases, including seven engineerin
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **178** |     **138** | **0** |       **0** |   **0** |     **1** | **39** |    **0** |
+| **Total**                                     | **178** |     **137** | **0** |       **0** |   **0** |     **2** | **39** |    **0** |
 
 ## 4. Milestone tracker
 
@@ -279,12 +279,12 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Evidence:** [Structure decision and documentation verification](./evidence/P01-015-structure-decision.md). Implementation tasks below remain Not Started.
 
 - [ ] **P01-016 — Implement inventory-driven CI jobs and required-result governance**\
-  **Status:** `Not Started` · **Area:** CI/repository · **Owner:** Codex\
+  **Status:** `In Review` · **Area:** CI/repository · **Owner:** Codex\
   **Sources:** Architecture §§4.2,14; Operations §§5.5–5.6; Testing §15\
   **Depends on:** `P01-015`, `P01-010`\
   **Deliverable:** Extend the shared inventory/runner for repository and cross-app ownership; split hosted workspace/browser jobs, retain equivalent local checks, sanitize reports and implement explicit aggregate status and dependency/security review. Document and verify required branch checks without claiming unavailable remote settings.\
   **Acceptance:** All existing checks/cases retained, browser build dependencies correct, failure/cancel/skip/missing-report tests fail closed, locked installs and action/secret controls preserved; actual hosted run and repository-settings evidence before acceptance.\
-  **Evidence:** Not Run; current single-job workflow remains supported.
+  **Evidence:** [Inventory, aggregate, security and full local pipeline verification](./evidence/P01-016-ci-governance.md). All 22 configured checks, 559 unit/component/tooling cases, 260 real replica-set integration cases and 30 browser cases passed. Hosted run and branch-protection verification remain Not Run because GitHub CLI is unauthenticated; no remote mutation or acceptance is claimed.
 
 - [ ] **P01-017 — Establish coordinated development commands and source-quality guards**\
   **Status:** `Not Started` · **Area:** Developer tooling · **Owner:** Codex\
@@ -1802,6 +1802,8 @@ Record task execution, material blockers, acceptance and milestone decisions her
 **20 October 2026 — Selected structure and staged refactor:** The project owner requested documentation updates to the agreed architecture before gradually refactoring applications. Added P01-015 (In Review) and P02-012–013/P03-019–020 (Not Started); register 171 → 176 tasks, accepted history retained. [Decision/evidence](./evidence/P01-015-structure-decision.md). Next action: review documentation, then take one refactor slice; this entry accepts no implementation or milestone.
 
 **20 October 2026 — Engineering foundation reconciliation:** Expanded P01-015 to cover monorepo, CI, source-control/release and operational constraints; added P01-016/P01-017 as Not Started (176 → 178 tasks). Documentation remains In Review; all accepted statuses retained. Implementation starts with verified tooling or a bounded refactor under Implementation Plan §3.6.
+
+**20 October 2026 — P01-016:** Not Started → In Progress → In Review. Implemented shared scope inventory/runner, reusable hosted jobs, fail-closed current-attempt aggregation and supply-chain controls. Final local run passed all 22 checks and 849 cases after resolving the Markdown contract parser and isolated host WebKit runtime prerequisites. [Verification](./evidence/P01-016-ci-governance.md). Hosted run/protected-main verification and independent acceptance remain pending because GitHub CLI is unauthenticated; no milestone accepted.
 
 When execution starts, update the task status and attach evidence. Change a checkbox to `[x]` only after acceptance.
 Preserve IDs and dependency references; update phase totals and record milestone acceptance separately.

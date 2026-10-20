@@ -6,6 +6,11 @@
 
 This changelog tracks the documentation baseline. Application releases are recorded separately when software is released.
 
+## Development changes — 20 October 2026
+
+- Implemented P01-016 inventory-driven local/hosted CI scopes, shared locked setup, root browser ownership, current-attempt report aggregation and failure/stale-report guards; added checksum-pinned secret scanning, dependency advisory policy and Dependabot configuration. Hosted/settings acceptance remains pending. [Implementation evidence](docs/evidence/P01-016-ci-governance.md).
+- Corrected identity-contract test parsing to tolerate Markdown table alignment while retaining the exact 26-operation assertion; application authorization and public API behavior are unchanged.
+
 ## Engineering documentation revision — 20 October 2026
 
 - Defined feature-based Next.js/Vite UIs and concrete Express modular-monolith modules with entity-prefixed model/validation/service/controller/routes/types files; retained MongoDB/Mongoose and existing security/financial contracts.

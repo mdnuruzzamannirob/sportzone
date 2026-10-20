@@ -120,7 +120,7 @@ They are presentation foundations; catalog/cart/checkout routes retain their sep
 
 Admin management foundations live in `admin/src/components/management/`; see the [component guide](docs/UI_COMPONENTS.md#admin-management-compositions) for server-owned list data, upload constraints and guarded-action integration.
 
-Browser foundation audits use Playwright and axe. After building both apps, run `npx playwright install --with-deps chromium firefox webkit`, then `npm run test:ui`. The full CI runs the same audit through admin's `test:a11y` inventory entry. Tests reserve loopback ports 3100, 5273 and 5180; the component fixture is never included in application builds. Reports and screenshots are generated under `test-results/`. See [audit scope and environment notes](docs/evidence/P02-011-accessibility.md).
+Browser foundation audits use Playwright and axe. After building both apps, run `npx playwright install --with-deps chromium firefox webkit`, then `npm run test:ui`. The root browser inventory runs the same audit; admin's `test:a11y` remains a compatibility alias. Tests reserve loopback ports 3100, 5273 and 5180; the component fixture is never included in application builds. Reports and screenshots are generated under `test-results/`. See [audit scope and environment notes](docs/evidence/P02-011-accessibility.md).
 
 Current root checks:
 
@@ -235,11 +235,27 @@ no business views, administrator identity or logout success are fabricated. The 
 with a polite loading fallback. Backend session integration remains in Phase 03.
 
 `.github/workflows/ci.yml` runs on pushes, pull requests and manual dispatch with read-only repository permissions and
-commit-pinned actions. It uses `.nvmrc`, npm 11.19.0, a locked install, `npm run ci` and a summary artifact; no deployment
-or merchant secrets are required. A hosted run requires the repository to be connected and pushed to GitHub.
+commit-pinned actions. Six inventory scopes run repository, storefront, admin, backend, browser and supply-chain checks.
+Workspace jobs run independently after repository checks; browser jobs wait for both UI jobs and rebuild them locally.
+`CI required result` checks every job and current-attempt report, failing on missing/failed/cancelled/skipped results,
+dirty hosted checkouts and mismatched revision/lock/inventory/runtime/run identities. Branch protection must require
+this check after an observed hosted run; local YAML does not configure remote repository settings.
 
-`ci-workspaces.json` tracks app setup against P02-001, P02-002 and P03-001. While a workspace contains only its manifest,
-CI reports **Not Configured** for app checks. Adding source, scripts or dependencies requires switching it to `active`
+`npm run ci` runs the same inventory locally. Select a scope with `npm run ci -- --scope=backend`, or use
+`npm run ci -- --scope=browser --prepare` to build both UIs before the audit. `npm run ci:workflow` checks workflow
+topology against the inventory. Scope reports are `test-results/ci/<scope>.json`; full/aggregate output is
+`test-results/ci.json`. Re-run **all jobs** on hosted retries: artifact/report identities are attempt-scoped.
+
+`npm run test:security` runs npm advisories and Gitleaks 8.30.1 against history and working files. Linux x64, Git,
+tar and network access are required. The official release archive is checksum-verified and cached in ignored
+`.cache/tools/`, then freshly extracted per invocation. Reports exclude matched secrets and author/provider payloads.
+High/critical advisories fail unless covered by reviewed, specific, expiring non-applicability records in
+`ci-security-exceptions.json` (initially empty). Scanner/registry errors fail. Dependabot proposes reviewed npm/Actions
+updates; automatic merge and force upgrades are not configured. Hosted verification still requires GitHub access.
+
+`ci-workspaces.json` version 2 records all six scopes, dependencies and check lists. App entries retain setup ownership
+against P02-001, P02-002 and P03-001. Manifest-only apps report **Not Configured** and fail required execution.
+Adding source, scripts or dependencies requires switching the app to `active`
 and supplying real `lint`, `typecheck`, `test:unit` and `build` scripts. All listed checks run and any missing/failed script
 fails CI. Add integration/contract/security/E2E/coverage suites to the inventory as their capabilities are implemented;
 backend financial slices require the real replica-set integration and contract suites before acceptance.

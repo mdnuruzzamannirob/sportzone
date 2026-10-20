@@ -1,41 +1,81 @@
 {
-  "storefront": {
-    "state": "active",
-    "ownerTask": "P02-001",
-    "checks": [
-      "lint",
-      "typecheck",
-      "test:unit",
-      "build",
-      "test:smoke"
-    ],
-    "uiLibrary": "HeroUI v3"
-  },
-  "admin": {
-    "state": "active",
-    "ownerTask": "P02-002",
-    "checks": [
-      "lint",
-      "typecheck",
-      "test:unit",
-      "build",
-      "test:smoke",
-      "test:a11y"
-    ],
-    "uiLibrary": "HeroUI v3"
-  },
-  "backend": {
-    "state": "active",
-    "ownerTask": "P03-001",
-    "checks": [
-      "lint",
-      "typecheck",
-      "test:unit",
-      "build",
-      "test:smoke",
-      "test:integration"
-    ],
-    "phoneValidation": "libphonenumber-js/max 1.13.15; P03-008 unit/integration checks",
-    "notificationWorker": "P03-009–012 registration, customer-reset, email-change and administrator-reset delivery; explicit migration/worker commands, unit and real MongoDB/HTTP checks"
+  "version": 2,
+  "scopes": {
+    "repository": {
+      "ownerTask": "P01-016",
+      "needs": [],
+      "checks": [
+        "workspaces:check",
+        "lint",
+        "test:unit",
+        "ci:workflow"
+      ]
+    },
+    "storefront": {
+      "state": "active",
+      "ownerTask": "P02-001",
+      "checks": [
+        "lint",
+        "typecheck",
+        "test:unit",
+        "build",
+        "test:smoke"
+      ],
+      "uiLibrary": "HeroUI v3",
+      "needs": [
+        "repository"
+      ]
+    },
+    "admin": {
+      "state": "active",
+      "ownerTask": "P02-002",
+      "checks": [
+        "lint",
+        "typecheck",
+        "test:unit",
+        "build",
+        "test:smoke"
+      ],
+      "uiLibrary": "HeroUI v3",
+      "needs": [
+        "repository"
+      ]
+    },
+    "backend": {
+      "state": "active",
+      "ownerTask": "P03-001",
+      "checks": [
+        "lint",
+        "typecheck",
+        "test:unit",
+        "build",
+        "test:smoke",
+        "test:integration"
+      ],
+      "phoneValidation": "libphonenumber-js/max 1.13.15; P03-008 unit/integration checks",
+      "notificationWorker": "P03-009–012 registration, customer-reset, email-change and administrator-reset delivery; explicit migration/worker commands, unit and real MongoDB/HTTP checks",
+      "needs": [
+        "repository"
+      ]
+    },
+    "browser": {
+      "ownerTask": "P01-016",
+      "needs": [
+        "storefront",
+        "admin"
+      ],
+      "checks": [
+        "test:ui"
+      ]
+    },
+    "supply-chain": {
+      "ownerTask": "P01-016",
+      "needs": [
+        "repository"
+      ],
+      "checks": [
+        "test:security"
+      ]
+    }
   }
 }

@@ -112,7 +112,7 @@ describe('identity request/response contracts', () => {
       spec.indexOf('### 9.1 Authentication'),
       spec.indexOf('**Identity input registry**'),
     )
-    const declared = [...table.matchAll(/\| `(GET|POST|PATCH|DELETE)` \| `([^`]+)`/g)]
+    const declared = [...table.matchAll(/^\|[ \t]+`(GET|POST|PATCH|DELETE)`[ \t]+\|[ \t]+`([^`]+)`/gm)]
       .map((m) => `${m[1]} ${m[2]}`)
       .sort()
     expect(

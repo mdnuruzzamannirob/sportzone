@@ -18,6 +18,8 @@
     "lint": "node scripts/check-repository.mjs",
     "test:unit": "node --test --test-isolation=none tests/ci.test.mjs",
     "ci": "node scripts/ci.mjs",
+    "test:security": "node scripts/security.mjs",
+    "ci:workflow": "node scripts/ci-workflow.mjs",
     "test:ui": "tsc --project tests/ui/tsconfig.json && playwright test --config tests/ui/playwright.config.mts"
   },
   "devDependencies": {

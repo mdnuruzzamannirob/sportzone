@@ -257,10 +257,13 @@ recovery and load checks have separately approved commands/workflows, not mandat
 | --- | --- |
 | `npm run workspaces:check` | Three local workspace links; storefront, admin and backend active |
 | `npm run lint` | Repository JavaScript syntax, JSON, whitespace, Markdown structure/links and targeted credential checks |
-| `npm run test:unit` | Twelve repository/CI guard regressions; no application tests are implied |
-| `npm run ci` | Root checks plus every activated workspace check, including the cross-app browser audit through admin `test:a11y`; machine-readable summary includes Not Configured app states |
+| `npm run test:unit` | Repository/CI guard, scope/aggregate/security regressions; intentional fixture failures assert governance rather than application acceptance |
+| `npm run ci` | Same six-scope version-2 inventory as hosted CI; all workspace checks and root browser/security scopes; unconfigured required scopes fail |
+| `npm run ci -- --scope=browser --prepare` | Build both UIs in inventory order, then run browser audit; preparation recorded separately |
+| `npm run ci:workflow` | Committed workflow topology compared with inventory dependencies and required-result behavior |
+| `npm run test:security` | Pinned/checksummed Gitleaks working-tree/history scan and npm advisories; sanitized reports and reviewed expiring advisory exceptions |
 | `npm run test:ui` | Type-check isolated fixture/config/tests; Playwright Chromium/Firefox/WebKit foundation reflow, axe, keyboard, theme and reduced-motion checks; requires both production builds and installed browser engines |
-| `npm run typecheck`, `test:integration`, `test:contract`, `test:e2e`, `test:security`, `test:coverage`, `build` | Not yet configured at root; implement with the owning tooling/slices before accepting the corresponding capability |
+| `npm run typecheck`, `test:integration`, `test:contract`, `test:e2e`, `test:coverage`, `build` | Not yet configured at root; implement with the owning tooling/slices before accepting the corresponding capability |
 
 Storefront workspace commands now implement `lint` (Biome), `typecheck` (Next route types plus TypeScript), `test:unit`
 (Vitest layout rendering), `build` (Next production Webpack) and `test:smoke` (real production HTTP routes/CSS/cache/404
@@ -873,7 +876,7 @@ flowchart LR
     Result --> Review[Eligible for staging review]
 ```
 
-Operations §5.5 owns pipeline execution/caching/security and §5.6 owns promotion. The current single-job runner is the transitional implementation; P01-016 establishes job separation with equivalent inventory coverage. Run the full required suite initially. Dependency-aware subsets require separate verification that contract/shared/lockfile changes and skipped/missing checks cannot bypass acceptance. Real-API browser journeys add their backend/runtime prerequisite when implemented. This graph concerns CI evidence, not merchant or production acceptance.
+Operations §5.5 owns pipeline execution/caching/security and §5.6 owns promotion. P01-016 implements six inventory scopes and an explicit required-result job; local execution follows the same checks sequentially. Run the full required suite for every hosted trigger; change-based subsets remain unimplemented. Real-API browser journeys add their backend/runtime prerequisite when implemented. This graph concerns CI evidence, not merchant or production acceptance. See [P01-016 evidence](./evidence/P01-016-ci-governance.md) for current results and remaining hosted gates.
 
 ### 15.2 Trigger and quality matrix
 
