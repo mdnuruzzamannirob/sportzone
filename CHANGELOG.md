@@ -8,6 +8,14 @@ This changelog tracks the documentation baseline. Application releases are recor
 
 ## Development changes — 20 October 2026
 
+- Clarified the next execution step as P03-019 backend composition refactoring, followed by module and frontend refactors; hosted CI/settings closure remains separate and does not restart accepted tooling work or waive release gates.
+
+- Reclassified P01-016 from In Review to Blocked after repeated confirmation that authenticated hosted CI/settings verification is unavailable; recorded the repository-owner recovery action. Current totals: 41 Done, 0 In Review, 1 Blocked.
+
+- Recorded owner acceptance of P01-015 after document review; updated totals to 41 Done and 1 In Review. P01-016 closure review found no hosted CI run for current HEAD and unauthenticated branch-protection access, so its required verification remains open.
+
+- Recorded project-owner acceptance of P01-017; marked the task Done and synchronized its checkbox, progress totals and acceptance evidence. P01-015/P01-016 and milestone statuses are unchanged.
+
 - Implemented P01-017 root development coordination, a single backend compiler/watch loop and graceful API restarts, bounded owned-process cleanup, parsed import boundaries and scoped Biome formatting; reused existing pinned tool versions and added focused process/boundary regressions. Application business behavior and provider activation are unchanged. [Evidence](docs/evidence/P01-017-development-tooling.md).
 
 - Simplified CI to one job and one locked install, reusing frontend builds for browser checks; removed reusable/composite workflow layers, workflow generation, cross-job aggregation and their obsolete tests. Defined change-based local verification to avoid repeated full-suite runs; application and security coverage remain required. P01-016 remains In Review pending hosted/settings acceptance.

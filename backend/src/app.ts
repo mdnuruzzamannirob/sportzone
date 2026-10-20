@@ -1,10 +1,10 @@
-import { randomUUID } from 'node:crypto'
 import express, { type Router } from 'express'
+import { randomUUID } from 'node:crypto'
 import { handleError } from './middleware/errors.js'
-import { ApiError } from './shared/errors.js'
-import type { Logger } from './observability/logger.js'
 import type { HealthDependencies } from './modules/health/service.js'
+import type { Logger } from './observability/logger.js'
 import { createApiRouter } from './routes.js'
+import { ApiError } from './shared/errors.js'
 
 export function createApp({
   apiRouter,
@@ -39,7 +39,8 @@ export function createApp({
         if (recorded) return
         recorded = true
         // Only the registered pattern, never originalUrl/baseUrl/params/query/header/body.
-        const route = typeof req.route?.path === 'string' ? req.route.path : 'unmatched'
+        const route =
+          typeof req.route?.path === 'string' ? req.route.path : 'unmatched'
         logger.request({
           requestId: res.locals.requestId,
           method: req.method,
@@ -53,7 +54,11 @@ export function createApp({
       res.once('close', record)
       next()
     })
-  const json = express.json({ limit: jsonBodyLimitBytes, strict: true, inflate: false })
+  const json = express.json({
+    limit: jsonBodyLimitBytes,
+    strict: true,
+    inflate: false,
+  })
   app.use((req, res, next) => {
     const hasBody =
       req.headers['transfer-encoding'] !== undefined ||

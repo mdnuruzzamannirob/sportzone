@@ -38,7 +38,11 @@ try {
         signal: child.signal,
         durationMs: Date.now() - started,
       })
-      if (!passed) throw new Error(`Configured CI command failed: ${command}`)
+      if (!passed) {
+        if (process.env.GITHUB_ACTIONS === 'true')
+          console.log(`::error title=CI command failed::${command}`)
+        throw new Error(`Configured CI command failed: ${command}`)
+      }
     }
   }
   report.result = 'Passed'

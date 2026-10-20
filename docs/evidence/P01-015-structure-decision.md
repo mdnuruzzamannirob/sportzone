@@ -1,6 +1,6 @@
 # P01-015 — Engineering baseline verification
 
-Date: 20 October 2026 (Asia/Dhaka). Status: **In Review**. Executor: Codex. Independent acceptance: pending.
+Date: 20 October 2026 (Asia/Dhaka). Status: **Done**. Executor: Codex. Accepted by the project owner on 20 October 2026.
 
 ## Scope and decision status
 
@@ -23,7 +23,7 @@ The baseline retains Next.js, React/Vite, Express, MongoDB/Mongoose, HeroUI and 
 
 Requirements are placed in their owning numbered sections; conversational rationale and repeated introductory supplements have been removed. Historical task/evidence records remain historical. PRD product scope, financial rules and existing acceptance gates are unchanged.
 
-## Implementation boundary
+## Original implementation boundary (historical)
 
 - P01-016: CI inventory/jobs, cross-app ownership, reports and required-result governance.
 - P01-017: coordinated development processes, import-boundary guards and source-format checks.
@@ -51,7 +51,7 @@ Official sources accessed 20 October 2026:
 
 The repository-specific choices are engineering judgments, not vendor certifications or measured performance claims. No load benchmark, hosting quote, provider transaction or deployed acceptance check was performed.
 
-## Verification record
+## Original verification record (historical)
 
 The initial structure revision passed repository guards (258 files, 1,101 local links), whitespace checks and a 176-task register audit. Final engineering reconciliation extends the staged documentation; its results below supersede those counts for the current revision.
 
@@ -66,3 +66,17 @@ The initial structure revision passed repository guards (258 files, 1,101 local 
 ## Acceptance and remaining work
 
 Independent review covers document consistency and verification evidence. Existing accepted task statuses and milestone records are retained; this revision does not self-approve them. Operational inputs remain tracked in their existing readiness register, with no fabricated credentials, resource selections, numerical recovery guarantees or provider activation.
+
+## Owner acceptance
+
+Date: 20 October 2026. Reviewer/approver: project owner. Executor: Codex.
+The owner authorized checking and closing the remaining In Review tasks. The closure review reconciled
+Architecture §§4–6,14, Implementation Plan §3.6, Operations §§5.2/5.5, Testing §15, README and the task
+register. Current owning documents specify the simplified single-job CI and implemented P01-017 tooling;
+the original unimplemented-task and multi-job statements above describe their historical revision.
+Technology choices, MongoDB/Mongoose persistence, product/security invariants and external launch gates
+remain unchanged. Decision: accept P01-015; In Review → Done. P01-016 remote verification is still required;
+no implementation, milestone, merchant or deployment gate is accepted through this documentation decision.
+
+Verification for closure: repository Markdown/link checks, cross-document reference review and whitespace
+review only. Application/runtime suites are Not Run for this documentation-only acceptance update.

@@ -1,6 +1,6 @@
 # P01-017 — Development tooling verification
 
-Date: 20 October 2026 (Asia/Dhaka). Executor: Codex. Status: In Review; independent acceptance pending.
+Date: 20 October 2026 (Asia/Dhaka). Executor: Codex. Status: Done; accepted by the project owner on 20 October 2026.
 
 ## Scope and implementation
 
@@ -61,7 +61,7 @@ Node/Biome implementation without another orchestrator dependency.
 
 ## Acceptance boundary
 
-Implementation and focused local verification are complete for review. Independent task acceptance,
+Implementation and focused local verification were submitted for review and accepted by the project owner.
 P01-015 documentation acceptance, P01-016 hosted/settings acceptance and milestones remain separate.
 Recovery is reverting these tooling/configuration changes; no application data migration is involved.
 
@@ -88,3 +88,11 @@ node --test --test-isolation=none --test-name-pattern='TOOL-10' tests/tooling.te
 
 Next.js generated a local `storefront/AGENTS.md` during development startup. It is ignored as a generated
 local artifact; repository policy remains in root AGENTS.md. No user-authored source or instructions were removed.
+
+## Owner acceptance
+
+On 20 October 2026, the project owner replied “so do it” to the explicit request to accept P01-017 and
+update its status, checkbox, counts and acceptance log. Reviewer/approver: project owner. Executor: Codex.
+Decision: accept P01-017; In Review → Done. The previously recorded verification supports this task
+acceptance; no new runtime test or milestone/provider/hosted CI acceptance is claimed. P01-015 and
+P01-016 remain In Review under their own acceptance requirements.

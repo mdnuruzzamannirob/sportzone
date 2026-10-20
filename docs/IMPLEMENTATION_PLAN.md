@@ -146,6 +146,13 @@ Architecture §§4–6,14 define application organization and engineering decisi
 | 6 | Existing feature tasks | Integrate customer/admin auth, then admin catalog → public catalog → inventory/cart → quote/COD order/admin processing; honor declared prerequisites |
 | 7 | Existing P07/P08 tasks | Verified online payment/reconciliation and after-sales; required channels and launch gates unchanged |
 
+**Current execution priority:** Continue with P03-019, followed by P03-020 and the two frontend refactors,
+using the accepted P01-015 architecture and P01-017 tooling baseline. P01-016 hosted CI/settings closure
+is a separate follow-up; it is not a declared prerequisite of these refactor tasks in TASKS.md. Do not
+restart completed tooling work merely because remote verification is unavailable. This sequencing does
+not waive P01-016 acceptance, protected-main checks or release gates. Finish and review one refactor task
+before starting the next; use change-based checks under Testing §15.5.
+
 Do not start a bulk rename across all apps. For each slice, record current-to-target paths, preserve public URLs, error/DTO/session/CSRF contracts and collection/index identities, move/update imports and operational entry points together, then run the owning checks. Refactor tasks do not recreate already accepted foundations or mark dependent business features complete. Pre-existing accepted evidence is retained as historical evidence; new behavior/parity evidence accompanies refactored code.
 
 Initial current-to-target inventory (not executed):

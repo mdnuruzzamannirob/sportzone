@@ -24,7 +24,7 @@ import {
 const childEnv = { ...process.env }
 delete childEnv.NODE_TEST_CONTEXT
 const spawnSync = (command, args, options = {}) =>
-  spawn(command, args, { ...options, env: childEnv })
+  spawn(command, args, { ...options, env: { ...childEnv, ...options.env } })
 
 function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'sportzone-ci-'))
@@ -199,8 +199,10 @@ test('CI-11: configured failing command propagates to pipeline exit and report; 
   const child = spawnSync(process.execPath, ['scripts/ci.mjs'], {
     cwd: root,
     encoding: 'utf8',
+    env: { GITHUB_ACTIONS: 'true' },
   })
   assert.equal(child.status, 1)
+  assert.ok(child.stdout.includes('::error title=CI command failed::npm run lint'))
   assert.equal(
     child.stderr.includes('Cannot identify source revision'),
     false,

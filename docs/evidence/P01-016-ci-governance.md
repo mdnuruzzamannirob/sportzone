@@ -1,6 +1,6 @@
 # P01-016 — CI scope and required-result verification
 
-Date: 20 October 2026 (Asia/Dhaka). Status: **In Review**. Executor: Codex. Independent acceptance: pending.
+Date: 20 October 2026 (Asia/Dhaka). Status: **Blocked**. Executor: Codex. Owner closure authorization recorded; required remote verification unavailable.
 
 ## Historical implementation (superseded by simplification below)
 
@@ -62,4 +62,77 @@ Removing repeated setup and browser rebuilds reduces duplicated work; hosted ela
 
 ## Acceptance boundary
 
-Implementation was explicitly requested; P01-015 remains independently In Review rather than being silently accepted. No milestone is accepted by this work. Local verification does not satisfy hosted/settings acceptance. The remote handoff must run this exact revision on GitHub, verify `CI required result` and supply-chain/browser artifacts, configure/check protected-main requirements without dropping existing protection prematurely, and record reviewer approval. No deployment/merchant credentials are required by this CI.
+Implementation was explicitly requested; P01-015 was subsequently accepted independently on 20 October 2026. No milestone is accepted by this work. Local verification does not satisfy hosted/settings acceptance. The remote handoff must run this exact revision on GitHub, verify `CI required result` and supply-chain/browser artifacts, configure/check protected-main requirements without dropping existing protection prematurely, and record reviewer approval. No deployment/merchant credentials are required by this CI.
+
+## Closure review
+
+Date: 20 October 2026. Executor: Codex. The project owner requested checking and closing all remaining
+In Review tasks. The actual hosted-run and repository-settings requirements in TASKS/Operations still
+apply; this instruction does not supply missing execution evidence.
+
+- `gh auth status`: no authenticated GitHub host.
+- Unauthenticated workflow-run API: HTTP 200. Filtering by current committed HEAD
+  `420565d94da8c9c20ca734cd374029834857b952` returned `total_count: 0`.
+- The latest public [workflow run](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/39385495398)
+  completed with failure at a different commit; it is not acceptance evidence for current HEAD.
+- `GET /repos/mdnuruzzamannirob/sportzone/branches/main/protection`: HTTP 401, Requires authentication.
+  Protection settings were not inspected successfully or changed. The active local branch is refactor;
+  no local uncommitted changes were pushed or attributed to a hosted run.
+
+Result: P01-016 remains In Review. Required next evidence is a successful hosted run for the submitted
+revision and authenticated verification of required-check enforcement under Operations §5.5. Owner
+authorization is recorded, but missing verification is not represented as Passed. Existing local tests
+were not rerun merely to close status records. User changes to backend/src/app.ts and staged biome.json
+were preserved.
+
+### Follow-up inspection
+
+Public job metadata for run 39385495398 shows setup, locked installation and browser installation
+succeeded; `Run required checks` failed, and report upload succeeded. Public annotations report only
+exit code 1 and an upload-artifact Node 20 deprecation warning. The warning does not establish the
+failure cause. Detailed job-log access returned HTTP 403, `Must have admin rights to Repository`.
+`gh auth status` still reports no authenticated host. No speculative action upgrade, repeated full test
+run or remote mutation was performed. Authenticated log/settings access and a successful hosted run
+remain required before P01-016 can be accepted.
+
+## Current blocker status
+
+On 20 October 2026, another closure check confirmed that `gh auth status` still has no authenticated
+host and committed HEAD is unchanged. P01-016 moves from In Review to Blocked: this is an external
+verification prerequisite, not a missing owner approval. Accountable function: repository owner.
+Required recovery: authenticate repository access, inspect/fix the failed CI check, record successful
+hosted execution for the submitted revision, and verify protected-main required checks. Existing
+401/403 and public-run findings remain the evidence; no redundant full test run or remote mutation
+was performed. Done remains unavailable until the task acceptance requirements are satisfied.
+
+## Local revalidation and execution priority
+
+On 20 October 2026, the owner requested a fresh assessment of the CI portion, then clarified that the
+approved application refactors should take priority and remote review closure should be handled later.
+Implementation Plan §3.6 now states that P01-016 remote closure is not a prerequisite of P03-019.
+
+Before that clarification, a scoped local revalidation was started and subsequently completed:
+
+| Scope / command | Observed result |
+| --- | --- |
+| `npm run ci -- --scope=repository` | Passed — five commands, including 31 tooling cases |
+| `npm run lint --workspaces` | Passed — storefront, admin and backend |
+| `npm run ci -- --scope=storefront` | Passed — five commands; 114 unit/component cases, build and smoke |
+| `npm run ci -- --scope=admin` | Passed — five commands; 97 unit/component cases, build and smoke |
+| `npm run ci -- --scope=backend` | Passed — six commands; 314 unit cases and 260 isolated replica-set integration cases |
+| `npm run ci -- --scope=browser` | Passed — 30 cases across Chromium, Firefox and WebKit |
+| `npm run ci -- --scope=supply-chain` | Passed — configured secret/advisory checks |
+| Focused `CI-11` / `CI-12` after annotation change | Passed — failed commands emit their validated command name as a GitHub annotation and still stop execution |
+
+The 23 inventory commands were verified across scoped runs, not by repeating a full pipeline after
+each edit. Repository checks ran first; the remaining scopes each ran once. After the small annotation
+change only its two affected failure tests were rerun. Scope artifacts are in ignored
+`test-results/ci/<scope>.json`; native browser/database/security reports retain detailed results.
+Linux local configuration used `MONGOMS_DISTRO=ubuntu-24.04` and the previously documented temporary
+WebKit runtime wrapper. This is local evidence, not hosted CI or branch-protection acceptance.
+
+No workflow rewrite was necessary. The runner now uses GitHub's documented
+[error annotation command](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#setting-an-error-message)
+to identify future failed npm checks without exposing configuration values. The historical hosted failure
+cause remains unverified. Current priority is the P03-019 backend composition refactor; remote CI closure
+remains a separate follow-up under its existing acceptance requirements.

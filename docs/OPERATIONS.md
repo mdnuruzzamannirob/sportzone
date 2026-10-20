@@ -390,7 +390,9 @@ or cancelled job cannot satisfy the required successful check. Do not use `--if-
 or passing placeholders. Preserve application/browser/replica-set coverage when simplifying tooling.
 
 The runner records command outcomes, exit status and duration in `test-results/ci.json`; native suite reports
-retain detailed cases. Upload available sanitized reports even on failure. GitHub run metadata identifies the
+retain detailed cases. On GitHub Actions, a failed command also emits an error annotation containing its
+validated npm command name, so the failed check is visible without downloading logs. It does not publish
+configuration values or raw report payloads. Upload available sanitized reports even on failure. GitHub run metadata identifies the
 source revision and attempt; do not combine artifacts from different runs as acceptance evidence. Keep the
 required check name stable. Verify a successful hosted run and the protected-main rule before acceptance;
 local YAML does not configure remote settings. Record the operator and actual settings evidence.
