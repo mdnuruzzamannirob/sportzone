@@ -144,6 +144,11 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
 
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 01. **Associated gate:** M1. **Tasks:** 17.
 
+Current architecture reconciliation: [Phase 01 review and remaining closure evidence](./evidence/phase-01-reconciliation.md).
+Sixteen tasks retain their recorded acceptance; P01-016 remains Blocked pending authenticated
+hosted/settings evidence and subsequent owner acceptance. Application structure changes remain
+owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
+
 - [x] **P01-001 — Verify approved document baseline and paths**\
   **Status:** `Done` · **Area:** Planning · **Owner:** Codex\
   **Sources:** PRD §1; Architecture §4; Design §1\

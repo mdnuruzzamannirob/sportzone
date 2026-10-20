@@ -201,7 +201,11 @@ process.exitCode = await runDev(${JSON.stringify({ cwd: root, build: [process.ex
     for (const pid of pids()) if (running(pid)) process.kill(pid, 'SIGKILL')
     rmSync(root, { recursive: true, force: true })
   })
-  await waitFor(() => output.includes('first:'), 15000)
+  try {
+    await waitFor(() => output.includes('first:'), 15000)
+  } catch {
+    assert.fail(`Synthetic compiler/API fixture did not start:\n${output}`)
+  }
   assert.equal(pids().length, 1)
   put('backend/src/server.ts', source('second'))
   await waitFor(() => output.includes('second:'), 15000)

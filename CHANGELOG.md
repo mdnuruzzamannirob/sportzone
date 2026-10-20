@@ -8,6 +8,8 @@ This changelog tracks the documentation baseline. Application releases are recor
 
 ## Development changes — 20 October 2026
 
+- Reconciled all seventeen Phase 01 tasks with the revised architecture; preserved sixteen existing acceptances and the P01-016 remote-evidence blocker. Added synthetic tooling-fixture failure diagnostics and corrected API-only local environment-loading guidance. Owner acceptance remains pending for phase closure. [Review record](docs/evidence/phase-01-reconciliation.md).
+
 - Clarified the next execution step as P03-019 backend composition refactoring, followed by module and frontend refactors; hosted CI/settings closure remains separate and does not restart accepted tooling work or waive release gates.
 
 - Reclassified P01-016 from In Review to Blocked after repeated confirmation that authenticated hosted CI/settings verification is unavailable; recorded the repository-owner recovery action. Current totals: 41 Done, 0 In Review, 1 Blocked.

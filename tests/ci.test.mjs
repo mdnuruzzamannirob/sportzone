@@ -202,7 +202,10 @@ test('CI-11: configured failing command propagates to pipeline exit and report; 
     env: { GITHUB_ACTIONS: 'true' },
   })
   assert.equal(child.status, 1)
-  assert.ok(child.stdout.includes('::error title=CI command failed::npm run lint'))
+  assert.ok(
+    child.stdout.includes('::error title=CI command failed::npm run lint'),
+    JSON.stringify({ stdout: child.stdout, stderr: child.stderr }),
+  )
   assert.equal(
     child.stderr.includes('Cannot identify source revision'),
     false,
