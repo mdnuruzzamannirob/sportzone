@@ -197,7 +197,7 @@ Use npm workspaces with the existing three root application directories and one 
 
 Use the existing task inventory and Node orchestration scripts. Additional build orchestrators, remote task caches, an `apps/` relocation and publishable shared packages are not part of the initial architecture. Reconsider task caching only against measured repeated-build cost, invalidation requirements and operational ownership. Pure shared utilities and styles do not grant frontend access to backend runtime code. Enforce import direction in automated repository checks during tooling implementation.
 
-Development orchestration must start the two UIs, backend compiler/watch process and API with coordinated termination and visible failures. Retain the isolated replica-set database tool. Optional local containers supplement this setup; they must not replace transaction-capable fixtures with standalone MongoDB. Commands are documented as executable only after their implementing task provides them.
+Development orchestration must start the two UIs, backend compiler/watch process and API with coordinated termination and visible failures. Retain the isolated replica-set database tool. Optional local containers supplement this setup; they must not replace transaction-capable fixtures with standalone MongoDB. P01-017 provides `npm run dev` for this workflow on Linux/macOS/WSL; Operations §5.2 owns configuration and process-lifecycle details. The compiler retains the last successful API on compilation errors; an API runtime exit stops the coordinator. Verify actual readiness separately.
 
 ---
 

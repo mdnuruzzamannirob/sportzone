@@ -257,7 +257,9 @@ recovery and load checks have separately approved commands/workflows, not mandat
 | --- | --- |
 | `npm run workspaces:check` | Three local workspace links; storefront, admin and backend active |
 | `npm run lint` | Repository JavaScript syntax, JSON, whitespace, Markdown structure/links and targeted credential checks |
-| `npm run test:unit` | Repository guards, command failure propagation, scoped execution and security regressions; intentional fixture failures assert governance rather than application acceptance |
+| `npm run test:unit` | Repository guards, command failure propagation, scoped execution and security regressions; includes supervisor signal/failure/descendant-cleanup fixtures; intentional failures assert tooling behavior rather than application acceptance |
+| `npm run lint:boundaries` | TypeScript-parsed source imports: declared dependencies, workspace/shared isolation, private backend models and transitive client/server boundaries |
+| `npm run format:check` | Biome format check of the four-file P01-017 tooling baseline; legacy application formatting is outside this baseline |
 | `npm run ci` | Complete inventory once, using the same runner as the single hosted job; workspace builds precede browser checks |
 | `npm run ci -- --scope=browser` | Browser audit only; requires current storefront/admin production builds and installed browser engines |
 | `npm run test:security` | Pinned/checksummed Gitleaks working-tree/history scan and npm advisories; sanitized reports and reviewed expiring advisory exceptions |
@@ -895,7 +897,7 @@ full-suite results from the current tooling revision and pending hosted acceptan
 
 ### 15.4 Refactor regression and pipeline verification
 
-P02-012–013/P03-019–020 preserve existing scenario IDs and accepted historical evidence. Record before/after discovered cases when changing test paths; update Vitest globs, test TypeScript projects, browser fixture imports and smoke entry points together. A green run that silently drops tests fails acceptance. Tests remain outside production src; enforce feature/server/client/backend import direction as an automated guard. Biome source-format checks are introduced with P01-017 after a scoped baseline; formatting is separate from behavior changes.
+P02-012–013/P03-019–020 preserve existing scenario IDs and accepted historical evidence. Record before/after discovered cases when changing test paths; update Vitest globs, test TypeScript projects, browser fixture imports and smoke entry points together. A green run that silently drops tests fails acceptance. Tests remain outside production src; enforce feature/server/client/backend import direction as an automated guard. P01-017 establishes a four-file Biome tooling baseline; add affected application files with their refactor rather than requiring an unrelated bulk format. Formatting is separate from behavior changes.
 
 | Scope | Required parity evidence |
 | --- | --- |

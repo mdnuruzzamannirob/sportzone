@@ -6,7 +6,9 @@
       "checks": [
         "workspaces:check",
         "lint",
-        "test:unit"
+        "test:unit",
+        "lint:boundaries",
+        "format:check"
       ]
     },
     "storefront": {

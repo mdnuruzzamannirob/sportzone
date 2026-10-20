@@ -107,6 +107,27 @@ The install links the three workspaces and installs the storefront's exact locke
 requires npm registry access; offline installation works only with a complete matching package cache.
 `workspaces:check` lists `storefront`, `admin` and `backend` without missing dependencies.
 
+Start an isolated local replica set in a separate terminal with `npm run db:local --workspace=backend`.
+Prepare private local configuration using [.env.example](.env.example), including that replica's URI and two
+independently generated secrets. Never use a production database. Then run:
+
+```sh
+npm run dev
+```
+
+The Linux/macOS/WSL coordinator starts both UI servers and the backend TypeScript watch compiler.
+The first successful compilation starts the API; subsequent successful builds restart it gracefully.
+Storefront uses 3000, admin 5173 and the API defaults to 4000. Only the API loads an optional root `.env`;
+existing process variables take precedence. API startup validates configuration before database/HTTP access.
+No credentials, database or workers are created automatically. Ctrl-C or a child failure terminates owned
+process groups, with a 12-second grace period before forced cleanup. Compilation errors remain visible
+and retain the last successful API process; an API runtime exit stops the coordinator. Run workspaces
+individually when debugging one app. The separate database terminal has its own shutdown lifecycle.
+
+`npm run lint:boundaries` checks application source imports and transitive browser boundaries.
+`npm run format:check` checks the scoped new tooling baseline; `npm run format` formats those files only.
+Existing app formatting is adopted with each refactor rather than rewriting all legacy files now.
+
 Both frontends use HeroUI v3 (`@heroui/react` and `@heroui/styles`, locked to 3.2.6) with Tailwind CSS v4.
 CSS imports Tailwind, HeroUI, project tokens/foundation and the shared HeroUI adapter in that order.
 Project tokens govern both themes; the existing Appearance bootstrap/storage remains the only theme mechanism.

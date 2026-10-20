@@ -105,7 +105,7 @@ The register contains 178 tasks across twelve phases, including seven engineerin
 
 | Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |   Done | Deferred |
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
-| 01 — Requirements Finalization and Planning   |      17 |           1 |     0 |           0 |       0 |         2 |     14 |        0 |
+| 01 — Requirements Finalization and Planning   |      17 |           0 |     0 |           0 |       0 |         3 |     14 |        0 |
 | 02 — UI/UX Design                             |      13 |           2 |     0 |           0 |       0 |         0 |     11 |        0 |
 | 03 — Authentication and Core Backend          |      20 |           6 |     0 |           0 |       0 |         0 |     14 |        0 |
 | 04 — Product Catalog and Inventory            |      15 |          15 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -117,7 +117,7 @@ The register contains 178 tasks across twelve phases, including seven engineerin
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **178** |     **137** | **0** |       **0** |   **0** |     **2** | **39** |    **0** |
+| **Total**                                     | **178** |     **136** | **0** |       **0** |   **0** |     **3** | **39** |    **0** |
 
 ## 4. Milestone tracker
 
@@ -276,7 +276,7 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Depends on:** `P01-011`, `P01-012`\
   **Deliverable:** Reconcile application organization, module/data/API ownership, monorepo/tooling, CI/source-control/release policy, deployment constraints and staged verification/recovery.\
   **Acceptance:** Related contracts and links agree; target paths/dependencies are distinguished from current implementation; no acceptance/milestone or runtime change is fabricated; independent owner review recorded.\
-  **Evidence:** [Structure decision and documentation verification](./evidence/P01-015-structure-decision.md). Implementation tasks below remain Not Started.
+  **Evidence:** [Structure decision and documentation verification](./evidence/P01-015-structure-decision.md). Implementation task states are tracked individually below.
 
 - [ ] **P01-016 — Simplify inventory-driven CI and required verification**\
   **Status:** `In Review` · **Area:** CI/repository · **Owner:** Codex\
@@ -287,12 +287,12 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Evidence:** [CI verification and simplification revision](./evidence/P01-016-ci-governance.md). Historical full-pipeline results are retained separately from current focused tooling verification; obsolete aggregation-only tests and the workflow-generator check are removed. Hosted run and branch-protection verification remain Not Run because GitHub CLI is unauthenticated; no remote mutation or acceptance is claimed.
 
 - [ ] **P01-017 — Establish coordinated development commands and source-quality guards**\
-  **Status:** `Not Started` · **Area:** Developer tooling · **Owner:** Codex\
+  **Status:** `In Review` · **Area:** Developer tooling · **Owner:** Codex\
   **Sources:** Architecture §4.2; Operations §5.2; Testing §15.4\
   **Depends on:** `P01-015`, `P01-009`\
   **Deliverable:** Provide documented root development orchestration over existing app/compiler commands with coordinated signal/failure cleanup; add import-boundary guards and scoped Biome source-format checks.\
   **Acceptance:** Child failure/termination leaves no owned orphan servers; declared workspace dependencies and server/client/backend boundaries are checked; relevant tooling checks pass, test discovery preserved and actual scripts/inventory/README synchronized. Optional containers do not replace replica-set fixtures.\
-  **Evidence:** Not Run; no command or configuration added by documentation.
+  **Evidence:** [Development tooling verification](./evidence/P01-017-development-tooling.md). Thirty-one distinct focused repository/tooling cases were verified; actual UI/API startup returned HTTP 200 and termination released all three ports using synthetic local replica-set configuration. Independent acceptance pending.
 
 ### Phase 02 — UI/UX design
 
@@ -1804,6 +1804,8 @@ Record task execution, material blockers, acceptance and milestone decisions her
 **20 October 2026 — Engineering foundation reconciliation:** Expanded P01-015 to cover monorepo, CI, source-control/release and operational constraints; added P01-016/P01-017 as Not Started (176 → 178 tasks). Documentation remains In Review; all accepted statuses retained. Implementation starts with verified tooling or a bounded refactor under Implementation Plan §3.6.
 
 **20 October 2026 — P01-016:** Not Started → In Progress → In Review. Implemented shared scope inventory/runner, reusable hosted jobs, fail-closed current-attempt aggregation and supply-chain controls. Final local run passed all 22 checks and 849 cases after resolving the Markdown contract parser and isolated host WebKit runtime prerequisites. [Verification](./evidence/P01-016-ci-governance.md). Hosted run/protected-main verification and independent acceptance remain pending because GitHub CLI is unauthenticated; no milestone accepted.
+
+**20 October 2026 — P01-017:** Not Started → In Progress → In Review. Added coordinated development startup and bounded owned-process cleanup, parsed source boundaries and a four-file Biome formatting baseline. Thirty initial cases and the added compiler-restart regression passed; affected process fixtures were rechecked after cleanup corrections. Final real local startup/shutdown passed with ephemeral MongoDB and synthetic configuration. No full application-suite rerun, provider activation, application refactor or milestone acceptance. [Evidence](./evidence/P01-017-development-tooling.md). Executor: Codex; independent review pending. Next action: review this tooling slice, then P03-019 backend composition/configuration refactor under Implementation Plan §3.6.
 
 When execution starts, update the task status and attach evidence. Change a checkbox to `[x]` only after acceptance.
 Preserve IDs and dependency references; update phase totals and record milestone acceptance separately.

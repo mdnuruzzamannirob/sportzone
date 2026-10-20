@@ -290,6 +290,25 @@ and `npm run ci`. All three workspaces have independent lint/type/unit/build and
 not production static hosting; configure fallback and noindex/private document headers at the deployment host. No deployment, migration or restore
 command exists yet; local storefront build/start is not a production deployment procedure. See
 [Testing §5.3](./TESTING.md#53-standard-execution-interface) for current coverage and the complete required interface.
+
+P01-017 provides `npm run dev` on Linux/macOS/WSL: one TypeScript watch compiler and both UI dev servers.
+The compiler uses the existing backend tsconfig; its first successful emit starts the API and later
+successful builds gracefully restart it. This avoids a duplicate initial compilation. API startup validates
+configuration before database/HTTP access; only the API explicitly loads optional root `.env` and injected
+variables take precedence. Provision isolated local configuration and run the existing ephemeral replica-set
+tool in another terminal. No database provisioning, identity bootstrap, migration, provider activation or
+notification worker runs automatically. SIGINT/SIGTERM and unexpected child/API exits stop owned process
+groups with a 12-second grace period before SIGKILL. Compiler errors retain the last successfully running
+API until a valid rebuild; verify actual HTTP readiness separately. Stop the separate DB tool independently.
+Native Windows uses WSL or individual workspace commands.
+
+Root `lint:boundaries` validates literal source imports, package declarations, workspace isolation,
+shared-code purity and transitive browser/server imports. Root `format:check` applies Biome only to
+`scripts/dev.mjs`, `scripts/dev-backend.mjs`, `scripts/check-boundaries.mjs` and `tests/tooling.test.mjs`. Expand this baseline
+with a scoped refactor; it does not imply legacy application files were reformatted. Both checks are in
+the CI inventory and fail on violations. Their pinned Biome/TypeScript tools are declared at the root,
+using the same versions already locked for the workspaces.
+
 The database foundation exports `openDatabase(uri, dbName)` and P03-003 startup now calls it after configuration validation, before binding HTTP. Use an isolated explicit database name; `admin`, `local` and `config` are rejected. Pools are bounded to ten connections, with five-second selection/connect/queue waits and a fifteen-second socket timeout. Startup failures return static database codes without URI/driver text; failed connections are destroyed. Connections require replica-set topology and logical sessions. Automatic collection/index creation and command buffering are disabled.
 
 `npm run db:local --workspace=backend` starts a single-member, loopback-only, ephemeral MongoDB 8.0.16 replica set and prints its credential-free local URI. Its data disappears on shutdown; never use it for real/customer data or durability/backup acceptance. Integration tests generate their own random database on their own replica and never read external `MONGODB_URI`. `MONGOMS_DISTRO=ubuntu-24.04` selects the compatible official binary on this Ubuntu 26 host; supported Ubuntu 24 CI resolves it normally. First use downloads the pinned binary and requires network access; there is no mock/standalone fallback. Close the local tool with SIGINT/SIGTERM to clean its owned processes/data.

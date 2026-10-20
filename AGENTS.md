@@ -125,6 +125,7 @@ For higher-risk mutations, write state-transition and concurrency tests before e
 
 - Use TypeScript types and narrow interfaces at module boundaries; avoid `any`, unsafe casts and `@ts-ignore` that conceal errors.
 - Match the repository’s actual linter, formatter, naming and import conventions. Do not invent tools, versions or commands.
+- Run `npm run lint:boundaries` when source imports change. Keep the scoped `format:check` baseline passing; add application files during their owning refactor rather than bulk-formatting unrelated code.
 - Keep Biome, TypeScript, Vitest and existing browser tooling. Any refactor moving tests/config/tool entry points must update imports, test discovery and CI inventory together; retain NodeNext `.js` backend import specifiers.
 - Keep code cohesive and explicit; validate external input; handle failures without leaking internal details.
 - Keep side effects in appropriately owned services; prefer pure calculations for monetary and business rules.

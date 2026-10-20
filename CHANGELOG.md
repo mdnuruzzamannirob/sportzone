@@ -8,6 +8,8 @@ This changelog tracks the documentation baseline. Application releases are recor
 
 ## Development changes — 20 October 2026
 
+- Implemented P01-017 root development coordination, a single backend compiler/watch loop and graceful API restarts, bounded owned-process cleanup, parsed import boundaries and scoped Biome formatting; reused existing pinned tool versions and added focused process/boundary regressions. Application business behavior and provider activation are unchanged. [Evidence](docs/evidence/P01-017-development-tooling.md).
+
 - Simplified CI to one job and one locked install, reusing frontend builds for browser checks; removed reusable/composite workflow layers, workflow generation, cross-job aggregation and their obsolete tests. Defined change-based local verification to avoid repeated full-suite runs; application and security coverage remain required. P01-016 remains In Review pending hosted/settings acceptance.
 
 - Implemented P01-016 inventory-driven local/hosted CI scopes, shared locked setup, root browser ownership, current-attempt report aggregation and failure/stale-report guards; added checksum-pinned secret scanning, dependency advisory policy and Dependabot configuration. Hosted/settings acceptance remains pending. [Implementation evidence](docs/evidence/P01-016-ci-governance.md).
