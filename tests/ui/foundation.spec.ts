@@ -1,5 +1,17 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
+
+async function settleTransitions(page: Page) {
+  await page.evaluate(async () => {
+    // Audit final colors/positions, not an intermediate theme or drawer frame.
+    // Infinite loading animations must remain running and cannot be awaited.
+    await Promise.all(
+      document.getAnimations()
+        .filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity)
+        .map((animation) => animation.finished.catch(() => {})),
+    )
+  })
+}
 
 for (const theme of ['light', 'dark'] as const) {
   for (const width of [320, 768, 1440]) {
@@ -36,6 +48,7 @@ for (const theme of ['light', 'dark'] as const) {
             () => document.documentElement.scrollWidth <= innerWidth + 1,
           ),
         ).toBe(true)
+        await settleTransitions(page)
         const result = await new AxeBuilder({ page })
           .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
           .analyze()
@@ -102,6 +115,7 @@ for (const theme of ['light', 'dark'] as const) {
     await page.keyboard.press('Enter')
     const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
+    await settleTransitions(page)
     expect(
       (
         await new AxeBuilder({ page })
@@ -172,6 +186,7 @@ for (const theme of ['light', 'dark'] as const) {
     await menu.press('Enter')
     const navigationDialog = page.getByRole('dialog', { name: 'Admin navigation', exact: true })
     await expect(navigationDialog).toBeVisible()
+    await settleTransitions(page)
     expect(
       (
         await new AxeBuilder({ page })
