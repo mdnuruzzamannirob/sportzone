@@ -2,7 +2,7 @@
 
 **Date:** 20 October 2026\
 **Executor:** Codex\
-**Status:** In Review; owner review and accessibility disposition pending
+**Status:** Done; owner-directed remaining contrast work implemented and verified
 
 ## Owner decision and authority
 
@@ -85,3 +85,28 @@ Status remains In Review pending owner review; no checkbox or milestone accepted
 ### Owner acceptance of review corrections
 
 On 20 October 2026, the owner explicitly accepted the listed UI corrections through the review popup: “এই সংশোধনগুলো accept করছি”. This accepts Link/Breadcrumb hover, the modern file picker, invalid radio styling, disclosure truncation and repaired preview layouts. It does not resolve the previously disclosed native-palette contrast findings or accept a milestone. P02-014 remains In Review until its remaining acceptance conditions are satisfied.
+
+
+## Final task acceptance
+
+On 20 October 2026, after accepting the listed corrections and receiving the contrast disclosure, the owner explicitly instructed “done koro”. P02-014 is Done for the implemented design-system/UI scope. Earlier In Review statements above describe the pre-acceptance state.
+
+Open contrast findings are carried forward to P10-006, with the existing unsuppressed accessibility checks retained. This is the disposition of those findings, not a claim that they passed or permission to waive PRD §12.7. Milestone and release acceptance remain unchanged. No code or test execution was required for this status-only update; repository documentation/link checks were run.
+
+
+## Contrast correction and verified completion
+
+The owner clarified that “done koro” meant implement the outstanding work before marking Done. The earlier status-only closure and carry-forward disposition were premature; this section supersedes those current-status claims. The historical failed audit above is retained as evidence of the original defects.
+
+Implemented the smallest correction in both app UI theme entries: primary/danger filled actions retain native hues/foregrounds/APIs, but their local `--button-bg` variables mix the native color with black (82% native at rest, 75% hover, 70% pressed). Global HeroUI tokens, sizes, fonts and component APIs remain unchanged. The storefront footer uses native foreground text rather than insufficient-contrast muted text. Design §2 records this limited contrast refinement.
+
+Verification, local Node 24.20.0 / npm 11.19.0:
+
+- `npm run build --workspace storefront` and `npm run build --workspace admin`: Passed; both include type checking. Existing admin chunk-size advisory remains.
+- `npm run test:smoke --workspace storefront` and corresponding admin command: Passed (four storefront groups, two admin groups).
+- `npm run lint --workspace storefront` and corresponding admin command: Passed.
+- `npm run test:ui -- --project=chromium tests/ui/accessibility.spec.ts`: Passed all four previously failing cases. Sixteen page/viewport scans across actual app shells and initial Button preview, both apps, both themes, 375/1280px: zero axe violations. No contrast rules disabled, no exceptions added. An initial invocation could not reserve the already-running preview port; stopped that preview temporarily, reran successfully, then restored it.
+- [Final raw accessibility report](../../test-results/p02-014-contrast/accessibility-final.json) preserves the actual scan attachments. Earlier reports remain historical failures.
+- Documentation checks and diff whitespace: Passed. Full CI, Firefox/WebKit and backend/unit reruns: Not Run; no behavioral/API/backend changes. A passing scoped automated audit does not certify every component or full WCAG compliance; manual feature/release verification remains with P10-006.
+
+Known P02-014 contrast defects are now resolved in the scanned scope; no known finding from that report is deferred merely to close the task. P02-014 is Done in fulfillment of the owner’s explicit instruction to finish the remaining work. No milestone/release gate is self-approved.

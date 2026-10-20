@@ -106,3 +106,15 @@
 .ui-file-picker[data-disabled] .ui-file-picker__input {
   cursor: default;
 }
+
+/* Contrast correction: retain native hues and APIs, deepen only filled actions. */
+.button--primary {
+  --button-bg: color-mix(in oklab, var(--accent) 82%, black);
+  --button-bg-hover: color-mix(in oklab, var(--accent) 75%, black);
+  --button-bg-pressed: color-mix(in oklab, var(--accent) 70%, black);
+}
+.button--danger {
+  --button-bg: color-mix(in oklab, var(--danger) 82%, black);
+  --button-bg-hover: color-mix(in oklab, var(--danger) 75%, black);
+  --button-bg-pressed: color-mix(in oklab, var(--danger) 70%, black);
+}

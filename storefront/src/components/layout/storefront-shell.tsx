@@ -24,7 +24,7 @@ export function StorefrontShell({ children }: Readonly<{ children: ReactNode }>)
       <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 py-12 sm:py-16">
         {children}
       </main>
-      <footer className="border-t border-border py-6 text-sm text-muted">
+      <footer className="border-t border-border py-6 text-sm text-foreground">
         <p>SportZone · Made for your next game.</p>
         <nav
           aria-label="Support and policies"

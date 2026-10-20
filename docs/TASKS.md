@@ -106,7 +106,7 @@ The register contains 179 tasks across twelve phases, including seven engineerin
 | Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |   Done | Deferred |
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
 | 01 — Requirements Finalization and Planning   |      17 |           0 |     0 |           0 |       0 |         0 |     17 |        0 |
-| 02 — UI/UX Design                             |      14 |           0 |     0 |           0 |       0 |         1 |     13 |        0 |
+| 02 — UI/UX Design                             |      14 |           0 |     0 |           0 |       0 |         0 |     14 |        0 |
 | 03 — Authentication and Core Backend          |      20 |           6 |     0 |           0 |       0 |         0 |     14 |        0 |
 | 04 — Product Catalog and Inventory            |      15 |          15 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -117,7 +117,7 @@ The register contains 179 tasks across twelve phases, including seven engineerin
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **179** |     **134** | **0** |       **0** |   **0** |     **1** | **44** |    **0** |
+| **Total**                                     | **179** |     **134** | **0** |       **0** |   **0** |     **0** | **45** |    **0** |
 
 ## 4. Milestone tracker
 
@@ -407,13 +407,13 @@ owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
   **Acceptance:** Lint/typecheck/unit/build/smoke and affected accessibility/browser checks; deep links, loading/errors, themes and navigation remain correct; query integration belongs to its actual API feature.\
   **Evidence:** [Admin structure and parity verification](./evidence/P02-013-admin-refactor.md). 99 admin tests, 23 shared-helper consumer tests, build/smoke, lint/types/boundaries and 72 browser cases Passed after correcting a reproduced audit transition-wait timeout. Project owner reviewed and accepted on 20 October 2026: “Review করেছি—accept করছি, Done করো”.
 
-- [ ] **P02-014 — Adopt the default HeroUI design system and app-owned UI boundaries**\
-  **Status:** `In Review` · **Area:** Frontend design system · **Owner:** Codex\
+- [x] **P02-014 — Adopt the default HeroUI design system and app-owned UI boundaries**\
+  **Status:** `Done` · **Area:** Frontend design system · **Owner:** Codex\
   **Sources:** Explicit owner decision, 20 October 2026; Design §2; Architecture §§4–5; Testing §15.5\
   **Depends on:** `P02-012`, `P02-013`\
   **Deliverable:** Research installed/official HeroUI defaults; centralize primitive/theme imports in each app’s UI directory; remove custom palette/fonts/skin and obsolete tests; provide one actual-app preview with Admin/Storefront and Light/Dark toggles.\
   **Acceptance:** Both frontend types/lint/necessary interaction/display checks and builds/smoke verified; import boundary enforced; one preview uses real app modules; accessibility findings retained and explicitly dispositioned without waiving PRD gates; independent owner review.\
-  **Evidence:** [Decision, research, implementation and verification](./evidence/P02-014-default-heroui.md). Implementation and focused functional checks passed; owner accepted the UI review corrections on 20 October 2026 (“এই সংশোধনগুলো accept করছি”). Native contrast findings remain open, so the task stays In Review. No new milestone acceptance.
+  **Evidence:** [Decision, research, implementation and verification](./evidence/P02-014-default-heroui.md). Implementation and focused functional checks passed; owner accepted the UI review corrections on 20 October 2026 (“এই সংশোধনগুলো accept করছি”). Owner subsequently requested “done koro”; P02-014 accepted as Done. Known native contrast findings subsequently fixed and all four affected Chromium accessibility cases passed (16 scans); see final correction evidence. No new milestone acceptance.
 
 ### Phase 03 — Authentication and core backend
 
@@ -1413,7 +1413,7 @@ owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
   **Depends on:** `P10-001`\
   **Deliverable:** Run automated and manual keyboard/screen-reader checks on discovery, checkout, guest proof, returns, admin dialogs/tables.\
   **Acceptance:** Labels, focus, reflow, contrast, reduced motion and approved native HeroUI themes meet the design target.\
-  **Evidence to attach:** Accessibility findings/resolution record.
+  **Evidence to attach:** Accessibility findings/resolution record. The [P02-014 contrast correction](./evidence/P02-014-default-heroui.md#contrast-correction-and-verified-completion) resolves the known foundation findings; full feature-flow and manual release accessibility verification remains required.
 
 - [ ] **P10-007 — Verify mobile, tablet, desktop and target browsers**\
   **Status:** `Not Started` · **Area:** Quality/UI\
@@ -1846,3 +1846,9 @@ Preserve IDs and dependency references; update phase totals and record milestone
 **20 October 2026 — UI reference correction:** Owner rejected the initial showcase and clarified original HeroUI components used by the project, with all supported variants. Added isolated native reference (22 families), kept app compositions separate, removed forced app shape overrides, and recorded focused checks plus stock-palette contrast findings. In Review pending revised popup acceptance; numbered task/milestone totals unchanged. [Evidence](./evidence/ui-component-showcase.md#revised-owner-scope--original-heroui-reference).
 
 **20 October 2026 — Default HeroUI owner decision:** Added P02-014 (In Progress) under the explicit request to use the complete native default design system in both apps, centralize UI control, unify preview and remove obsolete/redundant visual tests. Register 178 → 179; prior acceptances preserved. Phase 02: 13 Done, 1 In Progress. Overall: 44 Done, 1 In Progress, 134 Not Started. No product/security/accessibility milestone waived.
+
+
+**20 October 2026 — P02-014 acceptance:** In Review → Done following owner acceptance of corrections and explicit “done koro”. Phase 02: 14/14 Done; overall: 45 Done, 134 Not Started. Native contrast findings remain open under P10-006; no WCAG or milestone gate accepted.
+
+
+**20 October 2026 — P02-014 verified correction:** Owner clarified that “done koro” meant finish the remaining work, not carry defects forward. Fixed the filled-button/footer contrast defects and reran the unsuppressed affected audit: four cases, 16 scans Passed. Done now reflects implemented and verified corrections; P10-006 retains its full feature/release scope.

@@ -8,6 +8,10 @@ This changelog tracks the documentation baseline. Application releases are recor
 
 ## Development changes — 20 October 2026
 
+- Corrected P02-014’s premature status-only closure: implemented native-hue filled-button and storefront-footer contrast fixes. Both build/smoke/lint checks and all four previously failing Chromium accessibility cases now pass (16 scans, no suppressed rules). P02-014 Done now reflects verified remaining work; feature/release accessibility gates remain. [Evidence](docs/evidence/P02-014-default-heroui.md#contrast-correction-and-verified-completion).
+
+- Marked P02-014 Done after explicit owner instruction “done koro”. Phase 02 is 14/14 Done; overall 45 Done, 134 Not Started. Carried unresolved native contrast findings to P10-006 without waiving accessibility or milestone gates. [Acceptance](docs/evidence/P02-014-default-heroui.md#final-task-acceptance).
+
 - Recorded owner acceptance of P02-014 UI review corrections through the popup. The task remains In Review because disclosed native-palette contrast findings are unresolved; no milestone accepted. [Acceptance](docs/evidence/P02-014-default-heroui.md#owner-acceptance-of-review-corrections).
 
 - Applied P02-014 owner review corrections: accent/no-underline links and breadcrumbs, modern native file picker facade, invalid radio colors, disclosure truncation and clean responsive preview specimens. Fixed app Tailwind source discovery in the preview; retained necessary tests and open contrast findings. [Evidence](docs/evidence/P02-014-default-heroui.md#owner-review-corrections--20-october-2026).
