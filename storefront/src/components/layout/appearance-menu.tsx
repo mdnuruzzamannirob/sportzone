@@ -1,7 +1,7 @@
 'use client'
 
 import { Disclosure } from '@heroui/react'
-import { ThemePreferenceSelect } from './theme-preference'
+import { ThemePreferenceSelect } from '../ui/theme-preference'
 
 export function AppearanceMenu() {
   return (

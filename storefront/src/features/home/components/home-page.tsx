@@ -1,4 +1,4 @@
-import { PagePanel } from '../../components/page-panel'
+import { PagePanel } from '../../../components/ui/page-panel'
 
 export default function HomePage() {
   return (

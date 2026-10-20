@@ -1,10 +1,10 @@
 'use client'
 
 import { Disclosure } from '@heroui/react'
-import { Link } from './ui/link'
+import { Link } from '../ui/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { Button } from './ui/button'
+import { Button } from '../ui/button'
 import { AppearanceMenu } from './appearance-menu'
 
 const links = [

@@ -8,6 +8,10 @@ This changelog tracks the documentation baseline. Application releases are recor
 
 ## Development changes — 20 October 2026
 
+- Recorded project-owner review and acceptance of P02-012 through the review popup; marked it Done and synchronized evidence and totals. Phase 02: 12/13 Done; overall: 43 Done, 135 Not Started. [Acceptance](docs/evidence/P02-012-storefront-refactor.md#owner-acceptance).
+
+- Implemented P02-012 storefront route/layout refactoring: store/account groups, layout-owned shell/navigation, shared UI foundations and feature-owned home/account views. Preserved URLs, unavailable states and private cache boundaries; 114 unit/component tests, production build/smoke and 18 three-engine browser cases passed. In Review pending independent acceptance. [Evidence](docs/evidence/P02-012-storefront-refactor.md).
+
 - Recorded explicit project-owner acceptance of the verified Phase 01 result (“onumoti dilam”); marked P01-016 Done, completing Phase 01 at 17/17 tasks. Updated overall totals to 42 Done and 136 Not Started. Milestone acceptance is unchanged. [Acceptance](docs/evidence/phase-01-reconciliation.md#owner-acceptance).
 
 - Submitted Phase 01 for final owner acceptance after hosted run 39414507457 passed all 23 checks and 846 cases, including 30 browser and 260 real MongoDB cases; zero secret findings/advisories. Verified protected-main enforcement and resolved audit timing without weakening coverage. P01-016 is In Review; no milestone accepted. [Evidence](docs/evidence/phase-01-reconciliation.md#final-hosted-verification-and-review-handoff).

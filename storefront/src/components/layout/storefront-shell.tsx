@@ -1,4 +1,4 @@
-import { Link } from './ui/link'
+import { Link } from '../ui/link'
 import type { ReactNode } from 'react'
 import { NetworkStatus } from './network-status'
 import { StorefrontHeader } from './storefront-header'

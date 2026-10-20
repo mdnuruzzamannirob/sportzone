@@ -1,6 +1,6 @@
 'use client'
 
-import { Notice } from './ui/feedback'
+import { Notice } from '../ui/feedback'
 import { useEffect, useState } from 'react'
 
 export function NetworkStatus() {

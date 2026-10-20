@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { PagePanel } from '../../../components/page-panel'
+import { PagePanel } from '../../../components/ui/page-panel'
 import { notFound } from 'next/navigation'
 
 const destinations: Record<string, string> = {

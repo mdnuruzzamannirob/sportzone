@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import PrivateLayout from '../src/app/(private)/layout'
-import PublicLayout from '../src/app/(public)/layout'
+import PrivateLayout from '../src/app/(account)/account/layout'
+import PublicLayout from '../src/app/(store)/layout'
 
 describe('storefront layout accessibility boundaries', () => {
   it('SF-01: public content has one main landmark, a working skip target and home link', () => {

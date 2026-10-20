@@ -113,7 +113,7 @@ try {
   assert.match(html, /aria-label="Mobile navigation"/)
   assert.match(html, /aria-expanded="false"/)
   console.log('SMOKE-04 Passed: 11 honest noindex destinations, consistent shell and closed mobile navigation')
-  for (const path of ['/not-a-route', '/%28public%29', '/%28private%29']) {
+  for (const path of ['/not-a-route', '/%28public%29', '/%28private%29', '/%28store%29', '/%28account%29', '/account/not-a-route', '/products/not-a-product']) {
     const response = await fetch(origin + path)
     assert.equal(response.status, 404)
     const missing = await response.text()

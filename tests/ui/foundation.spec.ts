@@ -207,3 +207,58 @@ for (const theme of ['light', 'dark'] as const) {
     await expect(customerMenu).toBeFocused()
   })
 }
+
+
+// P02-012: exercise moved production routes without treating folders as access control.
+for (const theme of ['light', 'dark'] as const) {
+  for (const width of [320, 768, 1440]) {
+    test(`storefront refactor: ${theme} ${width}px routes, keyboard and cache boundaries`, async ({ page }, info) => {
+      await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' })
+      await page.setViewportSize({ width, height: 900 })
+      await page.addInitScript((value) => localStorage.setItem('sportzone.theme', value), theme)
+      await page.goto('http://127.0.0.1:3100')
+      await expect(page.getByRole('heading', { name: 'Ready for your next game.' })).toBeVisible()
+      await page.keyboard.press('Tab')
+      await expect(page.getByRole('link', { name: 'Skip to content' })).toBeFocused()
+      await page.keyboard.press('Enter')
+      await expect(page.locator('main')).toBeFocused()
+      if (width < 1024) {
+        const menu = page.getByRole('button', { name: 'Menu', exact: true })
+        await menu.press('Enter')
+        await expect(menu).toHaveAttribute('aria-expanded', 'true')
+        await page.keyboard.press('Escape')
+        await expect(menu).toBeFocused()
+        await expect(menu).toHaveAttribute('aria-expanded', 'false')
+      }
+      for (const [path, heading] of [
+        ['/products', 'Products'],
+        ['/cart', 'Cart'],
+        ['/wishlist', 'Wishlist'],
+        ['/policies/privacy', 'Privacy policy'],
+        ['/account', 'Your account'],
+        ['/unknown-refactor-route', 'Page not found'],
+      ]) {
+        const response = await page.goto(`http://127.0.0.1:3100${path}`)
+        expect(response?.status()).toBe(path === '/unknown-refactor-route' ? 404 : 200)
+        await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible()
+        await expect(page.locator('main')).toHaveCount(1)
+        await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
+        if (path === '/account') {
+          expect(response?.headers()['cache-control']).toMatch(/private.*no-store/)
+          await expect(page.getByText('Account access is not available yet.')).toBeVisible()
+          await expect(page.locator('header, footer')).toHaveCount(0)
+        }
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+        await settleTransitions(page)
+        expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze()).violations).toEqual([])
+        if (path === '/account' || path === '/products')
+          await info.attach(`refactor-${path.slice(1)}-${theme}-${width}`, {
+            body: await page.screenshot({ fullPage: true }), contentType: 'image/png',
+          })
+      }
+      await page.getByRole('link', { name: 'Back to SportZone' }).click()
+      await expect(page).toHaveURL('http://127.0.0.1:3100/')
+      await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
+    })
+  }
+}

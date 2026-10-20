@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { AppearanceMenu } from '../../components/appearance-menu'
+import { AppearanceMenu } from '../../../components/layout/appearance-menu'
 
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'

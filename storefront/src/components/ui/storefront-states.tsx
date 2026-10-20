@@ -1,9 +1,9 @@
 'use client'
 
 import { Card, CardContent } from '@heroui/react'
-import { Link } from './ui/link'
+import { Link } from './link'
 import { PagePanel } from './page-panel'
-import { LoadingState } from './ui/feedback'
+import { LoadingState } from './feedback'
 
 export function MissingPage() {
   return (
