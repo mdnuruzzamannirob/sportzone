@@ -5,7 +5,7 @@ Authenticated follow-up resolved login access but found main unprotected and no 
 successful hosted execution and actual required-check enforcement remain outstanding. See the linked
 report for the proposed submission/protection change awaiting owner authorization.
 
-Date: 20 October 2026 (Asia/Dhaka). Status: **Blocked**. Executor: Codex. Owner closure authorization recorded; required remote verification unavailable.
+Date: 20 October 2026 (Asia/Dhaka). Status: **In Progress**. Executor: Codex. Owner authorized submission and protection; authenticated settings verification is complete and hosted browser corrections are under validation. See the latest reconciliation for current state; blocker descriptions below are historical.
 
 ## Historical implementation (superseded by simplification below)
 

@@ -105,7 +105,7 @@ The register contains 178 tasks across twelve phases, including seven engineerin
 
 | Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |   Done | Deferred |
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
-| 01 — Requirements Finalization and Planning   |      17 |           0 |     0 |           0 |       1 |         0 |     16 |        0 |
+| 01 — Requirements Finalization and Planning   |      17 |           0 |     0 |           1 |       0 |         0 |     16 |        0 |
 | 02 — UI/UX Design                             |      13 |           2 |     0 |           0 |       0 |         0 |     11 |        0 |
 | 03 — Authentication and Core Backend          |      20 |           6 |     0 |           0 |       0 |         0 |     14 |        0 |
 | 04 — Product Catalog and Inventory            |      15 |          15 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -117,7 +117,7 @@ The register contains 178 tasks across twelve phases, including seven engineerin
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **178** |     **136** | **0** |       **0** |   **1** |     **0** | **41** |    **0** |
+| **Total**                                     | **178** |     **136** | **0** |       **1** |   **0** |     **0** | **41** |    **0** |
 
 ## 4. Milestone tracker
 
@@ -145,8 +145,8 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 01. **Associated gate:** M1. **Tasks:** 17.
 
 Current architecture reconciliation: [Phase 01 review and remaining closure evidence](./evidence/phase-01-reconciliation.md).
-Sixteen tasks retain their recorded acceptance; P01-016 remains Blocked pending authenticated
-hosted/settings evidence and subsequent owner acceptance. Application structure changes remain
+Sixteen tasks retain their recorded acceptance; P01-016 is In Progress following authenticated
+settings verification, pending successful hosted execution and subsequent owner acceptance. Application structure changes remain
 owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
 
 - [x] **P01-001 — Verify approved document baseline and paths**\
@@ -284,12 +284,12 @@ owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
   **Evidence:** [Structure decision and documentation verification](./evidence/P01-015-structure-decision.md). Project owner accepted on 20 October 2026 following document review; implementation tasks retain their own acceptance requirements.
 
 - [ ] **P01-016 — Simplify inventory-driven CI and required verification**\
-  **Status:** `Blocked` · **Area:** CI/repository · **Owner:** Codex\
+  **Status:** `In Progress` · **Area:** CI/repository · **Owner:** Codex\
   **Sources:** Architecture §§4.2,14; Operations §§5.5–5.6; Testing §15\
   **Depends on:** `P01-015`, `P01-010`\
   **Deliverable:** Keep one hosted CI job and shared check inventory; install once, reuse frontend builds, retain application checks and sanitized reports, and use change-based local verification. Document and verify required branch checks without claiming unavailable remote settings.\
   **Acceptance:** Application checks/cases retained, browser build dependencies correct, command failures stop execution, scoped runs avoid unrelated checks, locked installs and action/secret controls preserved; actual hosted run and repository-settings evidence before acceptance.\
-  **Evidence:** [CI verification and simplification revision](./evidence/P01-016-ci-governance.md). Historical full-pipeline results are retained separately from current focused tooling verification; obsolete aggregation-only tests and the workflow-generator check are removed. Closure review on 20 October 2026 found no hosted runs for current HEAD; branch-protection API returned HTTP 401 and GitHub CLI is unauthenticated. Required hosted/settings evidence is unavailable; no remote mutation or acceptance is claimed. Blocker owner: repository owner; next action: authenticate GitHub access, inspect/fix the failed required check, obtain a successful hosted run and verify protected-main requirements.
+  **Evidence:** [CI implementation and historical verification](./evidence/P01-016-ci-governance.md); [current Phase 01 reconciliation](./evidence/phase-01-reconciliation.md). Owner authorized submission and main protection on 20 October 2026. Authentication is resolved; required CI, strict up-to-date branch, one approving review, stale-review dismissal, administrator enforcement and no force pushes/deletion were applied and read back. Hosted browser-audit timing failures are being corrected without removing checks. Successful hosted execution and final owner acceptance remain pending.
 
 - [x] **P01-017 — Establish coordinated development commands and source-quality guards**\
   **Status:** `Done` · **Area:** Developer tooling · **Owner:** Codex\

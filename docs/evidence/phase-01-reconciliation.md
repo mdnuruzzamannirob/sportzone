@@ -1,7 +1,7 @@
 # Phase 01 — Current architecture reconciliation
 
 Date: 20 October 2026 (Asia/Dhaka). Executor: Codex. Review status: submitted for owner review;
-Phase 01 closure remains blocked by P01-016 remote evidence. No new acceptance is recorded.
+P01-016 is In Progress with authenticated protection verified; hosted success remains pending. No new acceptance is recorded.
 
 ## Scope and retained acceptance
 
@@ -105,3 +105,39 @@ back the settings only after explicit approval; no protection has been changed b
 
 If authentication is unavailable, local review can be accepted separately, but Phase 01 cannot be
 reported fully complete under the current P01-016 acceptance contract.
+
+## Authorized implementation follow-up
+
+The owner's request to complete Phase 01 authorized the proposed branch submission and protection.
+The first submission contained seven remaining changed/new files because prior work had meanwhile
+been committed as a8bbb36. No unrelated files were included. Refactor branch pushes were fast-forward;
+no main merge or force push occurred.
+
+Main protection was applied and read back through the authenticated API: strict CI required result,
+GitHub Actions app 15368, one approving review, stale-review dismissal, administrator enforcement,
+allow_force_pushes false and allow_deletions false. No ruleset overrides were present. Independent
+review remains necessary to merge; task acceptance does not bypass protection.
+
+Hosted attempts retained for diagnosis:
+
+| Run / revision | Result and correction |
+| --- | --- |
+| [39411434673](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/39411434673), ffa7c71 | Failed — WebKit dark desktop axe sampled black inherited text; later screenshot showed the final light foreground. Initialized stored preference before navigation instead of overriding root theme after rendering; added explicit desktop foreground readiness assertion. |
+| [39412318300](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/39412318300), 93eb45c | Failed — WebKit normal-motion drawer audit sampled interpolated blue #5283ef on white, contrast 3.58:1. Added transition readiness before axe without changing contrast assertions. |
+| [39413289447](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/39413289447), f93e78b | Failed — Chromium dark mobile audit timed out waiting for a loading animation. Narrowed readiness to running CSSTransition instances; paused/loading animations are not awaited. |
+
+The first two attempts each passed 29/30 browser cases; the third also passed 29/30 with a readiness
+timeout, not an accepted contrast result. All three passed 31 tooling, 114 storefront, 97 admin,
+314 backend unit and 260 real MongoDB integration cases. Security scope was not reached in these
+failed attempts. Failures remain real failures; local passing checks do not replace hosted success.
+
+Local browser correction verification: WebKit desktop light/dark repeated three times, 6/6 Passed;
+initialization-only full matrix 30/30 Passed; WebKit normal-motion persistence cases repeated three
+times, 6/6 Passed. Final active-transition filter full local matrix: 30/30 Passed (npm run test:ui with the documented temporary WebKit runtime wrapper).
+No production UI, palette, library version, retry count or axe rule was changed. The library action
+Node-runtime deprecation annotation is a warning and was not the failed command.
+
+Current disposition: P01-016 In Progress; authentication and settings blockers resolved. Successful
+hosted execution of the final correction and the owner's final acceptance are still required. This
+section supersedes earlier descriptions of unperformed submission/protection; historical records above
+remain dated evidence of their earlier state.
