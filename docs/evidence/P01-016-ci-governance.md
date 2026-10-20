@@ -2,7 +2,7 @@
 
 Date: 20 October 2026 (Asia/Dhaka). Status: **In Review**. Executor: Codex. Independent acceptance: pending.
 
-## Implementation
+## Historical implementation (superseded by simplification below)
 
 Version-2 `ci-workspaces.json` owns repository, storefront, admin, backend, browser and supply-chain checks/dependencies. The runner supports all/scoped execution and browser preparation. A generated, checked workflow topology invokes a reusable locked-setup workflow; the required-result job evaluates all dependency results and matching per-scope reports. Browser checks moved to root inventory ownership; the existing admin alias remains compatible.
 
@@ -10,7 +10,7 @@ Reports include command outcome, duration, discovered/pass/fail/skip counts wher
 
 Gitleaks 8.30.1 Linux x64 archive SHA-256: `551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb`, verified against the [official release](https://github.com/gitleaks/gitleaks/releases/tag/v8.30.1). The script scans history and working files, suppresses raw output and retains only rule/path/line/fingerprint. npm audit reports advisory counts and high/critical blockers; exceptions are empty initially and require specific reviewed expiring records. Dependabot update configuration is included.
 
-## Verification
+## Historical verification
 
 | Check | Observed result |
 | --- | --- |
@@ -30,6 +30,35 @@ The initial full run exposed a pre-existing space-sensitive API table parser. It
 Official Ubuntu packages were downloaded/extracted only into `/tmp/sportzone-ci-browser-vq3gIQ`: libevent-2.1-7t64, libavif16, libmanette-0.2-0 and dependent libyuv0/libgav1-2/libhidapi-hidraw0. A temporary wrapper supplies their library paths and the official Playwright WebKit 2370 bundle using the existing test-only executable override; it clears inherited GTK/GIO module paths. No system packages or browser source were modified. The isolated WebKit rerun passed 10/10, followed by the final full 30/30 matrix. The wrapper is machine-specific temporary setup, not a CI dependency; Ubuntu 24.04 hosted jobs install official Playwright dependencies normally.
 
 Nested Git/npm, loopback fixtures and security downloads required sandbox escalation on this host. Failure reports were retained during investigation; no failed/unavailable check was represented as Passed before the successful rerun.
+
+## Simplification revision
+
+The single hosted job now installs once and executes the same application/browser/security commands in inventory
+order. Frontend builds are reused for browser tests. Removed the reusable scope workflow, composite setup action,
+workflow generator/check, dependency graph and cross-job report aggregation/identity/count-parsing machinery.
+Deleted tests exercise removed machinery only; application, real MongoDB and browser test files are unchanged.
+The inventory now contains 21 commands (the removed 22nd command checked generated workflow parity).
+Reports retain command outcomes/durations; native suite reports own case counts. GitHub run metadata owns
+hosted source/attempt identity. Local verification follows Testing §15.5.
+
+| Current revision check | Observed result |
+| --- | --- |
+| `npm run test:unit` outside sandbox | Passed — 20 tooling cases; command failures, scoped execution, repository guards and security policy |
+| `npm run lint` | Passed — 268 repository files, 1,108 local links, zero errors |
+| Inventory comparison with `HEAD:ci-workspaces.json` | Passed — all application/browser/security commands retained; 21 commands total, one build per frontend |
+| PyYAML BaseLoader parsing of `.github/workflows/ci.yml` | Passed — one required job, read-only permissions and push/PR/manual triggers; syntax review is not hosted execution |
+| `git diff --check` and scoped diff review | Passed — no whitespace errors or application source/test changes |
+| Full application/MongoDB/browser/security execution | Not Run — application and security implementations are unchanged; focused tooling checks apply to this revision |
+| Hosted execution/settings | Not Run — this revision has not been submitted to hosted CI; the earlier authentication blocker is recorded above |
+
+Historical full-suite results above do not constitute a new full-suite run for this revision.
+The first inventory comparison attempt hit the sandbox's nested Git restriction; reading the baseline through
+the shell and comparing JSON directly completed the same check. YAML validation used `python3` after the
+unversioned `python` command proved unavailable. Neither required rerunning application tests.
+
+The simplified setup follows GitHub's documented [Node.js build/test workflow](https://docs.github.com/en/actions/tutorials/build-and-test-code/nodejs)
+and [npm download caching](https://github.com/actions/setup-node#caching-global-packages-data).
+Removing repeated setup and browser rebuilds reduces duplicated work; hosted elapsed time has not been measured.
 
 ## Acceptance boundary
 

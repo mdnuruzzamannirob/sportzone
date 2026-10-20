@@ -257,10 +257,9 @@ recovery and load checks have separately approved commands/workflows, not mandat
 | --- | --- |
 | `npm run workspaces:check` | Three local workspace links; storefront, admin and backend active |
 | `npm run lint` | Repository JavaScript syntax, JSON, whitespace, Markdown structure/links and targeted credential checks |
-| `npm run test:unit` | Repository/CI guard, scope/aggregate/security regressions; intentional fixture failures assert governance rather than application acceptance |
-| `npm run ci` | Same six-scope version-2 inventory as hosted CI; all workspace checks and root browser/security scopes; unconfigured required scopes fail |
-| `npm run ci -- --scope=browser --prepare` | Build both UIs in inventory order, then run browser audit; preparation recorded separately |
-| `npm run ci:workflow` | Committed workflow topology compared with inventory dependencies and required-result behavior |
+| `npm run test:unit` | Repository guards, command failure propagation, scoped execution and security regressions; intentional fixture failures assert governance rather than application acceptance |
+| `npm run ci` | Complete inventory once, using the same runner as the single hosted job; workspace builds precede browser checks |
+| `npm run ci -- --scope=browser` | Browser audit only; requires current storefront/admin production builds and installed browser engines |
 | `npm run test:security` | Pinned/checksummed Gitleaks working-tree/history scan and npm advisories; sanitized reports and reviewed expiring advisory exceptions |
 | `npm run test:ui` | Type-check isolated fixture/config/tests; Playwright Chromium/Firefox/WebKit foundation reflow, axe, keyboard, theme and reduced-motion checks; requires both production builds and installed browser engines |
 | `npm run typecheck`, `test:integration`, `test:contract`, `test:e2e`, `test:coverage`, `build` | Not yet configured at root; implement with the owning tooling/slices before accepting the corresponding capability |
@@ -861,22 +860,18 @@ Automated accessibility scan is **supplementary**; keyboard review and at least 
 
 ```mermaid
 flowchart LR
-    Commit[Change / pull request] --> Repo[Repository checks]
-    Repo --> Store[Storefront checks, build, smoke]
-    Repo --> Admin[Admin checks, build, smoke]
-    Repo --> API[Backend checks, replica-set integration]
-    Repo --> Supply[Dependency advisory and secret checks]
-    Store --> Browser[Cross-app browser/accessibility]
-    Admin --> Browser
-    Store --> Result[Required result: all required jobs succeed]
-    Admin --> Result
-    API --> Result
-    Supply --> Result
-    Browser --> Result
-    Result --> Review[Eligible for staging review]
+    Setup[One locked install] --> Repo[Repository checks]
+    Repo --> Apps[Workspace checks and builds]
+    Apps --> Browser[Browser audit reuses UI builds]
+    Browser --> Security[Secret and dependency checks]
+    Security --> Review[Eligible for staging review]
 ```
 
-Operations §5.5 owns pipeline execution/caching/security and §5.6 owns promotion. P01-016 implements six inventory scopes and an explicit required-result job; local execution follows the same checks sequentially. Run the full required suite for every hosted trigger; change-based subsets remain unimplemented. Real-API browser journeys add their backend/runtime prerequisite when implemented. This graph concerns CI evidence, not merchant or production acceptance. See [P01-016 evidence](./evidence/P01-016-ci-governance.md) for current results and remaining hosted gates.
+Operations §5.5 owns execution/caching/security and §5.6 owns promotion. The single hosted job runs the
+same inventory as local full verification, stopping on the first failed command. Every hosted trigger runs
+the complete inventory; local development uses §15.5. This graph concerns CI evidence, not merchant or
+production acceptance. [P01-016 evidence](./evidence/P01-016-ci-governance.md) distinguishes historical
+full-suite results from the current tooling revision and pending hosted acceptance.
 
 ### 15.2 Trigger and quality matrix
 
@@ -908,9 +903,29 @@ P02-012–013/P03-019–020 preserve existing scenario IDs and accepted historic
 | Storefront placement | Lint/types/unit/build/smoke, unchanged URL/404/cache/noindex behavior, server/client boundaries, affected responsive/keyboard/both-theme browser cases |
 | Admin placement | Lint/types/unit/build/smoke, root-owned cross-app browser coverage after migration, deep links/lazy pending/errors/denied states and both-theme navigation |
 | Query/API integration | Identity-expiry/logout cache clearing, CSRF refresh, controlled read retries, financial retry prohibition, input retention/invalidation and guest-cart merge |
-| Pipeline replacement | Baseline command/case coverage; successful run plus injected failure, cancelled/skipped dependency, missing report and root/shared-change cases; aggregate fails closed and artifacts remain attributable |
+| Pipeline replacement | Application command/case coverage preserved; isolated fixtures verify command failures stop execution, scoped runs avoid unrelated checks, and unknown scopes fail; inspect workflow setup, permissions and artifact handling |
 
 Test pipeline failure semantics using isolated fixtures, not intentionally broken protected branches or live providers. Retain the current browser engine/theme/viewport matrix and real replica-set suite; new implementation adds business journey coverage. No blanket coverage percentage, automatic retry or quarantine policy may hide a mandatory financial/security regression. Documentation checks comprise local links, ownership/reference consistency, task-register totals/dependencies and diff review; runtime suites are Not Run for documentation-only changes.
+
+### 15.5 Change-based local verification
+
+Choose checks from the changed behavior and its consumers before executing them. Run each applicable check
+once against the final change. A passing result remains useful until a later edit affects its inputs; record
+its scope and environment. After a localized failure, rerun the failed suite and directly affected consumers.
+Do not restart an unchanged full pipeline merely to produce a new all-green summary.
+
+| Local change | Verification scope |
+| --- | --- |
+| Documentation only | Repository lint/link checks and diff review; no application build or runtime suites |
+| CI runner or workflow | Tooling regression fixtures, syntax/config review and inventory parity; hosted CI verifies integration |
+| One component or feature | Focused test files, affected workspace lint/types, relevant browser checks when UI behavior changes |
+| Backend/API/persistence | Affected unit/contract/integration cases; include authorization, transactions, races and retries when touched |
+| Dependencies, shared configuration or broad refactor | Checks for all affected consumers; use full CI when impact genuinely spans the repository |
+
+Full verification belongs to hosted integration and release candidates, or a locally justified cross-project
+change. Financial/security/provider acceptance requirements remain mandatory. Report checks not run explicitly;
+do not present older application results as verification of a newer application revision. Revisit settled
+architecture or tooling research only when a concrete requirement, compatibility issue or new evidence warrants it.
 
 ---
 

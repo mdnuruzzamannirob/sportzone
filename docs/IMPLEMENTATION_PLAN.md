@@ -139,7 +139,7 @@ Architecture §§4–6,14 define application organization and engineering decisi
 | Step | Task | Outcome and prerequisite |
 | --- | --- | --- |
 | 1 | P01-015 | Reconcile engineering contracts and submit documentation verification for independent acceptance |
-| 2 | P01-016 / P01-017 | Implement inventory-driven CI/job aggregation and development/quality tooling; validate failure and cleanup behavior |
+| 2 | P01-016 / P01-017 | Keep inventory-driven CI and development tooling minimal; validate command failures and affected checks without repeated full-suite runs |
 | 3 | P03-019 | Extract typed composition/configuration and route registration; preserve runtime/worker/tool behavior |
 | 4 | P03-020 | Separate auth/customer/delivery boundaries, standardize cohesive backend files and provider adapters; depends on P03-019 |
 | 5 | P02-012 / P02-013 | Refactor storefront/admin routes, layouts and feature placement independently after documentation acceptance |

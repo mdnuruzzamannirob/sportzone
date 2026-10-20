@@ -234,17 +234,15 @@ context, a title/action region, skip target, Appearance menu and offline feedbac
 no business views, administrator identity or logout success are fabricated. The admin boundary loads as a separate route chunk
 with a polite loading fallback. Backend session integration remains in Phase 03.
 
-`.github/workflows/ci.yml` runs on pushes, pull requests and manual dispatch with read-only repository permissions and
-commit-pinned actions. Six inventory scopes run repository, storefront, admin, backend, browser and supply-chain checks.
-Workspace jobs run independently after repository checks; browser jobs wait for both UI jobs and rebuild them locally.
-`CI required result` checks every job and current-attempt report, failing on missing/failed/cancelled/skipped results,
-dirty hosted checkouts and mismatched revision/lock/inventory/runtime/run identities. Branch protection must require
-this check after an observed hosted run; local YAML does not configure remote repository settings.
+`.github/workflows/ci.yml` runs one job named `CI required result` on pushes, pull requests and manual dispatch.
+It installs dependencies once, runs the shared inventory in order, and reuses the frontend builds for browser checks.
+Actions remain commit-pinned with read-only permissions. Hosted execution and protected-main settings require separate verification.
 
-`npm run ci` runs the same inventory locally. Select a scope with `npm run ci -- --scope=backend`, or use
-`npm run ci -- --scope=browser --prepare` to build both UIs before the audit. `npm run ci:workflow` checks workflow
-topology against the inventory. Scope reports are `test-results/ci/<scope>.json`; full/aggregate output is
-`test-results/ci.json`. Re-run **all jobs** on hosted retries: artifact/report identities are attempt-scoped.
+Use `npm run ci` for complete integration verification. During development, run the affected test file or workspace
+command; see [Testing §15.5](docs/TESTING.md#155-change-based-local-verification). A scope such as
+`npm run ci -- --scope=backend` runs that workspace's checks. `--scope=browser` requires existing production builds
+for both UIs and installed browser engines; it does not rebuild them. Reports are `test-results/ci.json` for full
+runs and `test-results/ci/<scope>.json` for scoped runs. Native test reports retain case counts and diagnostics.
 
 `npm run test:security` runs npm advisories and Gitleaks 8.30.1 against history and working files. Linux x64, Git,
 tar and network access are required. The official release archive is checksum-verified and cached in ignored
@@ -253,7 +251,7 @@ High/critical advisories fail unless covered by reviewed, specific, expiring non
 `ci-security-exceptions.json` (initially empty). Scanner/registry errors fail. Dependabot proposes reviewed npm/Actions
 updates; automatic merge and force upgrades are not configured. Hosted verification still requires GitHub access.
 
-`ci-workspaces.json` version 2 records all six scopes, dependencies and check lists. App entries retain setup ownership
+`ci-workspaces.json` version 2 records the six check groups and their command lists. App entries retain setup ownership
 against P02-001, P02-002 and P03-001. Manifest-only apps report **Not Configured** and fail required execution.
 Adding source, scripts or dependencies requires switching the app to `active`
 and supplying real `lint`, `typecheck`, `test:unit` and `build` scripts. All listed checks run and any missing/failed script

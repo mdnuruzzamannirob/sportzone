@@ -201,6 +201,8 @@ Verification depends on the change type. Consult [Testing](docs/TESTING.md) for 
 | Configuration/operations | Environment safety, deploy/rollback compatibility, monitoring and affected recovery runbooks |
 | Documentation | Correct references, Markdown structure/links, consistency with related contracts |
 
+Use change-based local verification in [Testing §15.5](docs/TESTING.md#155-change-based-local-verification). Select affected checks before running them; reuse valid results for unchanged inputs. After a localized fix, rerun the failed suite and affected consumers rather than restarting the whole pipeline. Documentation-only work needs repository documentation checks, not application builds/tests. Full CI belongs to hosted integration/release or justified cross-project changes. Do not repeat settled architecture research without a concrete unresolved question.
+
 Execute repository scripts **only after confirming their actual names** in `package.json` and CI. Do not imply planned scripts/tests already exist. Record command, environment, observed result and artifact link. Use these results honestly: **Passed**, **Failed**, **Not Run** (including unavailable infrastructure), or **Blocked**. A mock-only check or static review is not real provider, concurrency, deployment or production acceptance.
 
 When scaffolding a workspace or adding its scripts/dependencies, update [ci-workspaces.json](ci-workspaces.json) with the actual setup state and required checks. Every configured check must exist and pass; do not use `--if-present` or passing placeholders to conceal missing setup. A foundation CI pass does not prove application or milestone readiness.

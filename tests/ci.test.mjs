@@ -12,13 +12,7 @@ import {
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import test from 'node:test'
-import {
-  ciPlan,
-  scopeNames,
-  testCounts,
-  validateResults,
-} from '../scripts/ci-plan.mjs'
-import { workflowText } from '../scripts/ci-workflow.mjs'
+import { ciPlan, scopeNames } from '../scripts/ci-plan.mjs'
 import { auditResult, safeFindings } from '../scripts/security-policy.mjs'
 import {
   baseChecks,
@@ -65,22 +59,17 @@ function fixture(t) {
     ...config,
     repository: {
       ownerTask: 'P01-016',
-      needs: [],
       checks: ['workspaces:check', 'lint', 'test:unit'],
     },
     browser: {
       ownerTask: 'P01-016',
-      needs: ['storefront', 'admin'],
       checks: ['test:ui'],
     },
     'supply-chain': {
       ownerTask: 'P01-016',
-      needs: ['repository'],
       checks: ['test:security'],
     },
   }
-  for (const name of ['storefront', 'admin', 'backend'])
-    scopes[name].needs = ['repository']
   const putFile = (file, data) =>
     put(
       file,
@@ -281,136 +270,35 @@ function activeFixture(t) {
   f.put('ci-workspaces.json', f.config)
   return f
 }
-function successReports(plan) {
-  const identity = {
-    commit: 'fixture',
-    lockSha256: 'lock',
-    inventorySha256: 'inventory',
-    node: 'node',
-    npm: 'npm',
-    runId: 'run',
-    runAttempt: '1',
-  }
-  const needs = Object.fromEntries(
-    plan.map((s) => [s.name, { result: 'success' }]),
-  )
-  const reports = Object.fromEntries(
-    plan.map((s) => [
-      s.name,
-      {
-        ...identity,
-        version: 2,
-        scope: s.name,
-        result: 'Passed',
-        finishedAt: 'time',
-        workingTreeDirty: false,
-        checks: s.checks.map((args) => ({
-          command: `npm ${args.join(' ')}`,
-          result: 'Passed',
-          exitCode: 0,
-          signal: null,
-        })),
-      },
-    ]),
-  )
-  return { needs, reports, identity }
-}
-test('CI-13: all six scopes share one plan, browser builds are explicit, every change keeps all checks', (t) => {
+test('CI-13: one ordered inventory runs every configured check', (t) => {
   const { root } = activeFixture(t)
   const plan = ciPlan(root)
   assert.deepEqual(
     plan.map((s) => s.name),
     scopeNames,
   )
-  assert.deepEqual(plan.find((s) => s.name === 'browser').needs, [
-    'storefront',
-    'admin',
-  ])
   assert.equal(plan.flatMap((s) => s.checks).length, 17)
 })
-test('CI-14: mandatory browser/security checks and dependency edges cannot disappear', (t) => {
+test('CI-14: mandatory browser checks cannot disappear', (t) => {
   const { root, put, config } = activeFixture(t)
   config.browser.checks = ['lint']
   put('ci-workspaces.json', config)
   assert.throws(() => ciPlan(root), /Missing required browser/)
-  config.browser.checks = ['test:ui']
-  config.browser.needs = []
-  put('ci-workspaces.json', config)
-  assert.throws(() => ciPlan(root), /Invalid CI scope/)
 })
-test('CI-15: aggregate accepts complete same-run reports and success results', (t) => {
-  const plan = ciPlan(activeFixture(t).root)
-  const { needs, reports, identity } = successReports(plan)
-  assert.doesNotThrow(() => validateResults(needs, reports, plan, identity))
-})
-for (const result of ['failure', 'cancelled', 'skipped', undefined]) {
-  test(`CI-16: aggregate rejects ${result ?? 'missing'} required job`, (t) => {
-    const plan = ciPlan(activeFixture(t).root)
-    const { needs, reports, identity } = successReports(plan)
-    if (result) needs.backend.result = result
-    else delete needs.backend
-    assert.throws(() => validateResults(needs, reports, plan, identity))
-  })
-}
-for (const field of [
-  'commit',
-  'lockSha256',
-  'inventorySha256',
-  'runId',
-  'runAttempt',
-  'node',
-  'npm',
-]) {
-  test(`CI-17: aggregate rejects stale/mismatched ${field}`, (t) => {
-    const plan = ciPlan(activeFixture(t).root)
-    const { needs, reports, identity } = successReports(plan)
-    reports.browser[field] = 'other'
-    assert.throws(
-      () => validateResults(needs, reports, plan, identity),
-      /stale/,
-    )
-  })
-}
-test('CI-18: missing, partial, failed or dirty reports cannot pass aggregation', (t) => {
-  const plan = ciPlan(activeFixture(t).root)
-  for (const mutate of [
-    (r) => delete r.admin,
-    (r) => r.admin.checks.pop(),
-    (r) => (r.admin.checks[0].exitCode = 8),
-    (r) => (r.admin.workingTreeDirty = true),
-    (r) => (r.admin.result = 'Failed'),
-  ]) {
-    const { needs, reports, identity } = successReports(plan)
-    mutate(reports)
-    assert.throws(() => validateResults(needs, reports, plan, identity))
-  }
-  const fixtureReports = successReports(plan)
-  assert.throws(
-    () =>
-      validateResults(fixtureReports.needs, fixtureReports.reports, plan, {
-        ...fixtureReports.identity,
-        workingTreeDirty: true,
-      }),
-    /dirty/,
-  )
-})
-test('CI-19: browser scope prepares both builds before its audit; other workspace tests are not duplicated', (t) => {
+test('CI-19: browser scope runs only its audit and reuses existing builds', (t) => {
   const { root, put } = activeFixture(t)
   cpSync(resolve('scripts'), join(root, 'scripts'), { recursive: true })
   put('package-lock.json', { lockfileVersion: 3 })
   const child = spawnSync(
     process.execPath,
-    ['scripts/ci.mjs', '--scope=browser', '--prepare'],
+    ['scripts/ci.mjs', '--scope=browser'],
     { cwd: root, encoding: 'utf8' },
   )
   assert.equal(child.status, 0, child.stderr)
   const report = JSON.parse(
     readFileSync(join(root, 'test-results/ci/browser.json'), 'utf8'),
   )
-  assert.deepEqual(
-    report.preparation.map((c) => c.command),
-    ['npm run build --workspace=storefront', 'npm run build --workspace=admin'],
-  )
+  assert.equal(report.preparation, undefined)
   assert.deepEqual(
     report.checks.map((c) => c.command),
     ['npm run test:ui'],
@@ -431,26 +319,23 @@ test('CI-20: unknown scope fails and preserves a failure report', (t) => {
     'Failed',
   )
 })
-test('CI-21: committed workflow topology matches inventory and required-result always evaluates all jobs', () => {
-  const workflow = readFileSync('.github/workflows/ci.yml', 'utf8')
-  assert.equal(workflow, workflowText(ciPlan(process.cwd())))
-  assert.ok(workflow.includes('if: ${{ always() }}'))
-  assert.ok(!workflow.includes('paths:'))
-  const reusable = readFileSync('.github/workflows/ci-scope.yml', 'utf8')
-  assert.ok(reusable.includes('--prepare'))
-  assert.ok(reusable.includes('fetch-depth: 0'))
-  assert.ok(reusable.includes('github.run_attempt'))
-  for (const file of [
-    '.github/workflows/ci.yml',
-    '.github/workflows/ci-scope.yml',
-    '.github/actions/ci-setup/action.yml',
-  ]) {
-    const content = readFileSync(file, 'utf8')
-    for (const match of content.matchAll(/uses: (?!\.\/)(\S+)/g))
-      assert.match(match[1], /@[a-f0-9]{40}$/)
-    assert.ok(!content.includes('pull_request_target'))
-    assert.ok(!content.includes('continue-on-error'))
-  }
+test('CI-21: hosted checks use one install and one inventory invocation with pinned actions', () => {
+  const content = readFileSync('.github/workflows/ci.yml', 'utf8')
+  assert.equal((content.match(/run: npm ci /g) ?? []).length, 1)
+  assert.equal((content.match(/run: npm run ci$/gm) ?? []).length, 1)
+  assert.ok(content.includes('name: CI required result'))
+  assert.ok(content.includes('fetch-depth: 0'))
+  assert.ok(content.includes('if: ${{ always() }}'))
+  for (const match of content.matchAll(/uses: (\S+)/g))
+    assert.match(match[1], /@[a-f0-9]{40}$/)
+  for (const unsafe of [
+    'paths:',
+    'pull_request_target',
+    'continue-on-error',
+    '--prepare',
+    '--aggregate',
+  ])
+    assert.ok(!content.includes(unsafe))
 })
 test('CI-22: security reports exclude secret/match/author/provider payload fields', () => {
   const findings = safeFindings([
@@ -520,29 +405,4 @@ test('CI-24: dependency exceptions are specific, reviewed and expiring', () => {
     () => auditResult(auditFixture(), [exception, exception], now),
     /Duplicate/,
   )
-})
-
-test('CI-25: machine summaries preserve discovered/passed/failed counts from real runner formats', () => {
-  assert.deepEqual(
-    testCounts('ℹ tests 33\nℹ pass 32\nℹ fail 1\nℹ skipped 0\nℹ cancelled 0\n'),
-    { discovered: 33, pass: 32, fail: 1, skipped: 0, cancelled: 0 },
-  )
-  assert.deepEqual(testCounts('      Tests  1 failed | 313 passed (314)\n'), {
-    discovered: 314,
-    pass: 313,
-    fail: 1,
-    skipped: 0,
-  })
-  assert.deepEqual(testCounts('  30 passed (14.5s)\n'), {
-    discovered: 30,
-    pass: 30,
-    fail: 0,
-    skipped: 0,
-    cancelled: 0,
-  })
-  assert.deepEqual(
-    testCounts('  2 failed\n  1 skipped\n  27 passed (14.5s)\n'),
-    { discovered: 30, pass: 27, fail: 2, skipped: 1, cancelled: 0 },
-  )
-  assert.equal(testCounts('node v24'), undefined)
 })

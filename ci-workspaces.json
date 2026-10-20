@@ -3,12 +3,10 @@
   "scopes": {
     "repository": {
       "ownerTask": "P01-016",
-      "needs": [],
       "checks": [
         "workspaces:check",
         "lint",
-        "test:unit",
-        "ci:workflow"
+        "test:unit"
       ]
     },
     "storefront": {
@@ -20,10 +18,6 @@
         "test:unit",
         "build",
         "test:smoke"
-      ],
-      "uiLibrary": "HeroUI v3",
-      "needs": [
-        "repository"
       ]
     },
     "admin": {
@@ -35,10 +29,6 @@
         "test:unit",
         "build",
         "test:smoke"
-      ],
-      "uiLibrary": "HeroUI v3",
-      "needs": [
-        "repository"
       ]
     },
     "backend": {
@@ -51,28 +41,16 @@
         "build",
         "test:smoke",
         "test:integration"
-      ],
-      "phoneValidation": "libphonenumber-js/max 1.13.15; P03-008 unit/integration checks",
-      "notificationWorker": "P03-009–012 registration, customer-reset, email-change and administrator-reset delivery; explicit migration/worker commands, unit and real MongoDB/HTTP checks",
-      "needs": [
-        "repository"
       ]
     },
     "browser": {
       "ownerTask": "P01-016",
-      "needs": [
-        "storefront",
-        "admin"
-      ],
       "checks": [
         "test:ui"
       ]
     },
     "supply-chain": {
       "ownerTask": "P01-016",
-      "needs": [
-        "repository"
-      ],
       "checks": [
         "test:security"
       ]

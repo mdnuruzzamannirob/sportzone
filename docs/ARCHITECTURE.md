@@ -773,7 +773,7 @@ Run lint, type checks, tests, and application builds before deployment. Apply an
 | Application model | Separate Next.js storefront and React + Vite admin |
 | Backend model | One modular Express API; server-authoritative business rules |
 | Repository | npm workspaces monorepo; independent application builds |
-| Task orchestration | Existing Node runner and shared CI inventory; independent CI jobs with a fail-closed aggregate result |
+| Task orchestration | Existing Node runner and shared CI inventory; one hosted job with a single install and reusable application builds |
 | Source control | Protected main, short task branches, reviewed squash merges; operational enforcement in Operations §5.6 |
 | Source organization | Feature-based UIs; concrete backend modules with model/validation/service/controller/routes/types naming; staged refactor under Implementation Plan §3.6 |
 | Client server state | TanStack Query for interactive server data; Server Components for public rendering; feature-owned Zod inputs |
@@ -801,7 +801,7 @@ Run lint, type checks, tests, and application builds before deployment. Apply an
 | Immutable release artifacts and separate worker process | Trace deployed behavior to source/configuration and recover jobs without inventing a second business API |
 | Managed hosting and database capabilities | Reduce infrastructure administration; provider/region selection must satisfy verified runtime, backup and access requirements under Operations, not assumptions about a vendor |
 
-GitHub Actions implements CI; Operations §5.5 specifies topology, caching and supply-chain controls, and Testing §15 specifies evidence and acceptance. P01-016 implements inventory-driven job separation; local and hosted acceptance remain separately evidenced. Hosting accounts, budget, recovery objectives and provider activation are environment prerequisites with named roles and evidence requirements, not unresolved application-architecture alternatives.
+GitHub Actions implements CI; Operations §5.5 specifies execution, caching and supply-chain controls, and Testing §15 specifies evidence and acceptance. P01-016 uses one inventory-driven job with a single install; local and hosted acceptance remain separately evidenced. Hosting accounts, budget, recovery objectives and provider activation are environment prerequisites with named roles and evidence requirements, not unresolved application-architecture alternatives.
 
 **Document ownership:** PRD owns product rules; Design owns UI behavior; Architecture owns component, security, and consistency decisions. `DATABASE.md` and `API.md` own detailed data and HTTP contracts. `TESTING.md` owns verification procedures; `OPERATIONS.md` owns deployment and operating procedures. Implement these contracts with each feature slice and verify them against code and test evidence. Root README and AGENTS own setup/navigation and agent execution instructions.
 

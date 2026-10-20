@@ -278,13 +278,13 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
   **Acceptance:** Related contracts and links agree; target paths/dependencies are distinguished from current implementation; no acceptance/milestone or runtime change is fabricated; independent owner review recorded.\
   **Evidence:** [Structure decision and documentation verification](./evidence/P01-015-structure-decision.md). Implementation tasks below remain Not Started.
 
-- [ ] **P01-016 — Implement inventory-driven CI jobs and required-result governance**\
+- [ ] **P01-016 — Simplify inventory-driven CI and required verification**\
   **Status:** `In Review` · **Area:** CI/repository · **Owner:** Codex\
   **Sources:** Architecture §§4.2,14; Operations §§5.5–5.6; Testing §15\
   **Depends on:** `P01-015`, `P01-010`\
-  **Deliverable:** Extend the shared inventory/runner for repository and cross-app ownership; split hosted workspace/browser jobs, retain equivalent local checks, sanitize reports and implement explicit aggregate status and dependency/security review. Document and verify required branch checks without claiming unavailable remote settings.\
-  **Acceptance:** All existing checks/cases retained, browser build dependencies correct, failure/cancel/skip/missing-report tests fail closed, locked installs and action/secret controls preserved; actual hosted run and repository-settings evidence before acceptance.\
-  **Evidence:** [Inventory, aggregate, security and full local pipeline verification](./evidence/P01-016-ci-governance.md). All 22 configured checks, 559 unit/component/tooling cases, 260 real replica-set integration cases and 30 browser cases passed. Hosted run and branch-protection verification remain Not Run because GitHub CLI is unauthenticated; no remote mutation or acceptance is claimed.
+  **Deliverable:** Keep one hosted CI job and shared check inventory; install once, reuse frontend builds, retain application checks and sanitized reports, and use change-based local verification. Document and verify required branch checks without claiming unavailable remote settings.\
+  **Acceptance:** Application checks/cases retained, browser build dependencies correct, command failures stop execution, scoped runs avoid unrelated checks, locked installs and action/secret controls preserved; actual hosted run and repository-settings evidence before acceptance.\
+  **Evidence:** [CI verification and simplification revision](./evidence/P01-016-ci-governance.md). Historical full-pipeline results are retained separately from current focused tooling verification; obsolete aggregation-only tests and the workflow-generator check are removed. Hosted run and branch-protection verification remain Not Run because GitHub CLI is unauthenticated; no remote mutation or acceptance is claimed.
 
 - [ ] **P01-017 — Establish coordinated development commands and source-quality guards**\
   **Status:** `Not Started` · **Area:** Developer tooling · **Owner:** Codex\
