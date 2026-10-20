@@ -1,8 +1,11 @@
+import { renderToStaticMarkup } from 'react-dom/server'
+import { AdminLoading } from '../src/components/layout/admin-loading'
+import { RouteErrorBoundary } from '../src/app/route-error-boundary'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { BrowserRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { AppRoutes } from '../src/app/routes'
+import { AppRoutes } from '../src/app/router'
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
 let container: HTMLDivElement
@@ -86,5 +89,34 @@ describe('admin scaffold routing', () => {
     expect(container.querySelector('h1')?.textContent).toBe('Page not found')
     expect(container.querySelector('a')?.getAttribute('href')).toBe('/login')
     expect(container.textContent).not.toContain('unknown-synthetic-path')
+  })
+})
+
+describe('admin route recovery', () => {
+  it('AD-05: pending administration exposes a single landmark and live status', () => {
+    const html = renderToStaticMarkup(<AdminLoading />)
+    expect(html.match(/<main\b/g)).toHaveLength(1)
+    expect(html).toContain('role="status"')
+    expect(html).toContain('Loading administration…')
+  })
+
+  it('AD-06: rendering failure closes access and shows safe reload recovery', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    function FailedRoute(): never {
+      throw new Error('synthetic private diagnostics')
+    }
+    try {
+      await act(() => root.render(
+        <RouteErrorBoundary><FailedRoute /></RouteErrorBoundary>,
+      ))
+      expect(container.querySelector('h1')?.textContent).toBe('Administration could not load')
+      expect(container.querySelector('[role="alert"]')).not.toBeNull()
+      expect(container.querySelectorAll('main')).toHaveLength(1)
+      expect(container.textContent).not.toContain('synthetic private diagnostics')
+      expect(container.querySelector('button')?.textContent).toBe('Reload page')
+      expect(container.querySelector('form')).toBeNull()
+    } finally {
+      log.mockRestore()
+    }
   })
 })

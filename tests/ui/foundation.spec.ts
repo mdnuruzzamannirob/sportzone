@@ -3,14 +3,17 @@ import AxeBuilder from '@axe-core/playwright'
 
 async function settleTransitions(page: Page) {
   await page.evaluate(async () => {
-    // Audit final colors/positions, not an intermediate theme or drawer frame.
-    // Loading/paused animations need not finish. Only active CSS transitions
-    // change the theme colors and drawer position being audited here.
-    await Promise.all(
-      document.getAnimations()
-        .filter((animation) => animation instanceof CSSTransition && animation.playState === 'running')
-        .map((animation) => animation.finished.catch(() => {})),
+    // This audit checks final colors/positions. Chromium can leave a tiny
+    // reduced-motion transition's finished promise pending indefinitely.
+    // Finish finite CSS transitions at their real endpoint instead of waiting
+    // on compositor timing; leave loading/paused/repeating animations alone.
+    const transitions = document.getAnimations().filter(
+      (animation) => animation instanceof CSSTransition &&
+        animation.playState === 'running' &&
+        Number.isFinite(Number(animation.effect?.getComputedTiming().endTime)),
     )
+    for (const transition of transitions) transition.finish()
+    await Promise.all(transitions.map((transition) => transition.finished))
   })
 }
 

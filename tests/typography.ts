@@ -32,7 +32,7 @@ export function verifyTypography(app: 'admin' | 'storefront') {
   const entry =
     app === 'storefront'
       ? 'storefront/src/app/globals.css'
-      : 'admin/src/styles.css'
+      : 'admin/src/styles/globals.css'
   assert.match(
     readFileSync(resolve(root, entry), 'utf8'),
     /@import "(?:\.\.\/)+styles\/foundation\.css"/,

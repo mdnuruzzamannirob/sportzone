@@ -106,7 +106,7 @@ The register contains 178 tasks across twelve phases, including seven engineerin
 | Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |   Done | Deferred |
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
 | 01 — Requirements Finalization and Planning   |      17 |           0 |     0 |           0 |       0 |         0 |     17 |        0 |
-| 02 — UI/UX Design                             |      13 |           1 |     0 |           0 |       0 |         0 |     12 |        0 |
+| 02 — UI/UX Design                             |      13 |           0 |     0 |           0 |       0 |         0 |     13 |        0 |
 | 03 — Authentication and Core Backend          |      20 |           6 |     0 |           0 |       0 |         0 |     14 |        0 |
 | 04 — Product Catalog and Inventory            |      15 |          15 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -117,7 +117,7 @@ The register contains 178 tasks across twelve phases, including seven engineerin
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **178** |     **135** | **0** |       **0** |   **0** |     **0** | **43** |    **0** |
+| **Total**                                     | **178** |     **134** | **0** |       **0** |   **0** |     **0** | **44** |    **0** |
 
 ## 4. Milestone tracker
 
@@ -399,13 +399,13 @@ owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
   **Acceptance:** Import/test discovery parity; lint/typecheck/unit/build/smoke and affected responsive/keyboard/both-theme browser checks; no new dependencies or authenticated access implied by a folder move.\
   **Evidence:** [Storefront structure and parity verification](./evidence/P02-012-storefront-refactor.md). 114 unit/component tests, production build/smoke, lint/types/boundaries and 18 three-engine browser cases Passed; visual parity reviewed by executor. Project owner reviewed and accepted on 20 October 2026: “Review করেছি—accept করছি, Done করো”.
 
-- [ ] **P02-013 — Refactor admin composition, layouts and feature placement**\
-  **Status:** `Not Started` · **Area:** Admin structure · **Owner:** Codex\
+- [x] **P02-013 — Refactor admin composition, layouts and feature placement**\
+  **Status:** `Done` · **Area:** Admin structure · **Owner:** Codex\
   **Sources:** Architecture §§4,5; Design; UI Components\
   **Depends on:** `P01-015`, `P02-011`\
   **Deliverable:** Organize router/providers, components/layout and feature pages; retain reusable management/UI compositions, lazy loading and fail-closed access states.\
   **Acceptance:** Lint/typecheck/unit/build/smoke and affected accessibility/browser checks; deep links, loading/errors, themes and navigation remain correct; query integration belongs to its actual API feature.\
-  **Evidence:** Not Run; no code moved by documentation task.
+  **Evidence:** [Admin structure and parity verification](./evidence/P02-013-admin-refactor.md). 99 admin tests, 23 shared-helper consumer tests, build/smoke, lint/types/boundaries and 72 browser cases Passed after correcting a reproduced audit transition-wait timeout. Project owner reviewed and accepted on 20 October 2026: “Review করেছি—accept করছি, Done করো”.
 
 ### Phase 03 — Authentication and core backend
 
@@ -1828,3 +1828,7 @@ Preserve IDs and dependency references; update phase totals and record milestone
 **20 October 2026 — P02-012 storefront refactor:** Not Started → In Progress → In Review under the owner’s next-Phase-02-task request. Moved store/account route groups, shell/navigation and shared UI foundations; extracted feature-owned home/account views with URLs, private cache policy and unavailable states preserved. Storefront lint/types, 114 unit/component cases, build, four smoke groups, boundaries/formatting and 18 Chromium/Firefox/WebKit browser cases Passed; executor inspected four responsive/theme screenshots. Independent acceptance pending; P02-013 and milestone statuses unchanged. Overall: 42 Done, 1 In Review, 135 Not Started. [Evidence](./evidence/P02-012-storefront-refactor.md).
 
 **20 October 2026 — P02-012 owner acceptance:** In Review → Done after the project owner selected “Review করেছি—accept করছি, Done করো” in the review popup. Checkbox checked; Phase 02 is 12/13 Done, with P02-013 Not Started. Overall: 43 Done, 135 Not Started, zero In Review/Blocked. Executor: Codex; independent reviewer/approver: project owner. Existing verification evidence retained; no milestone accepted. [Acceptance](./evidence/P02-012-storefront-refactor.md#owner-acceptance).
+
+**20 October 2026 — P02-013 admin refactor:** Not Started → In Progress → In Review. Organized declarative router/providers, layouts/navigation, feature-owned auth access state and global styles; preserved deep links, themes, lazy loading and denied access. Added safe route/chunk-error reload recovery. 99 admin tests, 23 shared-helper consumer tests, build/smoke, lint/types/boundaries and 72 browser cases Passed. A reproduced Chromium transition-wait audit timeout was corrected in the test helper without changing application styles or weakening accessibility assertions; all 48 helper consumers then passed. Executor reviewed responsive screenshots and source diff. Independent owner acceptance pending via requested popup. Overall: 43 Done, 1 In Review, 134 Not Started; no milestone accepted. [Evidence](./evidence/P02-013-admin-refactor.md).
+
+**20 October 2026 — P02-013 owner acceptance:** In Review → Done after the project owner selected “Review করেছি—accept করছি, Done করো” in the requested review popup. Checkbox checked; Phase 02 is 13/13 Done. Overall: 44 Done, 134 Not Started, zero In Review/Blocked. Executor: Codex; independent reviewer/approver: project owner. Existing verification retained; M1 remains Not Accepted. [Acceptance](./evidence/P02-013-admin-refactor.md#owner-acceptance).

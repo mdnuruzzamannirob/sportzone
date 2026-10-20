@@ -114,7 +114,7 @@ export function verifyIntegration(app: 'storefront' | 'admin') {
   const path =
     app === 'storefront'
       ? 'storefront/src/app/globals.css'
-      : 'admin/src/styles.css'
+      : 'admin/src/styles/globals.css'
   const entry = readFileSync(resolve(root, path), 'utf8')
   assert.match(entry, /@import "(?:\.\.\/)+styles\/tokens\.css"/)
   assert.match(entry, /outline: 2px solid var\(--focus\)/)

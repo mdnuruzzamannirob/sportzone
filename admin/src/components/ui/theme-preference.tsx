@@ -1,6 +1,6 @@
 'use client'
 
-import { SelectField } from './ui/fields'
+import { SelectField } from './fields'
 import { useEffect, useId, useState } from 'react'
 import {
   getThemePreference,
@@ -8,7 +8,7 @@ import {
   subscribeThemePreference,
   synchronizeThemePreference,
   type ThemePreference,
-} from '../../../shared/theme'
+} from '../../../../shared/theme'
 
 export function ThemePreferenceSelect() {
   const id = useId()

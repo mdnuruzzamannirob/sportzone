@@ -2,9 +2,9 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { BrowserRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { AppRoutes } from '../src/app/routes'
-import { AdminShell } from '../src/components/admin/admin-shell'
-import { navigationGroups } from '../src/components/admin/navigation'
+import { AppRoutes } from '../src/app/router'
+import { AdminShell } from '../src/components/layout/admin-shell'
+import { navigationGroups } from '../src/components/layout/navigation'
 import { Button } from '../src/components/ui/button'
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })

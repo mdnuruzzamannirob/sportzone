@@ -1,6 +1,6 @@
 import { Card } from '@heroui/react'
-import { Link } from '../ui/link'
-import { AdminShell } from './admin-shell'
+import { Link } from '../../../components/ui/link'
+import { AdminShell } from '../../../components/layout/admin-shell'
 
 // No session authority exists yet. Only public navigation metadata and this denied state
 // may render; no management screen or client flag can establish authenticated access.

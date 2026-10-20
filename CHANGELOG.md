@@ -8,6 +8,10 @@ This changelog tracks the documentation baseline. Application releases are recor
 
 ## Development changes — 20 October 2026
 
+- Recorded explicit project-owner review/acceptance of P02-013 through the popup; marked it Done and synchronized evidence and totals. Phase 02 is 13/13 Done; overall: 44 Done, 134 Not Started. M1 remains Not Accepted. [Acceptance](docs/evidence/P02-013-admin-refactor.md#owner-acceptance).
+
+- Implemented P02-013 admin router/providers, layout/navigation, auth feature and stylesheet placement; retained lazy denied-access routes and added safe chunk/render-error reload recovery. Updated source links and shared fixture/test consumers. Corrected a reproduced audit-only CSS-transition wait; 99 admin tests, 23 shared-helper consumer tests and 72 browser cases passed, alongside build/smoke/lint/types. In Review pending owner acceptance. [Evidence](docs/evidence/P02-013-admin-refactor.md).
+
 - Recorded project-owner review and acceptance of P02-012 through the review popup; marked it Done and synchronized evidence and totals. Phase 02: 12/13 Done; overall: 43 Done, 135 Not Started. [Acceptance](docs/evidence/P02-012-storefront-refactor.md#owner-acceptance).
 
 - Implemented P02-012 storefront route/layout refactoring: store/account groups, layout-owned shell/navigation, shared UI foundations and feature-owned home/account views. Preserved URLs, unavailable states and private cache boundaries; 114 unit/component tests, production build/smoke and 18 three-engine browser cases passed. In Review pending independent acceptance. [Evidence](docs/evidence/P02-012-storefront-refactor.md).

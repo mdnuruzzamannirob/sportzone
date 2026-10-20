@@ -1,7 +1,7 @@
 import { Breadcrumbs, Disclosure, Drawer } from '@heroui/react'
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
-import { ThemePreferenceSelect } from '../theme-preference'
+import { ThemePreferenceSelect } from '../ui/theme-preference'
 import { Link } from '../ui/link'
 import { Notice } from '../ui/feedback'
 import { navigationContext, navigationGroups } from './navigation'

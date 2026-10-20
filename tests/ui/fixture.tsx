@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router'
-import { AdminShell } from '../../admin/src/components/admin/admin-shell'
+import { AdminShell } from '../../admin/src/components/layout/admin-shell'
 import { DataTable } from '../../admin/src/components/management/data-table'
 import { FileUpload } from '../../admin/src/components/management/file-upload'
 import { GuardedAction } from '../../admin/src/components/management/guarded-action'
