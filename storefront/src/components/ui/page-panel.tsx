@@ -1,6 +1,6 @@
 'use client'
 
-import { Card, CardContent, CardHeader } from '@heroui/react'
+import { Card, CardContent, CardHeader } from './primitives'
 import type { ReactNode } from 'react'
 
 export function PagePanel({
@@ -14,7 +14,7 @@ export function PagePanel({
 }) {
   return (
     <section aria-labelledby={id}>
-      <Card className="max-w-2xl border border-border p-6 sm:p-8">
+      <Card className="max-w-2xl">
         <CardHeader>
           <h1 id={id} className="text-3xl font-semibold tracking-tight sm:text-4xl">
             {title}

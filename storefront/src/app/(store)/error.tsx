@@ -1,6 +1,6 @@
 'use client'
 
-import { Alert } from '@heroui/react'
+import { Alert } from '../../components/ui/index'
 import { Link } from '../../components/ui/link'
 import { Button } from '../../components/ui/button'
 
@@ -14,18 +14,18 @@ export default function PublicError({
     <Alert
       aria-labelledby="error-title"
       role="alert"
-      className="rounded-card border border-control-border p-6"
+      className=" border border-border p-6"
     >
       <Alert.Content>
         <h1 id="error-title" className="text-3xl">
           This page could not load
         </h1>
-        <p className="mt-4 text-text-muted">Try again, or return to the home page.</p>
+        <p className="mt-4 text-muted">Try again, or return to the home page.</p>
         <div className="mt-6 flex flex-wrap gap-4">
           <Button type="button" onPress={reset}>
             Try again
           </Button>
-          <Link href="/" className="inline-flex min-h-control items-center">
+          <Link href="/" className="inline-flex  items-center">
             Back to SportZone
           </Link>
         </div>

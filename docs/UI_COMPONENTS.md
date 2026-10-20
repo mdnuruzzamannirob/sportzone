@@ -14,15 +14,16 @@
 | Reusable table/list/upload/guarded-action compositions          | Admin `components/management/`                                               |
 | Feature-only hooks, API functions, schemas and types            | Owning `features/<name>/`; root equivalents only for real cross-feature code |
 
-Keep HeroUI v3, existing app-owned defaults, shared tokens/fonts and theme bootstrap. Do not rewrite accepted primitives or add empty providers/wrappers during relocation. Preserve Server/Client Component boundaries and keyboard/focus/input-retention behavior; file moves alone do not prove visual acceptance. Form schemas validate usability; backend DTO/security/business validation remains authoritative. Future query/form dependencies are introduced with consuming features and their checks, not assumed installed.
+Keep HeroUI v3 and theme bootstrap. P02-014 replaces custom tokens/fonts with native defaults and centralizes native facades in each app’s `components/ui/`. Do not add empty providers or duplicate component implementations. Preserve Server/Client Component boundaries and keyboard/focus/input-retention behavior; file moves alone do not prove visual acceptance. Form schemas validate usability; backend DTO/security/business validation remains authoritative. Future query/form dependencies are introduced with consuming features and their checks, not assumed installed.
 
-This is a usage reference for the app-owned HeroUI compositions in `storefront/src/components/ui/` and `admin/src/components/ui/`. [Design](./DESIGN.md) governs visual and interaction requirements. Import the relevant module directly; neither app consumes the other app's runtime components.
+This is a usage reference for the app-owned HeroUI compositions in `storefront/src/components/ui/` and `admin/src/components/ui/`. [Design](./DESIGN.md) governs visual and interaction requirements. Import the relevant module directly; neither app consumes the other app's runtime components. The owner’s 20 October 2026 decision replaces the custom design system with native HeroUI defaults. All application HeroUI imports go through the app’s `components/ui/` modules, enforced by `lint:boundaries`. `primitives.tsx` preserves compound/generic APIs and `theme.css` owns colors/fonts/styles. There is no custom webfont/palette/size skin. `index.ts` exposes the public boundary; framework Link adapters retain navigation semantics.
+
 
 ## Component map
 
 | Module         | Exports                                                     | Responsibility                                                                                                             |
 | -------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `button.tsx`   | `Button`                                                    | Primary, outline, ghost and danger variants; disabled/pending handling and visible pending text                            |
+| `button.tsx`   | `Button`                                                    | All native variants/sizes; disabled/pending handling and optional visible pending text                            |
 | `fields.tsx`   | `TextInput`, `SelectField`, `CheckboxField`, `RadioChoices` | HeroUI labels, helper/error associations and controlled/uncontrolled input support; `TextInput multiline` renders TextArea |
 | `form.tsx`     | `Form`, `FormErrorSummary`                                  | Prevent navigation/repeated pending submissions; link safe field errors and focus the summary after a failed submit        |
 | `feedback.tsx` | `Notice`, `LoadingState`, `EmptyState`                      | Persistent textual feedback, announcement roles, decorative progress/skeletons and caller-supplied recovery actions        |
@@ -115,10 +116,16 @@ Admin-only primitives live in `admin/src/components/management/`. They are prese
 
 ## Verification
 
-Both apps run the same behavior contract against their own components in light and dark modes. Tests cover labels/errors, input retention, selection, pending guards, feedback semantics, summary focus and dialog/drawer dismissal/draft preservation. Browser viewport, native Tab cycling, zoom, pointer/touch and assistive-technology checks remain distinct from DOM tests. Record observed verification in the owning task evidence.
+Both apps run the same behavior contract against their own components once in jsdom; browser checks exercise light and dark styling. Tests cover labels/errors, input retention, selection, pending guards, feedback semantics, summary focus and dialog/drawer dismissal/draft preservation. Browser viewport, native Tab cycling, zoom, pointer/touch and assistive-technology checks remain distinct from DOM tests. Record observed verification in the owning task evidence.
 
-Storefront additionally runs 40 commerce cases (20 per theme), covering sale/rating/image states, unavailable variants, bounded/direct quantities, pending/removal, supplied amount authority and loading semantics. Browser layout/image-delivery/zoom/native keyboard checks remain separate from DOM state checks.
+Storefront additionally runs 20 commerce cases, covering sale/rating/image states, unavailable variants, bounded/direct quantities, pending/removal, supplied amount authority and loading semantics. Browser layout/image-delivery/zoom/native keyboard checks remain separate from DOM state checks.
 
-Admin management tests run ten cases per explicit theme (20 total): server row order/header/sort, arrow-key navigation, local overflow structure, result states/retry, pagination guards, filter drafts, file constraints/preview cleanup/progress/retry, explicit reason/eligibility confirmation and Escape/focus restoration and caller-controlled closure. DOM tests do not establish rendered viewport usability or native file-picker behavior.
+Admin management tests run ten DOM cases: server row order/header/sort, arrow-key navigation, local overflow structure, result states/retry, pagination guards, filter drafts, file constraints/preview cleanup/progress/retry, explicit reason/eligibility confirmation and Escape/focus restoration and caller-controlled closure. DOM tests do not establish rendered viewport usability or native file-picker behavior.
 
-The cross-app browser fixture and foundation audit live in `tests/ui/`. `npm run test:ui` requires both built apps and installed Playwright engines; see [P02-011 audit evidence](./evidence/P02-011-accessibility.md). The fixture uses real components and synthetic data outside the production route trees; it provides no authentication bypass.
+The actual-app preview and focused browser checks live in `tests/ui/`. `npm run test:ui` requires both built apps and installed Playwright engines; see [P02-011 audit evidence](./evidence/P02-011-accessibility.md). The fixture uses real components and synthetic data outside the production route trees; it provides no authentication bypass.
+
+## Default-theme migration and preview
+
+P02-014 records owner authorization, research and cleanup. The single local `showcase.html` loads the actual selected app UI facade and theme, with Admin/Storefront and Light/Dark controls. It exposes native variant axes, app fields/feedback/dialogs/theme and commerce/management compositions. It is not a separately styled mock. Theme switching preserves mounted drafts; app switching reloads the CSS boundary.
+
+Native Button variants/sizes are no longer narrowed by the app wrapper. Optional `pendingLabel` remains an explicit behavior composition. Required-field indication uses native labels/ARIA rather than appended text. Dialog/drawer Cancel uses the native close slot, with no positioning override. CSS palette/asset snapshots and duplicate DOM theme runs were retired; functional/negative tests, BDT correctness, theme lifecycle, browser interaction and explicit accessibility checks remain. Historical evidence is not rewritten as new acceptance.

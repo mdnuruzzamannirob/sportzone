@@ -8,6 +8,8 @@ This changelog tracks the documentation baseline. Application releases are recor
 
 ## Development changes — 20 October 2026
 
+- Implemented the owner-requested P02-014 migration to native HeroUI defaults in both apps, centralized UI/theme facades with enforced import boundaries, and one actual-app preview. Removed obsolete custom palette/font assets, duplicate galleries and redundant style/theme tests while preserving behavioral and accessibility gates. Independent review and native contrast findings remain open. [Evidence](docs/evidence/P02-014-default-heroui.md).
+
 - Replaced the default review entry with an isolated original-HeroUI reference after owner rejection/clarification: 22 used component families, complete supported visual variant axes, direct library imports and no project CSS/wrappers. Kept app compositions separate. Removed forced app control/card/dialog radii while preserving production theme/accessibility contracts. Native reference contrast findings are recorded, not certified as production acceptance. In Review. [Evidence](docs/evidence/ui-component-showcase.md#revised-owner-scope--original-heroui-reference).
 
 - Added a local UI component showcase with separate Storefront/Admin views, actual app controls, interactive states and Light/Dark/System appearance. Added `npm run ui:showcase` and README links; production routes/dependencies unchanged. Eight focused Chromium views and showcase types/accessibility checks passed. In Review pending owner acceptance. [Evidence](docs/evidence/ui-component-showcase.md).

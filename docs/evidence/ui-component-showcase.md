@@ -99,3 +99,8 @@ Artifacts: `test-results/ui-showcase/native-report.json`, `native-contrast.json`
 Removed forced radius classes from app-owned HeroUI button/card/dialog compositions and redundant shape/spacing overrides from the shared adapter, preserving the production palette, font foundations, 44px minimum targets and native interaction semantics. Added native alert indicators, inherited pending-spinner color, and correct footer CloseTrigger flow. Earlier proposed custom 12/20/24px radii were discarded when the owner selected original HeroUI styling; foundation token values remain unchanged.
 
 Final app checks: storefront lint/types and four affected suites Passed (93 tests); admin lint/types and four affected suites Passed (73 tests); both production builds and HTTP smoke scripts Passed. These checks apply to the app styling changes and are distinct from the stock-library reference findings above. No backend/API/database/dependency changes. All UI changes and revised preview remain In Review pending owner acceptance; task/milestone counts are unchanged.
+
+
+## Superseding owner decision
+
+P02-014 replaces the earlier isolated reference/app previews with one actual-app preview and native themes in both production frontends. Earlier results above are historical, not new acceptance. See [current migration evidence](./P02-014-default-heroui.md).

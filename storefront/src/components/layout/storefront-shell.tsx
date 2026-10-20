@@ -15,7 +15,7 @@ export const supportLinks = [
 
 export function StorefrontShell({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-storefront flex-col px-4 sm:px-6">
+    <div className="mx-auto flex min-h-dvh w-full max-w-7xl flex-col px-4 sm:px-6">
       <a href="#main-content" className="sr-only focus:not-sr-only">
         Skip to content
       </a>
@@ -24,7 +24,7 @@ export function StorefrontShell({ children }: Readonly<{ children: ReactNode }>)
       <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 py-12 sm:py-16">
         {children}
       </main>
-      <footer className="border-t border-border py-6 text-sm text-text-muted">
+      <footer className="border-t border-border py-6 text-sm text-muted">
         <p>SportZone · Made for your next game.</p>
         <nav
           aria-label="Support and policies"
@@ -34,7 +34,7 @@ export function StorefrontShell({ children }: Readonly<{ children: ReactNode }>)
             <Link
               key={href}
               href={href}
-              className="inline-flex min-h-control items-center"
+              className="inline-flex  items-center"
             >
               {label}
             </Link>

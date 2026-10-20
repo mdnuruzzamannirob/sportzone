@@ -7,9 +7,8 @@ function normalize(value: unknown): ThemePreference {
 }
 function apply(preference: ThemePreference) {
   document.documentElement.dataset.themePreference = preference
-  if (preference === 'system')
-    document.documentElement.removeAttribute('data-theme')
-  else document.documentElement.dataset.theme = preference
+  const dark = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches
+  document.documentElement.dataset.theme = preference === 'system' ? (dark ? 'dark' : 'light') : preference
 }
 export function getThemePreference(): ThemePreference {
   return normalize(document.documentElement.dataset.themePreference)
@@ -43,9 +42,15 @@ export function subscribeThemePreference(onChange: () => void): () => void {
     apply(normalize(event.newValue))
     onChange()
   }
+  const media = typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-color-scheme: dark)') : undefined
+  const systemChange = () => {
+    if (getThemePreference() === 'system') { apply('system'); onChange() }
+  }
+  media?.addEventListener('change', systemChange)
   window.addEventListener(eventName, onChange)
   window.addEventListener('storage', storage)
   return () => {
+    media?.removeEventListener('change', systemChange)
     window.removeEventListener(eventName, onChange)
     window.removeEventListener('storage', storage)
   }

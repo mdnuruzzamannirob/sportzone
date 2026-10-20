@@ -1,9 +1,6 @@
-// Native HeroUI reference: deliberately no imports from either app or project styles.
+// One local preview of the actual app-owned UI modules and selected app theme.
 import { type ReactNode, useEffect, useState } from 'react'
-import { createRoot } from 'react-dom/client'
-import * as H from '@heroui/react'
-import './native-showcase.css'
-
+import { AppCompositions } from './compositions'
 const sizes = ['sm', 'md', 'lg'] as const
 const buttonVariants = [
   'primary',
@@ -43,8 +40,11 @@ const components = [
   'Table',
   'Pagination',
   'Breadcrumbs',
+  'App fields', 'App feedback', 'App overlays', 'Appearance', 'Commerce', 'Management',
 ] as const
 type ComponentName = (typeof components)[number]
+export type PreviewUI = Omit<typeof import('../../../admin/src/components/ui/index'), 'Link'>
+export function createShowcase(H: PreviewUI, application: 'admin' | 'storefront', parameters: URLSearchParams) {
 function Sample({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="native-specimen">
@@ -282,6 +282,7 @@ function OverlayExamples({ drawer = false }: { drawer?: boolean }) {
 }
 function Examples({ name }: { name: ComponentName }) {
   const [page, setPage] = useState(1)
+  if (['App fields', 'App feedback', 'App overlays', 'Appearance', 'Commerce', 'Management'].includes(name)) return <AppCompositions UI={H} name={name} />
   if (name === 'Button')
     return (
       <>
@@ -322,10 +323,10 @@ function Examples({ name }: { name: ComponentName }) {
   if (name === 'Link')
     return (
       <div className="native-row">
-        <H.Link href="#native-main">Default link</H.Link>
-        <H.Link href="#native-main" isDisabled>
+        <H.PrimitiveLink href="#native-main">Default link</H.PrimitiveLink>
+        <H.PrimitiveLink href="#native-main" isDisabled>
           Disabled link
-        </H.Link>
+        </H.PrimitiveLink>
       </div>
     )
   if (name === 'Card')
@@ -690,30 +691,30 @@ function Examples({ name }: { name: ComponentName }) {
   )
 }
 function NativeShowcase() {
-  const [active, setActive] = useState<ComponentName>('Button')
-  const [dark, setDark] = useState(false)
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
-    document.documentElement.classList.toggle('dark', dark)
-  }, [dark])
+  const [active, setActive] = useState<ComponentName>(() => components.find(name => name === parameters.get('component')) ?? 'Button')
+  const [dark, setDark] = useState(document.documentElement.dataset.theme === 'dark')
+  useEffect(() => H.subscribeThemePreference(() => setDark(document.documentElement.dataset.theme === 'dark')), [])
   return (
     <div className="native-shell">
       <header className="native-header">
         <div>
-          <h1>HeroUI · Original components</h1>
-          <p>Installed v3.2.6 · Direct library components · No SportZone overrides</p>
+          <h1>SportZone UI · {application === 'admin' ? 'Admin' : 'Storefront'}</h1>
+          <p>HeroUI v3.2.6 default system · Actual app-owned UI components</p>
         </div>
-        <H.Button variant="secondary" onPress={() => setDark((v) => !v)}>
+        <nav aria-label="Preview application" className="native-row">
+          {(['storefront', 'admin'] as const).map(app => <H.Button key={app} variant={application === app ? 'primary' : 'secondary'} aria-pressed={application === app} onPress={() => { window.location.href = `/showcase.html?app=${app}&component=${encodeURIComponent(active)}` }}>{app === 'admin' ? 'Admin' : 'Storefront'}</H.Button>)}
+        </nav>
+        <H.Button variant="secondary" onPress={() => H.setThemePreference(dark ? 'light' : 'dark')}>
           {dark ? 'Light theme' : 'Dark theme'}
         </H.Button>
       </header>
       <div className="native-layout">
         <nav className="native-nav" aria-label="HeroUI components">
-          {components.map((name) => (
+          {components.filter(name => name !== (application === 'admin' ? 'Commerce' : 'Management')).map((name) => (
             <H.Button
               key={name}
               variant={active === name ? 'primary' : 'ghost'}
-              onPress={() => setActive(name)}
+              onPress={() => { setActive(name); const url = new URL(window.location.href); url.searchParams.set('component', name); window.history.replaceState(null, '', url) }}
               aria-current={active === name ? 'page' : undefined}
             >
               {name}
@@ -723,7 +724,7 @@ function NativeShowcase() {
         <main id="native-main" className="native-content">
           <h2>{active}</h2>
           <p className="native-note">
-            Native HeroUI markup and CSS. Variants, sizes and common interaction states are shown
+            Actual app-owned UI facade with default HeroUI styling. Variants, sizes and common interaction states are shown
             below; overlays have controls for every supported visual option.
           </p>
           <Examples name={active} key={active} />
@@ -732,6 +733,5 @@ function NativeShowcase() {
     </div>
   )
 }
-const root = document.getElementById('root')
-if (!root) throw new Error('Missing native gallery root')
-createRoot(root).render(<NativeShowcase />)
+return NativeShowcase
+}

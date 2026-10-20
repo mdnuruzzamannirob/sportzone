@@ -67,6 +67,12 @@ export function checkBoundaries(root = process.cwd()) {
           ? specifier.split('/').slice(0, 2).join('/')
           : specifier.split('/')[0]
         const builtin = builtins.has(specifier.replace(/^node:/, ''))
+        if (
+          (owner === 'admin' || owner === 'storefront') &&
+          packageName.startsWith('@heroui/') &&
+          !isWithin(file, join(root, owner, 'src/components/ui'))
+        )
+          errors.push(`${label}: import HeroUI through the app-owned components/ui boundary`)
         if (!builtin && !dependencies[packageName])
           errors.push(`${label}: undeclared dependency ${packageName}`)
         if (!owner) errors.push(`${label}: shared code must remain pure`)

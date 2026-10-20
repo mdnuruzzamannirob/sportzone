@@ -1,4 +1,4 @@
-import { Card } from '@heroui/react'
+import { Card } from '../ui/index'
 import { Outlet } from 'react-router'
 import { ThemePreferenceSelect } from '../ui/theme-preference'
 
@@ -12,7 +12,7 @@ export function PublicLayout() {
       <div className="mb-6">
         <ThemePreferenceSelect />
       </div>
-      <Card className="border border-border p-6 sm:p-8">
+      <Card className="">
         <Card.Content>
           <Outlet />
         </Card.Content>

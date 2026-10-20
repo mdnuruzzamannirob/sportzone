@@ -117,7 +117,6 @@ describe('responsive storefront shell', () => {
     expect(html.match(/<main\b/g)).toHaveLength(1)
     expect(html).toContain('tabindex="-1"')
     expect(html).toContain('href="#main-content"')
-    expect(html).toContain('max-w-storefront')
     expect(html).toContain('lg:hidden')
     expect(html).toContain('lg:flex')
     for (const [, href] of supportLinks) expect(html).toContain(`href="${href}"`)

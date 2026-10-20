@@ -1,6 +1,6 @@
 'use client'
 
-import { Card, Skeleton } from '@heroui/react'
+import { Card, Skeleton } from '../ui/index'
 
 export function CommerceSkeleton({
   kind = 'product',
@@ -16,12 +16,12 @@ export function CommerceSkeleton({
             ? 'Loading cart item…'
             : 'Loading order summary…'}
       </p>
-      <Card aria-hidden="true" className="border border-border p-4">
+      <Card aria-hidden="true" className="">
         <Card.Content className="space-y-4">
           {kind === 'product' && (
-            <Skeleton className="aspect-square w-full rounded-card" />
+            <Skeleton className="aspect-square w-full " />
           )}
-          {kind === 'cart-line' && <Skeleton className="h-24 w-24 rounded-card" />}
+          {kind === 'cart-line' && <Skeleton className="h-24 w-24 " />}
           <Skeleton className="h-5 w-3/4" />
           <Skeleton className="h-4 w-1/2" />
           {kind === 'summary' && (

@@ -1,6 +1,6 @@
 'use client'
 
-import { Card } from '@heroui/react'
+import { Card } from '../ui/index'
 import type { ReactNode } from 'react'
 import { Link } from '../ui/link'
 import { Price } from './price'
@@ -37,7 +37,7 @@ export function ProductCard({
       ? approvedRating
       : undefined
   return (
-    <Card className="h-full min-w-0 border border-border p-4">
+    <Card className="h-full min-w-0">
       <Card.Content className="flex flex-col gap-4">
         <Link href={href} className="flex w-full min-w-0 flex-col items-start gap-3">
           <ProductImage key={image?.src ?? 'missing'} image={image} />
@@ -48,9 +48,9 @@ export function ProductCard({
           regularPricePoisha={regularPricePoisha}
         />
         <AvailabilityBadge availability={availability} />
-        <p className="text-xs text-text-muted">Stock is rechecked at checkout.</p>
+        <p className="text-xs text-muted">Stock is rechecked at checkout.</p>
         {rating && (
-          <p className="text-sm text-text-muted">
+          <p className="text-sm text-muted">
             {rating.average} out of 5 · {rating.count} approved reviews
           </p>
         )}

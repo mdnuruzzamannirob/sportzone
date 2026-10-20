@@ -1,6 +1,6 @@
 'use client'
 
-import { Disclosure } from '@heroui/react'
+import { Disclosure } from '../ui/index'
 import { Link } from '../ui/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
@@ -49,7 +49,7 @@ export function StorefrontHeader() {
             ref={home}
             href="/"
             aria-label="SportZone home"
-            className="inline-flex min-h-control items-center text-xl font-semibold text-text"
+            className="inline-flex  items-center text-xl font-semibold text-foreground"
           >
             SportZone
             <span aria-hidden="true" className="text-brand">
@@ -65,7 +65,7 @@ export function StorefrontHeader() {
                 key={href}
                 href={href}
                 aria-current={pathname === href ? 'page' : undefined}
-                className="inline-flex min-h-control items-center"
+                className="inline-flex  items-center"
               >
                 {label}
               </Link>
@@ -84,11 +84,11 @@ export function StorefrontHeader() {
             </Disclosure.Heading>
             <Link
               href="/search"
-              className="inline-flex min-h-control items-center px-1"
+              className="inline-flex  items-center px-1"
             >
               Search
             </Link>
-            <Link href="/cart" className="inline-flex min-h-control items-center px-1">
+            <Link href="/cart" className="inline-flex  items-center px-1">
               Cart
             </Link>
           </div>
@@ -112,7 +112,7 @@ export function StorefrontHeader() {
                   href={href}
                   onClick={dismiss}
                   aria-current={pathname === href ? 'page' : undefined}
-                  className="inline-flex min-h-control items-center"
+                  className="inline-flex  items-center"
                 >
                   {label}
                 </Link>
@@ -120,7 +120,7 @@ export function StorefrontHeader() {
               <Link
                 href="/support"
                 onClick={dismiss}
-                className="inline-flex min-h-control items-center"
+                className="inline-flex  items-center"
               >
                 Customer support
               </Link>

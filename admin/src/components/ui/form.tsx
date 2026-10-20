@@ -1,6 +1,6 @@
 'use client'
 
-import { Alert, Form as HeroForm, type FormProps } from '@heroui/react'
+import { Alert, Form as HeroForm, type FormProps } from './primitives'
 import { useEffect, useId, useRef } from 'react'
 import { Link } from './link'
 
@@ -43,7 +43,7 @@ export function FormErrorSummary({
       tabIndex={-1}
       role="alert"
       aria-labelledby={titleId}
-      className="border border-danger p-4"
+      status="danger"
     >
       <Alert.Content>
         <h2 id={titleId} className="font-semibold text-danger">

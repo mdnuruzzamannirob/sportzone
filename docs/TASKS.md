@@ -101,12 +101,12 @@ retain their own approver, environment, artifacts, blockers and explicit decisio
 
 ## 3. Project progress dashboard
 
-The register contains 178 tasks across twelve phases, including seven engineering-foundation/refactor tasks added on 20 October 2026. Update phase totals when tasks are added or statuses change.
+The register contains 179 tasks across twelve phases, including seven engineering-foundation/refactor tasks and the P02-014 owner-requested UI migration added on 20 October 2026. Update phase totals when tasks are added or statuses change.
 
 | Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |   Done | Deferred |
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
 | 01 — Requirements Finalization and Planning   |      17 |           0 |     0 |           0 |       0 |         0 |     17 |        0 |
-| 02 — UI/UX Design                             |      13 |           0 |     0 |           0 |       0 |         0 |     13 |        0 |
+| 02 — UI/UX Design                             |      14 |           0 |     0 |           0 |       0 |         1 |     13 |        0 |
 | 03 — Authentication and Core Backend          |      20 |           6 |     0 |           0 |       0 |         0 |     14 |        0 |
 | 04 — Product Catalog and Inventory            |      15 |          15 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -117,7 +117,7 @@ The register contains 178 tasks across twelve phases, including seven engineerin
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **178** |     **134** | **0** |       **0** |   **0** |     **0** | **44** |    **0** |
+| **Total**                                     | **179** |     **134** | **0** |       **0** |   **0** |     **1** | **44** |    **0** |
 
 ## 4. Milestone tracker
 
@@ -301,7 +301,7 @@ owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
 
 ### Phase 02 — UI/UX design
 
-**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 02. **Associated gate:** M1. **Tasks:** 13.
+**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 02. **Associated gate:** M1. **Tasks:** 14.
 
 - [x] **P02-001 — Scaffold Next.js storefront workspace**\
   **Status:** `Done` · **Area:** Frontend/storefront · **Owner:** Codex\
@@ -324,7 +324,7 @@ owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
   **Sources:** Design §2.2\
   **Depends on:** `P02-001`, `P02-002`\
   **Deliverable:** Create semantic CSS token mappings for light/dark themes.\
-  **Acceptance:** Brand #2563EB and on-brand white remain identical in both modes; neutrals are grayscale.\
+  **Acceptance:** Original acceptance used the custom brand palette; P02-014 supersedes the palette with native HeroUI defaults without rewriting the historical acceptance.\
   **Evidence:** [Shared token, contrast, build checks and rendered light/dark comparison](./evidence/P02-003-tokens.md). Accepted by project owner on 17 October 2026: “Design tokens গ্রহণ করছি”.
 
 - [x] **P02-004 — Configure typography, spacing and currency utilities**\
@@ -406,6 +406,14 @@ owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
   **Deliverable:** Organize router/providers, components/layout and feature pages; retain reusable management/UI compositions, lazy loading and fail-closed access states.\
   **Acceptance:** Lint/typecheck/unit/build/smoke and affected accessibility/browser checks; deep links, loading/errors, themes and navigation remain correct; query integration belongs to its actual API feature.\
   **Evidence:** [Admin structure and parity verification](./evidence/P02-013-admin-refactor.md). 99 admin tests, 23 shared-helper consumer tests, build/smoke, lint/types/boundaries and 72 browser cases Passed after correcting a reproduced audit transition-wait timeout. Project owner reviewed and accepted on 20 October 2026: “Review করেছি—accept করছি, Done করো”.
+
+- [ ] **P02-014 — Adopt the default HeroUI design system and app-owned UI boundaries**\
+  **Status:** `In Review` · **Area:** Frontend design system · **Owner:** Codex\
+  **Sources:** Explicit owner decision, 20 October 2026; Design §2; Architecture §§4–5; Testing §15.5\
+  **Depends on:** `P02-012`, `P02-013`\
+  **Deliverable:** Research installed/official HeroUI defaults; centralize primitive/theme imports in each app’s UI directory; remove custom palette/fonts/skin and obsolete tests; provide one actual-app preview with Admin/Storefront and Light/Dark toggles.\
+  **Acceptance:** Both frontend types/lint/necessary interaction/display checks and builds/smoke verified; import boundary enforced; one preview uses real app modules; accessibility findings retained and explicitly dispositioned without waiving PRD gates; independent owner review.\
+  **Evidence:** [Decision, research, implementation and verification](./evidence/P02-014-default-heroui.md). Implementation and focused functional checks passed; native contrast findings and owner review remain open. No new milestone acceptance.
 
 ### Phase 03 — Authentication and core backend
 
@@ -1404,7 +1412,7 @@ owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
   **Sources:** Design §§3,12,14\
   **Depends on:** `P10-001`\
   **Deliverable:** Run automated and manual keyboard/screen-reader checks on discovery, checkout, guest proof, returns, admin dialogs/tables.\
-  **Acceptance:** Labels, focus, reflow, contrast, reduced motion and exact primary brand blue meet design target.\
+  **Acceptance:** Labels, focus, reflow, contrast, reduced motion and approved native HeroUI themes meet the design target.\
   **Evidence to attach:** Accessibility findings/resolution record.
 
 - [ ] **P10-007 — Verify mobile, tablet, desktop and target browsers**\
@@ -1836,3 +1844,5 @@ Preserve IDs and dependency references; update phase totals and record milestone
 **20 October 2026 — Supporting UI review showcase:** Owner requested a browsable view of both frontends’ existing buttons/fields and other components. Added a standalone local showcase and startup command; eight focused app/theme/viewport checks, types/lint and accessibility passed. Submitted for popup review; this supporting tool changes no numbered task totals or milestone decisions. [Evidence](./evidence/ui-component-showcase.md).
 
 **20 October 2026 — UI reference correction:** Owner rejected the initial showcase and clarified original HeroUI components used by the project, with all supported variants. Added isolated native reference (22 families), kept app compositions separate, removed forced app shape overrides, and recorded focused checks plus stock-palette contrast findings. In Review pending revised popup acceptance; numbered task/milestone totals unchanged. [Evidence](./evidence/ui-component-showcase.md#revised-owner-scope--original-heroui-reference).
+
+**20 October 2026 — Default HeroUI owner decision:** Added P02-014 (In Progress) under the explicit request to use the complete native default design system in both apps, centralize UI control, unify preview and remove obsolete/redundant visual tests. Register 178 → 179; prior acceptances preserved. Phase 02: 13 Done, 1 In Progress. Overall: 44 Done, 1 In Progress, 134 Not Started. No product/security/accessibility milestone waived.

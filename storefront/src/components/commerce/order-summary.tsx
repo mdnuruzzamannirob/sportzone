@@ -1,6 +1,6 @@
 'use client'
 
-import { Card } from '@heroui/react'
+import { Card } from '../ui/index'
 import { useId } from 'react'
 import { formatBdt } from '../../lib/format-bdt'
 
@@ -50,7 +50,7 @@ export function OrderSummary({
     ],
   ]
   return (
-    <Card aria-labelledby={id} className="border border-border p-6 text-text">
+    <Card aria-labelledby={id} className="">
       <Card.Header>
         <h2 id={id} className="text-xl">
           Order summary
@@ -61,14 +61,14 @@ export function OrderSummary({
           {rows.map(([label, value]) => (
             <div key={label} className="flex flex-wrap justify-between gap-x-6 gap-y-1">
               <dt>{label}</dt>
-              <dd className="numeric font-semibold">{value}</dd>
+              <dd className="tabular-nums font-semibold">{value}</dd>
             </div>
           ))}
         </dl>
         <p className="text-sm">
           Payment method: {method ? methods[method] : 'Not selected'}
         </p>
-        <p className="text-sm text-text-muted">
+        <p className="text-sm text-muted">
           {kind === 'order'
             ? 'Recorded order amounts. Payment status is shown separately.'
             : 'Prices, discounts, delivery and stock are rechecked when placing your order.'}

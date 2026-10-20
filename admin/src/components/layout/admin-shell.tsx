@@ -1,4 +1,4 @@
-import { Breadcrumbs, Disclosure, Drawer } from '@heroui/react'
+import { Breadcrumbs, Disclosure, Drawer } from '../ui/index'
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 import { ThemePreferenceSelect } from '../ui/theme-preference'
@@ -13,7 +13,7 @@ function Navigation({ label, onNavigate }: { label: string; onNavigate?: () => v
     <nav aria-label={label} className="space-y-6">
       {navigationGroups.map((group) => (
         <section key={group.label} aria-label={group.label}>
-          <h2 className="mb-2 px-3 text-xs font-semibold text-text-muted">
+          <h2 className="mb-2 px-3 text-xs font-semibold text-muted">
             {group.label}
           </h2>
           <ul className="space-y-1">
@@ -23,7 +23,7 @@ function Navigation({ label, onNavigate }: { label: string; onNavigate?: () => v
                   to={href}
                   onClick={onNavigate}
                   aria-current={current?.[1] === href ? 'page' : undefined}
-                  className={`flex w-full min-w-0 border-s-2 px-3 py-2 no-underline ${current?.[1] === href ? 'border-brand bg-selected-surface font-semibold' : 'border-transparent'}`}
+                  className={`flex w-full min-w-0 border-s-2 px-3 py-2 no-underline ${current?.[1] === href ? 'border-accent bg-default font-semibold' : 'border-transparent'}`}
                 >
                   {title}
                 </Link>
@@ -139,7 +139,7 @@ export function AdminShell({
             </Link>
           </div>
           <div className="flex min-w-0 flex-wrap items-start gap-4">
-            <p className="py-3 text-sm text-text-muted">Not signed in</p>
+            <p className="py-3 text-sm text-muted">Not signed in</p>
             <Disclosure className="w-56 max-w-full">
               <Disclosure.Heading>
                 <Disclosure.Trigger className="flex w-full items-center gap-2 py-3 text-sm">

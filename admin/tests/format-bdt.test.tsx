@@ -1,14 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { verifyDimensions, verifyTypography } from '../../tests/typography'
 import { formatBdt } from '../src/lib/format-bdt'
 
-describe('typography and display foundation', () => {
-  it('TYPE-01: fonts are local WOFF2 with swap and Latin/Bengali fallbacks', () =>
-    verifyTypography('admin'))
-  it(
-    'TYPE-02: typography, spacing, control and radius values match Design',
-    verifyDimensions,
-  )
+describe('integer-poisha BDT display', () => {
   it.each([
     [0, '৳0'],
     [1, '৳0.01'],

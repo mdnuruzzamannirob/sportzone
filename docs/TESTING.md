@@ -290,38 +290,11 @@ No backend authentication, production hosting or real-browser accessibility resu
 
 HeroUI integration uses the existing workspace check inventory: lint, typecheck, unit tests, build and HTTP smoke.
 Menu/close/retry interactions exercise HeroUI Buttons; admin sign-in remains disabled until authentication exists.
-Verify shared token aliases in emitted CSS, 44px controls, explicit Light/Dark and CSS System mode. Browser checks must
-cover native keyboard/focus behavior, responsive layouts and both themes; DOM/HTTP checks do not establish visual acceptance.
-Integration evidence is recorded in [the HeroUI foundation review](./evidence/heroui-foundation.md).
+Verify native HeroUI CSS delivery, one app-owned theme entry, Light/Dark/System resolution, keyboard/focus, draft retention and responsive overflow. No hard-coded custom palette/font/radius assertions remain after the owner’s P02-014 default-theme decision.
 
-Both workspaces also run 30 form/feedback cases each (15 per explicit theme) from `tests/form-primitives.test.tsx`.
-The shared test-only contract exercises each app's own fields, form submit guard, focus-requested error summary,
-pending/destructive Buttons, four Notice severities, loading/empty states and real HeroUI dialog/drawer behavior.
-Controlled draft retention, Escape/Cancel focus restoration, pending dismissal locks and retry-enabling after settlement
-are DOM checks; manual native Tab/backdrop/touch/viewport evidence remains separate. See [UI components](./UI_COMPONENTS.md).
+Form/feedback DOM contracts run once per app (15 cases); commerce logic runs once (20 cases), and management logic once (10 cases). These retain all negative/state/financial-display assertions. Repeating identical jsdom behavior with a theme attribute did not verify CSS and was removed. Currency display keeps exact/invalid integer-poisha cases. Theme suites retain storage, SSR hydration, keyboard selection, draft/URL retention, OS resolution and listener cleanup; the former custom CSS string check is replaced by an actual OS-change behavior case.
 
-Storefront runs 40 commerce primitive cases in `tests/commerce.test.tsx` (20 per theme): genuine sale comparison,
-exact poisha display, approved rating/missing-image behavior, unavailable and pending variants, bounded and direct
-quantity requests, pending removal, explicit statuses, backend-supplied line/final totals and three skeleton layouts.
-Fixtures deliberately supply line/final amounts differing from browser arithmetic to verify the UI displays supplied
-values without recalculation. No live catalog/cart/quote, stock reservation, image delivery or payment outcome is inferred.
-
-`admin/tests/management.test.tsx` runs 20 light/dark DOM cases for table header/sort and keyboard navigation, local scroll-region structure, retained/loading/error/empty results, retry, controlled filters and bounded pagination, upload constraints and preview cleanup, pending/retry/removal, and reason/eligibility/confirmation plus Escape/focus restoration. Synthetic records and local callbacks do not prove authenticated API behavior, provider upload success or real mutations. Browser viewport/zoom/native keyboard/file-picker checks remain separate from DOM assertions.
-
-Both workspaces run four semantic-token regressions from `tests/tokens.test.tsx`, using the shared
-`tests/design-tokens.ts` assertions. They compare all 17 values with Design §2.2, check grayscale/invariant colors,
-text/control contrast and app/Tailwind integration. Built CSS smoke checks require the shared variables and compiled
-muted-text utility. Token swatch comparisons are distinct from browser layout/interaction acceptance.
-
-Each workspace also runs 19 foundation cases: font/fallback and spacing/radius assertions, ten exact BDT examples,
-six invalid numeric inputs and a nonnumeric-input rejection case. Shared HTTP checks fetch all three emitted WOFF2
-assets, require same-origin 200 responses and compare their hashes with the licensed sources. Browser font-swap/CLS
-checks remain distinct from static font contracts, glyph/shaping specimens and asset-serving checks.
-
-Theme suites run 13 cases per app in jsdom: persisted pre-mount bootstrap, invalid/System fallback, HeroUI select
-changes, draft/DOM/URL preservation, remount restore, blocked storage, same-origin storage synchronization/cleanup,
-CSS reduced-motion contracts, SSR hydration and keyboard opening/option selection through the real HeroUI popup. HTTP smoke checks verify the blocking head script and its actual served
-source. These DOM/HTML checks are distinct from browser first-paint filmstrips and native keyboard/OS-motion verification.
+Browser verification is consolidated into focused app/preview behavior and a separate accessibility suite. The preview tests load each app’s actual UI modules and cover composition drafts, native overlays, app/theme switching and mobile overflow. App smoke retains private account cache and fail-closed administrator access. The explicit axe suite keeps all WCAG contrast checks and fails on actual stock-theme findings; it is not disabled or baselined away for green CI. Chromium is appropriate for focused local changes; the configured three-engine matrix remains for hosted/release coverage.
 
 Storefront shell tests exercise mobile disclosure/ARIA and Escape/focus recovery, link/Close dismissal, route/breakpoint
 changes, landmark/support-link structure, offline recovery and safe retry/loading/not-found states. Production smoke
@@ -834,7 +807,7 @@ On an **isolated staging restore**, record backup timestamp and restore point, i
 | Responsive reflow | Mobile single-column checkout, readable tables/overflows, no clipped controls or horizontal traps |
 | Locales/amounts | BDT formatting and optional Bengali fallbacks legible; calendar-day/business-day messaging accurate |
 
-`DESIGN.md` §2 fixes **brand blue `#2563EB` + white button label in both themes**; light/dark surfaces are monochrome and dark-mode links use readable light text with a persistent blue indicator. UI tests assert the actual semantic computed styles for the approved tokens—not screenshots alone.
+`DESIGN.md` §2 adopts the default HeroUI theme through app-owned UI facades. Verify native styles are delivered, theme preference resolves correctly and interactive behavior remains accessible in both modes. Keep contrast findings visible; a library default does not waive the accessibility target.
 
 The implemented P02-011 foundation suite is `tests/ui/foundation.spec.ts`. It runs 30 browser cases: three engines × two themes × (three viewport audits plus keyboard/motion and theme/menu checks). Each viewport case examines the actual built storefront home, built public admin login and an isolated component fixture. The fixture composes real admin/commerce/form components with synthetic data; it does not bypass live authorization or represent authenticated feature acceptance. It has its own Tailwind source discovery and is excluded from both app builds.
 

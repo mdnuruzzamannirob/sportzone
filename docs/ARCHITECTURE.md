@@ -159,7 +159,6 @@ sportzone/
 │   │   └── server.ts           # Process lifecycle
 │   ├── tests/                  # unit/, integration/, helpers/
 │   └── tools/                  # Bootstrap, database and operator tools
-├── styles/                     # Existing shared tokens, fonts and HeroUI adapter
 ├── shared/                     # Existing pure formatting/theme utilities; no business runtime
 ├── tests/ui/                   # Cross-app browser/accessibility verification
 ├── scripts/                    # Repository and CI automation
@@ -187,7 +186,7 @@ sportzone/
 
 Use kebab-case basenames and dot-separated backend responsibilities: `product.service.ts`, `product.controller.ts`, `browser-security.service.ts`. Framework-reserved names such as `page.tsx`, `layout.tsx`, `main.tsx` and `server.ts` retain their conventions. Preserve the current module-resolution rules; NodeNext backend imports retain `.js` specifiers. Frontend alias changes belong to their refactor task and must work in TypeScript, bundler and tests together.
 
-`components/ui/` contains app-owned HeroUI defaults and navigation adapters; `components/layout/` contains shells/navigation. Storefront `components/commerce/` and admin `components/management/` retain genuinely reusable presentation compositions. A feature-only product card, order form or filter lives in its feature; do not relocate reusable primitives merely to fill a template. Do not add a second `layouts/` tree or an ambiguous `components/shared/` bucket. Root hooks/types/utilities contain only actual cross-feature code. Existing pure root `shared/` utilities are retained, without adding a shared UI or backend-runtime package.
+`components/ui/` contains the mandatory native HeroUI facade, theme CSS and navigation/behavior adapters; `components/layout/` contains shells/navigation. Storefront `components/commerce/` and admin `components/management/` retain genuinely reusable presentation compositions. A feature-only product card, order form or filter lives in its feature; do not relocate reusable primitives merely to fill a template. Do not add a second `layouts/` tree or an ambiguous `components/shared/` bucket. Root hooks/types/utilities contain only actual cross-feature code. Existing pure root `shared/` utilities are retained, without adding a shared UI or backend-runtime package. All runtime HeroUI imports stay inside the app-owned UI directory; outside consumers use that boundary. App global CSS forwards to `components/ui/theme.css`, which keeps the library default theme and system fonts without a custom palette or skin.
 
 Folders and files are created when a feature needs them, not as empty scaffolding. Tests stay outside production `src/` in each workspace's `tests/`; organize by feature under unit/integration/helpers as applicable and update runner globs with moves.
 

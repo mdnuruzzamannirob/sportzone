@@ -1,4 +1,4 @@
-import { Card, Spinner } from '@heroui/react'
+import { Card, Spinner } from '../ui/index'
 
 export function AdminLoading() {
   return (

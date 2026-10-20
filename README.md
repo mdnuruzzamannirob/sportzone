@@ -53,7 +53,6 @@ sportzone/
 ├── storefront/                 # Next.js App Router scaffold, styles and tests
 ├── admin/                      # React/Vite SPA scaffold, styles and tests
 ├── backend/                    # Express API, identity/notification implementations and tests
-├── styles/                     # Shared colors, typography, dimensions and licensed fonts
 ├── shared/format-bdt.ts         # Pure integer-poisha display formatter
 ├── docs/                       # Product and engineering specifications
 ├── README.md
@@ -82,21 +81,15 @@ Zod with compatible locked versions. [Verification record](docs/evidence/P01-015
 
 ## 4. Development workflow
 
-### Local UI component showcase
+### Local UI component preview
 
-Run `npm run ui:showcase`, then open the [original HeroUI catalogue](http://127.0.0.1:5180/showcase.html).
-It renders the installed HeroUI v3.2.6 components directly, using only native library CSS:
-no app wrappers, SportZone color/font tokens or component overrides. Choose a component
-in the navigation to inspect its supported variants, sizes and states; Modal/Drawer
-expose controls for their visual options. Light/dark switching uses the native theme.
-The scope is all HeroUI component families currently used across the two frontends,
-including compound parts. It does not claim to catalogue unused library components.
+Run `npm run ui:showcase`, then open [the single UI preview](http://127.0.0.1:5180/showcase.html).
+Use Admin/Storefront and Light/Dark toggles to inspect the actual app-owned `components/ui/`
+modules, native variants and application compositions. Each app loads its own `ui/theme.css`;
+switching apps reloads the selected theme entry to avoid style leakage. No backend, database,
+sign-in or app build is needed. Stop this local server before a browser suite reserves port 5180.
+This development tool is not part of either production app’s routes.
 
-The [app composition gallery](http://127.0.0.1:5180/app-showcase.html) remains separately
-available for commerce/management compositions with project styling. Both tools are local,
-use synthetic data and require no database, API, sign-in or application build. Stop the
-server before running automated browser suites that reserve port 5180. Neither gallery
-is included in the production app trees.
 
 1. Read [AGENTS](AGENTS.md), the assigned [task](docs/TASKS.md) and its owning contracts.
 2. Install the workspace with the toolchain below; inspect implemented code and target refactor tasks before moving existing foundations.
@@ -145,8 +138,8 @@ individually when debugging one app. The separate database terminal has its own 
 Existing app formatting is adopted with each refactor rather than rewriting all legacy files now.
 
 Both frontends use HeroUI v3 (`@heroui/react` and `@heroui/styles`, locked to 3.2.6) with Tailwind CSS v4.
-CSS imports Tailwind, HeroUI, project tokens/foundation and the shared HeroUI adapter in that order.
-Project tokens govern both themes; the existing Appearance bootstrap/storage remains the only theme mechanism.
+Each app’s global CSS imports `src/components/ui/theme.css`, which imports Tailwind and native HeroUI styles.
+All HeroUI imports are confined to `components/ui/`; fonts, colors and styles remain the library defaults.
 App-owned Button defaults live in `src/components/ui/button.tsx`. HeroUI Link adapters preserve native anchors and app routing; Select, Disclosure, Card, Alert and Spinner
 provide the existing controls, panels and feedback states. See [Design](docs/DESIGN.md#2-design-system) for visual direction and component conventions.
 
@@ -297,19 +290,19 @@ backend financial slices require the real replica-set integration and contract s
 [Testing §5.3](docs/TESTING.md#53-standard-execution-interface) defines the full required interface. A foundation CI pass
 does not establish application or milestone readiness. Missing scripts must fail; never use `--if-present` to conceal them.
 
-Both apps import `styles/tokens.css` for the 17 Design §2.2 colors. Use semantic utilities such as `bg-brand`,
-`text-on-brand`, `text-text-muted` and `border-control-border`. Explicit root `data-theme="light"` / `"dark"` overrides the
-system fallback. Both apps expose a labelled Appearance select with Light/Dark/System. Choices persist under
-`sportzone.theme` in localStorage per origin and synchronize across same-origin tabs. A blocking head script applies
-explicit choices before body content; System uses CSS media preferences. Storage errors retain page-local usability.
-Reduced-motion CSS limits animation/transition duration and disables smooth scrolling. See [Design §2.2](docs/DESIGN.md#22-light-and-dark-color-system).
+Both apps use the installed HeroUI default theme and Tailwind system font stack. There is no custom
+palette, webfont set, radius/size override or shared adapter. Route/feature/layout code imports its
+own `components/ui/` facade and compositions. `ui/theme.css`, `ui/primitives.tsx` and individual UI
+modules are the only customization points. The import-boundary check rejects direct HeroUI imports
+elsewhere in application source.
 
-Typography and dimensions come from `styles/foundation.css`: self-hosted Inter, Plus Jakarta Sans and Noto Sans Bengali,
-font-display swap, system fallbacks, a 4px spacing unit, semantic radii and a 1280px storefront container. Font provenance
-and licenses are in [styles/fonts](styles/fonts/README.md). Use `font-heading`, `font-bengali`, `numeric`, `min-h-control`
-and `rounded-control/card/dialog` as appropriate. Each app exports `formatBdt` from `src/lib/format-bdt.ts`; pass integer
-poisha, for example `formatBdt(123450)` → `৳1,234.50`. Zero fractions omit decimals; nonzero fractions show two digits.
-Negative, fractional, unsafe or nonnumeric inputs are rejected. This utility displays backend amounts and calculates no totals.
+Light/Dark/System preferences persist under `sportzone.theme`. The blocking bootstrap resolves
+System to the OS preference before hydration; the single preference controller follows OS changes
+and synchronizes same-origin tabs without resetting drafts. Native HeroUI handles motion/focus styles.
+Default-package accessibility findings remain reportable release issues, not automatically waived gates.
+
+Use `tabular-nums` for monetary display. Each app exports `formatBdt` from `src/lib/format-bdt.ts`;
+pass integer poisha, for example `formatBdt(123450)` → `৳1,234.50`. The formatter calculates no totals.
 
 ## 5. Configuration and verification
 

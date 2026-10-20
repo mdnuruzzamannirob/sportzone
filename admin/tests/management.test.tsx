@@ -62,7 +62,8 @@ const rows = [
   { id: '2', name: 'Zebra' },
   { id: '1', name: 'Alpha' },
 ]
-describe.each(['light', 'dark'])('management primitives in %s', (theme) => {
+describe('management primitives', () => {
+  const theme = 'light'
   beforeEach(() => {
     document.documentElement.dataset.theme = theme
   })

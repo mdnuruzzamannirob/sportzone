@@ -31,7 +31,7 @@ export default async function DestinationPage({
   if (!title) notFound()
   return (
     <PagePanel id="destination-title" title={title}>
-      <p className="max-w-prose text-text-muted">This page is not available yet.</p>
+      <p className="max-w-prose text-muted">This page is not available yet.</p>
     </PagePanel>
   )
 }

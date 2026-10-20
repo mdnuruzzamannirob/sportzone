@@ -85,7 +85,7 @@ This version defines the development baseline. Execute the roadmap through the s
 5. **Financial and inventory integrity.** Use integer poisha for money, immutable order snapshots, indexed identities, guarded transitions, atomic writes, and transactions when multiple records must change together.
 6. **Safe retries and uncertainty.** Duplicate checkout submissions, callbacks, refund attempts, and job runs must not repeat effects. Timeouts do not establish financial failure.
 7. **Security by default.** Enforce session/role/ownership checks and input validation on the server; route guards and hidden actions are not authorization.
-8. **Design parity.** Apply the semantic tokens from `DESIGN.md`; the primary blue stays `#2563EB` with white label text in both themes. Test accessibility in both modes.
+8. **Design parity.** Use the default HeroUI semantic theme through each app’s `components/ui/`, as approved in `DESIGN.md` §2. Test accessibility in both modes.
 9. **Continuous quality.** Add type checks, linting, relevant automated tests, review, and accessible error/loading/empty states during implementation, not only before launch.
 10. **Explicit evidence.** A phase or feature is complete only when its stated tests and acceptance criteria have passed with reproducible evidence.
 11. **Controlled configuration.** Operator-supplied content, merchant activation, legal/policy approval, and external service credentials are configuration prerequisites, not values to invent in code.
@@ -293,22 +293,25 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 **Objective:** Implement the already-specified UI foundation; this phase does not redesign SportZone.
 
-**Prerequisites:** Phase 01 repository/workspace skeleton, `DESIGN.md` v1.0, and available approved visual assets or identified placeholders awaiting operator assets.
+**Prerequisites:** Phase 01 repository/workspace skeleton, current `DESIGN.md` owner-approved baseline, and available approved visual assets or identified placeholders awaiting operator assets.
 
 **Work packages:**
 
-1. Initialize the Next.js storefront and React + Vite admin workspaces, then implement semantic theme tokens and Tailwind mappings for both applications. Keep the brand blue `#2563EB` and white-on-brand text identical in both modes; keep neutrals true grayscale.
+1. Initialize the Next.js storefront and React + Vite admin workspaces, then use the default HeroUI theme through app-owned UI facades in both applications, following the P02-014 owner decision.
 2. Set up Inter, Plus Jakarta Sans, Bengali-capable fallbacks, consistent spacing/radii, icon conventions, and BDT formatting.
 3. Implement responsive storefront and admin shells, navigation, theme preference, keyboard-accessible menus/drawers, and error/not-found/loading boundaries.
 4. Implement the appropriate basic primitives: inputs, buttons, alerts, status badges, pagination, dialogs, file upload, tables, cards, and skeletons as needed for upcoming slices.
 5. Establish form-error, focus, disabled, selection, loading, confirmation, and reduced-motion patterns using real component states in both themes.
 6. Define reusable page-level templates for product discovery, detail, account, checkout, and admin management without falsely marking those pages feature-complete.
 
-**Verification:** Check responsive reflow, keyboard access, focus treatment, contrast, theme persistence/no flash, same-color brand buttons, and no loss of entered state during theme switching. Component previews alone do not satisfy feature acceptance.
+**Verification:** Check responsive reflow, keyboard access, focus treatment, contrast, theme persistence/no flash, native component variants, and no loss of entered state during theme switching. Component previews alone do not satisfy feature acceptance.
 
 **Deliverable:** Reusable and tested UI foundations in both applications.
 
 **Exit gate:** Applicable design-system primitives and route shells can support Phase 03–04 work without revisiting core visual decisions.
+
+
+**20 October 2026 owner decision (P02-014):** Replace the custom palette/fonts/adapter with native default HeroUI design, enforce app-owned UI import/theme boundaries, unify the preview and retire obsolete visual assertions while retaining interaction/security/accessibility gates. Stock-theme findings must be reported; no milestone is implicitly accepted.
 
 ### Phase 03 — Authentication and core backend
 
@@ -708,7 +711,7 @@ A product created in Admin appears in public catalog only when active; changed s
 
 ### 10.3 UI, accessibility, and content acceptance
 
-Verify responsive layouts, semantic landmarks, keyboard-only task completion, visible focus, dialog focus management, properly associated field errors, meaningful status text, image alternatives, and reduced-motion behavior. Test critical storefront and admin journeys in both light and dark modes. Maintain `#2563EB` blue primary buttons with white text in both modes, while applying the design's dark-mode readable link text and blue indicators. Verify prices, payment/return/refund statuses, deadlines, and warnings never rely only on color.
+Verify responsive layouts, semantic landmarks, keyboard-only task completion, visible focus, dialog focus management, properly associated field errors, meaningful status text, image alternatives, and reduced-motion behavior. Test critical storefront and admin journeys in both light and dark modes. Use the approved native HeroUI component styles in both modes; record any native contrast defects against the accessibility target. Verify prices, payment/return/refund statuses, deadlines, and warnings never rely only on color.
 
 Do not publish placeholder legal policies, merchant activation claims, unsupported courier tracking, or unverified delivery/refund promises. Separate estimated delivery dates from applicable deadlines. Keep explicit unresolved-payment and unresolved-refund messages.
 

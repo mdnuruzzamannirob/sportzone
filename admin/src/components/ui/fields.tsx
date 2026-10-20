@@ -15,7 +15,7 @@ import {
   type CheckboxProps,
   type RadioGroupProps,
   type TextFieldProps,
-} from '@heroui/react'
+} from './primitives'
 
 type FieldContent = { label: string; description?: string; error?: string }
 type TextProps = Omit<TextFieldProps, 'children' | 'className'> &
@@ -39,7 +39,7 @@ export function TextInput({
     >
       <Label>
         {label}
-        {isRequired && ' (required)'}
+
       </Label>
       {multiline ? <TextArea rows={rows} /> : <Input />}
       {description && <Description>{description}</Description>}
@@ -82,7 +82,7 @@ export function SelectField({
     >
       <Label>
         {label}
-        {isRequired && ' (required)'}
+
       </Label>
       <Select.Trigger>
         <Select.Value />
@@ -112,13 +112,13 @@ export function CheckboxField({
 }: Omit<CheckboxProps, 'children' | 'className'> & FieldContent) {
   return (
     <Checkbox {...props} isInvalid={error ? true : props.isInvalid}>
-      <Checkbox.Content className="min-h-control">
+      <Checkbox.Content >
         <Checkbox.Control>
           <Checkbox.Indicator />
         </Checkbox.Control>
         <Label>
           {label}
-          {props.isRequired && ' (required)'}
+
         </Label>
       </Checkbox.Content>
       {description && <Description>{description}</Description>}
@@ -139,11 +139,11 @@ export function RadioChoices({
     <RadioGroup {...props} isInvalid={error ? true : props.isInvalid}>
       <Label>
         {label}
-        {props.isRequired && ' (required)'}
+
       </Label>
       {options.map((option) => (
         <Radio key={option.value} value={option.value} isDisabled={option.disabled}>
-          <Radio.Content className="min-h-control">
+          <Radio.Content >
             <Radio.Control>
               <Radio.Indicator />
             </Radio.Control>

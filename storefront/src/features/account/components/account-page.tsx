@@ -4,7 +4,7 @@ import { Link } from '../../../components/ui/link'
 export default function AccountPage() {
   return (
     <PagePanel id="account-title" title="Your account">
-      <p className="leading-relaxed text-text-muted">
+      <p className="leading-relaxed text-muted">
         Account access is not available yet.
       </p>
       <Link href="/">Back to SportZone</Link>

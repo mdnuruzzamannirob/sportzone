@@ -1,4 +1,4 @@
-import { Card } from '@heroui/react'
+import { Card } from '../../../components/ui/index'
 import { Link } from '../../../components/ui/link'
 import { AdminShell } from '../../../components/layout/admin-shell'
 
@@ -10,9 +10,9 @@ export default function AdminAccessBoundary() {
       title="Admin access unavailable"
       actions={<Link to="/login">Go to administrator sign-in</Link>}
     >
-      <Card className="max-w-2xl rounded-card border border-border p-6 sm:p-8">
+      <Card className="max-w-2xl">
         <Card.Content>
-          <p className="text-text-muted">
+          <p className="text-muted">
             Administrator sign-in is required. Access is not available yet.
           </p>
         </Card.Content>

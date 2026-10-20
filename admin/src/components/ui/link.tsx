@@ -1,4 +1,4 @@
-import { Link as HeroLink } from '@heroui/react'
+import { Link as HeroLink } from './primitives'
 import { Link as RouterLink } from 'react-router'
 import type { ComponentProps } from 'react'
 
@@ -12,7 +12,7 @@ export function Link({ to, children, className = '', onClick, ref, ...rest }: Pr
     <HeroLink
       href={to}
       ref={ref}
-      className={`min-h-control ${className}`}
+      className={` ${className}`}
       render={(props) => (
         <RouterLink
           {...props}

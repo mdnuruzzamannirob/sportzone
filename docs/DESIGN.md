@@ -9,7 +9,7 @@
 **Applications:** Customer storefront (Next.js) and administration portal (React + Vite)\
 **Market / currency:** Bangladesh / BDT
 
-This document owns the visual system, page composition, navigation, interactions, responsive behavior, and accessible UI states for SportZone. Detailed HTTP/data contracts and test/operating procedures are documented separately in [API](./API.md), [Database](./DATABASE.md), [Testing](./TESTING.md), and [Operations](./OPERATIONS.md). The [PRD](./PRD.md) defines product scope and business rules; [Architecture](./ARCHITECTURE.md) defines technical boundaries. The interface uses a black-and-white light/dark foundation with restrained blue interactive accents and semantic tokens. Brand assets and policy content remain operator-supplied; no unapproved business claims are assumed.
+This document owns the visual system, page composition, navigation, interactions, responsive behavior, and accessible UI states for SportZone. Detailed HTTP/data contracts and test/operating procedures are documented separately in [API](./API.md), [Database](./DATABASE.md), [Testing](./TESTING.md), and [Operations](./OPERATIONS.md). The [PRD](./PRD.md) defines product scope and business rules; [Architecture](./ARCHITECTURE.md) defines technical boundaries. The interface uses the native HeroUI v3 default design system in both themes. Brand assets and policy content remain operator-supplied; no unapproved business claims are assumed.
 
 ---
 
@@ -63,107 +63,33 @@ The storefront serves guests and registered customers; the admin portal serves t
 
 ### 2.1 Visual direction
 
-SportZone uses a **black-and-white foundation with a restrained blue brand accent**. Light mode is predominantly white; dark mode is predominantly black. All neutral backgrounds, borders, and text use true grayscale without blue, green, or purple undertones. Blue identifies primary actions, interactive links, selection, and focus; it does not tint page backgrounds, cards, or large interface regions. Product photography provides the visual energy. The brand blue is identical in both themes. The same system applies to the storefront and admin portal, with layouts tailored to each application.
+**Owner decision, 20 October 2026:** Both frontends use the installed HeroUI v3 default design system exactly: native colors, system fonts, spacing, radii, sizes, shadows, variants, focus and motion. This supersedes the earlier monochrome/blue palette, fixed Inter/Jakarta/Bengali font stack, custom radius/control tokens and shared CSS adapter. The owner explicitly requested centralized app-owned `components/ui/` boundaries, a single Admin/Storefront light/dark preview and removal of obsolete design-specific tests.
 
-**Component system:** HeroUI v3 is the standard component library for both frontends, using `@heroui/react` and `@heroui/styles`. Application-owned Button defaults live in each app's `src/components/ui/button.tsx`: primary for the main action, outline for secondary actions, ghost for low-emphasis actions and danger for destructive actions. Use app-owned HeroUI Link adapters to preserve Next.js/React Router navigation. Appearance uses HeroUI Select; mobile navigation and the Appearance panel use Disclosure. Page/loading panels use Card, loading feedback uses Spinner and connectivity/error feedback uses Alert. Keep native headings, text and landmarks for document semantics. Add further primitives as their feature tasks require them, with accessible pending, disabled, error and keyboard states.
-
-**Design delivery:** The project owner delegates visual design within this specification; no separate Figma file is required. Use clear product-focused layouts, generous consistent spacing, restrained blue actions and grayscale surfaces. Storefront layouts prioritize discovery and purchase; admin layouts prioritize readable data and explicit actions. Review actual responsive screens and both themes, then incorporate owner feedback. Earlier scaffold acceptance does not approve every future screen's appearance.
-
-**Implementation ownership:** Keep layout/composition in routes, repeated UI defaults in app-owned `components/ui/`, feature-specific components with their feature, pure shared behavior in `shared/` and cross-app design values in `styles/`. Avoid speculative abstractions, a shared UI package and additional component libraries. Remove superseded code/styles as components migrate.
-
-**Component placement:** Architecture §§4–5 specify thin route composition, shells/navigation in `components/layout/`, feature-owned views/forms and reusable commerce/management compositions. Route groups organize layouts without changing URL or access rules. Current-shell/component links below remain implementation references until P02-012/P02-013 migrate them. Preserve HeroUI v3, semantic tokens, Appearance behavior and responsive/accessibility requirements; moves require affected browser verification.
+Do not reskin library components or copy the documentation website’s chrome. App-owned UI modules are the customization boundary; features, routes, layouts and commerce/management compositions consume those modules instead of importing HeroUI directly. Keep native generic/compound APIs intact. No new shared runtime UI package is introduced.
 
 ### 2.2 Light and dark color system
 
-Use the same **brand blue `#2563EB` in light and dark modes**, including primary buttons and selection indicators. Theme switching changes only monochrome surfaces, text, and borders; it does not change the brand hue. Neutrals are strictly grayscale. Success, warning, and danger colors are reserved for functional status feedback, never decorative backgrounds.
+Use HeroUI native semantic variables and Tailwind utilities (`background`, `foreground`, `surface`, `muted`, `accent`, `default`, `border`, `success`, `warning`, `danger`). Do not maintain a second palette, hard-code a brand hex, redefine native color variables, or add aliases for the retired SportZone colors.
 
-| Semantic token | Light | Dark | Purpose |
-| --- | --- | --- | --- |
-| `brand` | `#2563EB` | `#2563EB` | Primary buttons, selection indicators, accent strokes |
-| `onBrand` | `#FFFFFF` | `#FFFFFF` | Text and icons on blue-filled controls |
-| `linkText` | `#2563EB` | `#FAFAFA` | Readable link labels; dark links use blue underline/indicator |
-| `linkAccent` | `#2563EB` | `#2563EB` | Link underline and interactive accent in both modes |
-| `selectedSurface` | `#F5F5F5` | `#171717` | Neutral selected item surface with a blue border/indicator |
-| `text` | `#0A0A0A` | `#FAFAFA` | Primary content |
-| `textMuted` | `#525252` | `#A3A3A3` | Supporting content |
-| `canvas` | `#FFFFFF` | `#000000` | Main page background |
-| `surface` | `#FFFFFF` | `#0A0A0A` | Cards, dialogs, and panels |
-| `surfaceMuted` | `#F5F5F5` | `#171717` | Inputs and secondary surfaces |
-| `border` | `#D4D4D4` | `#404040` | Decorative dividers and nonessential separators |
-| `controlBorder` | `#737373` | `#737373` | Visually identifiable input/control boundaries |
-| `focus` | `#2563EB` | `#2563EB` | Keyboard focus accent; provide sufficient outline separation |
-| `success` | `#166534` | `#86EFAC` | Confirmed successful status |
-| `warning` | `#92400E` | `#FCD34D` | Pending or attention status |
-| `danger` | `#B91C1C` | `#FCA5A5` | Errors and destructive status |
-| `infoText` | `#2563EB` | `#FAFAFA` | Informational copy; dark mode pairs text with blue icon/indicator |
+Each app owns `src/components/ui/theme.css` as its single theme/style entry. Global application styles only import it. Future authorized color/font/style changes begin in that app’s UI directory. The default theme is the pinned package implementation, not a separately copied token table.
 
-**Contrast and interaction rules:**
-
-- Blue-filled primary buttons use **`#2563EB` with white text in both themes** (approximately **5.17:1** contrast). The button fill must not switch to light blue in dark mode.
-- `#2563EB` against pure black is approximately **4.06:1**: sufficient for many non-text indicators, but below the **4.5:1** WCAG AA requirement for normal text. Therefore, dark-mode links and informational labels use readable light text with a persistent blue underline, icon, or accent; do **not** use blue alone for small dark-mode text.
-- Primary-button hover and press feedback use neutral outlines or elevation **without replacing the blue base token**. Do not introduce a separate light-blue or dark-blue primary-button variant.
-- Selected navigation uses a neutral selected surface and blue indicator; no blue-filled sidebar items. Focus outlines use blue with a contrasting offset/outer separation ring where needed, and must be clearly visible on both themes.
-- Use `controlBorder` for essential form boundaries; subtle `border` is only for nonessential dividers. Functional status colors are not general-purpose button fills or broad tinted surfaces.
-- Test actual combinations for badges, icons, links, overlays, disabled controls, and charts; do not rely on color alone to convey status.
-
-**Theme behavior:**
-
-- Provide a labeled **Light / Dark / System** preference in both applications; use the OS preference until the user chooses an override.
-- Persist the choice per browser and apply it before the first visible paint to avoid theme flashing. Theme preference is visual only and does not require a backend account setting.
-- Switching themes must not reset forms, carts, filters, or navigation state. The SSLCOMMERZ hosted interface is outside SportZone's theme control.
-- Set `color-scheme` appropriately and style native controls, skeletons, overlays, icons, and charts for each mode. Do not invert product photographs; use theme-appropriate logo assets if necessary.
-- Respect `prefers-reduced-motion`. Verify WCAG 2.2 AA text contrast, non-text contrast, and visible focus in **both** modes.
-
-Both apps expose a labelled HeroUI Appearance select. Browser-local `sportzone.theme` stores Light/Dark/System per
-origin; same-origin tabs synchronize changes. A blocking same-origin `/theme-bootstrap.js` in the document head applies
-explicit choices before body content. System remains CSS media-driven, including OS changes. Storage failures preserve
-a usable page-local selection. Theme state is independent of route/form state; reduced-motion rules apply in both apps.
-
-**Implementation mapping:** [Shared color tokens](../styles/tokens.css) define semantic CSS custom properties (`--brand`, `--on-brand`, `--canvas`, `--text`, `--link-text`) on `:root`, overridden by `:root[data-theme="dark"]`. Without an explicit light/dark choice, the system preference supplies the dark fallback. Keep `--brand: #2563EB` and `--on-brand: #FFFFFF` unchanged in both modes. Tailwind color mappings use the same kebab-case names in both applications (`bg-brand`, `text-on-brand`, `text-text-muted`, `border-control-border`); avoid raw hex values in components. HeroUI aliases in [the adapter](../styles/heroui.css) reference these tokens in both apps; no separate shared UI package is needed. Tailwind library color mappings remain available for HeroUI internals, while project components use semantic tokens. Keep the existing CSS-driven System fallback and blocking bootstrap; do not add a second theme manager. HeroUI v3 needs no global provider.
+Preserve one browser-local Light/Dark/System preference, bootstrap before hydration and subscription cleanup. Resolve System to the actual OS light/dark value and apply `data-theme` so native HeroUI CSS works without custom dark palette rules. Switching appearance preserves drafts and navigation. Do not introduce a second theme store/provider just to use HeroUI.
 
 ### 2.3 Typography
 
-- **Body, navigation, forms, tables, and product information:** **Inter**, weights 400, 500, and 600. Its readable shapes and tabular numerals suit both commerce screens and dense administration tables.
-- **Page headings, product titles, and promotional display text:** **Plus Jakarta Sans**, weights 600 and 700. Use it for a distinct, modern retail identity without introducing decorative display fonts.
-- **Bangla content, when present:** **Noto Sans Bengali** with a tested Bengali-capable system fallback. Do not assume the Latin fonts cover Bengali characters.
-- **Fallbacks:** `Inter, system-ui, sans-serif` for UI text; `Plus Jakarta Sans, Inter, system-ui, sans-serif` for headings.
-- **Loading:** Prefer self-hosted, subsetted WOFF2 files with `font-display: swap`; avoid unnecessary weights. Preserve readable layout while fonts load.
-- **Sizing:** Body 16px at 1.5–1.6 line height; most supporting UI text at least 14px; 12px reserved for nonessential metadata. Scale: 12, 14, 16, 18, 20, 24, 30, 36px. Responsive page titles typically 24–32px.
-- **Numeric content:** Use tabular figures for BDT amounts, quantities, order identifiers, and dashboard metrics. Preserve semantic heading order and avoid excessive all-caps labels.
-
-[Typography foundation](../styles/foundation.css) provides the shared font faces and Tailwind font/size mappings.
-[Font assets and licenses](../styles/fonts/README.md) are self-hosted; use `numeric` for tabular figures.
+Use HeroUI/Tailwind’s default system sans stack and native typography. No custom webfonts, font downloads, heading font family or app-defined type scale. Semantic headings and readable content remain required. Bangla uses the operating system’s available fallback fonts. Currency, quantities and identifiers use `tabular-nums`; integer-poisha financial authority is unchanged.
 
 ### 2.4 Spacing, dimensions, and surfaces
 
-| Element | Baseline |
-| --- | --- |
-| Spacing scale | 4, 8, 12, 16, 24, 32, 40, 48, 64px |
-| Content width | Storefront max 1280px; centered with responsive gutters |
-| Form/control height | Minimum 44px for primary interactive controls |
-| Card radius | 20px |
-| Input/button radius | 12px |
-| Dialog radius | 24px |
-| Borders | 1px subtle neutral; stronger for selected/error states |
-| Shadows | Minimal; use primarily for elevated dialogs, menus, and sticky surfaces |
-| Icon sizes | 16, 20, or 24px according to context |
-
-Use responsive spacing rather than fixed heights for content. Product imagery should have stable aspect ratios to avoid layout shifts. Keep animation subtle and respect `prefers-reduced-motion`.
-
-**20 October 2026 owner direction:** After rejecting the first showcase, the owner explicitly selected HeroUI v3’s original component design and requested simplicity/professionalism. Retain native HeroUI shapes, typography, spacing, variants and elevation rather than a custom component skin. Semantic blue/neutral colors, project fonts, minimum 44px interactive targets, contrast, focus and reduced-motion requirements remain. Radius tokens above remain available for app-owned non-library compositions; do not force them over HeroUI controls/cards/dialogs. All current app-owned UI and commerce/management components must be accessible in the local gallery, including state examples and isolated layout previews. Visual acceptance remains pending owner review. The owner subsequently clarified that the reference preview must show direct HeroUI components used by the project with their supported variants, entirely without project CSS or wrappers. Serve that reference in its own document; keep the app composition gallery separate. Native reference colors are not approval to replace production palette/contrast requirements.
+Keep HeroUI’s native component size, radius, padding, border, elevation and variant behavior. Layout utilities may compose screens without styling library internals. Do not force one height across sm/md/lg or override component styles globally. Product imagery may retain app-owned aspect ratios; all real input/error/pending/disabled behavior remains explicit.
 
 ### 2.5 Core visual rules
 
-- Primary buttons use the same `brand` fill and white `onBrand` text in both themes; secondary buttons use semantic neutral surfaces and borders. Destructive controls use tested danger-specific combinations.
-- Links remain recognizable independently of color: use `linkText` plus a persistent underline or other clear affordance; in dark mode, the underline/indicator uses `linkAccent`.
-- Disabled controls explain the reason when useful, particularly for unavailable variants, ineligible actions, and unactivated payment channels.
-- Prices use **৳** or **BDT** consistently, with the display precision determined by the amount; never use floating-point UI arithmetic as the source of checkout totals.
-- Product images use `object-fit: contain` for catalog thumbnails when cropping would hide merchandise; editorial banners may use intentional cover cropping.
+All native primitives and app navigation adapters are exposed through each app’s `components/ui/`. Small behavior compositions (field labels/errors, pending submit labels and focus-preserving dialogs) remain there; they do not replace native styling. Generic compound primitives use a thin facade to preserve native types/statics, avoiding fragile clones of the library API. The approved import-boundary check enforces this convention.
 
-The shared foundation maps the 4px spacing unit, `min-h-control` (44px), `max-w-storefront` (1280px), and
-`rounded-control/card/dialog` (8/12/16px). The [BDT display utility](../shared/format-bdt.ts) accepts nonnegative safe integer
-poisha and uses the taka symbol with en-BD grouping. Whole taka omit decimals; other amounts show exactly two digits
-(for example, 100 → ৳1, 105 → ৳1.05, 123450 → ৳1,234.50). Invalid input is rejected without coercion.
+A single local `showcase.html` renders the actual app UI boundary, with Admin/Storefront and Light/Dark controls, all currently used component families and supported visual variant axes. Switching apps reloads its selected CSS entry so future per-app customization cannot leak across previews. Obsolete standalone native/reference and app-gallery HTML entries are removed.
+
+**Accessibility remains a release requirement:** PRD §12.7 and this document §12 continue to target WCAG 2.2 AA. Stock HeroUI palette contrast findings already observed in the reference are tracked findings, not automatic acceptance or a waived gate. Preserve real accessibility checks and report actual results. The owner’s default-theme choice authorizes reversible visual implementation; it does not prove release accessibility or accept a milestone.
 
 ---
 
@@ -231,7 +157,7 @@ Main: page title/actions → filters/summary → content → pagination
 
 Provide the Light / Dark / System control in the administrator account/appearance menu. Group related destinations without creating extra permission levels. Show current section and contextual actions. Keep the administrator's session and access separate from customer sessions. Complaint handling is available from the order/customer context where relevant; a standalone complaint screen is not required by the PRD.
 
-**Current shell implementation:** [Admin shell](../admin/src/components/layout/admin-shell.tsx) uses a persistent sidebar from 1024px and a HeroUI left Drawer below that breakpoint. The five groups and 14 destinations share one navigation source. Selected items use a grayscale surface and blue border. Drawer navigation, Escape/Close and desktop transitions dismiss the overlay; the body scrolls vertically. Page title/actions and Appearance are reusable compositions. Until Phase 03 session integration, only public navigation metadata and an unavailable-access state render on `/app/*`; no management data, logged-in identity or working logout is implied. Lazy administration loading exposes a live status; route render/chunk failures show a safe alert and Reload page action without exception details.
+**Current shell implementation:** [Admin shell](../admin/src/components/layout/admin-shell.tsx) uses a persistent sidebar from 1024px and a HeroUI left Drawer below that breakpoint. The five groups and 14 destinations share one navigation source. Selected items use native default/accent semantic tokens. Drawer navigation, Escape/Close and desktop transitions dismiss the overlay; the body scrolls vertically. Page title/actions and Appearance are reusable compositions. Until Phase 03 session integration, only public navigation metadata and an unavailable-access state render on `/app/*`; no management data, logged-in identity or working logout is implied. Lazy administration loading exposes a live status; route render/chunk failures show a safe alert and Reload page action without exception details.
 
 ### 4.4 Shared layout states
 
@@ -649,7 +575,7 @@ Target **WCAG 2.2 AA**. Use semantic headings, landmarks, navigation, form label
 ### 12.2 Interaction requirements
 
 - Maintain visible keyboard focus and restore it after closing menus/dialogs.
-- Ensure touch targets meet the applicable WCAG 2.2 target-size requirement, with 44px controls as the default design baseline.
+- Ensure touch targets meet the applicable WCAG 2.2 target-size requirement, using native component sizes and documented WCAG exceptions only where applicable.
 - Use sufficient text and non-text contrast; verify real component combinations, not only isolated tokens.
 - Associate validation errors and hints with inputs; announce important state changes through appropriate live regions.
 - Provide meaningful image alternatives; decorative images have empty alt text.
@@ -740,7 +666,7 @@ A page specification is ready for implementation when it defines the following. 
 | Admin actions | Invalid transitions blocked; financial actions confirmed and auditable |
 | Responsive layout | No clipped controls or page-level horizontal scrolling |
 | Accessibility | Keyboard, focus, labels, contrast, errors, and reflow checked in both themes |
-| Theme switching | System default, explicit preference, persisted choice, identical brand-blue buttons, and no lost form state |
+| Theme switching | System default, explicit preference, persisted choice, native HeroUI variants, and no lost form state |
 | Content | No placeholder legal claims, unsupported delivery promises, or inactive payment channels |
 
 ### 14.3 Relationship to implementation

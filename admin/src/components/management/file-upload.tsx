@@ -1,4 +1,4 @@
-import { Input } from '@heroui/react'
+import { Input } from '../ui/index'
 import { useEffect, useId, useState } from 'react'
 import { Button } from '../ui/button'
 import { Notice } from '../ui/feedback'
@@ -57,7 +57,7 @@ export function FileUpload({
       <label htmlFor={id} className="block font-medium">
         {label}
       </label>
-      <p id={`${id}-help`} className="break-words text-sm text-text-muted">
+      <p id={`${id}-help`} className="break-words text-sm text-muted">
         Types: {acceptedTypes.join(', ')}. Maximum {maxBytes} bytes. Files are checked
         again by the server.
       </p>
@@ -68,7 +68,7 @@ export function FileUpload({
         disabled={disabled}
         aria-describedby={`${id}-help${issue ? ` ${id}-error` : ''}`}
         aria-invalid={!!issue}
-        className="block min-h-control w-full min-w-0 border border-control-border p-2 focus-visible:outline-2 focus-visible:outline-focus"
+        className="block  w-full min-w-0 border border-border p-2 focus-visible:outline-2 focus-visible:outline-accent"
         onChange={(event) => {
           const candidate = event.currentTarget.files?.[0]
           event.currentTarget.value = ''

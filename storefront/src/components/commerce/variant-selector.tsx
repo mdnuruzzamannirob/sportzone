@@ -49,7 +49,7 @@ export function VariantSelector({
             onChange(next)
         }}
       />
-      <p id={id} role="status" className="text-sm text-text-muted">
+      <p id={id} role="status" className="text-sm text-muted">
         {!options.length
           ? 'No variants available.'
           : selected?.available

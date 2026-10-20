@@ -1,6 +1,6 @@
 'use client'
 
-import { Drawer, Modal } from '@heroui/react'
+import { Drawer, Modal } from './primitives'
 import { type ReactNode, useId } from 'react'
 import { Button } from './button'
 
@@ -37,20 +37,14 @@ export function FormDialog({
             <Modal.Header>
               <Modal.Heading>{title}</Modal.Heading>
               {description && (
-                <p id={id} className="text-text-muted">
+                <p id={id} className="text-muted">
                   {description}
                 </p>
               )}
             </Modal.Header>
             <Modal.Body>{children}</Modal.Body>
             <Modal.Footer>
-              <Modal.CloseTrigger
-                aria-label="Cancel"
-                isDisabled={isPending}
-                className="button button--outline"
-              >
-                Cancel
-              </Modal.CloseTrigger>
+              <Button slot="close" aria-label="Cancel" variant="secondary" isDisabled={isPending}>Cancel</Button>
               {actions}
             </Modal.Footer>
           </Modal.Dialog>
@@ -81,20 +75,14 @@ export function FormDrawer({
             <Drawer.Header>
               <Drawer.Heading>{title}</Drawer.Heading>
               {description && (
-                <p id={id} className="text-text-muted">
+                <p id={id} className="text-muted">
                   {description}
                 </p>
               )}
             </Drawer.Header>
             <Drawer.Body>{children}</Drawer.Body>
             <Drawer.Footer>
-              <Drawer.CloseTrigger
-                aria-label="Cancel"
-                isDisabled={isPending}
-                className="button button--outline"
-              >
-                Cancel
-              </Drawer.CloseTrigger>
+              <Button slot="close" aria-label="Cancel" variant="secondary" isDisabled={isPending}>Cancel</Button>
               {actions}
             </Drawer.Footer>
           </Drawer.Dialog>

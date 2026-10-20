@@ -8,7 +8,7 @@ import {
   subscribeThemePreference,
   synchronizeThemePreference,
   type ThemePreference,
-} from '../../../../shared/theme'
+} from './theme'
 
 export function ThemePreferenceSelect() {
   const id = useId()

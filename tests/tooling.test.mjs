@@ -67,6 +67,18 @@ test('TOOL-05: cross-module private persistence fails while service imports rema
   assert.deepEqual(checkBoundaries(root).errors, [])
 })
 
+test('UI-BOUNDARY-01: only app-owned UI modules may import native HeroUI', (t) => {
+  const { root, put } = fixture(t)
+  put(
+    'admin/package.json',
+    JSON.stringify({ private: true, dependencies: { '@heroui/react': '3.2.6' } }),
+  )
+  put('admin/src/components/ui/primitives.tsx', 'export {Button} from "@heroui/react"')
+  assert.deepEqual(checkBoundaries(root).errors, [])
+  put('admin/src/features/catalog.tsx', 'import {Button} from "@heroui/react"')
+  assert.ok(checkBoundaries(root).errors.some((e) => e.includes('app-owned components/ui')))
+})
+
 const waitFor = async (condition, timeout = 5000) => {
   const end = Date.now() + timeout
   while (!condition()) {
