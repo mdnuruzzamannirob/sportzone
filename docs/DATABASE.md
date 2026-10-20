@@ -274,6 +274,8 @@ Both controllers and scheduled jobs invoke shared backend **domain services**, n
 | `storeSettings`, `policyDocuments` | Settings |
 | Other records | Retain the domain ownership and invariants specified in their collection sections |
 
+P03-013 reuses the existing identity models through `auth/authorization.ts`: transaction-local credential/principal revalidation, with conditional monotonic `updatedAt` writes for protected mutations to serialize with revocation. No expiry extension, new field/collection/index or migration is introduced. Profile/address reads revalidate without timestamp writes. This capability stays inside auth; callers do not gain raw models for other domains.
+
 Composition wires narrow public operations, never a second mutable schema for the same collection or unrestricted foreign-model access. Public capabilities accept the coordinating transaction session; participants must not start nested transactions or parallel operations in the same session. Preserve ObjectIds, snapshots, integer-poisha arithmetic, unique identities, BSON validation and all existing indexes. Raw model, validator and bootstrap path moves require updated tooling and parity tests; a filename change is not permission to change durable data or mark a migration executed.
 
 ### 4.3 Atomic allocation and verified-payment flow

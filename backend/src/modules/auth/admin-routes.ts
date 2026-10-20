@@ -56,11 +56,18 @@ export function adminRoutes(
       })
     },
   )
-  router.get('/admin/auth/session', cors, noQuery, async (req, res) =>
-    respond(
-      res,
-      await credentials.current(readSessionCookie(req.get('Cookie'), 'admin')),
-    ),
+  router.get(
+    '/admin/auth/session',
+    cors,
+    cookies.require('admin'),
+    noQuery,
+    async (req, res) =>
+      respond(
+        res,
+        await credentials.current(
+          readSessionCookie(req.get('Cookie'), 'admin'),
+        ),
+      ),
   )
   router.post(
     '/admin/auth/logout',

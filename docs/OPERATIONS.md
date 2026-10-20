@@ -625,6 +625,8 @@ return evidence, raw authentication challenges, full addresses, provider signatu
 Sensitive security incidents may require protected forensic retention with explicit authorization and limited
 distribution.
 
+P03-013 adds an optional `securityAction` and `outcome` to the existing `request_completed` event for allowlisted identity action patterns. `outcome` is `succeeded` for 2xx/3xx, `denied` for 4xx and `failed` otherwise. Classification comes from server-owned method/registered-route pairs; unmatched routes and denials before route matching retain the normal safe request record without a fabricated action. No submitted ID, actor claim, email, body, query or proof is added. Correlate by the server-issued request ID. These stdout operational records require the normal protected collector/retention setup; they do not implement the append-only business `auditLogs` contract or deployed abuse controls scheduled in P03-014 and later feature tasks.
+
 ### 9.4 Dashboard and alert design
 
 Present separate dashboards for **service health**, **customer journey**, **inventory/coupon state**,

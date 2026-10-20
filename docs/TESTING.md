@@ -736,6 +736,8 @@ Critical checks distinguish **payment collection**, **merchandise allocation**, 
 | `SEC-12` | Unauthorized reporting/export/audit APIs and excessive list filters | Restrict sensitive fields and list volume; record admin operations |
 | `SEC-13` | Failed write/retry races causing replay or business privilege bypass | No duplicated money/stock state and no privilege downgrade on retry |
 
+P03-013 verifies SEC-02/03/06/07/10 against the implemented identity surface: cross-account nested-address mutation denial, equivalent foreign/unknown IDs, correct-role cookie isolation, rejection of owner/role injection, stale authentication after revocation/suspension/security-revision change, transaction rollback and concurrent revocation fencing. Tests use an isolated real replica set. Safe action logs assert fixed classifications and absence of client identifiers/proof/PII. Future commerce ownership and durable financial audit cases remain with their feature tasks.
+
 ### 12.2 Testing method and limits
 
 Run automated static checks and **authorized, bounded** dynamic tests in isolated environments. Include threat-oriented manual review for session/cookie trust, guest access, SSR/private cache, callback intake, upload ownership and refunds. Review security findings against the PRD, Architecture §11 and API §§4–5/17; avoid inventing security compliance certification.

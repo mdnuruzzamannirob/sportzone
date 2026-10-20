@@ -1,3 +1,4 @@
+import { authorizeAccount } from './authorization.js'
 import { Types, type ClientSession, type Connection } from 'mongoose'
 import { randomBytes } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -34,44 +35,13 @@ export function createEmailChangeService(
   ) {
     const identity = await sessions.authenticate('customer', token)
     return inTransaction(connection, async (session) => {
-      const credential = await models.sessions
-        .findOne({
-          _id: identity.sessionId,
-          userId: identity.userId,
-          kind: 'customer',
-          expiresAt: { $gt: clock() },
-          revokedAt: { $exists: false },
-        })
-        .select('+securityRevisionAtIssue')
-        .session(session)
-      if (!credential || typeof credential.securityRevisionAtIssue !== 'number')
-        throw new ApiError('AUTH_REQUIRED')
-      const user = await models.users
-        .findOne({
-          _id: identity.userId,
-          role: 'customer',
-          status: 'active',
-          securityRevision: credential.securityRevisionAtIssue,
-        })
-        .select('+securityRevision +challengeRevisions')
-        .session(session)
-      if (!user) throw new ApiError('AUTH_REQUIRED')
-      const locked = await models.sessions.updateOne(
-        {
-          _id: credential._id,
-          revokedAt: { $exists: false },
-          expiresAt: { $gt: clock() },
-        },
-        {
-          $set: {
-            updatedAt: new Date(
-              Math.max(clock().getTime(), credential.updatedAt.getTime() + 1),
-            ),
-          },
-        },
-        { session, timestamps: false },
+      const user = await authorizeAccount(
+        models,
+        identity,
+        'customer',
+        session,
+        clock(),
       )
-      if (locked.modifiedCount !== 1) throw new ApiError('AUTH_REQUIRED')
       return work(user, session)
     })
   }

@@ -1,3 +1,4 @@
+import { securityAction } from './observability/security-actions.js'
 import express, { type Router } from 'express'
 import { randomUUID } from 'node:crypto'
 import { handleError } from './middleware/errors.js'
@@ -41,10 +42,12 @@ export function createApp({
         // Only the registered pattern, never originalUrl/baseUrl/params/query/header/body.
         const route =
           typeof req.route?.path === 'string' ? req.route.path : 'unmatched'
+        const action = securityAction(req.method, route)
         logger.request({
           requestId: res.locals.requestId,
           method: req.method,
           route,
+          ...(action ? { securityAction: action } : {}),
           status: res.writableFinished ? res.statusCode : 499,
           durationMs: performance.now() - started,
           ...(res.locals.errorCode ? { errorCode: res.locals.errorCode } : {}),

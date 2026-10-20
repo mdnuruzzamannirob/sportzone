@@ -253,6 +253,10 @@ errors identify fields only. Operators must approve deployed values and verify r
 Cookie expiry is advisory; server-side lookup remains authoritative. Set a cookie only after successful committed issuance;
 await durable logout before reporting server revocation, then perform P03-006's safe CSRF/context refresh.
 
+**P03-013 authorization enforcement:** Customer profile/address and email-change services recheck the selected credential and active matching-role principal inside their owning transaction. Protected mutations fence both records with conditional timestamp writes, so concurrent logout/suspension/revision changes cause retry and reauthorization rather than a stale permission grant. Fixed expiry is unchanged. Nested address IDs are resolved only within that principal's embedded addresses; foreign and absent IDs return the same 404, and owner/role input fields remain forbidden. Admin session access uses the admin cookie/role guard; customer routes do not accept admin authority. No unimplemented commerce/admin mutation route is activated by this foundation.
+
+Sensitive identity actions are classified from a server-owned method/registered-route allowlist in operational request logs. Records contain action, HTTP status/outcome and server request correlation; never submitted IDs, credentials, proof material, email or body/query/header values. These operational records do not replace transactional `auditLogs` required by future administrative/financial mutations. Broader abuse throttles/audit policy remain P03-014.
+
 The service's authenticate result is an explicit internal principal projection; never serialize a raw session document.
 The private lookup explicitly selects its CSRF verifier for the session service; ordinary model projections still exclude
 all credential verifiers. Guest sessions remain P06-015. Browser protection is implemented in §4.5 and customer credentials

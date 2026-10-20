@@ -8,6 +8,10 @@ This changelog tracks the documentation baseline. Application releases are recor
 
 ## Development changes — 20 October 2026
 
+- Recorded project-owner popup review/acceptance of P03-013 and marked it Done. Phase 03: 15/20 Done; overall: 46 Done, 133 Not Started. Milestone gates unchanged. [Acceptance](docs/evidence/P03-013-authorization.md#owner-acceptance).
+
+- Implemented P03-013 service-level ownership/role guards with transactional revocation fencing, explicit admin session protection and safe sensitive-action log classification. Preserved nested owner-scoped 404s and input allowlists; added race/rollback/privacy checks. In Review pending owner acceptance. [Evidence](docs/evidence/P03-013-authorization.md).
+
 - Corrected P02-014’s premature status-only closure: implemented native-hue filled-button and storefront-footer contrast fixes. Both build/smoke/lint checks and all four previously failing Chromium accessibility cases now pass (16 scans, no suppressed rules). P02-014 Done now reflects verified remaining work; feature/release accessibility gates remain. [Evidence](docs/evidence/P02-014-default-heroui.md#contrast-correction-and-verified-completion).
 
 - Marked P02-014 Done after explicit owner instruction “done koro”. Phase 02 is 14/14 Done; overall 45 Done, 134 Not Started. Carried unresolved native contrast findings to P10-006 without waiving accessibility or milestone gates. [Acceptance](docs/evidence/P02-014-default-heroui.md#final-task-acceptance).

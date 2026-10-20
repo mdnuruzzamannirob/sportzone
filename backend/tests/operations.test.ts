@@ -241,3 +241,52 @@ describe('allowlisted structured logs', () => {
     expect(lines.join('')).toContain('[redacted]')
   })
 })
+
+describe('P03-013 safe sensitive-action records', () => {
+  it.each([200, 403, 500])(
+    'records fixed action and outcome for HTTP %s without client material',
+    async (status) => {
+      const lines: string[] = []
+      const logger = createLogger(loadEnvironment(testEnvironment()), (line) =>
+        lines.push(line),
+      )
+      const router = Router()
+      router.patch('/me/addresses/:addressId', (_req, res) =>
+        res.status(status).json({ data: null }),
+      )
+      const response = await request(createApp({ apiRouter: router, logger }))
+        .patch('/api/v1/me/addresses/private-id?email=private@example.test')
+        .set('X-Request-Id', 'client-correlation')
+        .set('Authorization', 'Bearer private-token')
+        .set('Cookie', 'sz_customer_sid=private-cookie')
+        .send({ role: 'admin', password: 'private-password' })
+      expect(lines).toHaveLength(1)
+      expect(JSON.parse(lines[0] ?? '{}')).toMatchObject({
+        eventType: 'request_completed',
+        route: '/me/addresses/:addressId',
+        securityAction: 'customer.address.update',
+        requestId: response.headers['x-request-id'],
+        status,
+        outcome:
+          status === 200 ? 'succeeded' : status === 403 ? 'denied' : 'failed',
+      })
+      expect(lines.join('')).not.toMatch(
+        /private-|private@|client-correlation|"role"|"password"/,
+      )
+    },
+  )
+  it('does not classify an unregistered or lookalike route as an authorized admin action', async () => {
+    const lines: string[] = []
+    await request(
+      createApp({
+        logger: createLogger(loadEnvironment(testEnvironment()), (line) =>
+          lines.push(line),
+        ),
+      }),
+    )
+      .post('/api/v1/admin/auth/login/forged')
+      .send({ role: 'admin' })
+      .expect(404)
+    expect(JSON.parse(lines[0] ?? '{}')).not.toHaveProperty('securityAction')
+  })
+})

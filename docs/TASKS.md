@@ -107,7 +107,7 @@ The register contains 179 tasks across twelve phases, including seven engineerin
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
 | 01 — Requirements Finalization and Planning   |      17 |           0 |     0 |           0 |       0 |         0 |     17 |        0 |
 | 02 — UI/UX Design                             |      14 |           0 |     0 |           0 |       0 |         0 |     14 |        0 |
-| 03 — Authentication and Core Backend          |      20 |           6 |     0 |           0 |       0 |         0 |     14 |        0 |
+| 03 — Authentication and Core Backend          |      20 |           5 |     0 |           0 |       0 |         0 |     15 |        0 |
 | 04 — Product Catalog and Inventory            |      15 |          15 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      20 |          20 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -117,7 +117,7 @@ The register contains 179 tasks across twelve phases, including seven engineerin
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **179** |     **134** | **0** |       **0** |   **0** |     **0** | **45** |    **0** |
+| **Total**                                     | **179** |     **133** | **0** |       **0** |   **0** |     **0** | **46** |    **0** |
 
 ## 4. Milestone tracker
 
@@ -515,13 +515,13 @@ owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
   **Acceptance:** No public admin signup; admin access requires active admin session.\
   **Evidence:** [Private administrator verification](./evidence/P03-012-admin-auth.md). Private one-time provisioning, isolated admin login/session/logout/recovery, admin-bound proof delivery and independent safe activation implemented. 14 new unit and 22 real replica/HTTP/CLI cases; all 314 backend tests, 260 integration cases, 30 browser regressions and 20 CI commands Passed. Accepted by project owner on 19 October 2026: “Private admin authentication implementation গ্রহণ করছি”; production provisioning, live sender, deployed security/audit and frontend gates remain separate.
 
-- [ ] **P03-013 — Enforce ownership and role guards**\
-  **Status:** `Not Started` · **Area:** Backend/security\
+- [x] **P03-013 — Enforce ownership and role guards**\
+  **Status:** `Done` · **Area:** Backend/security · **Owner:** Codex\
   **Sources:** FR-01; FR-02; FR-21; Architecture §9\
   **Depends on:** `P03-005`, `P03-012`\
   **Deliverable:** Enforce server-side ownership on nested resources and admin-only mutations; log sensitive actions.\
   **Acceptance:** User-supplied IDs and client route guards cannot escalate privileges.\
-  **Evidence to attach:** Cross-account and admin denial tests.
+  **Evidence:** [Ownership, role guards and safe action logging](./evidence/P03-013-authorization.md). Transaction-local principal/session guards and revocation fencing implemented; 91 affected unit cases and 88 real replica-set integration cases passed across scoped runs, alongside backend lint/types/build/smoke and source boundaries. Project owner reviewed and accepted through the popup on 20 October 2026: “Review করেছি—accept করছি, Done করো”.
 
 - [ ] **P03-014 — Add auth/recovery throttles and audit safety**\
   **Status:** `Not Started` · **Area:** Backend/security\
@@ -1852,3 +1852,9 @@ Preserve IDs and dependency references; update phase totals and record milestone
 
 
 **20 October 2026 — P02-014 verified correction:** Owner clarified that “done koro” meant finish the remaining work, not carry defects forward. Fixed the filled-button/footer contrast defects and reran the unsuppressed affected audit: four cases, 16 scans Passed. Done now reflects implemented and verified corrections; P10-006 retains its full feature/release scope.
+
+
+**20 October 2026 — P03-013:** Not Started → In Progress → In Review. Added shared transaction-local authorization/fencing for profile and email-change services, explicit admin session role middleware and safe fixed action classifications in operational logs. Scoped 91 unit and 88 real replica/HTTP cases passed, including forced logout/suspension races and owner denial; backend static/build/smoke checks passed. No new public routes, schema migration or milestone acceptance. Owner review pending.
+
+
+**20 October 2026 — P03-013 acceptance:** In Review → Done after explicit popup review/acceptance: “Review করেছি—accept করছি, Done করো”. Phase 03: 15 Done, 5 Not Started; overall: 46 Done, 133 Not Started. No milestone accepted.

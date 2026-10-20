@@ -1,3 +1,4 @@
+import { authorizeAccount } from './authorization.js'
 import { parsePhoneNumberWithError } from 'libphonenumber-js/max'
 import { Types, type ClientSession, type Connection } from 'mongoose'
 import { z } from 'zod'
@@ -64,30 +65,18 @@ export function createProfileService(
   async function owned<T>(
     token: string | undefined,
     work: (user: User, session: ClientSession) => Promise<T>,
+    mutating = true,
   ) {
     const identity = await sessions.authenticate('customer', token)
     return inTransaction(connection, async (session) => {
-      const credential = await models.sessions
-        .findOne({
-          _id: identity.sessionId,
-          userId: identity.userId,
-          kind: 'customer',
-          revokedAt: { $exists: false },
-          expiresAt: { $gt: clock() },
-        })
-        .select('+securityRevisionAtIssue')
-        .session(session)
-      if (!credential || typeof credential.securityRevisionAtIssue !== 'number')
-        throw new ApiError('AUTH_REQUIRED')
-      const user = await models.users
-        .findOne({
-          _id: identity.userId,
-          role: 'customer',
-          status: 'active',
-          securityRevision: credential.securityRevisionAtIssue,
-        })
-        .session(session)
-      if (!user) throw new ApiError('AUTH_REQUIRED')
+      const user = await authorizeAccount(
+        models,
+        identity,
+        'customer',
+        session,
+        clock(),
+        mutating,
+      )
       return work(user, session)
     })
   }
@@ -110,7 +99,7 @@ export function createProfileService(
   }
   return {
     read(token: string | undefined) {
-      return owned(token, async (user) => accountDto(user))
+      return owned(token, async (user) => accountDto(user), false)
     },
     patch(token: string | undefined, raw: unknown) {
       const input = parseInput(profilePatch, raw)
@@ -122,7 +111,7 @@ export function createProfileService(
       })
     },
     list(token: string | undefined) {
-      return owned(token, async (user) => user.addresses.map(addressDto))
+      return owned(token, async (user) => user.addresses.map(addressDto), false)
     },
     add(token: string | undefined, raw: unknown) {
       const input = parseInput(addressInput, raw)
