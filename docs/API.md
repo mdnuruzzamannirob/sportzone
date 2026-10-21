@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 20 October 2026
+**Updated:** 21 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical references:** [Architecture](./ARCHITECTURE.md) · [Database](./DATABASE.md)\
@@ -255,7 +255,7 @@ await durable logout before reporting server revocation, then perform P03-006's 
 
 **P03-013 authorization enforcement:** Customer profile/address and email-change services recheck the selected credential and active matching-role principal inside their owning transaction. Protected mutations fence both records with conditional timestamp writes, so concurrent logout/suspension/revision changes cause retry and reauthorization rather than a stale permission grant. Fixed expiry is unchanged. Nested address IDs are resolved only within that principal's embedded addresses; foreign and absent IDs return the same 404, and owner/role input fields remain forbidden. Admin session access uses the admin cookie/role guard; customer routes do not accept admin authority. No unimplemented commerce/admin mutation route is activated by this foundation.
 
-Sensitive identity actions are classified from a server-owned method/registered-route allowlist in operational request logs. Records contain action, HTTP status/outcome and server request correlation; never submitted IDs, credentials, proof material, email or body/query/header values. These operational records do not replace transactional `auditLogs` required by future administrative/financial mutations. Broader abuse throttles/audit policy remain P03-014.
+Sensitive identity actions are classified from a server-owned method/registered-route allowlist in operational request logs. Records contain action, HTTP status/outcome and server request correlation; never submitted IDs, credentials, proof material, email or body/query/header values. These operational records do not replace transactional `auditLogs` required by future administrative/financial mutations. P03-014 adds the shared throttles and fixed security audit reasons in §4.9.
 
 The service's authenticate result is an explicit internal principal projection; never serialize a raw session document.
 The private lookup explicitly selects its CSRF verifier for the session service; ordinary model projections still exclude
@@ -321,9 +321,7 @@ session cookie. It revokes only the supplied customer credential, clears that co
 the anonymous context and returns fresh CSRF after persistence succeeds. Failure during context replacement does not
 undo durable revocation; re-bootstrap before retry. Administrator/guest cookies are never cleared/revoked here.
 
-Register/login/logout share a per-process 10-attempt/60-second socket-address guard (forwarded headers are ignored),
-a bounded 10000-entry map and KDF concurrency cap. This local guard is not distributed abuse-control acceptance;
-P03-014 owns broader controls and deployed proxy policy. No credentials or raw network identity are logged.
+Activated composition uses P03-014’s shared MongoDB throttles (§4.9) alongside the existing KDF concurrency cap. Standalone router factories retain a bounded local guard for isolated adapters; the executable never falls back to it on quota-store failure. No credentials or raw network identity are logged.
 
 ### 4.7 Customer profile, addresses and deletion intake
 
@@ -384,6 +382,16 @@ with an approved test-recipient override, regardless of the intent's customer de
 timeout, lease and batch policy are explicit protected configuration. The fixed provider URL is HTTPS, redirects are
 rejected, responses are bounded and provider errors/credentials are never reflected. Verified sender/domain, provider
 activation and real mailbox acceptance remain operational gates.
+
+### 4.9 Auth/recovery throttles and audit safety (P03-014)
+
+Activated identity composition uses a MongoDB-backed, atomic fixed-window throttle shared by API instances; no process-memory fallback on database failure. Every audience has a shared network budget of 60 requests/minute. Credential, recovery and email-change mutations additionally share 10 network attempts/minute per group; normalized supplied email targets share 10 attempts/minute per audience/group across source addresses. CSRF bootstrap/refresh uses the audience network budget. Customer/admin budgets and groups are independent; successful and failed attempts consume equally and no account lookup determines a limit. This is a request throttle, not an account suspension or lockout mutation.
+
+Use only the socket address while trust proxy remains false; forwarded/client identity headers are ignored. Keys are domain-separated HMAC digests derived from SESSION_SECRET and bind audience/group/window; plaintext address/email/proof is never persisted or logged. Fixed minute boundaries govern reset even before TTL cleanup. A rejected quota returns generic 429 RATE_LIMITED plus integer Retry-After; no matching-account detail or counter key is exposed. Counter-store failure returns generic 503 SERVICE_UNAVAILABLE and never proceeds to credentials/recovery. Rotate the shared session secret consistently across API instances; rotation resets counter key namespaces and invalidates old sessions as already documented.
+
+Operational request audit records classify CSRF/login/recovery and other existing sensitive identity actions and include only fixed `securityReason` values for throttling/store unavailability. Generic recovery responses, response floors, Origin/CSRF, proof single-use and credential/role checks are retained. Durable domain auditLogs for commerce remain governed by Database §10.3; these security events use the existing protected operational collector.
+
+---
 
 ## 5. Authorization & data exposure
 
@@ -601,14 +609,14 @@ Public responses stay enumeration-safe; account reactivation/recovery requires t
 
 #### Customer password recovery and change implementation
 
-Customer reset issuance returns the same `{accepted:true}` for missing, inactive and noncustomer identities. Reset confirmation uses a 32-byte base64url proof, returns `400 INVALID_REQUEST` for unavailable/expired/replayed proofs, and never creates a session. Confirmation changes password, increments security and password-reset scope revisions, revokes customer sessions and removes outstanding reset envelopes atomically. Authenticated password change verifies the current credential, invalidates reset challenges, revokes existing customer sessions and issues a replacement customer cookie and CSRF token in the same transaction. Neither path verifies email or changes account eligibility. Local IP rate limits cover all three routes; a per-account issuance cooldown silently suppresses repeated emails. The explicit common response floor (100–5000 ms) reduces ordinary timing differences; operators must size it above measured issuance latency and enforce distributed limits. It is not a constant-time network guarantee. Deployed distributed abuse controls remain an operational gate.
+Customer reset issuance returns the same `{accepted:true}` for missing, inactive and noncustomer identities. Reset confirmation uses a 32-byte base64url proof, returns `400 INVALID_REQUEST` for unavailable/expired/replayed proofs, and never creates a session. Confirmation changes password, increments security and password-reset scope revisions, revokes customer sessions and removes outstanding reset envelopes atomically. Authenticated password change verifies the current credential, invalidates reset challenges, revokes existing customer sessions and issues a replacement customer cookie and CSRF token in the same transaction. Neither path verifies email or changes account eligibility. P03-014 shared network/target rate limits cover these routes; a per-account issuance cooldown silently suppresses repeated emails. The explicit common response floor (100–5000 ms) reduces ordinary timing differences; operators must size it above measured issuance latency and verify the deployed P03-014 shared limits. It is not a constant-time network guarantee. Deployed shared-control and proxy verification remains an operational gate.
 
 Recovery activates only with explicit `PASSWORD_RECOVERY_ENABLED=true`, a bounded `PASSWORD_RESET_TTL_SECONDS` (60–1800), `PASSWORD_RESET_COOLDOWN_SECONDS` (60–3600), separate versioned 256-bit envelope keys and the fixed configured HTTPS storefront origin. No Host/request URL supplies email links. Proofs use the `/reset-password#token=…` fragment for the later frontend screen; the backend accepts tokens only in the confirmation JSON body. Key loss/tamper fails closed; expiry cleanup runs independently of MongoDB TTL in the notification worker.
 
 
 #### Verified email-change implementation
 
-P03-011 implements customer-only `/me/email-changes` and `/me/email-changes/confirm` with Origin/session CSRF, strict JSON and local rate limits. Issuance persists a time-limited single-use proof for the normalized new destination without changing the account. Existing/occupied targets and cooldown suppression return the same `{verificationSent:true}`; this acknowledges handling, not inbox delivery or availability. A target equal to the current email returns `409 STATE_CONFLICT`. Confirmation requires both a current customer session owning the challenge and its proof. Wrong, expired, consumed, invalidated or stale proofs yield `400 INVALID_REQUEST`; a target claimed concurrently yields `409 STATE_CONFLICT` with the entire transaction rolled back.
+P03-011 implements customer-only `/me/email-changes` and `/me/email-changes/confirm` with Origin/session CSRF, strict JSON and P03-014 shared rate limits. Issuance persists a time-limited single-use proof for the normalized new destination without changing the account. Existing/occupied targets and cooldown suppression return the same `{verificationSent:true}`; this acknowledges handling, not inbox delivery or availability. A target equal to the current email returns `409 STATE_CONFLICT`. Confirmation requires both a current customer session owning the challenge and its proof. Wrong, expired, consumed, invalidated or stale proofs yield `400 INVALID_REQUEST`; a target claimed concurrently yields `409 STATE_CONFLICT` with the entire transaction rolled back.
 
 Confirmation atomically changes the unique email, marks that destination verified, advances security and challenge revisions, invalidates pending identity challenges and revokes all customer sessions. It returns the Account allowlist and clears the customer cookie; it does not silently sign in to the changed identity or return a new CSRF token. The customer must bootstrap/login again. Password reset/change also invalidates pending email-change/verification proofs. Existing order-time email/address snapshots and saved addresses remain untouched. Email-change delivery uses the fixed HTTPS storefront path `/account/email-change#token=…`; the later authenticated frontend submits proof only in the JSON body.
 

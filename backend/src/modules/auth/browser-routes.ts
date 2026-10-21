@@ -1,4 +1,5 @@
-import { Router } from 'express'
+import { Router, type RequestHandler } from 'express'
+import { localAuthRateLimit } from './rate-limit.js'
 import { ApiError } from '../../shared/errors.js'
 import { respond } from '../../shared/responses.js'
 import { readSessionCookie } from './session-http.js'
@@ -28,6 +29,7 @@ export function browserSecurityRoutes(
   security: BrowserSecurity,
   sessions: SessionService,
   guest?: GuestCsrfAdapter,
+  limit: RequestHandler = localAuthRateLimit(Date.now, 60),
 ) {
   const router = Router()
   for (const audience of ['storefront', 'admin'] as const) {
@@ -36,7 +38,7 @@ export function browserSecurityRoutes(
     router.head(path, security.cors(audience), (_req, res) => {
       res.status(204).end()
     })
-    router.get(path, security.cors(audience), async (req, res) => {
+    router.get(path, security.cors(audience), limit, async (req, res) => {
       // Bootstrap also requires Origin: no credential issuance from arbitrary embedding origins.
       // cors alone allows origin-less safe reads; require the header explicitly here.
       if (!req.get('Origin')) throw new ApiError('CSRF_INVALID')

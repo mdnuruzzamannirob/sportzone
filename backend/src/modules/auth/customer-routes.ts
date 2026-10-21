@@ -1,8 +1,7 @@
+import { localAuthRateLimit } from './rate-limit.js'
 import { Router, type RequestHandler } from 'express'
-import { createHash } from 'node:crypto'
 import { z } from 'zod'
 import { parseInput } from '../../middleware/validation.js'
-import { ApiError } from '../../shared/errors.js'
 import { respond } from '../../shared/responses.js'
 import type { BrowserSecurity } from './browser-security.js'
 import { readContextCookie } from './browser-security.js'
@@ -10,39 +9,14 @@ import type { CustomerService } from './customer.js'
 import { createSessionHttp, readSessionCookie } from './session-http.js'
 import type { SessionService } from './sessions.js'
 
-// Local process guard, not a multi-replica abuse-control claim. Trusted proxy remains disabled.
-export function customerRateLimit(
-  clock: () => number = Date.now,
-): RequestHandler {
-  const buckets = new Map<string, { count: number; until: number }>()
-  return (req, _res, next) => {
-    const now = clock()
-    for (const [key, value] of buckets)
-      if (value.until <= now) buckets.delete(key)
-    const key = createHash('sha256')
-      .update(req.socket.remoteAddress ?? 'unknown')
-      .digest('hex')
-    let bucket = buckets.get(key)
-    if (!bucket) {
-      if (buckets.size >= 10000) {
-        next(new ApiError('RATE_LIMITED'))
-        return
-      }
-      bucket = { count: 0, until: now + 60000 }
-      buckets.set(key, bucket)
-    }
-    bucket.count++
-    next(bucket.count > 10 ? new ApiError('RATE_LIMITED') : undefined)
-  }
-}
 export function customerRoutes(
   service: CustomerService,
   security: BrowserSecurity,
   sessions: SessionService,
+  limit: RequestHandler = localAuthRateLimit(),
 ) {
   const router = Router(),
-    cookies = createSessionHttp(sessions),
-    limit = customerRateLimit()
+    cookies = createSessionHttp(sessions)
   const endpoints = [
     '/auth/register',
     '/auth/login',

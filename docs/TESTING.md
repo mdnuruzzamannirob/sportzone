@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 20 October 2026
+**Updated:** 21 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -1486,3 +1486,8 @@ their owning features; current registration payloads cannot contain proofs or ar
 ### P03-012 administrator credential verification
 
 `backend/tests/admin-auth.test.ts` checks independent fail-closed admin activation, policy bounds and customer/admin verifier/AEAD separation. `backend/tests/integration/admin-auth.test.ts` covers FR-21 and SEC-01/03/04/05/10 using real isolated MongoDB/HTTP: private initial provisioning and concurrent duplicate guards, no signup/upgrade/overwrite, separate login/session/logout/context/cookie behavior, generic recovery, proof replay/expiry/role-change isolation, session revocation, login/reset/reissue concurrency, rollback, stable durable delivery/uncertainty, disabled renderer exclusion and actual independent router composition. Compiled stdin-only CLI tests exercise success/replay/oversize/production refusal without exposing input. Existing customer/recovery/email-change/session suites remain mandatory. [Execution evidence](./evidence/P03-012-admin-auth.md) separates backend foundation results from live provider, production/operator/audit and frontend gates.
+
+
+### P03-014 scoped security-control checks
+
+SEC-01/10/11/13: test shared Mongo quota across two limiter instances and recreation, concurrent limit boundaries, fixed-window reset with expired TTL rows still present, distinct audiences/groups, equivalent existing/missing and differently cased target input, malformed input, ignored forwarded headers, unavailable store fail-closed behavior, correct Retry-After, unchanged Origin/CSRF and recovery semantics, schema/index readiness and additive bootstrap. Audit assertions forbid raw key/identity/proof material and require only fixed action/reason fields. No synthetic HTTP test proves deployed proxy/collector configuration.

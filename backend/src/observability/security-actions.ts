@@ -1,5 +1,7 @@
 // Registered route patterns only. Never classify or log raw paths, IDs or input.
 const actions = {
+  'GET /auth/csrf': 'customer.csrf.issue',
+  'GET /admin/auth/csrf': 'admin.csrf.issue',
   'POST /auth/register': 'customer.register',
   'POST /auth/login': 'customer.login',
   'POST /auth/logout': 'customer.logout',

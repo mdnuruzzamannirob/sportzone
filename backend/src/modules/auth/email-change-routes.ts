@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { parseInput } from '../../middleware/validation.js'
 import { respond } from '../../shared/responses.js'
 import type { BrowserSecurity } from './browser-security.js'
-import { customerRateLimit } from './customer-routes.js'
+import { localAuthRateLimit } from './rate-limit.js'
 import type { EmailChangeService } from './email-change.js'
 import { createSessionHttp, readSessionCookie } from './session-http.js'
 import type { SessionService } from './sessions.js'
@@ -11,10 +11,10 @@ export function emailChangeRoutes(
   service: EmailChangeService,
   security: BrowserSecurity,
   sessions: SessionService,
+  limit: RequestHandler = localAuthRateLimit(),
 ) {
   const router = Router(),
-    cookies = createSessionHttp(sessions),
-    limit = customerRateLimit()
+    cookies = createSessionHttp(sessions)
   const cors = security.cors('storefront'),
     guard = security.require('storefront', 'customer')
   const noQuery: RequestHandler = (req, _res, next) => {

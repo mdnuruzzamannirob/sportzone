@@ -1,3 +1,4 @@
+import { createAuthQuotaStore } from './rate-limit-store.js'
 import type { Connection } from 'mongoose'
 import { isDeepStrictEqual } from 'node:util'
 import { z } from 'zod'
@@ -337,6 +338,7 @@ export async function initializeIdentityPersistence(
   await verifyDeclaredIndexes(models.sessions)
   await verifyDeclaredIndexes(models.challenges)
   await verifyDeclaredIndexes(models.contexts)
+  await createAuthQuotaStore(connection).initialize()
 }
 
 // Read-only readiness: never creates collections/indexes or changes validators.

@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 20 October 2026
+**Updated:** 21 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -264,7 +264,7 @@ Both controllers and scheduled jobs invoke shared backend **domain services**, n
 | Records | Canonical registration / permitted operations |
 | --- | --- |
 | `users` | Auth owns the single schema/index/validator registration and credential/security writes; customers uses narrow public profile/address operations. Guest-order access remains independently scoped |
-| `sessions`, `authChallenges`, `browserContexts` | Auth; guest-access uses the approved scoped guest boundary |
+| `sessions`, `authChallenges`, `browserContexts`, `authRateLimits` | Auth; guest-access uses the approved scoped guest boundary |
 | `products`, `productVariants` | Products registers schemas; inventory receives a stock-only persistence capability for variant counters. Product updates cannot overwrite counters |
 | `categories` | Categories |
 | `carts`, `wishlists` | Carts, wishlists respectively |
@@ -558,6 +558,14 @@ Before enabling an identity writer, apply §15.1 with a migration ID and indepen
 Retention remains §14.2/Operations OP-PRIV-01. Expired envelopes are stripped independently of TTL; legally held records
 and immutable order/collection/refund history survive account review. Every refund obligation still references verified
 source collections and preserves classification/unit caps (§§8.6, 9, 12.5); identity deletion cannot weaken those rules.
+
+### 5.8 `authRateLimits` — shared ephemeral auth controls (P03-014)
+
+Auth owns `authRateLimits`, an ephemeral shared security-control collection. `_id` is a 64-character HMAC hex digest including audience, group, subject and fixed-window start; `count` is an integer 1–61, saturated at the policy ceiling plus one; `expiresAt` is the fixed window end. No raw email, network address, cookie, token, password or account-existence result is stored. Required indexes are the unique built-in `_id` and `auth_rate_limits_expiry` on `{expiresAt:1}` with TTL 0. Strict BSON validation rejects unknown fields. TTL is cleanup only: the window-bound key determines eligibility before deletion. Atomic single-document increments use majority write concern; sequential independent network/group/target checks may consume earlier quota when a later check denies, never grant extra quota through rollback/refund.
+
+Explicit identity bootstrap adds this collection/index without modifying existing identity collections or records. Existing mismatched validators require review; HTTP startup and admission verify schema/index readiness without bootstrapping; missing or mismatched protection state fails closed. No legal/account audit history is TTL-deleted by this change. No down migration removes records or alters session revocation.
+
+---
 
 ## 6. Catalog and shopping collections
 

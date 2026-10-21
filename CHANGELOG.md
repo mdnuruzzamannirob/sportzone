@@ -2,9 +2,15 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 20 October 2026
+**Updated:** 21 October 2026
 
 This changelog tracks the documentation baseline. Application releases are recorded separately when software is released.
+
+## Development changes — 21 October 2026
+
+- Recorded project-owner popup review/acceptance of P03-014 and marked it Done. Phase 03: 16/20 Done; overall: 47 Done, 132 Not Started. Deployment and milestone gates unchanged. [Acceptance](docs/evidence/P03-014-auth-throttles.md#owner-acceptance).
+
+- Implemented P03-014 shared MongoDB auth/recovery quotas, protected bootstrap, additive ephemeral counter persistence, fixed-window Retry-After and fail-closed readiness/admission. Added secret-free fixed security audit reasons; retained generic recovery, CSRF/session protections and required CI statuses. Scoped unit/contract and real replica-set checks passed; In Review pending owner acceptance. [Evidence](docs/evidence/P03-014-auth-throttles.md).
 
 ## Development changes — 20 October 2026
 

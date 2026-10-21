@@ -20,6 +20,7 @@ type RequestEvent = {
   status: number
   durationMs: number
   securityAction?: SecurityAction
+  securityReason?: 'rate_limited' | 'throttle_unavailable'
   errorCode?: ErrorCode
 }
 const methods = new Set([
@@ -92,6 +93,7 @@ export function createLogger(
           status: event.status,
           durationMs: Math.max(0, Math.round(event.durationMs)),
           errorCode: event.errorCode ?? null,
+          ...(event.securityReason ? { securityReason: event.securityReason } : {}),
           ...(event.securityAction
             ? {
                 securityAction: event.securityAction,

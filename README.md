@@ -195,8 +195,7 @@ existing incompatible validators require a reviewed migration. Set the flag and 
 validators/indexes without modifying them. Registration/login/logout/session and CSRF bootstrap routes then run under
 `/api/v1`. The default flag is false. Profile/address/deletion-intake APIs share that activation. Current active delivery rules govern saved-address eligibility;
 missing coverage fails closed. Phone input is validated locally against Bangladesh numbering metadata and stored as E.164.
-Deletion intake requires verified email and never deletes an account or historical records. Admin credentials, verification email delivery, profile UI and distributed abuse
-controls remain with their owning tasks. New passwords follow the owner-approved 12–128-character/512-byte policy.
+Deletion intake requires verified email and never deletes an account or historical records. P03-014 adds shared MongoDB auth/recovery quotas and secret-free security event reasons; explicit identity bootstrap now also prepares `authRateLimits`. Startup fails closed on missing protection state. See [rollout and proxy/collector gates](docs/OPERATIONS.md#p03-014-shared-auth-throttle-rollout). Frontend integration and deployed acceptance remain their owning tasks. New passwords follow the owner-approved 12–128-character/512-byte policy.
 
 Registration email delivery has a separate, disabled-by-default worker. After building, use
 `node --env-file=.env backend/tools/notification-worker.mjs` with the explicit protected email/retry configuration.

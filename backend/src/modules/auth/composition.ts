@@ -1,3 +1,5 @@
+import { createAuthQuotaStore } from './rate-limit-store.js'
+import { createAuthThrottle } from './rate-limit.js'
 import { loadAdminRecoveryOptions } from '../../config/recovery.js'
 import { adminRoutes } from './admin-routes.js'
 import { loadEmailChangeOptions } from '../../config/recovery.js'
@@ -51,14 +53,26 @@ export async function composeCustomerRoutes(
     sessions,
     loadBrowserSecurityOptions(environment, sessions.cookiePolicy.secure),
   )
+  const quota = createAuthQuotaStore(connection)
+  await quota.verify()
+  const throttle = createAuthThrottle(quota, config.SESSION_SECRET)
   const router = Router()
-  router.use(browserSecurityRoutes(security, sessions))
+  // Separate bootstrap adapters select their audience from the registered route.
+  router.use(
+    browserSecurityRoutes(security, sessions, undefined, (req, res, next) =>
+      throttle.middleware(
+        req.path.startsWith('/admin/') ? 'admin' : 'customer',
+        'bootstrap',
+      )(req, res, next),
+    ),
+  )
   if (config.CUSTOMER_AUTH_ENABLED)
     router.use(
       customerRoutes(
         createCustomerService(models, sessions, security, notifications),
         security,
         sessions,
+        throttle.middleware('customer', 'credentials'),
       ),
     )
   if (config.PASSWORD_RECOVERY_ENABLED)
@@ -74,6 +88,7 @@ export async function composeCustomerRoutes(
         ),
         security,
         sessions,
+        throttle.middleware('customer', 'recovery'),
       ),
     )
   if (config.EMAIL_CHANGE_ENABLED)
@@ -88,6 +103,7 @@ export async function composeCustomerRoutes(
         ),
         security,
         sessions,
+        throttle.middleware('customer', 'email'),
       ),
     )
   if (config.CUSTOMER_AUTH_ENABLED)
@@ -125,6 +141,11 @@ export async function composeCustomerRoutes(
         ),
         security,
         sessions,
+        (req, res, next) =>
+          throttle.middleware(
+            'admin',
+            req.path.includes('/password-resets') ? 'recovery' : 'credentials',
+          )(req, res, next),
       ),
     )
   return router

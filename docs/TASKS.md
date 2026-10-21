@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 20 October 2026
+**Updated:** 21 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -107,7 +107,7 @@ The register contains 179 tasks across twelve phases, including seven engineerin
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
 | 01 — Requirements Finalization and Planning   |      17 |           0 |     0 |           0 |       0 |         0 |     17 |        0 |
 | 02 — UI/UX Design                             |      14 |           0 |     0 |           0 |       0 |         0 |     14 |        0 |
-| 03 — Authentication and Core Backend          |      20 |           5 |     0 |           0 |       0 |         0 |     15 |        0 |
+| 03 — Authentication and Core Backend          |      20 |           4 |     0 |           0 |       0 |         0 |     16 |        0 |
 | 04 — Product Catalog and Inventory            |      15 |          15 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      20 |          20 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -117,7 +117,7 @@ The register contains 179 tasks across twelve phases, including seven engineerin
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **179** |     **133** | **0** |       **0** |   **0** |     **0** | **46** |    **0** |
+| **Total**                                     | **179** |     **132** | **0** |       **0** |   **0** |     **0** | **47** |    **0** |
 
 ## 4. Milestone tracker
 
@@ -523,13 +523,13 @@ owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
   **Acceptance:** User-supplied IDs and client route guards cannot escalate privileges.\
   **Evidence:** [Ownership, role guards and safe action logging](./evidence/P03-013-authorization.md). Transaction-local principal/session guards and revocation fencing implemented; 91 affected unit cases and 88 real replica-set integration cases passed across scoped runs, alongside backend lint/types/build/smoke and source boundaries. Project owner reviewed and accepted through the popup on 20 October 2026: “Review করেছি—accept করছি, Done করো”.
 
-- [ ] **P03-014 — Add auth/recovery throttles and audit safety**\
-  **Status:** `Not Started` · **Area:** Backend/security\
+- [x] **P03-014 — Add auth/recovery throttles and audit safety**\
+  **Status:** `Done` · **Area:** Backend/security · **Owner:** Codex\
   **Sources:** FR-01; FR-21; PRD §12\
   **Depends on:** `P03-007`, `P03-012`\
   **Deliverable:** Rate-limit sensitive endpoints and record safe security-relevant audit events.\
   **Acceptance:** Brute-force/recovery abuse blocked without exposing account existence or secrets.\
-  **Evidence to attach:** Rate-limit and audit tests.
+  **Evidence:** [Shared auth throttles and safe security audit records](./evidence/P03-014-auth-throttles.md). MongoDB-backed audience/network/target quotas, readiness/fail-closed behavior, Retry-After and fixed secret-free audit reasons implemented. 122 scoped unit/contract and 173 real MongoDB integration cases passed across affected runs; backend lint/types/build/smoke and boundaries passed. Project owner reviewed and accepted through the popup on 21 October 2026: “Review করেছি—accept করছি, Done করো”.
 
 - [ ] **P03-015 — Connect customer and admin authentication/account interfaces**\
   **Status:** `Not Started` · **Area:** Storefront/admin\
@@ -1858,3 +1858,9 @@ Preserve IDs and dependency references; update phase totals and record milestone
 
 
 **20 October 2026 — P03-013 acceptance:** In Review → Done after explicit popup review/acceptance: “Review করেছি—accept করছি, Done করো”. Phase 03: 15 Done, 5 Not Started; overall: 46 Done, 133 Not Started. No milestone accepted.
+
+
+**21 October 2026 — P03-014:** Not Started → In Progress → In Review. Added shared atomic MongoDB auth quotas and an additive ephemeral counter bootstrap, bound recovery/login attempts independently of account existence, protected bootstrap, fail-closed schema/store handling and secret-free security audit reasons. Scoped 122 unit/contract and 173 real replica/HTTP cases passed; build/smoke/static checks passed. Owner review pending; deployment/proxy/collector and milestone gates unchanged.
+
+
+**21 October 2026 — P03-014 acceptance:** In Review → Done after explicit owner popup review/acceptance: “Review করেছি—accept করছি, Done করো”. Phase 03: 16 Done, 4 Not Started; overall: 47 Done, 132 Not Started. Deployment and milestone gates unchanged.

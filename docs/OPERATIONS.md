@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 20 October 2026
+**Updated:** 21 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -625,7 +625,7 @@ return evidence, raw authentication challenges, full addresses, provider signatu
 Sensitive security incidents may require protected forensic retention with explicit authorization and limited
 distribution.
 
-P03-013 adds an optional `securityAction` and `outcome` to the existing `request_completed` event for allowlisted identity action patterns. `outcome` is `succeeded` for 2xx/3xx, `denied` for 4xx and `failed` otherwise. Classification comes from server-owned method/registered-route pairs; unmatched routes and denials before route matching retain the normal safe request record without a fabricated action. No submitted ID, actor claim, email, body, query or proof is added. Correlate by the server-issued request ID. These stdout operational records require the normal protected collector/retention setup; they do not implement the append-only business `auditLogs` contract or deployed abuse controls scheduled in P03-014 and later feature tasks.
+P03-013 adds an optional `securityAction` and `outcome` to the existing `request_completed` event for allowlisted identity action patterns. `outcome` is `succeeded` for 2xx/3xx, `denied` for 4xx and `failed` otherwise. Classification comes from server-owned method/registered-route pairs; unmatched routes and denials before route matching retain the normal safe request record without a fabricated action. No submitted ID, actor claim, email, body, query or proof is added. Correlate by the server-issued request ID. These stdout operational records require the normal protected collector/retention setup; they do not implement the append-only business `auditLogs` contract or the domain audit infrastructure owned by later feature tasks. P03-014 adds fixed `securityReason` values (`rate_limited`, `throttle_unavailable`) and CSRF issuance action classifications without identifiers or counter keys.
 
 ### 9.4 Dashboard and alert design
 
@@ -1585,9 +1585,7 @@ registration subset and must be expanded through reviewed migrations for later n
 Registration enqueues one retryable intent transactionally, without calling an email provider. Email verification and
 worker delivery remain P03-009/010 and notification tasks; queued is not delivered. Keep the intent across retries and
 application rollback. Password hashes use versioned scrypt with a per-process two-KDF concurrency cap; budget at least
-256 MiB plus application/headroom for concurrent derivations and benchmark deployed capacity. Per-process socket-IP
-limits are 10 attempts/minute across register/login/logout; trust proxy remains false and forwarded headers are ignored.
-Multi-replica/shared abuse controls, credential auditing and deployed-origin checks remain release gates in P03-014/016.
+256 MiB plus application/headroom for concurrent derivations and benchmark deployed capacity. P03-014 provides shared MongoDB quotas across instances; trust proxy remains false and forwarded headers are ignored. Deployed proxy/origin/collector verification remains a release gate.
 
 Disable the activation flag to roll back HTTP exposure; do not remove accounts, intents, contexts or sessions. Preserve
 hash format compatibility; password/secret changes follow the identity rotation policy. Logout reports success only after
@@ -1671,10 +1669,21 @@ For uncertain delivery, reconcile retained provider/event/claim identifiers; do 
 
 ### Private administrator provisioning and recovery
 
-ADMIN_AUTH_ENABLED defaults false and is independent of CUSTOMER_AUTH_ENABLED. Activation requires explicit CUSTOMER_SESSION_TTL_SECONDS/ADMIN_SESSION_TTL_SECONDS, BROWSER_CONTEXT_TTL_SECONDS, SESSION_COOKIE_SAME_SITE, existing protected proof keys and approved HTTPS ADMIN_ORIGIN, plus ADMIN_PASSWORD_RESET_TTL_SECONDS (60–1800), ADMIN_PASSWORD_RESET_COOLDOWN_SECONDS (60–3600), ADMIN_PASSWORD_RESET_RESPONSE_FLOOR_MS (100–5000). No public administrator signup exists. Per-process admin rate limits and existing protected request logs are foundation controls; shared ingress and comprehensive audit infrastructure remain with their owning security/operations tasks.
+ADMIN_AUTH_ENABLED defaults false and is independent of CUSTOMER_AUTH_ENABLED. Activation requires explicit CUSTOMER_SESSION_TTL_SECONDS/ADMIN_SESSION_TTL_SECONDS, BROWSER_CONTEXT_TTL_SECONDS, SESSION_COOKIE_SAME_SITE, existing protected proof keys and approved HTTPS ADMIN_ORIGIN, plus ADMIN_PASSWORD_RESET_TTL_SECONDS (60–1800), ADMIN_PASSWORD_RESET_COOLDOWN_SECONDS (60–3600), ADMIN_PASSWORD_RESET_RESPONSE_FLOOR_MS (100–5000). No public administrator signup exists. P03-014 shared MongoDB quotas and protected structured security event logs cover admin credentials/recovery. Deployed ingress configuration and comprehensive domain audit infrastructure retain their owning security/operations gates.
 
 Build the backend and bootstrap owned local/test identity persistence through the existing explicit command; migrate notifications through `node --env-file=.env backend/tools/migrate-notifications.mjs`. The additive migration now accepts the exact P03-011 predecessor and admin-password-reset-v1 reference-only intents. HTTP startup never migrates. Operator-controlled production rollout and a compatible rollback build must preserve expanded records, claims and provider receipts.
 
 For owned local/test initial provisioning, pipe a protected secret-source JSON object `{name,email,password}` into `node --env-file=.env backend/tools/provision-admin.mjs`. Input is noninteractive and limited to 8192 bytes; the command prints only generic success/failure and never credentials. Do not type passwords in process arguments, commit an input file, use a shared default credential or expose this function as an HTTP route. The command verifies existing strict persistence without creating collections/indexes, inserts the reserved initial administrator and refuses replay, existing admins, occupied identities and customer upgrades. Concurrent attempts serialize through the reserved _id. Staging/production are refused by this convenience command. Production initial provisioning requires an authorized operator to review the same service against verified persistence, privately inject credentials, record a secret-free change record and verify namespace/role/session behavior; no production action is claimed here.
 
 Admin recovery uses the same one-batch email worker with admin activation/key/origin policy supplied. Only the admin-specific template is claimed by the enabled admin renderer. Admin links use the configured admin HTTPS origin; customer proof/cookie/context cannot substitute, including after a role change. Known provider rejection retains stable challenge/event identity; uncertainty stops automatic resend. Bounded cleanup, key rotation, restore invalidation and reconciliation follow the existing proof procedures. Successful reset revokes admin sessions, consumes the proof and creates no session. Repeat logout requires fresh admin context when the session is unavailable. Suspended/ineligible accounts remain inaccessible; recovery cannot reactivate or privilege-upgrade them. Live inbox, deployed ingress/browser/TLS, secret-store, audit rollout and milestone approvals remain separate gates.
+
+
+### P03-014 shared auth throttle rollout
+
+Before enabling the new identity build, run the existing explicit local/test identity bootstrap (`node --env-file=.env backend/tools/bootstrap-identity.mjs` after building). It adds only `authRateLimits` with a strict digest/count/expiry validator and the TTL index; existing identity records/validators are retained. Review the equivalent additive collection/index rollout separately for staging/production; the convenience tool refuses those environments. HTTP startup and admission only verify, never repair/implicitly create protection state. Missing/mismatched schema/index or unavailable MongoDB fails closed (generic 503), never falling back to process memory.
+
+Use one protected SESSION_SECRET and synchronized clocks across the API instances sharing the database. Drain previous unguarded builds before asserting fleet-wide protection; a mixed old/new rollout is not verified enforcement. Do not delete current buckets to bypass lockout. Minute-window keys determine reset, and TTL only reclaims expired opaque counters. Counters saturate at policy ceiling plus one. Secret rotation invalidates sessions and changes quota namespaces; coordinate it across the fleet.
+
+Network limits use the socket address; an unreviewed proxy must not be trusted through client Forwarded/X-Forwarded-For values. Behind a proxy, verify the documented topology and capacity before enabling traffic; do not silently weaken quota or trust proxy. Monitor fixed securityAction/securityReason/errorCode counts for rate limiting (429) and unavailable storage (503), and verify the protected collector and alert delivery in the deployed environment. No raw email, address, proof, cookie or HMAC key enters logs; retain security logs under the existing approved access/retention policy. Target limits apply equally to supplied existing/missing accounts, temporarily bound requests and do not change account status. Recovery cooldowns, generic responses and single-use proofs remain independent defenses.
+
+Rollback uses the prior compatible build and preserves identity/proof/notification/audit state; the new ephemeral collection can stay in place. A rollback to a build without shared enforcement requires traffic restriction or verified equivalent edge protection before reopening auth traffic. No operator migration, live sender, deployed collector/proxy or M1 acceptance is claimed by local tests.

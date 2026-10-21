@@ -43,11 +43,13 @@ export function createApp({
         const route =
           typeof req.route?.path === 'string' ? req.route.path : 'unmatched'
         const action = securityAction(req.method, route)
+        const reason: unknown = res.locals.securityReason
         logger.request({
           requestId: res.locals.requestId,
           method: req.method,
           route,
           ...(action ? { securityAction: action } : {}),
+          ...(reason === 'rate_limited' || reason === 'throttle_unavailable' ? { securityReason: reason } : {}),
           status: res.writableFinished ? res.statusCode : 499,
           durationMs: performance.now() - started,
           ...(res.locals.errorCode ? { errorCode: res.locals.errorCode } : {}),
