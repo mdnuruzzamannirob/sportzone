@@ -14,35 +14,35 @@ import {
 import { createApp } from '../../src/app.js'
 import { loadEnvironment } from '../../src/config/environment.js'
 import { inTransaction } from '../../src/db/transaction.js'
-import { createIdentityModels } from '../../src/modules/auth/models.js'
-import { initializeIdentityPersistence } from '../../src/modules/auth/collection-validators.js'
+import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
+import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
 import {
   provisionInitialAdmin,
   initialAdminId,
-} from '../../src/modules/auth/provision-admin.js'
-import { createSessionService } from '../../src/modules/auth/sessions.js'
-import { createBrowserSecurity } from '../../src/modules/auth/browser-security.js'
-import { browserSecurityRoutes } from '../../src/modules/auth/browser-routes.js'
-import { createCustomerService } from '../../src/modules/auth/customer.js'
-import { createRecoveryService } from '../../src/modules/auth/recovery.js'
-import { adminRoutes } from '../../src/modules/auth/admin-routes.js'
-import { composeCustomerRoutes } from '../../src/modules/auth/composition.js'
+} from '../../src/modules/auth/admin-provision.service.js'
+import { createSessionService } from '../../src/modules/auth/session.service.js'
+import { createBrowserSecurity } from '../../src/modules/auth/browser-security.service.js'
+import { browserSecurityRoutes } from '../../src/modules/auth/browser-security.routes.js'
+import { createCustomerService } from '../../src/modules/auth/credentials.service.js'
+import { createRecoveryService } from '../../src/modules/auth/password-recovery.service.js'
+import { adminRoutes } from '../../src/modules/auth/admin-auth.routes.js'
+import { composeCustomerRoutes } from '../../src/modules/auth/auth.composition.js'
 import {
   createAdminResetDelivery,
   createResetDelivery,
-} from '../../src/modules/auth/proof-delivery.js'
-import { createProofEncryption } from '../../src/modules/auth/proof-envelope.js'
+} from '../../src/modules/auth/proof-delivery.service.js'
+import { createProofEncryption } from '../../src/modules/auth/proof.crypto.js'
 import {
   hashPassword,
   verifyPassword,
-} from '../../src/modules/auth/passwords.js'
+} from '../../src/modules/auth/password.service.js'
 import {
   createRegistrationNotifications,
   emailChangeNotificationValidator,
   registrationNotificationValidator,
-} from '../../src/modules/notifications/registration.js'
-import { createNotificationWorker } from '../../src/modules/notifications/worker.js'
-import type { EmailMessage } from '../../src/modules/notifications/email.js'
+} from '../../src/modules/notifications/notification.service.js'
+import { createNotificationWorker } from '../../src/modules/notifications/notification-worker.service.js'
+import type { EmailMessage } from '../../src/modules/notifications/notification.types.js'
 import { isolatedDatabase } from '../support/database.js'
 import { testEnvironment } from '../support/environment.js'
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>

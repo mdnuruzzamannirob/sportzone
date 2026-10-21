@@ -1,4 +1,4 @@
-import { authorizeAccount } from './authorization.js'
+import { authorizeAccount } from './authorization.service.js'
 import { Types, type ClientSession, type Connection } from 'mongoose'
 import { randomBytes } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -7,16 +7,16 @@ import type { RecoveryOptions } from '../../config/recovery.js'
 import { inTransaction } from '../../db/transaction.js'
 import { parseInput } from '../../common/middleware/validation.js'
 import { ApiError } from '../../common/errors.js'
-import type { RegistrationNotifications } from '../notifications/registration.js'
-import { accountDto } from './account-dto.js'
-import { loginInput } from './customer.js'
-import type { IdentityModels } from './models.js'
+import type { RegistrationNotifications } from '../notifications/notification.service.js'
+import { accountDto } from './account.dto.js'
+import { loginInput } from './credentials.service.js'
+import type { IdentityModels } from './auth.model.js'
 import {
   ChallengeUnavailableError,
   consumeUserChallenge,
-} from './persistence.js'
-import { proofHash, proofPattern } from './proof-envelope.js'
-import type { SessionService } from './sessions.js'
+} from './session.persistence.js'
+import { proofHash, proofPattern } from './proof.crypto.js'
+import type { SessionService } from './session.service.js'
 
 const requestInput = z.strictObject({ newEmail: loginInput.shape.email })
 const confirmInput = z.strictObject({ token: z.string().regex(proofPattern) })

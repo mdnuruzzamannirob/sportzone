@@ -1,16 +1,16 @@
+import type { loadNotificationWorker } from './config/notifications.js'
 import type { Connection } from 'mongoose'
 import { createApp } from './app.js'
 import type { RuntimeConfig } from './config/environment.js'
 import {
   composeCustomerRoutes,
   composeProofDeliveries,
-} from './modules/auth/composition.js'
-import type { HealthDependencies } from './modules/health/service.js'
-import { createRegistrationNotifications } from './modules/notifications/registration.js'
+} from './modules/auth/auth.composition.js'
+import type { HealthDependencies } from './modules/health/health.service.js'
+import { createRegistrationNotifications } from './modules/notifications/notification.service.js'
 import {
   createNotificationWorker,
-  type loadNotificationWorker,
-} from './modules/notifications/worker.js'
+} from './modules/notifications/notification-worker.service.js'
 import type { Logger } from './observability/logger.js'
 import { createApiRouter } from './routes/index.js'
 

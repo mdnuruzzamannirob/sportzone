@@ -2,12 +2,12 @@ import { Router, type RequestHandler } from 'express'
 import { z } from 'zod'
 import { parseInput } from '../../common/middleware/validation.js'
 import { respond } from '../../common/responses.js'
-import type { BrowserSecurity } from './browser-security.js'
-import { readContextCookie } from './browser-security.js'
-import { localAuthRateLimit } from './rate-limit.js'
-import type { RecoveryService } from './recovery.js'
-import { createSessionHttp, readSessionCookie } from './session-http.js'
-import type { SessionService } from './sessions.js'
+import type { BrowserSecurity } from './browser-security.service.js'
+import { readContextCookie } from './browser-security.service.js'
+import { localAuthRateLimit } from './auth-throttle.service.js'
+import type { RecoveryService } from './password-recovery.service.js'
+import { createSessionHttp, readSessionCookie } from './session.http.js'
+import type { SessionService } from './session.service.js'
 
 export function recoveryRoutes(
   service: RecoveryService,

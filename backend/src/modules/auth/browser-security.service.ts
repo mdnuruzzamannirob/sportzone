@@ -4,9 +4,9 @@ import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
 import { inTransaction } from '../../db/transaction.js'
 import { ApiError } from '../../common/errors.js'
 import { ConfigurationError } from '../../config/errors.js'
-import type { IdentityModels } from './models.js'
-import { readSessionCookie } from './session-http.js'
-import type { SessionKind, SessionService } from './sessions.js'
+import type { IdentityModels } from './auth.model.js'
+import { readSessionCookie } from './session.http.js'
+import type { SessionKind, SessionService } from './session.service.js'
 
 export type BrowserAudience = 'storefront' | 'admin'
 const opaque = /^[A-Za-z0-9_-]{43}$/

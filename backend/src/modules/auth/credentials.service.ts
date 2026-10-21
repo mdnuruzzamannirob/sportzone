@@ -1,12 +1,12 @@
 import { z } from 'zod'
-import { accountDto } from './account-dto.js'
+import { accountDto } from './account.dto.js'
 import { parseInput } from '../../common/middleware/validation.js'
 import { ApiError } from '../../common/errors.js'
-import type { RegistrationNotifications } from '../notifications/registration.js'
-import type { IdentityModels } from './models.js'
-import type { SessionService, SessionKind } from './sessions.js'
-import type { BrowserSecurity } from './browser-security.js'
-import { hashPassword, newPasswordPolicy, verifyPassword } from './passwords.js'
+import type { RegistrationNotifications } from '../notifications/notification.service.js'
+import type { IdentityModels } from './auth.model.js'
+import type { SessionService, SessionKind } from './session.service.js'
+import type { BrowserSecurity } from './browser-security.service.js'
+import { hashPassword, newPasswordPolicy, verifyPassword } from './password.service.js'
 
 const email = z.string().trim().toLowerCase().pipe(z.email().max(254))
 export const registrationInput = z.strictObject({

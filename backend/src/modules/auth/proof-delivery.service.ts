@@ -1,7 +1,7 @@
 import type { Types } from 'mongoose'
-import type { IdentityModels } from './models.js'
-import { proofHash, type ProofEnvelope } from './proof-envelope.js'
-import type { RecoveryOptions } from './recovery.js'
+import type { IdentityModels } from './auth.model.js'
+import { proofHash, type ProofEnvelope } from './proof.crypto.js'
+import type { RecoveryOptions } from './password-recovery.service.js'
 
 function createDelivery(
   models: IdentityModels,

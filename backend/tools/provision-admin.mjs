@@ -1,8 +1,8 @@
 import { loadEnvironment } from '../dist/config/environment.js'
 import { openDatabase } from '../dist/db/connection.js'
-import { verifyIdentityPersistence } from '../dist/modules/auth/collection-validators.js'
-import { createIdentityModels } from '../dist/modules/auth/models.js'
-import { provisionInitialAdmin } from '../dist/modules/auth/provision-admin.js'
+import { verifyIdentityPersistence } from '../dist/modules/auth/identity.persistence.js'
+import { createIdentityModels } from '../dist/modules/auth/auth.model.js'
+import { provisionInitialAdmin } from '../dist/modules/auth/admin-provision.service.js'
 
 let connection
 try {

@@ -17,7 +17,7 @@ type Charge = {
   amountPoisha: number
   ruleVersion: number
 }
-// Settings-owned delivery read boundary only. It does not quote/lock a charge or seed master data.
+// Delivery-owned coverage read boundary only. It does not quote/lock a charge or seed master data.
 export function createAddressCoverage(
   connection: Connection,
   clock: () => Date = () => new Date(),

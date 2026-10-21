@@ -382,3 +382,12 @@ CI sets these synthetic build origins explicitly. [Task evidence](docs/evidence/
 `config/environment.ts`; the worker reuses that policy and loads its separate email/retry settings once. Existing
 start/build/operator commands and data/API contracts remain unchanged. The module ownership/entity-file refactor
 remains P03-020. [Verification](docs/evidence/P03-019-backend-composition.md).
+
+### Backend module ownership (P03-020)
+
+`auth/auth.model.ts` is the sole user/session/challenge/context model registration. Customers owns profile/address
+validation and routes through auth's narrow transaction-scoped customer-account capability; delivery owns coverage.
+Notifications owns durable intent/claim/retry behavior and neutral message/outcome types. The fixed Resend transport
+lives in `integrations/email/resend.adapter.ts`, configured through `config/notifications.ts`. Implemented files use
+entity-prefixed responsibilities. Public API, collections, environment variables and tool commands are unchanged;
+rebuild all backend modules together. [Verification](docs/evidence/P03-020-module-ownership.md).

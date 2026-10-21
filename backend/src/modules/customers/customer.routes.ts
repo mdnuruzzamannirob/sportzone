@@ -2,10 +2,11 @@ import { Router, type RequestHandler } from 'express'
 import { z } from 'zod'
 import { parseInput } from '../../common/middleware/validation.js'
 import { respond } from '../../common/responses.js'
-import type { BrowserSecurity } from './browser-security.js'
-import { addressId, type ProfileService } from './profile.js'
-import { createSessionHttp, readSessionCookie } from './session-http.js'
-import type { SessionService } from './sessions.js'
+import type { BrowserSecurity } from '../auth/browser-security.service.js'
+import type { ProfileService } from './customer.service.js'
+import { addressId } from './customer.validation.js'
+import { createSessionHttp, readSessionCookie } from '../auth/session.http.js'
+import type { SessionService } from '../auth/session.service.js'
 
 export function profileRoutes(
   service: ProfileService,

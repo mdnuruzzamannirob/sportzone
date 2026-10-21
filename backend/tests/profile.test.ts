@@ -6,7 +6,7 @@ import {
   bangladeshPhone,
   deletionInput,
   profilePatch,
-} from '../src/modules/auth/profile.js'
+} from '../src/modules/customers/customer.validation.js'
 describe('profile and Bangladesh contact contracts', () => {
   it.each([
     ['01700000000', '+8801700000000'],

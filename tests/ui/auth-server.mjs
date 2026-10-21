@@ -16,17 +16,17 @@ import {
   loadAdminRecoveryOptions,
   loadEmailChangeOptions,
 } from '../../backend/dist/config/recovery.js'
-import { createIdentityModels } from '../../backend/dist/modules/auth/models.js'
-import { initializeIdentityPersistence } from '../../backend/dist/modules/auth/collection-validators.js'
-import { createRegistrationNotifications } from '../../backend/dist/modules/notifications/registration.js'
-import { composeCustomerRoutes } from '../../backend/dist/modules/auth/composition.js'
-import { provisionInitialAdmin } from '../../backend/dist/modules/auth/provision-admin.js'
-import { hashPassword } from '../../backend/dist/modules/auth/passwords.js'
+import { createIdentityModels } from '../../backend/dist/modules/auth/auth.model.js'
+import { initializeIdentityPersistence } from '../../backend/dist/modules/auth/identity.persistence.js'
+import { createRegistrationNotifications } from '../../backend/dist/modules/notifications/notification.service.js'
+import { composeCustomerRoutes } from '../../backend/dist/modules/auth/auth.composition.js'
+import { provisionInitialAdmin } from '../../backend/dist/modules/auth/admin-provision.service.js'
+import { hashPassword } from '../../backend/dist/modules/auth/password.service.js'
 import {
   createResetDelivery,
   createAdminResetDelivery,
   createEmailChangeDelivery,
-} from '../../backend/dist/modules/auth/proof-delivery.js'
+} from '../../backend/dist/modules/auth/proof-delivery.service.js'
 import { createApp } from '../../backend/dist/app.js'
 
 let replica, connection, directory, models, environment

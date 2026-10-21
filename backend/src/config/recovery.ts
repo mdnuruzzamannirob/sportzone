@@ -3,7 +3,7 @@ import { ConfigurationError } from './errors.js'
 import {
   createProofEncryption,
   type ProofEncryption,
-} from '../modules/auth/proof-envelope.js'
+} from '../modules/auth/proof.crypto.js'
 
 export type RecoveryOptions = {
   ttlSeconds: number

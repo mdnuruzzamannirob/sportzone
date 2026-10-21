@@ -1,6 +1,6 @@
 import type { ClientSession, Connection, Types } from 'mongoose'
 import { inTransaction } from '../../db/transaction.js'
-import type { IdentityModels } from './models.js'
+import type { IdentityModels } from './auth.model.js'
 
 type UserPurpose = 'email_verify' | 'email_change' | 'password_reset'
 export class ChallengeUnavailableError extends Error {

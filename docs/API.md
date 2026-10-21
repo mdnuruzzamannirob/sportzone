@@ -231,7 +231,7 @@ fields add no public DTO properties. Executable validators and protocol/replay t
 
 ### 4.4 Implemented customer/admin session boundary
 
-`backend/src/modules/auth/sessions.ts` implements the internal session lifecycle; `session-http.ts` supplies route-selected
+`backend/src/modules/auth/session.service.ts` implements the internal session lifecycle; `session.http.ts` supplies route-selected
 cookie parsing, set/clear controls and session-required middleware. The production router remains health-only until the
 Customer activation composes credential verification with P03-006's Origin/CSRF defenses; administrator login remains separate. No endpoint may
 issue a session from a client-supplied user ID alone. The internal issuer accepts only the verified principal selected by
@@ -346,7 +346,7 @@ deleting a default leaves zero defaults and never invents a replacement. Partial
 stored address and revalidate the entire result before writing. Ownership misses return `404 NOT_FOUND` without revealing
 whether a foreign address exists. User/address changes serialize in MongoDB transactions and re-read state on conflict.
 
-The settings-owned delivery coverage reader checks currently effective active `deliveryCharges` and active `deliveryZones` in the
+The delivery-owned coverage reader checks currently effective active `deliveryCharges` and active `deliveryZones` in the
 same transaction snapshot. Select exact `district:area` before approved `district:*`; ambiguous active rules, inactive
 exact zones, invalid charge metadata and absent coverage fail closed with `400 UNSUPPORTED_DELIVERY_AREA`. Clients cannot
 supply the wildcard or inject key separators. Saved address reads/deletion remain available after a service area ends;
@@ -650,7 +650,7 @@ Do not include a public `GET /orders?email=...` endpoint.
 
 ### 9.3 Executable identity contract baseline
 
-`backend/src/modules/auth/contracts.ts` defines strict request, path/query and response schemas for all 26 §9.1
+`backend/src/modules/auth/auth.validation.ts` defines strict request, path/query and response schemas for all 26 §9.1
 operations. It is a contract module, not an Express router: no authentication/account route becomes available merely by
 importing it. Controllers must validate requests before service delegation and validate/allowlist outputs before the
 success envelope. Internal invalid output is a server fault, never a client validation failure; no raw document is returned.
@@ -1972,3 +1972,11 @@ validation and contract tests. Add an operation entry, DTO mapping and test cove
 Both app-owned identity clients validate allowlisted responses and use public build-time API origin configuration, credentials include, no-store and no-referrer. All browser mutations fetch a fresh correct-namespace CSRF context/session token first, then send one JSON mutation without automatic retry/replay. Authentication/identity changes cancel/clear private queries; no credential/proof/password is stored in query variables, browser storage or URLs beyond the incoming fragment. Requests from an obsolete identity generation cannot populate the new cache. UI guards never authorize API access.
 
 Existing endpoints/DTOs and backend business rules are unchanged. Registration verification and delivery-coverage discovery are not fabricated when their APIs remain unimplemented. Frontend dependencies are pinned with this consuming task; there is no new auth provider or shared UI package.
+
+### P03-020 module ownership implementation
+
+Customer profile/address/deletion-intake routes are implemented by `modules/customers/customer.routes.ts`; they
+retain their existing `/me` method/path/DTO contracts. Auth owns canonical identity schemas, credential/role checks,
+transaction fencing and the narrow customer-account persistence capability. Delivery owns the existing coverage
+read service. Notifications and the email adapter communicate through provider-neutral message/outcome types.
+Entity-prefixed file paths do not create or rename public API namespaces. Missing future endpoints remain planned.

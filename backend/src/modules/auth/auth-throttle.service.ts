@@ -1,7 +1,7 @@
 import { createHash, createHmac } from 'node:crypto'
 import type { RequestHandler } from 'express'
 import { ApiError } from '../../common/errors.js'
-import type { QuotaStore } from './rate-limit-store.js'
+import type { QuotaStore } from './auth-throttle.persistence.js'
 
 type Audience = 'customer' | 'admin'
 type Group = 'credentials' | 'recovery' | 'email' | 'bootstrap'

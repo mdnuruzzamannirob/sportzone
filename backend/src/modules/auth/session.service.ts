@@ -4,8 +4,8 @@ import { z } from 'zod'
 import { ConfigurationError } from '../../config/errors.js'
 import { inTransaction } from '../../db/transaction.js'
 import { ApiError } from '../../common/errors.js'
-import type { IdentityModels } from './models.js'
-import { findActiveUserSession } from './persistence.js'
+import type { IdentityModels } from './auth.model.js'
+import { findActiveUserSession } from './session.persistence.js'
 
 export type SessionKind = 'customer' | 'admin'
 const tokenPattern = /^[A-Za-z0-9_-]{43}$/

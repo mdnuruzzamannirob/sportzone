@@ -1,16 +1,17 @@
+import { createCustomerAccountAccess } from '../../src/modules/auth/customer-account.service.js'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { Router } from 'express'
 import { Types } from 'mongoose'
 import request from 'supertest'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createApp } from '../../src/app.js'
-import { createIdentityModels } from '../../src/modules/auth/models.js'
-import { initializeIdentityPersistence } from '../../src/modules/auth/collection-validators.js'
-import { createSessionService } from '../../src/modules/auth/sessions.js'
-import { createBrowserSecurity } from '../../src/modules/auth/browser-security.js'
-import { createProfileService } from '../../src/modules/auth/profile.js'
-import { profileRoutes } from '../../src/modules/auth/profile-routes.js'
-import { createAddressCoverage } from '../../src/modules/settings/coverage.js'
+import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
+import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
+import { createSessionService } from '../../src/modules/auth/session.service.js'
+import { createBrowserSecurity } from '../../src/modules/auth/browser-security.service.js'
+import { createProfileService } from '../../src/modules/customers/customer.service.js'
+import { profileRoutes } from '../../src/modules/customers/customer.routes.js'
+import { createAddressCoverage } from '../../src/modules/delivery/delivery-coverage.service.js'
 import { isolatedDatabase } from '../support/database.js'
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
 let models: ReturnType<typeof createIdentityModels>
@@ -101,9 +102,7 @@ beforeAll(async () => {
     clock,
   )
   service = createProfileService(
-    fixture.connection,
-    models,
-    sessions,
+    createCustomerAccountAccess(fixture.connection, models, sessions, clock),
     createAddressCoverage(fixture.connection, clock),
     clock,
   )
@@ -557,5 +556,103 @@ describe('profile/address ownership on real transactional persistence', () => {
     expect(
       (await mutate('patch', '/me', own, { name: 'Forbidden' })).status,
     ).toBe(403)
+  })
+})
+
+describe('P03-020 narrow customer persistence capability', () => {
+  it('exposes detached profile data and cannot persist injected credential/security fields', async () => {
+    const own = await account()
+    const access = createCustomerAccountAccess(
+      fixture.connection,
+      models,
+      sessions,
+      clock,
+    )
+    const before = await models.users
+      .findById(own.user._id)
+      .select('+passwordHash +securityRevision')
+    await access.owned(own.token, async (profile, { save }) => {
+      expect(
+        ['save', 'passwordHash', 'securityRevision', 'sessions', 'role'].some(
+          (key) => key in profile,
+        ),
+      ).toBe(false)
+      expect(Object.getPrototypeOf(profile) === Object.prototype).toBe(true)
+      Object.assign(profile, {
+        name: 'Allowed profile edit',
+        role: 'admin',
+        email: 'injected@example.test',
+        emailNormalized: 'injected@example.test',
+        status: 'suspended',
+        passwordHash: 'injected',
+        securityRevision: 999,
+      })
+      await save()
+    })
+    const after = await models.users
+      .findById(own.user._id)
+      .select('+passwordHash +securityRevision')
+    expect(after?.name).toBe('Allowed profile edit')
+    expect(
+      [
+        'role',
+        'emailNormalized',
+        'status',
+        'passwordHash',
+        'securityRevision',
+      ].every((field) => before?.get(field) === after?.get(field)),
+    ).toBe(true)
+    expect(
+      (await sessions.authenticate('customer', own.token)).userId.equals(
+        own.user._id,
+      ),
+    ).toBe(true)
+  })
+  it('cannot save through read-only or escaped transaction scopes', async () => {
+    const own = await account()
+    const access = createCustomerAccountAccess(
+      fixture.connection,
+      models,
+      sessions,
+      clock,
+    )
+    await expect(
+      access.owned(
+        own.token,
+        async (profile, { save }) => {
+          profile.name = 'Not saved'
+          await save()
+        },
+        false,
+      ),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    let escaped: (() => Promise<void>) | undefined
+    await access.owned(own.token, async (profile, { save }) => {
+      profile.name = 'Not saved'
+      escaped = save
+    })
+    if (!escaped) throw new Error('Missing synthetic callback')
+    await expect(escaped()).rejects.toMatchObject({ code: 'AUTH_REQUIRED' })
+    expect((await models.users.findById(own.user._id))?.name).toBe('Synthetic')
+  })
+  it('rolls profile saves and authorization fences back when the coordinating operation fails', async () => {
+    const own = await account()
+    const access = createCustomerAccountAccess(
+      fixture.connection,
+      models,
+      sessions,
+      clock,
+    )
+    const before = await models.users.findById(own.user._id)
+    await expect(
+      access.owned(own.token, async (profile, { save }) => {
+        profile.name = 'Rolled back'
+        await save()
+        throw new Error('Synthetic coordinated failure')
+      }),
+    ).rejects.toThrow('Synthetic coordinated failure')
+    const after = await models.users.findById(own.user._id)
+    expect(after?.name).toBe('Synthetic')
+    expect(after?.updatedAt.getTime()).toBe(before?.updatedAt.getTime())
   })
 })

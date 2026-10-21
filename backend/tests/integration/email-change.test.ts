@@ -1,4 +1,4 @@
-import { createCustomerService } from '../../src/modules/auth/customer.js'
+import { createCustomerService } from '../../src/modules/auth/credentials.service.js'
 import { inTransaction } from '../../src/db/transaction.js'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { Router } from 'express'
@@ -15,34 +15,34 @@ import {
 } from 'vitest'
 import { createApp } from '../../src/app.js'
 import { loadEnvironment } from '../../src/config/environment.js'
-import { createIdentityModels } from '../../src/modules/auth/models.js'
-import { initializeIdentityPersistence } from '../../src/modules/auth/collection-validators.js'
+import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
+import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
 import {
   createSessionService,
   loadSessionOptions,
-} from '../../src/modules/auth/sessions.js'
-import { createBrowserSecurity } from '../../src/modules/auth/browser-security.js'
-import { browserSecurityRoutes } from '../../src/modules/auth/browser-routes.js'
-import { createEmailChangeService } from '../../src/modules/auth/email-change.js'
-import { emailChangeRoutes } from '../../src/modules/auth/email-change-routes.js'
-import { composeCustomerRoutes } from '../../src/modules/auth/composition.js'
-import { createRecoveryService } from '../../src/modules/auth/recovery.js'
+} from '../../src/modules/auth/session.service.js'
+import { createBrowserSecurity } from '../../src/modules/auth/browser-security.service.js'
+import { browserSecurityRoutes } from '../../src/modules/auth/browser-security.routes.js'
+import { createEmailChangeService } from '../../src/modules/auth/email-change.service.js'
+import { emailChangeRoutes } from '../../src/modules/auth/email-change.routes.js'
+import { composeCustomerRoutes } from '../../src/modules/auth/auth.composition.js'
+import { createRecoveryService } from '../../src/modules/auth/password-recovery.service.js'
 import {
   createProofEncryption,
   proofHash,
-} from '../../src/modules/auth/proof-envelope.js'
+} from '../../src/modules/auth/proof.crypto.js'
 import {
   createEmailChangeDelivery,
   createResetDelivery,
-} from '../../src/modules/auth/proof-delivery.js'
-import { hashPassword } from '../../src/modules/auth/passwords.js'
+} from '../../src/modules/auth/proof-delivery.service.js'
+import { hashPassword } from '../../src/modules/auth/password.service.js'
 import {
   createRegistrationNotifications,
   passwordResetNotificationValidator,
   registrationNotificationValidator,
-} from '../../src/modules/notifications/registration.js'
-import { createNotificationWorker } from '../../src/modules/notifications/worker.js'
-import type { EmailMessage } from '../../src/modules/notifications/email.js'
+} from '../../src/modules/notifications/notification.service.js'
+import { createNotificationWorker } from '../../src/modules/notifications/notification-worker.service.js'
+import type { EmailMessage } from '../../src/modules/notifications/notification.types.js'
 import { testEnvironment } from '../support/environment.js'
 import { isolatedDatabase } from '../support/database.js'
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>

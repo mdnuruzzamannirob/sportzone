@@ -1,7 +1,7 @@
 import type { ClientSession } from 'mongoose'
 import { ApiError } from '../../common/errors.js'
-import type { IdentityModels } from './models.js'
-import type { SessionIdentity, SessionKind } from './sessions.js'
+import type { IdentityModels } from './auth.model.js'
+import type { SessionIdentity, SessionKind } from './session.service.js'
 
 // Service boundary: route guards are never proof that a later mutation is authorized.
 export async function authorizeAccount(

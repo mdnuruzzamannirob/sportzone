@@ -1,4 +1,4 @@
-import type { IdentityModels } from './models.js'
+import type { IdentityModels } from './auth.model.js'
 type User = InstanceType<IdentityModels['users']>
 type Address = User['addresses'][number]
 export function addressDto(address: Address) {

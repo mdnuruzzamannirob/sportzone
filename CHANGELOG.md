@@ -8,6 +8,10 @@ This changelog tracks the documentation baseline. Application releases are recor
 
 ## Development changes — 21 October 2026
 
+- Recorded explicit project-owner popup acceptance of P03-020 and marked it Done. Phase 03: 20/20 Done; overall: 51 Done, 128 Not Started. M1 remains Not Accepted pending separate approval. [Acceptance](docs/evidence/P03-020-module-ownership.md#owner-acceptance).
+
+- Implemented P03-020 existing backend ownership/file refactor: auth-owned narrow customer persistence capability, customers profile/address operations, delivery-owned coverage, provider-neutral notifications and isolated Resend adapter/config. Preserved canonical schemas/indexes and provider/claim logic; updated imports, tools/runbooks and private-persistence checks. Scoped real database/browser/tooling verification passed; In Review pending owner acceptance. [Evidence](docs/evidence/P03-020-module-ownership.md).
+
 - Recorded explicit project-owner popup acceptance of P03-019 and marked it Done. Phase 03: 19/20 Done; overall: 50 Done, 129 Not Started. P03-020 and M1 approval remain separate. [Acceptance](docs/evidence/P03-019-backend-composition.md#owner-acceptance).
 
 - Implemented P03-019 typed runtime configuration and HTTP/worker composition, removing environment-string re-serialization and repeated proof parsing. Moved root route registration/common HTTP utilities with preserved contracts, lifecycle and operator commands. Backend unit/real database and affected three-engine browser parity passed; In Review pending owner acceptance. [Evidence](docs/evidence/P03-019-backend-composition.md).

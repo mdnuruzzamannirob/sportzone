@@ -1,12 +1,13 @@
+import { createCustomerAccountAccess } from '../../src/modules/auth/customer-account.service.js'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { Types } from 'mongoose'
 import { beforeAll, afterAll, describe, expect, it, vi } from 'vitest'
-import { authorizeAccount } from '../../src/modules/auth/authorization.js'
-import { initializeIdentityPersistence } from '../../src/modules/auth/collection-validators.js'
-import { createIdentityModels } from '../../src/modules/auth/models.js'
-import { createSessionService } from '../../src/modules/auth/sessions.js'
-import { createProfileService } from '../../src/modules/auth/profile.js'
-import { createAddressCoverage } from '../../src/modules/settings/coverage.js'
+import { authorizeAccount } from '../../src/modules/auth/authorization.service.js'
+import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
+import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
+import { createSessionService } from '../../src/modules/auth/session.service.js'
+import { createProfileService } from '../../src/modules/customers/customer.service.js'
+import { createAddressCoverage } from '../../src/modules/delivery/delivery-coverage.service.js'
 import { inTransaction } from '../../src/db/transaction.js'
 import { isolatedDatabase } from '../support/database.js'
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
@@ -145,9 +146,7 @@ describe('P03-013 transaction authorization', () => {
       })
     try {
       const profiles = createProfileService(
-        fixture.connection,
-        models,
-        sessions,
+    createCustomerAccountAccess(fixture.connection, models, sessions, () => now),
         createAddressCoverage(fixture.connection),
         () => now,
       )

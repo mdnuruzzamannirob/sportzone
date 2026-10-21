@@ -7,7 +7,7 @@ import {
 import { randomUUID } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
 import { mutableSchemaOptions } from '../../db/schema.js'
-import type { DeliveryOutcome } from './email.js'
+import type { DeliveryOutcome } from './notification.types.js'
 
 const recipient = new Schema(
   { emailNormalized: { type: String, required: true }, displayName: String },

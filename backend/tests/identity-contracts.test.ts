@@ -9,7 +9,7 @@ import {
   createIdentityContracts,
   isChallengeCurrent,
   parseIdentityResponse,
-} from '../src/modules/auth/contracts.js'
+} from '../src/modules/auth/auth.validation.js'
 import { ApiError, type ErrorCode } from '../src/common/errors.js'
 import { respond } from '../src/common/responses.js'
 

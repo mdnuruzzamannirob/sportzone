@@ -10,17 +10,17 @@ export {
 import { inTransaction } from '../../db/transaction.js'
 import { parseInput } from '../../common/middleware/validation.js'
 import { ApiError } from '../../common/errors.js'
-import type { RegistrationNotifications } from '../notifications/registration.js'
-import type { BrowserSecurity } from './browser-security.js'
-import { loginInput } from './customer.js'
-import type { IdentityModels } from './models.js'
-import { hashPassword, newPasswordPolicy, verifyPassword } from './passwords.js'
+import type { RegistrationNotifications } from '../notifications/notification.service.js'
+import type { BrowserSecurity } from './browser-security.service.js'
+import { loginInput } from './credentials.service.js'
+import type { IdentityModels } from './auth.model.js'
+import { hashPassword, newPasswordPolicy, verifyPassword } from './password.service.js'
 import {
   ChallengeUnavailableError,
   consumeUserChallenge,
-} from './persistence.js'
-import { proofHash, proofPattern } from './proof-envelope.js'
-import type { SessionService, SessionKind } from './sessions.js'
+} from './session.persistence.js'
+import { proofHash, proofPattern } from './proof.crypto.js'
+import type { SessionService, SessionKind } from './session.service.js'
 
 const issuance = loginInput.pick({ email: true })
 const confirmation = z.strictObject({

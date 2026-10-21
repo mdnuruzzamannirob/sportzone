@@ -102,7 +102,7 @@ export function checkBoundaries(root = process.cwd()) {
         owner === 'backend' &&
         sourceModule !== targetModule &&
         isWithin(path, join(root, 'backend/src/modules')) &&
-        /(?:\.model|\/models|\/persistence)(?:\.[cm]?[jt]s)?$/.test(path)
+        /(?:\.(?:model|persistence)|\/models|\/persistence)(?:\.[cm]?[jt]s)?$/.test(path)
       )
         errors.push(`${label}: use the owning module's service instead of its private persistence`)
       if (extname(path).match(/^\.[cm]?[jt]sx?$/) && !target)

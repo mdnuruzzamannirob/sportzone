@@ -1,5 +1,5 @@
-import { validateSessionOptions } from '../modules/auth/sessions.js'
-import { validateBrowserSecurityOptions } from '../modules/auth/browser-security.js'
+import { validateSessionOptions } from '../modules/auth/session.service.js'
+import { validateBrowserSecurityOptions } from '../modules/auth/browser-security.service.js'
 import {
   loadRecoveryOptions,
   loadEmailChangeOptions,

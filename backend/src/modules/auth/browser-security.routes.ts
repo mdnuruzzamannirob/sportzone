@@ -1,10 +1,10 @@
 import { Router, type RequestHandler } from 'express'
-import { localAuthRateLimit } from './rate-limit.js'
+import { localAuthRateLimit } from './auth-throttle.service.js'
 import { ApiError } from '../../common/errors.js'
 import { respond } from '../../common/responses.js'
-import { readSessionCookie } from './session-http.js'
-import type { SessionService } from './sessions.js'
-import { readContextCookie, type BrowserSecurity } from './browser-security.js'
+import { readSessionCookie } from './session.http.js'
+import type { SessionService } from './session.service.js'
+import { readContextCookie, type BrowserSecurity } from './browser-security.service.js'
 
 // Guest persistence is owned by P06-015; this adapter must verify the exact order scope,
 // expiry and revocation. Never substitute a customer/browser credential for a guest one.

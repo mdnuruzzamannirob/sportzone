@@ -1,19 +1,19 @@
+import type { EmailAdapter } from '../../src/modules/notifications/notification.types.js'
 import { createServer, type Server } from 'node:http'
 import { randomUUID } from 'node:crypto'
 import type { Types } from 'mongoose'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { initializeIdentityPersistence } from '../../src/modules/auth/collection-validators.js'
-import { createIdentityModels } from '../../src/modules/auth/models.js'
+import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
+import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
 import {
   createRegistrationNotifications,
   legacyRegistrationNotificationValidator,
   registrationNotificationValidator,
-} from '../../src/modules/notifications/registration.js'
+} from '../../src/modules/notifications/notification.service.js'
 import {
   createResendAdapter,
-  type EmailAdapter,
-} from '../../src/modules/notifications/email.js'
-import { createNotificationWorker } from '../../src/modules/notifications/worker.js'
+} from '../../src/integrations/email/resend.adapter.js'
+import { createNotificationWorker } from '../../src/modules/notifications/notification-worker.service.js'
 import { inTransaction } from '../../src/db/transaction.js'
 import { isolatedDatabase } from '../support/database.js'
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>

@@ -1540,3 +1540,18 @@ safe disabled-provider preflight without sending real email. Existing runtime, a
 and schema/index suites retain their assertions and discovery; common utility moves update source imports only.
 Browser verification uses the affected real-API authentication flows with unchanged frontend builds. Full unrelated
 frontend/unit/showcase suites and hosted CI are not implied. [Evidence](./evidence/P03-019-backend-composition.md).
+
+### P03-020 ownership and file-convention parity
+
+The existing unit/integration test paths and discovery remain stable; imports follow the entity-prefixed module
+paths. The profile suite additionally verifies that the auth-owned customer capability exposes detached data,
+ignores injected credential/security fields, rejects read-only/escaped-scope saves and rolls both profile writes
+and authorization fences back on failure. Existing concurrent address/default, owner denial, logout/suspension,
+proof/recovery replay, schema/index and notification-claim/external-effect guards remain mandatory.
+
+TOOL-05 now also rejects cross-module `.persistence.ts` imports, preserving the private boundary with entity-prefixed
+filenames rather than exempting the new layout. The backend CI inventory retains every required check. Compiled
+bootstrap/provision/migration/worker commands and three-engine real auth/account flows use the new paths without
+old generated-module fallbacks. Worker preflight explicitly sets `EMAIL_DELIVERY_ENABLED=false` to prevent inherited
+email activation during operator tests. No external sender acceptance is implied.
+[Evidence and preserved schema/provider bodies](./evidence/P03-020-module-ownership.md).

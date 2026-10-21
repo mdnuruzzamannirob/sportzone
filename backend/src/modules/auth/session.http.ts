@@ -4,7 +4,7 @@ import type {
   SessionIdentity,
   SessionKind,
   SessionService,
-} from './sessions.js'
+} from './session.service.js'
 
 const names = { customer: 'sz_customer_sid', admin: 'sz_admin_sid' } as const
 export function readSessionCookie(header: string | undefined, kind: SessionKind) {

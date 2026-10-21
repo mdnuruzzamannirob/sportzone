@@ -2,9 +2,9 @@ import { Types, type Connection } from 'mongoose'
 import { inTransaction } from '../../db/transaction.js'
 import { parseInput } from '../../common/middleware/validation.js'
 import { ApiError } from '../../common/errors.js'
-import { registrationInput } from './customer.js'
-import type { IdentityModels } from './models.js'
-import { hashPassword } from './passwords.js'
+import { registrationInput } from './credentials.service.js'
+import type { IdentityModels } from './auth.model.js'
+import { hashPassword } from './password.service.js'
 
 // Reserved bootstrap identity, not a secret or a selectable public registration field.
 export const initialAdminId = () =>

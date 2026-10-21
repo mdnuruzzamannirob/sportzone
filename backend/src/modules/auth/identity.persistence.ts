@@ -1,9 +1,9 @@
-import { createAuthQuotaStore } from './rate-limit-store.js'
+import { createAuthQuotaStore } from './auth-throttle.persistence.js'
 import type { Connection } from 'mongoose'
 import { isDeepStrictEqual } from 'node:util'
 import { z } from 'zod'
 import { verifyDeclaredIndexes } from '../../db/indexes.js'
-import type { IdentityModels } from './models.js'
+import type { IdentityModels } from './auth.model.js'
 
 type Shape = Record<string, unknown>
 const text = (max?: number): Shape => ({

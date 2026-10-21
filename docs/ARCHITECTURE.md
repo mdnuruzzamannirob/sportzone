@@ -372,9 +372,16 @@ This is a **logical module diagram**, not a set of microservices. Arrows indicat
 | `admin-operations` | Dashboard aggregates and administrative reporting from existing modules | FR-22 |
 | `health` | Liveness and protected readiness | API §16.4 |
 
-Earlier `catalog`, `shopping` and `promotions` labels remain domain groupings in specifications and historical evidence. Their implementation modules are respectively `products`/`categories`, `carts`/`wishlists`, and `coupons`. Existing settings-owned delivery code moves to `delivery`; catalog/returns asset lifecycle is implemented through `media`. No collection, route namespace or DTO is renamed by this mapping.
+Earlier `catalog`, `shopping` and `promotions` labels remain domain groupings in specifications and historical evidence. Their implementation modules are respectively `products`/`categories`, `carts`/`wishlists`, and `coupons`. The existing coverage reader now lives in `delivery`; catalog/returns asset lifecycle is implemented through `media`. No collection, route namespace or DTO is renamed by this mapping.
 
 Each collection has one canonical schema/index/validator registration. `users` remains identity-owned by `auth`; `customers` obtains narrow profile/address read/write operations through its public persistence/service boundary. Credential/security fields remain auth-only. `productVariants` is registered by `products`; `inventory` receives a narrow stock-write capability that cannot edit descriptive/pricing fields. The composition root wires capabilities, not raw foreign models into arbitrary callers. Customers/products receive no ability to bypass security or allocation. Multi-module changes share an explicit transaction context. Database §4.2 defines the mapping; do not duplicate models or split collections as a folder refactor.
+
+P03-020 implements customers through auth's narrow transaction-scoped customer-account capability; the sole user
+schema remains `auth/auth.model.ts`. Delivery owns `delivery-coverage.service.ts`. Notifications owns durable
+intent/claim/retry services and provider-neutral message/outcome types; `integrations/email/resend.adapter.ts`
+owns provider transport and `config/notifications.ts` owns its explicit activation/settings boundary. Implemented
+module files use entity-prefixed responsibilities; unimplemented modules are not scaffolded or renamed. Public HTTP
+namespaces and all collection/index identities are unchanged.
 
 ### 6.2 Request processing
 

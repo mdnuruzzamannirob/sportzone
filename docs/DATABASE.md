@@ -269,12 +269,19 @@ Both controllers and scheduled jobs invoke shared backend **domain services**, n
 | `categories` | Categories |
 | `carts`, `wishlists` | Carts, wishlists respectively |
 | `coupons`, `couponRedemptions`, `couponCustomerCounters` | Coupons (the promotions domain) |
-| `deliveryZones`, `deliveryCharges` | Delivery; current settings coverage reader is a transitional implementation |
+| `deliveryZones`, `deliveryCharges` | Delivery owns the existing coverage reader; future charge management remains its feature task |
 | `mediaAssets` | Media owns registration, scoped attachment/reference-ledger/cleanup operations; products/categories/returns/settings coordinate attachments through that boundary |
 | `storeSettings`, `policyDocuments` | Settings |
 | Other records | Retain the domain ownership and invariants specified in their collection sections |
 
-P03-013 reuses the existing identity models through `auth/authorization.ts`: transaction-local credential/principal revalidation, with conditional monotonic `updatedAt` writes for protected mutations to serialize with revocation. No expiry extension, new field/collection/index or migration is introduced. Profile/address reads revalidate without timestamp writes. This capability stays inside auth; callers do not gain raw models for other domains.
+P03-013 reuses the existing identity models through `auth/authorization.service.ts`: transaction-local credential/principal revalidation, with conditional monotonic `updatedAt` writes for protected mutations to serialize with revocation. No expiry extension, new field/collection/index or migration is introduced. Profile/address reads revalidate without timestamp writes. This capability stays inside auth; callers do not gain raw models for other domains.
+
+P03-020 implements the shared-user boundary through auth-owned `customer-account.service.ts`: customers receives
+only detached profile/address/deletion-intake data and transaction-scoped save/view operations. Auth revalidates
+and fences the customer credential/principal, and persists only name, phone, addresses and new verified deletion
+intake. Supplied email/role/status/credential/security fields are never written. Existing deletion review metadata
+is preserved; read-only or expired scopes cannot save. Customers owns validation/coverage and profile operations,
+with no foreign user model or duplicated schema. The coordinating transaction is retained across the capability.
 
 Composition wires narrow public operations, never a second mutable schema for the same collection or unrestricted foreign-model access. Public capabilities accept the coordinating transaction session; participants must not start nested transactions or parallel operations in the same session. Preserve ObjectIds, snapshots, integer-poisha arithmetic, unique identities, BSON validation and all existing indexes. Raw model, validator and bootstrap path moves require updated tooling and parity tests; a filename change is not permission to change durable data or mark a migration executed.
 
@@ -514,8 +521,8 @@ change, not permission to drop these indexes or create business collections duri
 ### 5.7 Identity implementation and rollout gates
 
 P03-017 established this contract. P03-004 now supplies connection-owned User, Session, AuthChallenge and BrowserContext
-models in `backend/src/modules/auth/models.ts`, with collection-level validators and ten named indexes in
-`collection-validators.ts`. Private verifiers/envelopes are excluded from default queries. Shared `backend/src/db/`
+models in `backend/src/modules/auth/auth.model.ts`, with collection-level validators and ten named indexes in
+`identity.persistence.ts`. Private verifiers/envelopes are excluded from default queries. Shared `backend/src/db/`
 helpers still own connection/schema/index/transaction mechanics; index verification accepts only its required
 `diffIndexes` interface so inferred strict models need no type casts.
 
@@ -872,7 +879,7 @@ original rule ID and amount. If no precisely eligible active rule exists, **fail
 charge. Snapshot selected version/charge/deadline **rule basis**, not a confirmation-relative absolute date. Effective
 windows and legal deadlines are operator-approved, not invented.
 
-P03-008 uses a settings-owned read-only delivery coverage boundary for saved-address eligibility against these existing
+The delivery-owned read-only coverage boundary checks saved-address eligibility against these existing
 collections. It neither seeds delivery data nor creates/changes delivery indexes or master records. Its transaction reads
 exact eligible coverage before an eligible district wildcard; multiple active exact candidates or an inactive selected
 zone fail closed. P06-001 still owns validated delivery masters, index rollout, global revision serialization and admin

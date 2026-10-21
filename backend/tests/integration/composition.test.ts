@@ -7,11 +7,11 @@ import {
   composeNotificationWorker,
 } from '../../src/composition.js'
 import { createLogger } from '../../src/observability/logger.js'
-import { createIdentityModels } from '../../src/modules/auth/models.js'
-import { initializeIdentityPersistence } from '../../src/modules/auth/collection-validators.js'
-import { createRegistrationNotifications } from '../../src/modules/notifications/registration.js'
-import { hashPassword } from '../../src/modules/auth/passwords.js'
-import type { EmailMessage } from '../../src/modules/notifications/email.js'
+import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
+import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
+import { createRegistrationNotifications } from '../../src/modules/notifications/notification.service.js'
+import { hashPassword } from '../../src/modules/auth/password.service.js'
+import type { EmailMessage } from '../../src/modules/notifications/notification.types.js'
 import { identityEnvironment } from '../support/environment.js'
 import { isolatedDatabase } from '../support/database.js'
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
@@ -120,7 +120,7 @@ it('preserves compiled bootstrap/migration entry points and safe worker prefligh
     ADMIN_AUTH_ENABLED: 'false',
     PASSWORD_RECOVERY_ENABLED: 'false',
     EMAIL_CHANGE_ENABLED: 'false',
-    EMAIL_ENABLED: 'false',
+    EMAIL_DELIVERY_ENABLED: 'false',
   }
   const models = createIdentityModels(fixture.connection)
   const before = await models.users.countDocuments()

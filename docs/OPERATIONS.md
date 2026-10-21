@@ -472,7 +472,7 @@ business records. Transaction-capable deployment and unique indexes are required
 traffic. Database §11–§15 controls exact index keys, schema changes, state transitions and recovery invariants;
 this section governs safe execution.
 
-Identity collection bootstrap is explicit in `backend/src/modules/auth/collection-validators.ts`, not HTTP startup.
+Identity collection bootstrap is explicit in `backend/src/modules/auth/identity.persistence.ts`, not HTTP startup.
 `initializeIdentityPersistence` creates missing empty collections with strict/error validators and additive named indexes;
 it rejects existing validator mismatches without collMod/drop. Before a deployed invocation, follow Database §15.1:
 record migration/environment authority, duplicate/invalid-data preflight, backup/recovery compatibility and index results.
@@ -1743,3 +1743,28 @@ The worker loads its separate email/retry policy once, then uses the same typed 
 Bootstrap/migration/provisioning restrictions, bounded stdin, safe diagnostics and connection cleanup remain.
 Rollback restores the compatible prior application build; no collection/index/data or external-effect migration
 was performed. Build all backend modules together; internal moved import paths are not compatibility entry points.
+
+### P03-020 module paths and provider boundary
+
+Implemented auth files now use entity-prefixed responsibilities: `auth.model.ts` is the sole identity model
+registration; `identity.persistence.ts` owns exact BSON validators/bootstrap/readiness, and `session.persistence.ts`
+retains identity persistence operations. `auth.composition.ts` wires auth and customers. Session/browser-security,
+password/recovery/email-change, credential/admin, proof and throttle files retain their prior contracts under their
+named `.service.ts`, `.routes.ts`, `.http.ts` or `.crypto.ts` responsibilities. This is a source move, not a schema
+migration, credential rotation, quota reset or re-bootstrap requirement.
+
+Customers owns `customer.validation.ts`, `customer.service.ts` and `customer.routes.ts`; auth-owned
+`customer-account.service.ts` supplies the bounded transaction-scoped profile persistence capability. Delivery owns
+`delivery-coverage.service.ts`; no alternate delivery collection or guessed API namespace was introduced.
+Notifications owns `notification.service.ts` (durable intents/claims), `notification-worker.service.ts` (batch/retry)
+and `notification.types.ts` (message/outcome contracts). `config/notifications.ts` loads explicit email/retry policy;
+`integrations/email/resend.adapter.ts` owns the fixed provider transport. External calls remain outside transactions;
+uncertain sends retain their previous durable disposition.
+
+All existing tool command paths remain unchanged. Tools and the isolated browser fixture import the new compiled
+module paths. Build/deploy the complete backend artifact from current source; do not rely on stale generated modules
+from the old layout. The local parity run removed obsolete generated outputs before checking CLI/runtime/browser
+behavior. Normal HTTP startup still verifies persistence rather than creating or repairing it. Operator bootstrap,
+provisioning/migration restrictions, stdout redaction, worker cleanup and explicit activation remain unchanged.
+No production migration/external effect was performed. Rollback restores the previous complete compatible artifact
+and environment; all records, identifiers, indexes, credentials and audit/outbox state remain intact.

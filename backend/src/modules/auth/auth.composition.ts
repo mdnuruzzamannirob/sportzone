@@ -1,29 +1,30 @@
+import { createCustomerAccountAccess } from './customer-account.service.js'
 import {
   createAdminResetDelivery,
   createEmailChangeDelivery,
   createResetDelivery,
-} from './proof-delivery.js'
-import { createAuthQuotaStore } from './rate-limit-store.js'
-import { createAuthThrottle } from './rate-limit.js'
-import { adminRoutes } from './admin-routes.js'
-import { createEmailChangeService } from './email-change.js'
-import { emailChangeRoutes } from './email-change-routes.js'
-import { createRecoveryService } from './recovery.js'
-import { recoveryRoutes } from './recovery-routes.js'
+} from './proof-delivery.service.js'
+import { createAuthQuotaStore } from './auth-throttle.persistence.js'
+import { createAuthThrottle } from './auth-throttle.service.js'
+import { adminRoutes } from './admin-auth.routes.js'
+import { createEmailChangeService } from './email-change.service.js'
+import { emailChangeRoutes } from './email-change.routes.js'
+import { createRecoveryService } from './password-recovery.service.js'
+import { recoveryRoutes } from './password-recovery.routes.js'
 import { Router } from 'express'
-import { createAddressCoverage } from '../settings/coverage.js'
-import { createProfileService } from './profile.js'
-import { profileRoutes } from './profile-routes.js'
+import { createAddressCoverage } from '../delivery/delivery-coverage.service.js'
+import { createProfileService } from '../customers/customer.service.js'
+import { profileRoutes } from '../customers/customer.routes.js'
 import type { Connection } from 'mongoose'
 import type { IdentityConfig, RuntimeConfig } from '../../config/environment.js'
-import { createRegistrationNotifications } from '../notifications/registration.js'
-import { browserSecurityRoutes } from './browser-routes.js'
-import { createBrowserSecurity } from './browser-security.js'
-import { verifyIdentityPersistence } from './collection-validators.js'
-import { customerRoutes } from './customer-routes.js'
-import { createCustomerService } from './customer.js'
-import { createIdentityModels } from './models.js'
-import { createSessionService } from './sessions.js'
+import { createRegistrationNotifications } from '../notifications/notification.service.js'
+import { browserSecurityRoutes } from './browser-security.routes.js'
+import { createBrowserSecurity } from './browser-security.service.js'
+import { verifyIdentityPersistence } from './identity.persistence.js'
+import { customerRoutes } from './customer-auth.routes.js'
+import { createCustomerService } from './credentials.service.js'
+import { createIdentityModels } from './auth.model.js'
+import { createSessionService } from './session.service.js'
 
 export async function composeCustomerRoutes(
   connection: Connection,
@@ -99,9 +100,7 @@ export async function composeCustomerRoutes(
     router.use(
       profileRoutes(
         createProfileService(
-          connection,
-          models,
-          sessions,
+          createCustomerAccountAccess(connection, models, sessions),
           createAddressCoverage(connection),
         ),
         security,

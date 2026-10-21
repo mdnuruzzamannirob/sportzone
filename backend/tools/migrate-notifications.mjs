@@ -1,6 +1,6 @@
 import { loadEnvironment } from '../dist/config/environment.js'
 import { openDatabase } from '../dist/db/connection.js'
-import { createRegistrationNotifications } from '../dist/modules/notifications/registration.js'
+import { createRegistrationNotifications } from '../dist/modules/notifications/notification.service.js'
 let connection
 try {
   const config = loadEnvironment(process.env)
