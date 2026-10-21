@@ -639,6 +639,37 @@ existing database index helper, never automatic startup synchronization.
 
 **Rules:** `available` is **derived**, not independently writable. A no-options product uses exactly one default variant; never create a parallel product-level stock authority. All stock writes go through `inventory` services, not generic product edits.
 
+**P04-002 implementation profile:** `products` owns both canonical Mongoose registrations and
+strict BSON collection validators. Slugs are trimmed lowercase ASCII kebab-case (160 characters);
+SKUs are trimmed uppercase ASCII letters/digits with single `.`, `_` or `-` separators (64 characters).
+Names use the §2.2 120-character limit; descriptions are plain text, at most 2,000 Unicode characters,
+with HTML tags/control characters rejected. Future views must render them as text. Keywords are
+trimmed lowercase distinct terms, up to 30 terms of 120 characters. No search engine/index is chosen
+without the P04-009 representative query profile; the declared compound indexes remain authoritative.
+
+Internal aggregate creation accepts 1–100 variants and 1–30 distinct category references. Option maps
+contain up to 30 keys (64 characters) with values up to 120 characters, NFKC/lowercase/whitespace
+normalized. Ambiguous normalized keys and MongoDB/prototype-reserved map keys are rejected.
+`attributeSignature` is JSON of sorted key/value tuples (bounded 40,000 characters), or `default`.
+Each option variant in one aggregate uses the same keys; a default SKU cannot coexist with option
+variants or another default. These are internal creation batch/validation bounds, not new HTTP DTOs.
+
+Creation commits product and variants in one transaction using categories' ancestry guard; active
+products require active ancestry and at least one active SKU. Draft/inactive products still require
+existing categories and at least one configured SKU. Duplicate slug/SKU/combination aborts the entire
+aggregate. The products-owned category-reference reader protects all statuses from category deletion.
+Media reference attachment remains closed until the media ledger integration; images are modeled
+(up to 12 ordered HTTPS references) but the current creation capability accepts an empty list only.
+Initial counters are all zero; an active SKU is configured for sale but cannot be purchased without
+available inventory. Stock changes and inventory capabilities remain P04-006/P04-008; generic product
+inputs cannot set counters, revision, rating projections or low-stock overrides.
+
+`initializeProductPersistence` explicitly creates new collections with strict/error validators and
+additive declared indexes; it is not called by HTTP startup. Existing validator drift requires a
+reviewed migration and is never silently replaced. BSON checks also reject fractional/unsafe money,
+optional null money/threshold, sale above regular and negative derived availability. Cross-document
+category/SKU eligibility is enforced by owning services, not by foreign model access.
+
 ### 6.4 `carts` — `shopping`
 
 | Field | Type | Constraints / notes |

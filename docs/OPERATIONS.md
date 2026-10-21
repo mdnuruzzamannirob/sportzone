@@ -1768,3 +1768,16 @@ behavior. Normal HTTP startup still verifies persistence rather than creating or
 provisioning/migration restrictions, stdout redaction, worker cleanup and explicit activation remain unchanged.
 No production migration/external effect was performed. Rollback restores the previous complete compatible artifact
 and environment; all records, identifiers, indexes, credentials and audit/outbox state remain intact.
+
+
+### P04-002 product persistence rollout constraint
+
+The product/variant foundation exposes `initializeProductPersistence` in
+`backend/src/modules/products/product.persistence.ts` for explicit new-environment bootstrap.
+It is not registered in HTTP startup or deployed by this change. It creates strict/error BSON
+validators and additive indexes, preserves extra indexes and refuses incompatible existing
+collection validators. Existing-data rollout requires a reviewed migration with duplicate
+slug/SKU/signature and numeric/stock preflight; never drop indexes or silently normalize collisions.
+P04-005/deployment work must wire and verify bootstrap/readiness before exposing catalog mutations.
+The current foundation performs no external media or inventory effects. Undoing code must preserve
+existing product/variant records and indexes; no data-erasing rollback is supplied.

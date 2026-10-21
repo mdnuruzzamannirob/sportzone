@@ -8,6 +8,16 @@ This changelog tracks the documentation baseline. Application releases are recor
 
 ## Development changes — 21 October 2026
 
+- Recorded explicit project-owner popup acceptance of P04-002 and marked it Done. Phase 04: 2 Done,
+  13 Not Started; overall: 53 Done, 126 Not Started. M2 remains Not Accepted.
+  [Acceptance](docs/evidence/P04-002-product-variants.md#owner-acceptance).
+
+- Implemented P04-002 product/default-option variant foundations: canonical schema/index registration,
+  strict BSON persistence bootstrap, normalized unique SKU/option combinations and transactionally
+  guarded aggregate creation. Five focused unit and fourteen real product replica-set tests passed;
+  category regression retained. HTTP/UI/media/inventory integration remains in its owning tasks.
+  In Review pending owner acceptance. [Evidence](docs/evidence/P04-002-product-variants.md).
+
 - Recorded explicit project-owner popup acceptance of P04-001 and marked it Done. Phase 04: 1 Done,
   14 Not Started; overall: 52 Done, 127 Not Started. M2 remains Not Accepted.
   [Acceptance](docs/evidence/P04-001-category-hierarchy.md#owner-acceptance).

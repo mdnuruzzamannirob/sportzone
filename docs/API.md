@@ -1200,6 +1200,12 @@ sequenceDiagram
 
 ### 14.1 Catalog, categories and variants (admin)
 
+P04-002 adds internal product/variant schemas and aggregate creation only. Its two service arguments
+(product metadata and variant batch) are not an alternate HTTP request shape. Canonical public/admin
+DTOs and routes below remain unchanged; P04-005 owns protected HTTP editing, CAS/audit and media
+attachment integration. P04-009 owns public discovery and projection. Database §§6.2–6.3 document
+normalization and bounded validation; image attachment is unavailable until the media ledger exists.
+
 P04-001 supplies internal category persistence/hierarchy capabilities only. HTTP registration,
 auth/CSRF/ETag adapters and admin forms remain P04-004; public category endpoint integration remains
 P04-009. Hierarchy/dependency guards may advance category revisions, conservatively invalidating

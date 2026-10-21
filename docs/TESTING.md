@@ -906,6 +906,14 @@ architecture or tooling research only when a concrete requirement, compatibility
 
 ---
 
+P04-002 product/variant foundation: `backend/tests/products.test.ts` and
+`backend/tests/integration/products.test.ts` cover CAT-01/CAT-02 persistence portions: bounded metadata,
+SKU/option normalization, default/option exclusivity, sale money, protected-input rejection,
+canonical registration/indexes, atomic creation/rollback, normalized slug/SKU conflicts, BSON guards,
+category deletion contention and fail-closed validator drift. Use isolated replica sets; no product
+UI, public discovery, stock-allocation or provider acceptance is inferred.
+[Execution evidence](./evidence/P04-002-product-variants.md).
+
 P04-001 category foundation: `backend/tests/integration/categories.test.ts` covers CAT-01/CAT-04
 persistence portions, normalized slug uniqueness, invalid inputs/counters, missing/cyclic ancestry,
 inactive ancestor visibility, omission versus null parent, stale revisions, dependency rollback,

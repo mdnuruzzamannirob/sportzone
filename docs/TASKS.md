@@ -108,7 +108,7 @@ The register contains 179 tasks across twelve phases, including seven engineerin
 | 01 — Requirements Finalization and Planning   |      17 |           0 |     0 |           0 |       0 |         0 |     17 |        0 |
 | 02 — UI/UX Design                             |      14 |           0 |     0 |           0 |       0 |         0 |     14 |        0 |
 | 03 — Authentication and Core Backend          |      20 |           0 |     0 |           0 |       0 |         0 |     20 |        0 |
-| 04 — Product Catalog and Inventory            |      15 |          14 |     0 |           0 |       0 |         0 |      1 |        0 |
+| 04 — Product Catalog and Inventory            |      15 |          13 |     0 |           0 |       0 |         0 |      2 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      20 |          20 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 07 — Payment Integration and Verification     |      17 |          17 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -117,7 +117,7 @@ The register contains 179 tasks across twelve phases, including seven engineerin
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **179** |     **127** | **0** |       **0** |   **0** |     **0** | **52** |    **0** |
+| **Total**                                     | **179** |     **126** | **0** |       **0** |   **0** |     **0** | **53** |    **0** |
 
 ## 4. Milestone tracker
 
@@ -591,13 +591,13 @@ owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
   **Acceptance:** Products cannot be stranded by category deletion; inactive categories are excluded publicly.\
   **Evidence:** [Schema, transactional hierarchy and race verification](./evidence/P04-001-category-hierarchy.md). [Owner acceptance](./evidence/P04-001-category-hierarchy.md#owner-acceptance), 21 October 2026.
 
-- [ ] **P04-002 — Model products and default/option variants**\
-  **Status:** `Not Started` · **Area:** Backend/catalog\
+- [x] **P04-002 — Model products and default/option variants**\
+  **Status:** `Done` · **Area:** Backend/catalog · **Owner:** Codex\
   **Sources:** FR-05; FR-06; FR-23\
   **Depends on:** `P04-001`\
   **Deliverable:** Define products, images, prices/sale prices, searchable fields, variant SKUs and uniqueness indexes.\
   **Acceptance:** Product has at least one purchasable SKU; duplicate SKUs/slugs rejected.\
-  **Evidence to attach:** Model/index tests.
+  **Evidence:** [Canonical models, indexes, transaction/race verification](./evidence/P04-002-product-variants.md). [Owner acceptance](./evidence/P04-002-product-variants.md#owner-acceptance), 21 October 2026.
 
 - [ ] **P04-003 — Implement controlled Cloudinary media adapter**\
   **Status:** `Not Started` · **Area:** Backend/media\
@@ -1901,3 +1901,18 @@ review/acceptance: “Review করেছি—accept করছি, Done কর�
 overall: 52 Done, 127 Not Started, zero In Review. Existing implementation verification retained;
 this status-only update repeats documentation checks only. M2 remains Not Accepted.
 [Acceptance](./evidence/P04-001-category-hierarchy.md#owner-acceptance).
+
+
+**21 October 2026 — P04-002:** Not Started → In Progress → In Review. Added canonical product/variant
+schemas, BSON validators/index bootstrap and guarded atomic aggregate creation. Five focused unit
+and fourteen product replica-set tests passed; eight category regression cases retained. Executor:
+Codex; independent acceptance pending. Phase 04: 1 Done, 1 In Review, 13 Not Started; overall:
+52 Done, 1 In Review, 126 Not Started. M2 remains Not Accepted.
+[Evidence](./evidence/P04-002-product-variants.md).
+
+
+**21 October 2026 — P04-002 acceptance:** In Review → Done following explicit project-owner popup
+review/acceptance: “Review করেছি—accept করছি, Done করো”. Phase 04: 2 Done, 13 Not Started;
+overall: 53 Done, 126 Not Started, zero In Review. Existing implementation verification retained;
+this status-only update repeats documentation checks only. M2 remains Not Accepted.
+[Acceptance](./evidence/P04-002-product-variants.md#owner-acceptance).
