@@ -906,6 +906,13 @@ architecture or tooling research only when a concrete requirement, compatibility
 
 ---
 
+P04-001 category foundation: `backend/tests/integration/categories.test.ts` covers CAT-01/CAT-04
+persistence portions, normalized slug uniqueness, invalid inputs/counters, missing/cyclic ancestry,
+inactive ancestor visibility, omission versus null parent, stale revisions, dependency rollback,
+mutual reparent/edit races, child-creation/deletion races, real product-reference transactions and
+fail-closed media/orphan handling on isolated MongoDB 8.0.16 replica sets. It does not establish
+HTTP/admin UI or media-provider acceptance. [Execution evidence](./evidence/P04-001-category-hierarchy.md).
+
 ## 16. Test register & requirements traceability
 
 ### 16.1 Stable identifiers and state

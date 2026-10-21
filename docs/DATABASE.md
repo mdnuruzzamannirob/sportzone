@@ -591,6 +591,17 @@ Explicit identity bootstrap adds this collection/index without modifying existin
 
 **Rules:** reject cycles; verify category has active ancestry for public visibility; restrict deletion while products/subcategories depend on it unless reassigned in an approved operation.
 
+**P04-001 implementation protocol:** category hierarchy writes run in snapshot/majority transactions.
+The categories-owned `guardAncestry` capability checks the full parent chain and increments each
+visited category's revision to serialize against reparenting, deactivation and deletion. Product
+association writers must invoke it with active-ancestry validation in the same transaction as their
+product write. Consequently, dependency changes can conservatively invalidate category ETags.
+Deletion checks children and a required products-owned reference reader in the same transaction;
+there is no permissive default reader. Image-bearing deletion remains rejected until the media-owned
+reference detachment operation is integrated. Reassignment uses guarded parent updates; no cascade
+or destructive HTTP endpoint is introduced. Index creation is explicit and additive through the
+existing database index helper, never automatic startup synchronization.
+
 ### 6.2 `products` — `catalog`
 
 | Field | Type | Constraints / notes |

@@ -108,7 +108,7 @@ The register contains 179 tasks across twelve phases, including seven engineerin
 | 01 — Requirements Finalization and Planning   |      17 |           0 |     0 |           0 |       0 |         0 |     17 |        0 |
 | 02 — UI/UX Design                             |      14 |           0 |     0 |           0 |       0 |         0 |     14 |        0 |
 | 03 — Authentication and Core Backend          |      20 |           0 |     0 |           0 |       0 |         0 |     20 |        0 |
-| 04 — Product Catalog and Inventory            |      15 |          15 |     0 |           0 |       0 |         0 |      0 |        0 |
+| 04 — Product Catalog and Inventory            |      15 |          14 |     0 |           0 |       0 |         0 |      1 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      20 |          20 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 07 — Payment Integration and Verification     |      17 |          17 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -117,7 +117,7 @@ The register contains 179 tasks across twelve phases, including seven engineerin
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **179** |     **128** | **0** |       **0** |   **0** |     **0** | **51** |    **0** |
+| **Total**                                     | **179** |     **127** | **0** |       **0** |   **0** |     **0** | **52** |    **0** |
 
 ## 4. Milestone tracker
 
@@ -583,13 +583,13 @@ owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
 
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 04. **Associated gate:** M2. **Tasks:** 15.
 
-- [ ] **P04-001 — Model categories and hierarchy with activity rules**\
-  **Status:** `Not Started` · **Area:** Backend/catalog\
+- [x] **P04-001 — Model categories and hierarchy with activity rules**\
+  **Status:** `Done` · **Area:** Backend/catalog · **Owner:** Codex\
   **Sources:** FR-04; FR-24\
   **Depends on:** `P03-002`\
   **Deliverable:** Add hierarchical category schema, slug/index, active state and guarded deletion/reassignment semantics.\
   **Acceptance:** Products cannot be stranded by category deletion; inactive categories are excluded publicly.\
-  **Evidence to attach:** Schema and hierarchy tests.
+  **Evidence:** [Schema, transactional hierarchy and race verification](./evidence/P04-001-category-hierarchy.md). [Owner acceptance](./evidence/P04-001-category-hierarchy.md#owner-acceptance), 21 October 2026.
 
 - [ ] **P04-002 — Model products and default/option variants**\
   **Status:** `Not Started` · **Area:** Backend/catalog\
@@ -1888,3 +1888,16 @@ Preserve IDs and dependency references; update phase totals and record milestone
 
 
 **21 October 2026 — P03-020 acceptance:** In Review → Done after explicit project-owner popup acceptance: “Review করেছি—accept করছি, Done করো”. Phase 03: 20/20 Done; overall: 51 Done, 128 Not Started, zero In Review. Existing verification retained; only documentation checks repeated for this status update. M1 remains Not Accepted and requires separate approval. [Acceptance](./evidence/P03-020-module-ownership.md#owner-acceptance).
+
+
+**21 October 2026 — P04-001:** Not Started → In Progress → In Review. Added category schema/indexes,
+transactional ancestry/CAS/deletion capabilities and eight real replica-set tests. Executor: Codex;
+independent reviewer pending. Phase 04: 14 Not Started, 1 In Review; overall: 127 Not Started,
+1 In Review, 51 Done. M2 remains Not Accepted. [Evidence](./evidence/P04-001-category-hierarchy.md).
+
+
+**21 October 2026 — P04-001 acceptance:** In Review → Done following explicit project-owner popup
+review/acceptance: “Review করেছি—accept করছি, Done করো”. Phase 04: 1 Done, 14 Not Started;
+overall: 52 Done, 127 Not Started, zero In Review. Existing implementation verification retained;
+this status-only update repeats documentation checks only. M2 remains Not Accepted.
+[Acceptance](./evidence/P04-001-category-hierarchy.md#owner-acceptance).

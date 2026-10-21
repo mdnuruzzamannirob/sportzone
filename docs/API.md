@@ -1200,6 +1200,11 @@ sequenceDiagram
 
 ### 14.1 Catalog, categories and variants (admin)
 
+P04-001 supplies internal category persistence/hierarchy capabilities only. HTTP registration,
+auth/CSRF/ETag adapters and admin forms remain P04-004; public category endpoint integration remains
+P04-009. Hierarchy/dependency guards may advance category revisions, conservatively invalidating
+previous ETags (Database §6.1). No category deletion route is added.
+
 Every route below is **A only** and requires session, Origin, CSRF and audit for mutations.
 `If-Match` is required where shown; the API must derive a strong ETag from a durable revision/CAS field and reject stale writes.
 Database v1.0 defines CAS `revision` for every affected master; every successful edit increments it, while server-only `storeSettings.deliveryCoverageRevision` serializes delivery changes across all zones; `deliveryZones.coverageRevision` is only a per-zone sequence (API §14.1).

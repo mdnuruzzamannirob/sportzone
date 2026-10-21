@@ -8,6 +8,15 @@ This changelog tracks the documentation baseline. Application releases are recor
 
 ## Development changes — 21 October 2026
 
+- Recorded explicit project-owner popup acceptance of P04-001 and marked it Done. Phase 04: 1 Done,
+  14 Not Started; overall: 52 Done, 127 Not Started. M2 remains Not Accepted.
+  [Acceptance](docs/evidence/P04-001-category-hierarchy.md#owner-acceptance).
+
+- Implemented P04-001 category schema/indexes, transactional hierarchy and active-ancestry filtering,
+  guarded deletion and CAS concurrency protection. Eight isolated replica-set cases passed; internal
+  foundation only, with HTTP/UI/media integration retained in their owning tasks. In Review pending
+  independent acceptance. [Evidence](docs/evidence/P04-001-category-hierarchy.md).
+
 - Recorded explicit project-owner popup acceptance of P03-020 and marked it Done. Phase 03: 20/20 Done; overall: 51 Done, 128 Not Started. M1 remains Not Accepted pending separate approval. [Acceptance](docs/evidence/P03-020-module-ownership.md#owner-acceptance).
 
 - Implemented P03-020 existing backend ownership/file refactor: auth-owned narrow customer persistence capability, customers profile/address operations, delivery-owned coverage, provider-neutral notifications and isolated Resend adapter/config. Preserved canonical schemas/indexes and provider/claim logic; updated imports, tools/runbooks and private-persistence checks. Scoped real database/browser/tooling verification passed; In Review pending owner acceptance. [Evidence](docs/evidence/P03-020-module-ownership.md).
