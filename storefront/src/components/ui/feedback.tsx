@@ -26,7 +26,7 @@ export function Notice({
       role={tone === 'error' ? 'alert' : 'status'}
 
     >
-      <Alert.Indicator />
+      <Alert.Indicator aria-hidden="true" />
       <Alert.Content>
         <Alert.Title>{title}</Alert.Title>
         {children && <Alert.Description>{children}</Alert.Description>}

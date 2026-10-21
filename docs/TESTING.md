@@ -1491,3 +1491,26 @@ their owning features; current registration payloads cannot contain proofs or ar
 ### P03-014 scoped security-control checks
 
 SEC-01/10/11/13: test shared Mongo quota across two limiter instances and recreation, concurrent limit boundaries, fixed-window reset with expired TTL rows still present, distinct audiences/groups, equivalent existing/missing and differently cased target input, malformed input, ignored forwarded headers, unavailable store fail-closed behavior, correct Retry-After, unchanged Origin/CSRF and recovery semantics, schema/index readiness and additive bootstrap. Audit assertions forbid raw key/identity/proof material and require only fixed action/reason fields. No synthetic HTTP test proves deployed proxy/collector configuration.
+
+### P03-015 connected identity interface verification
+
+The app-owned `identity-client.test.tsx` suites exercise canonical public origin rejection, credential/no-store/
+no-referrer policy, correct CSRF namespace, safe error allowlists/Retry-After, single mutation dispatch, concurrent
+submission exclusion, response validation, cancellation, 401 cleanup and identity changes both before headers and
+during JSON decoding. Existing form/route/shell consumers remain in their workspace unit suites.
+
+`tests/ui/authentication.spec.ts` uses `tests/ui/auth-server.mjs`: real composed API, MongoDB 8.0.16 replica set,
+temporary TLS proxies/certificates, synthetic customer/admin and a delivery-coverage fixture. It verifies frontend
+validation/resubmission, generic wrong-credential/recovery messages, profile network failure preserving drafts,
+address invalid coverage/add/default/edit/remove, password/email changes and proof fragment removal, both recovery
+namespaces, denied customer cookies/forged local flags at admin, separate logout, suspended/expired in-memory views,
+and cross-tab identity invalidation. JavaScript-disabled SSR forms remain inert until hydration. Keyboard Enter submits login; mobile reflow and unsuppressed Axe WCAG rules run
+in both themes. Await React Aria's seven-second transient pending-button announcements before settled-screen Axe;
+no rule is disabled. Screenshots contain only synthetic non-secret settled views. Executor visual review remains
+separate from the owner's acceptance.
+
+Build backend plus both frontends with synthetic public API origin `https://127.0.0.1:4443` before this suite; default
+Playwright starts existing app servers. Fixture proof access uses private IPC rather than a diagnostic HTTP endpoint.
+No network traces, automatic failure screenshots, cookies, proof URLs or passwords may be retained in reports.
+Fixture failure messages are sanitized. Live email transport, deployed ingress and milestone gates are not proved.
+Use change-based local verification (§15.5); the hosted required inventory still includes these discovered cases.

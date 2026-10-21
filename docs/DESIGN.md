@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 20 October 2026
+**Updated:** 21 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -672,3 +672,10 @@ A page specification is ready for implementation when it defines the following. 
 ### 14.3 Relationship to implementation
 
 Use these specifications as the UI/UX baseline for both applications. `ARCHITECTURE.md` remains authoritative for technical boundaries and financial state transitions; the PRD remains authoritative for product scope and business rules. Implementation tasks, route-by-route coding details, and project schedules belong in `IMPLEMENTATION_PLAN.md` and `TASKS.md`, not here.
+
+
+### P03-015 implemented account interfaces
+
+Customer routes `/login`, `/register`, `/forgot-password`, `/reset-password`, `/account` and `/account/email-change` use native app-owned HeroUI forms and real Express identity APIs. Administrator `/login`, `/forgot-password`, `/reset-password` and `/app/*` use the separate administrator namespace; there is no admin signup. Registration email-verification issuance/confirmation is not implemented, so the account accurately identifies unverified email without a pretend verification button. Addresses use currently supported district/area values with authoritative save-time coverage rejection; delivery option discovery remains the delivery feature contract.
+
+Private/auth storefront routes are noindex/no-store; no account data or proof enters SSR shared caches. Fragment proofs are captured once in memory, removed from the location and only submitted explicitly in a JSON body. Failed forms preserve inputs; pending guards stop double submission, errors/status are accessible, and password fields clear after confirmed success. Session checks and reauthentication hide denied/expired private views. Admin navigation is presentation only and only renders a signed-in identity after the server session response; unimplemented management features stay honestly unavailable.

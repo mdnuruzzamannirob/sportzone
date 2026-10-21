@@ -8,6 +8,10 @@ This changelog tracks the documentation baseline. Application releases are recor
 
 ## Development changes — 21 October 2026
 
+- Recorded explicit project-owner popup acceptance of P03-015 and marked it Done. Phase 03: 17/20 Done; overall: 48 Done, 131 Not Started. Live sender/deployment and milestone gates unchanged. [Acceptance](docs/evidence/P03-015-identity-interfaces.md#owner-acceptance).
+
+- Implemented P03-015 real customer/account and separate admin authentication interfaces with planned pinned Query/Zod, private-cache/identity fencing, fresh CSRF, hydration-safe forms and secret-safe proof handling. Focused real API/browser, unit, accessibility, build/smoke and static checks passed; In Review pending owner acceptance. No hosted/deployed or live email acceptance claimed. [Evidence](docs/evidence/P03-015-identity-interfaces.md).
+
 - Recorded project-owner popup review/acceptance of P03-014 and marked it Done. Phase 03: 16/20 Done; overall: 47 Done, 132 Not Started. Deployment and milestone gates unchanged. [Acceptance](docs/evidence/P03-014-auth-throttles.md#owner-acceptance).
 
 - Implemented P03-014 shared MongoDB auth/recovery quotas, protected bootstrap, additive ephemeral counter persistence, fixed-window Retry-After and fail-closed readiness/admission. Added secret-free fixed security audit reasons; retained generic recovery, CSRF/session protections and required CI statuses. Scoped unit/contract and real replica-set checks passed; In Review pending owner acceptance. [Evidence](docs/evidence/P03-014-auth-throttles.md).

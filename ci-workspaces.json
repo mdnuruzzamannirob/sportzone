@@ -13,7 +13,7 @@
     },
     "storefront": {
       "state": "active",
-      "ownerTask": "P02-001",
+      "ownerTask": "P03-015",
       "checks": [
         "lint",
         "typecheck",
@@ -24,7 +24,7 @@
     },
     "admin": {
       "state": "active",
-      "ownerTask": "P02-002",
+      "ownerTask": "P03-015",
       "checks": [
         "lint",
         "typecheck",
@@ -46,7 +46,7 @@
       ]
     },
     "browser": {
-      "ownerTask": "P01-016",
+      "ownerTask": "P03-015",
       "checks": [
         "test:ui"
       ]

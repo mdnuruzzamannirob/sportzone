@@ -46,7 +46,7 @@ export function FormErrorSummary({
       status="danger"
     >
       <Alert.Content>
-        <h2 id={titleId} className="font-semibold text-danger">
+        <h2 id={titleId} className="font-semibold text-danger-soft-foreground">
           Please check the following fields
         </h2>
         <ul className="mt-2 space-y-2">

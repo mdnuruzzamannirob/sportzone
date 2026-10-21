@@ -1,3 +1,4 @@
+import { IdentityProvider } from '../features/auth/api/session'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import './globals.css'
@@ -17,7 +18,7 @@ export default function RootLayout({
         <script src="/theme-bootstrap.js" />
       </head>
       <body suppressHydrationWarning>
-        {children}
+        <IdentityProvider>{children}</IdentityProvider>
       </body>
     </html>
   )

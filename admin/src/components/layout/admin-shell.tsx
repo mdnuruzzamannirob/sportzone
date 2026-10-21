@@ -59,8 +59,10 @@ export function AdminShell({
   title,
   actions,
   children,
+  identity,
 }: {
   title: string
+  identity?: string
   actions?: ReactNode
   children: ReactNode
 }) {
@@ -139,7 +141,7 @@ export function AdminShell({
             </Link>
           </div>
           <div className="flex min-w-0 flex-wrap items-start gap-4">
-            <p className="py-3 text-sm text-muted">Not signed in</p>
+            <p className="min-w-0 break-all py-3 text-sm text-foreground">{identity ?? 'Not signed in'}</p>
             <Disclosure className="w-56 max-w-full">
               <Disclosure.Heading>
                 <Disclosure.Trigger className="flex w-full items-center gap-2 py-3 text-sm">

@@ -2,7 +2,6 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { BrowserRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { AppRoutes } from '../src/app/router'
 import { AdminShell } from '../src/components/layout/admin-shell'
 import { navigationGroups } from '../src/components/layout/navigation'
 import { Button } from '../src/components/ui/button'
@@ -49,7 +48,7 @@ async function visit(path: string) {
     window.dispatchEvent(new PopStateEvent('popstate'))
     root.render(
       <BrowserRouter>
-        <AppRoutes />
+        <AdminShell title="Shell preview"><p>Shell layout fixture.</p></AdminShell>
       </BrowserRouter>,
     )
   })
@@ -104,7 +103,7 @@ describe('admin navigation shell', () => {
     expect(nav?.querySelector('[aria-current="page"]')?.getAttribute('href')).toBe(
       '/app/orders',
     )
-    expect(host.querySelector('h1')?.textContent).toBe('Admin access unavailable')
+    expect(host.querySelector('h1')?.textContent).toBe('Shell preview')
     expect(host.textContent).toContain('Not signed in')
     expect(host.textContent).not.toMatch(/synthetic-private|Logout|Revenue|৳/)
     expect(host.querySelector('form, table')).toBeNull()
@@ -148,7 +147,7 @@ describe('admin navigation shell', () => {
     expect(host.querySelector('nav[aria-label="Page context"]')?.textContent).toContain(
       'Inventory',
     )
-    expect(host.querySelector('h1')?.textContent).toBe('Admin access unavailable')
+    expect(host.querySelector('h1')?.textContent).toBe('Shell preview')
     expect(host.querySelector('table, form')).toBeNull()
   })
   it('ADMIN-SHELL-04: explicit Close restores focus and switching to desktop dismisses the modal onto a visible control', async () => {

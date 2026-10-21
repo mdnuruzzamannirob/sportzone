@@ -37,12 +37,12 @@ export function TextInput({
       isInvalid={error ? true : props.isInvalid}
       className="w-full"
     >
-      <Label>
+      <Label className={error ? 'text-danger-soft-foreground' : undefined}>
         {label}
       </Label>
       {multiline ? <TextArea rows={rows} /> : <Input />}
       {description && <Description>{description}</Description>}
-      <FieldError>{error}</FieldError>
+      <FieldError className="text-danger-soft-foreground">{error}</FieldError>
     </TextField>
   )
 }
@@ -79,7 +79,7 @@ export function SelectField({
       }}
       className="w-full"
     >
-      <Label>
+      <Label className={error ? 'text-danger-soft-foreground' : undefined}>
         {label}
       </Label>
       <Select.Trigger>
@@ -87,7 +87,7 @@ export function SelectField({
         <Select.Indicator />
       </Select.Trigger>
       {description && <Description>{description}</Description>}
-      <FieldError>{error}</FieldError>
+      <FieldError className="text-danger-soft-foreground">{error}</FieldError>
       <Select.Popover>
         <ListBox>
           {options.map((option) => (
@@ -114,12 +114,12 @@ export function CheckboxField({
         <Checkbox.Control>
           <Checkbox.Indicator />
         </Checkbox.Control>
-        <Label>
+        <Label className={error ? 'text-danger-soft-foreground' : undefined}>
           {label}
         </Label>
       </Checkbox.Content>
       {description && <Description>{description}</Description>}
-      <FieldError>{error}</FieldError>
+      <FieldError className="text-danger-soft-foreground">{error}</FieldError>
     </Checkbox>
   )
 }
@@ -134,7 +134,7 @@ export function RadioChoices({
   FieldContent & { options: readonly SelectOption[] }) {
   return (
     <RadioGroup {...props} isInvalid={error ? true : props.isInvalid}>
-      <Label>
+      <Label className={error ? 'text-danger-soft-foreground' : undefined}>
         {label}
       </Label>
       {options.map((option) => (
@@ -143,12 +143,12 @@ export function RadioChoices({
             <Radio.Control>
               <Radio.Indicator />
             </Radio.Control>
-            <Label>{option.label}</Label>
+            <Label className={error ? 'text-danger-soft-foreground' : undefined}>{option.label}</Label>
           </Radio.Content>
         </Radio>
       ))}
       {description && <Description>{description}</Description>}
-      <FieldError>{error}</FieldError>
+      <FieldError className="text-danger-soft-foreground">{error}</FieldError>
     </RadioGroup>
   )
 }

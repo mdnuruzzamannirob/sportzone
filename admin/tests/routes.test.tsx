@@ -1,3 +1,4 @@
+import { IdentityProvider } from '../src/features/auth/api/session'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { AdminLoading } from '../src/components/layout/admin-loading'
 import { RouteErrorBoundary } from '../src/app/route-error-boundary'
@@ -27,7 +28,7 @@ async function visit(path: string) {
   await act(() =>
     root.render(
       <BrowserRouter>
-        <AppRoutes />
+        <IdentityProvider><AppRoutes /></IdentityProvider>
       </BrowserRouter>,
     ),
   )
@@ -47,9 +48,9 @@ describe('admin scaffold routing', () => {
     await visit('/')
     expect(window.location.pathname).toBe('/login')
     expect(container.querySelectorAll('main')).toHaveLength(1)
-    expect(container.querySelector('h1')?.textContent).toBe('Administrator access')
-    expect(container.textContent).toContain('Sign-in is not available yet.')
-    expect(container.querySelector('form')).toBeNull()
+    expect(container.querySelector('h1')?.textContent).toBe('SportZone administrator')
+    expect(container.textContent).toContain('Account service unavailable')
+    expect(container.querySelector('form')).not.toBeNull()
     expect(
       [...container.querySelectorAll('button')].find(
         (button) => button.textContent === 'Sign in',
@@ -61,7 +62,7 @@ describe('admin scaffold routing', () => {
     localStorage.setItem('role', 'admin')
     localStorage.setItem('authenticated', 'true')
     await visit('/app/orders/synthetic-order')
-    expect(container.querySelector('h1')?.textContent).toBe('Admin access unavailable')
+    expect(container.querySelector('h1')?.textContent).toBe('Administrator service unavailable')
     expect(container.textContent).not.toContain('synthetic-order')
     expect(container.querySelectorAll('main')).toHaveLength(1)
   })
@@ -76,12 +77,12 @@ describe('admin scaffold routing', () => {
       ),
     )
     expect(window.location.pathname).toBe('/login')
-    expect(container.querySelector('h1')?.textContent).toBe('Administrator access')
+    expect(container.querySelector('h1')?.textContent).toBe('SportZone administrator')
     await act(() => {
       window.history.replaceState(null, '', '/app/products')
       window.dispatchEvent(new PopStateEvent('popstate'))
     })
-    expect(container.querySelector('h1')?.textContent).toBe('Admin access unavailable')
+    await vi.waitFor(async()=>{ await act(async()=>{await new Promise(resolve=>setTimeout(resolve,0))});expect(container.querySelector('h1')?.textContent).toBe('Administrator service unavailable') })
   })
 
   it('AD-04: unknown public URL has a recovery link without echoing the path', async () => {

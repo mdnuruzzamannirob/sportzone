@@ -1687,3 +1687,27 @@ Use one protected SESSION_SECRET and synchronized clocks across the API instance
 Network limits use the socket address; an unreviewed proxy must not be trusted through client Forwarded/X-Forwarded-For values. Behind a proxy, verify the documented topology and capacity before enabling traffic; do not silently weaken quota or trust proxy. Monitor fixed securityAction/securityReason/errorCode counts for rate limiting (429) and unavailable storage (503), and verify the protected collector and alert delivery in the deployed environment. No raw email, address, proof, cookie or HMAC key enters logs; retain security logs under the existing approved access/retention policy. Target limits apply equally to supplied existing/missing accounts, temporarily bound requests and do not change account status. Recovery cooldowns, generic responses and single-use proofs remain independent defenses.
 
 Rollback uses the prior compatible build and preserves identity/proof/notification/audit state; the new ephemeral collection can stay in place. A rollback to a build without shared enforcement requires traffic restriction or verified equivalent edge protection before reopening auth traffic. No operator migration, live sender, deployed collector/proxy or M1 acceptance is claimed by local tests.
+
+### P03-015 browser identity rollout
+
+Build storefront with `NEXT_PUBLIC_API_ORIGIN` and admin with `VITE_API_ORIGIN`, each an exact canonical API origin
+without a trailing slash/path. These are public build-time values. Never copy session/proof/mail keys into either
+frontend environment. Align existing API_PUBLIC_ORIGIN, STOREFRONT_ORIGIN, ADMIN_ORIGIN and CORS_ALLOWED_ORIGINS
+with the real HTTPS deployments and verify Secure/HttpOnly, separate customer/admin cookies and CSRF from browsers.
+Root `.env` alone does not feed frontend builds; changed public values require rebuilding assets. Unset/invalid
+values disable requests with a service-unavailable message rather than guessing a backend. Local loopback HTTP is
+accepted as explicit configuration but does not prove the production Secure-cookie flow; isolated browser tests
+use TLS proxies and a real API/MongoDB replica set.
+
+Auth/account pages remain no-store/private and noindex; proof fragments are captured once into component memory
+and removed before explicit confirmation. Do not capture auth traffic/proofs/cookies in analytics, replay tools,
+network traces or support logs. Recovery messages preserve generic acknowledgement. Browser caches are not
+persisted; identity changes cancel/clear private reads and broadcast only an invalidation signal to other tabs.
+A failed sign-out clears the private view and offers explicit revocation retry without claiming the server session
+was revoked. No mutation is automatically retried, including CSRF/network failure.
+
+Validate actual deployed login/recovery inbox delivery, link origins, browser cookie/CORS behavior, suspension and
+cross-tab expiry before environment acceptance. Registration verification delivery is not implemented; the UI does
+not fabricate it. Delivery-coverage discovery remains the delivery feature; address save checks existing server
+coverage. Rollback restores previous compatible frontend assets/configuration and preserves all backend identity,
+challenge, notification and audit data. No schema migration or production operation is part of P03-015.

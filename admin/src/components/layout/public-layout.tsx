@@ -12,7 +12,7 @@ export function PublicLayout() {
       <div className="mb-6">
         <ThemePreferenceSelect />
       </div>
-      <Card className="">
+      <Card>
         <Card.Content>
           <Outlet />
         </Card.Content>

@@ -89,7 +89,7 @@ try {
     assert.match(account.headers.get('cache-control') ?? '', /no-store/)
     assert.equal(account.headers.get('x-robots-tag'), 'noindex, nofollow')
     const body = await account.text()
-    assert.match(body, /Account access is not available yet/)
+    assert.match(body, /Checking your session/)
     assert.match(body, /name="robots" content="noindex, nofollow"/)
     assert.ok(
       !body.includes(identity),

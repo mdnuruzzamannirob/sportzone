@@ -1,6 +1,11 @@
-import type { ReactNode } from 'react'
-import { BrowserRouter } from 'react-router'
+import { IdentityProvider } from "../features/auth/api/session";
+import type { ReactNode } from "react";
+import { BrowserRouter } from "react-router";
 
 export function AppProviders({ children }: { children: ReactNode }) {
-  return <BrowserRouter>{children}</BrowserRouter>
+	return (
+		<IdentityProvider>
+			<BrowserRouter>{children}</BrowserRouter>
+		</IdentityProvider>
+	);
 }

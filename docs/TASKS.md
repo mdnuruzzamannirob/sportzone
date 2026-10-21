@@ -107,7 +107,7 @@ The register contains 179 tasks across twelve phases, including seven engineerin
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
 | 01 — Requirements Finalization and Planning   |      17 |           0 |     0 |           0 |       0 |         0 |     17 |        0 |
 | 02 — UI/UX Design                             |      14 |           0 |     0 |           0 |       0 |         0 |     14 |        0 |
-| 03 — Authentication and Core Backend          |      20 |           4 |     0 |           0 |       0 |         0 |     16 |        0 |
+| 03 — Authentication and Core Backend          |      20 |           3 |     0 |           0 |       0 |         0 |     17 |        0 |
 | 04 — Product Catalog and Inventory            |      15 |          15 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      20 |          20 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -117,7 +117,7 @@ The register contains 179 tasks across twelve phases, including seven engineerin
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **179** |     **132** | **0** |       **0** |   **0** |     **0** | **47** |    **0** |
+| **Total**                                     | **179** |     **131** | **0** |       **0** |   **0** |     **0** | **48** |    **0** |
 
 ## 4. Milestone tracker
 
@@ -531,13 +531,13 @@ owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
   **Acceptance:** Brute-force/recovery abuse blocked without exposing account existence or secrets.\
   **Evidence:** [Shared auth throttles and safe security audit records](./evidence/P03-014-auth-throttles.md). MongoDB-backed audience/network/target quotas, readiness/fail-closed behavior, Retry-After and fixed secret-free audit reasons implemented. 122 scoped unit/contract and 173 real MongoDB integration cases passed across affected runs; backend lint/types/build/smoke and boundaries passed. Project owner reviewed and accepted through the popup on 21 October 2026: “Review করেছি—accept করছি, Done করো”.
 
-- [ ] **P03-015 — Connect customer and admin authentication/account interfaces**\
-  **Status:** `Not Started` · **Area:** Storefront/admin\
+- [x] **P03-015 — Connect customer and admin authentication/account interfaces**\
+  **Status:** `Done` · **Area:** Storefront/admin · **Owner:** Codex\
   **Sources:** FR-01; FR-02; FR-21; Design §§7-8\
   **Depends on:** `P02-008`, `P02-006`, `P02-007`, `P03-013`, `P03-010`, `P03-008`, `P03-011`\
   **Deliverable:** Connect registration/login/recovery, profile, addresses and admin login to real API.\
   **Acceptance:** Loading, denied, suspended and expired states work; no sensitive information appears in shared caches.\
-  **Evidence to attach:** Browser integration flows.
+  **Evidence:** [Connected identity interfaces and real API browser verification](./evidence/P03-015-identity-interfaces.md). Customer registration/login/recovery, profile/address/password/email interfaces and separate admin login/recovery/session guard implemented. 165 frontend unit cases across affected runs, three-engine real API flows and both-theme accessibility/reflow checks passed; builds/smokes/static checks passed. Project owner explicitly reviewed and accepted through the popup on 21 October 2026: “Review করেছি—accept করছি, Done করো”. Existing registration-verification delivery and live deployment/sender gates remain explicitly unclaimed.
 
 - [ ] **P03-016 — Verify identity/security milestone**\
   **Status:** `Not Started` · **Area:** Quality/security\
@@ -1864,3 +1864,9 @@ Preserve IDs and dependency references; update phase totals and record milestone
 
 
 **21 October 2026 — P03-014 acceptance:** In Review → Done after explicit owner popup review/acceptance: “Review করেছি—accept করছি, Done করো”. Phase 03: 16 Done, 4 Not Started; overall: 47 Done, 132 Not Started. Deployment and milestone gates unchanged.
+
+
+**21 October 2026 — P03-015:** Not Started → In Progress → In Review. Connected customer/account and administrator identity UIs to existing APIs with pinned Query/Zod, fresh CSRF, abortable private caches, generation fencing, cross-tab invalidation and hydration-safe forms. Real replica-set/TLS browser flows pass in Chromium/Firefox/WebKit. Owner acceptance pending; Phase 03: 16 Done, 1 In Review, 3 Not Started; overall: 47 Done, 1 In Review, 131 Not Started. M1 remains unapproved. [Evidence](./evidence/P03-015-identity-interfaces.md).
+
+
+**21 October 2026 — P03-015 acceptance:** In Review → Done after explicit project-owner popup review/acceptance: “Review করেছি—accept করছি, Done করো”. Phase 03: 17/20 Done; overall: 48 Done, 131 Not Started, zero In Review. Existing verification retained; this status-only update does not repeat application tests. Live sender/deployment and M1 gates remain separate. [Acceptance](./evidence/P03-015-identity-interfaces.md#owner-acceptance).

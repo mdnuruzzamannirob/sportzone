@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 20 October 2026
+**Updated:** 21 October 2026
 
 Single-store sports e-commerce platform for Bangladesh, using BDT. SportZone combines a customer storefront, a separate
 administration portal and one authoritative backend API.
@@ -76,8 +76,7 @@ their shared ownership. Current code is migrated incrementally; the CLI commands
 [Implementation Plan §3.6](docs/IMPLEMENTATION_PLAN.md#36-engineering-foundation-and-incremental-refactor) sequences
 P01-015 contract review, P01-016–017 tooling, P03-019–020 backend and P02-012–013 UI refactors.
 [Operations §5](docs/OPERATIONS.md#5-cicd--deployment-procedures) defines target CI/release controls; the existing workflow
-remains the operational reference until verified replacement. Future API/form tasks introduce TanStack Query/frontend
-Zod with compatible locked versions. [Verification record](docs/evidence/P01-015-structure-decision.md).
+remains the operational reference until verified replacement. P03-015 introduces pinned TanStack Query 5.104.5 and frontend Zod 4.6.7 for the implemented identity forms. [Verification record](docs/evidence/P01-015-structure-decision.md).
 
 ## 4. Development workflow
 
@@ -355,3 +354,22 @@ Customer password recovery/change (P03-010) is an explicitly activated backend s
 Verified customer email change (P03-011) uses EMAIL_CHANGE_ENABLED with explicit email-change TTL/cooldown/response-floor settings and the same protected proof keys/HTTPS storefront origin. Run the existing local/test notification migration before upgrading. Email stays unchanged until proof confirmation; confirmation revokes customer sessions and requires login with the verified new address. Password recovery and email-change activation are independent. See [email-change operations](docs/OPERATIONS.md#verified-email-change-activation-and-recovery).
 
 Private administrator credentials (P03-012) activate with ADMIN_AUTH_ENABLED independently of customer auth. Supply explicit session/context policy, bounded ADMIN_PASSWORD_RESET TTL/cooldown/response-floor values, protected proof keys and approved HTTPS ADMIN_ORIGIN. Bootstrap/migrate owned persistence first. The local/test `node --env-file=.env backend/tools/provision-admin.mjs` command reads one bounded `{name,email,password}` JSON object from a protected noninteractive stdin source; never put passwords in command arguments or shell history. It refuses existing administrators, customer upgrades, overwrites and deployed environments. Production provisioning requires the reviewed operator procedure. See [administrator operations](docs/OPERATIONS.md#private-administrator-provisioning-and-recovery).
+
+### Connected identity interfaces (P03-015)
+
+Storefront `/register`, `/login`, `/forgot-password`, `/reset-password`, `/account` and `/account/email-change`
+consume the existing customer API. Admin `/login`, `/forgot-password`, `/reset-password` and protected `/app/*`
+consume the separate administrator API; no administrator signup is provided. Account profile/address/password/email
+operations use server validation and session/CSRF enforcement. Management modules remain their owning future tasks.
+
+Set `NEXT_PUBLIC_API_ORIGIN` for the storefront and `VITE_API_ORIGIN` for admin in each frontend process or its
+own ignored `.env.local`, then rebuild. These are public origins only (for example `https://api.example.test`),
+never backend secrets. Missing/invalid values visibly disable the service. Keep exact API Origin/CORS allowlists
+and proof-link frontend origins aligned; browser cookies require the documented HTTPS topology. Root `.env` does
+not automatically configure frontend builds. See [operations](docs/OPERATIONS.md#p03-015-browser-identity-rollout).
+
+Focused real-API browser verification requires `npm run build --workspace backend`, both frontend builds with public
+origin `https://127.0.0.1:4443`, and `npm run test:ui -- tests/ui/authentication.spec.ts`. The harness owns temporary
+TLS certificates, an isolated MongoDB replica set and synthetic accounts, cleans them on exit, and sends no external
+email. Proofs pass privately through fixture IPC; authentication traces/screenshots-on-failure are disabled. Hosted
+CI sets these synthetic build origins explicitly. [Task evidence](docs/evidence/P03-015-identity-interfaces.md).

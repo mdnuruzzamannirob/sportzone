@@ -1960,3 +1960,10 @@ Any difference between this matrix and the route's own explicitly stated `201`/`
 
 **Registry maintenance:** Keep every method/path, response status, DTO and error profile aligned with OpenAPI, runtime
 validation and contract tests. Add an operation entry, DTO mapping and test coverage slot in the same change as a new route.
+
+
+### P03-015 frontend consumption
+
+Both app-owned identity clients validate allowlisted responses and use public build-time API origin configuration, credentials include, no-store and no-referrer. All browser mutations fetch a fresh correct-namespace CSRF context/session token first, then send one JSON mutation without automatic retry/replay. Authentication/identity changes cancel/clear private queries; no credential/proof/password is stored in query variables, browser storage or URLs beyond the incoming fragment. Requests from an obsolete identity generation cannot populate the new cache. UI guards never authorize API access.
+
+Existing endpoints/DTOs and backend business rules are unchanged. Registration verification and delivery-coverage discovery are not fabricated when their APIs remain unimplemented. Frontend dependencies are pinned with this consuming task; there is no new auth provider or shared UI package.
