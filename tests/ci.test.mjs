@@ -188,7 +188,7 @@ test('CI-11: configured failing command propagates to pipeline exit and report; 
   const child = spawnSync(process.execPath, ['scripts/ci.mjs'], {
     cwd: root,
     encoding: 'utf8',
-    env: { GITHUB_ACTIONS: 'true' },
+    env: { ...childEnv, GITHUB_ACTIONS: 'true' },
   })
   assert.equal(child.status, 1)
   assert.ok(

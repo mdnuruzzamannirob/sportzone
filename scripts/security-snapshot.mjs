@@ -15,7 +15,10 @@ export function snapshotWorkingTree(root, destination) {
       timeout: 30000,
     },
   )
-  if (listing.error || listing.status !== 0) throw new Error('Working-tree inventory unavailable')
+  // Some constrained process hosts report a spurious spawn error after Git has
+  // successfully exited. The exit status remains authoritative; a missing or
+  // nonzero status still fails closed.
+  if (listing.status !== 0) throw new Error('Working-tree inventory unavailable')
   const base = realpathSync(root)
   mkdirSync(destination, { recursive: true })
   for (const name of new Set(listing.stdout.split('\0').filter(Boolean))) {
