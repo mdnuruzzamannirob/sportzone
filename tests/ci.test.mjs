@@ -7,18 +7,16 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import test from 'node:test'
+import { baseChecks, inspectRepository, workspacePlan } from '../scripts/check-repository.mjs'
 import { ciPlan, scopeNames } from '../scripts/ci-plan.mjs'
 import { auditResult, safeFindings } from '../scripts/security-policy.mjs'
-import {
-  baseChecks,
-  inspectRepository,
-  workspacePlan,
-} from '../scripts/check-repository.mjs'
+import { snapshotWorkingTree } from '../scripts/security-snapshot.mjs'
 
 // Nested CLI runs must not inherit the parent test runner's IPC context.
 const childEnv = { ...process.env }
@@ -41,9 +39,10 @@ function fixture(t) {
     private: true,
     workspaces: ['storefront', 'admin', 'backend'],
     scripts: Object.fromEntries(
-      ['workspaces:check', 'lint', 'test:unit', 'test:ui', 'test:security'].map(
-        (c) => [c, 'node --version'],
-      ),
+      ['workspaces:check', 'lint', 'test:unit', 'test:ui', 'test:security'].map((c) => [
+        c,
+        'node --version',
+      ]),
     ),
   })
   const config = {}
@@ -71,10 +70,7 @@ function fixture(t) {
     },
   }
   const putFile = (file, data) =>
-    put(
-      file,
-      file === 'ci-workspaces.json' ? { version: 2, scopes: data } : data,
-    )
+    put(file, file === 'ci-workspaces.json' ? { version: 2, scopes: data } : data)
   putFile('ci-workspaces.json', scopes)
   assert.equal(
     spawnSync('git', [
@@ -138,9 +134,7 @@ test('CI-06: every configured extra suite is mandatory, never if-present', (t) =
   config.backend.state = 'active'
   config.backend.checks = [...baseChecks, 'test:integration']
   put('ci-workspaces.json', config)
-  const scripts = Object.fromEntries(
-    baseChecks.map((c) => [c, 'node --version']),
-  )
+  const scripts = Object.fromEntries(baseChecks.map((c) => [c, 'node --version']))
   put('backend/package.json', { name: 'backend', private: true, scripts })
   assert.throws(() => workspacePlan(root), /test:integration/)
   scripts['test:integration'] = 'npm run missing --if-present'
@@ -150,11 +144,7 @@ test('CI-06: every configured extra suite is mandatory, never if-present', (t) =
 test('CI-07: broken link or anchor fails repository lint', (t) => {
   const { root, put } = fixture(t)
   put('README.md', '# Hello\n\n[missing](missing.md)\n[anchor](#absent)\n')
-  assert.equal(
-    inspectRepository(root).errors.filter((e) => e.includes('broken local'))
-      .length,
-    2,
-  )
+  assert.equal(inspectRepository(root).errors.filter((e) => e.includes('broken local')).length, 2)
 })
 test('CI-08: valid duplicate heading anchors pass', (t) => {
   const { root, put } = fixture(t)
@@ -190,8 +180,7 @@ test('CI-11: configured failing command propagates to pipeline exit and report; 
     scripts: {
       'workspaces:check': 'node --version',
       lint: 'node -e "process.exit(7)"',
-      'test:unit':
-        "node -e \"require('node:fs').writeFileSync('should-not-exist','bad')\"",
+      'test:unit': "node -e \"require('node:fs').writeFileSync('should-not-exist','bad')\"",
       'test:ui': 'node --version',
       'test:security': 'node --version',
     },
@@ -206,14 +195,8 @@ test('CI-11: configured failing command propagates to pipeline exit and report; 
     child.stdout.includes('::error title=CI command failed::npm run lint'),
     JSON.stringify({ stdout: child.stdout, stderr: child.stderr }),
   )
-  assert.equal(
-    child.stderr.includes('Cannot identify source revision'),
-    false,
-    child.stderr,
-  )
-  const report = JSON.parse(
-    readFileSync(join(root, 'test-results/ci.json'), 'utf8'),
-  )
+  assert.equal(child.stderr.includes('Cannot identify source revision'), false, child.stderr)
+  const report = JSON.parse(readFileSync(join(root, 'test-results/ci.json'), 'utf8'))
   assert.equal(report.result, 'Failed')
   assert.ok(
     report.checks.length > 0,
@@ -232,19 +215,17 @@ test('CI-12: a failing workspace build propagates to pipeline failure', (t) => {
     private: true,
     workspaces: ['storefront', 'admin', 'backend'],
     scripts: Object.fromEntries(
-      ['workspaces:check', 'lint', 'test:unit', 'test:ui', 'test:security'].map(
-        (c) => [c, 'node --version'],
-      ),
+      ['workspaces:check', 'lint', 'test:unit', 'test:ui', 'test:security'].map((c) => [
+        c,
+        'node --version',
+      ]),
     ),
   })
   put('storefront/package.json', {
     name: 'storefront',
     private: true,
     scripts: Object.fromEntries(
-      baseChecks.map((c) => [
-        c,
-        c === 'build' ? 'node -e "process.exit(9)"' : 'node --version',
-      ]),
+      baseChecks.map((c) => [c, c === 'build' ? 'node -e "process.exit(9)"' : 'node --version']),
     ),
   })
   const child = spawnSync(process.execPath, ['scripts/ci.mjs'], {
@@ -252,13 +233,8 @@ test('CI-12: a failing workspace build propagates to pipeline failure', (t) => {
     encoding: 'utf8',
   })
   assert.equal(child.status, 1)
-  const report = JSON.parse(
-    readFileSync(join(root, 'test-results/ci.json'), 'utf8'),
-  )
-  assert.equal(
-    report.checks.at(-1).command,
-    'npm run build --workspace=storefront',
-  )
+  const report = JSON.parse(readFileSync(join(root, 'test-results/ci.json'), 'utf8'))
+  assert.equal(report.checks.at(-1).command, 'npm run build --workspace=storefront')
   assert.equal(report.checks.at(-1).result, 'Failed')
 })
 
@@ -294,15 +270,12 @@ test('CI-19: browser scope runs only its audit and reuses existing builds', (t) 
   const { root, put } = activeFixture(t)
   cpSync(resolve('scripts'), join(root, 'scripts'), { recursive: true })
   put('package-lock.json', { lockfileVersion: 3 })
-  const child = spawnSync(
-    process.execPath,
-    ['scripts/ci.mjs', '--scope=browser'],
-    { cwd: root, encoding: 'utf8' },
-  )
+  const child = spawnSync(process.execPath, ['scripts/ci.mjs', '--scope=browser'], {
+    cwd: root,
+    encoding: 'utf8',
+  })
   assert.equal(child.status, 0, child.stderr)
-  const report = JSON.parse(
-    readFileSync(join(root, 'test-results/ci/browser.json'), 'utf8'),
-  )
+  const report = JSON.parse(readFileSync(join(root, 'test-results/ci/browser.json'), 'utf8'))
   assert.equal(report.preparation, undefined)
   assert.deepEqual(
     report.checks.map((c) => c.command),
@@ -313,11 +286,10 @@ test('CI-20: unknown scope fails and preserves a failure report', (t) => {
   const { root, put } = activeFixture(t)
   cpSync(resolve('scripts'), join(root, 'scripts'), { recursive: true })
   put('package-lock.json', { lockfileVersion: 3 })
-  const child = spawnSync(
-    process.execPath,
-    ['scripts/ci.mjs', '--scope=missing'],
-    { cwd: root, encoding: 'utf8' },
-  )
+  const child = spawnSync(process.execPath, ['scripts/ci.mjs', '--scope=missing'], {
+    cwd: root,
+    encoding: 'utf8',
+  })
   assert.equal(child.status, 1)
   assert.equal(
     JSON.parse(readFileSync(join(root, 'test-results/ci.json'), 'utf8')).result,
@@ -331,8 +303,7 @@ test('CI-21: hosted checks use one install and one inventory invocation with pin
   assert.ok(content.includes('name: CI required result'))
   assert.ok(content.includes('fetch-depth: 0'))
   assert.ok(content.includes('if: ${{ always() }}'))
-  for (const match of content.matchAll(/uses: (\S+)/g))
-    assert.match(match[1], /@[a-f0-9]{40}$/)
+  for (const match of content.matchAll(/uses: (\S+)/g)) assert.match(match[1], /@[a-f0-9]{40}$/)
   for (const unsafe of [
     'paths:',
     'pull_request_target',
@@ -354,9 +325,7 @@ test('CI-22: security reports exclude secret/match/author/provider payload field
       Author: 'private',
     },
   ])
-  assert.deepEqual(findings, [
-    { rule: 'rule', file: 'file', line: 1, fingerprint: 'id' },
-  ])
+  assert.deepEqual(findings, [{ rule: 'rule', file: 'file', line: 1, fingerprint: 'id' }])
   assert.ok(!JSON.stringify(findings).includes('sensitive'))
   assert.throws(() => safeFindings({}), /invalid/)
 })
@@ -382,10 +351,7 @@ test('CI-23: high/critical direct and transitive advisories block without approv
   const audit = auditFixture()
   delete audit.vulnerabilities.direct
   assert.throws(() => auditResult(audit, []), /inconsistent|lineage/)
-  assert.throws(
-    () => auditResult({ ...auditFixture(), vulnerabilities: {} }, []),
-    /inconsistent/,
-  )
+  assert.throws(() => auditResult({ ...auditFixture(), vulnerabilities: {} }, []), /inconsistent/)
 })
 test('CI-24: dependency exceptions are specific, reviewed and expiring', () => {
   const exception = {
@@ -398,16 +364,48 @@ test('CI-24: dependency exceptions are specific, reviewed and expiring', () => {
   const now = new Date('2026-10-20T00:00:00Z')
   assert.equal(auditResult(auditFixture(), [exception], now).blocked.length, 0)
   assert.throws(
-    () =>
-      auditResult(
-        auditFixture(),
-        [{ ...exception, expires: '2020-01-01' }],
-        now,
-      ),
+    () => auditResult(auditFixture(), [{ ...exception, expires: '2020-01-01' }], now),
     /expired/,
   )
-  assert.throws(
-    () => auditResult(auditFixture(), [exception, exception], now),
-    /Duplicate/,
-  )
+  assert.throws(() => auditResult(auditFixture(), [exception, exception], now), /Duplicate/)
+})
+
+test('CI-25: working-tree scan excludes ignored local secrets but includes tracked ignored and new source', () => {
+  const root = mkdtempSync(join(tmpdir(), 'sportzone-scan-fixture-'))
+  const output = mkdtempSync(join(tmpdir(), 'sportzone-scan-output-'))
+  try {
+    assert.equal(spawn('git', ['init', '--quiet', root]).status, 0)
+    writeFileSync(join(root, '.gitignore'), '.env*\n')
+    writeFileSync(join(root, '.env'), 'synthetic local configuration')
+    writeFileSync(join(root, '.env.tracked'), 'synthetic tracked configuration')
+    assert.equal(spawn('git', ['add', '-f', '.env.tracked'], { cwd: root }).status, 0)
+    writeFileSync(join(root, '.env.tracked'), 'synthetic current working copy')
+    writeFileSync(join(root, 'new-source.ts'), 'export const synthetic = true')
+    snapshotWorkingTree(root, output)
+    assert.equal(existsSync(join(output, '.env')), false)
+    assert.equal(
+      readFileSync(join(output, '.env.tracked'), 'utf8'),
+      'synthetic current working copy',
+    )
+    assert.equal(existsSync(join(output, 'new-source.ts')), true)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+    rmSync(output, { recursive: true, force: true })
+  }
+})
+test('CI-26: working-tree scan never follows symlink secrets and fails closed without Git inventory', () => {
+  const root = mkdtempSync(join(tmpdir(), 'sportzone-scan-fixture-'))
+  const output = mkdtempSync(join(tmpdir(), 'sportzone-scan-output-'))
+  try {
+    assert.throws(() => snapshotWorkingTree(root, output), /inventory unavailable/)
+    assert.equal(spawn('git', ['init', '--quiet', root]).status, 0)
+    const outside = join(output, 'synthetic-private')
+    writeFileSync(outside, 'synthetic private material')
+    symlinkSync(outside, join(root, 'source-link'))
+    snapshotWorkingTree(root, output)
+    assert.equal(existsSync(join(output, 'source-link')), false)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+    rmSync(output, { recursive: true, force: true })
+  }
 })

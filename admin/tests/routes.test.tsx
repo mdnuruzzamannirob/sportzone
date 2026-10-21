@@ -13,6 +13,8 @@ let container: HTMLDivElement
 let root: Root
 
 beforeEach(() => {
+  // This suite intentionally exercises missing configuration, independent of CI build origins.
+  vi.stubEnv('VITE_API_ORIGIN', '')
   localStorage.clear()
   container = document.createElement('div')
   document.body.append(container)
@@ -22,6 +24,7 @@ afterEach(async () => {
   await act(() => root.unmount())
   container.remove()
   localStorage.clear()
+  vi.unstubAllEnvs()
 })
 async function visit(path: string) {
   window.history.replaceState(null, '', path)

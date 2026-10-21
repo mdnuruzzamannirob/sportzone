@@ -1678,6 +1678,16 @@ For owned local/test initial provisioning, pipe a protected secret-source JSON o
 Admin recovery uses the same one-batch email worker with admin activation/key/origin policy supplied. Only the admin-specific template is claimed by the enabled admin renderer. Admin links use the configured admin HTTPS origin; customer proof/cookie/context cannot substitute, including after a role change. Known provider rejection retains stable challenge/event identity; uncertainty stops automatic resend. Bounded cleanup, key rotation, restore invalidation and reconciliation follow the existing proof procedures. Successful reset revokes admin sessions, consumes the proof and creates no session. Repeat logout requires fresh admin context when the session is unavailable. Suspended/ineligible accounts remain inaccessible; recovery cannot reactivate or privilege-upgrade them. Live inbox, deployed ingress/browser/TLS, secret-store, audit rollout and milestone approvals remain separate gates.
 
 
+### P03-016 local security scan boundaries
+
+The working-tree secret scan copies Git-tracked files (including tracked files that now match ignore rules)
+and non-ignored untracked files into a private temporary snapshot. Ignored local environment/configuration,
+generated output and symlink targets are not copied. Git inventory failure or a file escaping the repository
+fails closed. The separate `git --all` history scan retains the existing pinned scanner, redaction and reviewed
+Gitleaks rules; tracked secrets must never be hidden by adding an ignore rule. Temporary snapshots are removed
+on completion. Keep the versioned `ci-security-exceptions.json` register present; `[]` means no dependency
+exceptions, and missing/invalid/expired records fail the check. The scan does not modify local secrets.
+
 ### P03-014 shared auth throttle rollout
 
 Before enabling the new identity build, run the existing explicit local/test identity bootstrap (`node --env-file=.env backend/tools/bootstrap-identity.mjs` after building). It adds only `authRateLimits` with a strict digest/count/expiry validator and the TTL index; existing identity records/validators are retained. Review the equivalent additive collection/index rollout separately for staging/production; the convenience tool refuses those environments. HTTP startup and admission only verify, never repair/implicitly create protection state. Missing/mismatched schema/index or unavailable MongoDB fails closed (generic 503), never falling back to process memory.

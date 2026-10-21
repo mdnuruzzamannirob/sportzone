@@ -107,7 +107,7 @@ The register contains 179 tasks across twelve phases, including seven engineerin
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
 | 01 — Requirements Finalization and Planning   |      17 |           0 |     0 |           0 |       0 |         0 |     17 |        0 |
 | 02 — UI/UX Design                             |      14 |           0 |     0 |           0 |       0 |         0 |     14 |        0 |
-| 03 — Authentication and Core Backend          |      20 |           3 |     0 |           0 |       0 |         0 |     17 |        0 |
+| 03 — Authentication and Core Backend          |      20 |           2 |     0 |           0 |       0 |         0 |     18 |        0 |
 | 04 — Product Catalog and Inventory            |      15 |          15 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      20 |          20 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -117,7 +117,7 @@ The register contains 179 tasks across twelve phases, including seven engineerin
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **179** |     **131** | **0** |       **0** |   **0** |     **0** | **48** |    **0** |
+| **Total**                                     | **179** |     **130** | **0** |       **0** |   **0** |     **0** | **49** |    **0** |
 
 ## 4. Milestone tracker
 
@@ -539,13 +539,13 @@ owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
   **Acceptance:** Loading, denied, suspended and expired states work; no sensitive information appears in shared caches.\
   **Evidence:** [Connected identity interfaces and real API browser verification](./evidence/P03-015-identity-interfaces.md). Customer registration/login/recovery, profile/address/password/email interfaces and separate admin login/recovery/session guard implemented. 165 frontend unit cases across affected runs, three-engine real API flows and both-theme accessibility/reflow checks passed; builds/smokes/static checks passed. Project owner explicitly reviewed and accepted through the popup on 21 October 2026: “Review করেছি—accept করছি, Done করো”. Existing registration-verification delivery and live deployment/sender gates remain explicitly unclaimed.
 
-- [ ] **P03-016 — Verify identity/security milestone**\
-  **Status:** `Not Started` · **Area:** Quality/security\
+- [x] **P03-016 — Verify identity/security milestone**\
+  **Status:** `Done` · **Area:** Quality/security · **Owner:** Codex\
   **Sources:** FR-01; FR-02; FR-21\
   **Depends on:** `P03-015`, `P03-014`, `P01-004`, `P01-010`, `P01-011`, `P01-012`, `P02-011`, `P01-013`, `P01-014`\
   **Deliverable:** Execute session separation, password reset replay, CSRF, Origin, ownership, suspension and account changes.\
   **Acceptance:** M1 foundation evidence includes CI, agent instructions, FR/NFR coverage protocol, responsive/accessibility foundation and identity/security checks before dependent milestone acceptance.\
-  **Evidence to attach:** M1 auth/API security report.
+  **Evidence:** [Current identity/security foundation report](./evidence/P03-016-identity-security.md). All required local checks accounted for across the initial inventory and scoped corrections; 527 combined unit/contract/tooling, 280 real MongoDB integration and 36 three-engine browser cases passed. Verified baseline CI/agent/FR-NFR/responsive-accessibility prerequisites; fixed admin test environment isolation and Git-aware working-tree scanning, restored empty exception register. Project owner explicitly reviewed and accepted through the popup on 21 October 2026: “Review করেছি—accept করছি, Done করো”; M1 remains Not Accepted and live/hosted gates are explicitly unclaimed.
 
 - [x] **P03-017 — Establish `DATABASE.md` identity and persistence contracts**\
   **Status:** `Done` · **Area:** Documentation/data · **Owner:** Codex\
@@ -1870,3 +1870,9 @@ Preserve IDs and dependency references; update phase totals and record milestone
 
 
 **21 October 2026 — P03-015 acceptance:** In Review → Done after explicit project-owner popup review/acceptance: “Review করেছি—accept করছি, Done করো”. Phase 03: 17/20 Done; overall: 48 Done, 131 Not Started, zero In Review. Existing verification retained; this status-only update does not repeat application tests. Live sender/deployment and M1 gates remain separate. [Acceptance](./evidence/P03-015-identity-interfaces.md#owner-acceptance).
+
+
+**21 October 2026 — P03-016:** Not Started → In Progress → In Review. Assembled M1 foundation/identity security evidence, executed the required local inventory and retained scoped corrections rather than rerunning unchanged passing checks. Real database/session/recovery/ownership and three-engine browser checks passed; no dependency exceptions. Independent task review pending; M1 remains Not Accepted. Overall: 48 Done, 1 In Review, 130 Not Started. [Evidence](./evidence/P03-016-identity-security.md).
+
+
+**21 October 2026 — P03-016 acceptance:** In Review → Done after explicit project-owner popup acceptance: “Review করেছি—accept করছি, Done করো”. Acceptance covers this verification task only; M1 remains Not Accepted. Phase 03: 18/20 Done; overall: 49 Done, 130 Not Started, zero In Review. Existing application/security results retained; only documentation checks repeated. [Acceptance](./evidence/P03-016-identity-security.md#owner-acceptance).

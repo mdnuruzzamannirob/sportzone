@@ -1514,3 +1514,17 @@ Playwright starts existing app servers. Fixture proof access uses private IPC ra
 No network traces, automatic failure screenshots, cookies, proof URLs or passwords may be retained in reports.
 Fixture failure messages are sanitized. Live email transport, deployed ingress and milestone gates are not proved.
 Use change-based local verification (§15.5); the hosted required inventory still includes these discovered cases.
+
+### P03-016 foundation identity/security verification
+
+[The M1 identity/security report](./evidence/P03-016-identity-security.md) reconciles accepted P01/P02 foundation
+records with current session, reset replay, CSRF/Origin, ownership, suspension and account-change assertions.
+Use real replica-set suites and actual TLS browser/API flows. Retain initial failures and corrected scoped runs;
+do not restart unchanged passing scopes merely to obtain a new single green summary. This report is local
+foundation evidence, not deployed/live-email acceptance or authorization to mark M1 accepted.
+
+CI-25/26 in `tests/ci.test.mjs` use isolated synthetic Git repositories to prove that working-tree security scans
+exclude ignored local configuration, include tracked ignored/current files and new source, avoid symlink targets,
+and fail closed without Git inventory. CI-22/23/24 retain safe-report and strict advisory/exception coverage.
+The full history scan and empty exception register remain mandatory. Current release/commerce OPV and acceptance
+slots stay Not Run until their owning feature/environment evidence exists.

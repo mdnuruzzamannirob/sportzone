@@ -8,6 +8,10 @@ This changelog tracks the documentation baseline. Application releases are recor
 
 ## Development changes — 21 October 2026
 
+- Recorded explicit project-owner popup acceptance of P03-016 and marked the task Done. Phase 03: 18/20 Done; overall: 49 Done, 130 Not Started. M1 approval remains separate and Not Accepted. [Acceptance](docs/evidence/P03-016-identity-security.md#owner-acceptance).
+
+- Verified P03-016 identity/security foundation across real MongoDB and three browser engines; reconciled M1 prerequisite evidence. Fixed inherited-environment admin test isolation, restored the empty dependency-exception register and made working-tree secret scanning Git-aware while preserving full history scanning and fail-closed policy. In Review; M1 and live/hosted gates remain separately unaccepted. [Evidence](docs/evidence/P03-016-identity-security.md).
+
 - Recorded explicit project-owner popup acceptance of P03-015 and marked it Done. Phase 03: 17/20 Done; overall: 48 Done, 131 Not Started. Live sender/deployment and milestone gates unchanged. [Acceptance](docs/evidence/P03-015-identity-interfaces.md#owner-acceptance).
 
 - Implemented P03-015 real customer/account and separate admin authentication interfaces with planned pinned Query/Zod, private-cache/identity fencing, fresh CSRF, hydration-safe forms and secret-safe proof handling. Focused real API/browser, unit, accessibility, build/smoke and static checks passed; In Review pending owner acceptance. No hosted/deployed or live email acceptance claimed. [Evidence](docs/evidence/P03-015-identity-interfaces.md).
