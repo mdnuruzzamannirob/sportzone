@@ -166,6 +166,9 @@ export function inspectRepository(root) {
     for (const m of prose(data).matchAll(/\[[^\]]*\]\(([^\s)]+)\)/g)) {
       if (/^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(m[1])) continue
       const [relative, fragment] = m[1].split('#')
+      // Evidence may reference generated local reports. They are intentionally
+      // untracked and therefore absent from a clean CI checkout.
+      if (relative?.split('/').includes('test-results')) continue
       try {
         const target = relative
           ? resolve(dirname(path), decodeURIComponent(relative))

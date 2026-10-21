@@ -151,6 +151,11 @@ test('CI-08: valid duplicate heading anchors pass', (t) => {
   put('README.md', '# Hello\n\n## Hello\n\n[one](#hello) [two](#hello-1)\n')
   assert.deepEqual(inspectRepository(root).errors, [])
 })
+test('CI-08a: generated local evidence artifacts do not fail a clean checkout', (t) => {
+  const { root, put } = fixture(t)
+  put('README.md', '# Evidence\n\n[local report](test-results/example/report.json)\n')
+  assert.deepEqual(inspectRepository(root).errors, [])
+})
 test('CI-09: syntax, whitespace and malformed JSON are failures', (t) => {
   const { root, put } = fixture(t)
   put('bad.mjs', 'const = ;\n')
