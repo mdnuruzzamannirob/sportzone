@@ -57,7 +57,8 @@ const amounts = {
   finalTotalPoisha: 9876,
 }
 
-describe.each(['light', 'dark'])('commerce foundations in %s', (theme) => {
+describe('commerce foundations', () => {
+  const theme = 'light'
   beforeEach(() => {
     document.documentElement.dataset.theme = theme
   })

@@ -8,7 +8,7 @@
 ## Delivered scope
 
 Implemented [Design §§2.3–2.5](../DESIGN.md#23-typography) for both applications through
-[shared foundation CSS](../../styles/foundation.css), [licensed fonts](../../styles/fonts/README.md) and
+shared foundation CSS (historical `styles/foundation.css`, retired by P02-014), licensed fonts (historical `styles/fonts/README.md`, retired by P02-014) and
 [a pure BDT formatter](../../shared/format-bdt.ts). No backend calculation, API/database contract or authentication behavior
 changed. Both app-local `src/lib/format-bdt.ts` modules expose the same implementation; no new workspace or runtime package
 was introduced. Existing color tokens and accepted evidence remain intact.
@@ -33,7 +33,7 @@ The formatter does not accept decimal BDT, calculate totals, allocate discounts 
 
 All three source packages are Fontsource variable version **5.3.0**: Inter, Plus Jakarta Sans and Noto Sans Bengali.
 Downloaded with exact `npm pack` versions; only required normal-weight Latin/Bengali files and original licenses were
-vendored. [Asset manifest](../../styles/fonts/assets.json) records sizes and SHA-256 hashes. Original package unicode
+vendored. Asset manifest (historical `styles/fonts/assets.json`, retired by P02-014) records sizes and SHA-256 hashes. Original package unicode
 ranges are retained. Variable files cover the declared weights without separate files per weight.
 
 Setup references: [Fontsource installation](https://fontsource.org/docs/getting-started/install),

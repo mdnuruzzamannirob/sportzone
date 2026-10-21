@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 17 October 2026
+**Updated:** 20 October 2026
 
 **Project:** Single-store sports e-commerce platform for Bangladesh (BDT)\
 **Scope:** Repository-root instructions for coding agents working in `sportzone/`\
@@ -94,6 +94,8 @@ Inspect the live repository before using paths or commands from this target layo
 
 **MUST NOT** import Mongoose models or backend runtime services into either frontend. Shared pure types/contracts are optional only when justified by real duplication; do not introduce a shared UI library or new service without a demonstrated need.
 
+**Source organization:** Follow [Architecture §§4–6](docs/ARCHITECTURE.md#4-project-structure) and the implementation tasks in Plan §3.6. Frontends use feature-owned API/components/hooks/schemas/types with thin routes; backend modules use `<entity>.model/validation/service/controller/routes/types.ts` as needed. Current paths remain valid until their refactor verifies the move. Do not create empty template files, duplicate models or infer API namespaces from folders. Preserve pure `shared/` utilities and HeroUI foundations. Shared-collection access follows Database §4.2's narrow capabilities. Monorepo and CI changes preserve one locked dependency graph, one check inventory and fail-closed required statuses under Operations §5.5; remote settings and deployment readiness require actual evidence.
+
 ## 4. Agent workflow & task execution
 
 Apply this sequence to each assigned change:
@@ -123,6 +125,8 @@ For higher-risk mutations, write state-transition and concurrency tests before e
 
 - Use TypeScript types and narrow interfaces at module boundaries; avoid `any`, unsafe casts and `@ts-ignore` that conceal errors.
 - Match the repository’s actual linter, formatter, naming and import conventions. Do not invent tools, versions or commands.
+- Run `npm run lint:boundaries` when source imports change. Keep the scoped `format:check` baseline passing; add application files during their owning refactor rather than bulk-formatting unrelated code.
+- Keep Biome, TypeScript, Vitest and existing browser tooling. Any refactor moving tests/config/tool entry points must update imports, test discovery and CI inventory together; retain NodeNext `.js` backend import specifiers.
 - Keep code cohesive and explicit; validate external input; handle failures without leaking internal details.
 - Keep side effects in appropriately owned services; prefer pure calculations for monetary and business rules.
 - Do not introduce packages, generated code, shared abstractions or broad refactors without task-level justification.
@@ -135,13 +139,15 @@ For higher-risk mutations, write state-transition and concurrency tests before e
 
 **Admin (`admin/`):** Follow React/Vite client-side routing and API-backed management forms. Enforce permission and ownership again on every backend mutation; route hiding is only a usability measure.
 
-**UI implementation convention:** Use HeroUI v3 for new reusable interactive controls in both apps, with app-owned defaults in `src/components/ui/`. Keep components needed only by one feature with that feature; keep route files focused on composition and navigation. Import HeroUI directly when no repeated project defaults are needed. Existing Appearance controls, disclosures, links, alerts and panels use HeroUI. Preserve Next.js/React Router navigation through app-owned Link adapters. Native headings, text and page landmarks remain semantic HTML; use HeroUI for the corresponding interactive or visual primitive rather than maintaining a second custom implementation. Do not add another component library, theme store or a generic wrapper without a concrete need.
+Use `components/layout/` for shells, `components/ui/` for HeroUI defaults, and owning features for feature-only views. Keep reusable commerce/management compositions and existing theme behavior. Introduce target TanStack Query/frontend Zod only with the actual API/form integration task, pinned dependencies and checks; documentation does not establish installation. Clear private caches on identity change, enforce server/client import boundaries and prohibit automatic financial-mutation retries. Route groups and UI guards do not authorize data access.
 
-**Design responsibility:** The project owner delegates UI design to the implementing agent within `docs/DESIGN.md`. Figma is not a prerequisite. Use the documented monochrome/blue direction, typography, spacing and component variants consistently; document meaningful design changes in the owning specification. Present working screens for feedback and incorporate owner corrections. Design delegation does not waive task acceptance or authorize changes to product/security rules. Treat browser visual review separately from lint, builds and DOM tests; never claim visual acceptance from a CI pass.
+**UI implementation convention:** Use HeroUI v3 for new reusable interactive controls in both apps, with app-owned defaults in `src/components/ui/`. Keep components needed only by one feature with that feature; keep route files focused on composition and navigation. Import HeroUI only inside the owning app’s `src/components/ui/`; all routes, features, layouts and reusable compositions consume that boundary. Preserve native generic and compound APIs through thin UI facades; put theme/color/font/style entry points in the same UI directory. Existing Appearance controls, disclosures, links, alerts and panels use HeroUI. Preserve Next.js/React Router navigation through app-owned Link adapters. Native headings, text and page landmarks remain semantic HTML; use HeroUI for the corresponding interactive or visual primitive rather than maintaining a second custom implementation. Do not add another component library, theme store or a generic wrapper without a concrete need.
+
+**Design responsibility:** The project owner delegates UI design to the implementing agent within `docs/DESIGN.md`. Figma is not a prerequisite. Use the documented native HeroUI default design system, typography, spacing and component variants consistently; document meaningful design changes in the owning specification. Present working screens for feedback and incorporate owner corrections. Design delegation does not waive task acceptance or authorize changes to product/security rules. Treat browser visual review separately from lint, builds and DOM tests; never claim visual acceptance from a CI pass.
 
 **Both UIs MUST:**
 
-- Use [Design](docs/DESIGN.md) semantic tokens rather than ad-hoc brand colors. Primary blue `#2563EB` and white button text are the same in light and dark mode; neutrals remain grayscale.
+- Use HeroUI’s native semantic tokens and default light/dark themes under [Design](docs/DESIGN.md). Do not add a custom palette, font stack or global component skin. Changes to UI defaults belong in each app’s `components/ui/`.
 - Support keyboard use, focus visibility, accessible labels/errors, reduced motion and WCAG 2.2 AA-targeted contrast.
 - Preserve input on failed submissions; render correct pending, success, disabled, empty and retry states.
 - Never imply order, payment or refund success before confirmed backend state; never trust client-calculated totals.
@@ -195,6 +201,8 @@ Verification depends on the change type. Consult [Testing](docs/TESTING.md) for 
 | Checkout/financial | Replays, duplicate callbacks/jobs, timeouts, partial/excess/mismatched payments, refund caps and recovery |
 | Configuration/operations | Environment safety, deploy/rollback compatibility, monitoring and affected recovery runbooks |
 | Documentation | Correct references, Markdown structure/links, consistency with related contracts |
+
+Use change-based local verification in [Testing §15.5](docs/TESTING.md#155-change-based-local-verification). Select affected checks before running them; reuse valid results for unchanged inputs. After a localized fix, rerun the failed suite and affected consumers rather than restarting the whole pipeline. Documentation-only work needs repository documentation checks, not application builds/tests. Full CI belongs to hosted integration/release or justified cross-project changes. Do not repeat settled architecture research without a concrete unresolved question.
 
 Execute repository scripts **only after confirming their actual names** in `package.json` and CI. Do not imply planned scripts/tests already exist. Record command, environment, observed result and artifact link. Use these results honestly: **Passed**, **Failed**, **Not Run** (including unavailable infrastructure), or **Blocked**. A mock-only check or static review is not real provider, concurrency, deployment or production acceptance.
 

@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 17 October 2026
+**Updated:** 21 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -259,6 +259,32 @@ flowchart LR
 
 Both controllers and scheduled jobs invoke shared backend **domain services**, never each other's HTTP endpoint. Cross-module transaction coordination remains inside backend-controlled services (Architecture §§3, 6).
 
+**Implementation ownership:** The following maps domain labels to concrete modules under Architecture §6.1. Source-boundary changes preserve schemas, indexes and collection identities.
+
+| Records | Canonical registration / permitted operations |
+| --- | --- |
+| `users` | Auth owns the single schema/index/validator registration and credential/security writes; customers uses narrow public profile/address operations. Guest-order access remains independently scoped |
+| `sessions`, `authChallenges`, `browserContexts`, `authRateLimits` | Auth; guest-access uses the approved scoped guest boundary |
+| `products`, `productVariants` | Products registers schemas; inventory receives a stock-only persistence capability for variant counters. Product updates cannot overwrite counters |
+| `categories` | Categories |
+| `carts`, `wishlists` | Carts, wishlists respectively |
+| `coupons`, `couponRedemptions`, `couponCustomerCounters` | Coupons (the promotions domain) |
+| `deliveryZones`, `deliveryCharges` | Delivery owns the existing coverage reader; future charge management remains its feature task |
+| `mediaAssets` | Media owns registration, scoped attachment/reference-ledger/cleanup operations; products/categories/returns/settings coordinate attachments through that boundary |
+| `storeSettings`, `policyDocuments` | Settings |
+| Other records | Retain the domain ownership and invariants specified in their collection sections |
+
+P03-013 reuses the existing identity models through `auth/authorization.service.ts`: transaction-local credential/principal revalidation, with conditional monotonic `updatedAt` writes for protected mutations to serialize with revocation. No expiry extension, new field/collection/index or migration is introduced. Profile/address reads revalidate without timestamp writes. This capability stays inside auth; callers do not gain raw models for other domains.
+
+P03-020 implements the shared-user boundary through auth-owned `customer-account.service.ts`: customers receives
+only detached profile/address/deletion-intake data and transaction-scoped save/view operations. Auth revalidates
+and fences the customer credential/principal, and persists only name, phone, addresses and new verified deletion
+intake. Supplied email/role/status/credential/security fields are never written. Existing deletion review metadata
+is preserved; read-only or expired scopes cannot save. Customers owns validation/coverage and profile operations,
+with no foreign user model or duplicated schema. The coordinating transaction is retained across the capability.
+
+Composition wires narrow public operations, never a second mutable schema for the same collection or unrestricted foreign-model access. Public capabilities accept the coordinating transaction session; participants must not start nested transactions or parallel operations in the same session. Preserve ObjectIds, snapshots, integer-poisha arithmetic, unique identities, BSON validation and all existing indexes. Raw model, validator and bootstrap path moves require updated tooling and parity tests; a filename change is not permission to change durable data or mark a migration executed.
+
 ### 4.3 Atomic allocation and verified-payment flow
 
 ```mermaid
@@ -495,8 +521,8 @@ change, not permission to drop these indexes or create business collections duri
 ### 5.7 Identity implementation and rollout gates
 
 P03-017 established this contract. P03-004 now supplies connection-owned User, Session, AuthChallenge and BrowserContext
-models in `backend/src/modules/auth/models.ts`, with collection-level validators and ten named indexes in
-`collection-validators.ts`. Private verifiers/envelopes are excluded from default queries. Shared `backend/src/db/`
+models in `backend/src/modules/auth/auth.model.ts`, with collection-level validators and ten named indexes in
+`identity.persistence.ts`. Private verifiers/envelopes are excluded from default queries. Shared `backend/src/db/`
 helpers still own connection/schema/index/transaction mechanics; index verification accepts only its required
 `diffIndexes` interface so inferred strict models need no type casts.
 
@@ -539,6 +565,14 @@ Before enabling an identity writer, apply §15.1 with a migration ID and indepen
 Retention remains §14.2/Operations OP-PRIV-01. Expired envelopes are stripped independently of TTL; legally held records
 and immutable order/collection/refund history survive account review. Every refund obligation still references verified
 source collections and preserves classification/unit caps (§§8.6, 9, 12.5); identity deletion cannot weaken those rules.
+
+### 5.8 `authRateLimits` — shared ephemeral auth controls (P03-014)
+
+Auth owns `authRateLimits`, an ephemeral shared security-control collection. `_id` is a 64-character HMAC hex digest including audience, group, subject and fixed-window start; `count` is an integer 1–61, saturated at the policy ceiling plus one; `expiresAt` is the fixed window end. No raw email, network address, cookie, token, password or account-existence result is stored. Required indexes are the unique built-in `_id` and `auth_rate_limits_expiry` on `{expiresAt:1}` with TTL 0. Strict BSON validation rejects unknown fields. TTL is cleanup only: the window-bound key determines eligibility before deletion. Atomic single-document increments use majority write concern; sequential independent network/group/target checks may consume earlier quota when a later check denies, never grant extra quota through rollback/refund.
+
+Explicit identity bootstrap adds this collection/index without modifying existing identity collections or records. Existing mismatched validators require review; HTTP startup and admission verify schema/index readiness without bootstrapping; missing or mismatched protection state fails closed. No legal/account audit history is TTL-deleted by this change. No down migration removes records or alters session revocation.
+
+---
 
 ## 6. Catalog and shopping collections
 
@@ -845,7 +879,7 @@ original rule ID and amount. If no precisely eligible active rule exists, **fail
 charge. Snapshot selected version/charge/deadline **rule basis**, not a confirmation-relative absolute date. Effective
 windows and legal deadlines are operator-approved, not invented.
 
-P03-008 uses a settings-owned read-only delivery coverage boundary for saved-address eligibility against these existing
+The delivery-owned read-only coverage boundary checks saved-address eligibility against these existing
 collections. It neither seeds delivery data nor creates/changes delivery indexes or master records. Its transaction reads
 exact eligible coverage before an eligible district wildcard; multiple active exact candidates or an inactive selected
 zone fail closed. P06-001 still owns validated delivery masters, index rollout, global revision serialization and admin

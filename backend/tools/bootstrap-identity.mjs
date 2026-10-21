@@ -1,8 +1,8 @@
 import { loadEnvironment } from '../dist/config/environment.js'
 import { openDatabase } from '../dist/db/connection.js'
-import { createIdentityModels } from '../dist/modules/auth/models.js'
-import { initializeIdentityPersistence } from '../dist/modules/auth/collection-validators.js'
-import { createRegistrationNotifications } from '../dist/modules/notifications/registration.js'
+import { createIdentityModels } from '../dist/modules/auth/auth.model.js'
+import { initializeIdentityPersistence } from '../dist/modules/auth/identity.persistence.js'
+import { createRegistrationNotifications } from '../dist/modules/notifications/notification.service.js'
 
 // Explicit additive local/test bootstrap. Never run collection/index rollout during HTTP startup.
 let connection

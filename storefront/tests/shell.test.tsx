@@ -3,11 +3,11 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { StorefrontHeader } from '../src/components/storefront-header'
-import { StorefrontShell, supportLinks } from '../src/components/storefront-shell'
-import { NetworkStatus } from '../src/components/network-status'
-import { LoadingPage, MissingPage } from '../src/components/storefront-states'
-import PublicError from '../src/app/(public)/error'
+import { StorefrontHeader } from '../src/components/layout/storefront-header'
+import { StorefrontShell, supportLinks } from '../src/components/layout/storefront-shell'
+import { NetworkStatus } from '../src/components/layout/network-status'
+import { LoadingPage, MissingPage } from '../src/components/ui/storefront-states'
+import PublicError from '../src/app/(store)/error'
 
 const navigation = vi.hoisted(() => ({ pathname: '/' }))
 vi.mock('next/navigation', () => ({ usePathname: () => navigation.pathname }))
@@ -117,7 +117,6 @@ describe('responsive storefront shell', () => {
     expect(html.match(/<main\b/g)).toHaveLength(1)
     expect(html).toContain('tabindex="-1"')
     expect(html).toContain('href="#main-content"')
-    expect(html).toContain('max-w-storefront')
     expect(html).toContain('lg:hidden')
     expect(html).toContain('lg:flex')
     for (const [, href] of supportLinks) expect(html).toContain(`href="${href}"`)

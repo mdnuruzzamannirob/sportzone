@@ -1,10 +1,10 @@
 'use client'
 
-import { Chip } from '@heroui/react'
+import { Chip } from '../ui/index'
 
 const tones = {
-  neutral: 'text-text',
-  info: 'text-info-text',
+  neutral: 'text-foreground',
+  info: 'text-accent',
   success: 'text-success',
   warning: 'text-warning',
   danger: 'text-danger',

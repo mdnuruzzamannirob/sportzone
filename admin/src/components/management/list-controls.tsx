@@ -1,4 +1,4 @@
-import { Pagination as HeroPagination } from '@heroui/react'
+import { Pagination as HeroPagination } from '../ui/index'
 import { type ReactNode, useId } from 'react'
 import { Button } from '../ui/button'
 import { TextInput } from '../ui/fields'
@@ -86,7 +86,7 @@ export function ListPagination({
       <HeroPagination.Content>
         <HeroPagination.Item>
           <HeroPagination.Previous
-            className="min-h-control min-w-control"
+
             isDisabled={!previous}
             onPress={() => {
               if (previous) onPageChange(page - 1)
@@ -97,7 +97,7 @@ export function ListPagination({
         </HeroPagination.Item>
         <HeroPagination.Item>
           <HeroPagination.Next
-            className="min-h-control min-w-control"
+
             isDisabled={!next}
             onPress={() => {
               if (next) onPageChange(page + 1)

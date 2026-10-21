@@ -1,4 +1,4 @@
-import { Input } from '@heroui/react'
+import { FileInput } from '../ui/file-input'
 import { useEffect, useId, useState } from 'react'
 import { Button } from '../ui/button'
 import { Notice } from '../ui/feedback'
@@ -57,18 +57,15 @@ export function FileUpload({
       <label htmlFor={id} className="block font-medium">
         {label}
       </label>
-      <p id={`${id}-help`} className="break-words text-sm text-text-muted">
-        Types: {acceptedTypes.join(', ')}. Maximum {maxBytes} bytes. Files are checked
-        again by the server.
+      <p id={`${id}-help`} className="break-words text-sm text-muted">
+        {acceptedTypes.map(type => type.split('/')[1].toUpperCase()).join(', ')} · Up to {Math.round(maxBytes / 1024)} KB
       </p>
-      <Input
+      <FileInput
         id={id}
-        type="file"
         accept={acceptedTypes.join(',')}
         disabled={disabled}
         aria-describedby={`${id}-help${issue ? ` ${id}-error` : ''}`}
         aria-invalid={!!issue}
-        className="block min-h-control w-full min-w-0 rounded-control border border-control-border p-2 focus-visible:outline-2 focus-visible:outline-focus"
         onChange={(event) => {
           const candidate = event.currentTarget.files?.[0]
           event.currentTarget.value = ''
@@ -93,7 +90,7 @@ export function FileUpload({
             <img
               src={preview}
               alt={`Local preview of ${file.name}`}
-              className="h-32 w-32 rounded-card object-contain"
+              className="h-32 w-32 object-contain"
             />
           )}
           <p className="break-all">

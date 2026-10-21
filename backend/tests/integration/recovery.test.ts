@@ -1,4 +1,4 @@
-import { composeCustomerRoutes } from '../../src/modules/auth/composition.js'
+import { composeCustomerRoutes } from '../../src/modules/auth/auth.composition.js'
 import { loadEnvironment } from '../../src/config/environment.js'
 import { testEnvironment } from '../support/environment.js'
 import { randomBytes, randomUUID } from 'node:crypto'
@@ -8,29 +8,29 @@ import request from 'supertest'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createApp } from '../../src/app.js'
 import { inTransaction } from '../../src/db/transaction.js'
-import { createIdentityModels } from '../../src/modules/auth/models.js'
-import { initializeIdentityPersistence } from '../../src/modules/auth/collection-validators.js'
-import { createBrowserSecurity } from '../../src/modules/auth/browser-security.js'
-import { browserSecurityRoutes } from '../../src/modules/auth/browser-routes.js'
-import { createSessionService } from '../../src/modules/auth/sessions.js'
-import { createRecoveryService } from '../../src/modules/auth/recovery.js'
-import { recoveryRoutes } from '../../src/modules/auth/recovery-routes.js'
+import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
+import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
+import { createBrowserSecurity } from '../../src/modules/auth/browser-security.service.js'
+import { browserSecurityRoutes } from '../../src/modules/auth/browser-security.routes.js'
+import { createSessionService } from '../../src/modules/auth/session.service.js'
+import { createRecoveryService } from '../../src/modules/auth/password-recovery.service.js'
+import { recoveryRoutes } from '../../src/modules/auth/password-recovery.routes.js'
 import {
   createProofEncryption,
   proofHash,
-} from '../../src/modules/auth/proof-envelope.js'
-import { createResetDelivery } from '../../src/modules/auth/proof-delivery.js'
+} from '../../src/modules/auth/proof.crypto.js'
+import { createResetDelivery } from '../../src/modules/auth/proof-delivery.service.js'
 import {
   hashPassword,
   verifyPassword,
-} from '../../src/modules/auth/passwords.js'
+} from '../../src/modules/auth/password.service.js'
 import {
   createRegistrationNotifications,
   foundationNotificationValidator,
   registrationNotificationValidator,
-} from '../../src/modules/notifications/registration.js'
-import { createNotificationWorker } from '../../src/modules/notifications/worker.js'
-import type { EmailMessage } from '../../src/modules/notifications/email.js'
+} from '../../src/modules/notifications/notification.service.js'
+import { createNotificationWorker } from '../../src/modules/notifications/notification-worker.service.js'
+import type { EmailMessage } from '../../src/modules/notifications/notification.types.js'
 import { isolatedDatabase } from '../support/database.js'
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
 let models: ReturnType<typeof createIdentityModels>

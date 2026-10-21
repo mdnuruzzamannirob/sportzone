@@ -1,6 +1,6 @@
 'use client'
 
-import { Surface } from '@heroui/react'
+import { Surface } from '../ui/index'
 import Image from 'next/image'
 import { useState } from 'react'
 
@@ -15,7 +15,7 @@ export function ProductImage({
 }) {
   const [failed, setFailed] = useState(false)
   return (
-    <Surface className="aspect-square w-full overflow-hidden rounded-card">
+    <Surface className="aspect-square w-full overflow-hidden ">
       {image && !failed ? (
         <Image
           src={image.src}
@@ -27,7 +27,7 @@ export function ProductImage({
           onError={() => setFailed(true)}
         />
       ) : (
-        <div className="flex h-full min-h-24 items-center justify-center p-4 text-center text-sm text-text-muted">
+        <div className="flex h-full min-h-24 items-center justify-center p-4 text-center text-sm text-muted">
           Image unavailable
         </div>
       )}

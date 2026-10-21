@@ -44,7 +44,7 @@ export function GuardedAction({
   return (
     <div className="space-y-3">
       {!eligible && (
-        <p className="text-sm text-text-muted">
+        <p className="text-sm text-muted">
           {unavailableReason || 'This action is currently unavailable.'}
         </p>
       )}
@@ -69,7 +69,7 @@ export function GuardedAction({
           className="space-y-4"
         >
           {context}
-          <p className="text-sm text-text-muted">
+          <p className="text-sm text-muted">
             Review the details before confirming. The result is shown only after server
             confirmation.
           </p>

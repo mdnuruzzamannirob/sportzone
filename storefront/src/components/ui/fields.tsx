@@ -15,7 +15,7 @@ import {
   type TextFieldProps,
   type CheckboxProps,
   type RadioGroupProps,
-} from '@heroui/react'
+} from './primitives'
 
 type FieldContent = { label: string; description?: string; error?: string }
 type TextProps = Omit<TextFieldProps, 'children' | 'className'> &
@@ -37,13 +37,12 @@ export function TextInput({
       isInvalid={error ? true : props.isInvalid}
       className="w-full"
     >
-      <Label>
+      <Label className={error ? 'text-danger-soft-foreground' : undefined}>
         {label}
-        {isRequired && ' (required)'}
       </Label>
       {multiline ? <TextArea rows={rows} /> : <Input />}
       {description && <Description>{description}</Description>}
-      <FieldError>{error}</FieldError>
+      <FieldError className="text-danger-soft-foreground">{error}</FieldError>
     </TextField>
   )
 }
@@ -80,16 +79,15 @@ export function SelectField({
       }}
       className="w-full"
     >
-      <Label>
+      <Label className={error ? 'text-danger-soft-foreground' : undefined}>
         {label}
-        {isRequired && ' (required)'}
       </Label>
       <Select.Trigger>
         <Select.Value />
         <Select.Indicator />
       </Select.Trigger>
       {description && <Description>{description}</Description>}
-      <FieldError>{error}</FieldError>
+      <FieldError className="text-danger-soft-foreground">{error}</FieldError>
       <Select.Popover>
         <ListBox>
           {options.map((option) => (
@@ -112,17 +110,16 @@ export function CheckboxField({
 }: Omit<CheckboxProps, 'children' | 'className'> & FieldContent) {
   return (
     <Checkbox {...props} isInvalid={error ? true : props.isInvalid}>
-      <Checkbox.Content className="min-h-control">
+      <Checkbox.Content>
         <Checkbox.Control>
           <Checkbox.Indicator />
         </Checkbox.Control>
-        <Label>
+        <Label className={error ? 'text-danger-soft-foreground' : undefined}>
           {label}
-          {props.isRequired && ' (required)'}
         </Label>
       </Checkbox.Content>
       {description && <Description>{description}</Description>}
-      <FieldError>{error}</FieldError>
+      <FieldError className="text-danger-soft-foreground">{error}</FieldError>
     </Checkbox>
   )
 }
@@ -137,22 +134,21 @@ export function RadioChoices({
   FieldContent & { options: readonly SelectOption[] }) {
   return (
     <RadioGroup {...props} isInvalid={error ? true : props.isInvalid}>
-      <Label>
+      <Label className={error ? 'text-danger-soft-foreground' : undefined}>
         {label}
-        {props.isRequired && ' (required)'}
       </Label>
       {options.map((option) => (
         <Radio key={option.value} value={option.value} isDisabled={option.disabled}>
-          <Radio.Content className="min-h-control">
+          <Radio.Content>
             <Radio.Control>
               <Radio.Indicator />
             </Radio.Control>
-            <Label>{option.label}</Label>
+            <Label className={error ? 'text-danger-soft-foreground' : undefined}>{option.label}</Label>
           </Radio.Content>
         </Radio>
       ))}
       {description && <Description>{description}</Description>}
-      <FieldError>{error}</FieldError>
+      <FieldError className="text-danger-soft-foreground">{error}</FieldError>
     </RadioGroup>
   )
 }

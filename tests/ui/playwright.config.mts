@@ -40,7 +40,7 @@ export default defineConfig({
     },
     {
       command: 'node node_modules/vite/bin/vite.js --config tests/ui/vite.config.mts',
-      url: 'http://127.0.0.1:5180',
+      url: 'http://127.0.0.1:5180/showcase.html',
       cwd,
       reuseExistingServer: false,
     },

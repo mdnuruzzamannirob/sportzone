@@ -1,3 +1,5 @@
+import { validateSessionOptions } from '../modules/auth/session.service.js'
+import { validateBrowserSecurityOptions } from '../modules/auth/browser-security.service.js'
 import {
   loadRecoveryOptions,
   loadEmailChangeOptions,
@@ -100,23 +102,6 @@ const schema = z
           path: ['PASSWORD_RECOVERY_ENABLED'],
           message: 'Customer authentication required',
         })
-      try {
-        loadRecoveryOptions({
-          ...value,
-          PORT: String(value.PORT),
-          CUSTOMER_AUTH_ENABLED: String(value.CUSTOMER_AUTH_ENABLED),
-          ADMIN_AUTH_ENABLED: String(value.ADMIN_AUTH_ENABLED),
-          PASSWORD_RECOVERY_ENABLED: 'true',
-          EMAIL_CHANGE_ENABLED: String(value.EMAIL_CHANGE_ENABLED),
-          CORS_ALLOWED_ORIGINS: value.CORS_ALLOWED_ORIGINS.join(','),
-        })
-      } catch {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['password_recovery_configuration'],
-          message: 'Explicit secure recovery configuration required',
-        })
-      }
     }
     if (value.EMAIL_CHANGE_ENABLED) {
       if (!value.CUSTOMER_AUTH_ENABLED)
@@ -125,42 +110,6 @@ const schema = z
           path: ['EMAIL_CHANGE_ENABLED'],
           message: 'Customer authentication required',
         })
-      try {
-        loadEmailChangeOptions({
-          ...value,
-          PORT: String(value.PORT),
-          CUSTOMER_AUTH_ENABLED: String(value.CUSTOMER_AUTH_ENABLED),
-          ADMIN_AUTH_ENABLED: String(value.ADMIN_AUTH_ENABLED),
-          PASSWORD_RECOVERY_ENABLED: String(value.PASSWORD_RECOVERY_ENABLED),
-          EMAIL_CHANGE_ENABLED: 'true',
-          CORS_ALLOWED_ORIGINS: value.CORS_ALLOWED_ORIGINS.join(','),
-        })
-      } catch {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['email_change_configuration'],
-          message: 'Explicit secure email-change configuration required',
-        })
-      }
-    }
-    if (value.ADMIN_AUTH_ENABLED) {
-      try {
-        loadAdminRecoveryOptions({
-          ...value,
-          PORT: String(value.PORT),
-          CUSTOMER_AUTH_ENABLED: String(value.CUSTOMER_AUTH_ENABLED),
-          PASSWORD_RECOVERY_ENABLED: String(value.PASSWORD_RECOVERY_ENABLED),
-          EMAIL_CHANGE_ENABLED: String(value.EMAIL_CHANGE_ENABLED),
-          ADMIN_AUTH_ENABLED: 'true',
-          CORS_ALLOWED_ORIGINS: value.CORS_ALLOWED_ORIGINS.join(','),
-        })
-      } catch {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['admin_recovery_configuration'],
-          message: 'Explicit secure administrator configuration required',
-        })
-      }
     }
     if (value.CUSTOMER_AUTH_ENABLED || value.ADMIN_AUTH_ENABLED) {
       for (const field of [
@@ -240,7 +189,16 @@ const schema = z
       }
     }
   })
-export type RuntimeConfig = Readonly<z.output<typeof schema>>
+export type IdentityConfig = Readonly<{
+  sessions: ReturnType<typeof validateSessionOptions>
+  browser: ReturnType<typeof validateBrowserSecurityOptions>
+  recovery?: ReturnType<typeof loadRecoveryOptions>
+  emailChange?: ReturnType<typeof loadEmailChangeOptions>
+  adminRecovery?: ReturnType<typeof loadAdminRecoveryOptions>
+}>
+export type RuntimeConfig = Readonly<
+  z.output<typeof schema> & { identity?: IdentityConfig }
+>
 export function loadEnvironment(environment: NodeJS.ProcessEnv): RuntimeConfig {
   const parsed = schema.safeParse(environment)
   if (!parsed.success)
@@ -253,5 +211,52 @@ export function loadEnvironment(environment: NodeJS.ProcessEnv): RuntimeConfig {
         ),
       ].sort(),
     )
-  return Object.freeze(parsed.data)
+  const config = parsed.data
+  if (!config.CUSTOMER_AUTH_ENABLED && !config.ADMIN_AUTH_ENABLED)
+    return Object.freeze(config)
+  // Read raw boundary values once, with the canonical origins validated above.
+  const input = {
+    ...environment,
+    API_PUBLIC_ORIGIN: config.API_PUBLIC_ORIGIN,
+    STOREFRONT_ORIGIN: config.STOREFRONT_ORIGIN,
+    ADMIN_ORIGIN: config.ADMIN_ORIGIN,
+  }
+  const sessions = Object.freeze(
+    validateSessionOptions({
+      secret: config.SESSION_SECRET,
+      customerTtlSeconds: Number(config.CUSTOMER_SESSION_TTL_SECONDS),
+      adminTtlSeconds: Number(config.ADMIN_SESSION_TTL_SECONDS),
+      sameSite: config.SESSION_COOKIE_SAME_SITE,
+      appEnvironment: config.APP_ENV,
+      apiOrigin: config.API_PUBLIC_ORIGIN,
+    }),
+  )
+  let browser: ReturnType<typeof validateBrowserSecurityOptions>
+  try {
+    browser = validateBrowserSecurityOptions(
+      {
+        secret: config.SESSION_SECRET,
+        contextTtlSeconds: Number(config.BROWSER_CONTEXT_TTL_SECONDS),
+        storefrontOrigin: config.STOREFRONT_ORIGIN,
+        adminOrigin: config.ADMIN_ORIGIN,
+      },
+      new URL(config.API_PUBLIC_ORIGIN).protocol === 'https:',
+    )
+  } catch {
+    throw new ConfigurationError(['browser_security_configuration'])
+  }
+  const identity: IdentityConfig = Object.freeze({
+    sessions,
+    browser,
+    ...(config.PASSWORD_RECOVERY_ENABLED
+      ? { recovery: Object.freeze(loadRecoveryOptions(input)) }
+      : {}),
+    ...(config.EMAIL_CHANGE_ENABLED
+      ? { emailChange: Object.freeze(loadEmailChangeOptions(input)) }
+      : {}),
+    ...(config.ADMIN_AUTH_ENABLED
+      ? { adminRecovery: Object.freeze(loadAdminRecoveryOptions(input)) }
+      : {}),
+  })
+  return Object.freeze({ ...config, identity })
 }

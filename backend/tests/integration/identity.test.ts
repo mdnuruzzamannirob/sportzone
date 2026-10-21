@@ -5,13 +5,13 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   identityCollectionValidators,
   initializeIdentityPersistence,
-} from '../../src/modules/auth/collection-validators.js'
-import { createIdentityModels } from '../../src/modules/auth/models.js'
+} from '../../src/modules/auth/identity.persistence.js'
+import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
 import {
   consumeUserChallenge,
   findActiveBrowserContext,
   findActiveUserSession,
-} from '../../src/modules/auth/persistence.js'
+} from '../../src/modules/auth/session.persistence.js'
 import { isolatedDatabase } from '../support/database.js'
 
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>

@@ -1,10 +1,11 @@
-import { randomUUID } from 'node:crypto'
+import { securityAction } from './observability/security-actions.js'
 import express, { type Router } from 'express'
-import { handleError } from './middleware/errors.js'
-import { ApiError } from './shared/errors.js'
+import { randomUUID } from 'node:crypto'
+import { handleError } from './common/middleware/errors.js'
+import type { HealthDependencies } from './modules/health/health.service.js'
 import type { Logger } from './observability/logger.js'
-import type { HealthDependencies } from './modules/health/service.js'
-import { createApiRouter } from './routes.js'
+import { createApiRouter } from './routes/index.js'
+import { ApiError } from './common/errors.js'
 
 export function createApp({
   apiRouter,
@@ -39,11 +40,16 @@ export function createApp({
         if (recorded) return
         recorded = true
         // Only the registered pattern, never originalUrl/baseUrl/params/query/header/body.
-        const route = typeof req.route?.path === 'string' ? req.route.path : 'unmatched'
+        const route =
+          typeof req.route?.path === 'string' ? req.route.path : 'unmatched'
+        const action = securityAction(req.method, route)
+        const reason: unknown = res.locals.securityReason
         logger.request({
           requestId: res.locals.requestId,
           method: req.method,
           route,
+          ...(action ? { securityAction: action } : {}),
+          ...(reason === 'rate_limited' || reason === 'throttle_unavailable' ? { securityReason: reason } : {}),
           status: res.writableFinished ? res.statusCode : 499,
           durationMs: performance.now() - started,
           ...(res.locals.errorCode ? { errorCode: res.locals.errorCode } : {}),
@@ -53,7 +59,11 @@ export function createApp({
       res.once('close', record)
       next()
     })
-  const json = express.json({ limit: jsonBodyLimitBytes, strict: true, inflate: false })
+  const json = express.json({
+    limit: jsonBodyLimitBytes,
+    strict: true,
+    inflate: false,
+  })
   app.use((req, res, next) => {
     const hasBody =
       req.headers['transfer-encoding'] !== undefined ||

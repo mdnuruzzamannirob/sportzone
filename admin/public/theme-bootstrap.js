@@ -8,7 +8,6 @@
     /* CSS system preference works when storage is unavailable. */
   }
   document.documentElement.dataset.themePreference = preference
-  if (preference === 'system')
-    document.documentElement.removeAttribute('data-theme')
-  else document.documentElement.dataset.theme = preference
+  const dark = typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches
+  document.documentElement.dataset.theme = preference === 'system' ? (dark ? 'dark' : 'light') : preference
 })()

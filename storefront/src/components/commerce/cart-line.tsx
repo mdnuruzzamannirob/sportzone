@@ -1,6 +1,6 @@
 'use client'
 
-import { Card, Label, NumberField } from '@heroui/react'
+import { Card, Label, NumberField } from '../ui/index'
 import { useId } from 'react'
 import { Button } from '../ui/button'
 import { Notice } from '../ui/feedback'
@@ -53,7 +53,7 @@ export function CartLine({
     )
   const disabled = isPending || availability !== 'available' || maxQuantity === 0
   return (
-    <Card className="min-w-0 rounded-card border border-border p-4">
+    <Card className="min-w-0">
       <Card.Content className="grid min-w-0 gap-4 sm:grid-cols-[6rem_minmax(0,1fr)]">
         <div className="w-24">
           <ProductImage key={image?.src ?? 'missing'} image={image} sizes="96px" />
@@ -62,7 +62,7 @@ export function CartLine({
           <h3 className="text-lg">
             <Link href={href}>{name}</Link>
           </h3>
-          <p className="break-words text-sm text-text-muted">
+          <p className="break-words text-sm text-muted">
             {variant} · SKU: {sku}
           </p>
           <AvailabilityBadge availability={availability} />
@@ -89,24 +89,24 @@ export function CartLine({
             }}
           >
             <Label>Quantity for {name}</Label>
-            <NumberField.Group className="h-auto min-h-control w-fit max-w-full">
+            <NumberField.Group className="h-auto  w-fit max-w-full">
               <NumberField.DecrementButton
-                className="min-h-control min-w-control"
+
                 aria-label={`Decrease quantity for ${name}`}
               />
-              <NumberField.Input className="min-h-control w-16 numeric" />
+              <NumberField.Input className=" w-16 tabular-nums" />
               <NumberField.IncrementButton
-                className="min-h-control min-w-control"
+
                 aria-label={`Increase quantity for ${name}`}
               />
             </NumberField.Group>
           </NumberField>
           {isPending ? (
-            <p role="status" className="text-sm text-text-muted">
+            <p role="status" className="text-sm text-muted">
               Updating cart item…
             </p>
           ) : disabled ? (
-            <p className="text-sm text-text-muted">
+            <p className="text-sm text-muted">
               Quantity changes are unavailable. Remove this item or check availability.
             </p>
           ) : quantity > maxQuantity ? (
@@ -128,7 +128,7 @@ export function CartLine({
         </div>
       </Card.Content>
       <Card.Footer className="mt-4 flex flex-col items-start gap-3">
-        <p className="text-sm text-text-muted">
+        <p className="text-sm text-muted">
           Cart estimates do not reserve stock. Final prices are checked at checkout.
         </p>
         {warning && (

@@ -1,6 +1,6 @@
 'use client'
 
-import { Alert, Card, Skeleton, Spinner } from '@heroui/react'
+import { Alert, Card, Skeleton, Spinner } from './primitives'
 import { type ReactNode, useId } from 'react'
 
 const statuses = {
@@ -24,8 +24,9 @@ export function Notice({
     <Alert
       status={statuses[tone]}
       role={tone === 'error' ? 'alert' : 'status'}
-      className="rounded-card border border-control-border"
+
     >
+      <Alert.Indicator aria-hidden="true" />
       <Alert.Content>
         <Alert.Title>{title}</Alert.Title>
         {children && <Alert.Description>{children}</Alert.Description>}
@@ -67,14 +68,14 @@ export function EmptyState({
 }) {
   const id = useId()
   return (
-    <Card aria-labelledby={id} className="rounded-card border border-border p-6">
+    <Card aria-labelledby={id}>
       <Card.Header>
         <h2 id={id} className="text-xl">
           {title}
         </h2>
       </Card.Header>
       <Card.Content>
-        <p className="text-text-muted">{children}</p>
+        <p className="text-muted">{children}</p>
       </Card.Content>
       {action && <Card.Footer>{action}</Card.Footer>}
     </Card>

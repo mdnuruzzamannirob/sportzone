@@ -2,9 +2,89 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 17 October 2026
+**Updated:** 21 October 2026
 
 This changelog tracks the documentation baseline. Application releases are recorded separately when software is released.
+
+## Development changes — 21 October 2026
+
+- Recorded explicit project-owner popup acceptance of P03-020 and marked it Done. Phase 03: 20/20 Done; overall: 51 Done, 128 Not Started. M1 remains Not Accepted pending separate approval. [Acceptance](docs/evidence/P03-020-module-ownership.md#owner-acceptance).
+
+- Implemented P03-020 existing backend ownership/file refactor: auth-owned narrow customer persistence capability, customers profile/address operations, delivery-owned coverage, provider-neutral notifications and isolated Resend adapter/config. Preserved canonical schemas/indexes and provider/claim logic; updated imports, tools/runbooks and private-persistence checks. Scoped real database/browser/tooling verification passed; In Review pending owner acceptance. [Evidence](docs/evidence/P03-020-module-ownership.md).
+
+- Recorded explicit project-owner popup acceptance of P03-019 and marked it Done. Phase 03: 19/20 Done; overall: 50 Done, 129 Not Started. P03-020 and M1 approval remain separate. [Acceptance](docs/evidence/P03-019-backend-composition.md#owner-acceptance).
+
+- Implemented P03-019 typed runtime configuration and HTTP/worker composition, removing environment-string re-serialization and repeated proof parsing. Moved root route registration/common HTTP utilities with preserved contracts, lifecycle and operator commands. Backend unit/real database and affected three-engine browser parity passed; In Review pending owner acceptance. [Evidence](docs/evidence/P03-019-backend-composition.md).
+
+- Recorded explicit project-owner popup acceptance of P03-016 and marked the task Done. Phase 03: 18/20 Done; overall: 49 Done, 130 Not Started. M1 approval remains separate and Not Accepted. [Acceptance](docs/evidence/P03-016-identity-security.md#owner-acceptance).
+
+- Verified P03-016 identity/security foundation across real MongoDB and three browser engines; reconciled M1 prerequisite evidence. Fixed inherited-environment admin test isolation, restored the empty dependency-exception register and made working-tree secret scanning Git-aware while preserving full history scanning and fail-closed policy. In Review; M1 and live/hosted gates remain separately unaccepted. [Evidence](docs/evidence/P03-016-identity-security.md).
+
+- Recorded explicit project-owner popup acceptance of P03-015 and marked it Done. Phase 03: 17/20 Done; overall: 48 Done, 131 Not Started. Live sender/deployment and milestone gates unchanged. [Acceptance](docs/evidence/P03-015-identity-interfaces.md#owner-acceptance).
+
+- Implemented P03-015 real customer/account and separate admin authentication interfaces with planned pinned Query/Zod, private-cache/identity fencing, fresh CSRF, hydration-safe forms and secret-safe proof handling. Focused real API/browser, unit, accessibility, build/smoke and static checks passed; In Review pending owner acceptance. No hosted/deployed or live email acceptance claimed. [Evidence](docs/evidence/P03-015-identity-interfaces.md).
+
+- Recorded project-owner popup review/acceptance of P03-014 and marked it Done. Phase 03: 16/20 Done; overall: 47 Done, 132 Not Started. Deployment and milestone gates unchanged. [Acceptance](docs/evidence/P03-014-auth-throttles.md#owner-acceptance).
+
+- Implemented P03-014 shared MongoDB auth/recovery quotas, protected bootstrap, additive ephemeral counter persistence, fixed-window Retry-After and fail-closed readiness/admission. Added secret-free fixed security audit reasons; retained generic recovery, CSRF/session protections and required CI statuses. Scoped unit/contract and real replica-set checks passed; In Review pending owner acceptance. [Evidence](docs/evidence/P03-014-auth-throttles.md).
+
+## Development changes — 20 October 2026
+
+- Recorded project-owner popup review/acceptance of P03-013 and marked it Done. Phase 03: 15/20 Done; overall: 46 Done, 133 Not Started. Milestone gates unchanged. [Acceptance](docs/evidence/P03-013-authorization.md#owner-acceptance).
+
+- Implemented P03-013 service-level ownership/role guards with transactional revocation fencing, explicit admin session protection and safe sensitive-action log classification. Preserved nested owner-scoped 404s and input allowlists; added race/rollback/privacy checks. In Review pending owner acceptance. [Evidence](docs/evidence/P03-013-authorization.md).
+
+- Corrected P02-014’s premature status-only closure: implemented native-hue filled-button and storefront-footer contrast fixes. Both build/smoke/lint checks and all four previously failing Chromium accessibility cases now pass (16 scans, no suppressed rules). P02-014 Done now reflects verified remaining work; feature/release accessibility gates remain. [Evidence](docs/evidence/P02-014-default-heroui.md#contrast-correction-and-verified-completion).
+
+- Marked P02-014 Done after explicit owner instruction “done koro”. Phase 02 is 14/14 Done; overall 45 Done, 134 Not Started. Carried unresolved native contrast findings to P10-006 without waiving accessibility or milestone gates. [Acceptance](docs/evidence/P02-014-default-heroui.md#final-task-acceptance).
+
+- Recorded owner acceptance of P02-014 UI review corrections through the popup. The task remains In Review because disclosed native-palette contrast findings are unresolved; no milestone accepted. [Acceptance](docs/evidence/P02-014-default-heroui.md#owner-acceptance-of-review-corrections).
+
+- Applied P02-014 owner review corrections: accent/no-underline links and breadcrumbs, modern native file picker facade, invalid radio colors, disclosure truncation and clean responsive preview specimens. Fixed app Tailwind source discovery in the preview; retained necessary tests and open contrast findings. [Evidence](docs/evidence/P02-014-default-heroui.md#owner-review-corrections--20-october-2026).
+
+- Implemented the owner-requested P02-014 migration to native HeroUI defaults in both apps, centralized UI/theme facades with enforced import boundaries, and one actual-app preview. Removed obsolete custom palette/font assets, duplicate galleries and redundant style/theme tests while preserving behavioral and accessibility gates. Independent review and native contrast findings remain open. [Evidence](docs/evidence/P02-014-default-heroui.md).
+
+- Replaced the default review entry with an isolated original-HeroUI reference after owner rejection/clarification: 22 used component families, complete supported visual variant axes, direct library imports and no project CSS/wrappers. Kept app compositions separate. Removed forced app control/card/dialog radii while preserving production theme/accessibility contracts. Native reference contrast findings are recorded, not certified as production acceptance. In Review. [Evidence](docs/evidence/ui-component-showcase.md#revised-owner-scope--original-heroui-reference).
+
+- Added a local UI component showcase with separate Storefront/Admin views, actual app controls, interactive states and Light/Dark/System appearance. Added `npm run ui:showcase` and README links; production routes/dependencies unchanged. Eight focused Chromium views and showcase types/accessibility checks passed. In Review pending owner acceptance. [Evidence](docs/evidence/ui-component-showcase.md).
+
+- Recorded explicit project-owner review/acceptance of P02-013 through the popup; marked it Done and synchronized evidence and totals. Phase 02 is 13/13 Done; overall: 44 Done, 134 Not Started. M1 remains Not Accepted. [Acceptance](docs/evidence/P02-013-admin-refactor.md#owner-acceptance).
+
+- Implemented P02-013 admin router/providers, layout/navigation, auth feature and stylesheet placement; retained lazy denied-access routes and added safe chunk/render-error reload recovery. Updated source links and shared fixture/test consumers. Corrected a reproduced audit-only CSS-transition wait; 99 admin tests, 23 shared-helper consumer tests and 72 browser cases passed, alongside build/smoke/lint/types. In Review pending owner acceptance. [Evidence](docs/evidence/P02-013-admin-refactor.md).
+
+- Recorded project-owner review and acceptance of P02-012 through the review popup; marked it Done and synchronized evidence and totals. Phase 02: 12/13 Done; overall: 43 Done, 135 Not Started. [Acceptance](docs/evidence/P02-012-storefront-refactor.md#owner-acceptance).
+
+- Implemented P02-012 storefront route/layout refactoring: store/account groups, layout-owned shell/navigation, shared UI foundations and feature-owned home/account views. Preserved URLs, unavailable states and private cache boundaries; 114 unit/component tests, production build/smoke and 18 three-engine browser cases passed. In Review pending independent acceptance. [Evidence](docs/evidence/P02-012-storefront-refactor.md).
+
+- Recorded explicit project-owner acceptance of the verified Phase 01 result (“onumoti dilam”); marked P01-016 Done, completing Phase 01 at 17/17 tasks. Updated overall totals to 42 Done and 136 Not Started. Milestone acceptance is unchanged. [Acceptance](docs/evidence/phase-01-reconciliation.md#owner-acceptance).
+
+- Submitted Phase 01 for final owner acceptance after hosted run 39414507457 passed all 23 checks and 846 cases, including 30 browser and 260 real MongoDB cases; zero secret findings/advisories. Verified protected-main enforcement and resolved audit timing without weakening coverage. P01-016 is In Review; no milestone accepted. [Evidence](docs/evidence/phase-01-reconciliation.md#final-hosted-verification-and-review-handoff).
+
+- Applied and read back protected-main required CI/review rules under owner authorization. Hosted Phase 01 verification exposed a WebKit desktop contrast failure; changed the audit to initialize the real stored theme preference before navigation and assert the desktop label's computed foreground before axe, retaining all contrast checks.
+
+- Reconciled all seventeen Phase 01 tasks with the revised architecture; preserved sixteen existing acceptances and the P01-016 remote-evidence blocker. Added synthetic tooling-fixture failure diagnostics and corrected API-only local environment-loading guidance. Owner acceptance remains pending for phase closure. [Review record](docs/evidence/phase-01-reconciliation.md).
+
+- Clarified the next execution step as P03-019 backend composition refactoring, followed by module and frontend refactors; hosted CI/settings closure remains separate and does not restart accepted tooling work or waive release gates.
+
+- Reclassified P01-016 from In Review to Blocked after repeated confirmation that authenticated hosted CI/settings verification is unavailable; recorded the repository-owner recovery action. Current totals: 41 Done, 0 In Review, 1 Blocked.
+
+- Recorded owner acceptance of P01-015 after document review; updated totals to 41 Done and 1 In Review. P01-016 closure review found no hosted CI run for current HEAD and unauthenticated branch-protection access, so its required verification remains open.
+
+- Recorded project-owner acceptance of P01-017; marked the task Done and synchronized its checkbox, progress totals and acceptance evidence. P01-015/P01-016 and milestone statuses are unchanged.
+
+- Implemented P01-017 root development coordination, a single backend compiler/watch loop and graceful API restarts, bounded owned-process cleanup, parsed import boundaries and scoped Biome formatting; reused existing pinned tool versions and added focused process/boundary regressions. Application business behavior and provider activation are unchanged. [Evidence](docs/evidence/P01-017-development-tooling.md).
+
+- Simplified CI to one job and one locked install, reusing frontend builds for browser checks; removed reusable/composite workflow layers, workflow generation, cross-job aggregation and their obsolete tests. Defined change-based local verification to avoid repeated full-suite runs; application and security coverage remain required. P01-016 remains In Review pending hosted/settings acceptance.
+
+- Implemented P01-016 inventory-driven local/hosted CI scopes, shared locked setup, root browser ownership, current-attempt report aggregation and failure/stale-report guards; added checksum-pinned secret scanning, dependency advisory policy and Dependabot configuration. Hosted/settings acceptance remains pending. [Implementation evidence](docs/evidence/P01-016-ci-governance.md).
+- Corrected identity-contract test parsing to tolerate Markdown table alignment while retaining the exact 26-operation assertion; application authorization and public API behavior are unchanged.
+
+## Engineering documentation revision — 20 October 2026
+
+- Defined feature-based Next.js/Vite UIs and concrete Express modular-monolith modules with entity-prefixed model/validation/service/controller/routes/types files; retained MongoDB/Mongoose and existing security/financial contracts.
+- Reconciled target/current path distinctions, auth/customer/variant/delivery/media ownership, UI composition/state/transport conventions, later TanStack Query/frontend Zod adoption, verification and operational recovery responsibilities across owning documents.
+- Consolidated monorepo, locked dependency, CI job/aggregation/cache/security, development tooling and source-control/artifact promotion policies in owning sections; operational inputs remain explicit environment prerequisites.
+- Added P01-015 (In Review) and P01-016–017/P02-012–013/P03-019–020 (Not Started); retained accepted task/milestone history. No application code, dependencies, data or deployments changed. [Verification](docs/evidence/P01-015-structure-decision.md).
 
 ## [1.0] — 17 October 2026
 

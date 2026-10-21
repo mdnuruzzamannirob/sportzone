@@ -24,7 +24,8 @@ function anchors(s) {
 }
 export function workspacePlan(root) {
   const manifest = json(root, 'package.json')
-  const config = json(root, 'ci-workspaces.json')
+  const inventory = json(root, 'ci-workspaces.json')
+  const config = inventory.scopes
   if (
     JSON.stringify(manifest.workspaces) !== JSON.stringify(names) ||
     !manifest.private
@@ -32,11 +33,13 @@ export function workspacePlan(root) {
     throw new Error('Root must declare exactly three private workspaces')
   }
   if (
+    inventory.version !== 2 ||
+    !config ||
     JSON.stringify(Object.keys(config).sort()) !==
-    JSON.stringify([...names].sort())
+      JSON.stringify([...names, 'repository', 'browser', 'supply-chain'].sort())
   ) {
     throw new Error(
-      'CI workspace inventory must cover exactly three workspaces',
+      'CI inventory must declare version 2 and exactly six required scopes',
     )
   }
   return names.map((name) => {
@@ -163,6 +166,9 @@ export function inspectRepository(root) {
     for (const m of prose(data).matchAll(/\[[^\]]*\]\(([^\s)]+)\)/g)) {
       if (/^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(m[1])) continue
       const [relative, fragment] = m[1].split('#')
+      // Evidence may reference generated local reports. They are intentionally
+      // untracked and therefore absent from a clean CI checkout.
+      if (relative?.split('/').includes('test-results')) continue
       try {
         const target = relative
           ? resolve(dirname(path), decodeURIComponent(relative))

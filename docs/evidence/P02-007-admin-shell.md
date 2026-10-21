@@ -46,9 +46,9 @@ The project owner explicitly accepted this task after reviewing the reported sco
 
 ## Implementation references
 
-- [Admin shell](../../admin/src/components/admin/admin-shell.tsx)
-- [Navigation configuration](../../admin/src/components/admin/navigation.ts)
-- [Route access boundary](../../admin/src/components/admin/admin-access-boundary.tsx)
+- [Admin shell](../../admin/src/components/layout/admin-shell.tsx)
+- [Navigation configuration](../../admin/src/components/layout/navigation.ts)
+- [Route access boundary](../../admin/src/features/auth/components/admin-access-boundary.tsx)
 - [Shell interaction tests](../../admin/tests/shell.test.tsx)
 - [HeroUI Drawer reference](https://heroui.com/en/docs/react/components/drawer)
 
@@ -62,3 +62,5 @@ Local CI started at `2026-10-18T10:24:36.376Z`; report: `test-results/ci.json` (
 | `admin/src/components/admin/navigation.ts` | `c3ce278867fe98fcb4e0e0504f51543a6ecaea2d00522d2cd582fb0028ed8d29` |
 | `admin/src/components/admin/admin-access-boundary.tsx` | `78a899f59204144195f9047aa66690ae386b656d3743dcbbdf6bd11462ddda1d` |
 | `admin/tests/shell.test.tsx` | `52b063ec5518ece2a838a3a528143febaabd0dbb55c52c5bc2ffab13c36a583f` |
+
+**P02-013 path maintenance (20 October 2026):** Source links above follow the current refactored locations. Historical acceptance and file hashes retain their original revision/path meaning; current parity evidence is in [P02-013](./P02-013-admin-refactor.md).

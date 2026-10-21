@@ -4,8 +4,8 @@ import {
   createProofEncryption,
   proofHash,
   type ProofBinding,
-} from '../src/modules/auth/proof-envelope.js'
-import { loadRecoveryOptions } from '../src/modules/auth/recovery.js'
+} from '../src/modules/auth/proof.crypto.js'
+import { loadRecoveryOptions } from '../src/modules/auth/password-recovery.service.js'
 import { loadEnvironment } from '../src/config/environment.js'
 import { testEnvironment } from './support/environment.js'
 const keys = {

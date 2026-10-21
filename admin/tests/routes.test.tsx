@@ -1,14 +1,20 @@
+import { IdentityProvider } from '../src/features/auth/api/session'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { AdminLoading } from '../src/components/layout/admin-loading'
+import { RouteErrorBoundary } from '../src/app/route-error-boundary'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { BrowserRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { AppRoutes } from '../src/app/routes'
+import { AppRoutes } from '../src/app/router'
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
 let container: HTMLDivElement
 let root: Root
 
 beforeEach(() => {
+  // This suite intentionally exercises missing configuration, independent of CI build origins.
+  vi.stubEnv('VITE_API_ORIGIN', '')
   localStorage.clear()
   container = document.createElement('div')
   document.body.append(container)
@@ -18,13 +24,14 @@ afterEach(async () => {
   await act(() => root.unmount())
   container.remove()
   localStorage.clear()
+  vi.unstubAllEnvs()
 })
 async function visit(path: string) {
   window.history.replaceState(null, '', path)
   await act(() =>
     root.render(
       <BrowserRouter>
-        <AppRoutes />
+        <IdentityProvider><AppRoutes /></IdentityProvider>
       </BrowserRouter>,
     ),
   )
@@ -44,9 +51,9 @@ describe('admin scaffold routing', () => {
     await visit('/')
     expect(window.location.pathname).toBe('/login')
     expect(container.querySelectorAll('main')).toHaveLength(1)
-    expect(container.querySelector('h1')?.textContent).toBe('Administrator access')
-    expect(container.textContent).toContain('Sign-in is not available yet.')
-    expect(container.querySelector('form')).toBeNull()
+    expect(container.querySelector('h1')?.textContent).toBe('SportZone administrator')
+    expect(container.textContent).toContain('Account service unavailable')
+    expect(container.querySelector('form')).not.toBeNull()
     expect(
       [...container.querySelectorAll('button')].find(
         (button) => button.textContent === 'Sign in',
@@ -58,7 +65,7 @@ describe('admin scaffold routing', () => {
     localStorage.setItem('role', 'admin')
     localStorage.setItem('authenticated', 'true')
     await visit('/app/orders/synthetic-order')
-    expect(container.querySelector('h1')?.textContent).toBe('Admin access unavailable')
+    expect(container.querySelector('h1')?.textContent).toBe('Administrator service unavailable')
     expect(container.textContent).not.toContain('synthetic-order')
     expect(container.querySelectorAll('main')).toHaveLength(1)
   })
@@ -73,12 +80,12 @@ describe('admin scaffold routing', () => {
       ),
     )
     expect(window.location.pathname).toBe('/login')
-    expect(container.querySelector('h1')?.textContent).toBe('Administrator access')
+    expect(container.querySelector('h1')?.textContent).toBe('SportZone administrator')
     await act(() => {
       window.history.replaceState(null, '', '/app/products')
       window.dispatchEvent(new PopStateEvent('popstate'))
     })
-    expect(container.querySelector('h1')?.textContent).toBe('Admin access unavailable')
+    await vi.waitFor(async()=>{ await act(async()=>{await new Promise(resolve=>setTimeout(resolve,0))});expect(container.querySelector('h1')?.textContent).toBe('Administrator service unavailable') })
   })
 
   it('AD-04: unknown public URL has a recovery link without echoing the path', async () => {
@@ -86,5 +93,34 @@ describe('admin scaffold routing', () => {
     expect(container.querySelector('h1')?.textContent).toBe('Page not found')
     expect(container.querySelector('a')?.getAttribute('href')).toBe('/login')
     expect(container.textContent).not.toContain('unknown-synthetic-path')
+  })
+})
+
+describe('admin route recovery', () => {
+  it('AD-05: pending administration exposes a single landmark and live status', () => {
+    const html = renderToStaticMarkup(<AdminLoading />)
+    expect(html.match(/<main\b/g)).toHaveLength(1)
+    expect(html).toContain('role="status"')
+    expect(html).toContain('Loading administration…')
+  })
+
+  it('AD-06: rendering failure closes access and shows safe reload recovery', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    function FailedRoute(): never {
+      throw new Error('synthetic private diagnostics')
+    }
+    try {
+      await act(() => root.render(
+        <RouteErrorBoundary><FailedRoute /></RouteErrorBoundary>,
+      ))
+      expect(container.querySelector('h1')?.textContent).toBe('Administration could not load')
+      expect(container.querySelector('[role="alert"]')).not.toBeNull()
+      expect(container.querySelectorAll('main')).toHaveLength(1)
+      expect(container.textContent).not.toContain('synthetic private diagnostics')
+      expect(container.querySelector('button')?.textContent).toBe('Reload page')
+      expect(container.querySelector('form')).toBeNull()
+    } finally {
+      log.mockRestore()
+    }
   })
 })

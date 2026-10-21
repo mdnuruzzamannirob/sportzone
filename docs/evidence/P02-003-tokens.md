@@ -8,7 +8,7 @@
 ## Scope and implementation
 
 Implemented all 17 light/dark color pairs from [Design §2.2](../DESIGN.md#22-light-and-dark-color-system).
-[Shared tokens](../../styles/tokens.css) are imported by both application stylesheets. Semantic Tailwind mappings use
+Historical shared tokens (`styles/tokens.css`, retired by P02-014) are imported by both application stylesheets. Semantic Tailwind mappings use
 `@theme inline` with the standard color palette cleared, following [Tailwind theme variables](https://tailwindcss.com/docs/theme).
 The same utilities resolve to the current semantic values in both applications; no shared UI component library or package
 was introduced. Existing scaffold copy, routes, cache boundaries and access behavior are preserved.

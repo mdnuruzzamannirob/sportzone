@@ -6,7 +6,7 @@ import {
   createProofEncryption,
   proofHash,
   type ProofBinding,
-} from '../src/modules/auth/proof-envelope.js'
+} from '../src/modules/auth/proof.crypto.js'
 import { testEnvironment } from './support/environment.js'
 const keys = { current: randomBytes(32).toString('hex') }
 const encryption = createProofEncryption('current', keys)

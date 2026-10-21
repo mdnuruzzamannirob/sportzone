@@ -3,7 +3,7 @@ import {
   hashPassword,
   newPasswordPolicy,
   verifyPassword,
-} from '../src/modules/auth/passwords.js'
+} from '../src/modules/auth/password.service.js'
 import { loadEnvironment } from '../src/config/environment.js'
 import { testEnvironment } from './support/environment.js'
 describe('approved password policy and bounded adaptive hashing', () => {

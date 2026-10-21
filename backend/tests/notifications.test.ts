@@ -1,12 +1,12 @@
+import { loadNotificationWorker } from '../src/config/notifications.js'
 import { describe, expect, it, vi } from 'vitest'
 import {
   createResendAdapter,
   validateEmailOptions,
-} from '../src/modules/notifications/email.js'
+} from '../src/integrations/email/resend.adapter.js'
 import {
-  loadNotificationWorker,
   validateRetryPolicy,
-} from '../src/modules/notifications/worker.js'
+} from '../src/modules/notifications/notification-worker.service.js'
 const settings = {
   apiKey: 'synthetic-provider-key',
   from: 'sender@example.test',

@@ -6,16 +6,16 @@ import { createApp } from '../../src/app.js'
 import {
   initializeIdentityPersistence,
   identityCollectionValidators,
-} from '../../src/modules/auth/collection-validators.js'
-import { createIdentityModels } from '../../src/modules/auth/models.js'
-import { createSessionHttp } from '../../src/modules/auth/session-http.js'
+} from '../../src/modules/auth/identity.persistence.js'
+import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
+import { createSessionHttp } from '../../src/modules/auth/session.http.js'
 import {
   createSessionService,
   type SessionKind,
   type SessionOptions,
-} from '../../src/modules/auth/sessions.js'
+} from '../../src/modules/auth/session.service.js'
 import { createLogger } from '../../src/observability/logger.js'
-import { respond } from '../../src/shared/responses.js'
+import { respond } from '../../src/common/responses.js'
 import { isolatedDatabase } from '../support/database.js'
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
 let models: ReturnType<typeof createIdentityModels>

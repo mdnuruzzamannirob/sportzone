@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 17 October 2026
+**Updated:** 20 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -85,7 +85,7 @@ This version defines the development baseline. Execute the roadmap through the s
 5. **Financial and inventory integrity.** Use integer poisha for money, immutable order snapshots, indexed identities, guarded transitions, atomic writes, and transactions when multiple records must change together.
 6. **Safe retries and uncertainty.** Duplicate checkout submissions, callbacks, refund attempts, and job runs must not repeat effects. Timeouts do not establish financial failure.
 7. **Security by default.** Enforce session/role/ownership checks and input validation on the server; route guards and hidden actions are not authorization.
-8. **Design parity.** Apply the semantic tokens from `DESIGN.md`; the primary blue stays `#2563EB` with white label text in both themes. Test accessibility in both modes.
+8. **Design parity.** Use the default HeroUI semantic theme through each app’s `components/ui/`, as approved in `DESIGN.md` §2. Test accessibility in both modes.
 9. **Continuous quality.** Add type checks, linting, relevant automated tests, review, and accessible error/loading/empty states during implementation, not only before launch.
 10. **Explicit evidence.** A phase or feature is complete only when its stated tests and acceptance criteria have passed with reproducible evidence.
 11. **Controlled configuration.** Operator-supplied content, merchant activation, legal/policy approval, and external service credentials are configuration prerequisites, not values to invent in code.
@@ -131,6 +131,47 @@ Convert approved work packages into `TASKS.md` entries with a stable ID, short o
 ### 3.5 Timeline and estimation
 
 Do not assign arbitrary completion dates. Estimate work after evaluating developer capacity, approved hosting, gateway/refund feasibility, operator content, and integration access. Record milestone dates separately in task tracking once agreed. A missing merchant capability may block online-payment acceptance without blocking COD-oriented development.
+
+### 3.6 Engineering foundation and incremental refactor
+
+Architecture §§4–6,14 define application organization and engineering decisions; Operations §§5.5–5.7 define CI, source control and promotion, and Testing §15 defines verification. Reconcile these contracts before implementation. Source reorganization preserves the existing stack, business behavior and release gates.
+
+| Step | Task | Outcome and prerequisite |
+| --- | --- | --- |
+| 1 | P01-015 | Reconcile engineering contracts and submit documentation verification for independent acceptance |
+| 2 | P01-016 / P01-017 | Keep inventory-driven CI and development tooling minimal; validate command failures and affected checks without repeated full-suite runs |
+| 3 | P03-019 | Extract typed composition/configuration and route registration; preserve runtime/worker/tool behavior |
+| 4 | P03-020 | Separate auth/customer/delivery boundaries, standardize cohesive backend files and provider adapters; depends on P03-019 |
+| 5 | P02-012 / P02-013 | Refactor storefront/admin routes, layouts and feature placement independently after documentation acceptance |
+| 6 | Existing feature tasks | Integrate customer/admin auth, then admin catalog → public catalog → inventory/cart → quote/COD order/admin processing; honor declared prerequisites |
+| 7 | Existing P07/P08 tasks | Verified online payment/reconciliation and after-sales; required channels and launch gates unchanged |
+
+**Current execution priority:** Continue with P03-019, followed by P03-020 and the two frontend refactors,
+using the accepted P01-015 architecture and P01-017 tooling baseline. P01-016 hosted CI/settings closure
+is a separate follow-up; it is not a declared prerequisite of these refactor tasks in TASKS.md. Do not
+restart completed tooling work merely because remote verification is unavailable. This sequencing does
+not waive P01-016 acceptance, protected-main checks or release gates. Finish and review one refactor task
+before starting the next; use change-based checks under Testing §15.5.
+
+Do not start a bulk rename across all apps. For each slice, record current-to-target paths, preserve public URLs, error/DTO/session/CSRF contracts and collection/index identities, move/update imports and operational entry points together, then run the owning checks. Refactor tasks do not recreate already accepted foundations or mark dependent business features complete. Pre-existing accepted evidence is retained as historical evidence; new behavior/parity evidence accompanies refactored code.
+
+Initial current-to-target inventory (not executed):
+
+| Current code | Target responsibility | Task |
+| --- | --- | --- |
+| `backend/src/server.ts`, `modules/auth/composition.ts` | Process lifecycle plus root `composition.ts` and typed options | P03-019 |
+| `backend/src/config/environment.ts`, `routes.ts`, `middleware/`, `shared/` | `config/env.ts`, `routes/index.ts`, cohesive `common/` utilities | P03-019 |
+| `backend/src/modules/auth/profile.ts`, `profile-routes.ts`, `account-dto.ts` | Customer validation/service/controller/routes/DTO ownership; canonical identity persistence retained | P03-020 |
+| `backend/src/modules/settings/coverage.ts` | Delivery coverage read service | P03-020 |
+| `backend/src/modules/notifications/email.ts` | Email provider integration; intent/claims stay in notifications | P03-020 |
+| `storefront/src/app/(public)`, `(private)`, root shell/header components | Target route groups, components/layout and consuming features, keeping URLs/cache rules | P02-012 |
+| `admin/src/app/routes.tsx`, `components/admin/`, `styles.css` | Router/providers, components/layout, feature auth guard and styles/globals.css | P02-013 |
+
+Keep `db/`, `observability/`, reusable UI/management/commerce foundations, pure root shared utilities and operator tools unless a specific dependency requires a verified move. Do not implement planned products/inventory models solely to complete a refactor checklist.
+
+TanStack Query/frontend Zod are selected target dependencies for later integrated API/forms work, not dependencies to add during layout-only moves. Add compatible locked versions and CI checks with their consuming feature. Do not reorganize the phase roadmap to hide incomplete prerequisites. Recovery for a code-only move is the prior compatible build after shutdown/lease handling; migrations and external financial retries require their own contracts and safeguards.
+
+Tooling work may proceed independently where its inputs are stable, but a source move must update the current runner/inventory rather than depend on an unimplemented CI design. Application/container deployment, migration jobs and protected environment configuration remain within the existing Phase 11 implementation work; specification does not imply deployed infrastructure. New automation runs no production financial activity.
 
 ---
 
@@ -252,22 +293,25 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 **Objective:** Implement the already-specified UI foundation; this phase does not redesign SportZone.
 
-**Prerequisites:** Phase 01 repository/workspace skeleton, `DESIGN.md` v1.0, and available approved visual assets or identified placeholders awaiting operator assets.
+**Prerequisites:** Phase 01 repository/workspace skeleton, current `DESIGN.md` owner-approved baseline, and available approved visual assets or identified placeholders awaiting operator assets.
 
 **Work packages:**
 
-1. Initialize the Next.js storefront and React + Vite admin workspaces, then implement semantic theme tokens and Tailwind mappings for both applications. Keep the brand blue `#2563EB` and white-on-brand text identical in both modes; keep neutrals true grayscale.
+1. Initialize the Next.js storefront and React + Vite admin workspaces, then use the default HeroUI theme through app-owned UI facades in both applications, following the P02-014 owner decision.
 2. Set up Inter, Plus Jakarta Sans, Bengali-capable fallbacks, consistent spacing/radii, icon conventions, and BDT formatting.
 3. Implement responsive storefront and admin shells, navigation, theme preference, keyboard-accessible menus/drawers, and error/not-found/loading boundaries.
 4. Implement the appropriate basic primitives: inputs, buttons, alerts, status badges, pagination, dialogs, file upload, tables, cards, and skeletons as needed for upcoming slices.
 5. Establish form-error, focus, disabled, selection, loading, confirmation, and reduced-motion patterns using real component states in both themes.
 6. Define reusable page-level templates for product discovery, detail, account, checkout, and admin management without falsely marking those pages feature-complete.
 
-**Verification:** Check responsive reflow, keyboard access, focus treatment, contrast, theme persistence/no flash, same-color brand buttons, and no loss of entered state during theme switching. Component previews alone do not satisfy feature acceptance.
+**Verification:** Check responsive reflow, keyboard access, focus treatment, contrast, theme persistence/no flash, native component variants, and no loss of entered state during theme switching. Component previews alone do not satisfy feature acceptance.
 
 **Deliverable:** Reusable and tested UI foundations in both applications.
 
 **Exit gate:** Applicable design-system primitives and route shells can support Phase 03–04 work without revisiting core visual decisions.
+
+
+**20 October 2026 owner decision (P02-014):** Replace the custom palette/fonts/adapter with native default HeroUI design, enforce app-owned UI import/theme boundaries, unify the preview and retire obsolete visual assertions while retaining interaction/security/accessibility gates. Stock-theme findings must be reported; no milestone is implicitly accepted.
 
 ### Phase 03 — Authentication and core backend
 
@@ -667,7 +711,7 @@ A product created in Admin appears in public catalog only when active; changed s
 
 ### 10.3 UI, accessibility, and content acceptance
 
-Verify responsive layouts, semantic landmarks, keyboard-only task completion, visible focus, dialog focus management, properly associated field errors, meaningful status text, image alternatives, and reduced-motion behavior. Test critical storefront and admin journeys in both light and dark modes. Maintain `#2563EB` blue primary buttons with white text in both modes, while applying the design's dark-mode readable link text and blue indicators. Verify prices, payment/return/refund statuses, deadlines, and warnings never rely only on color.
+Verify responsive layouts, semantic landmarks, keyboard-only task completion, visible focus, dialog focus management, properly associated field errors, meaningful status text, image alternatives, and reduced-motion behavior. Test critical storefront and admin journeys in both light and dark modes. Use the approved native HeroUI component styles in both modes; record any native contrast defects against the accessibility target. Verify prices, payment/return/refund statuses, deadlines, and warnings never rely only on color.
 
 Do not publish placeholder legal policies, merchant activation claims, unsupported courier tracking, or unverified delivery/refund promises. Separate estimated delivery dates from applicable deadlines. Keep explicit unresolved-payment and unresolved-refund messages.
 

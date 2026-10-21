@@ -1,6 +1,7 @@
+import type { SecurityAction } from './security-actions.js'
 import { randomUUID } from 'node:crypto'
 import type { RuntimeConfig } from '../config/environment.js'
-import type { ErrorCode } from '../shared/errors.js'
+import type { ErrorCode } from '../common/errors.js'
 
 type LifecycleEvent =
   | 'starting'
@@ -18,9 +19,19 @@ type RequestEvent = {
   route: string
   status: number
   durationMs: number
+  securityAction?: SecurityAction
+  securityReason?: 'rate_limited' | 'throttle_unavailable'
   errorCode?: ErrorCode
 }
-const methods = new Set(['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'])
+const methods = new Set([
+  'GET',
+  'HEAD',
+  'POST',
+  'PUT',
+  'PATCH',
+  'DELETE',
+  'OPTIONS',
+])
 export function createLogger(
   config: Pick<RuntimeConfig, 'APP_ENV' | 'RELEASE_ID'>,
   sink: (line: string) => void = (line) => {
@@ -67,7 +78,11 @@ export function createLogger(
       sink(
         JSON.stringify({
           ...base(
-            event.status >= 500 ? 'error' : event.status >= 400 ? 'warn' : 'info',
+            event.status >= 500
+              ? 'error'
+              : event.status >= 400
+                ? 'warn'
+                : 'info',
             'request_completed',
           ),
           requestId: /^[a-f0-9-]{36}$/.test(event.requestId)
@@ -78,6 +93,18 @@ export function createLogger(
           status: event.status,
           durationMs: Math.max(0, Math.round(event.durationMs)),
           errorCode: event.errorCode ?? null,
+          ...(event.securityReason ? { securityReason: event.securityReason } : {}),
+          ...(event.securityAction
+            ? {
+                securityAction: event.securityAction,
+                outcome:
+                  event.status >= 200 && event.status < 400
+                    ? 'succeeded'
+                    : event.status >= 400 && event.status < 500
+                      ? 'denied'
+                      : 'failed',
+              }
+            : {}),
         }),
       )
     },

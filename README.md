@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 17 October 2026
+**Updated:** 21 October 2026
 
 Single-store sports e-commerce platform for Bangladesh, using BDT. SportZone combines a customer storefront, a separate
 administration portal and one authoritative backend API.
@@ -52,8 +52,7 @@ The repository contains the documentation set, runnable Next.js storefront, Reac
 sportzone/
 ├── storefront/                 # Next.js App Router scaffold, styles and tests
 ├── admin/                      # React/Vite SPA scaffold, styles and tests
-├── backend/package.json        # Backend workspace
-├── styles/                     # Shared colors, typography, dimensions and licensed fonts
+├── backend/                    # Express API, identity/notification implementations and tests
 ├── shared/format-bdt.ts         # Pure integer-poisha display formatter
 ├── docs/                       # Product and engineering specifications
 ├── README.md
@@ -69,10 +68,30 @@ sportzone/
 
 [Architecture §4](docs/ARCHITECTURE.md#4-project-structure) defines application/module boundaries.
 
+Architecture §§4–6,14 define feature-based UIs, a module-based layered backend and npm-workspaces engineering policy.
+Target backend modules use `<entity>.model/validation/service/controller/routes/types.ts`; UI shells belong to
+`components/layout/`, feature behavior to `features/`, and reusable HeroUI/commerce/management compositions retain
+their shared ownership. Current code is migrated incrementally; the CLI commands below describe implemented setup.
+
+[Implementation Plan §3.6](docs/IMPLEMENTATION_PLAN.md#36-engineering-foundation-and-incremental-refactor) sequences
+P01-015 contract review, P01-016–017 tooling, P03-019–020 backend and P02-012–013 UI refactors.
+[Operations §5](docs/OPERATIONS.md#5-cicd--deployment-procedures) defines target CI/release controls; the existing workflow
+remains the operational reference until verified replacement. P03-015 introduces pinned TanStack Query 5.104.5 and frontend Zod 4.6.7 for the implemented identity forms. [Verification record](docs/evidence/P01-015-structure-decision.md).
+
 ## 4. Development workflow
 
+### Local UI component preview
+
+Run `npm run ui:showcase`, then open [the single UI preview](http://127.0.0.1:5180/showcase.html).
+Use Admin/Storefront and Light/Dark toggles to inspect the actual app-owned `components/ui/`
+modules, native variants and application compositions. Each app loads its own `ui/theme.css`;
+switching apps reloads the selected theme entry to avoid style leakage. No backend, database,
+sign-in or app build is needed. Stop this local server before a browser suite reserves port 5180.
+This development tool is not part of either production app’s routes.
+
+
 1. Read [AGENTS](AGENTS.md), the assigned [task](docs/TASKS.md) and its owning contracts.
-2. Install the workspace with the toolchain below, then scaffold the frontends and backend in Phases 02–03.
+2. Install the workspace with the toolchain below; inspect implemented code and target refactor tasks before moving existing foundations.
 3. Configure isolated local/test resources, a transaction-capable MongoDB replica set and sandbox integrations.
 4. Implement each feature with its API/data contracts, required UI states, tests and operating controls.
 5. Run applicable checks, review the diff and attach evidence before task acceptance.
@@ -96,9 +115,30 @@ The install links the three workspaces and installs the storefront's exact locke
 requires npm registry access; offline installation works only with a complete matching package cache.
 `workspaces:check` lists `storefront`, `admin` and `backend` without missing dependencies.
 
+Start an isolated local replica set in a separate terminal with `npm run db:local --workspace=backend`.
+Prepare private local configuration using [.env.example](.env.example), including that replica's URI and two
+independently generated secrets. Never use a production database. Then run:
+
+```sh
+npm run dev
+```
+
+The Linux/macOS/WSL coordinator starts both UI servers and the backend TypeScript watch compiler.
+The first successful compilation starts the API; subsequent successful builds restart it gracefully.
+Storefront uses 3000, admin 5173 and the API defaults to 4000. Only the API loads an optional root `.env`;
+existing process variables take precedence. API startup validates configuration before database/HTTP access.
+No credentials, database or workers are created automatically. Ctrl-C or a child failure terminates owned
+process groups, with a 12-second grace period before forced cleanup. Compilation errors remain visible
+and retain the last successful API process; an API runtime exit stops the coordinator. Run workspaces
+individually when debugging one app. The separate database terminal has its own shutdown lifecycle.
+
+`npm run lint:boundaries` checks application source imports and transitive browser boundaries.
+`npm run format:check` checks the scoped new tooling baseline; `npm run format` formats those files only.
+Existing app formatting is adopted with each refactor rather than rewriting all legacy files now.
+
 Both frontends use HeroUI v3 (`@heroui/react` and `@heroui/styles`, locked to 3.2.6) with Tailwind CSS v4.
-CSS imports Tailwind, HeroUI, project tokens/foundation and the shared HeroUI adapter in that order.
-Project tokens govern both themes; the existing Appearance bootstrap/storage remains the only theme mechanism.
+Each app’s global CSS imports `src/components/ui/theme.css`, which imports Tailwind and native HeroUI styles.
+All HeroUI imports are confined to `components/ui/`; fonts, colors and styles remain the library defaults.
 App-owned Button defaults live in `src/components/ui/button.tsx`. HeroUI Link adapters preserve native anchors and app routing; Select, Disclosure, Card, Alert and Spinner
 provide the existing controls, panels and feedback states. See [Design](docs/DESIGN.md#2-design-system) for visual direction and component conventions.
 
@@ -109,7 +149,7 @@ They are presentation foundations; catalog/cart/checkout routes retain their sep
 
 Admin management foundations live in `admin/src/components/management/`; see the [component guide](docs/UI_COMPONENTS.md#admin-management-compositions) for server-owned list data, upload constraints and guarded-action integration.
 
-Browser foundation audits use Playwright and axe. After building both apps, run `npx playwright install --with-deps chromium firefox webkit`, then `npm run test:ui`. The full CI runs the same audit through admin's `test:a11y` inventory entry. Tests reserve loopback ports 3100, 5273 and 5180; the component fixture is never included in application builds. Reports and screenshots are generated under `test-results/`. See [audit scope and environment notes](docs/evidence/P02-011-accessibility.md).
+Browser foundation audits use Playwright and axe. After building both apps, run `npx playwright install --with-deps chromium firefox webkit`, then `npm run test:ui`. The root browser inventory runs the same audit; admin's `test:a11y` remains a compatibility alias. Tests reserve loopback ports 3100, 5273 and 5180; the component fixture is never included in application builds. Reports and screenshots are generated under `test-results/`. See [audit scope and environment notes](docs/evidence/P02-011-accessibility.md).
 
 Current root checks:
 
@@ -141,10 +181,10 @@ synthetic accounts/digests on an owned replica. Customer activation is described
 [identity persistence evidence](docs/evidence/P03-004-identity-models.md).
 
 Customer/admin session service and cookie adapter are implemented in `backend/src/modules/auth/`. They require explicit
-session lifetime/SameSite settings through `loadSessionOptions` when authentication is composed; no values are supplied as
+session lifetime/SameSite settings validated once by `loadEnvironment` into typed identity options; no values are supplied as
 defaults. Tokens are opaque and hashed at rest; issuance, rotation and revocation are verified with real MongoDB fixtures.
 Customer credential routes can be activated as described below; administrator credential integration remains separate. Origin/CORS/CSRF guards and bootstrap router are available through `createBrowserSecurity` and
-`browserSecurityRoutes`; customer composition loads explicit `BROWSER_CONTEXT_TTL_SECONDS` (1–1800), mount that router,
+`browserSecurityRoutes`; the configuration boundary validates explicit `BROWSER_CONTEXT_TTL_SECONDS` (1–1800); identity composition mounts that router,
 and apply the route-selected protection before exposing mutations. Guest order persistence remains P06-015. See [session evidence](docs/evidence/P03-005-sessions.md).
 
 Customer authentication is available with `CUSTOMER_AUTH_ENABLED=true` after explicit local/test persistence setup.
@@ -154,8 +194,7 @@ existing incompatible validators require a reviewed migration. Set the flag and 
 validators/indexes without modifying them. Registration/login/logout/session and CSRF bootstrap routes then run under
 `/api/v1`. The default flag is false. Profile/address/deletion-intake APIs share that activation. Current active delivery rules govern saved-address eligibility;
 missing coverage fails closed. Phone input is validated locally against Bangladesh numbering metadata and stored as E.164.
-Deletion intake requires verified email and never deletes an account or historical records. Admin credentials, verification email delivery, profile UI and distributed abuse
-controls remain with their owning tasks. New passwords follow the owner-approved 12–128-character/512-byte policy.
+Deletion intake requires verified email and never deletes an account or historical records. P03-014 adds shared MongoDB auth/recovery quotas and secret-free security event reasons; explicit identity bootstrap now also prepares `authRateLimits`. Startup fails closed on missing protection state. See [rollout and proxy/collector gates](docs/OPERATIONS.md#p03-014-shared-auth-throttle-rollout). Frontend integration and deployed acceptance remain their owning tasks. New passwords follow the owner-approved 12–128-character/512-byte policy.
 
 Registration email delivery has a separate, disabled-by-default worker. After building, use
 `node --env-file=.env backend/tools/notification-worker.mjs` with the explicit protected email/retry configuration.
@@ -223,31 +262,45 @@ context, a title/action region, skip target, Appearance menu and offline feedbac
 no business views, administrator identity or logout success are fabricated. The admin boundary loads as a separate route chunk
 with a polite loading fallback. Backend session integration remains in Phase 03.
 
-`.github/workflows/ci.yml` runs on pushes, pull requests and manual dispatch with read-only repository permissions and
-commit-pinned actions. It uses `.nvmrc`, npm 11.19.0, a locked install, `npm run ci` and a summary artifact; no deployment
-or merchant secrets are required. A hosted run requires the repository to be connected and pushed to GitHub.
+`.github/workflows/ci.yml` runs one job named `CI required result` on pushes, pull requests and manual dispatch.
+It installs dependencies once, runs the shared inventory in order, and reuses the frontend builds for browser checks.
+Actions remain commit-pinned with read-only permissions. Hosted execution and protected-main settings require separate verification.
 
-`ci-workspaces.json` tracks app setup against P02-001, P02-002 and P03-001. While a workspace contains only its manifest,
-CI reports **Not Configured** for app checks. Adding source, scripts or dependencies requires switching it to `active`
+Use `npm run ci` for complete integration verification. During development, run the affected test file or workspace
+command; see [Testing §15.5](docs/TESTING.md#155-change-based-local-verification). A scope such as
+`npm run ci -- --scope=backend` runs that workspace's checks. `--scope=browser` requires existing production builds
+for both UIs and installed browser engines; it does not rebuild them. Reports are `test-results/ci.json` for full
+runs and `test-results/ci/<scope>.json` for scoped runs. Native test reports retain case counts and diagnostics.
+
+`npm run test:security` runs npm advisories and Gitleaks 8.30.1 against history and working files. Linux x64, Git,
+tar and network access are required. The official release archive is checksum-verified and cached in ignored
+`.cache/tools/`, then freshly extracted per invocation. Reports exclude matched secrets and author/provider payloads.
+High/critical advisories fail unless covered by reviewed, specific, expiring non-applicability records in
+`ci-security-exceptions.json` (initially empty). Scanner/registry errors fail. Dependabot proposes reviewed npm/Actions
+updates; automatic merge and force upgrades are not configured. Hosted verification still requires GitHub access.
+
+`ci-workspaces.json` version 2 records the six check groups and their command lists. App entries retain setup ownership
+against P02-001, P02-002 and P03-001. Manifest-only apps report **Not Configured** and fail required execution.
+Adding source, scripts or dependencies requires switching the app to `active`
 and supplying real `lint`, `typecheck`, `test:unit` and `build` scripts. All listed checks run and any missing/failed script
 fails CI. Add integration/contract/security/E2E/coverage suites to the inventory as their capabilities are implemented;
 backend financial slices require the real replica-set integration and contract suites before acceptance.
 [Testing §5.3](docs/TESTING.md#53-standard-execution-interface) defines the full required interface. A foundation CI pass
 does not establish application or milestone readiness. Missing scripts must fail; never use `--if-present` to conceal them.
 
-Both apps import `styles/tokens.css` for the 17 Design §2.2 colors. Use semantic utilities such as `bg-brand`,
-`text-on-brand`, `text-text-muted` and `border-control-border`. Explicit root `data-theme="light"` / `"dark"` overrides the
-system fallback. Both apps expose a labelled Appearance select with Light/Dark/System. Choices persist under
-`sportzone.theme` in localStorage per origin and synchronize across same-origin tabs. A blocking head script applies
-explicit choices before body content; System uses CSS media preferences. Storage errors retain page-local usability.
-Reduced-motion CSS limits animation/transition duration and disables smooth scrolling. See [Design §2.2](docs/DESIGN.md#22-light-and-dark-color-system).
+Both apps use the installed HeroUI default theme and Tailwind system font stack. There is no custom
+palette, webfont set, radius/size override or shared adapter. Route/feature/layout code imports its
+own `components/ui/` facade and compositions. `ui/theme.css`, `ui/primitives.tsx` and individual UI
+modules are the only customization points. The import-boundary check rejects direct HeroUI imports
+elsewhere in application source.
 
-Typography and dimensions come from `styles/foundation.css`: self-hosted Inter, Plus Jakarta Sans and Noto Sans Bengali,
-font-display swap, system fallbacks, a 4px spacing unit, semantic radii and a 1280px storefront container. Font provenance
-and licenses are in [styles/fonts](styles/fonts/README.md). Use `font-heading`, `font-bengali`, `numeric`, `min-h-control`
-and `rounded-control/card/dialog` as appropriate. Each app exports `formatBdt` from `src/lib/format-bdt.ts`; pass integer
-poisha, for example `formatBdt(123450)` → `৳1,234.50`. Zero fractions omit decimals; nonzero fractions show two digits.
-Negative, fractional, unsafe or nonnumeric inputs are rejected. This utility displays backend amounts and calculates no totals.
+Light/Dark/System preferences persist under `sportzone.theme`. The blocking bootstrap resolves
+System to the OS preference before hydration; the single preference controller follows OS changes
+and synchronizes same-origin tabs without resetting drafts. Native HeroUI handles motion/focus styles.
+Default-package accessibility findings remain reportable release issues, not automatically waived gates.
+
+Use `tabular-nums` for monetary display. Each app exports `formatBdt` from `src/lib/format-bdt.ts`;
+pass integer poisha, for example `formatBdt(123450)` → `৳1,234.50`. The formatter calculates no totals.
 
 ## 5. Configuration and verification
 
@@ -301,3 +354,40 @@ Customer password recovery/change (P03-010) is an explicitly activated backend s
 Verified customer email change (P03-011) uses EMAIL_CHANGE_ENABLED with explicit email-change TTL/cooldown/response-floor settings and the same protected proof keys/HTTPS storefront origin. Run the existing local/test notification migration before upgrading. Email stays unchanged until proof confirmation; confirmation revokes customer sessions and requires login with the verified new address. Password recovery and email-change activation are independent. See [email-change operations](docs/OPERATIONS.md#verified-email-change-activation-and-recovery).
 
 Private administrator credentials (P03-012) activate with ADMIN_AUTH_ENABLED independently of customer auth. Supply explicit session/context policy, bounded ADMIN_PASSWORD_RESET TTL/cooldown/response-floor values, protected proof keys and approved HTTPS ADMIN_ORIGIN. Bootstrap/migrate owned persistence first. The local/test `node --env-file=.env backend/tools/provision-admin.mjs` command reads one bounded `{name,email,password}` JSON object from a protected noninteractive stdin source; never put passwords in command arguments or shell history. It refuses existing administrators, customer upgrades, overwrites and deployed environments. Production provisioning requires the reviewed operator procedure. See [administrator operations](docs/OPERATIONS.md#private-administrator-provisioning-and-recovery).
+
+### Connected identity interfaces (P03-015)
+
+Storefront `/register`, `/login`, `/forgot-password`, `/reset-password`, `/account` and `/account/email-change`
+consume the existing customer API. Admin `/login`, `/forgot-password`, `/reset-password` and protected `/app/*`
+consume the separate administrator API; no administrator signup is provided. Account profile/address/password/email
+operations use server validation and session/CSRF enforcement. Management modules remain their owning future tasks.
+
+Set `NEXT_PUBLIC_API_ORIGIN` for the storefront and `VITE_API_ORIGIN` for admin in each frontend process or its
+own ignored `.env.local`, then rebuild. These are public origins only (for example `https://api.example.test`),
+never backend secrets. Missing/invalid values visibly disable the service. Keep exact API Origin/CORS allowlists
+and proof-link frontend origins aligned; browser cookies require the documented HTTPS topology. Root `.env` does
+not automatically configure frontend builds. See [operations](docs/OPERATIONS.md#p03-015-browser-identity-rollout).
+
+Focused real-API browser verification requires `npm run build --workspace backend`, both frontend builds with public
+origin `https://127.0.0.1:4443`, and `npm run test:ui -- tests/ui/authentication.spec.ts`. The harness owns temporary
+TLS certificates, an isolated MongoDB replica set and synthetic accounts, cleans them on exit, and sends no external
+email. Proofs pass privately through fixture IPC; authentication traces/screenshots-on-failure are disabled. Hosted
+CI sets these synthetic build origins explicitly. [Task evidence](docs/evidence/P03-015-identity-interfaces.md).
+
+### Backend runtime wiring (P03-019)
+
+`backend/src/composition.ts` wires the application and notification worker from typed configuration;
+`routes/index.ts` owns root HTTP registration, and `common/` owns technical errors/responses/pagination/middleware.
+`server.ts` retains process/listener/database lifecycle. Each process loads enabled identity policies once through
+`config/environment.ts`; the worker reuses that policy and loads its separate email/retry settings once. Existing
+start/build/operator commands and data/API contracts remain unchanged. The module ownership/entity-file refactor
+remains P03-020. [Verification](docs/evidence/P03-019-backend-composition.md).
+
+### Backend module ownership (P03-020)
+
+`auth/auth.model.ts` is the sole user/session/challenge/context model registration. Customers owns profile/address
+validation and routes through auth's narrow transaction-scoped customer-account capability; delivery owns coverage.
+Notifications owns durable intent/claim/retry behavior and neutral message/outcome types. The fixed Resend transport
+lives in `integrations/email/resend.adapter.ts`, configured through `config/notifications.ts`. Implemented files use
+entity-prefixed responsibilities. Public API, collections, environment variables and tool commands are unchanged;
+rebuild all backend modules together. [Verification](docs/evidence/P03-020-module-ownership.md).

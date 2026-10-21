@@ -14,5 +14,10 @@
   },
   "javascript": {
     "jsxRuntime": "transparent"
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
   }
 }

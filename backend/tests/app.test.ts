@@ -3,10 +3,10 @@ import request from 'supertest'
 import { describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { createApp } from '../src/app.js'
-import { parseInput, validate } from '../src/middleware/validation.js'
-import { ApiError } from '../src/shared/errors.js'
-import { pageMeta, parsePagination } from '../src/shared/pagination.js'
-import { respond } from '../src/shared/responses.js'
+import { parseInput, validate } from '../src/common/middleware/validation.js'
+import { ApiError } from '../src/common/errors.js'
+import { pageMeta, parsePagination } from '../src/common/pagination.js'
+import { respond } from '../src/common/responses.js'
 
 // Synthetic routes exist only in this test. No new public endpoint is registered.
 function fixture() {

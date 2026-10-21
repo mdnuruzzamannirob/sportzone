@@ -1,4 +1,4 @@
-import { Table } from '@heroui/react'
+import { Table } from '../ui/index'
 import { type ReactNode, useId } from 'react'
 import { Button } from '../ui/button'
 import { EmptyState, LoadingState, Notice } from '../ui/feedback'
@@ -51,17 +51,17 @@ export function DataTable<T extends { id: string }>({
         </Notice>
       )}
       {isPending && <LoadingState label="Loading results…" />}
-      <p id={help} className="text-sm text-text-muted">
+      <p id={help} className="text-sm text-muted">
         Scroll within the table to view all columns. Use arrow keys to move between
         cells.
       </p>
-      <Table className="min-w-0 max-w-full rounded-card border border-border">
+      <Table className="min-w-0 max-w-full border border-border">
         <Table.ScrollContainer
           role="region"
           aria-label={`${label} columns`}
           aria-describedby={help}
           tabIndex={0}
-          className="max-w-full overflow-x-auto focus-visible:outline-2 focus-visible:outline-focus"
+          className="max-w-full overflow-x-auto focus-visible:outline-2 focus-visible:outline-accent"
         >
           <Table.Content
             aria-label={label}
@@ -118,7 +118,7 @@ export function DataTable<T extends { id: string }>({
         </EmptyState>
       )}
       {rows.length > 0 && (isPending || error) && (
-        <p className="text-sm text-text-muted">Previously loaded results are shown.</p>
+        <p className="text-sm text-muted">Previously loaded results are shown.</p>
       )}
     </section>
   )

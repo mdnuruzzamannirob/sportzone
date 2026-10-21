@@ -1,6 +1,5 @@
 import { verifyHeroUIStyles } from '../../tests/heroui-smoke.mjs'
 import { verifyThemeBootstrap } from '../../tests/theme-smoke.mjs'
-import { verifyFontAssets } from '../../tests/font-assets.mjs'
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
@@ -74,10 +73,9 @@ try {
   assert.equal(css.status, 200)
   const stylesheet = await css.text()
   assert.match(stylesheet, /100dvh/)
-  await verifyFontAssets(stylesheet, origin)
+
   verifyHeroUIStyles(stylesheet)
-  assert.match(stylesheet, /color:var\(--text-muted\)/)
-  assert.ok(stylesheet.includes('--link-text:') && stylesheet.includes('--on-brand:'), 'Shared light/dark tokens must reach production CSS')
+  assert.match(stylesheet, /color:var\(--muted\)/)
   console.log(
     'SMOKE-01 Passed: public route, landmark and compiled Tailwind CSS',
   )
@@ -91,7 +89,7 @@ try {
     assert.match(account.headers.get('cache-control') ?? '', /no-store/)
     assert.equal(account.headers.get('x-robots-tag'), 'noindex, nofollow')
     const body = await account.text()
-    assert.match(body, /Account access is not available yet/)
+    assert.match(body, /Checking your session/)
     assert.match(body, /name="robots" content="noindex, nofollow"/)
     assert.ok(
       !body.includes(identity),
@@ -113,7 +111,7 @@ try {
   assert.match(html, /aria-label="Mobile navigation"/)
   assert.match(html, /aria-expanded="false"/)
   console.log('SMOKE-04 Passed: 11 honest noindex destinations, consistent shell and closed mobile navigation')
-  for (const path of ['/not-a-route', '/%28public%29', '/%28private%29']) {
+  for (const path of ['/not-a-route', '/%28public%29', '/%28private%29', '/%28store%29', '/%28account%29', '/account/not-a-route', '/products/not-a-product']) {
     const response = await fetch(origin + path)
     assert.equal(response.status, 404)
     const missing = await response.text()

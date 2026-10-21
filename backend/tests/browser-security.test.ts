@@ -4,7 +4,7 @@ import {
   readContextCookie,
   loadBrowserSecurityOptions,
   validateBrowserSecurityOptions,
-} from '../src/modules/auth/browser-security.js'
+} from '../src/modules/auth/browser-security.service.js'
 const options = {
   secret: randomBytes(32).toString('hex'),
   contextTtlSeconds: 120,

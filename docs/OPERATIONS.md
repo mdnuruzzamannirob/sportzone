@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 17 October 2026
+**Updated:** 21 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -290,6 +290,25 @@ and `npm run ci`. All three workspaces have independent lint/type/unit/build and
 not production static hosting; configure fallback and noindex/private document headers at the deployment host. No deployment, migration or restore
 command exists yet; local storefront build/start is not a production deployment procedure. See
 [Testing §5.3](./TESTING.md#53-standard-execution-interface) for current coverage and the complete required interface.
+
+P01-017 provides `npm run dev` on Linux/macOS/WSL: one TypeScript watch compiler and both UI dev servers.
+The compiler uses the existing backend tsconfig; its first successful emit starts the API and later
+successful builds gracefully restart it. This avoids a duplicate initial compilation. API startup validates
+configuration before database/HTTP access; only the API explicitly loads optional root `.env` and injected
+variables take precedence. Provision isolated local configuration and run the existing ephemeral replica-set
+tool in another terminal. No database provisioning, identity bootstrap, migration, provider activation or
+notification worker runs automatically. SIGINT/SIGTERM and unexpected child/API exits stop owned process
+groups with a 12-second grace period before SIGKILL. Compiler errors retain the last successfully running
+API until a valid rebuild; verify actual HTTP readiness separately. Stop the separate DB tool independently.
+Native Windows uses WSL or individual workspace commands.
+
+Root `lint:boundaries` validates literal source imports, package declarations, workspace isolation,
+shared-code purity and transitive browser/server imports. Root `format:check` applies Biome only to
+`scripts/dev.mjs`, `scripts/dev-backend.mjs`, `scripts/check-boundaries.mjs` and `tests/tooling.test.mjs`. Expand this baseline
+with a scoped refactor; it does not imply legacy application files were reformatted. Both checks are in
+the CI inventory and fail on violations. Their pinned Biome/TypeScript tools are declared at the root,
+using the same versions already locked for the workspaces.
+
 The database foundation exports `openDatabase(uri, dbName)` and P03-003 startup now calls it after configuration validation, before binding HTTP. Use an isolated explicit database name; `admin`, `local` and `config` are rejected. Pools are bounded to ten connections, with five-second selection/connect/queue waits and a fifteen-second socket timeout. Startup failures return static database codes without URI/driver text; failed connections are destroyed. Connections require replica-set topology and logical sessions. Automatic collection/index creation and command buffering are disabled.
 
 `npm run db:local --workspace=backend` starts a single-member, loopback-only, ephemeral MongoDB 8.0.16 replica set and prints its credential-free local URI. Its data disappears on shutdown; never use it for real/customer data or durability/backup acceptance. Integration tests generate their own random database on their own replica and never read external `MONGODB_URI`. `MONGOMS_DISTRO=ubuntu-24.04` selects the compatible official binary on this Ubuntu 26 host; supported Ubuntu 24 CI resolves it normally. First use downloads the pinned binary and requires network access; there is no mock/standalone fallback. Close the local tool with SIGINT/SIGTERM to clean its owned processes/data.
@@ -300,9 +319,9 @@ The compiled backend starts with `npm run start --workspace=backend` after build
 
 APP_ENV is local/test/staging/production, paired with NODE_ENV development/test/production respectively (staging uses production). Staging/production origins require HTTPS and reject localhost/loopback conventions. RELEASE_ID is bounded nonsecret deployment metadata. PORT defaults to 4000 and must be 1–65535. API_BIND_HOST defaults to 127.0.0.1 and permits only documented loopback/wildcard bind addresses. Production/wildcard listeners require the approved TLS proxy/firewall/operational ingress; a bind option is not deployment acceptance. Missing/invalid values fail before DB/network access and emit only safe configuration key names, never values.
 
-Session composition additionally calls `loadSessionOptions`: require CUSTOMER_SESSION_TTL_SECONDS and
+When either auth flag is enabled, `loadEnvironment` constructs frozen typed session/browser/proof options once: require CUSTOMER_SESSION_TTL_SECONDS and
 ADMIN_SESSION_TTL_SECONDS as positive bounded seconds and SESSION_COOKIE_SAME_SITE as explicit lax/strict. Values require
-security/operator approval; none are supplied by the repository. Session options are validated at service composition,
+security/operator approval; none are supplied by the repository. Session options are validated at the configuration boundary and guarded by the service factory,
 required for explicit customer activation and never silently defaulted. Configured HTTPS produces Secure cookies in every environment;
 only local/test loopback HTTP may omit Secure. Cookies remain host-only, HttpOnly and path /. Confirm actual deployed
 same-site origin/TLS behavior before activation; proxy headers cannot override configured cookie security.
@@ -316,7 +335,7 @@ Startup verifies MongoDB replica/session capability before opening HTTP. Runtime
 
 Every application response retains a fresh server UUID, no-store and nosniff; private errors remain generic. Ordinary JSON parsing is strict, uncompressed and limited to 102400 bytes by default. Unsupported media/parser/limit input maps to API 400 INVALID_REQUEST. Provider/media parsers must be added under their owning contracts. Customer/admin sessions, browser CORS/CSRF, external-provider capability gates and deployed telemetry/alerts remain their owning tasks.
 
-Successful foundation CI is evidence for its configured checks only, not application deployment or operational readiness. Browser audit setup now requires `npx playwright install --with-deps chromium firefox webkit` after locked installation. The audit is mandatory through admin `test:a11y` in the CI inventory and starts only loopback test servers on 3100/5273/5180 after both builds. `test-results/ui-report.json` and `test-results/ui/` are CI artifacts; the fixture is not a deployment asset. Missing engines/libraries fail the audit rather than silently skip it. Local engine-wrapper overrides are test-machine configuration only; see [P02-011 environment evidence](./evidence/P02-011-accessibility.md).
+Successful foundation CI is evidence for its configured checks only, not application deployment or operational readiness. Browser audit setup now requires `npx playwright install --with-deps chromium firefox webkit` after locked installation. The audit is mandatory through the root browser scope in the CI inventory and starts only loopback test servers on 3100/5273/5180 after both builds. `test-results/ui-report.json` and `test-results/ui/` are CI artifacts; the fixture is not a deployment asset. Missing engines/libraries fail the audit rather than silently skip it. Local engine-wrapper overrides are test-machine configuration only; see [P02-011 environment evidence](./evidence/P02-011-accessibility.md).
 
 CI must reject missing required scripts rather than silently skip checks. Pin compatible runtime/tool versions and
 preserve tested build outputs with commit SHA, dependency lock digest and signed/traceable artifact identity where
@@ -357,6 +376,46 @@ or affected feature; use OP-REL-02 and OP-FIN-* instead of ad hoc manual ledger 
   its supported state** during planned rollback, or the change cannot use binary rollback.
 - Staged rollout or maintenance-mode choices require the actual platform's capabilities and operator approval.
   Avoid having two incompatible worker versions process the same job queue.
+
+### 5.5 CI execution and supply-chain controls
+
+GitHub Actions runs one job named `CI required result`. A single locked install serves all checks.
+`ci-workspaces.json` lists the commands; the local runner executes repository, storefront, admin, backend,
+browser and supply-chain groups in order. Each application builds once; browser checks reuse the two UI builds
+in the same job. No workflow generation, cross-job build transfer or report aggregation is required.
+
+Run the full inventory on hosted PR, push and manual triggers. During development follow Testing §15.5 rather
+than repeatedly running the entire pipeline. A failed command stops the runner and fails the job; an interrupted
+or cancelled job cannot satisfy the required successful check. Do not use `--if-present`, `continue-on-error`
+or passing placeholders. Preserve application/browser/replica-set coverage when simplifying tooling.
+
+The runner records command outcomes, exit status and duration in `test-results/ci.json`; native suite reports
+retain detailed cases. On GitHub Actions, a failed command also emits an error annotation containing its
+validated npm command name, so the failed check is visible without downloading logs. It does not publish
+configuration values or raw report payloads. Upload available sanitized reports even on failure. GitHub run metadata identifies the
+source revision and attempt; do not combine artifacts from different runs as acceptance evidence. Keep the
+required check name stable. Verify a successful hosted run and the protected-main rule before acceptance;
+local YAML does not configure remote settings. Record the operator and actual settings evidence.
+
+Use the recorded Node/npm versions and root `npm ci --ignore-scripts --no-audit --no-fund` installation policy. Review any required dependency lifecycle step explicitly; never enable all install scripts to fix an unexplained failure. Cache package downloads, keyed by runner/runtime/lockfile, rather than treating cached node_modules as installation. Install pinned Playwright engines/system dependencies in the CI job; browser binary caching and remote task-result caches are not initial requirements. Tests using time, databases or providers must not be accepted solely from cached results.
+
+Pin external actions to full commit SHAs, use read-only permissions by default and keep checkout credentials unpersisted. PR code receives no deployment/merchant secrets; do not run untrusted PR source under privileged pull_request_target/workflow_run contexts. Scope release credentials to protected deployment environments. Prefer short-lived provider identity when supported. CI cancels superseded validation runs; deployment serialization is separate and must not interrupt an in-flight migration or financial operation blindly.
+
+Retain native suite reports with their workflow revision and runtime context. Upload sanitized failure diagnostics on failure as well as success; enforce restricted access/retention for traces containing private data. Use npm audit for locked dependency advisories and Gitleaks CLI for repository secret detection, with an explicitly pinned/checksummed release and bounded reviewable exclusions. Scan the working tree and relevant Git history; redact matches from public logs/artifacts. P01-016 provides `npm run test:security`, downloading a pinned/checksummed Gitleaks archive into ignored cache and extracting a verified copy per invocation; Linux x64 and network access are required. Scanner/network unavailability is not a clean result. High/critical advisories require remediation or an explicit reviewed non-applicability exception; actual secrets or exploitable high-impact findings block acceptance. Exceptions record affected versions, rationale, reviewer, expiry and remediation without waiving product/security invariants. Use Dependabot for npm/GitHub Actions update PRs, grouping compatible maintenance updates and separating majors; no unreviewed auto-merge or automatic audit fix/force upgrade.
+
+### 5.6 Source control and artifact promotion
+
+Use protected `main`, short task branches and reviewed squash merges; a persistent develop branch is not required. PRs identify task IDs, behavioral scope, test evidence and compatibility/recovery impact. Require the successful CI job and independent review; changes to security/financial paths include their owning negative/concurrency tests. Repository protection/environment settings must be inspected and verified during implementation; local YAML is not proof they are enabled or available on the selected account plan. Retain the equivalent release approval record if a platform protection feature is unavailable.
+
+Applications are private workspaces with a coordinated release record; no public package publication or Changesets workflow is required. Release IDs trace immutable commit and artifact digests. Build backend images once per candidate using locked dependencies, excluding source secrets and running without privileged identity; API and worker use the same compatible image with distinct entry commands. Image/container setup remains a deployment implementation task, not an existing command. Admin is a static artifact; storefront is a supported Next.js runtime artifact. Frontend public env values may be compiled into bundles: record environment/build-config identity and rebuild/reverify for a different environment when necessary. Never promote a staging-baked API origin as a production artifact by assumption.
+
+Eligible candidates may deploy to isolated staging after CI. Production promotion requires the existing milestone/provider/policy gates and a recorded release approval. Run additive schema/index operations as explicit controlled jobs, not from every API replica startup. Preserve API/worker compatibility during rollout and follow §6 for rollback. Managed runtime/static hosting and transaction-capable managed MongoDB are the deployment class; exact vendor, region, resources and billable plan are selected against the environment inventory before provisioning.
+
+### 5.7 Refactor deployment compatibility
+
+P02-012–013/P03-019–020 change source organization incrementally. Inventory runtime/build imports, tool/worker launch commands, CI paths and runbook references with each move. Preserve env names, activation, process draining, protected readiness, logs and fenced job claims. No folder move authorizes a schema change, deployed-origin/cookie change or destructive data operation. Drain incompatible runners before replacing entry points; do not create a second uncontrolled scheduler.
+
+Restore a compatible prior build for code-only recovery while retaining durable intents/audit and reconciling uncertain external effects. Update runbook commands when actually implemented; planned script names are not executable instructions. Any persistence/config change needs its additive migration and restore assessment before deployment.
 
 ## 6. Release management & rollback
 
@@ -413,7 +472,7 @@ business records. Transaction-capable deployment and unique indexes are required
 traffic. Database §11–§15 controls exact index keys, schema changes, state transitions and recovery invariants;
 this section governs safe execution.
 
-Identity collection bootstrap is explicit in `backend/src/modules/auth/collection-validators.ts`, not HTTP startup.
+Identity collection bootstrap is explicit in `backend/src/modules/auth/identity.persistence.ts`, not HTTP startup.
 `initializeIdentityPersistence` creates missing empty collections with strict/error validators and additive named indexes;
 it rejects existing validator mismatches without collMod/drop. Before a deployed invocation, follow Database §15.1:
 record migration/environment authority, duplicate/invalid-data preflight, backup/recovery compatibility and index results.
@@ -566,6 +625,8 @@ return evidence, raw authentication challenges, full addresses, provider signatu
 Sensitive security incidents may require protected forensic retention with explicit authorization and limited
 distribution.
 
+P03-013 adds an optional `securityAction` and `outcome` to the existing `request_completed` event for allowlisted identity action patterns. `outcome` is `succeeded` for 2xx/3xx, `denied` for 4xx and `failed` otherwise. Classification comes from server-owned method/registered-route pairs; unmatched routes and denials before route matching retain the normal safe request record without a fabricated action. No submitted ID, actor claim, email, body, query or proof is added. Correlate by the server-issued request ID. These stdout operational records require the normal protected collector/retention setup; they do not implement the append-only business `auditLogs` contract or the domain audit infrastructure owned by later feature tasks. P03-014 adds fixed `securityReason` values (`rate_limited`, `throttle_unavailable`) and CSRF issuance action classifications without identifiers or counter keys.
+
 ### 9.4 Dashboard and alert design
 
 Present separate dashboards for **service health**, **customer journey**, **inventory/coupon state**,
@@ -656,6 +717,8 @@ maintains the following environment-specific recovery policy and verifies it thr
 | Retention and encryption/key custody | Retention/legal-hold policy, protected storage, independent key custody and deletion controls | Privacy / security / data owner |
 | Restore drill cadence | Scheduled isolated exercises, responsible operator and retained results | Data owner |
 | Cross-region/offsite protection | Recovery location, residency constraints, threat coverage and provider capability | Platform / privacy owner |
+
+Production database selection must support encrypted managed backups and the approved recovery window; select PITR capability when required to meet that target. Verify actual service-tier capability, access separation and isolated restore before acceptance. Runtime replication is not a backup policy. Monitoring retains structured stdout/stderr with redaction and separate owned alerts for API availability, transaction integrity, financial/notification backlog and backup freshness; vendor selection belongs to environment provisioning.
 
 **RPO/RTO are targets, not inferred guarantees.** A successful database snapshot can still omit activity after its
 capture and cannot reverse settled external payments/refunds or reconstruct every missing local action.
@@ -1381,6 +1444,8 @@ production fallback to sandbox credentials or localhost.
 | Disaster cutover | Old-writer fencing, callback handoff, restored-session rejection and controlled reopening | Incident commander |
 | Handover | Account ownership, support coverage, service costs and signed operating inventory | Store owner |
 
+These are environment acceptance inputs, not alternatives to the engineering architecture. Keep each record linked to its EXT-01–09 dependency, accountable named individual, verified capability, evidence, acceptance deadline and next action. Hosting/vendor/region and budget selection must establish Next.js runtime compatibility, static SPA routing, durable worker support, network/session behavior, data residency, backup/recovery capability and account ownership before provisioning. Select monitoring access/retention and recovery objectives against measured operator needs; do not populate arbitrary numbers or legal claims to close a register.
+
 Maintain environment-specific records in the protected operating inventory. Verify them at M6/M7 and transfer them at M8.
 
 ## Appendix D — Requirements & task traceability
@@ -1491,8 +1556,7 @@ propagate accepted versions and remaining decisions to the handover record.
 
 ### Browser security composition
 
-P03-006 provides the identity bootstrap router and route-selected Origin/CORS/CSRF controls; the executable defaults to health-only and can activate customer routes through P03-007 as described below. At identity composition, call `loadBrowserSecurityOptions` with the protected environment
-and existing cookie policy. Set `BROWSER_CONTEXT_TTL_SECONDS` explicitly in 1–1800 seconds; its sanitized template is
+P03-006 provides the identity bootstrap router and route-selected Origin/CORS/CSRF controls; the executable defaults to health-only and can activate customer routes through P03-007 as described below. The configuration boundary validates the protected environment and configured cookie policy once; identity composition receives its typed browser options. Set `BROWSER_CONTEXT_TTL_SECONDS` explicitly in 1–1800 seconds; its sanitized template is
 blank. `STOREFRONT_ORIGIN`, `ADMIN_ORIGIN` and `CORS_ALLOWED_ORIGINS` must agree exactly; frontend origins must be distinct.
 HTTPS is required with secure cookies; controlled loopback HTTP follows the existing local/test session policy.
 
@@ -1520,9 +1584,7 @@ registration subset and must be expanded through reviewed migrations for later n
 Registration enqueues one retryable intent transactionally, without calling an email provider. Email verification and
 worker delivery remain P03-009/010 and notification tasks; queued is not delivered. Keep the intent across retries and
 application rollback. Password hashes use versioned scrypt with a per-process two-KDF concurrency cap; budget at least
-256 MiB plus application/headroom for concurrent derivations and benchmark deployed capacity. Per-process socket-IP
-limits are 10 attempts/minute across register/login/logout; trust proxy remains false and forwarded headers are ignored.
-Multi-replica/shared abuse controls, credential auditing and deployed-origin checks remain release gates in P03-014/016.
+256 MiB plus application/headroom for concurrent derivations and benchmark deployed capacity. P03-014 provides shared MongoDB quotas across instances; trust proxy remains false and forwarded headers are ignored. Deployed proxy/origin/collector verification remains a release gate.
 
 Disable the activation flag to roll back HTTP exposure; do not remove accounts, intents, contexts or sessions. Preserve
 hash format compatibility; password/secret changes follow the identity rotation policy. Logout reports success only after
@@ -1606,10 +1668,103 @@ For uncertain delivery, reconcile retained provider/event/claim identifiers; do 
 
 ### Private administrator provisioning and recovery
 
-ADMIN_AUTH_ENABLED defaults false and is independent of CUSTOMER_AUTH_ENABLED. Activation requires explicit CUSTOMER_SESSION_TTL_SECONDS/ADMIN_SESSION_TTL_SECONDS, BROWSER_CONTEXT_TTL_SECONDS, SESSION_COOKIE_SAME_SITE, existing protected proof keys and approved HTTPS ADMIN_ORIGIN, plus ADMIN_PASSWORD_RESET_TTL_SECONDS (60–1800), ADMIN_PASSWORD_RESET_COOLDOWN_SECONDS (60–3600), ADMIN_PASSWORD_RESET_RESPONSE_FLOOR_MS (100–5000). No public administrator signup exists. Per-process admin rate limits and existing protected request logs are foundation controls; shared ingress and comprehensive audit infrastructure remain with their owning security/operations tasks.
+ADMIN_AUTH_ENABLED defaults false and is independent of CUSTOMER_AUTH_ENABLED. Activation requires explicit CUSTOMER_SESSION_TTL_SECONDS/ADMIN_SESSION_TTL_SECONDS, BROWSER_CONTEXT_TTL_SECONDS, SESSION_COOKIE_SAME_SITE, existing protected proof keys and approved HTTPS ADMIN_ORIGIN, plus ADMIN_PASSWORD_RESET_TTL_SECONDS (60–1800), ADMIN_PASSWORD_RESET_COOLDOWN_SECONDS (60–3600), ADMIN_PASSWORD_RESET_RESPONSE_FLOOR_MS (100–5000). No public administrator signup exists. P03-014 shared MongoDB quotas and protected structured security event logs cover admin credentials/recovery. Deployed ingress configuration and comprehensive domain audit infrastructure retain their owning security/operations gates.
 
 Build the backend and bootstrap owned local/test identity persistence through the existing explicit command; migrate notifications through `node --env-file=.env backend/tools/migrate-notifications.mjs`. The additive migration now accepts the exact P03-011 predecessor and admin-password-reset-v1 reference-only intents. HTTP startup never migrates. Operator-controlled production rollout and a compatible rollback build must preserve expanded records, claims and provider receipts.
 
 For owned local/test initial provisioning, pipe a protected secret-source JSON object `{name,email,password}` into `node --env-file=.env backend/tools/provision-admin.mjs`. Input is noninteractive and limited to 8192 bytes; the command prints only generic success/failure and never credentials. Do not type passwords in process arguments, commit an input file, use a shared default credential or expose this function as an HTTP route. The command verifies existing strict persistence without creating collections/indexes, inserts the reserved initial administrator and refuses replay, existing admins, occupied identities and customer upgrades. Concurrent attempts serialize through the reserved _id. Staging/production are refused by this convenience command. Production initial provisioning requires an authorized operator to review the same service against verified persistence, privately inject credentials, record a secret-free change record and verify namespace/role/session behavior; no production action is claimed here.
 
 Admin recovery uses the same one-batch email worker with admin activation/key/origin policy supplied. Only the admin-specific template is claimed by the enabled admin renderer. Admin links use the configured admin HTTPS origin; customer proof/cookie/context cannot substitute, including after a role change. Known provider rejection retains stable challenge/event identity; uncertainty stops automatic resend. Bounded cleanup, key rotation, restore invalidation and reconciliation follow the existing proof procedures. Successful reset revokes admin sessions, consumes the proof and creates no session. Repeat logout requires fresh admin context when the session is unavailable. Suspended/ineligible accounts remain inaccessible; recovery cannot reactivate or privilege-upgrade them. Live inbox, deployed ingress/browser/TLS, secret-store, audit rollout and milestone approvals remain separate gates.
+
+
+### P03-016 local security scan boundaries
+
+The working-tree secret scan copies Git-tracked files (including tracked files that now match ignore rules)
+and non-ignored untracked files into a private temporary snapshot. Ignored local environment/configuration,
+generated output and symlink targets are not copied. Git inventory failure or a file escaping the repository
+fails closed. The separate `git --all` history scan retains the existing pinned scanner, redaction and reviewed
+Gitleaks rules; tracked secrets must never be hidden by adding an ignore rule. Temporary snapshots are removed
+on completion. Keep the versioned `ci-security-exceptions.json` register present; `[]` means no dependency
+exceptions, and missing/invalid/expired records fail the check. The scan does not modify local secrets.
+
+### P03-014 shared auth throttle rollout
+
+Before enabling the new identity build, run the existing explicit local/test identity bootstrap (`node --env-file=.env backend/tools/bootstrap-identity.mjs` after building). It adds only `authRateLimits` with a strict digest/count/expiry validator and the TTL index; existing identity records/validators are retained. Review the equivalent additive collection/index rollout separately for staging/production; the convenience tool refuses those environments. HTTP startup and admission only verify, never repair/implicitly create protection state. Missing/mismatched schema/index or unavailable MongoDB fails closed (generic 503), never falling back to process memory.
+
+Use one protected SESSION_SECRET and synchronized clocks across the API instances sharing the database. Drain previous unguarded builds before asserting fleet-wide protection; a mixed old/new rollout is not verified enforcement. Do not delete current buckets to bypass lockout. Minute-window keys determine reset, and TTL only reclaims expired opaque counters. Counters saturate at policy ceiling plus one. Secret rotation invalidates sessions and changes quota namespaces; coordinate it across the fleet.
+
+Network limits use the socket address; an unreviewed proxy must not be trusted through client Forwarded/X-Forwarded-For values. Behind a proxy, verify the documented topology and capacity before enabling traffic; do not silently weaken quota or trust proxy. Monitor fixed securityAction/securityReason/errorCode counts for rate limiting (429) and unavailable storage (503), and verify the protected collector and alert delivery in the deployed environment. No raw email, address, proof, cookie or HMAC key enters logs; retain security logs under the existing approved access/retention policy. Target limits apply equally to supplied existing/missing accounts, temporarily bound requests and do not change account status. Recovery cooldowns, generic responses and single-use proofs remain independent defenses.
+
+Rollback uses the prior compatible build and preserves identity/proof/notification/audit state; the new ephemeral collection can stay in place. A rollback to a build without shared enforcement requires traffic restriction or verified equivalent edge protection before reopening auth traffic. No operator migration, live sender, deployed collector/proxy or M1 acceptance is claimed by local tests.
+
+### P03-015 browser identity rollout
+
+Build storefront with `NEXT_PUBLIC_API_ORIGIN` and admin with `VITE_API_ORIGIN`, each an exact canonical API origin
+without a trailing slash/path. These are public build-time values. Never copy session/proof/mail keys into either
+frontend environment. Align existing API_PUBLIC_ORIGIN, STOREFRONT_ORIGIN, ADMIN_ORIGIN and CORS_ALLOWED_ORIGINS
+with the real HTTPS deployments and verify Secure/HttpOnly, separate customer/admin cookies and CSRF from browsers.
+Root `.env` alone does not feed frontend builds; changed public values require rebuilding assets. Unset/invalid
+values disable requests with a service-unavailable message rather than guessing a backend. Local loopback HTTP is
+accepted as explicit configuration but does not prove the production Secure-cookie flow; isolated browser tests
+use TLS proxies and a real API/MongoDB replica set.
+
+Auth/account pages remain no-store/private and noindex; proof fragments are captured once into component memory
+and removed before explicit confirmation. Do not capture auth traffic/proofs/cookies in analytics, replay tools,
+network traces or support logs. Recovery messages preserve generic acknowledgement. Browser caches are not
+persisted; identity changes cancel/clear private reads and broadcast only an invalidation signal to other tabs.
+A failed sign-out clears the private view and offers explicit revocation retry without claiming the server session
+was revoked. No mutation is automatically retried, including CSRF/network failure.
+
+Validate actual deployed login/recovery inbox delivery, link origins, browser cookie/CORS behavior, suspension and
+cross-tab expiry before environment acceptance. Registration verification delivery is not implemented; the UI does
+not fabricate it. Delivery-coverage discovery remains the delivery feature; address save checks existing server
+coverage. Rollback restores previous compatible frontend assets/configuration and preserves all backend identity,
+challenge, notification and audit data. No schema migration or production operation is part of P03-015.
+
+### P03-019 typed runtime and tool composition
+
+`backend/src/config/environment.ts` is the process-environment boundary. Enabled identity capabilities are frozen
+under `RuntimeConfig.identity`: numeric session/context policy and customer reset, email-change and admin reset
+options. Origins remain canonical, same-site/cookie rules and explicit lifetimes are unchanged. Invalid enabled
+policies fail before database/listener work; inactive providers do not become startup dependencies. Do not convert
+parsed booleans/numbers/allowlists back into environment strings or reload proof keys in HTTP/worker composition.
+Raw option adapters remain available for isolated callers and tests, but executable runtime wiring uses typed policy.
+
+`src/composition.ts` wires HTTP and notification worker capabilities. `src/routes/index.ts` registers health routes;
+identity registration remains in the owning auth composition. Private model construction stays inside auth; the
+notification worker receives narrow proof-delivery capabilities. `src/server.ts` retains listener/readiness/draining,
+database cleanup and signal handling. HTTP startup still verifies schema/index readiness without bootstrap/repair.
+Common errors/responses/pagination and validation/error middleware now live in `src/common/`.
+
+Existing commands and environment names are unchanged: `npm run build --workspace backend`,
+`node --env-file=.env backend/dist/server.js`, and `backend/tools/{bootstrap-identity,provision-admin,
+notification-worker,migrate-notifications}.mjs` remain entry points (brace list is descriptive, not a shell command).
+The worker loads its separate email/retry policy once, then uses the same typed identity proof policy as HTTP.
+Bootstrap/migration/provisioning restrictions, bounded stdin, safe diagnostics and connection cleanup remain.
+Rollback restores the compatible prior application build; no collection/index/data or external-effect migration
+was performed. Build all backend modules together; internal moved import paths are not compatibility entry points.
+
+### P03-020 module paths and provider boundary
+
+Implemented auth files now use entity-prefixed responsibilities: `auth.model.ts` is the sole identity model
+registration; `identity.persistence.ts` owns exact BSON validators/bootstrap/readiness, and `session.persistence.ts`
+retains identity persistence operations. `auth.composition.ts` wires auth and customers. Session/browser-security,
+password/recovery/email-change, credential/admin, proof and throttle files retain their prior contracts under their
+named `.service.ts`, `.routes.ts`, `.http.ts` or `.crypto.ts` responsibilities. This is a source move, not a schema
+migration, credential rotation, quota reset or re-bootstrap requirement.
+
+Customers owns `customer.validation.ts`, `customer.service.ts` and `customer.routes.ts`; auth-owned
+`customer-account.service.ts` supplies the bounded transaction-scoped profile persistence capability. Delivery owns
+`delivery-coverage.service.ts`; no alternate delivery collection or guessed API namespace was introduced.
+Notifications owns `notification.service.ts` (durable intents/claims), `notification-worker.service.ts` (batch/retry)
+and `notification.types.ts` (message/outcome contracts). `config/notifications.ts` loads explicit email/retry policy;
+`integrations/email/resend.adapter.ts` owns the fixed provider transport. External calls remain outside transactions;
+uncertain sends retain their previous durable disposition.
+
+All existing tool command paths remain unchanged. Tools and the isolated browser fixture import the new compiled
+module paths. Build/deploy the complete backend artifact from current source; do not rely on stale generated modules
+from the old layout. The local parity run removed obsolete generated outputs before checking CLI/runtime/browser
+behavior. Normal HTTP startup still verifies persistence rather than creating or repairing it. Operator bootstrap,
+provisioning/migration restrictions, stdout redaction, worker cleanup and explicit activation remain unchanged.
+No production migration/external effect was performed. Rollback restores the previous complete compatible artifact
+and environment; all records, identifiers, indexes, credentials and audit/outbox state remain intact.

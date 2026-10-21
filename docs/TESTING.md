@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 17 October 2026
+**Updated:** 21 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -257,10 +257,14 @@ recovery and load checks have separately approved commands/workflows, not mandat
 | --- | --- |
 | `npm run workspaces:check` | Three local workspace links; storefront, admin and backend active |
 | `npm run lint` | Repository JavaScript syntax, JSON, whitespace, Markdown structure/links and targeted credential checks |
-| `npm run test:unit` | Twelve repository/CI guard regressions; no application tests are implied |
-| `npm run ci` | Root checks plus every activated workspace check, including the cross-app browser audit through admin `test:a11y`; machine-readable summary includes Not Configured app states |
+| `npm run test:unit` | Repository guards, command failure propagation, scoped execution and security regressions; includes supervisor signal/failure/descendant-cleanup fixtures; intentional failures assert tooling behavior rather than application acceptance |
+| `npm run lint:boundaries` | TypeScript-parsed source imports: declared dependencies, workspace/shared isolation, private backend models and transitive client/server boundaries |
+| `npm run format:check` | Biome format check of the four-file P01-017 tooling baseline; legacy application formatting is outside this baseline |
+| `npm run ci` | Complete inventory once, using the same runner as the single hosted job; workspace builds precede browser checks |
+| `npm run ci -- --scope=browser` | Browser audit only; requires current storefront/admin production builds and installed browser engines |
+| `npm run test:security` | Pinned/checksummed Gitleaks working-tree/history scan and npm advisories; sanitized reports and reviewed expiring advisory exceptions |
 | `npm run test:ui` | Type-check isolated fixture/config/tests; Playwright Chromium/Firefox/WebKit foundation reflow, axe, keyboard, theme and reduced-motion checks; requires both production builds and installed browser engines |
-| `npm run typecheck`, `test:integration`, `test:contract`, `test:e2e`, `test:security`, `test:coverage`, `build` | Not yet configured at root; implement with the owning tooling/slices before accepting the corresponding capability |
+| `npm run typecheck`, `test:integration`, `test:contract`, `test:e2e`, `test:coverage`, `build` | Not yet configured at root; implement with the owning tooling/slices before accepting the corresponding capability |
 
 Storefront workspace commands now implement `lint` (Biome), `typecheck` (Next route types plus TypeScript), `test:unit`
 (Vitest layout rendering), `build` (Next production Webpack) and `test:smoke` (real production HTTP routes/CSS/cache/404
@@ -286,38 +290,11 @@ No backend authentication, production hosting or real-browser accessibility resu
 
 HeroUI integration uses the existing workspace check inventory: lint, typecheck, unit tests, build and HTTP smoke.
 Menu/close/retry interactions exercise HeroUI Buttons; admin sign-in remains disabled until authentication exists.
-Verify shared token aliases in emitted CSS, 44px controls, explicit Light/Dark and CSS System mode. Browser checks must
-cover native keyboard/focus behavior, responsive layouts and both themes; DOM/HTTP checks do not establish visual acceptance.
-Integration evidence is recorded in [the HeroUI foundation review](./evidence/heroui-foundation.md).
+Verify native HeroUI CSS delivery, one app-owned theme entry, Light/Dark/System resolution, keyboard/focus, draft retention and responsive overflow. No hard-coded custom palette/font/radius assertions remain after the owner’s P02-014 default-theme decision.
 
-Both workspaces also run 30 form/feedback cases each (15 per explicit theme) from `tests/form-primitives.test.tsx`.
-The shared test-only contract exercises each app's own fields, form submit guard, focus-requested error summary,
-pending/destructive Buttons, four Notice severities, loading/empty states and real HeroUI dialog/drawer behavior.
-Controlled draft retention, Escape/Cancel focus restoration, pending dismissal locks and retry-enabling after settlement
-are DOM checks; manual native Tab/backdrop/touch/viewport evidence remains separate. See [UI components](./UI_COMPONENTS.md).
+Form/feedback DOM contracts run once per app (15 cases); commerce logic runs once (20 cases), and management logic once (10 cases). These retain all negative/state/financial-display assertions. Repeating identical jsdom behavior with a theme attribute did not verify CSS and was removed. Currency display keeps exact/invalid integer-poisha cases. Theme suites retain storage, SSR hydration, keyboard selection, draft/URL retention, OS resolution and listener cleanup; the former custom CSS string check is replaced by an actual OS-change behavior case.
 
-Storefront runs 40 commerce primitive cases in `tests/commerce.test.tsx` (20 per theme): genuine sale comparison,
-exact poisha display, approved rating/missing-image behavior, unavailable and pending variants, bounded and direct
-quantity requests, pending removal, explicit statuses, backend-supplied line/final totals and three skeleton layouts.
-Fixtures deliberately supply line/final amounts differing from browser arithmetic to verify the UI displays supplied
-values without recalculation. No live catalog/cart/quote, stock reservation, image delivery or payment outcome is inferred.
-
-`admin/tests/management.test.tsx` runs 20 light/dark DOM cases for table header/sort and keyboard navigation, local scroll-region structure, retained/loading/error/empty results, retry, controlled filters and bounded pagination, upload constraints and preview cleanup, pending/retry/removal, and reason/eligibility/confirmation plus Escape/focus restoration. Synthetic records and local callbacks do not prove authenticated API behavior, provider upload success or real mutations. Browser viewport/zoom/native keyboard/file-picker checks remain separate from DOM assertions.
-
-Both workspaces run four semantic-token regressions from `tests/tokens.test.tsx`, using the shared
-`tests/design-tokens.ts` assertions. They compare all 17 values with Design §2.2, check grayscale/invariant colors,
-text/control contrast and app/Tailwind integration. Built CSS smoke checks require the shared variables and compiled
-muted-text utility. Token swatch comparisons are distinct from browser layout/interaction acceptance.
-
-Each workspace also runs 19 foundation cases: font/fallback and spacing/radius assertions, ten exact BDT examples,
-six invalid numeric inputs and a nonnumeric-input rejection case. Shared HTTP checks fetch all three emitted WOFF2
-assets, require same-origin 200 responses and compare their hashes with the licensed sources. Browser font-swap/CLS
-checks remain distinct from static font contracts, glyph/shaping specimens and asset-serving checks.
-
-Theme suites run 13 cases per app in jsdom: persisted pre-mount bootstrap, invalid/System fallback, HeroUI select
-changes, draft/DOM/URL preservation, remount restore, blocked storage, same-origin storage synchronization/cleanup,
-CSS reduced-motion contracts, SSR hydration and keyboard opening/option selection through the real HeroUI popup. HTTP smoke checks verify the blocking head script and its actual served
-source. These DOM/HTML checks are distinct from browser first-paint filmstrips and native keyboard/OS-motion verification.
+Browser verification is consolidated into focused app/preview behavior and a separate accessibility suite. The preview tests load each app’s actual UI modules and cover composition drafts, native overlays, app/theme switching and mobile overflow. App smoke retains private account cache and fail-closed administrator access. The explicit axe suite keeps all WCAG contrast checks and fails on actual stock-theme findings; it is not disabled or baselined away for green CI. Chromium is appropriate for focused local changes; the configured three-engine matrix remains for hosted/release coverage.
 
 Storefront shell tests exercise mobile disclosure/ARIA and Escape/focus recovery, link/Close dismissal, route/breakpoint
 changes, landmark/support-link structure, offline recovery and safe retry/loading/not-found states. Production smoke
@@ -759,6 +736,8 @@ Critical checks distinguish **payment collection**, **merchandise allocation**, 
 | `SEC-12` | Unauthorized reporting/export/audit APIs and excessive list filters | Restrict sensitive fields and list volume; record admin operations |
 | `SEC-13` | Failed write/retry races causing replay or business privilege bypass | No duplicated money/stock state and no privilege downgrade on retry |
 
+P03-013 verifies SEC-02/03/06/07/10 against the implemented identity surface: cross-account nested-address mutation denial, equivalent foreign/unknown IDs, correct-role cookie isolation, rejection of owner/role injection, stale authentication after revocation/suspension/security-revision change, transaction rollback and concurrent revocation fencing. Tests use an isolated real replica set. Safe action logs assert fixed classifications and absence of client identifiers/proof/PII. Future commerce ownership and durable financial audit cases remain with their feature tasks.
+
 ### 12.2 Testing method and limits
 
 Run automated static checks and **authorized, bounded** dynamic tests in isolated environments. Include threat-oriented manual review for session/cookie trust, guest access, SSR/private cache, callback intake, upload ownership and refunds. Review security findings against the PRD, Architecture §11 and API §§4–5/17; avoid inventing security compliance certification.
@@ -830,7 +809,7 @@ On an **isolated staging restore**, record backup timestamp and restore point, i
 | Responsive reflow | Mobile single-column checkout, readable tables/overflows, no clipped controls or horizontal traps |
 | Locales/amounts | BDT formatting and optional Bengali fallbacks legible; calendar-day/business-day messaging accurate |
 
-`DESIGN.md` §2 fixes **brand blue `#2563EB` + white button label in both themes**; light/dark surfaces are monochrome and dark-mode links use readable light text with a persistent blue indicator. UI tests assert the actual semantic computed styles for the approved tokens—not screenshots alone.
+`DESIGN.md` §2 adopts the default HeroUI theme through app-owned UI facades. Verify native styles are delivered, theme preference resolves correctly and interactive behavior remains accessible in both modes. Keep contrast findings visible; a library default does not waive the accessibility target.
 
 The implemented P02-011 foundation suite is `tests/ui/foundation.spec.ts`. It runs 30 browser cases: three engines × two themes × (three viewport audits plus keyboard/motion and theme/menu checks). Each viewport case examines the actual built storefront home, built public admin login and an isolated component fixture. The fixture composes real admin/commerce/form components with synthetic data; it does not bypass live authorization or represent authenticated feature acceptance. It has its own Tailwind source discovery and is excluded from both app builds.
 
@@ -858,19 +837,18 @@ Automated accessibility scan is **supplementary**; keyboard review and at least 
 
 ```mermaid
 flowchart LR
-    Commit[Change / pull request] --> Static[Lint + type checks + secret scan]
-    Static --> Build[Storefront + Admin + API builds]
-    Build --> Fast[Unit + component tests]
-    Fast --> DB[Transactional DB + API integration]
-    DB --> Contract[API/schema contract checks]
-    Contract --> Smoke[Selective browser smoke]
-    Smoke --> Evidence[Reports and signed artifacts]
-    Evidence --> Review{Applicable gates pass?}
-    Review -->|Yes| Stage[Eligible for staging review]
-    Review -->|No| Block[Block acceptance; triage]
+    Setup[One locked install] --> Repo[Repository checks]
+    Repo --> Apps[Workspace checks and builds]
+    Apps --> Browser[Browser audit reuses UI builds]
+    Browser --> Security[Secret and dependency checks]
+    Security --> Review[Eligible for staging review]
 ```
 
-Implement the pipeline during foundation setup. For independent changes, execute the relevant subset plus mandatory cross-cutting guards; gate an affected financial slice on its concurrency test suite.
+Operations §5.5 owns execution/caching/security and §5.6 owns promotion. The single hosted job runs the
+same inventory as local full verification, stopping on the first failed command. Every hosted trigger runs
+the complete inventory; local development uses §15.5. This graph concerns CI evidence, not merchant or
+production acceptance. [P01-016 evidence](./evidence/P01-016-ci-governance.md) distinguishes historical
+full-suite results from the current tooling revision and pending hosted acceptance.
 
 ### 15.2 Trigger and quality matrix
 
@@ -891,6 +869,40 @@ Implement the pipeline during foundation setup. For independent changes, execute
 - Publish JUnit or equivalent machine-readable results, coverage artifact, failing traces/screenshots with redaction, and test-run metadata.
 - Coverage percentages are **diagnostic measurements**, not a made-up global pass threshold. Set thresholds after module risk and baseline are evaluated; zero unverified critical invariants is mandatory.
 - Secret access must be scoped to jobs; fork PRs and test artifacts must not expose gateway credentials or personal data.
+
+### 15.4 Refactor regression and pipeline verification
+
+P02-012–013/P03-019–020 preserve existing scenario IDs and accepted historical evidence. Record before/after discovered cases when changing test paths; update Vitest globs, test TypeScript projects, browser fixture imports and smoke entry points together. A green run that silently drops tests fails acceptance. Tests remain outside production src; enforce feature/server/client/backend import direction as an automated guard. P01-017 establishes a four-file Biome tooling baseline; add affected application files with their refactor rather than requiring an unrelated bulk format. Formatting is separate from behavior changes.
+
+| Scope | Required parity evidence |
+| --- | --- |
+| Backend composition and boundaries | All existing workspace checks; config activation, lifecycle, exact HTTP/session/CSRF/ownership/recovery contracts, replica-set races/rollback, canonical validators/indexes, notification claim and external-effect guards |
+| Storefront placement | Lint/types/unit/build/smoke, unchanged URL/404/cache/noindex behavior, server/client boundaries, affected responsive/keyboard/both-theme browser cases |
+| Admin placement | Lint/types/unit/build/smoke, root-owned cross-app browser coverage after migration, deep links/lazy pending/errors/denied states and both-theme navigation |
+| Query/API integration | Identity-expiry/logout cache clearing, CSRF refresh, controlled read retries, financial retry prohibition, input retention/invalidation and guest-cart merge |
+| Pipeline replacement | Application command/case coverage preserved; isolated fixtures verify command failures stop execution, scoped runs avoid unrelated checks, and unknown scopes fail; inspect workflow setup, permissions and artifact handling |
+
+Test pipeline failure semantics using isolated fixtures, not intentionally broken protected branches or live providers. Retain the current browser engine/theme/viewport matrix and real replica-set suite; new implementation adds business journey coverage. No blanket coverage percentage, automatic retry or quarantine policy may hide a mandatory financial/security regression. Documentation checks comprise local links, ownership/reference consistency, task-register totals/dependencies and diff review; runtime suites are Not Run for documentation-only changes.
+
+### 15.5 Change-based local verification
+
+Choose checks from the changed behavior and its consumers before executing them. Run each applicable check
+once against the final change. A passing result remains useful until a later edit affects its inputs; record
+its scope and environment. After a localized failure, rerun the failed suite and directly affected consumers.
+Do not restart an unchanged full pipeline merely to produce a new all-green summary.
+
+| Local change | Verification scope |
+| --- | --- |
+| Documentation only | Repository lint/link checks and diff review; no application build or runtime suites |
+| CI runner or workflow | Tooling regression fixtures, syntax/config review and inventory parity; hosted CI verifies integration |
+| One component or feature | Focused test files, affected workspace lint/types, relevant browser checks when UI behavior changes |
+| Backend/API/persistence | Affected unit/contract/integration cases; include authorization, transactions, races and retries when touched |
+| Dependencies, shared configuration or broad refactor | Checks for all affected consumers; use full CI when impact genuinely spans the repository |
+
+Full verification belongs to hosted integration and release candidates, or a locally justified cross-project
+change. Financial/security/provider acceptance requirements remain mandatory. Report checks not run explicitly;
+do not present older application results as verification of a newer application revision. Revisit settled
+architecture or tooling research only when a concrete requirement, compatibility issue or new evidence warrants it.
 
 ---
 
@@ -1474,3 +1486,72 @@ their owning features; current registration payloads cannot contain proofs or ar
 ### P03-012 administrator credential verification
 
 `backend/tests/admin-auth.test.ts` checks independent fail-closed admin activation, policy bounds and customer/admin verifier/AEAD separation. `backend/tests/integration/admin-auth.test.ts` covers FR-21 and SEC-01/03/04/05/10 using real isolated MongoDB/HTTP: private initial provisioning and concurrent duplicate guards, no signup/upgrade/overwrite, separate login/session/logout/context/cookie behavior, generic recovery, proof replay/expiry/role-change isolation, session revocation, login/reset/reissue concurrency, rollback, stable durable delivery/uncertainty, disabled renderer exclusion and actual independent router composition. Compiled stdin-only CLI tests exercise success/replay/oversize/production refusal without exposing input. Existing customer/recovery/email-change/session suites remain mandatory. [Execution evidence](./evidence/P03-012-admin-auth.md) separates backend foundation results from live provider, production/operator/audit and frontend gates.
+
+
+### P03-014 scoped security-control checks
+
+SEC-01/10/11/13: test shared Mongo quota across two limiter instances and recreation, concurrent limit boundaries, fixed-window reset with expired TTL rows still present, distinct audiences/groups, equivalent existing/missing and differently cased target input, malformed input, ignored forwarded headers, unavailable store fail-closed behavior, correct Retry-After, unchanged Origin/CSRF and recovery semantics, schema/index readiness and additive bootstrap. Audit assertions forbid raw key/identity/proof material and require only fixed action/reason fields. No synthetic HTTP test proves deployed proxy/collector configuration.
+
+### P03-015 connected identity interface verification
+
+The app-owned `identity-client.test.tsx` suites exercise canonical public origin rejection, credential/no-store/
+no-referrer policy, correct CSRF namespace, safe error allowlists/Retry-After, single mutation dispatch, concurrent
+submission exclusion, response validation, cancellation, 401 cleanup and identity changes both before headers and
+during JSON decoding. Existing form/route/shell consumers remain in their workspace unit suites.
+
+`tests/ui/authentication.spec.ts` uses `tests/ui/auth-server.mjs`: real composed API, MongoDB 8.0.16 replica set,
+temporary TLS proxies/certificates, synthetic customer/admin and a delivery-coverage fixture. It verifies frontend
+validation/resubmission, generic wrong-credential/recovery messages, profile network failure preserving drafts,
+address invalid coverage/add/default/edit/remove, password/email changes and proof fragment removal, both recovery
+namespaces, denied customer cookies/forged local flags at admin, separate logout, suspended/expired in-memory views,
+and cross-tab identity invalidation. JavaScript-disabled SSR forms remain inert until hydration. Keyboard Enter submits login; mobile reflow and unsuppressed Axe WCAG rules run
+in both themes. Await React Aria's seven-second transient pending-button announcements before settled-screen Axe;
+no rule is disabled. Screenshots contain only synthetic non-secret settled views. Executor visual review remains
+separate from the owner's acceptance.
+
+Build backend plus both frontends with synthetic public API origin `https://127.0.0.1:4443` before this suite; default
+Playwright starts existing app servers. Fixture proof access uses private IPC rather than a diagnostic HTTP endpoint.
+No network traces, automatic failure screenshots, cookies, proof URLs or passwords may be retained in reports.
+Fixture failure messages are sanitized. Live email transport, deployed ingress and milestone gates are not proved.
+Use change-based local verification (§15.5); the hosted required inventory still includes these discovered cases.
+
+### P03-016 foundation identity/security verification
+
+[The M1 identity/security report](./evidence/P03-016-identity-security.md) reconciles accepted P01/P02 foundation
+records with current session, reset replay, CSRF/Origin, ownership, suspension and account-change assertions.
+Use real replica-set suites and actual TLS browser/API flows. Retain initial failures and corrected scoped runs;
+do not restart unchanged passing scopes merely to obtain a new single green summary. This report is local
+foundation evidence, not deployed/live-email acceptance or authorization to mark M1 accepted.
+
+CI-25/26 in `tests/ci.test.mjs` use isolated synthetic Git repositories to prove that working-tree security scans
+exclude ignored local configuration, include tracked ignored/current files and new source, avoid symlink targets,
+and fail closed without Git inventory. CI-22/23/24 retain safe-report and strict advisory/exception coverage.
+The full history scan and empty exception register remain mandatory. Current release/commerce OPV and acceptance
+slots stay Not Run until their owning feature/environment evidence exists.
+
+### P03-019 composition parity
+
+`backend/tests/composition.test.ts` verifies frozen typed policy, detached environment values, optional inactive
+providers and value-free configuration failures. The real replica-set `tests/integration/composition.test.ts`
+issues a recovery proof through root HTTP composition, renders/delivers it through root worker composition and
+consumes it through HTTP, with deliberately unusable legacy raw config fields proving there is no reparsing.
+It also exercises compiled bootstrap/migration entry points, preserves existing users and checks the worker's
+safe disabled-provider preflight without sending real email. Existing runtime, auth/recovery/ownership/notification
+and schema/index suites retain their assertions and discovery; common utility moves update source imports only.
+Browser verification uses the affected real-API authentication flows with unchanged frontend builds. Full unrelated
+frontend/unit/showcase suites and hosted CI are not implied. [Evidence](./evidence/P03-019-backend-composition.md).
+
+### P03-020 ownership and file-convention parity
+
+The existing unit/integration test paths and discovery remain stable; imports follow the entity-prefixed module
+paths. The profile suite additionally verifies that the auth-owned customer capability exposes detached data,
+ignores injected credential/security fields, rejects read-only/escaped-scope saves and rolls both profile writes
+and authorization fences back on failure. Existing concurrent address/default, owner denial, logout/suspension,
+proof/recovery replay, schema/index and notification-claim/external-effect guards remain mandatory.
+
+TOOL-05 now also rejects cross-module `.persistence.ts` imports, preserving the private boundary with entity-prefixed
+filenames rather than exempting the new layout. The backend CI inventory retains every required check. Compiled
+bootstrap/provision/migration/worker commands and three-engine real auth/account flows use the new paths without
+old generated-module fallbacks. Worker preflight explicitly sets `EMAIL_DELIVERY_ENABLED=false` to prevent inherited
+email activation during operator tests. No external sender acceptance is implied.
+[Evidence and preserved schema/provider bodies](./evidence/P03-020-module-ownership.md).

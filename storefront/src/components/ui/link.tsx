@@ -1,6 +1,6 @@
 'use client'
 
-import { Link as HeroLink } from '@heroui/react'
+import { Link as HeroLink } from './primitives'
 import NextLink from 'next/link'
 import type { ComponentProps } from 'react'
 
@@ -14,7 +14,7 @@ export function Link({ href, children, className = '', onClick, ref, ...rest }: 
     <HeroLink
       href={href}
       ref={ref}
-      className={`min-h-control ${className}`}
+      className={className}
       render={(props) => (
         <NextLink
           {...props}

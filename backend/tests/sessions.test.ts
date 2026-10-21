@@ -1,8 +1,8 @@
 import { randomBytes } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { ConfigurationError } from '../src/config/environment.js'
-import { readSessionCookie } from '../src/modules/auth/session-http.js'
-import { loadSessionOptions } from '../src/modules/auth/sessions.js'
+import { readSessionCookie } from '../src/modules/auth/session.http.js'
+import { loadSessionOptions } from '../src/modules/auth/session.service.js'
 function environment() {
   return {
     SESSION_SECRET: randomBytes(32).toString('hex'),

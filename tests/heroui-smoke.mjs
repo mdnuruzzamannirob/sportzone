@@ -1,16 +1,9 @@
 import assert from 'node:assert/strict'
 
-// Check what the HTTP client actually receives, not only source imports.
+// Verify actual delivered default library CSS, not a copied palette/font table.
 export function verifyHeroUIStyles(css) {
-  for (const alias of [
-    '--accent:var(--brand)',
-    '--accent-foreground:var(--on-brand)',
-    '--background:var(--canvas)',
-    '--foreground:var(--text)',
-    '--field-border:var(--control-border)',
-  ]) assert.ok(css.includes(alias), `Missing deployed HeroUI token alias: ${alias}`)
-  assert.match(css, /\.button\{[^}]*min-height:var\(--spacing-control\)/)
-  assert.match(css, /\.button--primary\{[^}]*--button-bg:var\(--accent\)/)
-  assert.match(css, /--spacing-control:44px/)
-  assert.match(css, /\.button\[data-focus-visible=(?:"true"|true)\]\{[^}]*outline:2px solid var\(--focus\)/)
+  for (const selector of ['.button--primary', '.input', '.card', '.modal__dialog'])
+    assert.ok(css.includes(selector), `Missing native HeroUI CSS: ${selector}`)
+  assert.ok(css.includes('--accent:') && css.includes('--foreground:'))
+  assert.doesNotMatch(css, /--brand:|--on-brand:|font-family:["'](?:Inter|Plus Jakarta Sans)/)
 }

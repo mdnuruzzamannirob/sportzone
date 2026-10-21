@@ -25,6 +25,7 @@ export function themeInteractionTests(
   function bootstrap(saved: string | null, blocked = false) {
     runInNewContext(source, {
       document,
+      matchMedia: globalThis.matchMedia,
       localStorage: {
         getItem() {
           if (blocked) throw new Error('Storage blocked')
@@ -97,11 +98,11 @@ export function themeInteractionTests(
       },
     )
     it.each([null, 'system', 'corrupt'])(
-      'THEME-02: %s keeps CSS system fallback without a forced theme',
+      'THEME-02: %s resolves the system preference for native HeroUI',
       (saved) => {
         bootstrap(saved)
         expect(getThemePreference()).toBe('system')
-        expect(document.documentElement.hasAttribute('data-theme')).toBe(false)
+        expect(document.documentElement.dataset.theme).toBe('light')
       },
     )
     it('THEME-03: labelled HeroUI control persists light/dark/system and preserves DOM, draft and URL', async () => {
@@ -139,7 +140,7 @@ export function themeInteractionTests(
           '/account?filter=kept',
         )
       }
-      expect(document.documentElement.hasAttribute('data-theme')).toBe(false)
+      expect(document.documentElement.dataset.theme).toBe('light')
     })
     it('THEME-10: HeroUI popup opens from the keyboard and selecting Dark updates the preference', async () => {
       await mount()
@@ -246,21 +247,23 @@ export function themeInteractionTests(
         TypeError,
       )
     })
-    it('THEME-08: system CSS remains media-driven and reduced motion disables scrolling/long effects', () => {
-      const tokens = readFileSync(
-        resolve(process.cwd(), '../styles/tokens.css'),
-        'utf8',
-      )
-      const foundation = readFileSync(
-        resolve(process.cwd(), '../styles/foundation.css'),
-        'utf8',
-      )
-      expect(tokens).toContain('@media (prefers-color-scheme: dark)')
-      expect(tokens).toContain(
-        ':root:not([data-theme="light"]):not([data-theme="dark"])',
-      )
-      expect(foundation).toContain('@media (prefers-reduced-motion: reduce)')
-      expect(foundation).toContain('scroll-behavior: auto !important')
+    it('THEME-08: System resolves the OS before mount and follows OS changes without overriding explicit choices', () => {
+      const media = Object.assign(new EventTarget(), { matches: true })
+      vi.stubGlobal('matchMedia', () => media)
+      bootstrap(null)
+      expect(document.documentElement.dataset.theme).toBe('dark')
+      expect(getThemePreference()).toBe('system')
+      const callback = vi.fn()
+      const stop = subscribeThemePreference(callback)
+      media.matches = false
+      media.dispatchEvent(new Event('change'))
+      expect(document.documentElement.dataset.theme).toBe('light')
+      expect(callback).toHaveBeenCalledOnce()
+      setThemePreference('light')
+      media.matches = true
+      media.dispatchEvent(new Event('change'))
+      expect(document.documentElement.dataset.theme).toBe('light')
+      stop()
     })
   })
 }

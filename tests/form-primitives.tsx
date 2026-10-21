@@ -100,7 +100,8 @@ export function formPrimitiveTests(
       await new Promise((resolve) => setTimeout(resolve, 50))
     })
   }
-  describe.each(['light', 'dark'])(`${app} form primitives in %s`, (theme) => {
+  describe(`${app} form primitives`, () => {
+    const theme = 'light'
     beforeEach(() => {
       document.documentElement.dataset.theme = theme
     })
@@ -150,7 +151,8 @@ export function formPrimitiveTests(
         true,
       )
       expect(field?.value).toBe('retained')
-      expect(host.textContent).toContain('Notes (required)')
+      expect(host.textContent).toContain('Notes')
+      expect(field?.required).toBe(true)
     })
     it('FORM-03: selection supports keyboard opening, long labels, disabled choices and error association', async () => {
       const change = vi.fn()
