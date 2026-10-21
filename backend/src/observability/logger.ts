@@ -1,7 +1,7 @@
 import type { SecurityAction } from './security-actions.js'
 import { randomUUID } from 'node:crypto'
 import type { RuntimeConfig } from '../config/environment.js'
-import type { ErrorCode } from '../shared/errors.js'
+import type { ErrorCode } from '../common/errors.js'
 
 type LifecycleEvent =
   | 'starting'

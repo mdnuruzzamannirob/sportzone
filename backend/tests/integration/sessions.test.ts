@@ -15,7 +15,7 @@ import {
   type SessionOptions,
 } from '../../src/modules/auth/sessions.js'
 import { createLogger } from '../../src/observability/logger.js'
-import { respond } from '../../src/shared/responses.js'
+import { respond } from '../../src/common/responses.js'
 import { isolatedDatabase } from '../support/database.js'
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
 let models: ReturnType<typeof createIdentityModels>

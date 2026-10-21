@@ -1,5 +1,5 @@
 import type { ClientSession } from 'mongoose'
-import { ApiError } from '../../shared/errors.js'
+import { ApiError } from '../../common/errors.js'
 import type { IdentityModels } from './models.js'
 import type { SessionIdentity, SessionKind } from './sessions.js'
 

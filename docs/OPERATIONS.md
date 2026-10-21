@@ -319,9 +319,9 @@ The compiled backend starts with `npm run start --workspace=backend` after build
 
 APP_ENV is local/test/staging/production, paired with NODE_ENV development/test/production respectively (staging uses production). Staging/production origins require HTTPS and reject localhost/loopback conventions. RELEASE_ID is bounded nonsecret deployment metadata. PORT defaults to 4000 and must be 1–65535. API_BIND_HOST defaults to 127.0.0.1 and permits only documented loopback/wildcard bind addresses. Production/wildcard listeners require the approved TLS proxy/firewall/operational ingress; a bind option is not deployment acceptance. Missing/invalid values fail before DB/network access and emit only safe configuration key names, never values.
 
-Session composition additionally calls `loadSessionOptions`: require CUSTOMER_SESSION_TTL_SECONDS and
+When either auth flag is enabled, `loadEnvironment` constructs frozen typed session/browser/proof options once: require CUSTOMER_SESSION_TTL_SECONDS and
 ADMIN_SESSION_TTL_SECONDS as positive bounded seconds and SESSION_COOKIE_SAME_SITE as explicit lax/strict. Values require
-security/operator approval; none are supplied by the repository. Session options are validated at service composition,
+security/operator approval; none are supplied by the repository. Session options are validated at the configuration boundary and guarded by the service factory,
 required for explicit customer activation and never silently defaulted. Configured HTTPS produces Secure cookies in every environment;
 only local/test loopback HTTP may omit Secure. Cookies remain host-only, HttpOnly and path /. Confirm actual deployed
 same-site origin/TLS behavior before activation; proxy headers cannot override configured cookie security.
@@ -1556,8 +1556,7 @@ propagate accepted versions and remaining decisions to the handover record.
 
 ### Browser security composition
 
-P03-006 provides the identity bootstrap router and route-selected Origin/CORS/CSRF controls; the executable defaults to health-only and can activate customer routes through P03-007 as described below. At identity composition, call `loadBrowserSecurityOptions` with the protected environment
-and existing cookie policy. Set `BROWSER_CONTEXT_TTL_SECONDS` explicitly in 1–1800 seconds; its sanitized template is
+P03-006 provides the identity bootstrap router and route-selected Origin/CORS/CSRF controls; the executable defaults to health-only and can activate customer routes through P03-007 as described below. The configuration boundary validates the protected environment and configured cookie policy once; identity composition receives its typed browser options. Set `BROWSER_CONTEXT_TTL_SECONDS` explicitly in 1–1800 seconds; its sanitized template is
 blank. `STOREFRONT_ORIGIN`, `ADMIN_ORIGIN` and `CORS_ALLOWED_ORIGINS` must agree exactly; frontend origins must be distinct.
 HTTPS is required with secure cookies; controlled loopback HTTP follows the existing local/test session policy.
 
@@ -1721,3 +1720,26 @@ cross-tab expiry before environment acceptance. Registration verification delive
 not fabricate it. Delivery-coverage discovery remains the delivery feature; address save checks existing server
 coverage. Rollback restores previous compatible frontend assets/configuration and preserves all backend identity,
 challenge, notification and audit data. No schema migration or production operation is part of P03-015.
+
+### P03-019 typed runtime and tool composition
+
+`backend/src/config/environment.ts` is the process-environment boundary. Enabled identity capabilities are frozen
+under `RuntimeConfig.identity`: numeric session/context policy and customer reset, email-change and admin reset
+options. Origins remain canonical, same-site/cookie rules and explicit lifetimes are unchanged. Invalid enabled
+policies fail before database/listener work; inactive providers do not become startup dependencies. Do not convert
+parsed booleans/numbers/allowlists back into environment strings or reload proof keys in HTTP/worker composition.
+Raw option adapters remain available for isolated callers and tests, but executable runtime wiring uses typed policy.
+
+`src/composition.ts` wires HTTP and notification worker capabilities. `src/routes/index.ts` registers health routes;
+identity registration remains in the owning auth composition. Private model construction stays inside auth; the
+notification worker receives narrow proof-delivery capabilities. `src/server.ts` retains listener/readiness/draining,
+database cleanup and signal handling. HTTP startup still verifies schema/index readiness without bootstrap/repair.
+Common errors/responses/pagination and validation/error middleware now live in `src/common/`.
+
+Existing commands and environment names are unchanged: `npm run build --workspace backend`,
+`node --env-file=.env backend/dist/server.js`, and `backend/tools/{bootstrap-identity,provision-admin,
+notification-worker,migrate-notifications}.mjs` remain entry points (brace list is descriptive, not a shell command).
+The worker loads its separate email/retry policy once, then uses the same typed identity proof policy as HTTP.
+Bootstrap/migration/provisioning restrictions, bounded stdin, safe diagnostics and connection cleanup remain.
+Rollback restores the compatible prior application build; no collection/index/data or external-effect migration
+was performed. Build all backend modules together; internal moved import paths are not compatibility entry points.

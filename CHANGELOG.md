@@ -8,6 +8,10 @@ This changelog tracks the documentation baseline. Application releases are recor
 
 ## Development changes — 21 October 2026
 
+- Recorded explicit project-owner popup acceptance of P03-019 and marked it Done. Phase 03: 19/20 Done; overall: 50 Done, 129 Not Started. P03-020 and M1 approval remain separate. [Acceptance](docs/evidence/P03-019-backend-composition.md#owner-acceptance).
+
+- Implemented P03-019 typed runtime configuration and HTTP/worker composition, removing environment-string re-serialization and repeated proof parsing. Moved root route registration/common HTTP utilities with preserved contracts, lifecycle and operator commands. Backend unit/real database and affected three-engine browser parity passed; In Review pending owner acceptance. [Evidence](docs/evidence/P03-019-backend-composition.md).
+
 - Recorded explicit project-owner popup acceptance of P03-016 and marked the task Done. Phase 03: 18/20 Done; overall: 49 Done, 130 Not Started. M1 approval remains separate and Not Accepted. [Acceptance](docs/evidence/P03-016-identity-security.md#owner-acceptance).
 
 - Verified P03-016 identity/security foundation across real MongoDB and three browser engines; reconciled M1 prerequisite evidence. Fixed inherited-environment admin test isolation, restored the empty dependency-exception register and made working-tree secret scanning Git-aware while preserving full history scanning and fail-closed policy. In Review; M1 and live/hosted gates remain separately unaccepted. [Evidence](docs/evidence/P03-016-identity-security.md).

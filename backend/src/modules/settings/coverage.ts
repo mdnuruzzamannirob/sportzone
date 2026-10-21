@@ -1,5 +1,5 @@
 import type { ClientSession, Connection, Types } from 'mongoose'
-import { ApiError } from '../../shared/errors.js'
+import { ApiError } from '../../common/errors.js'
 
 export type AddressCoverage = {
   supports(

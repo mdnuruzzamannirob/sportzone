@@ -181,10 +181,10 @@ synthetic accounts/digests on an owned replica. Customer activation is described
 [identity persistence evidence](docs/evidence/P03-004-identity-models.md).
 
 Customer/admin session service and cookie adapter are implemented in `backend/src/modules/auth/`. They require explicit
-session lifetime/SameSite settings through `loadSessionOptions` when authentication is composed; no values are supplied as
+session lifetime/SameSite settings validated once by `loadEnvironment` into typed identity options; no values are supplied as
 defaults. Tokens are opaque and hashed at rest; issuance, rotation and revocation are verified with real MongoDB fixtures.
 Customer credential routes can be activated as described below; administrator credential integration remains separate. Origin/CORS/CSRF guards and bootstrap router are available through `createBrowserSecurity` and
-`browserSecurityRoutes`; customer composition loads explicit `BROWSER_CONTEXT_TTL_SECONDS` (1–1800), mount that router,
+`browserSecurityRoutes`; the configuration boundary validates explicit `BROWSER_CONTEXT_TTL_SECONDS` (1–1800); identity composition mounts that router,
 and apply the route-selected protection before exposing mutations. Guest order persistence remains P06-015. See [session evidence](docs/evidence/P03-005-sessions.md).
 
 Customer authentication is available with `CUSTOMER_AUTH_ENABLED=true` after explicit local/test persistence setup.
@@ -373,3 +373,12 @@ origin `https://127.0.0.1:4443`, and `npm run test:ui -- tests/ui/authentication
 TLS certificates, an isolated MongoDB replica set and synthetic accounts, cleans them on exit, and sends no external
 email. Proofs pass privately through fixture IPC; authentication traces/screenshots-on-failure are disabled. Hosted
 CI sets these synthetic build origins explicitly. [Task evidence](docs/evidence/P03-015-identity-interfaces.md).
+
+### Backend runtime wiring (P03-019)
+
+`backend/src/composition.ts` wires the application and notification worker from typed configuration;
+`routes/index.ts` owns root HTTP registration, and `common/` owns technical errors/responses/pagination/middleware.
+`server.ts` retains process/listener/database lifecycle. Each process loads enabled identity policies once through
+`config/environment.ts`; the worker reuses that policy and loads its separate email/retry settings once. Existing
+start/build/operator commands and data/API contracts remain unchanged. The module ownership/entity-file refactor
+remains P03-020. [Verification](docs/evidence/P03-019-backend-composition.md).

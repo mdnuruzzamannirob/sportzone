@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { parseInput } from '../middleware/validation.js'
+import { parseInput } from './middleware/validation.js'
 
 const positiveInteger = z
   .string()

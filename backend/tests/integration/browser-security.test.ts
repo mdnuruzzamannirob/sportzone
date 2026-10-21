@@ -15,7 +15,7 @@ import {
   browserSecurityRoutes,
   requireGuestCsrf,
 } from '../../src/modules/auth/browser-routes.js'
-import { respond } from '../../src/shared/responses.js'
+import { respond } from '../../src/common/responses.js'
 import { isolatedDatabase } from '../support/database.js'
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
 let models: ReturnType<typeof createIdentityModels>

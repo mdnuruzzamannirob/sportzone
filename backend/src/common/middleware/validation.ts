@@ -1,6 +1,6 @@
 import type { Request, RequestHandler, Response } from 'express'
 import type { z } from 'zod'
-import { ApiError } from '../shared/errors.js'
+import { ApiError } from '../errors.js'
 
 export function parseInput<T extends z.ZodType>(
   schema: T,

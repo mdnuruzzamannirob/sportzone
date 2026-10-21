@@ -1,9 +1,7 @@
 import { createServer } from 'node:http'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { createApp } from './app.js'
-import { createApiRouter } from './routes.js'
-import { composeCustomerRoutes } from './modules/auth/composition.js'
+import { composeApplication } from './composition.js'
 import {
   ConfigurationError,
   loadEnvironment,
@@ -28,24 +26,7 @@ export async function startServer(
     config.MONGODB_URI,
     config.MONGODB_DB_NAME,
   )
-  let identityRouter:
-    | Awaited<ReturnType<typeof composeCustomerRoutes>>
-    | undefined
-  try {
-    if (config.CUSTOMER_AUTH_ENABLED || config.ADMIN_AUTH_ENABLED)
-      identityRouter = await composeCustomerRoutes(connection, config)
-  } catch (error) {
-    await connection.destroy()
-    throw error
-  }
   let draining = false
-  const disconnected = () => logger.lifecycle('database_disconnected')
-  const connected = () => logger.lifecycle('database_connected')
-  const databaseError = () => logger.lifecycle('database_error')
-  connection.on('disconnected', disconnected)
-  connection.on('connected', connected)
-  connection.on('error', databaseError)
-  logger.lifecycle('database_connected')
   const health = {
     monitorToken: config.HEALTH_MONITOR_TOKEN,
     isReady: async () => {
@@ -55,9 +36,21 @@ export async function startServer(
       return !draining && connection.readyState === 1
     },
   }
-  const apiRouter = createApiRouter(health)
-  if (identityRouter) apiRouter.use(identityRouter)
-  const server = createServer(createApp({ logger, apiRouter }))
+  let app: Awaited<ReturnType<typeof composeApplication>>
+  try {
+    app = await composeApplication(connection, config, health, logger)
+  } catch (error) {
+    await connection.destroy()
+    throw error
+  }
+  const server = createServer(app)
+  const disconnected = () => logger.lifecycle('database_disconnected')
+  const connected = () => logger.lifecycle('database_connected')
+  const databaseError = () => logger.lifecycle('database_error')
+  connection.on('disconnected', disconnected)
+  connection.on('connected', connected)
+  connection.on('error', databaseError)
+  logger.lifecycle('database_connected')
   try {
     await new Promise<void>((resolve, reject) => {
       const failed = (error: Error) => reject(error)

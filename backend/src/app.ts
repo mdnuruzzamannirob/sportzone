@@ -1,11 +1,11 @@
 import { securityAction } from './observability/security-actions.js'
 import express, { type Router } from 'express'
 import { randomUUID } from 'node:crypto'
-import { handleError } from './middleware/errors.js'
+import { handleError } from './common/middleware/errors.js'
 import type { HealthDependencies } from './modules/health/service.js'
 import type { Logger } from './observability/logger.js'
-import { createApiRouter } from './routes.js'
-import { ApiError } from './shared/errors.js'
+import { createApiRouter } from './routes/index.js'
+import { ApiError } from './common/errors.js'
 
 export function createApp({
   apiRouter,

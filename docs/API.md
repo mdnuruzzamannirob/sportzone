@@ -76,6 +76,11 @@ change (PRD §3.3).
 
 ### 2.1 Runtime and request path
 
+P03-019 implements the composition root in `backend/src/composition.ts`, root registration in
+`backend/src/routes/index.ts`, and technical HTTP utilities in `backend/src/common/`. Parsed runtime identity
+options are wired directly into HTTP/worker capabilities; there is no environment-string round trip. Endpoint,
+DTO, cookie, CSRF, rate-limit, error and persistence contracts are unchanged by these source moves.
+
 ```mermaid
 flowchart LR
     Store[Next.js Storefront] --> API[Express /api/v1]

@@ -1,29 +1,29 @@
+import {
+  createAdminResetDelivery,
+  createEmailChangeDelivery,
+  createResetDelivery,
+} from './proof-delivery.js'
 import { createAuthQuotaStore } from './rate-limit-store.js'
 import { createAuthThrottle } from './rate-limit.js'
-import { loadAdminRecoveryOptions } from '../../config/recovery.js'
 import { adminRoutes } from './admin-routes.js'
-import { loadEmailChangeOptions } from '../../config/recovery.js'
 import { createEmailChangeService } from './email-change.js'
 import { emailChangeRoutes } from './email-change-routes.js'
-import { createRecoveryService, loadRecoveryOptions } from './recovery.js'
+import { createRecoveryService } from './recovery.js'
 import { recoveryRoutes } from './recovery-routes.js'
 import { Router } from 'express'
 import { createAddressCoverage } from '../settings/coverage.js'
 import { createProfileService } from './profile.js'
 import { profileRoutes } from './profile-routes.js'
 import type { Connection } from 'mongoose'
-import type { RuntimeConfig } from '../../config/environment.js'
+import type { IdentityConfig, RuntimeConfig } from '../../config/environment.js'
 import { createRegistrationNotifications } from '../notifications/registration.js'
 import { browserSecurityRoutes } from './browser-routes.js'
-import {
-  createBrowserSecurity,
-  loadBrowserSecurityOptions,
-} from './browser-security.js'
+import { createBrowserSecurity } from './browser-security.js'
 import { verifyIdentityPersistence } from './collection-validators.js'
 import { customerRoutes } from './customer-routes.js'
 import { createCustomerService } from './customer.js'
 import { createIdentityModels } from './models.js'
-import { createSessionService, loadSessionOptions } from './sessions.js'
+import { createSessionService } from './sessions.js'
 
 export async function composeCustomerRoutes(
   connection: Connection,
@@ -33,25 +33,14 @@ export async function composeCustomerRoutes(
   await verifyIdentityPersistence(connection, models)
   const notifications = createRegistrationNotifications(connection)
   await notifications.verifyIndexes()
-  const environment = {
-    ...config,
-    CUSTOMER_AUTH_ENABLED: String(config.CUSTOMER_AUTH_ENABLED),
-    ADMIN_AUTH_ENABLED: String(config.ADMIN_AUTH_ENABLED),
-    PASSWORD_RECOVERY_ENABLED: String(config.PASSWORD_RECOVERY_ENABLED),
-    EMAIL_CHANGE_ENABLED: String(config.EMAIL_CHANGE_ENABLED),
-    PORT: String(config.PORT),
-    CORS_ALLOWED_ORIGINS: config.CORS_ALLOWED_ORIGINS.join(','),
-  }
-  const sessions = createSessionService(
-    connection,
-    models,
-    loadSessionOptions(environment),
-  )
+  const options = config.identity
+  if (!options) throw new Error('Validated identity configuration required.')
+  const sessions = createSessionService(connection, models, options.sessions)
   const security = createBrowserSecurity(
     connection,
     models,
     sessions,
-    loadBrowserSecurityOptions(environment, sessions.cookiePolicy.secure),
+    options.browser,
   )
   const quota = createAuthQuotaStore(connection)
   await quota.verify()
@@ -75,7 +64,7 @@ export async function composeCustomerRoutes(
         throttle.middleware('customer', 'credentials'),
       ),
     )
-  if (config.PASSWORD_RECOVERY_ENABLED)
+  if (options.recovery)
     router.use(
       recoveryRoutes(
         createRecoveryService(
@@ -84,14 +73,14 @@ export async function composeCustomerRoutes(
           sessions,
           security,
           notifications,
-          loadRecoveryOptions(environment),
+          options.recovery,
         ),
         security,
         sessions,
         throttle.middleware('customer', 'recovery'),
       ),
     )
-  if (config.EMAIL_CHANGE_ENABLED)
+  if (options.emailChange)
     router.use(
       emailChangeRoutes(
         createEmailChangeService(
@@ -99,7 +88,7 @@ export async function composeCustomerRoutes(
           models,
           sessions,
           notifications,
-          loadEmailChangeOptions(environment),
+          options.emailChange,
         ),
         security,
         sessions,
@@ -119,7 +108,7 @@ export async function composeCustomerRoutes(
         sessions,
       ),
     )
-  if (config.ADMIN_AUTH_ENABLED)
+  if (options.adminRecovery)
     router.use(
       adminRoutes(
         createCustomerService(
@@ -135,7 +124,7 @@ export async function composeCustomerRoutes(
           sessions,
           security,
           notifications,
-          loadAdminRecoveryOptions(environment),
+          options.adminRecovery,
           undefined,
           'admin',
         ),
@@ -149,4 +138,23 @@ export async function composeCustomerRoutes(
       ),
     )
   return router
+}
+
+// Keep private model construction inside auth; callers receive narrow delivery capabilities.
+export function composeProofDeliveries(
+  connection: Connection,
+  options: IdentityConfig | undefined,
+) {
+  const models = createIdentityModels(connection)
+  return {
+    reset: options?.recovery
+      ? createResetDelivery(models, options.recovery)
+      : undefined,
+    emailChange: options?.emailChange
+      ? createEmailChangeDelivery(models, options.emailChange)
+      : undefined,
+    adminReset: options?.adminRecovery
+      ? createAdminResetDelivery(models, options.adminRecovery)
+      : undefined,
+  }
 }

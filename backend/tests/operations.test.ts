@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createApp } from '../src/app.js'
 import { ConfigurationError, loadEnvironment } from '../src/config/environment.js'
 import { createLogger, logConfigurationFailure } from '../src/observability/logger.js'
-import { respond } from '../src/shared/responses.js'
+import { respond } from '../src/common/responses.js'
 import { testEnvironment } from './support/environment.js'
 
 describe('startup configuration', () => {

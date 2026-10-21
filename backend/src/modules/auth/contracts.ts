@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ApiError } from '../../shared/errors.js'
+import { ApiError } from '../../common/errors.js'
 
 const text = (max: number) =>
   z

@@ -1,6 +1,6 @@
 import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto'
 import { z } from 'zod'
-import { ApiError } from '../../shared/errors.js'
+import { ApiError } from '../../common/errors.js'
 
 // Owner accepted 19 October 2026. Do not normalize or trim credentials.
 export const newPasswordPolicy = z

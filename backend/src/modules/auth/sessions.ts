@@ -1,9 +1,9 @@
 import type { Types, Connection, ClientSession } from 'mongoose'
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
 import { z } from 'zod'
-import { ConfigurationError } from '../../config/environment.js'
+import { ConfigurationError } from '../../config/errors.js'
 import { inTransaction } from '../../db/transaction.js'
-import { ApiError } from '../../shared/errors.js'
+import { ApiError } from '../../common/errors.js'
 import type { IdentityModels } from './models.js'
 import { findActiveUserSession } from './persistence.js'
 
@@ -59,7 +59,7 @@ const fields: Record<string, string> = {
   appEnvironment: 'APP_ENV',
   apiOrigin: 'API_PUBLIC_ORIGIN',
 }
-function validatedOptions(value: unknown): SessionOptions {
+export function validateSessionOptions(value: unknown): SessionOptions {
   const parsed = optionsSchema.safeParse(value)
   if (!parsed.success)
     throw new ConfigurationError(
@@ -73,11 +73,11 @@ function validatedOptions(value: unknown): SessionOptions {
     )
   return parsed.data
 }
-// Activated by the owning identity composition, not by the current health-only runtime.
+// Raw-boundary adapter for isolated callers; the runtime consumes prevalidated typed options.
 export function loadSessionOptions(environment: NodeJS.ProcessEnv): SessionOptions {
   const seconds = (value: string | undefined) =>
     value && /^[1-9]\d*$/.test(value) ? Number(value) : NaN
-  return validatedOptions({
+  return validateSessionOptions({
     secret: environment.SESSION_SECRET,
     customerTtlSeconds: seconds(environment.CUSTOMER_SESSION_TTL_SECONDS),
     adminTtlSeconds: seconds(environment.ADMIN_SESSION_TTL_SECONDS),
@@ -104,7 +104,7 @@ export function createSessionService(
   settings: SessionOptions,
   clock: () => Date = () => new Date(),
 ) {
-  const options = validatedOptions(settings)
+  const options = validateSessionOptions(settings)
   const key = Buffer.from(options.secret, 'hex')
   const kindCheck = (kind: SessionKind) => {
     if (kind !== 'customer' && kind !== 'admin') throw new ApiError('AUTH_REQUIRED')

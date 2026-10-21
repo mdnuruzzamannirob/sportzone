@@ -4,14 +4,14 @@ import request from 'supertest'
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 import { createApp } from '../src/app.js'
-import { validate } from '../src/middleware/validation.js'
+import { validate } from '../src/common/middleware/validation.js'
 import {
   createIdentityContracts,
   isChallengeCurrent,
   parseIdentityResponse,
 } from '../src/modules/auth/contracts.js'
-import { ApiError, type ErrorCode } from '../src/shared/errors.js'
-import { respond } from '../src/shared/responses.js'
+import { ApiError, type ErrorCode } from '../src/common/errors.js'
+import { respond } from '../src/common/responses.js'
 
 // Synthetic service policies, never installed as production password/phone/area rules.
 const contracts = createIdentityContracts({

@@ -1528,3 +1528,15 @@ exclude ignored local configuration, include tracked ignored/current files and n
 and fail closed without Git inventory. CI-22/23/24 retain safe-report and strict advisory/exception coverage.
 The full history scan and empty exception register remain mandatory. Current release/commerce OPV and acceptance
 slots stay Not Run until their owning feature/environment evidence exists.
+
+### P03-019 composition parity
+
+`backend/tests/composition.test.ts` verifies frozen typed policy, detached environment values, optional inactive
+providers and value-free configuration failures. The real replica-set `tests/integration/composition.test.ts`
+issues a recovery proof through root HTTP composition, renders/delivers it through root worker composition and
+consumes it through HTTP, with deliberately unusable legacy raw config fields proving there is no reparsing.
+It also exercises compiled bootstrap/migration entry points, preserves existing users and checks the worker's
+safe disabled-provider preflight without sending real email. Existing runtime, auth/recovery/ownership/notification
+and schema/index suites retain their assertions and discovery; common utility moves update source imports only.
+Browser verification uses the affected real-API authentication flows with unchanged frontend builds. Full unrelated
+frontend/unit/showcase suites and hosted CI are not implied. [Evidence](./evidence/P03-019-backend-composition.md).

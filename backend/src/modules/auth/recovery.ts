@@ -8,8 +8,8 @@ export {
   type RecoveryOptions,
 } from '../../config/recovery.js'
 import { inTransaction } from '../../db/transaction.js'
-import { parseInput } from '../../middleware/validation.js'
-import { ApiError } from '../../shared/errors.js'
+import { parseInput } from '../../common/middleware/validation.js'
+import { ApiError } from '../../common/errors.js'
 import type { RegistrationNotifications } from '../notifications/registration.js'
 import type { BrowserSecurity } from './browser-security.js'
 import { loginInput } from './customer.js'

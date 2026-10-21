@@ -107,7 +107,7 @@ The register contains 179 tasks across twelve phases, including seven engineerin
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
 | 01 — Requirements Finalization and Planning   |      17 |           0 |     0 |           0 |       0 |         0 |     17 |        0 |
 | 02 — UI/UX Design                             |      14 |           0 |     0 |           0 |       0 |         0 |     14 |        0 |
-| 03 — Authentication and Core Backend          |      20 |           2 |     0 |           0 |       0 |         0 |     18 |        0 |
+| 03 — Authentication and Core Backend          |      20 |           1 |     0 |           0 |       0 |         0 |     19 |        0 |
 | 04 — Product Catalog and Inventory            |      15 |          15 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      20 |          20 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -117,7 +117,7 @@ The register contains 179 tasks across twelve phases, including seven engineerin
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **179** |     **130** | **0** |       **0** |   **0** |     **0** | **49** |    **0** |
+| **Total**                                     | **179** |     **129** | **0** |       **0** |   **0** |     **0** | **50** |    **0** |
 
 ## 4. Milestone tracker
 
@@ -563,13 +563,13 @@ owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
   **Acceptance:** Pre-authentication and authenticated mutations have explicit protection; future guest/order-scoped contracts are tracked and completed before those feature tasks.\
   **Evidence:** [Reviewed identity API contracts](./evidence/P03-018-api-contracts.md). Strict validators for 26 operations, browser/replay obligations and safe errors implemented; 73 new contract cases, 145 backend tests and all 20 CI commands passed. Accepted by project owner on 18 October 2026: “Identity API contract গ্রহণ করছি”; real identity/session/CSRF implementations remain their owning tasks.
 
-- [ ] **P03-019 — Refactor typed backend composition and runtime entry points**\
-  **Status:** `Not Started` · **Area:** Backend foundation · **Owner:** Codex\
+- [x] **P03-019 — Refactor typed backend composition and runtime entry points**\
+  **Status:** `Done` · **Area:** Backend foundation · **Owner:** Codex\
   **Sources:** Architecture §§4,6; API §2; Operations\
   **Depends on:** `P01-015`, `P03-012`\
   **Deliverable:** Centralize typed configuration/composition, HTTP registration and common technical utilities while preserving lifecycle, health and existing worker/operator entry points.\
   **Acceptance:** No re-serialization of parsed config, no secret exposure, parity across HTTP/worker/tools; lint/typecheck/unit/build/smoke/integration checks and updated import/tooling references.\
-  **Evidence:** Not Run; implementation not started.
+  **Evidence:** [Typed composition/runtime parity](./evidence/P03-019-backend-composition.md). Frozen typed identity configuration removes environment-string round trips; shared HTTP/worker composition, root route registration and common technical helpers implemented. 331 unit/contract, 282 real MongoDB integration and 6 three-engine API browser cases passed across affected runs; backend lint/types/build/smoke and boundaries passed. Project owner explicitly reviewed and accepted through the popup on 21 October 2026: “Review করেছি—accept করছি, Done করো”; no data/API migration, P03-020 or milestone acceptance claimed.
 
 - [ ] **P03-020 — Refactor module ownership and file conventions without data migration**\
   **Status:** `Not Started` · **Area:** Identity/modules/integrations · **Owner:** Codex\
@@ -1876,3 +1876,9 @@ Preserve IDs and dependency references; update phase totals and record milestone
 
 
 **21 October 2026 — P03-016 acceptance:** In Review → Done after explicit project-owner popup acceptance: “Review করেছি—accept করছি, Done করো”. Acceptance covers this verification task only; M1 remains Not Accepted. Phase 03: 18/20 Done; overall: 49 Done, 130 Not Started, zero In Review. Existing application/security results retained; only documentation checks repeated. [Acceptance](./evidence/P03-016-identity-security.md#owner-acceptance).
+
+
+**21 October 2026 — P03-019:** Not Started → In Progress → In Review. Extracted typed HTTP/worker composition and root registration, removed configuration re-serialization and moved common HTTP utilities with import parity. Scoped backend and real API browser verification passed. Owner acceptance pending; Phase 03: 18 Done, 1 In Review, 1 Not Started; overall: 49 Done, 1 In Review, 129 Not Started. [Evidence](./evidence/P03-019-backend-composition.md).
+
+
+**21 October 2026 — P03-019 acceptance:** In Review → Done after explicit project-owner popup acceptance: “Review করেছি—accept করছি, Done করো”. Phase 03: 19/20 Done; overall: 50 Done, 129 Not Started, zero In Review. P03-020 remains Not Started; M1 approval remains separate. Existing verification retained; only documentation checks repeated. [Acceptance](./evidence/P03-019-backend-composition.md#owner-acceptance).
