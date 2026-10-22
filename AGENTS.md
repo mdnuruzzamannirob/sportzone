@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 20 October 2026
+**Updated:** 22 October 2026
 
 **Project:** Single-store sports e-commerce platform for Bangladesh (BDT)\
 **Scope:** Repository-root instructions for coding agents working in `sportzone/`\
@@ -51,7 +51,7 @@ Use the authority of each document **for its own subject matter**. `AGENTS.md` p
 | Source | Governs |
 | --- | --- |
 | [PRD](docs/PRD.md) | Product scope, business rules, acceptance criteria, launch boundaries |
-| [Architecture](docs/ARCHITECTURE.md) | Technology decisions, module ownership, trust boundaries, cross-module invariants |
+| [Architecture](docs/ARCHITECTURE.md) | Technology decisions, module ownership, trust boundaries, cross-module invariants; delegates detailed source layout to [PROJECT_STRUCTURE](docs/PROJECT_STRUCTURE.md) |
 | [Design](docs/DESIGN.md) | UI tokens, layouts, states, accessibility and interactions |
 | [Database](docs/DATABASE.md) | Persistence schemas, constraints, indexes, migrations and data lifecycle |
 | [API](docs/API.md) | HTTP routes, DTOs, authentication/CSRF, errors and idempotency contracts |
@@ -94,7 +94,26 @@ Inspect the live repository before using paths or commands from this target layo
 
 **MUST NOT** import Mongoose models or backend runtime services into either frontend. Shared pure types/contracts are optional only when justified by real duplication; do not introduce a shared UI library or new service without a demonstrated need.
 
-**Source organization:** Follow [Architecture §§4–6](docs/ARCHITECTURE.md#4-project-structure) and the implementation tasks in Plan §3.6. Frontends use feature-owned API/components/hooks/schemas/types with thin routes; backend modules use `<entity>.model/validation/service/controller/routes/types.ts` as needed. Current paths remain valid until their refactor verifies the move. Do not create empty template files, duplicate models or infer API namespaces from folders. Preserve pure `shared/` utilities and HeroUI foundations. Shared-collection access follows Database §4.2's narrow capabilities. Monorepo and CI changes preserve one locked dependency graph, one check inventory and fail-closed required statuses under Operations §5.5; remote settings and deployment readiness require actual evidence.
+**Source organization:** Read [PROJECT_STRUCTURE](docs/PROJECT_STRUCTURE.md) before adding/moving
+files; Architecture §§4–6 delegate the 22 October 2026 target to it. Use feature ownership and the
+routes/controller/schema/service/model/types convention as needed; provider clients belong in
+providers/, root wiring in setup.ts/routes.ts, technical code in one shared/ boundary. Existing
+paths remain supported until the owning application refactor verifies their move. Do not duplicate
+models, infer public API namespaces from directories or create empty template files.
+
+**Mandatory ongoing review:** Every implementation/refactor must identify its owner/target path,
+verify naming/import direction, keep private persistence private, keep controllers free of model
+imports and business logic, prohibit shared→business dependencies and keep provider protocol separate
+from business decisions. No frontend backend-runtime/provider/secret imports. Update executable
+boundary checks and negative fixtures with the owning refactor; a documentation statement alone does
+not prove enforcement. Use narrow capabilities for shared collections and preserve canonical models.
+
+**One application at a time:** P01-018 documentation review → P03-021 backend → P02-015 storefront →
+P02-016 admin. Do not start the next application's refactor until the preceding task is accepted.
+Move imports, tools, test discovery, aliases and actual CI inventory together; retain compatibility
+and existing user/staged edits. No new behavior, package/framework, collection or destructive cleanup
+is implied by source organization. Exceptions require an explicit architecture decision and checks.
+Keep native HeroUI defaults, app-owned UI/Link/theme boundaries and pure shared utilities intact.
 
 ## 4. Agent workflow & task execution
 

@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 20 October 2026
+**Updated:** 22 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -134,44 +134,49 @@ Do not assign arbitrary completion dates. Estimate work after evaluating develop
 
 ### 3.6 Engineering foundation and incremental refactor
 
-Architecture §§4–6,14 define application organization and engineering decisions; Operations §§5.5–5.7 define CI, source control and promotion, and Testing §15 defines verification. Reconcile these contracts before implementation. Source reorganization preserves the existing stack, business behavior and release gates.
+The project owner selected the new simple feature-based target on 22 October 2026 and requested
+one application at a time. [PROJECT_STRUCTURE](./PROJECT_STRUCTURE.md), delegated by Architecture
+§§4–6, defines target trees/naming/ownership. Earlier P01-015–017/P03-019–020/P02-012–014 work and
+acceptance remain historical evidence; they do not prove this new target has been implemented.
 
-| Step | Task | Outcome and prerequisite |
+| Order | Task | Outcome / prerequisite |
 | --- | --- | --- |
-| 1 | P01-015 | Reconcile engineering contracts and submit documentation verification for independent acceptance |
-| 2 | P01-016 / P01-017 | Keep inventory-driven CI and development tooling minimal; validate command failures and affected checks without repeated full-suite runs |
-| 3 | P03-019 | Extract typed composition/configuration and route registration; preserve runtime/worker/tool behavior |
-| 4 | P03-020 | Separate auth/customer/delivery boundaries, standardize cohesive backend files and provider adapters; depends on P03-019 |
-| 5 | P02-012 / P02-013 | Refactor storefront/admin routes, layouts and feature placement independently after documentation acceptance |
-| 6 | Existing feature tasks | Integrate customer/admin auth, then admin catalog → public catalog → inventory/cart → quote/COD order/admin processing; honor declared prerequisites |
-| 7 | Existing P07/P08 tasks | Verified online payment/reconciliation and after-sales; required channels and launch gates unchanged |
+| 1 | P01-018 | Reconcile target organization, contracts, agent rules and documentation; independent review |
+| 2 | P03-021 | Backend refactor and executable boundary/tool/test parity; depends on P01-018 |
+| 3 | P02-015 | Storefront refactor, URL/cache/HeroUI/browser parity; depends on P03-021 |
+| 4 | P02-016 | Admin refactor, router/session/forms/browser parity; depends on P02-015 |
 
-**Current execution priority:** Continue with P03-019, followed by P03-020 and the two frontend refactors,
-using the accepted P01-015 architecture and P01-017 tooling baseline. P01-016 hosted CI/settings closure
-is a separate follow-up; it is not a declared prerequisite of these refactor tasks in TASKS.md. Do not
-restart completed tooling work merely because remote verification is unavailable. This sequencing does
-not waive P01-016 acceptance, protected-main checks or release gates. Finish and review one refactor task
-before starting the next; use change-based checks under Testing §15.5.
+Do not begin source moves as part of P01-018. Complete and review the owning application before the
+next application starts. Within an application use small verified slices, not one bulk destructive
+rename. Feature work must follow the target conventions and preserve security/financial invariants.
 
-Do not start a bulk rename across all apps. For each slice, record current-to-target paths, preserve public URLs, error/DTO/session/CSRF contracts and collection/index identities, move/update imports and operational entry points together, then run the owning checks. Refactor tasks do not recreate already accepted foundations or mark dependent business features complete. Pre-existing accepted evidence is retained as historical evidence; new behavior/parity evidence accompanies refactored code.
+| Implemented reference | Target responsibility (migration not yet executed) |
+| --- | --- |
+| backend/src/composition.ts, routes/index.ts | setup.ts, routes.ts; cross-domain wiring leaves auth |
+| backend/src/config/environment.ts, db/ | config/env.ts, config/database.ts, shared/database/; retain explicit transactions/indexes |
+| backend/src/common/, observability/ | One shared/ technical boundary; no duplicate generic buckets |
+| backend/src/integrations/, tools/ | providers/ (.client/.schema), scripts/; antivirus separate from Cloudinary; retain operator compatibility |
+| products/, categories/, carts/wishlists, coupons, guest-access | catalog subfeatures, cart, promotions, auth/guest-access; retain actual collection and HTTP identities |
+| storefront app/features/lib, tests/ui | Target route/feature/transport tree; account group adds no URL segment; migrate browser discovery together |
+| admin app/features/lib | Target router/guard/feature tree; backend auth remains mandatory |
 
-Initial current-to-target inventory (not executed):
+Each refactor must inventory actual current→target paths, imports, script commands, test runner globs,
+aliases, generated output, safe startup/shutdown and affected CI checks before moves. Preserve existing
+public URLs, DTOs, cookies/session/CSRF, idempotency/If-Match, DB names/indexes and external-effect
+recovery. One canonical model registration per collection; inventory receives only stock capabilities.
+Do not invent a second collection or use a generic repository layer to conceal ownership changes.
 
-| Current code | Target responsibility | Task |
-| --- | --- | --- |
-| `backend/src/server.ts`, `modules/auth/composition.ts` | Process lifecycle plus root `composition.ts` and typed options | P03-019 |
-| `backend/src/config/environment.ts`, `routes.ts`, `middleware/`, `shared/` | `config/env.ts`, `routes/index.ts`, cohesive `common/` utilities | P03-019 |
-| `backend/src/modules/auth/profile.ts`, `profile-routes.ts`, `account-dto.ts` | Customer validation/service/controller/routes/DTO ownership; canonical identity persistence retained | P03-020 |
-| `backend/src/modules/settings/coverage.ts` | Delivery coverage read service | P03-020 |
-| `backend/src/modules/notifications/email.ts` | Email provider integration; intent/claims stay in notifications | P03-020 |
-| `storefront/src/app/(public)`, `(private)`, root shell/header components | Target route groups, components/layout and consuming features, keeping URLs/cache rules | P02-012 |
-| `admin/src/app/routes.tsx`, `components/admin/`, `styles.css` | Router/providers, components/layout, feature auth guard and styles/globals.css | P02-013 |
+Update automated checks for frontend/backend isolation, nested module/private persistence boundaries,
+controllers→models, shared→modules and provider/business separation with negative fixtures. Keep
+Biome/TypeScript/Vitest/browser tooling and one locked graph; no new frameworks or infrastructure.
+Update ci-workspaces.json only for actual script/inventory changes; no skipped/passing placeholders.
+Retain existing pure shared utilities/reusable UI and operator entry points until consumers and
+compatibility are verified. Tests stay outside src/; preserve browser/theme/accessibility coverage.
 
-Keep `db/`, `observability/`, reusable UI/management/commerce foundations, pure root shared utilities and operator tools unless a specific dependency requires a verified move. Do not implement planned products/inventory models solely to complete a refactor checklist.
-
-TanStack Query/frontend Zod are selected target dependencies for later integrated API/forms work, not dependencies to add during layout-only moves. Add compatible locked versions and CI checks with their consuming feature. Do not reorganize the phase roadmap to hide incomplete prerequisites. Recovery for a code-only move is the prior compatible build after shutdown/lease handling; migrations and external financial retries require their own contracts and safeguards.
-
-Tooling work may proceed independently where its inputs are stable, but a source move must update the current runner/inventory rather than depend on an unimplemented CI design. Application/container deployment, migration jobs and protected environment configuration remain within the existing Phase 11 implementation work; specification does not imply deployed infrastructure. New automation runs no production financial activity.
+Use change-based verification (Testing §15.5). Record actual commands/environment/results, source
+revision, parity evidence, reviewer decision and rollback. Reverse code moves only with compatible
+config/entry points; never roll back by erasing business/financial/audit records or replaying unknown
+provider effects. Source refactors do not clear EXT-04 or accept milestones/release/provider gates.
 
 ---
 

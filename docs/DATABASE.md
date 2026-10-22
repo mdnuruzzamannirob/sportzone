@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 21 October 2026
+**Updated:** 22 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -259,16 +259,21 @@ flowchart LR
 
 Both controllers and scheduled jobs invoke shared backend **domain services**, never each other's HTTP endpoint. Cross-module transaction coordination remains inside backend-controlled services (Architecture §§3, 6).
 
-**Implementation ownership:** The following maps domain labels to concrete modules under Architecture §6.1. Source-boundary changes preserve schemas, indexes and collection identities.
+**Target ownership:** [PROJECT_STRUCTURE §2.1](./PROJECT_STRUCTURE.md#21-module-ownership), delegated
+by Architecture §6.1, groups products/variants/categories under catalog, carts/wishlists under cart,
+coupon operations under promotions, guest access under auth, and existing reports/audit under
+reporting/audit. The table below describes canonical capabilities; legacy labels do not require old
+source folders. P03-021 must preserve schema/collection/index identities, validators, transaction and
+narrow shared-collection capabilities. No migration or second model registration is implied.
 
 | Records | Canonical registration / permitted operations |
 | --- | --- |
 | `users` | Auth owns the single schema/index/validator registration and credential/security writes; customers uses narrow public profile/address operations. Guest-order access remains independently scoped |
 | `sessions`, `authChallenges`, `browserContexts`, `authRateLimits` | Auth; guest-access uses the approved scoped guest boundary |
-| `products`, `productVariants` | Products registers schemas; inventory receives a stock-only persistence capability for variant counters. Product updates cannot overwrite counters |
-| `categories` | Categories |
-| `carts`, `wishlists` | Carts, wishlists respectively |
-| `coupons`, `couponRedemptions`, `couponCustomerCounters` | Coupons (the promotions domain) |
+| `products`, `productVariants` | Catalog registers schemas; inventory receives a stock-only persistence capability for variant counters. Product updates cannot overwrite counters |
+| `categories` | Catalog/categories |
+| `carts`, `wishlists` | Cart module, distinct cart/wishlist capabilities |
+| `coupons`, `couponRedemptions`, `couponCustomerCounters` | Promotions |
 | `deliveryZones`, `deliveryCharges` | Delivery owns the existing coverage reader; future charge management remains its feature task |
 | `mediaAssets` | Media owns registration, scoped attachment/reference-ledger/cleanup operations; products/categories/returns/settings coordinate attachments through that boundary |
 | `storeSettings`, `policyDocuments` | Settings |

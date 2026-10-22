@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 21 October 2026
+**Updated:** 22 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -1579,3 +1579,23 @@ bootstrap/provision/migration/worker commands and three-engine real auth/account
 old generated-module fallbacks. Worker preflight explicitly sets `EMAIL_DELIVERY_ENABLED=false` to prevent inherited
 email activation during operator tests. No external sender acceptance is implied.
 [Evidence and preserved schema/provider bodies](./evidence/P03-020-module-ownership.md).
+
+
+## New structure refactor verification — 22 October 2026
+
+[PROJECT_STRUCTURE](./PROJECT_STRUCTURE.md) defines target conventions; P01-018 is documentation-only
+and runs repository Markdown/link/consistency/diff checks, not application builds. P03-021, P02-015
+and P02-016 migrate one app at a time under Implementation Plan §3.6. Existing test paths/globs,
+operator commands and evidence remain live until replacement is verified.
+
+Backend acceptance requires current→target inventory and positive/negative executable import checks:
+frontend isolation, foreign private persistence (including nested catalog/auth subfeatures),
+controller→model prohibition, shared→module prohibition and provider/business separation. Update
+moved imports, scripts, TypeScript discovery/output, worker entry points and CI inventory together.
+Run affected schema/index/HTTP/auth/session/transaction/race/provider-fault cases and build/startup/
+shutdown parity as applicable; source moves cannot weaken financial/security assertions or clear
+unavailable real-provider gates. Storefront/admin add existing URL/session/cache/form and native
+HeroUI/theme/keyboard/accessibility/browser parity. When tests/ui becomes tests/e2e, preserve the
+full discovered matrix and fail closed on missing checks; no synthetic passing replacements.
+Record exact commands, revision/environment, observed outcomes, artifacts and independent review.
+Expanded boundary rules are planned owning-refactor deliverables, not implemented by this document.

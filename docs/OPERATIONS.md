@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 21 October 2026
+**Updated:** 22 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -1834,3 +1834,18 @@ objects. Never drop the ledger or infer provider deletion from code rollback. Re
 uploading/deleting states against the same deterministic identity after recovery. Attaching real
 product/category/settings targets is owned by their integration tasks and must use the same session;
 private claim attachment is owned by P08-012. No new endpoint or cleanup schedule is silently enabled.
+
+
+## Source layout migration control — 22 October 2026
+
+[PROJECT_STRUCTURE](./PROJECT_STRUCTURE.md) supplies the target; implemented commands and paths in
+this runbook remain operational references until P03-021/P02-015/P02-016 verify replacements.
+Backend targets setup.ts/routes.ts, config/env.ts/config/database.ts, providers/, shared/ technical
+code and scripts/ operator entry points. No source rename in this documentation change is deployed.
+Before switching tools/jobs, inventory compiled output and cwd/env/arguments, preserve compatible
+entry points or verify the coordinated replacement, test safe shutdown/restart and update runbooks/
+CI discovery. Environment names and secret ownership do not change just because a file moves.
+Rollback preserves data, indexes, audit, work claims and unresolved external effects. Source moves
+must not drop collections or blindly replay payments/refunds/media operations. EXT-04 and all named
+operator/provider/legal/deployment gates remain separate. Application refactors run backend first,
+then storefront, then admin after independent acceptance of the preceding application.

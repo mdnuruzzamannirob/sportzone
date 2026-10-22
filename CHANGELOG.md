@@ -2,9 +2,23 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 21 October 2026
+**Updated:** 22 October 2026
 
 This changelog tracks the documentation baseline. Application releases are recorded separately when software is released.
+
+## Documentation changes — 22 October 2026
+
+- Recorded explicit project-owner popup acceptance of P01-018 and marked it Done. Phase 01: 18 Done;
+  overall: 54 Done, 128 Not Started, 1 Blocked. The agreed application sequence remains P03-021
+  backend → P02-015 storefront → P02-016 admin; no source refactor or milestone acceptance implied.
+  [Acceptance](docs/evidence/P01-018-project-structure.md#owner-acceptance).
+
+- Recorded the owner-selected simple feature-based target in PROJECT_STRUCTURE, delegated by
+  Architecture. Synchronized naming, domain/import ownership, physical account route grouping,
+  API/data/design/test/operational compatibility and mandatory agent review rules. Added P01-018
+  documentation review and sequential P03-021 backend → P02-015 storefront → P02-016 admin refactors.
+  No application source moved, automated rule enforcement or provider activation claimed. Earlier
+  acceptance and EXT-04 remain intact. [Evidence](docs/evidence/P01-018-project-structure.md).
 
 ## Development changes — 21 October 2026
 

@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 21 October 2026
+**Updated:** 22 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -31,6 +31,11 @@ This document owns the visual system, page composition, navigation, interactions
 - [14. Design quality & consistency](#14-design-quality--consistency)
 
 ---
+
+The 22 October 2026 source-layout target is [PROJECT_STRUCTURE](./PROJECT_STRUCTURE.md), delegated
+by Architecture. Earlier source-path examples below remain UI responsibility illustrations until
+P02-015/P02-016 migrate them; the canonical target takes precedence for placement/naming only.
+Screen behavior, product rules and native HeroUI/accessibility/theme requirements are unchanged.
 
 ## 1. Design overview
 
@@ -679,3 +684,19 @@ Use these specifications as the UI/UX baseline for both applications. `ARCHITECT
 Customer routes `/login`, `/register`, `/forgot-password`, `/reset-password`, `/account` and `/account/email-change` use native app-owned HeroUI forms and real Express identity APIs. Administrator `/login`, `/forgot-password`, `/reset-password` and `/app/*` use the separate administrator namespace; there is no admin signup. Registration email-verification issuance/confirmation is not implemented, so the account accurately identifies unverified email without a pretend verification button. Addresses use currently supported district/area values with authoritative save-time coverage rejection; delivery option discovery remains the delivery feature contract.
 
 Private/auth storefront routes are noindex/no-store; no account data or proof enters SSR shared caches. Fragment proofs are captured once in memory, removed from the location and only submitted explicitly in a JSON body. Failed forms preserve inputs; pending guards stop double submission, errors/status are accessible, and password fields clear after confirmed success. Session checks and reauthentication hide denied/expired private views. Admin navigation is presentation only and only renders a signed-in identity after the server session response; unimplemented management features stay honestly unavailable.
+
+
+## Source organization convention — 22 October 2026
+
+[PROJECT_STRUCTURE §3](./PROJECT_STRUCTURE.md#3-storefront-and-admin), delegated by Architecture,
+defines frontend route groups, feature naming and app-owned UI/layout boundaries. Features stay flat
+until their size requires subfolders; create/edit reuse one form. Route files compose views rather
+than pricing/stock/financial logic. Native HeroUI defaults, themes, typography, Link adapters,
+accessibility and private-state behavior remain required. Existing commerce/management components
+are not deleted by a diagram; classify reusable versus feature-owned consumers during the refactor.
+
+(account)/account/ means an organization-only group plus the /account URL segment. Existing account,
+order, address, return and settings URLs must be mapped and preserved; grouping never grants access
+or makes private content cacheable. Guest proof/payment-return/claim flows remain intact. P02-015
+and P02-016 require responsive/keyboard/light-dark/accessibility/browser evidence separate from CI
+and owner visual acceptance. This documentation change supplies no new screen or visual acceptance.

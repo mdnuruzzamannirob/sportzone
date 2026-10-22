@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 21 October 2026
+**Updated:** 22 October 2026
 
 Single-store sports e-commerce platform for Bangladesh, using BDT. SportZone combines a customer storefront, a separate
 administration portal and one authoritative backend API.
@@ -68,15 +68,18 @@ sportzone/
 
 [Architecture §4](docs/ARCHITECTURE.md#4-project-structure) defines application/module boundaries.
 
-Architecture §§4–6,14 define feature-based UIs, a module-based layered backend and npm-workspaces engineering policy.
-Target backend modules use `<entity>.model/validation/service/controller/routes/types.ts`; UI shells belong to
-`components/layout/`, feature behavior to `features/`, and reusable HeroUI/commerce/management compositions retain
-their shared ownership. Current code is migrated incrementally; the CLI commands below describe implemented setup.
+The new owner-selected target is [Project structure and coding conventions](docs/PROJECT_STRUCTURE.md),
+delegated by Architecture §§4–6. It specifies complete backend/storefront/admin trees, naming,
+module ownership, import direction, account route groups and test/tool conventions. These are target
+paths, not a claim that current composition/common/db/integrations/tools paths have already moved.
+Existing commands below remain the setup reference until the owning refactor verifies replacements.
 
-[Implementation Plan §3.6](docs/IMPLEMENTATION_PLAN.md#36-engineering-foundation-and-incremental-refactor) sequences
-P01-015 contract review, P01-016–017 tooling, P03-019–020 backend and P02-012–013 UI refactors.
-[Operations §5](docs/OPERATIONS.md#5-cicd--deployment-procedures) defines target CI/release controls; the existing workflow
-remains the operational reference until verified replacement. P03-015 introduces pinned TanStack Query 5.104.5 and frontend Zod 4.6.7 for the implemented identity forms. [Verification record](docs/evidence/P01-015-structure-decision.md).
+[Implementation Plan §3.6](docs/IMPLEMENTATION_PLAN.md#36-engineering-foundation-and-incremental-refactor)
+sequences P01-018 documentation → P03-021 backend → P02-015 storefront → P02-016 admin, one application
+at a time. Earlier task acceptance remains historical; new refactors require fresh parity evidence.
+[AGENTS](AGENTS.md) requires future work to follow target ownership/naming and update automated
+boundaries, imports, scripts, test globs and CI inventory with source moves. Source layout changes
+preserve API/data/security/financial/provider acceptance requirements and native HeroUI boundaries.
 
 ## 4. Development workflow
 

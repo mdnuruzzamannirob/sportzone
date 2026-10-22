@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 21 October 2026
+**Updated:** 22 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical references:** [Architecture](./ARCHITECTURE.md) · [Database](./DATABASE.md)\
@@ -76,6 +76,14 @@ change (PRD §3.3).
 
 ### 2.1 Runtime and request path
 
+**Target source organization (22 October 2026):** [PROJECT_STRUCTURE](./PROJECT_STRUCTURE.md)
+defines setup.ts/routes.ts, providers/.client.ts, shared/ technical helpers and grouped catalog,
+cart, promotions, auth/guest-access, reporting/audit responsibilities. Module names in older tables
+and implementation records below identify existing business capabilities/paths, not a requirement
+to retain the old folders. P03-021 migrates them while preserving every URL, DTO, access/CSRF/session,
+cache/error, idempotency/If-Match and provider-verification contract. No public endpoint is inferred
+from a target folder; no runtime migration is claimed by this documentation update.
+
 P03-019 implements the composition root in `backend/src/composition.ts`, root registration in
 `backend/src/routes/index.ts`, and technical HTTP utilities in `backend/src/common/`. Parsed runtime identity
 options are wired directly into HTTP/worker capabilities; there is no environment-string round trip. Endpoint,
@@ -101,16 +109,23 @@ gateway. Scheduled jobs call shared services without bypassing invariants.
 
 | Module                                                                        | Primary route namespace(s)                                                             | Ownership                                                             |
 | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `auth`, `customers`, `guest-access`                                           | `/auth`, `/me`, `/guest-access`, `/admin/auth`                                         | Identity, scoped access and sessions                                  |
-| `products`, `categories`, `inventory`                                         | `/products`, `/categories`, `/admin/products`, `/admin/categories`, `/admin/inventory` | Visibility, SKUs, stock movement                                      |
-| `carts`, `wishlists`, `coupons`, `reviews`                                    | `/cart`, `/wishlist`, `/coupons`, `/reviews`, `/admin/coupons`                         | Cart, quotas, verification, moderation                                |
+| `auth` (including guest access), `customers`                                           | `/auth`, `/me`, `/guest-access`, `/admin/auth`                                         | Identity, scoped access and sessions                                  |
+| `catalog`, `inventory`                                         | `/products`, `/categories`, `/admin/products`, `/admin/categories`, `/admin/inventory` | Visibility, SKUs, stock movement                                      |
+| `cart`, `promotions`, `reviews`                                    | `/cart`, `/wishlist`, `/coupons`, `/reviews`, `/admin/coupons`                         | Cart, quotas, verification, moderation                                |
 | `checkout`, `orders`, `delivery`                                              | `/checkout`, `/orders`, `/delivery`, `/admin/orders`, `/admin/delivery`                | Snapshots, submissions, fulfillment, charge rules                     |
 | `payments`, `refunds`, `returns`                                              | `/orders/{id}/payments`, `/payments`, `/claims`, `/refunds`, `/admin/...`              | Verification, collections, claims, payouts                            |
-| `notifications`, `support`, `admin-operations`, `settings`, `media`, `health` | Existing operations in §§14, 16 and Appendix D only                                    | Correspondence, reporting, configuration, authorized media and health |
+| `notifications`, `support`, `reporting`, `settings`, `media`, `health` | Existing operations in §§14, 16 and Appendix D only                                    | Correspondence, reporting, configuration, authorized media and health |
 
 Domain services coordinate cross-module mutations within MongoDB transactions. No external HTTP call occurs while a database transaction remains open.
 
-**Implementation mapping:** Architecture §§4–6 define target filenames and feature ownership. Legacy `catalog`/`shopping`/`promotions` references below name business domains, mapping to products/categories, carts/wishlists and coupons. Delivery rules belong to delivery; asset lifecycle belongs to media. This mapping preserves URLs, operation IDs, DTOs, response/errors, cookies, CSRF, idempotency and authorization. Implemented-path descriptions remain current references until their refactor tasks update them. Controllers map HTTP inputs/results; services enforce business rules through public module capabilities. Frontend transports and query caching follow Architecture §§5.4–5.6. Notification delivery remains restricted to the documented surfaces; module organization adds no endpoint. This specification and executable validators/contract tests define the API; any future OpenAPI output must be checked against them before adoption.
+**Implementation mapping:** Architecture §§4–6 delegate target filenames and ownership to
+PROJECT_STRUCTURE. Target catalog groups products/variants/categories; cart groups cart/wishlist;
+promotions owns coupon operations; auth contains guest-access; reporting groups existing admin
+aggregates. Delivery and media remain distinct owners. This mapping changes no URL, operation ID,
+DTO, response/error, cookie, CSRF, idempotency or authorization contract. Implemented-path references
+remain valid until verified migration. Controllers map HTTP inputs/results; services enforce domain
+rules through public capabilities. Notification surfaces stay restricted. This specification and
+executable validators/contract tests define the API; future OpenAPI output must be checked against them.
 
 ## 3. HTTP conventions & versioning
 
