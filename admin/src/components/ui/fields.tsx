@@ -37,9 +37,7 @@ export function TextInput({
       isInvalid={error ? true : props.isInvalid}
       className="w-full"
     >
-      <Label className={error ? 'text-danger-soft-foreground' : undefined}>
-        {label}
-      </Label>
+      <Label className={error ? 'text-danger-soft-foreground' : undefined}>{label}</Label>
       {multiline ? <TextArea rows={rows} /> : <Input />}
       {description && <Description>{description}</Description>}
       <FieldError className="text-danger-soft-foreground">{error}</FieldError>
@@ -71,17 +69,13 @@ export function SelectField({
       {...props}
       isRequired={isRequired}
       isInvalid={error ? true : undefined}
-      disabledKeys={options
-        .filter((option) => option.disabled)
-        .map((option) => option.value)}
+      disabledKeys={options.filter((option) => option.disabled).map((option) => option.value)}
       onChange={(value) => {
         if (typeof value === 'string' || value === null) onChange(value)
       }}
       className="w-full"
     >
-      <Label className={error ? 'text-danger-soft-foreground' : undefined}>
-        {label}
-      </Label>
+      <Label className={error ? 'text-danger-soft-foreground' : undefined}>{label}</Label>
       <Select.Trigger>
         <Select.Value />
         <Select.Indicator />
@@ -114,9 +108,7 @@ export function CheckboxField({
         <Checkbox.Control>
           <Checkbox.Indicator />
         </Checkbox.Control>
-        <Label className={error ? 'text-danger-soft-foreground' : undefined}>
-          {label}
-        </Label>
+        <Label className={error ? 'text-danger-soft-foreground' : undefined}>{label}</Label>
       </Checkbox.Content>
       {description && <Description>{description}</Description>}
       <FieldError className="text-danger-soft-foreground">{error}</FieldError>
@@ -134,16 +126,16 @@ export function RadioChoices({
   FieldContent & { options: readonly SelectOption[] }) {
   return (
     <RadioGroup {...props} isInvalid={error ? true : props.isInvalid}>
-      <Label className={error ? 'text-danger-soft-foreground' : undefined}>
-        {label}
-      </Label>
+      <Label className={error ? 'text-danger-soft-foreground' : undefined}>{label}</Label>
       {options.map((option) => (
         <Radio key={option.value} value={option.value} isDisabled={option.disabled}>
           <Radio.Content>
             <Radio.Control>
               <Radio.Indicator />
             </Radio.Control>
-            <Label className={error ? 'text-danger-soft-foreground' : undefined}>{option.label}</Label>
+            <Label className={error ? 'text-danger-soft-foreground' : undefined}>
+              {option.label}
+            </Label>
           </Radio.Content>
         </Radio>
       ))}

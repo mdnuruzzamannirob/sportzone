@@ -81,9 +81,9 @@ describe('commerce foundations', () => {
   )
   it('COMMERCE-02: zero and large amounts use exact integer-poisha formatting; invalid money is rejected', () => {
     expect(renderToStaticMarkup(<Price amountPoisha={0} />)).toContain('৳0')
-    expect(
-      renderToStaticMarkup(<Price amountPoisha={Number.MAX_SAFE_INTEGER} />),
-    ).toContain('৳90,071,992,547,409.91')
+    expect(renderToStaticMarkup(<Price amountPoisha={Number.MAX_SAFE_INTEGER} />)).toContain(
+      '৳90,071,992,547,409.91',
+    )
     expect(() => renderToStaticMarkup(<Price amountPoisha={1.5} />)).toThrow(RangeError)
   })
   it('COMMERCE-03: product action is separate from its link; approved rating and availability are explicit text', async () => {
@@ -116,9 +116,9 @@ describe('commerce foundations', () => {
     expect(unavailable).toContain('Out of stock')
     expect(unavailable).not.toContain('approved reviews')
     expect(unavailable).not.toContain('Add to cart')
-    expect(
-      renderToStaticMarkup(<ProductCard {...product} availability="unknown" />),
-    ).toContain('Availability unconfirmed')
+    expect(renderToStaticMarkup(<ProductCard {...product} availability="unknown" />)).toContain(
+      'Availability unconfirmed',
+    )
   })
   it('COMMERCE-05: failed image gets an honest fallback and a replacement source restores the image with alt text', async () => {
     await act(() =>
@@ -164,18 +164,14 @@ describe('commerce foundations', () => {
       )
     }
     await act(() => root.render(<Example />))
-    expect(host.textContent).toContain(
-      'Choose an available variant before adding to cart.',
-    )
+    expect(host.textContent).toContain('Choose an available variant before adding to cart.')
     const radios = [...host.querySelectorAll<HTMLInputElement>('input[type="radio"]')]
     expect(radios[1].disabled).toBe(true)
     await click(radios[1])
     expect(change).not.toHaveBeenCalled()
     await click(radios[0])
     expect(change).toHaveBeenCalledWith('m')
-    expect(host.querySelector('[role="status"]')?.textContent).toContain(
-      'Selected: Size M',
-    )
+    expect(host.querySelector('[role="status"]')?.textContent).toContain('Selected: Size M')
     expect(host.textContent).toContain('Stock is rechecked at checkout.')
   })
   it('COMMERCE-07: stale unavailable selection, empty and loading variants give clear recovery without a purchase claim', async () => {
@@ -191,12 +187,8 @@ describe('commerce foundations', () => {
     )
     expect(host.textContent).toContain('This variant is unavailable')
     expect(host.textContent).toContain('Checking variants…')
-    expect(host.querySelector<HTMLInputElement>('input[type="radio"]')?.disabled).toBe(
-      true,
-    )
-    await act(() =>
-      root.render(<VariantSelector options={[]} value={null} onChange={vi.fn()} />),
-    )
+    expect(host.querySelector<HTMLInputElement>('input[type="radio"]')?.disabled).toBe(true)
+    await act(() => root.render(<VariantSelector options={[]} value={null} onChange={vi.fn()} />))
     expect(host.textContent).toContain('No variants available.')
   })
   it('COMMERCE-08: quantity bounds and removal send requests while supplied line totals remain untouched', async () => {
@@ -254,13 +246,12 @@ describe('commerce foundations', () => {
         />,
       ),
     )
-    expect(
-      host.querySelector<HTMLInputElement>('[data-slot="number-field-input"]')
-        ?.disabled,
-    ).toBe(true)
-    expect(
-      host.querySelector<HTMLInputElement>('[data-slot="number-field-input"]')?.value,
-    ).toBe('2')
+    expect(host.querySelector<HTMLInputElement>('[data-slot="number-field-input"]')?.disabled).toBe(
+      true,
+    )
+    expect(host.querySelector<HTMLInputElement>('[data-slot="number-field-input"]')?.value).toBe(
+      '2',
+    )
     expect(host.textContent).toContain('Price and stock changed')
     await click(host.querySelector('button[aria-label^="Remove"]'))
     expect(remove).not.toHaveBeenCalled()
@@ -283,19 +274,13 @@ describe('commerce foundations', () => {
   it.each(['estimate', 'quote', 'order'] as const)(
     'COMMERCE-11: %s summary displays the supplied final total and separate payment method without recalculation',
     (kind) => {
-      const html = renderToStaticMarkup(
-        <OrderSummary amounts={amounts} kind={kind} method="cod" />,
-      )
+      const html = renderToStaticMarkup(<OrderSummary amounts={amounts} kind={kind} method="cod" />)
       expect(html).toContain('৳98.76')
       expect(html).not.toContain('৳110')
       expect(html).toContain('Cash on delivery')
       expect(html).not.toContain('Payment successful')
       expect(html).toContain(
-        kind === 'estimate'
-          ? 'Estimated total'
-          : kind === 'quote'
-            ? 'Quoted total'
-            : 'Order total',
+        kind === 'estimate' ? 'Estimated total' : kind === 'quote' ? 'Quoted total' : 'Order total',
       )
       expect(html).toContain(
         kind === 'order'
@@ -332,9 +317,7 @@ describe('commerce foundations', () => {
       )
     }
     await act(() => root.render(<Example />))
-    const input = host.querySelector<HTMLInputElement>(
-      '[data-slot="number-field-input"]',
-    )
+    const input = host.querySelector<HTMLInputElement>('[data-slot="number-field-input"]')
     if (!input) throw new Error('Quantity input missing')
     async function enter(value: string) {
       await act(() => {

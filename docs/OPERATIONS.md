@@ -303,8 +303,8 @@ API until a valid rebuild; verify actual HTTP readiness separately. Stop the sep
 Native Windows uses WSL or individual workspace commands.
 
 Root `lint:boundaries` validates literal source imports, package declarations, workspace isolation,
-shared-code purity and transitive browser/server imports. Root `format:check` covers repository development/boundary tooling plus backend source, tests,
-operator scripts and Vitest configuration. Frontend formatting is adopted with each owning refactor.
+shared-code purity and transitive browser/server imports. Root `format:check` covers repository scripts/tests/shared utilities and all three applications’ adopted source,
+tests, scripts and configuration; generated next-env.d.ts remains tool-owned and excluded. Workspace Biome configuration inherits the root formatting policy.
 Both checks are in
 the CI inventory and fail on violations. Their pinned Biome/TypeScript tools are declared at the root,
 using the same versions already locked for the workspaces.
@@ -335,7 +335,7 @@ Startup verifies MongoDB replica/session capability before opening HTTP. Runtime
 
 Every application response retains a fresh server UUID, no-store and nosniff; private errors remain generic. Ordinary JSON parsing is strict, uncompressed and limited to 102400 bytes by default. Unsupported media/parser/limit input maps to API 400 INVALID_REQUEST. Provider/media parsers must be added under their owning contracts. Customer/admin sessions, browser CORS/CSRF, external-provider capability gates and deployed telemetry/alerts remain their owning tasks.
 
-Successful foundation CI is evidence for its configured checks only, not application deployment or operational readiness. Browser audit setup requires `npx playwright install --with-deps chromium firefox webkit` after locked installation. The audit is mandatory through the root browser scope in the CI inventory and starts only loopback test servers on 3100/5273/5180 after both builds. `test-results/ui-report.json` and `test-results/ui/` are CI artifacts; the fixture is not a deployment asset. Missing engines/libraries fail the audit rather than silently skip it. Local engine-wrapper overrides are test-machine configuration only; see [P02-011 environment evidence](./evidence/P02-011-accessibility.md).
+Successful foundation CI is evidence for its configured checks only, not application deployment or operational readiness. Browser audit setup requires `npx playwright install --with-deps chromium firefox webkit` after locked installation. The tests/e2e audit is mandatory through the root browser scope in the CI inventory and starts only loopback test servers on 3100/5273/5180 after both builds. `test-results/ui-report.json` and `test-results/ui/` are CI artifacts; the fixture is not a deployment asset. Missing engines/libraries fail the audit rather than silently skip it. Local engine-wrapper overrides are test-machine configuration only; see [P02-011 environment evidence](./evidence/P02-011-accessibility.md).
 
 `npm run build --workspace=backend` clears only generated `backend/dist/` before compilation, so old
 module paths cannot survive a source move. The local watch coordinator also clears it before initial compilation.
@@ -344,6 +344,10 @@ Build the backend before invoking operator scripts; do not mix generated modules
 CI must reject missing required scripts rather than silently skip checks. Pin compatible runtime/tool versions and
 preserve tested build outputs with commit SHA, dependency lock digest and signed/traceable artifact identity where
 supported. Do not embed secrets or prefilled `.env` in release archives.
+
+Storefront type checking removes only generated .next/types and .next/dev/types caches before Next type generation
+and TypeScript verification, preventing moved routes from retaining obsolete validators. It does not clear application
+or customer state. UI preview/browser fixtures remain excluded from production builds.
 
 #### Runtime configuration and composition
 

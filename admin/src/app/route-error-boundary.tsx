@@ -2,10 +2,7 @@ import { Component, type ReactNode } from 'react'
 import { Button } from '../components/ui/button'
 import { Notice } from '../components/ui/feedback'
 
-export class RouteErrorBoundary extends Component<
-  { children: ReactNode },
-  { failed: boolean }
-> {
+export class RouteErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false }
 
   static getDerivedStateFromError() {

@@ -19,5 +19,9 @@
     "parser": {
       "tailwindDirectives": true
     }
-  }
+  },
+  "root": false,
+  "extends": [
+    "../biome.json"
+  ]
 }

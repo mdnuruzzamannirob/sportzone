@@ -141,8 +141,13 @@ sportzone/
 │   ├── OPERATIONS.md
 │   └── evidence/
 ├── shared/                      # Existing pure utilities
-├── scripts/                     # Repository/dev/CI orchestration
-├── tests/e2e/                   # Target cross-app browser journeys
+├── scripts/
+│   ├── ci/                      # One check inventory, repository/boundary/security checks
+│   └── dev/                     # Coordinated app/compiler lifecycle
+├── tests/
+│   ├── e2e/                     # Cross-app browser journeys and isolated preview
+│   ├── helpers/                 # Reusable app test contracts/smoke helpers
+│   └── tooling/                 # CI, process and boundary regressions
 ├── .github/workflows/
 ├── AGENTS.md
 ├── README.md
@@ -156,8 +161,7 @@ sportzone/
 ```
 
 No apps/ relocation, speculative shared package, second lockfile, new component library or build
-orchestrator. Existing root shared pure utilities and tests/ui remain supported until their consumers,
-runner configuration and CI inventory are migrated together; this decision does not authorize deleting them.
+orchestrator. Root shared utilities and tests/e2e have explicit consumer, runner and CI ownership; this decision does not authorize deleting them.
 
 ### 4.1 Naming and placement
 
@@ -192,6 +196,10 @@ Use npm workspaces with the existing three root application directories and one 
 Use the existing task inventory and Node orchestration scripts. Additional build orchestrators, remote task caches, an `apps/` relocation and publishable shared packages are not part of the initial architecture. Reconsider task caching only against measured repeated-build cost, invalidation requirements and operational ownership. Pure shared utilities and styles do not grant frontend access to backend runtime code. Enforce import direction in automated repository checks during tooling implementation.
 
 Development orchestration must start the two UIs, backend compiler/watch process and API with coordinated termination and visible failures. Retain the isolated replica-set database tool. Optional local containers supplement this setup; they must not replace transaction-capable fixtures with standalone MongoDB. `npm run dev` provides this workflow on Linux/macOS/WSL; Operations §5.2 owns configuration and process-lifecycle details. The compiler retains the last successful API on compilation errors; an API runtime exit stops the coordinator. Verify actual readiness separately.
+
+Root cross-application tests and the UI preview declare their directly imported React/Vite/browser/database fixture
+tools as root dev dependencies at the same pinned versions used by the workspaces. One root lockfile remains
+authoritative; this does not introduce another application, shared UI package or independent dependency graph.
 
 ---
 
@@ -232,7 +240,9 @@ Both applications use consistent BDT formatting, Bangladesh address/phone input 
 Small features stay flat: product-list.tsx, product-details.tsx, product-card.tsx, product.api.ts,
 product.hooks.ts, product.schema.ts, product.types.ts. Admin adds product-list-page.tsx,
 product-create-page.tsx, product-edit-page.tsx, product-form.tsx and product-table.tsx as needed.
-Large features may gain components/api/hooks subfolders. Create/edit reuse one form.
+Large features may gain components/api/hooks subfolders behind a public feature interface. Small features stay flat;
+create/edit reuse one form. Reusable components receive data/actions rather than importing features or app wiring;
+lib remains independent of features/components/app. Route files compose views rather than browser transport.
 
 Routes compose feature views and metadata, not business calculations. Feature API files own endpoint
 functions; lib owns transport/CSRF/error handling. Keep server and browser imports separate. Private
@@ -269,10 +279,11 @@ storefront/src/
 ├── features/                     # Feature-owned views/API/hooks/forms
 ├── components/
 │   ├── ui/                       # HeroUI facade, navigation adapters and theme
-│   └── layout/                   # Header/footer/shells
+│   ├── layout/                   # Header/footer/shells
+│   └── forms/                    # Reusable form compositions over app-owned UI
 ├── lib/
 │   ├── api-client.ts
-│   ├── api-server.ts             # Enforced server-only public transport
+│   ├── api-server.ts             # Add only with real public server API reads; client imports forbidden
 │   ├── api-error.ts
 │   ├── query-client.ts
 │   └── format.ts
@@ -301,7 +312,8 @@ admin/src/
 ├── features/
 ├── components/
 │   ├── ui/
-│   └── layout/
+│   ├── layout/
+│   └── forms/                    # Reusable app-owned form compositions
 ├── lib/
 │   ├── api-client.ts
 │   ├── api-error.ts

@@ -43,10 +43,7 @@ export function ProductCard({
           <ProductImage key={image?.src ?? 'missing'} image={image} />
           <h3 className="wrap-break-word text-base font-semibold">{name}</h3>
         </Link>
-        <Price
-          amountPoisha={effectivePricePoisha}
-          regularPricePoisha={regularPricePoisha}
-        />
+        <Price amountPoisha={effectivePricePoisha} regularPricePoisha={regularPricePoisha} />
         <AvailabilityBadge availability={availability} />
         <p className="text-xs text-muted">Stock is rechecked at checkout.</p>
         {rating && (

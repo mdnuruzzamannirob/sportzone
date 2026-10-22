@@ -143,9 +143,11 @@ trees/naming/ownership. The task register records migration progress and accepta
 | 2 | P03-021 | Backend refactor and executable boundary/tool/test parity; depends on P01-018 |
 | 3 | P02-015 | Storefront refactor, URL/cache/HeroUI/browser parity; depends on P03-021 |
 | 4 | P02-016 | Admin refactor, router/session/forms/browser parity; depends on P02-015 |
+| 5 | P01-019 | Monorepo tooling, browser discovery and locked setup parity for the frontend batch |
 
-Do not begin source moves as part of P01-018. Complete and review the owning application before the
-next application starts. Within an application use small verified slices, not one bulk destructive
+Do not begin source moves as part of P01-018. Normally complete and review each application before the next.
+For an explicitly owner-requested combined batch, verify each app before moving to the next and collect separate
+task acceptances in the final review; milestone and external gates remain independent. Within an application use small verified slices, not one bulk destructive
 rename. Feature work must follow the target conventions and preserve security/financial invariants.
 
 | Area | Required organization / continuity |

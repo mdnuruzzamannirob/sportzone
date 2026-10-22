@@ -13,9 +13,7 @@ function Navigation({ label, onNavigate }: { label: string; onNavigate?: () => v
     <nav aria-label={label} className="space-y-6">
       {navigationGroups.map((group) => (
         <section key={group.label} aria-label={group.label}>
-          <h2 className="mb-2 px-3 text-xs font-semibold text-muted">
-            {group.label}
-          </h2>
+          <h2 className="mb-2 px-3 text-xs font-semibold text-muted">{group.label}</h2>
           <ul className="space-y-1">
             {group.links.map(([title, href]) => (
               <li key={href}>
@@ -110,9 +108,7 @@ export function AdminShell({
         <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border px-4 py-4 sm:px-6">
           <div className="flex flex-wrap items-center gap-3">
             <Drawer isOpen={open} onOpenChange={setDrawerOpen}>
-              <Drawer.Trigger className="button button--outline lg:hidden">
-                Menu
-              </Drawer.Trigger>
+              <Drawer.Trigger className="button button--outline lg:hidden">Menu</Drawer.Trigger>
               <Drawer.Backdrop>
                 <Drawer.Content placement="left">
                   <Drawer.Dialog
@@ -122,7 +118,10 @@ export function AdminShell({
                   >
                     <Drawer.Header>
                       <Drawer.Heading>SportZone Admin</Drawer.Heading>
-                      <Drawer.CloseTrigger aria-label="Close menu" className="button button--outline">
+                      <Drawer.CloseTrigger
+                        aria-label="Close menu"
+                        className="button button--outline"
+                      >
                         Close menu
                       </Drawer.CloseTrigger>
                     </Drawer.Header>
@@ -141,7 +140,9 @@ export function AdminShell({
             </Link>
           </div>
           <div className="flex min-w-0 flex-wrap items-start gap-4">
-            <p className="min-w-0 break-all py-3 text-sm text-foreground">{identity ?? 'Not signed in'}</p>
+            <p className="min-w-0 break-all py-3 text-sm text-foreground">
+              {identity ?? 'Not signed in'}
+            </p>
             <Disclosure className="w-56 max-w-full">
               <Disclosure.Heading>
                 <Disclosure.Trigger className="flex w-full items-center gap-2 py-3 text-sm">
@@ -157,11 +158,7 @@ export function AdminShell({
             </Disclosure>
           </div>
         </header>
-        <main
-          id="main-content"
-          tabIndex={-1}
-          className="min-w-0 px-4 py-8 sm:px-6 lg:px-8"
-        >
+        <main id="main-content" tabIndex={-1} className="min-w-0 px-4 py-8 sm:px-6 lg:px-8">
           <nav aria-label="Page context" className="mb-4">
             <Breadcrumbs>
               <Breadcrumbs.Item isDisabled>Administration</Breadcrumbs.Item>

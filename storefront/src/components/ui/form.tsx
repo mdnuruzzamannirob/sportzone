@@ -38,13 +38,7 @@ export function FormErrorSummary({
   }, [focusKey])
   if (!errors.length) return null
   return (
-    <Alert
-      ref={summary}
-      tabIndex={-1}
-      role="alert"
-      aria-labelledby={titleId}
-      status="danger"
-    >
+    <Alert ref={summary} tabIndex={-1} role="alert" aria-labelledby={titleId} status="danger">
       <Alert.Content>
         <h2 id={titleId} className="font-semibold text-danger-soft-foreground">
           Please check the following fields

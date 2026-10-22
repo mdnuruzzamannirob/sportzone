@@ -2,7 +2,7 @@
   "version": 2,
   "scopes": {
     "repository": {
-      "ownerTask": "P01-016",
+      "ownerTask": "P01-019",
       "checks": [
         "workspaces:check",
         "lint",
@@ -13,7 +13,7 @@
     },
     "storefront": {
       "state": "active",
-      "ownerTask": "P03-015",
+      "ownerTask": "P02-015",
       "checks": [
         "lint",
         "typecheck",
@@ -24,7 +24,7 @@
     },
     "admin": {
       "state": "active",
-      "ownerTask": "P03-015",
+      "ownerTask": "P02-016",
       "checks": [
         "lint",
         "typecheck",
@@ -46,7 +46,7 @@
       ]
     },
     "browser": {
-      "ownerTask": "P03-015",
+      "ownerTask": "P01-019",
       "checks": [
         "test:ui"
       ]

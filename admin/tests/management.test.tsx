@@ -2,10 +2,7 @@ import { act, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DataTable } from '../src/components/management/data-table'
-import {
-  FilterToolbar,
-  ListPagination,
-} from '../src/components/management/list-controls'
+import { FilterToolbar, ListPagination } from '../src/components/management/list-controls'
 import { FileUpload } from '../src/components/management/file-upload'
 import { GuardedAction } from '../src/components/management/guarded-action'
 
@@ -21,9 +18,7 @@ beforeEach(() => {
       disconnect() {}
     },
   )
-  vi.stubGlobal('matchMedia', () =>
-    Object.assign(new EventTarget(), { matches: false }),
-  )
+  vi.stubGlobal('matchMedia', () => Object.assign(new EventTarget(), { matches: false }))
   Object.defineProperty(URL, 'createObjectURL', {
     configurable: true,
     value: vi.fn(() => 'blob:preview'),
@@ -78,18 +73,14 @@ describe('management primitives', () => {
         onSortChange={sort}
       />,
     )
-    expect(host.textContent?.indexOf('Zebra')).toBeLessThan(
-      host.textContent?.indexOf('Alpha') ?? 0,
-    )
+    expect(host.textContent?.indexOf('Zebra')).toBeLessThan(host.textContent?.indexOf('Alpha') ?? 0)
     const region = host.querySelector('[role="region"]')
     expect(region?.getAttribute('tabindex')).toBe('0')
     expect(region?.className).toContain('overflow-x-auto')
-    expect(
-      host.querySelector('[role="columnheader"],th')?.getAttribute('aria-sort'),
-    ).toBe('descending')
-    await act(() =>
-      host.querySelector<HTMLElement>('[role="columnheader"],th')?.click(),
+    expect(host.querySelector('[role="columnheader"],th')?.getAttribute('aria-sort')).toBe(
+      'descending',
     )
+    await act(() => host.querySelector<HTMLElement>('[role="columnheader"],th')?.click())
     expect(sort).toHaveBeenCalledWith({ column: 'name', direction: 'ascending' })
   })
   it('supports keyboard sorting and arrow navigation through table cells', async () => {
@@ -107,16 +98,12 @@ describe('management primitives', () => {
     if (!header) throw new Error('Missing sortable header')
     await act(() => {
       header.focus()
-      header.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
-      )
+      header.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
       header.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }))
     })
     expect(sort).toHaveBeenCalledWith({ column: 'name', direction: 'descending' })
     await act(() =>
-      header.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
-      ),
+      header.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })),
     )
     expect(document.activeElement?.textContent).toBe('Zebra')
   })
@@ -142,29 +129,19 @@ describe('management primitives', () => {
   })
   it('requests bounded pages, blocks pending and handles an empty snapshot', async () => {
     const change = vi.fn()
-    await render(
-      <ListPagination page={1} totalPages={3} totalItems={44} onPageChange={change} />,
-    )
+    await render(<ListPagination page={1} totalPages={3} totalItems={44} onPageChange={change} />)
     await click('Previous')
     expect(change).not.toHaveBeenCalled()
     await click('Next')
     expect(change).toHaveBeenLastCalledWith(2)
     change.mockClear()
     await render(
-      <ListPagination
-        page={3}
-        totalPages={3}
-        totalItems={44}
-        onPageChange={change}
-        isPending
-      />,
+      <ListPagination page={3} totalPages={3} totalItems={44} onPageChange={change} isPending />,
     )
     await click('Previous')
     await click('Next')
     expect(change).not.toHaveBeenCalled()
-    await render(
-      <ListPagination page={1} totalPages={0} totalItems={0} onPageChange={change} />,
-    )
+    await render(<ListPagination page={1} totalPages={0} totalItems={0} onPageChange={change} />)
     expect(host.textContent).toContain('No results')
   })
   it('applies caller filter drafts and clears only on explicit request', async () => {
@@ -172,12 +149,7 @@ describe('management primitives', () => {
       clear = vi.fn(),
       change = vi.fn()
     await render(
-      <FilterToolbar
-        query="draft"
-        onQueryChange={change}
-        onApply={apply}
-        onClear={clear}
-      />,
+      <FilterToolbar query="draft" onQueryChange={change} onApply={apply} onClear={clear} />,
     )
     expect(host.querySelector('input')?.value).toBe('draft')
     await act(() =>
@@ -246,9 +218,7 @@ describe('management primitives', () => {
       onSelect: vi.fn(),
       onRemove: remove,
     }
-    await render(
-      <FileUpload {...props} state="error" error="Network error" onRetry={retry} />,
-    )
+    await render(<FileUpload {...props} state="error" error="Network error" onRetry={retry} />)
     expect(host.querySelector('img')?.alt).toContain('Local preview')
     expect(host.textContent).toContain('selection retained')
     await click('Retry upload')
@@ -278,14 +248,10 @@ describe('management primitives', () => {
     }
     await render(<GuardedAction {...props} />)
     await click('Suspend account')
-    await vi.waitFor(() =>
-      expect(document.querySelector('[role="dialog"]')).toBeTruthy(),
-    )
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).toBeTruthy())
     await click('Confirm Suspend account')
     expect(confirm).not.toHaveBeenCalled()
-    await render(
-      <GuardedAction {...props} reason="Review requested" error="Record changed" />,
-    )
+    await render(<GuardedAction {...props} reason="Review requested" error="Record changed" />)
     expect(document.body.textContent).toContain('Record changed')
     expect(document.querySelector('textarea')?.value).toBe('Review requested')
     await click('Confirm Suspend account')
@@ -295,9 +261,7 @@ describe('management primitives', () => {
     await click('Cancel')
     expect(document.querySelector('[role="dialog"]')).toBeTruthy()
     expect(confirm).toHaveBeenCalledOnce()
-    await render(
-      <GuardedAction {...props} reason="Review requested" eligible={false} />,
-    )
+    await render(<GuardedAction {...props} reason="Review requested" eligible={false} />)
     await click('Confirm Suspend account')
     expect(confirm).toHaveBeenCalledOnce()
     expect(document.body.textContent).toContain('Action unavailable')
@@ -321,16 +285,12 @@ describe('management primitives', () => {
     if (!trigger) throw new Error('Missing trigger')
     await act(() => trigger.focus())
     await click('Deactivate')
-    await vi.waitFor(() =>
-      expect(document.querySelector('[role="dialog"]')).toBeTruthy(),
-    )
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).toBeTruthy())
     await vi.waitFor(async () => {
       await act(async () => {
         await new Promise((resolve) => setTimeout(resolve, 0))
       })
-      expect(
-        document.querySelector('[role="dialog"]')?.contains(document.activeElement),
-      ).toBe(true)
+      expect(document.querySelector('[role="dialog"]')?.contains(document.activeElement)).toBe(true)
     })
     await act(() =>
       document.activeElement?.dispatchEvent(
@@ -360,9 +320,7 @@ describe('management primitives', () => {
       onOpenChange: change,
     }
     await render(<GuardedAction {...props} isOpen />)
-    await vi.waitFor(() =>
-      expect(document.querySelector('[role="dialog"]')).toBeTruthy(),
-    )
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).toBeTruthy())
     await click('Confirm Deactivate')
     expect(confirm).toHaveBeenCalledOnce()
     expect(document.querySelector('[role="dialog"]')).toBeTruthy()

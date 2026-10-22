@@ -20,9 +20,7 @@ export function PagePanel({
             {title}
           </h1>
         </CardHeader>
-        <CardContent className="flex flex-col items-start gap-6">
-          {children}
-        </CardContent>
+        <CardContent className="flex flex-col items-start gap-6">{children}</CardContent>
       </Card>
     </section>
   )

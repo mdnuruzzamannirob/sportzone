@@ -52,8 +52,7 @@ export function DataTable<T extends { id: string }>({
       )}
       {isPending && <LoadingState label="Loading results…" />}
       <p id={help} className="text-sm text-muted">
-        Scroll within the table to view all columns. Use arrow keys to move between
-        cells.
+        Scroll within the table to view all columns. Use arrow keys to move between cells.
       </p>
       <Table className="min-w-0 max-w-full border border-border">
         <Table.ScrollContainer
@@ -71,10 +70,7 @@ export function DataTable<T extends { id: string }>({
               onSortChange
                 ? (next) => {
                     const column = String(next.column)
-                    if (
-                      !isPending &&
-                      columns.some((item) => item.id === column && item.sortable)
-                    )
+                    if (!isPending && columns.some((item) => item.id === column && item.sortable))
                       onSortChange({ column, direction: next.direction })
                   }
                 : undefined
@@ -113,9 +109,7 @@ export function DataTable<T extends { id: string }>({
         </Table.ScrollContainer>
       </Table>
       {!rows.length && !isPending && !error && (
-        <EmptyState title="No results">
-          Try changing or clearing the filters.
-        </EmptyState>
+        <EmptyState title="No results">Try changing or clearing the filters.</EmptyState>
       )}
       {rows.length > 0 && (isPending || error) && (
         <p className="text-sm text-muted">Previously loaded results are shown.</p>

@@ -193,7 +193,7 @@ The diagram shows verification responsibilities, not a claim that test infrastru
 
 | Need | Tool | Integration requirement |
 | --- | --- | --- |
-| Repository CI guard regressions | Node.js built-in test runner | Existing `tests/ci.test.mjs`; validates tooling behavior only, not application acceptance |
+| Repository CI guard regressions | Node.js built-in test runner | Existing `tests/tooling/ci.test.mjs`; validates tooling behavior only, not application acceptance |
 | TypeScript unit/component | Vitest | Compatible with approved React, Vite, Next.js and backend versions |
 | React behavior | React Testing Library + user-event | Accessible user interactions rather than component internals |
 | Browser E2E and device projects | Playwright | Browser-project config verified against actual supported browsers |
@@ -214,10 +214,10 @@ commit exact versions and lockfile, and record installed versions in run evidenc
 Architecture §§4–6 owns application placement. Keep backend tests outside production `src/` and organize
 them by feature under `tests/unit/` and `tests/integration/`; use fixtures/helpers for shared test setup.
 Frontend tests may remain near their components; cross-app browser journeys target root `tests/e2e/`.
-The existing root `tests/ui/`, backend test files and storefront/admin test directories remain valid until their
-owning migration verifies test discovery, fixture imports and CI inventory together.
+Root tooling regressions live in tests/tooling, reusable app contracts in tests/helpers and browser journeys in
+tests/e2e. Preserve discovery, fixture imports and CI inventory together when moving tests.
 
-Root tooling tests remain in `tests/ci.test.mjs` and `tests/tooling.test.mjs`. Introduce additional contract,
+Root tooling tests remain in `tests/tooling/ci.test.mjs` and `tests/tooling/development.test.mjs`. Introduce additional contract,
 concurrency, load or security suites only with actual cases and runner integration; do not create empty template
 directories. Keep business rules out of test helpers and version-link executable specs to API/Database contracts.
 
@@ -235,7 +235,7 @@ feature/tooling task, real assertions and CI integration rather than a passing p
 | `npm run lint` | Repository JavaScript syntax, JSON, whitespace, Markdown structure/links and targeted credential checks |
 | `npm run test:unit` | Repository guards, command failure propagation, scoped execution and security regressions; includes supervisor signal/failure/descendant-cleanup fixtures; intentional failures assert tooling behavior rather than application acceptance |
 | `npm run lint:boundaries` | TypeScript-parsed source imports: declared dependencies, workspace/shared isolation, private backend models and transitive client/server boundaries |
-| `npm run format:check` | Biome format check of repository development/boundary tooling and backend source/tests/scripts/Vitest config; frontend formatting remains with its refactor |
+| `npm run format:check` | Biome format check of repository scripts/tests/shared utilities and all adopted workspace source, tests and configuration |
 | `npm run ci` | Complete inventory once, using the same runner as the single hosted job; workspace builds precede browser checks |
 | `npm run ci -- --scope=browser` | Browser audit only; requires current storefront/admin production builds and installed browser engines |
 | `npm run test:security` | Pinned/checksummed Gitleaks working-tree/history scan and npm advisories; sanitized reports and reviewed expiring advisory exceptions |
@@ -423,8 +423,7 @@ object-URL cleanup, progress/retry and guarded-action eligibility/reason/pending
 
 Use real app facades/themes in isolated synthetic fixtures, not production preview routes or fake
 authentication. Native Tab/zoom/viewport/pointer/touch/file-picker behavior and assistive technology
-need their appropriate browser/manual evidence, separate from jsdom. tests/ui remains the current
-browser entry point until the owning refactor verifies tests/e2e discovery parity. Native variant axes,
+need their appropriate browser/manual evidence, separate from jsdom. tests/e2e is the cross-application browser entry point; source moves must preserve discovery parity. Native variant axes,
 app/theme switching, BDT correctness and accessibility remain covered. Historical case counts and
 acceptance stay in owning task evidence, not a second component specification.
 
@@ -901,6 +900,9 @@ in evidence rather than being appended to the API operation inventory.
 
 | Task | Implementation verification record |
 | --- | --- |
+| P01-019 | [Monorepo tooling and discovery parity](./evidence/P01-019-monorepo-refactor.md) |
+| P02-015 | [Storefront structure and behavior parity](./evidence/P02-015-storefront-refactor.md) |
+| P02-016 | [Admin structure and behavior parity](./evidence/P02-016-admin-refactor.md) |
 | P03-004 | [Identity persistence](./evidence/P03-004-identity-models.md) |
 | P03-005 | [Session lifecycle](./evidence/P03-005-sessions.md) |
 | P03-006 | [Browser Origin/CSRF](./evidence/P03-006-browser-security.md) |

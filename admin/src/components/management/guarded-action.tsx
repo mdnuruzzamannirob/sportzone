@@ -39,8 +39,7 @@ export function GuardedAction({
 }) {
   const reasonId = useId()
   const [open, setOpen] = useState(false)
-  const canConfirm =
-    eligible && !isPending && (!requiresReason || reason.trim().length > 0)
+  const canConfirm = eligible && !isPending && (!requiresReason || reason.trim().length > 0)
   return (
     <div className="space-y-3">
       {!eligible && (
@@ -86,8 +85,7 @@ export function GuardedAction({
           )}
           {!eligible && (
             <Notice tone="warning" title="Action unavailable">
-              {unavailableReason ||
-                'Eligibility changed. Refresh the record before continuing.'}
+              {unavailableReason || 'Eligibility changed. Refresh the record before continuing.'}
             </Notice>
           )}
           {error && (

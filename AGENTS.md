@@ -109,7 +109,9 @@ boundary checks and negative fixtures with the owning refactor; a documentation 
 not prove enforcement. Use narrow capabilities for shared collections and preserve canonical models.
 
 **One application at a time:** P01-018 documentation review → P03-021 backend → P02-015 storefront →
-P02-016 admin. Do not start the next application's refactor until the preceding task is accepted.
+P02-016 admin. By default, accept each application before starting the next. When the owner explicitly
+requests a combined application/monorepo batch, implement and verify each application in sequence, then collect
+independent acceptance for every task in the final review; a batch request never self-approves a task or milestone.
 Move imports, tools, test discovery, aliases and actual CI inventory together; retain compatibility
 and existing user/staged edits. No new behavior, package/framework, collection or destructive cleanup
 is implied by source organization. Exceptions require an explicit architecture decision and checks.
@@ -144,7 +146,7 @@ For higher-risk mutations, write state-transition and concurrency tests before e
 
 - Use TypeScript types and narrow interfaces at module boundaries; avoid `any`, unsafe casts and `@ts-ignore` that conceal errors.
 - Match the repository’s actual linter, formatter, naming and import conventions. Do not invent tools, versions or commands.
-- Run `npm run lint:boundaries` when source imports change. Keep the scoped `format:check` baseline passing; add application files during their owning refactor rather than bulk-formatting unrelated code.
+- Run `npm run lint:boundaries` when source imports change. Keep `format:check` passing across the adopted application, shared and tooling scope; avoid formatting unrelated content outside that inventory.
 - Keep Biome, TypeScript, Vitest and existing browser tooling. Any refactor moving tests/config/tool entry points must update imports, test discovery and CI inventory together; retain NodeNext `.js` backend import specifiers.
 - Keep code cohesive and explicit; validate external input; handle failures without leaking internal details.
 - Keep side effects in appropriately owned services; prefer pure calculations for monetary and business rules.

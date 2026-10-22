@@ -90,15 +90,9 @@ export function CartLine({
           >
             <Label>Quantity for {name}</Label>
             <NumberField.Group className="h-auto  w-fit max-w-full">
-              <NumberField.DecrementButton
-
-                aria-label={`Decrease quantity for ${name}`}
-              />
+              <NumberField.DecrementButton aria-label={`Decrease quantity for ${name}`} />
               <NumberField.Input className=" w-16 tabular-nums" />
-              <NumberField.IncrementButton
-
-                aria-label={`Increase quantity for ${name}`}
-              />
+              <NumberField.IncrementButton aria-label={`Increase quantity for ${name}`} />
             </NumberField.Group>
           </NumberField>
           {isPending ? (

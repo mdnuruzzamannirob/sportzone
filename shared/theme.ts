@@ -7,8 +7,11 @@ function normalize(value: unknown): ThemePreference {
 }
 function apply(preference: ThemePreference) {
   document.documentElement.dataset.themePreference = preference
-  const dark = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches
-  document.documentElement.dataset.theme = preference === 'system' ? (dark ? 'dark' : 'light') : preference
+  const dark =
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-color-scheme: dark)').matches
+  document.documentElement.dataset.theme =
+    preference === 'system' ? (dark ? 'dark' : 'light') : preference
 }
 export function getThemePreference(): ThemePreference {
   return normalize(document.documentElement.dataset.themePreference)
@@ -37,14 +40,24 @@ export function subscribeThemePreference(onChange: () => void): () => void {
   function storage(event: StorageEvent) {
     if (event.key !== null && event.key !== themeStorageKey) return
     if (event.storageArea) {
-      try { if (event.storageArea !== window.localStorage) return } catch { return }
+      try {
+        if (event.storageArea !== window.localStorage) return
+      } catch {
+        return
+      }
     }
     apply(normalize(event.newValue))
     onChange()
   }
-  const media = typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-color-scheme: dark)') : undefined
+  const media =
+    typeof window.matchMedia === 'function'
+      ? window.matchMedia('(prefers-color-scheme: dark)')
+      : undefined
   const systemChange = () => {
-    if (getThemePreference() === 'system') { apply('system'); onChange() }
+    if (getThemePreference() === 'system') {
+      apply('system')
+      onChange()
+    }
   }
   media?.addEventListener('change', systemChange)
   window.addEventListener(eventName, onChange)

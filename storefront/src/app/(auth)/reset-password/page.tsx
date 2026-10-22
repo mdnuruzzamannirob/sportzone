@@ -1,2 +1,4 @@
-import { Authentication } from '../../../features/auth/components/authentication'
-export default function Page() { return <Authentication mode="reset-password"/> }
+import { Authentication } from '../../../features/auth/authentication'
+export default function Page() {
+  return <Authentication mode="reset-password" />
+}

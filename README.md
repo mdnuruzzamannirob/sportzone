@@ -64,7 +64,8 @@ sportzone/
 [Architecture §§4–6](docs/ARCHITECTURE.md#4-project-structure) owns target paths, naming and module boundaries;
 [Design §6](docs/DESIGN.md#6-ui-components) owns component contracts. Current application paths remain valid until
 verified migration. The [refactor sequence](docs/IMPLEMENTATION_PLAN.md#36-engineering-foundation-and-incremental-refactor)
-is backend → storefront → admin, with separate verification and acceptance for each application.
+is backend → storefront → admin, with verification and acceptance for each application. Explicit owner-requested batches retain per-app parity and
+independent acceptance at the combined handoff.
 
 ## 4. Development workflow
 
@@ -121,8 +122,8 @@ Select checks for the changed area using [Testing §15.5](docs/TESTING.md#155-ch
 | --- | --- |
 | Documentation and repository integrity | `npm run lint` |
 | Repository tooling tests | `npm run test:unit` |
-| Source import boundaries | `npm run lint:boundaries` |
-| Scoped formatting baseline | `npm run format:check` |
+| Source import and ownership boundaries | `npm run lint:boundaries` |
+| Workspace/tooling formatting | `npm run format:check` |
 | Application checks | `npm run lint --workspace=<name>`, `typecheck`, `test:unit`, `build` |
 | Backend database integration | `npm run test:integration --workspace=backend` |
 | Browser verification | `npm run test:ui` |

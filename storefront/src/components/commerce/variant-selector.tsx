@@ -42,10 +42,7 @@ export function VariantSelector({
           disabled: !option.available,
         }))}
         onChange={(next) => {
-          if (
-            !isPending &&
-            options.some((option) => option.id === next && option.available)
-          )
+          if (!isPending && options.some((option) => option.id === next && option.available))
             onChange(next)
         }}
       />

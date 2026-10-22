@@ -56,10 +56,7 @@ export function StorefrontHeader() {
               .
             </span>
           </Link>
-          <nav
-            aria-label="Main navigation"
-            className="hidden flex-wrap items-center gap-4 lg:flex"
-          >
+          <nav aria-label="Main navigation" className="hidden flex-wrap items-center gap-4 lg:flex">
             {links.map(([label, href]) => (
               <Link
                 key={href}
@@ -82,10 +79,7 @@ export function StorefrontHeader() {
                 Menu
               </Disclosure.Trigger>
             </Disclosure.Heading>
-            <Link
-              href="/search"
-              className="inline-flex  items-center px-1"
-            >
+            <Link href="/search" className="inline-flex  items-center px-1">
               Search
             </Link>
             <Link href="/cart" className="inline-flex  items-center px-1">
@@ -117,11 +111,7 @@ export function StorefrontHeader() {
                   {label}
                 </Link>
               ))}
-              <Link
-                href="/support"
-                onClick={dismiss}
-                className="inline-flex  items-center"
-              >
+              <Link href="/support" onClick={dismiss} className="inline-flex  items-center">
                 Customer support
               </Link>
               <Button

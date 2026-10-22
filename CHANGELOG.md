@@ -8,6 +8,14 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 22 October 2026 — Frontend and monorepo structure
+
+- Refactored storefront routes/features/providers and admin routing/auth ownership; separated feature endpoints
+  from transport/query defaults and reusable forms. Preserved existing URLs, native HeroUI and private-session behavior.
+- Organized CI/dev tooling and e2e/helpers/tooling tests, declared pinned root fixture dependencies and strengthened
+  ownership/required-check guards under one lockfile/inventory. All local checks passed; independent acceptance
+  pending for P02-015, P02-016 and P01-019. [Evidence](docs/evidence/P01-019-monorepo-refactor.md).
+
 ## 22 October 2026 — Backend structure refactor
 
 - Migrated existing backend runtime/shared/provider/script and auth/catalog/media ownership to the approved

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatBdt } from '../src/lib/format-bdt'
+import { formatBdt } from '../src/lib/format'
 
 describe('integer-poisha BDT display', () => {
   it.each([
@@ -24,9 +24,7 @@ describe('integer-poisha BDT display', () => {
   )
   it('BDT-03: rejects untyped JavaScript inputs without coercion', () => {
     for (const value of ['100', null, undefined, true, 100n]) {
-      expect(() => Reflect.apply(formatBdt, undefined, [value])).toThrow(
-        RangeError,
-      )
+      expect(() => Reflect.apply(formatBdt, undefined, [value])).toThrow(RangeError)
     }
   })
 })

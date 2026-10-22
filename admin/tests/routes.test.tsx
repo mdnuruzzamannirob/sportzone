@@ -1,4 +1,4 @@
-import { IdentityProvider } from '../src/features/auth/api/session'
+import { IdentityProvider } from '../src/features/auth/identity-provider'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { AdminLoading } from '../src/components/layout/admin-loading'
 import { RouteErrorBoundary } from '../src/app/route-error-boundary'
@@ -31,7 +31,9 @@ async function visit(path: string) {
   await act(() =>
     root.render(
       <BrowserRouter>
-        <IdentityProvider><AppRoutes /></IdentityProvider>
+        <IdentityProvider>
+          <AppRoutes />
+        </IdentityProvider>
       </BrowserRouter>,
     ),
   )
@@ -55,9 +57,8 @@ describe('admin scaffold routing', () => {
     expect(container.textContent).toContain('Account service unavailable')
     expect(container.querySelector('form')).not.toBeNull()
     expect(
-      [...container.querySelectorAll('button')].find(
-        (button) => button.textContent === 'Sign in',
-      )?.disabled,
+      [...container.querySelectorAll('button')].find((button) => button.textContent === 'Sign in')
+        ?.disabled,
     ).toBe(true)
   })
 
@@ -75,9 +76,7 @@ describe('admin scaffold routing', () => {
     const link = container.querySelector('a[href="/login"]')
     expect(link?.getAttribute('href')).toBe('/login')
     await act(() =>
-      link?.dispatchEvent(
-        new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }),
-      ),
+      link?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 })),
     )
     expect(window.location.pathname).toBe('/login')
     expect(container.querySelector('h1')?.textContent).toBe('SportZone administrator')
@@ -85,7 +84,12 @@ describe('admin scaffold routing', () => {
       window.history.replaceState(null, '', '/app/products')
       window.dispatchEvent(new PopStateEvent('popstate'))
     })
-    await vi.waitFor(async()=>{ await act(async()=>{await new Promise(resolve=>setTimeout(resolve,0))});expect(container.querySelector('h1')?.textContent).toBe('Administrator service unavailable') })
+    await vi.waitFor(async () => {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      })
+      expect(container.querySelector('h1')?.textContent).toBe('Administrator service unavailable')
+    })
   })
 
   it('AD-04: unknown public URL has a recovery link without echoing the path', async () => {
@@ -110,9 +114,13 @@ describe('admin route recovery', () => {
       throw new Error('synthetic private diagnostics')
     }
     try {
-      await act(() => root.render(
-        <RouteErrorBoundary><FailedRoute /></RouteErrorBoundary>,
-      ))
+      await act(() =>
+        root.render(
+          <RouteErrorBoundary>
+            <FailedRoute />
+          </RouteErrorBoundary>,
+        ),
+      )
       expect(container.querySelector('h1')?.textContent).toBe('Administration could not load')
       expect(container.querySelector('[role="alert"]')).not.toBeNull()
       expect(container.querySelectorAll('main')).toHaveLength(1)

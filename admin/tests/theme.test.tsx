@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
 import { ThemePreferenceSelect } from '../src/components/ui/theme-preference'
-import { themeInteractionTests } from '../../tests/theme-interactions'
+import { themeInteractionTests } from '../../tests/helpers/theme-interactions'
 
 themeInteractionTests('admin', ThemePreferenceSelect)

@@ -44,9 +44,6 @@ export const navigationGroups = [
 export function navigationContext(pathname: string) {
   return navigationGroups
     .flatMap((group) => [...group.links])
-    .filter(
-      ([, href]) =>
-        pathname === href || (href !== '/app' && pathname.startsWith(`${href}/`)),
-    )
+    .filter(([, href]) => pathname === href || (href !== '/app' && pathname.startsWith(`${href}/`)))
     .sort((a, b) => b[1].length - a[1].length)[0]
 }

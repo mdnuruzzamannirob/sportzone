@@ -1,4 +1,4 @@
-import { formatBdt } from '../../lib/format-bdt'
+import { formatBdt } from '../../lib/format'
 
 export function Price({
   amountPoisha,
@@ -10,8 +10,7 @@ export function Price({
   label?: string
 }) {
   const amount = formatBdt(amountPoisha)
-  const regular =
-    regularPricePoisha === undefined ? undefined : formatBdt(regularPricePoisha)
+  const regular = regularPricePoisha === undefined ? undefined : formatBdt(regularPricePoisha)
   const sale = regularPricePoisha !== undefined && regularPricePoisha > amountPoisha
   return (
     <span className="inline-flex flex-wrap items-baseline gap-2 tabular-nums text-foreground">
