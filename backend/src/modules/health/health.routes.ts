@@ -1,6 +1,6 @@
 import { Router } from 'express'
-import { ApiError } from '../../common/errors.js'
-import { respond } from '../../common/responses.js'
+import { ApiError } from '../../shared/errors/app-error.js'
+import { respond } from '../../shared/responses.js'
 import { createHealthService, type HealthDependencies } from './health.service.js'
 
 export function healthRoutes(dependencies: HealthDependencies) {

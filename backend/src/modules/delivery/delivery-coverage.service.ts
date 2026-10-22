@@ -1,12 +1,8 @@
 import type { ClientSession, Connection, Types } from 'mongoose'
-import { ApiError } from '../../common/errors.js'
+import { ApiError } from '../../shared/errors/app-error.js'
 
 export type AddressCoverage = {
-  supports(
-    district: string,
-    area: string,
-    session: ClientSession,
-  ): Promise<boolean>
+  supports(district: string, area: string, session: ClientSession): Promise<boolean>
 }
 type Charge = {
   zoneId: Types.ObjectId
@@ -26,8 +22,7 @@ export function createAddressCoverage(
     async supports(district, area, session) {
       if (!connection.db) throw new ApiError('SERVICE_UNAVAILABLE')
       const now = clock()
-      if (!Number.isFinite(now.getTime()))
-        throw new Error('Invalid coverage clock.')
+      if (!Number.isFinite(now.getTime())) throw new Error('Invalid coverage clock.')
       const collection = connection.db.collection<Charge>('deliveryCharges')
       for (const key of [`${district}:${area}`, `${district}:*`]) {
         const rules = await collection
@@ -36,10 +31,7 @@ export function createAddressCoverage(
               coverageKey: key,
               status: 'active',
               effectiveFrom: { $lte: now },
-              $or: [
-                { effectiveTo: { $exists: false } },
-                { effectiveTo: { $gt: now } },
-              ],
+              $or: [{ effectiveTo: { $exists: false } }, { effectiveTo: { $gt: now } }],
             },
             { session },
           )
@@ -57,10 +49,7 @@ export function createAddressCoverage(
           return false
         const zone = await connection.db
           .collection('deliveryZones')
-          .findOne(
-            { _id: rule.zoneId, status: 'active' },
-            { session, projection: { _id: 1 } },
-          )
+          .findOne({ _id: rule.zoneId, status: 'active' }, { session, projection: { _id: 1 } })
         // An exact rule for an inactive zone must not silently fall back to a district rule.
         return Boolean(zone)
       }

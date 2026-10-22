@@ -1,7 +1,7 @@
 import type { ClientSession } from 'mongoose'
 import type { IdentityModels } from './auth.model.js'
-import type { SessionService } from './session.service.js'
-import { authorizeAccount } from './authorization.service.js'
+import type { SessionService } from './sessions/session.service.js'
+import { authorizeAccount } from './sessions/authorization.service.js'
 import type { MediaOwner } from '../media/media.types.js'
 export function createMediaAdminAccess(
   models: IdentityModels,

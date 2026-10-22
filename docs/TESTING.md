@@ -235,7 +235,7 @@ feature/tooling task, real assertions and CI integration rather than a passing p
 | `npm run lint` | Repository JavaScript syntax, JSON, whitespace, Markdown structure/links and targeted credential checks |
 | `npm run test:unit` | Repository guards, command failure propagation, scoped execution and security regressions; includes supervisor signal/failure/descendant-cleanup fixtures; intentional failures assert tooling behavior rather than application acceptance |
 | `npm run lint:boundaries` | TypeScript-parsed source imports: declared dependencies, workspace/shared isolation, private backend models and transitive client/server boundaries |
-| `npm run format:check` | Biome format check of the scoped repository tooling baseline; legacy application formatting is outside this baseline |
+| `npm run format:check` | Biome format check of repository development/boundary tooling and backend source/tests/scripts/Vitest config; frontend formatting remains with its refactor |
 | `npm run ci` | Complete inventory once, using the same runner as the single hosted job; workspace builds precede browser checks |
 | `npm run ci -- --scope=browser` | Browser audit only; requires current storefront/admin production builds and installed browser engines |
 | `npm run test:security` | Pinned/checksummed Gitleaks working-tree/history scan and npm advisories; sanitized reports and reviewed expiring advisory exceptions |
@@ -244,7 +244,7 @@ feature/tooling task, real assertions and CI integration rather than a passing p
 
 All three workspaces expose `lint`, `typecheck`, `test:unit`, `build` and `test:smoke` through
 `npm run <command> --workspace=<name>`. Smoke checks require the corresponding build and own their temporary
-servers. Backend also exposes mandatory `test:integration`, using an isolated MongoDB replica set and synthetic
+servers. Backend unit discovery uses `tests/unit/**/*.test.ts`; integration discovery uses `tests/integration/**/*.test.ts`. Backend also exposes mandatory `test:integration`, using an isolated MongoDB replica set and synthetic
 fixtures; it never reads or drops an externally configured database. Binary download/startup failures fail the
 suite. Results are written to `test-results/database.json`. Single-member tests do not establish deployment
 failover or production recovery.
@@ -815,7 +815,7 @@ full-suite results from the current tooling revision and pending hosted acceptan
 
 ### 15.4 Refactor regression and pipeline verification
 
-Source refactors preserve existing scenario IDs and accepted historical evidence. Record before/after discovered cases when changing test paths; update Vitest globs, test TypeScript projects, browser fixture imports and smoke entry points together. A green run that silently drops tests fails acceptance. Backend tests remain outside production src; frontend tests may be colocated with their components. Enforce feature/server/client/backend import direction as an automated guard. The current four-file Biome tooling baseline is listed in §5.3; add affected application files with their refactor rather than requiring an unrelated bulk format. Formatting is separate from behavior changes.
+Source refactors preserve existing scenario IDs and accepted historical evidence. Record before/after discovered cases when changing test paths; update Vitest globs, test TypeScript projects, browser fixture imports and smoke entry points together. A green run that silently drops tests fails acceptance. Backend tests remain outside production src; frontend tests may be colocated with their components. Enforce feature/server/client/backend import direction as an automated guard. The current formatting scope is listed in §5.3; keep backend coverage and add frontend files with their owning refactor. Formatting is separate from behavior changes.
 
 | Scope | Required parity evidence |
 | --- | --- |
@@ -917,6 +917,7 @@ in evidence rather than being appended to the API operation inventory.
 | P03-018 | [Identity API contracts](./evidence/P03-018-api-contracts.md) |
 | P03-019 | [Backend runtime composition](./evidence/P03-019-backend-composition.md) |
 | P03-020 | [Backend module ownership](./evidence/P03-020-module-ownership.md) |
+| P03-021 | [Backend target structure and parity](./evidence/P03-021-backend-refactor.md) |
 | P04-001 | [Category hierarchy](./evidence/P04-001-category-hierarchy.md) |
 | P04-002 | [Products and variants](./evidence/P04-002-product-variants.md) |
 | P04-003 | [Controlled media; EXT-04 remains blocked](./evidence/P04-003-controlled-media.md) |

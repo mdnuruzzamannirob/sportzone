@@ -1,17 +1,10 @@
 import { createServer } from 'node:http'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { composeApplication } from './composition.js'
-import {
-  ConfigurationError,
-  loadEnvironment,
-  type RuntimeConfig,
-} from './config/environment.js'
-import { openDatabase } from './db/connection.js'
-import {
-  createLogger,
-  logConfigurationFailure,
-} from './observability/logger.js'
+import { composeApplication } from './setup.js'
+import { ConfigurationError, loadEnvironment, type RuntimeConfig } from './config/env.js'
+import { openDatabase } from './config/database.js'
+import { createLogger, logConfigurationFailure } from './shared/logger.js'
 
 export async function startServer(
   config: RuntimeConfig,
@@ -22,16 +15,12 @@ export async function startServer(
   ]),
 ) {
   logger.lifecycle('starting')
-  const connection = await openDatabase(
-    config.MONGODB_URI,
-    config.MONGODB_DB_NAME,
-  )
+  const connection = await openDatabase(config.MONGODB_URI, config.MONGODB_DB_NAME)
   let draining = false
   const health = {
     monitorToken: config.HEALTH_MONITOR_TOKEN,
     isReady: async () => {
-      if (draining || connection.readyState !== 1 || !connection.db)
-        return false
+      if (draining || connection.readyState !== 1 || !connection.db) return false
       await connection.db.command({ ping: 1 }, { timeoutMS: 1000 })
       return !draining && connection.readyState === 1
     },
@@ -93,10 +82,7 @@ export async function startServer(
     },
   }
 }
-if (
-  process.argv[1] &&
-  import.meta.url === pathToFileURL(resolve(process.argv[1])).href
-) {
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   try {
     const config = loadEnvironment(process.env)
     const logger = createLogger(config, undefined, [
@@ -119,9 +105,7 @@ if (
       process.exitCode = 1
     }
   } catch (error) {
-    logConfigurationFailure(
-      error instanceof ConfigurationError ? error.fields : ['configuration'],
-    )
+    logConfigurationFailure(error instanceof ConfigurationError ? error.fields : ['configuration'])
     process.exitCode = 1
   }
 }

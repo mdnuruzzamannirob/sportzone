@@ -1,7 +1,7 @@
-import { validateClamAvOptions } from '../integrations/cloudinary/clamav.adapter.js'
-import { validateCloudinaryOptions } from '../integrations/cloudinary/cloudinary.adapter.js'
+import { validateClamAvOptions } from '../providers/antivirus/clamav.schema.js'
+import { validateCloudinaryOptions } from '../providers/cloudinary/cloudinary.schema.js'
 import { z } from 'zod'
-import { ConfigurationError } from './errors.js'
+import { ConfigurationError } from '../shared/errors/configuration-error.js'
 export const mediaPolicySchema = z.strictObject({
   maxBytes: z
     .int()

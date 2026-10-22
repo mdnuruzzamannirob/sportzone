@@ -23,8 +23,8 @@
     "dev": "node scripts/dev.mjs",
     "ui:showcase": "node node_modules/vite/bin/vite.js --config tests/ui/vite.config.mts",
     "lint:boundaries": "node scripts/check-boundaries.mjs",
-    "format:check": "biome format scripts/dev.mjs scripts/dev-backend.mjs scripts/check-boundaries.mjs tests/tooling.test.mjs",
-    "format": "biome format --write scripts/dev.mjs scripts/dev-backend.mjs scripts/check-boundaries.mjs tests/tooling.test.mjs"
+    "format:check": "biome format scripts/dev.mjs scripts/dev-backend.mjs scripts/check-boundaries.mjs tests/tooling.test.mjs backend/src backend/tests backend/scripts backend/vitest.config.ts backend/vitest.integration.config.ts",
+    "format": "biome format --write scripts/dev.mjs scripts/dev-backend.mjs scripts/check-boundaries.mjs tests/tooling.test.mjs backend/src backend/tests backend/scripts backend/vitest.config.ts backend/vitest.integration.config.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",

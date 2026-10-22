@@ -657,7 +657,7 @@ Do not include a public `GET /orders?email=...` endpoint.
 
 ### 9.3 Identity validation and replay contract
 
-`backend/src/modules/auth/auth.validation.ts` defines strict request, path/query and response schemas for all 26 §9.1
+`backend/src/modules/auth/auth.schema.ts` defines strict request, path/query and response schemas for all 26 §9.1
 operations. It is a contract module, not an Express router: no authentication/account route becomes available merely by
 importing it. Controllers must validate requests before service delegation and validate/allowlist outputs before the
 success envelope. Internal invalid output is a server fault, never a client validation failure; no raw document is returned.

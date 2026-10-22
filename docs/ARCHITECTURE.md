@@ -437,14 +437,16 @@ backend/
 │   ├── fixtures/
 │   └── helpers/
 ├── scripts/
-│   ├── provision-admin.ts
-│   ├── seed-development.ts
-│   ├── migrate.ts
-│   ├── run-job.ts
+│   ├── build.mjs               # Clean generated artifact, then compile
+│   ├── provision-admin.mjs
+│   ├── bootstrap-identity.mjs
+│   ├── migrate-notifications.mjs
+│   ├── notification-worker.mjs
+│   ├── local-database.mjs
 │   └── migrations/
 ├── package.json
 ├── tsconfig.json
-├── tsconfig.build.json
+├── tsconfig.check.json
 ├── vitest.config.ts
 └── vitest.integration.config.ts
 ```
@@ -483,8 +485,9 @@ Target grouping does not add a feature, endpoint, collection or provider. users 
 registration. productVariants has one catalog-owned registration; inventory receives only stock
 operations. Cross-module coordination uses public services/capabilities and a shared transaction context.
 
-Existing composition/common/db/integrations paths remain supported until their verified migration under Implementation Plan §3.6. Logical diagrams describe domain coordination rather
-than mandatory source-directory names.
+Backend root wiring uses setup.ts/routes.ts; technical helpers use shared/, provider transports use providers/
+and operator entry points use scripts/. Implementation Plan §3.6 governs subsequent source moves. Logical diagrams
+describe domain coordination rather than mandatory source-directory names.
 
 ### 6.2 Request processing
 

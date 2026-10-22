@@ -148,15 +148,17 @@ Do not begin source moves as part of P01-018. Complete and review the owning app
 next application starts. Within an application use small verified slices, not one bulk destructive
 rename. Feature work must follow the target conventions and preserve security/financial invariants.
 
-| Implemented reference | Target responsibility (migration not yet executed) |
+| Area | Required organization / continuity |
 | --- | --- |
-| backend/src/composition.ts, routes/index.ts | setup.ts, routes.ts; cross-domain wiring leaves auth |
-| backend/src/config/environment.ts, db/ | config/env.ts, config/database.ts, shared/database/; retain explicit transactions/indexes |
-| backend/src/common/, observability/ | One shared/ technical boundary; no duplicate generic buckets |
-| backend/src/integrations/, tools/ | providers/ (.client/.schema), scripts/; antivirus separate from Cloudinary; retain operator compatibility |
-| products/, categories/, carts/wishlists, coupons, guest-access | catalog subfeatures, cart, promotions, auth/guest-access; retain actual collection and HTTP identities |
-| storefront app/features/lib, tests/ui | Target route/feature/transport tree; account group adds no URL segment; migrate browser discovery together |
-| admin app/features/lib | Target router/guard/feature tree; backend auth remains mandatory |
+| Backend runtime | setup.ts/routes.ts with cross-domain wiring at root; config/env.ts and config/database.ts |
+| Backend technical code | One shared/ boundary for errors, logging, middleware and database mechanics |
+| Backend providers/operator tools | providers/ client/schema pairs; scripts/ Node entry points with existing input/environment restrictions |
+| Backend domains | Auth subfeatures, catalog products/variants/categories, cohesive media services; one model registration per collection |
+| Storefront | Target route/feature/transport tree; account group adds no URL segment; migrate browser discovery together |
+| Admin | Target router/guard/feature tree; backend auth remains mandatory |
+
+Current implementation and acceptance are recorded by the corresponding task; this table defines ownership,
+not a second progress register. Unimplemented domains do not need empty folders or templates.
 
 Each refactor must inventory actual current→target paths, imports, script commands, test runner globs,
 aliases, generated output, safe startup/shutdown and affected CI checks before moves. Preserve existing

@@ -11,9 +11,7 @@ export function createHealthService({ monitorToken, isReady }: HealthDependencie
   return {
     authorized(header: string | undefined) {
       const token = /^Bearer ([a-f0-9]{64})$/.exec(header ?? '')?.[1]
-      return (
-        !!expected && !!token && timingSafeEqual(expected, Buffer.from(token, 'hex'))
-      )
+      return !!expected && !!token && timingSafeEqual(expected, Buffer.from(token, 'hex'))
     },
     async ready() {
       try {

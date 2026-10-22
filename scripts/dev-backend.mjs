@@ -1,7 +1,11 @@
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
+import { rmSync } from 'node:fs'
 import { resolve } from 'node:path'
 import ts from 'typescript'
+
+// Discard obsolete generated paths before the initial watch compilation.
+rmSync(resolve('backend/dist'), { recursive: true, force: true })
 
 // Compile and restart in one owned process group, without Node's dependency watcher.
 let api

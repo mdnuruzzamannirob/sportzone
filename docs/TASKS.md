@@ -111,7 +111,7 @@ The register contains 183 tasks across twelve phases. The owner-selected structu
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
 | 01 — Requirements Finalization and Planning   |      18 |           0 |     0 |           0 |       0 |         0 |     18 |        0 |
 | 02 — UI/UX Design                             |      16 |           2 |     0 |           0 |       0 |         0 |     14 |        0 |
-| 03 — Authentication and Core Backend          |      21 |           1 |     0 |           0 |       0 |         0 |     20 |        0 |
+| 03 — Authentication and Core Backend          |      21 |           0 |     0 |           0 |       0 |         0 |     21 |        0 |
 | 04 — Product Catalog and Inventory            |      15 |          12 |     0 |           0 |       1 |         0 |      2 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      20 |          20 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -121,7 +121,7 @@ The register contains 183 tasks across twelve phases. The owner-selected structu
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **183** |     **128** | **0** |       **0** |   **1** |     **0** | **54** |    **0** |
+| **Total**                                     | **183** |     **127** | **0** |       **0** |   **1** |     **0** | **55** |    **0** |
 
 ## 4. Milestone tracker
 
@@ -607,13 +607,13 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 is the new struct
   **Acceptance:** Real replica-set and HTTP parity for sessions, CSRF, profile/address, recovery and notification claims; exact validators/indexes and external-effect guards retained; update operation/runbook paths with moves. No bulk renames of unimplemented features.\
   **Evidence:** [Module ownership and file-convention parity](./evidence/P03-020-module-ownership.md). Customers uses an auth-owned narrow transactional capability; delivery coverage, provider adapter/config and entity-prefixed implemented files now have their owning boundaries. Canonical schema/validator and provider/claim bodies preserved. 331 unit/contract, 285 real MongoDB integration, 34 tooling and 6 three-engine API browser cases passed; lint/types/build/smoke/boundaries passed. Project owner explicitly accepted through the review popup on 21 October 2026; [acceptance recorded](./evidence/P03-020-module-ownership.md#owner-acceptance). No data migration or M1 approval claimed.
 
-- [ ] **P03-021 — Refactor backend to the new modular target and enforce boundaries**\
-  **Status:** `Not Started` · **Area:** Backend/engineering\
+- [x] **P03-021 — Refactor backend to the new modular target and enforce boundaries**\
+  **Status:** `Done` · **Area:** Backend/engineering · **Owner:** Codex\
   **Sources:** Architecture §§4,6; Database §4.2; API §2\
   **Depends on:** `P01-018`, `P03-020`\
   **Deliverable:** Inventory and incrementally migrate setup/routes/config/shared/providers/scripts, grouped domain owners and cohesive services; update tests/tooling and executable negative import-boundary fixtures together.\
   **Acceptance:** Preserve canonical models/indexes/validators, HTTP DTO/session/CSRF/idempotency and transaction invariants, worker/operator compatibility and unknown-outcome recovery. Verify controller/model, shared/module, provider/domain, nested foreign-persistence and frontend isolation rules; actual affected test/build/smoke parity and independent acceptance. No provider/milestone gate is waived.\
-  **Evidence to attach:** Current→target map, import/check inventory, real affected verification, compatibility/rollback and reviewer decision.
+  **Evidence:** [Backend target structure and parity](./evidence/P03-021-backend-refactor.md). Root setup/routes, typed config/shared, auth/catalog/media ownership, provider clients/schemas, jobs/scripts and test discovery migrated; negative boundary fixtures and clean build/format scope updated. 343 unit/contract, 327 real MongoDB integration, 40 tooling cases and 6 three-engine identity journeys passed; backend lint/types/build/smoke, boundaries, formatting and documentation checks passed. Project owner reviewed and accepted through the popup on 22 October 2026: “Review করেছি—accept করছি, Done করো”; [acceptance recorded](./evidence/P03-021-backend-refactor.md#owner-acceptance). EXT-04 and milestone gates unchanged.
 
 ### Phase 04 — Product catalog and inventory
 
@@ -1966,3 +1966,9 @@ structure/naming into Architecture §§4–6 and component usage into Design §6
 guides and repaired references. UI verification, operational procedures and implementation evidence
 references now sit in owning sections. P01-018 acceptance/history and refactor order remain unchanged;
 no application source moves or new provider/milestone acceptance. [Correction evidence](./evidence/P01-018-project-structure.md#documentation-consolidation-correction).
+
+**22 October 2026 — P03-021 review handoff:** Backend target structure and executable safeguards implemented;
+Not Started → In Progress → In Review after affected local parity checks. Independent acceptance pending;
+P02-015/P02-016 and EXT-04 remain unchanged. [Evidence](./evidence/P03-021-backend-refactor.md).
+
+**22 October 2026 — P03-021 acceptance:** In Review → Done after explicit project-owner popup review: “Review করেছি—accept করছি, Done করো”. Existing parity evidence retained; documentation checks rerun for closure. [Acceptance](./evidence/P03-021-backend-refactor.md#owner-acceptance). No milestone/provider acceptance or frontend refactor implied.

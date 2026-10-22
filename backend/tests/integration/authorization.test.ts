@@ -2,14 +2,14 @@ import { createCustomerAccountAccess } from '../../src/modules/auth/customer-acc
 import { randomBytes, randomUUID } from 'node:crypto'
 import { Types } from 'mongoose'
 import { beforeAll, afterAll, describe, expect, it, vi } from 'vitest'
-import { authorizeAccount } from '../../src/modules/auth/authorization.service.js'
+import { authorizeAccount } from '../../src/modules/auth/sessions/authorization.service.js'
 import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
 import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
-import { createSessionService } from '../../src/modules/auth/session.service.js'
+import { createSessionService } from '../../src/modules/auth/sessions/session.service.js'
 import { createProfileService } from '../../src/modules/customers/customer.service.js'
 import { createAddressCoverage } from '../../src/modules/delivery/delivery-coverage.service.js'
-import { inTransaction } from '../../src/db/transaction.js'
-import { isolatedDatabase } from '../support/database.js'
+import { inTransaction } from '../../src/shared/database/transaction.js'
+import { isolatedDatabase } from '../helpers/database.js'
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
 let models: ReturnType<typeof createIdentityModels>
 let sessions: ReturnType<typeof createSessionService>
@@ -56,26 +56,22 @@ describe('P03-013 transaction authorization', () => {
         expect(user._id).toEqual(own.user._id)
         expect(user.role).toBe(kind)
       })
-      expect(
-        (await models.sessions.findById(own.identity.sessionId))?.expiresAt,
-      ).toEqual(own.issued.expiresAt)
+      expect((await models.sessions.findById(own.identity.sessionId))?.expiresAt).toEqual(
+        own.issued.expiresAt,
+      )
     },
   )
   it('authorizes a read without writing principal or credential metadata', async () => {
     const own = await principal()
     const beforeUser = await models.users.findById(own.user._id).lean()
-    const beforeSession = await models.sessions
-      .findById(own.identity.sessionId)
-      .lean()
+    const beforeSession = await models.sessions.findById(own.identity.sessionId).lean()
     await inTransaction(fixture.connection, (tx) =>
       authorizeAccount(models, own.identity, 'customer', tx, now, false),
     )
-    expect((await models.users.findById(own.user._id))?.updatedAt).toEqual(
-      beforeUser?.updatedAt,
+    expect((await models.users.findById(own.user._id))?.updatedAt).toEqual(beforeUser?.updatedAt)
+    expect((await models.sessions.findById(own.identity.sessionId))?.updatedAt).toEqual(
+      beforeSession?.updatedAt,
     )
-    expect(
-      (await models.sessions.findById(own.identity.sessionId))?.updatedAt,
-    ).toEqual(beforeSession?.updatedAt)
   })
   it('rejects wrong kind, forged user/session pair and a transactionless call', async () => {
     const own = await principal(),
@@ -104,23 +100,13 @@ describe('P03-013 transaction authorization', () => {
     'rechecks %s after an earlier valid authentication',
     async (state) => {
       const own = await principal()
-      if (state === 'revoked')
-        await sessions.logout('customer', own.issued.token)
+      if (state === 'revoked') await sessions.logout('customer', own.issued.token)
       if (state === 'suspended')
-        await models.users.updateOne(
-          { _id: own.user._id },
-          { $set: { status: 'suspended' } },
-        )
+        await models.users.updateOne({ _id: own.user._id }, { $set: { status: 'suspended' } })
       if (state === 'role')
-        await models.users.updateOne(
-          { _id: own.user._id },
-          { $set: { role: 'admin' } },
-        )
+        await models.users.updateOne({ _id: own.user._id }, { $set: { role: 'admin' } })
       if (state === 'revision')
-        await models.users.updateOne(
-          { _id: own.user._id },
-          { $inc: { securityRevision: 1 } },
-        )
+        await models.users.updateOne({ _id: own.user._id }, { $inc: { securityRevision: 1 } })
       await expect(
         inTransaction(fixture.connection, (tx) =>
           authorizeAccount(
@@ -137,25 +123,21 @@ describe('P03-013 transaction authorization', () => {
   it('denies a profile mutation when logout occurs between initial authentication and transaction recheck', async () => {
     const own = await principal()
     const original = sessions.authenticate.bind(sessions)
-    const spy = vi
-      .spyOn(sessions, 'authenticate')
-      .mockImplementationOnce(async (kind, token) => {
-        const identity = await original(kind, token)
-        await sessions.logout(kind, token)
-        return identity
-      })
+    const spy = vi.spyOn(sessions, 'authenticate').mockImplementationOnce(async (kind, token) => {
+      const identity = await original(kind, token)
+      await sessions.logout(kind, token)
+      return identity
+    })
     try {
       const profiles = createProfileService(
-    createCustomerAccountAccess(fixture.connection, models, sessions, () => now),
+        createCustomerAccountAccess(fixture.connection, models, sessions, () => now),
         createAddressCoverage(fixture.connection),
         () => now,
       )
       await expect(
         profiles.patch(own.issued.token, { name: 'Unauthorized' }),
       ).rejects.toMatchObject({ code: 'AUTH_REQUIRED' })
-      expect((await models.users.findById(own.user._id))?.name).toBe(
-        'Synthetic',
-      )
+      expect((await models.users.findById(own.user._id))?.name).toBe('Synthetic')
     } finally {
       spy.mockRestore()
     }
@@ -169,9 +151,9 @@ describe('P03-013 transaction authorization', () => {
         throw new Error('Synthetic failure')
       }),
     ).rejects.toThrow('Synthetic failure')
-    expect(
-      (await models.sessions.findById(own.identity.sessionId))?.updatedAt,
-    ).toEqual(before?.updatedAt)
+    expect((await models.sessions.findById(own.identity.sessionId))?.updatedAt).toEqual(
+      before?.updatedAt,
+    )
   })
   it.each(['session', 'principal'] as const)(
     'a concurrent %s revocation forces a retry and denial',
@@ -184,29 +166,17 @@ describe('P03-013 transaction authorization', () => {
           // Establish a transaction snapshot before a revocation commits outside it.
           await models.users.findById(own.user._id).session(tx)
           if (attempt === 1) {
-            if (target === 'session')
-              await sessions.logout('customer', own.issued.token)
+            if (target === 'session') await sessions.logout('customer', own.issued.token)
             else
-              await models.users.updateOne(
-                { _id: own.user._id },
-                { $set: { status: 'suspended' } },
-              )
+              await models.users.updateOne({ _id: own.user._id }, { $set: { status: 'suspended' } })
           }
-          const user = await authorizeAccount(
-            models,
-            own.identity,
-            'customer',
-            tx,
-            now,
-          )
+          const user = await authorizeAccount(models, own.identity, 'customer', tx, now)
           user.name = 'Unauthorized'
           await user.save({ session: tx })
         }),
       ).rejects.toMatchObject({ code: 'AUTH_REQUIRED' })
       expect(attempt).toBeGreaterThan(1)
-      expect((await models.users.findById(own.user._id))?.name).toBe(
-        'Synthetic',
-      )
+      expect((await models.users.findById(own.user._id))?.name).toBe('Synthetic')
     },
   )
 })

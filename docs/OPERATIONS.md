@@ -303,9 +303,9 @@ API until a valid rebuild; verify actual HTTP readiness separately. Stop the sep
 Native Windows uses WSL or individual workspace commands.
 
 Root `lint:boundaries` validates literal source imports, package declarations, workspace isolation,
-shared-code purity and transitive browser/server imports. Root `format:check` applies Biome only to
-`scripts/dev.mjs`, `scripts/dev-backend.mjs`, `scripts/check-boundaries.mjs` and `tests/tooling.test.mjs`. Expand this baseline
-with a scoped refactor; it does not imply legacy application files were reformatted. Both checks are in
+shared-code purity and transitive browser/server imports. Root `format:check` covers repository development/boundary tooling plus backend source, tests,
+operator scripts and Vitest configuration. Frontend formatting is adopted with each owning refactor.
+Both checks are in
 the CI inventory and fail on violations. Their pinned Biome/TypeScript tools are declared at the root,
 using the same versions already locked for the workspaces.
 
@@ -337,13 +337,17 @@ Every application response retains a fresh server UUID, no-store and nosniff; pr
 
 Successful foundation CI is evidence for its configured checks only, not application deployment or operational readiness. Browser audit setup requires `npx playwright install --with-deps chromium firefox webkit` after locked installation. The audit is mandatory through the root browser scope in the CI inventory and starts only loopback test servers on 3100/5273/5180 after both builds. `test-results/ui-report.json` and `test-results/ui/` are CI artifacts; the fixture is not a deployment asset. Missing engines/libraries fail the audit rather than silently skip it. Local engine-wrapper overrides are test-machine configuration only; see [P02-011 environment evidence](./evidence/P02-011-accessibility.md).
 
+`npm run build --workspace=backend` clears only generated `backend/dist/` before compilation, so old
+module paths cannot survive a source move. The local watch coordinator also clears it before initial compilation.
+Build the backend before invoking operator scripts; do not mix generated modules from different revisions.
+
 CI must reject missing required scripts rather than silently skip checks. Pin compatible runtime/tool versions and
 preserve tested build outputs with commit SHA, dependency lock digest and signed/traceable artifact identity where
 supported. Do not embed secrets or prefilled `.env` in release archives.
 
 #### Runtime configuration and composition
 
-`backend/src/config/environment.ts` is the process-environment boundary. Enabled identity capabilities are frozen
+`backend/src/config/env.ts` is the process-environment boundary. Enabled identity capabilities are frozen
 under `RuntimeConfig.identity`: numeric session/context policy and customer reset, email-change and admin reset
 options. Origins remain canonical, same-site/cookie rules and explicit lifetimes are unchanged. Invalid enabled
 policies fail before database/listener work; inactive providers do not become startup dependencies. Do not convert
@@ -442,9 +446,9 @@ P03-021 → P02-015 → P02-016 migrate backend, storefront and admin one at a t
 Restore a compatible prior build for code-only recovery while retaining durable intents/audit and reconciling uncertain external effects. Update runbook commands when actually implemented; planned script names are not executable instructions. Any persistence/config change needs its additive migration and restore assessment before deployment.
 
 Build/deploy the complete backend artifact from current source; obsolete generated modules must not survive
-source moves. Current operator entry points remain `backend/tools/bootstrap-identity.mjs`,
-`provision-admin.mjs`, `notification-worker.mjs` and `migrate-notifications.mjs` until a verified migration
-updates their callers and runbooks. Preserve bootstrap/provisioning restrictions, bounded secret input,
+source moves. Current operator entry points are `backend/scripts/bootstrap-identity.mjs`,
+`provision-admin.mjs`, `notification-worker.mjs` and `migrate-notifications.mjs`. Update scheduler/operator
+command paths when deploying this layout; use the matching complete artifact for rollback. Preserve bootstrap/provisioning restrictions, bounded secret input,
 safe diagnostics, readiness verification and connection/worker cleanup. Module ownership and target paths
 belong to Architecture §§4–6, not a second operational source tree.
 
@@ -534,7 +538,7 @@ restore/reconciliation if state was damaged.
 #### Product persistence rollout constraint
 
 The product/variant foundation exposes `initializeProductPersistence` in
-`backend/src/modules/products/product.persistence.ts` for explicit new-environment bootstrap.
+`backend/src/modules/catalog/products/product.persistence.ts` for explicit new-environment bootstrap.
 It is not registered in HTTP startup or deployed by this change. It creates strict/error BSON
 validators and additive indexes, preserves extra indexes and refuses incompatible existing
 collection validators. Existing-data rollout requires a reviewed migration with duplicate
@@ -615,7 +619,7 @@ uniqueness. Record schedules, key custodians, temporary upload/quote lifetimes a
 Registration commits its intent without invoking email. Build the backend; use the common protected environment plus
 `EMAIL_DELIVERY_ENABLED=true`, `EMAIL_PROVIDER=resend`, EMAIL_MODE, RESEND_API_KEY, EMAIL_FROM, EMAIL_TIMEOUT_MS,
 EMAIL_MAX_ATTEMPTS, EMAIL_RETRY_BASE_MS, EMAIL_RETRY_MAX_MS, EMAIL_CLAIM_TTL_MS and EMAIL_BATCH_SIZE for the separate command
-`node --env-file=.env backend/tools/notification-worker.mjs`. Each invocation processes at most the configured batch;
+`node --env-file=.env backend/scripts/notification-worker.mjs`. Each invocation processes at most the configured batch;
 processed counts claims, not confirmed inbox deliveries. No background loop is implicitly started by HTTP startup.
 Keep the worker disabled until sender/domain and provider credentials are verified. No live send was performed here.
 
@@ -632,7 +636,7 @@ limits and deployment capacity. Only known HTTP 429 rejection automatically retr
 ambiguous/network/timeout/5xx outcomes stop in delivery_uncertain. Resend acceptance is not recipient delivery proof.
 
 For an existing owned local/test P03-007/008 database, explicitly run
-`node --env-file=.env backend/tools/migrate-notifications.mjs` before updated identity startup/worker readiness. It upgrades
+`node --env-file=.env backend/scripts/migrate-notifications.mjs` before updated identity startup/worker readiness. It upgrades
 only the known strict P03-007/009/010/011 predecessor validators and ensures the claim-expiry index, preserving all records and statuses; repeat
 migration is safe. Fresh local/test bootstrap creates the current schema. Neither HTTP startup nor the worker migrates.
 Production migration needs normal operator change control; the convenience migration command refuses deployed environments.
@@ -1141,7 +1145,7 @@ validators/indexes plus registration notification validator/indexes before bindi
 Configuration and readiness failures remain secret-safe and close the database connection.
 
 For an owned local/test database, build the backend and run
-`node --env-file=.env backend/tools/bootstrap-identity.mjs` explicitly. The additive bootstrap rejects non-local/test
+`node --env-file=.env backend/scripts/bootstrap-identity.mjs` explicitly. The additive bootstrap rejects non-local/test
 environments and incompatible existing validators. Production rollout requires the ordinary reviewed schema/index
 procedure; there is no automatic production migration. Verify the notification schema for every enabled registration/recovery/email-change renderer; new event types require a reviewed compatible expansion.
 
@@ -1175,7 +1179,7 @@ Rollback removes route exposure while preserving user profile, addresses, review
 
 `PASSWORD_RECOVERY_ENABLED=false` is the sanitized default. Activation requires customer authentication, current identity/notification persistence, an approved HTTPS STOREFRONT_ORIGIN and explicit PASSWORD_RESET_TTL_SECONDS (60–1800), PASSWORD_RESET_COOLDOWN_SECONDS (60–3600) and PASSWORD_RESET_RESPONSE_FLOOR_MS (100–5000). Size the response floor above measured issuance latency; it reduces routine account timing differences, without promising constant-time network responses. Per-process IP limits do not substitute for deployed shared ingress abuse controls. Only the backend and separate email worker receive AUTH_PROOF_ACTIVE_KEY_VERSION and AUTH_PROOF_KEYS_JSON, a private JSON map of version to independent random 32-byte lowercase hex keys (1–8 versions). No key may duplicate the session, monitor or another proof key. Never commit/log this JSON or place it in frontend variables or MongoDB/backups.
 
-Deploy the additive notification validator migration before new HTTP/worker processes. Existing local/test databases use `node --env-file=.env backend/tools/migrate-notifications.mjs`; fresh owned databases use the documented identity bootstrap. No identity schema/index change is required. Production migration remains an operator-controlled action; the convenience command refuses deployed environments. Unknown validators are refused. The expanded validator preserves registration records and accepts password-reset-v1 reference-only intents. Older exact-validator binaries need a compatible rollback build.
+Deploy the additive notification validator migration before new HTTP/worker processes. Existing local/test databases use `node --env-file=.env backend/scripts/migrate-notifications.mjs`; fresh owned databases use the documented identity bootstrap. No identity schema/index change is required. Production migration remains an operator-controlled action; the convenience command refuses deployed environments. Unknown validators are refused. The expanded validator preserves registration records and accepts password-reset-v1 reference-only intents. Older exact-validator binaries need a compatible rollback build.
 
 The configured worker additionally delivers eligible password-reset challenges and removes expired/consumed/invalidated envelopes in bounded batches independently of TTL deletion. Schedule it often enough for the configured reset TTL. Provider rejection retries keep the same proof/link/event key; uncertain sends do not automatically retry. Explicit reissue after cooldown invalidates the predecessor. A mail already in flight may arrive after invalidation but cannot reset an account; proof consumption still checks the current scope. Missing/tampered envelopes fail without a provider call and record PROOF_UNAVAILABLE; restore key custody before requesting a fresh challenge, rather than blindly requeueing a failed row.
 
@@ -1185,7 +1189,7 @@ Key rotation: distribute the new active key plus still-needed old versions to al
 
 EMAIL_CHANGE_ENABLED defaults false and requires CUSTOMER_AUTH_ENABLED plus the existing protected proof key ring and approved HTTPS storefront origin. Explicit EMAIL_CHANGE_TTL_SECONDS (60–1800), EMAIL_CHANGE_COOLDOWN_SECONDS (60–3600) and EMAIL_CHANGE_RESPONSE_FLOOR_MS (100–5000) are independent of password-reset policy. Size the floor above measured issuance latency and enforce shared ingress limits; local process limits are foundation protection. Password recovery may remain disabled while email change is enabled, and vice versa. The separate notification worker must use matching activation/key/origin settings; only enabled event types are claimed.
 
-Upgrade the exact known notification validator before new HTTP/worker startup; owned local/test databases use `node --env-file=.env backend/tools/migrate-notifications.mjs`. It preserves registration/reset data and supports reference-only email-change-v1 intents. Production migration remains operator-controlled. Startup never migrates and unknown validators fail closed. Disable the worker before compatible rollback; retain expanded rows, provider receipts and claims, without destructive validator downgrade.
+Upgrade the exact known notification validator before new HTTP/worker startup; owned local/test databases use `node --env-file=.env backend/scripts/migrate-notifications.mjs`. It preserves registration/reset data and supports reference-only email-change-v1 intents. Production migration remains operator-controlled. Startup never migrates and unknown validators fail closed. Disable the worker before compatible rollback; retain expanded rows, provider receipts and claims, without destructive validator downgrade.
 
 Successful confirmation clears the customer cookie and revokes all customer sessions, so the customer must log in using the newly verified email. Pending identity challenges are invalidated atomically, including old-email resets. Successful password reset/change likewise invalidates pending email changes; merely requesting a reset email cannot cancel an authenticated email-change request. Suppressed occupied-target/cooldown requests do not replace the existing challenge. Do not manually switch identity to an unverified address or override unique-email failures. Historic order-time email/address snapshots remain immutable.
 
@@ -1195,15 +1199,15 @@ For uncertain delivery, reconcile retained provider/event/claim identifiers; do 
 
 ADMIN_AUTH_ENABLED defaults false and is independent of CUSTOMER_AUTH_ENABLED. Activation requires explicit CUSTOMER_SESSION_TTL_SECONDS/ADMIN_SESSION_TTL_SECONDS, BROWSER_CONTEXT_TTL_SECONDS, SESSION_COOKIE_SAME_SITE, existing protected proof keys and approved HTTPS ADMIN_ORIGIN, plus ADMIN_PASSWORD_RESET_TTL_SECONDS (60–1800), ADMIN_PASSWORD_RESET_COOLDOWN_SECONDS (60–3600), ADMIN_PASSWORD_RESET_RESPONSE_FLOOR_MS (100–5000). No public administrator signup exists. Shared MongoDB quotas and protected structured security event logs cover admin credentials/recovery. Deployed ingress configuration and comprehensive domain audit infrastructure retain their owning security/operations gates.
 
-Build the backend and bootstrap owned local/test identity persistence through the existing explicit command; migrate notifications through `node --env-file=.env backend/tools/migrate-notifications.mjs`. The additive migration accepts the exact P03-011 predecessor and admin-password-reset-v1 reference-only intents. HTTP startup never migrates. Operator-controlled production rollout and a compatible rollback build must preserve expanded records, claims and provider receipts.
+Build the backend and bootstrap owned local/test identity persistence through the existing explicit command; migrate notifications through `node --env-file=.env backend/scripts/migrate-notifications.mjs`. The additive migration accepts the exact P03-011 predecessor and admin-password-reset-v1 reference-only intents. HTTP startup never migrates. Operator-controlled production rollout and a compatible rollback build must preserve expanded records, claims and provider receipts.
 
-For owned local/test initial provisioning, pipe a protected secret-source JSON object `{name,email,password}` into `node --env-file=.env backend/tools/provision-admin.mjs`. Input is noninteractive and limited to 8192 bytes; the command prints only generic success/failure and never credentials. Do not type passwords in process arguments, commit an input file, use a shared default credential or expose this function as an HTTP route. The command verifies existing strict persistence without creating collections/indexes, inserts the reserved initial administrator and refuses replay, existing admins, occupied identities and customer upgrades. Concurrent attempts serialize through the reserved _id. Staging/production are refused by this convenience command. Production initial provisioning requires an authorized operator to review the same service against verified persistence, privately inject credentials, record a secret-free change record and verify namespace/role/session behavior; no production action is claimed here.
+For owned local/test initial provisioning, pipe a protected secret-source JSON object `{name,email,password}` into `node --env-file=.env backend/scripts/provision-admin.mjs`. Input is noninteractive and limited to 8192 bytes; the command prints only generic success/failure and never credentials. Do not type passwords in process arguments, commit an input file, use a shared default credential or expose this function as an HTTP route. The command verifies existing strict persistence without creating collections/indexes, inserts the reserved initial administrator and refuses replay, existing admins, occupied identities and customer upgrades. Concurrent attempts serialize through the reserved _id. Staging/production are refused by this convenience command. Production initial provisioning requires an authorized operator to review the same service against verified persistence, privately inject credentials, record a secret-free change record and verify namespace/role/session behavior; no production action is claimed here.
 
 Admin recovery uses the same one-batch email worker with admin activation/key/origin policy supplied. Only the admin-specific template is claimed by the enabled admin renderer. Admin links use the configured admin HTTPS origin; customer proof/cookie/context cannot substitute, including after a role change. Known provider rejection retains stable challenge/event identity; uncertainty stops automatic resend. Bounded cleanup, key rotation, restore invalidation and reconciliation follow the existing proof procedures. Successful reset revokes admin sessions, consumes the proof and creates no session. Repeat logout requires fresh admin context when the session is unavailable. Suspended/ineligible accounts remain inaccessible; recovery cannot reactivate or privilege-upgrade them. Live inbox, deployed ingress/browser/TLS, secret-store, audit rollout and milestone approvals remain separate gates.
 
 #### Shared authentication throttle rollout
 
-Before enabling the new identity build, run the existing explicit local/test identity bootstrap (`node --env-file=.env backend/tools/bootstrap-identity.mjs` after building). It adds only `authRateLimits` with a strict digest/count/expiry validator and the TTL index; existing identity records/validators are retained. Review the equivalent additive collection/index rollout separately for staging/production; the convenience tool refuses those environments. HTTP startup and admission only verify, never repair/implicitly create protection state. Missing/mismatched schema/index or unavailable MongoDB fails closed (generic 503), never falling back to process memory.
+Before enabling the new identity build, run the existing explicit local/test identity bootstrap (`node --env-file=.env backend/scripts/bootstrap-identity.mjs` after building). It adds only `authRateLimits` with a strict digest/count/expiry validator and the TTL index; existing identity records/validators are retained. Review the equivalent additive collection/index rollout separately for staging/production; the convenience tool refuses those environments. HTTP startup and admission only verify, never repair/implicitly create protection state. Missing/mismatched schema/index or unavailable MongoDB fails closed (generic 503), never falling back to process memory.
 
 Use one protected SESSION_SECRET and synchronized clocks across the API instances sharing the database. Drain previous unguarded builds before asserting fleet-wide protection; a mixed old/new rollout is not verified enforcement. Do not delete current buckets to bypass lockout. Minute-window keys determine reset, and TTL only reclaims expired opaque counters. Counters saturate at policy ceiling plus one. Secret rotation invalidates sessions and changes quota namespaces; coordinate it across the fleet.
 

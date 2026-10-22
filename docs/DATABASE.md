@@ -1761,7 +1761,7 @@ a numeric legal retention period or introducing an unapproved self-service delet
 7. **Rollback/repair:** Preserve original accounting evidence; never blindly reverse paid receipts, shipped stock movements, or completed payouts. Use explicit compensating records and authorized incident procedure.
 8. **Record:** Commit migration name/version, deployment environment, run result and test evidence. No migration is considered executed by its appearance in this document.
 
-**Code location:** `backend/src/db/migrations/`; use monotonic
+**Migration location:** `backend/scripts/migrations/` when versioned migrations are introduced; use monotonic
 migration IDs, an append-only migration run record and environment-controlled execution. The final repository folder layout
 must remain aligned with `ARCHITECTURE.md` §4 rather than silently inventing another application.
 

@@ -1,5 +1,9 @@
 import { Schema, type Connection, type InferSchemaType } from 'mongoose'
-import { integerField, mutableSchemaOptions, optionalObjectIdField } from '../../db/schema.js'
+import {
+  integerField,
+  mutableSchemaOptions,
+  optionalObjectIdField,
+} from '../../shared/database/schema.js'
 const embedded = { _id: false, strict: 'throw', versionKey: false } as const
 const schema = new Schema(
   {

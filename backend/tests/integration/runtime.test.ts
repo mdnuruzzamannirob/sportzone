@@ -1,11 +1,11 @@
 import { createServer } from 'node:net'
 import request from 'supertest'
 import { afterAll, beforeAll, expect, it } from 'vitest'
-import { loadEnvironment } from '../../src/config/environment.js'
-import { createLogger } from '../../src/observability/logger.js'
+import { loadEnvironment } from '../../src/config/env.js'
+import { createLogger } from '../../src/shared/logger.js'
 import { startServer } from '../../src/server.js'
-import { isolatedDatabase } from '../support/database.js'
-import { testEnvironment } from '../support/environment.js'
+import { isolatedDatabase } from '../helpers/database.js'
+import { testEnvironment } from '../helpers/environment.js'
 
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
 let runtime: Awaited<ReturnType<typeof startServer>>
@@ -95,17 +95,13 @@ it('keeps liveness while reporting unavailable after the real DB connection clos
         .set('Authorization', `Bearer ${config.HEALTH_MONITOR_TOKEN}`)
     ).status,
   ).toBe(503)
-  expect(lines.map((line) => JSON.parse(line).eventType)).toContain(
-    'database_disconnected',
-  )
+  expect(lines.map((line) => JSON.parse(line).eventType)).toContain('database_disconnected')
 })
 it('closes idempotently and releases HTTP/database handles', async () => {
   await Promise.all([runtime.close(), runtime.close()])
   expect(runtime.server.listening).toBe(false)
   expect(runtime.connection.readyState).toBe(0)
   expect(
-    lines
-      .map((line) => JSON.parse(line).eventType)
-      .filter((event) => event === 'stopped'),
+    lines.map((line) => JSON.parse(line).eventType).filter((event) => event === 'stopped'),
   ).toHaveLength(1)
 })

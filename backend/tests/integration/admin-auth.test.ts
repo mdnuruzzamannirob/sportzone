@@ -2,49 +2,41 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import { spawn } from 'node:child_process'
 import { Router } from 'express'
 import request from 'supertest'
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp } from '../../src/app.js'
-import { loadEnvironment } from '../../src/config/environment.js'
-import { inTransaction } from '../../src/db/transaction.js'
+import { loadEnvironment } from '../../src/config/env.js'
+import { inTransaction } from '../../src/shared/database/transaction.js'
 import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
 import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
 import {
   provisionInitialAdmin,
   initialAdminId,
-} from '../../src/modules/auth/admin-provision.service.js'
-import { createSessionService } from '../../src/modules/auth/session.service.js'
-import { createBrowserSecurity } from '../../src/modules/auth/browser-security.service.js'
-import { browserSecurityRoutes } from '../../src/modules/auth/browser-security.routes.js'
-import { createCustomerService } from '../../src/modules/auth/credentials.service.js'
-import { createRecoveryService } from '../../src/modules/auth/password-recovery.service.js'
-import { adminRoutes } from '../../src/modules/auth/admin-auth.routes.js'
-import { composeCustomerRoutes } from '../../src/modules/auth/auth.composition.js'
+} from '../../src/modules/auth/credentials/admin-provision.service.js'
+import { createSessionService } from '../../src/modules/auth/sessions/session.service.js'
+import { createBrowserSecurity } from '../../src/modules/auth/sessions/browser-security.service.js'
+import { browserSecurityRoutes } from '../../src/modules/auth/sessions/browser-security.routes.js'
+import { createCustomerService } from '../../src/modules/auth/credentials/credentials.service.js'
+import { createRecoveryService } from '../../src/modules/auth/recovery/password-recovery.service.js'
+import { adminRoutes } from '../../src/modules/auth/credentials/admin-auth.routes.js'
+import { composeIdentityRoutes } from '../../src/setup.js'
 import {
   createAdminResetDelivery,
   createResetDelivery,
-} from '../../src/modules/auth/proof-delivery.service.js'
-import { createProofEncryption } from '../../src/modules/auth/proof.crypto.js'
+} from '../../src/modules/auth/verification/proof-delivery.service.js'
+import { createProofEncryption } from '../../src/modules/auth/verification/proof.crypto.js'
 import {
   hashPassword,
   verifyPassword,
-} from '../../src/modules/auth/password.service.js'
+} from '../../src/modules/auth/credentials/password.service.js'
 import {
   createRegistrationNotifications,
   emailChangeNotificationValidator,
   registrationNotificationValidator,
 } from '../../src/modules/notifications/notification.service.js'
-import { createNotificationWorker } from '../../src/modules/notifications/notification-worker.service.js'
+import { createNotificationWorker } from '../../src/jobs/send-notifications.job.js'
 import type { EmailMessage } from '../../src/modules/notifications/notification.types.js'
-import { isolatedDatabase } from '../support/database.js'
-import { testEnvironment } from '../support/environment.js'
+import { isolatedDatabase } from '../helpers/database.js'
+import { testEnvironment } from '../helpers/environment.js'
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
 let models: ReturnType<typeof createIdentityModels>,
   sessions: ReturnType<typeof createSessionService>,
@@ -108,16 +100,13 @@ async function post(path: string, body: object, ctx = bootstrap()) {
 }
 async function issue(account: Awaited<ReturnType<typeof user>>) {
   time = Math.max(time, Date.now())
-  expect(
-    (await post('password-resets', { email: account.emailNormalized })).status,
-  ).toBe(200)
+  expect((await post('password-resets', { email: account.emailNormalized })).status).toBe(200)
   const challenge = await models.challenges.findOne({
     userId: account._id,
     invalidatedAt: { $exists: false },
     consumedAt: { $exists: false },
   })
-  if (!challenge?.deliveryNotificationId)
-    throw new Error('Missing synthetic admin challenge')
+  if (!challenge?.deliveryNotificationId) throw new Error('Missing synthetic admin challenge')
   const message = await delivery.message({
     id: challenge.deliveryNotificationId,
     userId: account._id,
@@ -129,35 +118,33 @@ async function issue(account: Awaited<ReturnType<typeof user>>) {
   return { token, challenge }
 }
 function cli(environment: NodeJS.ProcessEnv, input: string) {
-  return new Promise<{ code: number | null; output: string }>(
-    (resolve, reject) => {
-      const child = spawn(process.execPath, ['tools/provision-admin.mjs'], {
-        env: { ...process.env, ...environment },
-        stdio: ['pipe', 'pipe', 'pipe'],
-      })
-      let output = ''
-      const timer = setTimeout(() => {
-        child.kill()
-        reject(new Error('Provision CLI timeout'))
-      }, 15000)
-      child.stdout.on('data', (data) => {
-        output += String(data)
-      })
-      child.stderr.on('data', (data) => {
-        output += String(data)
-      })
-      child.on('error', (error) => {
-        clearTimeout(timer)
-        reject(error)
-      })
-      child.on('close', (code) => {
-        clearTimeout(timer)
-        resolve({ code, output })
-      })
-      child.stdin.on('error', () => {})
-      child.stdin.end(input)
-    },
-  )
+  return new Promise<{ code: number | null; output: string }>((resolve, reject) => {
+    const child = spawn(process.execPath, ['scripts/provision-admin.mjs'], {
+      env: { ...process.env, ...environment },
+      stdio: ['pipe', 'pipe', 'pipe'],
+    })
+    let output = ''
+    const timer = setTimeout(() => {
+      child.kill()
+      reject(new Error('Provision CLI timeout'))
+    }, 15000)
+    child.stdout.on('data', (data) => {
+      output += String(data)
+    })
+    child.stderr.on('data', (data) => {
+      output += String(data)
+    })
+    child.on('error', (error) => {
+      clearTimeout(timer)
+      reject(error)
+    })
+    child.on('close', (code) => {
+      clearTimeout(timer)
+      resolve({ code, output })
+    })
+    child.stdin.on('error', () => {})
+    child.stdin.end(input)
+  })
 }
 beforeAll(async () => {
   fixture = await isolatedDatabase()
@@ -190,13 +177,7 @@ beforeAll(async () => {
     },
     clock,
   )
-  credentials = createCustomerService(
-    models,
-    sessions,
-    security,
-    notifications,
-    'admin',
-  )
+  credentials = createCustomerService(models, sessions, security, notifications, 'admin')
   recovery = createRecoveryService(
     fixture.connection,
     models,
@@ -244,9 +225,7 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
         password,
       }),
     ).toEqual({ provisioned: true })
-    const admin = await models.users
-      .findById(initialAdminId())
-      .select('+passwordHash')
+    const admin = await models.users.findById(initialAdminId()).select('+passwordHash')
     expect(admin?.role).toBe('admin')
     expect(await verifyPassword(password, admin?.passwordHash)).toBe(true)
     await expect(
@@ -257,8 +236,7 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
       }),
     ).rejects.toMatchObject({ code: 'STATE_CONFLICT' })
     expect(
-      (await models.users.findById(initialAdminId()).select('+passwordHash'))
-        ?.passwordHash,
+      (await models.users.findById(initialAdminId()).select('+passwordHash'))?.passwordHash,
     ).toBe(admin?.passwordHash)
   })
   it('serializes concurrent different-email initial provisioning to one account', async () => {
@@ -302,10 +280,9 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
     await expect(credentials.register({}, '', '')).rejects.toMatchObject({
       code: 'FORBIDDEN',
     })
-    expect(
-      (await post('register', { name: 'Synthetic', email: email(), password }))
-        .status,
-    ).toBe(404)
+    expect((await post('register', { name: 'Synthetic', email: email(), password })).status).toBe(
+      404,
+    )
   })
   it('logs in with an admin cookie, safely projects current account and rejects customer-cookie substitution', async () => {
     const account = await user(),
@@ -319,11 +296,7 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
     expect(res.body.data.account.id).toBe(account._id.toHexString())
     expect(JSON.stringify(res.body)).not.toContain('passwordHash')
     expect(
-      (
-        await request(app)
-          .get('/api/v1/admin/auth/session')
-          .set('Cookie', cookie)
-      ).status,
+      (await request(app).get('/api/v1/admin/auth/session').set('Cookie', cookie)).status,
     ).toBe(200)
     const customer = await user('customer'),
       issued = await sessions.issue('customer', customer._id)
@@ -334,18 +307,15 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
           .set('Cookie', `sz_customer_sid=${issued.token}`)
       ).status,
     ).toBe(401)
-    await expect(
-      sessions.authenticate('customer', cookie.split('=')[1]),
-    ).rejects.toMatchObject({ code: 'AUTH_REQUIRED' })
+    await expect(sessions.authenticate('customer', cookie.split('=')[1])).rejects.toMatchObject({
+      code: 'AUTH_REQUIRED',
+    })
   })
   it('keeps wrong-password, missing, customer and suspended admin login failures ambiguous', async () => {
     const admin = await user(),
       customer = await user('customer'),
       suspended = await user()
-    await models.users.updateOne(
-      { _id: suspended._id },
-      { $set: { status: 'suspended' } },
-    )
+    await models.users.updateOne({ _id: suspended._id }, { $set: { status: 'suspended' } })
     for (const address of [
       admin.emailNormalized,
       customer.emailNormalized,
@@ -359,10 +329,7 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
       expect(res.status).toBe(401)
       expect(res.body.error.code).toBe('INVALID_CREDENTIALS')
     }
-    expect(
-      (await post('login', { email: customer.emailNormalized, password }))
-        .status,
-    ).toBe(401)
+    expect((await post('login', { email: customer.emailNormalized, password })).status).toBe(401)
   })
   it('serializes concurrent login/context reuse and rotates the predecessor session', async () => {
     const admin = await user(),
@@ -373,14 +340,12 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
       cookie: `${ctx.cookie}; sz_admin_sid=${old.token}`,
     })
     const outcomes = await Promise.all(
-      [0, 1].map(() =>
-        post('login', { email: admin.emailNormalized, password }, material),
-      ),
+      [0, 1].map(() => post('login', { email: admin.emailNormalized, password }, material)),
     )
     expect(outcomes.map((r) => r.status).sort()).toEqual([200, 403])
-    await expect(
-      sessions.authenticate('admin', old.token),
-    ).rejects.toMatchObject({ code: 'AUTH_REQUIRED' })
+    await expect(sessions.authenticate('admin', old.token)).rejects.toMatchObject({
+      code: 'AUTH_REQUIRED',
+    })
   })
   it('logs out and repeats logout with fresh admin context while preserving customer sessions', async () => {
     const admin = await user(),
@@ -397,15 +362,13 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
     )
     expect(res.status).toBe(200)
     expect(res.body.data.revoked).toBe(true)
-    await expect(
-      sessions.authenticate('admin', issued.token),
-    ).rejects.toMatchObject({ code: 'AUTH_REQUIRED' })
+    await expect(sessions.authenticate('admin', issued.token)).rejects.toMatchObject({
+      code: 'AUTH_REQUIRED',
+    })
     expect((await post('logout', {}, bootstrap())).status).toBe(200)
-    expect(
-      (
-        await sessions.authenticate('customer', other.token)
-      ).userId.toHexString(),
-    ).toBe(customer._id.toHexString())
+    expect((await sessions.authenticate('customer', other.token)).userId.toHexString()).toBe(
+      customer._id.toHexString(),
+    )
   })
   it('accepts admin recovery context despite an expired admin cookie, never customer context', async () => {
     const admin = await user(),
@@ -426,21 +389,13 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
     ).toBe(200)
     const wrong = await security.issueContext('storefront')
     await expect(
-      recovery.request(
-        { email: admin.emailNormalized },
-        wrong.token,
-        wrong.csrfToken,
-      ),
+      recovery.request({ email: admin.emailNormalized }, wrong.token, wrong.csrfToken),
     ).rejects.toMatchObject({ code: 'CSRF_INVALID' })
   })
   it('responds identically to admin/customer/missing recovery lookups and does not log in', async () => {
     const admin = await user(),
       customer = await user('customer')
-    for (const address of [
-      admin.emailNormalized,
-      customer.emailNormalized,
-      email(),
-    ]) {
+    for (const address of [admin.emailNormalized, customer.emailNormalized, email()]) {
       const res = await post('password-resets', { email: address })
       expect(res.status).toBe(200)
       expect(res.body.data).toEqual({ accepted: true })
@@ -463,18 +418,14 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
         })
       ).status,
     ).toBe(200)
-    const updated = await models.users
-      .findById(admin._id)
-      .select('+passwordHash')
+    const updated = await models.users.findById(admin._id).select('+passwordHash')
     expect(await verifyPassword(replacement, updated?.passwordHash)).toBe(true)
-    await expect(
-      sessions.authenticate('admin', old.token),
-    ).rejects.toMatchObject({ code: 'AUTH_REQUIRED' })
-    expect(
-      (
-        await sessions.authenticate('customer', other.token)
-      ).userId.toHexString(),
-    ).toBe(customer._id.toHexString())
+    await expect(sessions.authenticate('admin', old.token)).rejects.toMatchObject({
+      code: 'AUTH_REQUIRED',
+    })
+    expect((await sessions.authenticate('customer', other.token)).userId.toHexString()).toBe(
+      customer._id.toHexString(),
+    )
     expect(
       (
         await post('password-resets/confirm', {
@@ -484,24 +435,16 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
       ).status,
     ).toBe(400)
     expect(
-      (
-        await models.challenges
-          .findById(first.challenge._id)
-          .select('+deliveryEnvelope')
-      )?.deliveryEnvelope,
+      (await models.challenges.findById(first.challenge._id).select('+deliveryEnvelope'))
+        ?.deliveryEnvelope,
     ).toBeUndefined()
   })
   it('never accepts a customer-issued reset as admin proof even after a private role change', async () => {
     const customer = await user('customer'),
       ctx = await security.issueContext('storefront')
-    await customerRecovery.request(
-      { email: customer.emailNormalized },
-      ctx.token,
-      ctx.csrfToken,
-    )
+    await customerRecovery.request({ email: customer.emailNormalized }, ctx.token, ctx.csrfToken)
     const challenge = await models.challenges.findOne({ userId: customer._id })
-    if (!challenge?.deliveryNotificationId)
-      throw new Error('Missing customer challenge')
+    if (!challenge?.deliveryNotificationId) throw new Error('Missing customer challenge')
     const message = await createResetDelivery(models, options, clock).message({
       id: challenge.deliveryNotificationId,
       userId: customer._id,
@@ -509,10 +452,7 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
       recipient: customer.emailNormalized,
     })
     const token = message.text.match(/#token=([A-Za-z0-9_-]{43})/)?.[1]
-    await models.users.updateOne(
-      { _id: customer._id },
-      { $set: { role: 'admin' } },
-    )
+    await models.users.updateOne({ _id: customer._id }, { $set: { role: 'admin' } })
     expect(
       (
         await post('password-resets/confirm', {
@@ -529,9 +469,7 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
         recipient: customer.emailNormalized,
       }),
     ).rejects.toThrow()
-    expect(
-      (await models.challenges.findById(challenge._id))?.consumedAt,
-    ).toBeUndefined()
+    expect((await models.challenges.findById(challenge._id))?.consumedAt).toBeUndefined()
   })
   it('rejects admin proofs at customer confirmation, expired proofs and concurrent replay', async () => {
     const admin = await user(),
@@ -570,18 +508,12 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
     const admin = await user(),
       first = await issue(admin)
     await post('password-resets', { email: admin.emailNormalized })
-    expect(await models.challenges.countDocuments({ userId: admin._id })).toBe(
-      1,
-    )
+    expect(await models.challenges.countDocuments({ userId: admin._id })).toBe(1)
     time += 61000
     const contexts = [await bootstrap(), await bootstrap()]
     const results = await Promise.all(
       contexts.map((ctx) =>
-        post(
-          'password-resets',
-          { email: admin.emailNormalized },
-          Promise.resolve(ctx),
-        ),
+        post('password-resets', { email: admin.emailNormalized }, Promise.resolve(ctx)),
       ),
     )
     expect(results.map((r) => r.status)).toEqual([200, 200])
@@ -592,11 +524,8 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
       }),
     ).toBe(1)
     expect(
-      (
-        await models.challenges
-          .findById(first.challenge._id)
-          .select('+deliveryEnvelope')
-      )?.deliveryEnvelope,
+      (await models.challenges.findById(first.challenge._id).select('+deliveryEnvelope'))
+        ?.deliveryEnvelope,
     ).toBeUndefined()
     expect(
       (
@@ -624,16 +553,11 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
       'admin',
     )
     await expect(
-      broken.login(
-        { email: admin.emailNormalized, password },
-        ctx.token,
-        ctx.csrfToken,
-        old.token,
-      ),
+      broken.login({ email: admin.emailNormalized, password }, ctx.token, ctx.csrfToken, old.token),
     ).rejects.toThrow('Synthetic issuance failure')
-    expect(
-      (await sessions.authenticate('admin', old.token)).userId.toHexString(),
-    ).toBe(admin._id.toHexString())
+    expect((await sessions.authenticate('admin', old.token)).userId.toHexString()).toBe(
+      admin._id.toHexString(),
+    )
     const result = await credentials.login(
       { email: admin.emailNormalized, password },
       ctx.token,
@@ -648,11 +572,7 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
       login = await security.issueContext('admin'),
       reset = await security.issueContext('admin')
     const results = await Promise.allSettled([
-      credentials.login(
-        { email: admin.emailNormalized, password },
-        login.token,
-        login.csrfToken,
-      ),
+      credentials.login({ email: admin.emailNormalized, password }, login.token, login.csrfToken),
       recovery.confirm(
         { token: first.token, newPassword: replacement },
         reset.token,
@@ -666,10 +586,7 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
         sessions.authenticate('admin', attempt.value.issued.token),
       ).rejects.toMatchObject({ code: 'AUTH_REQUIRED' })
     const next = await issue(await user())
-    await models.users.updateOne(
-      { _id: next.challenge.userId },
-      { $set: { status: 'suspended' } },
-    )
+    await models.users.updateOne({ _id: next.challenge.userId }, { $set: { status: 'suspended' } })
     expect(
       (
         await post('password-resets/confirm', {
@@ -683,11 +600,9 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
     const admin = await user(),
       old = await sessions.issue('admin', admin._id),
       first = await issue(admin)
-    const failure = vi
-      .spyOn(models.sessions, 'updateMany')
-      .mockImplementationOnce(() => {
-        throw new Error('Synthetic revocation failure')
-      })
+    const failure = vi.spyOn(models.sessions, 'updateMany').mockImplementationOnce(() => {
+      throw new Error('Synthetic revocation failure')
+    })
     try {
       expect(
         (
@@ -700,20 +615,16 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
     } finally {
       failure.mockRestore()
     }
+    expect((await models.users.findById(admin._id).select('+passwordHash'))?.passwordHash).toBe(
+      encoded,
+    )
     expect(
-      (await models.users.findById(admin._id).select('+passwordHash'))
-        ?.passwordHash,
-    ).toBe(encoded)
-    expect(
-      (
-        await models.challenges
-          .findById(first.challenge._id)
-          .select('+deliveryEnvelope')
-      )?.deliveryEnvelope,
+      (await models.challenges.findById(first.challenge._id).select('+deliveryEnvelope'))
+        ?.deliveryEnvelope,
     ).toBeDefined()
-    expect(
-      (await sessions.authenticate('admin', old.token)).userId.toHexString(),
-    ).toBe(admin._id.toHexString())
+    expect((await sessions.authenticate('admin', old.token)).userId.toHexString()).toBe(
+      admin._id.toHexString(),
+    )
   })
   it('delivers only the admin template/origin and retries a stable reference-only intent', async () => {
     const admin = await user(),
@@ -785,15 +696,9 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
     expect(sends).toBe(1)
   })
   it('enforces Origin/CSRF, strict input/query and bounded admin abuse controls', async () => {
-    expect(
-      (await request(app).post('/api/v1/admin/auth/login').send({})).status,
-    ).toBe(403)
-    expect(
-      (await post('login', { email: email(), password, role: 'admin' })).status,
-    ).toBe(400)
-    expect((await post('password-resets?x=1', { email: email() })).status).toBe(
-      400,
-    )
+    expect((await request(app).post('/api/v1/admin/auth/login').send({})).status).toBe(403)
+    expect((await post('login', { email: email(), password, role: 'admin' })).status).toBe(400)
+    expect((await post('password-resets?x=1', { email: email() })).status).toBe(400)
     const statuses = []
     for (let i = 0; i < 11; i++)
       statuses.push((await post('password-resets', { email: email() })).status)
@@ -818,21 +723,12 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
       }),
     }
     app = createApp({
-      apiRouter: await composeCustomerRoutes(
-        fixture.connection,
-        loadEnvironment(base),
-      ),
+      apiRouter: await composeIdentityRoutes(fixture.connection, loadEnvironment(base)),
     })
     const admin = await user()
-    expect(
-      (await post('login', { email: admin.emailNormalized, password })).status,
-    ).toBe(200)
-    expect(
-      (await request(app).post('/api/v1/auth/register').send({})).status,
-    ).toBe(404)
-    expect((await post('register', { email: email(), password })).status).toBe(
-      404,
-    )
+    expect((await post('login', { email: admin.emailNormalized, password })).status).toBe(200)
+    expect((await request(app).post('/api/v1/auth/register').send({})).status).toBe(404)
+    expect((await post('register', { email: email(), password })).status).toBe(404)
   })
   it('migrates exact prior email-change validator and preserves existing records', async () => {
     const customer = await user('customer')

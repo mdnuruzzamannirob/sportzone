@@ -9,24 +9,24 @@ import { request as upstreamRequest } from 'node:http'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { MongoMemoryReplSet } from 'mongodb-memory-server-core'
 import { Types } from 'mongoose'
-import { openDatabase } from '../../backend/dist/db/connection.js'
-import { loadEnvironment } from '../../backend/dist/config/environment.js'
+import { openDatabase } from '../../backend/dist/config/database.js'
+import { loadEnvironment } from '../../backend/dist/config/env.js'
 import {
   loadRecoveryOptions,
   loadAdminRecoveryOptions,
   loadEmailChangeOptions,
-} from '../../backend/dist/config/recovery.js'
+} from '../../backend/dist/config/security.js'
 import { createIdentityModels } from '../../backend/dist/modules/auth/auth.model.js'
 import { initializeIdentityPersistence } from '../../backend/dist/modules/auth/identity.persistence.js'
 import { createRegistrationNotifications } from '../../backend/dist/modules/notifications/notification.service.js'
-import { composeCustomerRoutes } from '../../backend/dist/modules/auth/auth.composition.js'
-import { provisionInitialAdmin } from '../../backend/dist/modules/auth/admin-provision.service.js'
-import { hashPassword } from '../../backend/dist/modules/auth/password.service.js'
+import { composeIdentityRoutes } from '../../backend/dist/setup.js'
+import { provisionInitialAdmin } from '../../backend/dist/modules/auth/credentials/admin-provision.service.js'
+import { hashPassword } from '../../backend/dist/modules/auth/credentials/password.service.js'
 import {
   createResetDelivery,
   createAdminResetDelivery,
   createEmailChangeDelivery,
-} from '../../backend/dist/modules/auth/proof-delivery.service.js'
+} from '../../backend/dist/modules/auth/verification/proof-delivery.service.js'
 import { createApp } from '../../backend/dist/app.js'
 
 let replica, connection, directory, models, environment
@@ -134,7 +134,7 @@ try {
       amountPoisha: 100,
       ruleVersion: 1,
     })
-  const app = createApp({ apiRouter: await composeCustomerRoutes(connection, config) })
+  const app = createApp({ apiRouter: await composeIdentityRoutes(connection, config) })
   async function listen(server, port) {
     servers.push(server)
     await new Promise((resolve, reject) => {

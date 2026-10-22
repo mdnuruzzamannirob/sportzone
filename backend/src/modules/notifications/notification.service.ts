@@ -1,12 +1,7 @@
-import {
-  Schema,
-  type ClientSession,
-  type Connection,
-  type Types,
-} from 'mongoose'
+import { Schema, type ClientSession, type Connection, type Types } from 'mongoose'
 import { randomUUID } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
-import { mutableSchemaOptions } from '../../db/schema.js'
+import { mutableSchemaOptions } from '../../shared/database/schema.js'
 import type { DeliveryOutcome } from './notification.types.js'
 
 const recipient = new Schema(
@@ -25,22 +20,12 @@ const schema = new Schema(
     },
     templateVersion: { type: String, required: true },
     payload: {
-      type: new Schema(
-        { challengeId: Schema.Types.ObjectId },
-        { _id: false, strict: 'throw' },
-      ),
+      type: new Schema({ challengeId: Schema.Types.ObjectId }, { _id: false, strict: 'throw' }),
       required: true,
     },
     status: {
       type: String,
-      enum: [
-        'queued',
-        'sending',
-        'delivery_uncertain',
-        'sent',
-        'retry_wait',
-        'failed',
-      ],
+      enum: ['queued', 'sending', 'delivery_uncertain', 'sent', 'retry_wait', 'failed'],
       required: true,
     },
     attemptCount: {
@@ -59,27 +44,14 @@ const schema = new Schema(
   },
   { ...mutableSchemaOptions, minimize: false },
 )
-schema.index(
-  { eventKey: 1 },
-  { name: 'notifications_event_key_unique', unique: true },
-)
-schema.index(
-  { status: 1, nextAttemptAt: 1 },
-  { name: 'notifications_retry_queue' },
-)
-schema.index(
-  { status: 1, claimExpiresAt: 1 },
-  { name: 'notifications_claim_expiry' },
-)
+schema.index({ eventKey: 1 }, { name: 'notifications_event_key_unique', unique: true })
+schema.index({ status: 1, nextAttemptAt: 1 }, { name: 'notifications_retry_queue' })
+schema.index({ status: 1, claimExpiresAt: 1 }, { name: 'notifications_claim_expiry' })
 export function createRegistrationNotifications(
   connection: Connection,
   clock: () => Date = () => new Date(),
 ) {
-  const model = connection.model(
-    'RegistrationNotification',
-    schema,
-    'notifications',
-  )
+  const model = connection.model('RegistrationNotification', schema, 'notifications')
   return {
     // Explicit additive bootstrap, never automatic HTTP startup or deletion.
     async initialize() {
@@ -89,10 +61,7 @@ export function createRegistrationNotifications(
         .next()
       if (
         existing &&
-        (!isDeepStrictEqual(
-          existing.options?.validator,
-          registrationNotificationValidator,
-        ) ||
+        (!isDeepStrictEqual(existing.options?.validator, registrationNotificationValidator) ||
           existing.options?.validationLevel !== 'strict' ||
           existing.options?.validationAction !== 'error')
       )
@@ -149,8 +118,7 @@ export function createRegistrationNotifications(
         userId: input.userId,
         recipient: { emailNormalized: input.email },
         eventType: 'password_reset',
-        templateVersion:
-          kind === 'admin' ? 'admin-password-reset-v1' : 'password-reset-v1',
+        templateVersion: kind === 'admin' ? 'admin-password-reset-v1' : 'password-reset-v1',
         payload: { challengeId: input.challengeId },
         status: 'queued',
         attemptCount: 0,
@@ -195,33 +163,17 @@ export function createRegistrationNotifications(
         existing.options?.validationAction !== 'error'
       )
         throw new Error('Notification collection requires reviewed migration.')
-      if (
-        !isDeepStrictEqual(
-          existing.options?.validator,
-          registrationNotificationValidator,
-        )
-      ) {
+      if (!isDeepStrictEqual(existing.options?.validator, registrationNotificationValidator)) {
         if (
           !isDeepStrictEqual(
             existing.options?.validator,
             legacyRegistrationNotificationValidator,
           ) &&
-          !isDeepStrictEqual(
-            existing.options?.validator,
-            foundationNotificationValidator,
-          ) &&
-          !isDeepStrictEqual(
-            existing.options?.validator,
-            passwordResetNotificationValidator,
-          ) &&
-          !isDeepStrictEqual(
-            existing.options?.validator,
-            emailChangeNotificationValidator,
-          )
+          !isDeepStrictEqual(existing.options?.validator, foundationNotificationValidator) &&
+          !isDeepStrictEqual(existing.options?.validator, passwordResetNotificationValidator) &&
+          !isDeepStrictEqual(existing.options?.validator, emailChangeNotificationValidator)
         )
-          throw new Error(
-            'Notification collection requires reviewed migration.',
-          )
+          throw new Error('Notification collection requires reviewed migration.')
         await connection.db.command({
           collMod: 'notifications',
           validator: registrationNotificationValidator,
@@ -356,15 +308,9 @@ export function createRegistrationNotifications(
         { _id: id, claimId, status: 'sending' },
         {
           $set: {
-            status: uncertain
-              ? 'delivery_uncertain'
-              : retry
-                ? 'retry_wait'
-                : 'failed',
+            status: uncertain ? 'delivery_uncertain' : retry ? 'retry_wait' : 'failed',
             lastErrorCode: expired ? 'CLAIM_EXPIRED' : outcome.code,
-            ...(retry
-              ? { nextAttemptAt: new Date(now.getTime() + delayMs) }
-              : {}),
+            ...(retry ? { nextAttemptAt: new Date(now.getTime() + delayMs) } : {}),
           },
           $unset: {
             claimExpiresAt: 1,
@@ -378,10 +324,7 @@ export function createRegistrationNotifications(
       const stale = await model
         .find({
           status: 'sending',
-          $or: [
-            { claimExpiresAt: { $lte: now } },
-            { claimExpiresAt: { $exists: false } },
-          ],
+          $or: [{ claimExpiresAt: { $lte: now } }, { claimExpiresAt: { $exists: false } }],
         })
         .sort({ _id: 1 })
         .limit(limit)
@@ -390,10 +333,7 @@ export function createRegistrationNotifications(
           {
             _id: row._id,
             status: 'sending',
-            $or: [
-              { claimExpiresAt: { $lte: now } },
-              { claimExpiresAt: { $exists: false } },
-            ],
+            $or: [{ claimExpiresAt: { $lte: now } }, { claimExpiresAt: { $exists: false } }],
           },
           {
             $set: {
@@ -436,9 +376,7 @@ export function createRegistrationNotifications(
             attemptCount: row.attemptCount,
             ...(row.lastErrorCode ? { lastErrorCode: row.lastErrorCode } : {}),
             ...(row.sentAt ? { sentAt: row.sentAt } : {}),
-            ...(row.providerMessageId
-              ? { providerMessageId: row.providerMessageId }
-              : {}),
+            ...(row.providerMessageId ? { providerMessageId: row.providerMessageId } : {}),
           }
         : null
     },
@@ -449,23 +387,17 @@ export function createRegistrationNotifications(
         .next()
       if (
         !existing ||
-        !isDeepStrictEqual(
-          existing.options?.validator,
-          registrationNotificationValidator,
-        ) ||
+        !isDeepStrictEqual(existing.options?.validator, registrationNotificationValidator) ||
         existing.options?.validationLevel !== 'strict' ||
         existing.options?.validationAction !== 'error'
       )
         throw new Error('Notification validator unavailable.')
       const diff = await model.diffIndexes()
-      if (diff.toCreate.length)
-        throw new Error('Notification indexes unavailable.')
+      if (diff.toCreate.length) throw new Error('Notification indexes unavailable.')
     },
   }
 }
-export type RegistrationNotifications = ReturnType<
-  typeof createRegistrationNotifications
->
+export type RegistrationNotifications = ReturnType<typeof createRegistrationNotifications>
 
 export const legacyRegistrationNotificationValidator = {
   $jsonSchema: {
@@ -501,14 +433,7 @@ export const legacyRegistrationNotificationValidator = {
       templateVersion: { enum: ['registration-v1'] },
       payload: { bsonType: 'object', additionalProperties: false },
       status: {
-        enum: [
-          'queued',
-          'sending',
-          'delivery_uncertain',
-          'sent',
-          'retry_wait',
-          'failed',
-        ],
+        enum: ['queued', 'sending', 'delivery_uncertain', 'sent', 'retry_wait', 'failed'],
       },
       attemptCount: {
         bsonType: ['int', 'long', 'double'],

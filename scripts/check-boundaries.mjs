@@ -15,25 +15,40 @@ function sourceFiles(dir) {
 }
 function imports(source) {
   const results = []
+  const add = (node, typeOnly = false) => {
+    if (node && ts.isStringLiteralLike(node)) results.push({ specifier: node.text, typeOnly })
+  }
   const visit = (node) => {
-    if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier)
-      results.push(node.moduleSpecifier)
-    if (
-      ts.isImportEqualsDeclaration(node) &&
-      ts.isExternalModuleReference(node.moduleReference) &&
-      node.moduleReference.expression
-    )
-      results.push(node.moduleReference.expression)
+    if (ts.isImportDeclaration(node)) {
+      const clause = node.importClause
+      const bindings = clause?.namedBindings
+      const namedTypes =
+        bindings &&
+        ts.isNamedImports(bindings) &&
+        bindings.elements.length > 0 &&
+        bindings.elements.every((item) => item.isTypeOnly)
+      add(node.moduleSpecifier, Boolean(clause?.isTypeOnly || (!clause?.name && namedTypes)))
+    }
+    if (ts.isExportDeclaration(node)) {
+      const namedTypes =
+        node.exportClause &&
+        ts.isNamedExports(node.exportClause) &&
+        node.exportClause.elements.length > 0 &&
+        node.exportClause.elements.every((item) => item.isTypeOnly)
+      add(node.moduleSpecifier, Boolean(node.isTypeOnly || namedTypes))
+    }
+    if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference))
+      add(node.moduleReference.expression, node.isTypeOnly)
     if (
       ts.isCallExpression(node) &&
       (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
         node.expression.getText(source) === 'require')
     )
-      results.push(node.arguments[0])
+      add(node.arguments[0])
     ts.forEachChild(node, visit)
   }
   visit(source)
-  return results.filter((node) => node && ts.isStringLiteralLike(node)).map((node) => node.text)
+  return results
 }
 export function checkBoundaries(root = process.cwd()) {
   root = resolve(root)
@@ -50,6 +65,13 @@ export function checkBoundaries(root = process.cwd()) {
   )
   const edges = new Map()
   const isWithin = (path, dir) => path === dir || path.startsWith(`${dir}/`)
+  const backendSource = join(root, 'backend/src')
+  const moduleRoot = join(backendSource, 'modules')
+  const isPrivatePersistence = (path) =>
+    /\.(?:model|persistence)(?:\.[cm]?[jt]s)?$/.test(path) ||
+    /\/(?:models|persistence)(?:\/|\.)/.test(path)
+  const moduleOwner = (path) =>
+    isWithin(path, moduleRoot) ? relative(moduleRoot, path).split('/')[0] : undefined
   for (const [file, source] of sources) {
     const owner = workspaces.find((name) => isWithin(file, join(root, name)))
     const manifest = JSON.parse(readFileSync(join(root, owner ?? '', 'package.json'), 'utf8'))
@@ -60,7 +82,7 @@ export function checkBoundaries(root = process.cwd()) {
       ...manifest.optionalDependencies,
     }
     const targets = []
-    for (const specifier of imports(source)) {
+    for (const { specifier, typeOnly } of imports(source)) {
       const label = relative(root, file)
       if (!specifier.startsWith('.') && !specifier.startsWith('@/')) {
         const packageName = specifier.startsWith('@')
@@ -81,7 +103,7 @@ export function checkBoundaries(root = process.cwd()) {
           (packageName === 'mongoose' || workspaces.includes(packageName))
         )
           errors.push(`${label}: frontend cannot import another application or persistence`)
-        targets.push({ specifier, builtin })
+        targets.push({ specifier, builtin, typeOnly })
         continue
       }
       const path = specifier.startsWith('@/')
@@ -102,14 +124,94 @@ export function checkBoundaries(root = process.cwd()) {
         owner === 'backend' &&
         sourceModule !== targetModule &&
         isWithin(path, join(root, 'backend/src/modules')) &&
-        /(?:\.(?:model|persistence)|\/models|\/persistence)(?:\.[cm]?[jt]s)?$/.test(path)
+        isPrivatePersistence(path)
       )
         errors.push(`${label}: use the owning module's service instead of its private persistence`)
       if (extname(path).match(/^\.[cm]?[jt]sx?$/) && !target)
         errors.push(`${label}: unresolved source import ${specifier}`)
-      targets.push({ specifier, target })
+      targets.push({ specifier, target, typeOnly })
     }
     edges.set(file, targets)
+  }
+  // Check transitive imports too: a barrel/helper must not bypass a boundary.
+  const walk = (start, examine, stop = () => false) => {
+    const seen = new Set()
+    const visit = (file) => {
+      if (seen.has(file)) return
+      seen.add(file)
+      for (const edge of edges.get(file) ?? []) {
+        if (!edge.target) continue
+        examine(edge.target, edge)
+        if (!stop(edge.target, edge)) visit(edge.target)
+      }
+    }
+    visit(start)
+  }
+  for (const file of files.filter((path) => isWithin(path, backendSource))) {
+    const label = relative(root, file)
+    if (isWithin(file, join(backendSource, 'shared'))) {
+      walk(file, (target) => {
+        if (isWithin(target, backendSource) && !isWithin(target, join(backendSource, 'shared')))
+          errors.push(
+            `${label}: shared technical code cannot depend on backend business/configuration`,
+          )
+      })
+    }
+    if (isWithin(file, join(backendSource, 'providers'))) {
+      walk(
+        file,
+        (target, edge) => {
+          if (
+            !edge.typeOnly &&
+            (moduleOwner(target) ||
+              isWithin(target, join(backendSource, 'jobs')) ||
+              /\/(?:setup|routes|app|server)\.ts$/.test(target))
+          )
+            errors.push(`${label}: provider transport cannot execute domain or application code`)
+        },
+        (_target, edge) => edge.typeOnly,
+      )
+    }
+    if (moduleOwner(file)) {
+      walk(
+        file,
+        (target, edge) => {
+          if (
+            !edge.typeOnly &&
+            isWithin(target, join(backendSource, 'providers')) &&
+            target.endsWith('.client.ts')
+          )
+            errors.push(`${label}: domain services must receive provider capabilities from setup`)
+        },
+        (_target, edge) => edge.typeOnly,
+      )
+    }
+    if (/\.(?:controller|routes)\.ts$/.test(file)) {
+      walk(
+        file,
+        (target) => {
+          if (isPrivatePersistence(target))
+            errors.push(`${label}: controllers/routes must delegate persistence to services`)
+        },
+        (target) => /\.service\.ts$/.test(target),
+      )
+    }
+    if (moduleOwner(file)) {
+      walk(
+        file,
+        (target) => {
+          if (
+            moduleOwner(target) &&
+            moduleOwner(target) !== moduleOwner(file) &&
+            isPrivatePersistence(target)
+          )
+            errors.push(
+              `${label}: use the owning module's service instead of its private persistence`,
+            )
+        },
+        (target) => moduleOwner(target) !== moduleOwner(file) && /\.service\.ts$/.test(target),
+      )
+    }
   }
   const browserRoots = files.filter(
     (file) =>
@@ -129,6 +231,7 @@ export function checkBoundaries(root = process.cwd()) {
     if (visited.has(file)) return
     visited.add(file)
     for (const edge of edges.get(file) ?? []) {
+      if (edge.typeOnly) continue
       if (
         edge.builtin ||
         edge.specifier === 'server-only' ||

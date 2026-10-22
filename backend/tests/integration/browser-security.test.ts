@@ -5,18 +5,18 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createApp } from '../../src/app.js'
 import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
 import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
-import { createSessionService } from '../../src/modules/auth/session.service.js'
+import { createSessionService } from '../../src/modules/auth/sessions/session.service.js'
 import {
   createBrowserSecurity,
   readContextCookie,
   type BrowserAudience,
-} from '../../src/modules/auth/browser-security.service.js'
+} from '../../src/modules/auth/sessions/browser-security.service.js'
 import {
   browserSecurityRoutes,
   requireGuestCsrf,
-} from '../../src/modules/auth/browser-security.routes.js'
-import { respond } from '../../src/common/responses.js'
-import { isolatedDatabase } from '../support/database.js'
+} from '../../src/modules/auth/sessions/browser-security.routes.js'
+import { respond } from '../../src/shared/responses.js'
+import { isolatedDatabase } from '../helpers/database.js'
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
 let models: ReturnType<typeof createIdentityModels>
 let sessions: ReturnType<typeof createSessionService>
@@ -37,11 +37,7 @@ const syntheticGuest = {
   verify: async (cookie: string | undefined, csrf: string | undefined) =>
     cookie === 'g'.repeat(43) && csrf === 'g'.repeat(43),
 }
-async function bootstrap(
-  audience: BrowserAudience = 'storefront',
-  cookie?: string,
-  query = '',
-) {
+async function bootstrap(audience: BrowserAudience = 'storefront', cookie?: string, query = '') {
   let req = request(app)
     .get(`/api/v1/${audience === 'admin' ? 'admin/' : ''}auth/csrf${query}`)
     .set('Origin', origins[audience])
@@ -49,17 +45,13 @@ async function bootstrap(
   const response = await req.expect(200)
   return {
     response,
-    cookie: response.headers['set-cookie']?.[0]?.split(';')[0] as
-      | string
-      | undefined,
+    cookie: response.headers['set-cookie']?.[0]?.split(';')[0] as string | undefined,
     csrf: response.body.data.csrfToken as string,
   }
 }
 beforeAll(async () => {
   fixture = await isolatedDatabase()
-  await fixture.connection.db
-    ?.admin()
-    .command({ setParameter: 1, ttlMonitorEnabled: false })
+  await fixture.connection.db?.admin().command({ setParameter: 1, ttlMonitorEnabled: false })
   models = createIdentityModels(fixture.connection)
   await initializeIdentityPersistence(fixture.connection, models)
   sessions = createSessionService(
@@ -101,14 +93,10 @@ beforeAll(async () => {
       },
     )
   }
-  router.post(
-    '/customer/mutation',
-    security.require('storefront', 'customer'),
-    (_req, res) => {
-      mutations++
-      respond(res, { ok: true })
-    },
-  )
+  router.post('/customer/mutation', security.require('storefront', 'customer'), (_req, res) => {
+    mutations++
+    respond(res, { ok: true })
+  })
   router.post(
     '/checkout/fixture',
     security.require('storefront', 'customer-or-context'),
@@ -117,26 +105,16 @@ beforeAll(async () => {
       respond(res, { ok: true })
     },
   )
-  router.post(
-    '/guest/fixture',
-    requireGuestCsrf(security, syntheticGuest),
-    (_req, res) => {
-      mutations++
-      respond(res, { ok: true })
-    },
-  )
-  router.all(
-    '/method/fixture',
-    security.require('storefront', 'context'),
-    (_req, res) => {
-      mutations++
-      respond(res, { ok: true })
-    },
-  )
+  router.post('/guest/fixture', requireGuestCsrf(security, syntheticGuest), (_req, res) => {
+    mutations++
+    respond(res, { ok: true })
+  })
+  router.all('/method/fixture', security.require('storefront', 'context'), (_req, res) => {
+    mutations++
+    respond(res, { ok: true })
+  })
   // Explicit provider fixture is outside browser middleware, not a payment verification implementation.
-  router.post('/provider/fixture', (_req, res) =>
-    respond(res, { browserContextIssued: false }),
-  )
+  router.post('/provider/fixture', (_req, res) => respond(res, { browserContextIssued: false }))
   app = createApp({ apiRouter: router })
 })
 beforeEach(() => {
@@ -153,13 +131,9 @@ describe('real MongoDB browser security boundary', () => {
     async (audience) => {
       const { response, cookie, csrf } = await bootstrap(audience)
       expect(csrf).toMatch(/^[A-Za-z0-9_-]{43}$/)
-      expect(response.body.data.expiresAt).toBe(
-        new Date(time + 120000).toISOString(),
-      )
+      expect(response.body.data.expiresAt).toBe(new Date(time + 120000).toISOString())
       expect(response.headers['cache-control']).toBe('no-store')
-      expect(response.headers['access-control-allow-origin']).toBe(
-        origins[audience],
-      )
+      expect(response.headers['access-control-allow-origin']).toBe(origins[audience])
       expect(response.headers['access-control-allow-credentials']).toBe('true')
       expect(response.headers['set-cookie']?.[0]).toContain('HttpOnly')
       expect(response.headers['set-cookie']?.[0]).not.toContain('Domain=')
@@ -167,9 +141,7 @@ describe('real MongoDB browser security boundary', () => {
         .findOne({ audience, expiresAt: new Date(time + 120000) })
         .select('+contextTokenHash +csrfSecretHash')
       expect(JSON.stringify(record)).not.toContain(csrf)
-      expect(JSON.stringify(record)).not.toContain(
-        readContextCookie(cookie, audience),
-      )
+      expect(JSON.stringify(record)).not.toContain(readContextCookie(cookie, audience))
       await request(app)
         .post(`/api/v1/${audience}/mutation`)
         .set('Origin', origins[audience])
@@ -186,26 +158,20 @@ describe('real MongoDB browser security boundary', () => {
     'http://localhost:3000.evil.example',
     'http://localhost:3000/',
     origins.admin,
-  ])(
-    'rejects invalid storefront mutation Origin %s without side effects',
-    async (origin) => {
-      const context = await bootstrap()
-      let req = request(app)
-        .post('/api/v1/storefront/mutation')
-        .set('Cookie', context.cookie ?? '')
-        .set('X-CSRF-Token', context.csrf)
-      if (origin) req = req.set('Origin', origin)
-      const response = await req.expect(403)
-      expect(response.body.error.code).toBe('CSRF_INVALID')
-      expect(mutations).toBe(0)
-    },
-  )
+  ])('rejects invalid storefront mutation Origin %s without side effects', async (origin) => {
+    const context = await bootstrap()
+    let req = request(app)
+      .post('/api/v1/storefront/mutation')
+      .set('Cookie', context.cookie ?? '')
+      .set('X-CSRF-Token', context.csrf)
+    if (origin) req = req.set('Origin', origin)
+    const response = await req.expect(403)
+    expect(response.body.error.code).toBe('CSRF_INVALID')
+    expect(mutations).toBe(0)
+  })
   it('rejects missing Origin on bootstrap and opposite-origin admin bootstrap', async () => {
     await request(app).get('/api/v1/auth/csrf').expect(403)
-    await request(app)
-      .get('/api/v1/admin/auth/csrf')
-      .set('Origin', origins.storefront)
-      .expect(403)
+    await request(app).get('/api/v1/admin/auth/csrf').set('Origin', origins.storefront).expect(403)
   })
   it.each(['', 'x', 'x'.repeat(43), 'x'.repeat(129)])(
     'rejects missing/malformed/unbound CSRF %s',
@@ -224,12 +190,7 @@ describe('real MongoDB browser security boundary', () => {
     const a = await bootstrap(),
       b = await bootstrap(),
       admin = await bootstrap('admin')
-    for (const cookie of [
-      '',
-      `${a.cookie}; ${a.cookie}`,
-      b.cookie ?? '',
-      admin.cookie ?? '',
-    ])
+    for (const cookie of ['', `${a.cookie}; ${a.cookie}`, b.cookie ?? '', admin.cookie ?? ''])
       await request(app)
         .post('/api/v1/storefront/mutation')
         .set('Origin', origins.storefront)
@@ -242,26 +203,14 @@ describe('real MongoDB browser security boundary', () => {
     const a = await bootstrap(),
       b = await bootstrap('storefront', a.cookie)
     expect(
-      await security.verifyContext(
-        'storefront',
-        readContextCookie(a.cookie, 'storefront'),
-        a.csrf,
-      ),
+      await security.verifyContext('storefront', readContextCookie(a.cookie, 'storefront'), a.csrf),
     ).toBe(false)
     expect(
-      await security.verifyContext(
-        'storefront',
-        readContextCookie(b.cookie, 'storefront'),
-        b.csrf,
-      ),
+      await security.verifyContext('storefront', readContextCookie(b.cookie, 'storefront'), b.csrf),
     ).toBe(true)
     time += 120000
     expect(
-      await security.verifyContext(
-        'storefront',
-        readContextCookie(b.cookie, 'storefront'),
-        b.csrf,
-      ),
+      await security.verifyContext('storefront', readContextCookie(b.cookie, 'storefront'), b.csrf),
     ).toBe(false)
     expect(await models.contexts.countDocuments()).toBeGreaterThan(0)
   })
@@ -270,31 +219,24 @@ describe('real MongoDB browser security boundary', () => {
       token = readContextCookie(a.cookie, 'storefront') ?? ''
     const results = await Promise.allSettled(
       [1, 2].map(() =>
-        security.consumeContext(
-          'storefront',
-          token,
-          a.csrf,
-          async (session) => {
-            await models.users.create(
-              [
-                {
-                  emailNormalized: `fixture_${randomUUID()}@example.test`,
-                  name: 'Synthetic',
-                  passwordHash: 'synthetic_hash',
-                  role: 'customer',
-                },
-              ],
-              { session },
-            )
-            return true
-          },
-        ),
+        security.consumeContext('storefront', token, a.csrf, async (session) => {
+          await models.users.create(
+            [
+              {
+                emailNormalized: `fixture_${randomUUID()}@example.test`,
+                name: 'Synthetic',
+                passwordHash: 'synthetic_hash',
+                role: 'customer',
+              },
+            ],
+            { session },
+          )
+          return true
+        }),
       ),
     )
     expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
-    expect(await security.verifyContext('storefront', token, a.csrf)).toBe(
-      false,
-    )
+    expect(await security.verifyContext('storefront', token, a.csrf)).toBe(false)
   })
   it('rolls back consumption when its durable effect fails', async () => {
     const a = await bootstrap(),
@@ -329,9 +271,9 @@ describe('real MongoDB browser security boundary', () => {
     const effect = async () => {
       executed = true
     }
-    await expect(
-      security.consumeContext('admin', token, a.csrf, effect),
-    ).rejects.toMatchObject({ code: 'CSRF_INVALID' })
+    await expect(security.consumeContext('admin', token, a.csrf, effect)).rejects.toMatchObject({
+      code: 'CSRF_INVALID',
+    })
     time += 120000
     await expect(
       security.consumeContext('storefront', token, a.csrf, effect),
@@ -390,14 +332,9 @@ describe('real MongoDB browser security boundary', () => {
       .options('/api/v1/storefront/mutation')
       .set('Origin', origins.storefront)
       .set('Access-Control-Request-Method', 'POST')
-      .set(
-        'Access-Control-Request-Headers',
-        'Content-Type,X-CSRF-Token,If-Match,Idempotency-Key',
-      )
+      .set('Access-Control-Request-Headers', 'Content-Type,X-CSRF-Token,If-Match,Idempotency-Key')
       .expect(204)
-    expect(response.headers['access-control-allow-origin']).toBe(
-      origins.storefront,
-    )
+    expect(response.headers['access-control-allow-origin']).toBe(origins.storefront)
     expect(response.headers.vary).toContain('Origin')
     for (const [method, headers] of [
       ['TRACE', 'x-csrf-token'],
@@ -465,17 +402,9 @@ describe('real MongoDB browser security boundary', () => {
     },
   )
   it('can bootstrap admin recovery context with an expired admin cookie', async () => {
-    const a = await bootstrap(
-      'admin',
-      `sz_admin_sid=${'x'.repeat(43)}`,
-      '?sessionKind=context',
-    )
+    const a = await bootstrap('admin', `sz_admin_sid=${'x'.repeat(43)}`, '?sessionKind=context')
     expect(
-      await security.verifyContext(
-        'admin',
-        readContextCookie(a.cookie, 'admin'),
-        a.csrf,
-      ),
+      await security.verifyContext('admin', readContextCookie(a.cookie, 'admin'), a.csrf),
     ).toBe(true)
   })
   it('validates admin session CSRF and revocation', async () => {
@@ -487,20 +416,10 @@ describe('real MongoDB browser security boundary', () => {
     }).save()
     const issued = await sessions.issue('admin', account._id)
     const refreshed = await bootstrap('admin', `sz_admin_sid=${issued.token}`)
-    expect(
-      await sessions.verifyCsrfMaterial(
-        'admin',
-        issued.token,
-        issued.csrfToken,
-      ),
-    ).toBe(false)
-    expect(
-      await sessions.verifyCsrfMaterial('admin', issued.token, refreshed.csrf),
-    ).toBe(true)
+    expect(await sessions.verifyCsrfMaterial('admin', issued.token, issued.csrfToken)).toBe(false)
+    expect(await sessions.verifyCsrfMaterial('admin', issued.token, refreshed.csrf)).toBe(true)
     await sessions.revokeUser(account._id, 'admin')
-    expect(
-      await sessions.verifyCsrfMaterial('admin', issued.token, refreshed.csrf),
-    ).toBe(false)
+    expect(await sessions.verifyCsrfMaterial('admin', issued.token, refreshed.csrf)).toBe(false)
     await request(app)
       .get('/api/v1/admin/auth/csrf')
       .set('Origin', origins.admin)
@@ -537,10 +456,7 @@ describe('real MongoDB browser security boundary', () => {
     await request(app)
       .post('/api/v1/guest/fixture')
       .set('Origin', origins.storefront)
-      .set(
-        'Cookie',
-        `sz_guest_order_sid=${'g'.repeat(43)}; sz_guest_order_sid=${'g'.repeat(43)}`,
-      )
+      .set('Cookie', `sz_guest_order_sid=${'g'.repeat(43)}; sz_guest_order_sid=${'g'.repeat(43)}`)
       .set('X-CSRF-Token', 'g'.repeat(43))
       .expect(403)
     expect(mutations).toBe(1)
@@ -555,9 +471,7 @@ describe('real MongoDB browser security boundary', () => {
     expect(await models.contexts.countDocuments()).toBe(count)
   })
   it('keeps explicitly segregated provider fixtures outside browser context issuance', async () => {
-    const response = await request(app)
-      .post('/api/v1/provider/fixture')
-      .expect(200)
+    const response = await request(app).post('/api/v1/provider/fixture').expect(200)
     expect(response.headers['set-cookie']).toBeUndefined()
     expect(response.body.data.browserContextIssued).toBe(false)
   })

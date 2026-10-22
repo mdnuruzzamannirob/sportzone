@@ -235,3 +235,85 @@ process.exitCode = await runDev(${JSON.stringify({ cwd: root, build: [process.ex
   assert.equal(await exit, 5)
   assert.ok(pids().every((pid) => !running(pid)))
 })
+
+test('BACKEND-BOUNDARY-01: nested foreign models and persistence barrels cannot bypass ownership', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/modules/catalog/products/product.model.ts', 'export const model = 1')
+  put('backend/src/modules/catalog/products/product.service.ts', 'export const service = 1')
+  put('backend/src/modules/catalog/products/persistence/read.ts', 'export const read = 1')
+  put('backend/src/modules/catalog/products/internal.ts', 'export * from "./product.model.js"')
+  for (const path of ['product.model', 'persistence/read', 'internal']) {
+    put('backend/src/modules/inventory/stock.service.ts', `import "../catalog/products/${path}.js"`)
+    assert.ok(
+      checkBoundaries(root).errors.some((e) => e.includes('private persistence')),
+      path,
+    )
+  }
+  put(
+    'backend/src/modules/inventory/stock.service.ts',
+    'import "../catalog/products/product.service.js"',
+  )
+  assert.deepEqual(checkBoundaries(root).errors, [])
+})
+
+test('BACKEND-BOUNDARY-02: controllers and routes access models only through domain services', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/modules/orders/order.model.ts', 'export const model = 1')
+  put('backend/src/modules/orders/helper.ts', 'export * from "./order.model.js"')
+  for (const suffix of ['controller', 'routes']) {
+    put(`backend/src/modules/orders/order.${suffix}.ts`, 'import "./helper.js"')
+    assert.ok(
+      checkBoundaries(root).errors.some((e) => e.includes('controllers/routes must delegate')),
+    )
+    put(`backend/src/modules/orders/order.${suffix}.ts`, 'import "./order.service.js"')
+  }
+  put('backend/src/modules/orders/order.service.ts', 'import "./order.model.js"')
+  assert.deepEqual(checkBoundaries(root).errors, [])
+})
+
+test('BACKEND-BOUNDARY-03: shared technical helpers cannot import domain/configuration via barrels', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/modules/orders/order.service.ts', 'export const service = 1')
+  put('backend/src/config/env.ts', 'export const env = 1')
+  for (const target of ['../modules/orders/order.service.js', '../config/env.js']) {
+    put('backend/src/shared/helper.ts', `export * from "${target}"`)
+    assert.ok(checkBoundaries(root).errors.some((e) => e.includes('shared technical code')))
+  }
+  put('backend/src/shared/helper.ts', 'export const helper = 1')
+  assert.deepEqual(checkBoundaries(root).errors, [])
+})
+
+test('BACKEND-BOUNDARY-04: provider runtime cannot execute business code but public type-only contracts are allowed', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/modules/media/media.types.ts', 'export interface MediaProvider {}')
+  put('backend/src/modules/media/media.service.ts', 'export const service = 1')
+  put('backend/src/providers/helper.ts', 'export * from "../modules/media/media.service.js"')
+  put('backend/src/providers/cloudinary/cloudinary.client.ts', 'import "../helper.js"')
+  assert.ok(checkBoundaries(root).errors.some((e) => e.includes('provider transport')))
+  put('backend/src/providers/helper.ts', 'export const helper = 1')
+  for (const declaration of [
+    'import type {MediaProvider} from "../../modules/media/media.types.js"',
+    'import {type MediaProvider} from "../../modules/media/media.types.js"',
+    'export type {MediaProvider} from "../../modules/media/media.types.js"',
+    'export {type MediaProvider} from "../../modules/media/media.types.js"',
+  ]) {
+    put('backend/src/providers/cloudinary/cloudinary.client.ts', declaration)
+    assert.deepEqual(checkBoundaries(root).errors, [], declaration)
+  }
+  put(
+    'backend/src/providers/cloudinary/cloudinary.client.ts',
+    'import {type MediaProvider, service} from "../../modules/media/media.service.js"',
+  )
+  assert.ok(checkBoundaries(root).errors.some((e) => e.includes('provider transport')))
+})
+
+test('BACKEND-BOUNDARY-05: domain receives provider capabilities rather than importing transport indirectly', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/providers/cloudinary/cloudinary.client.ts', 'export const client = 1')
+  put('backend/src/providers/cloudinary/cloudinary.schema.ts', 'export const schema = 1')
+  put('backend/src/config/media.ts', 'export * from "../providers/cloudinary/cloudinary.client.js"')
+  put('backend/src/modules/media/media.service.ts', 'import "../../config/media.js"')
+  assert.ok(checkBoundaries(root).errors.some((e) => e.includes('receive provider capabilities')))
+  put('backend/src/config/media.ts', 'export * from "../providers/cloudinary/cloudinary.schema.js"')
+  assert.deepEqual(checkBoundaries(root).errors, [])
+})

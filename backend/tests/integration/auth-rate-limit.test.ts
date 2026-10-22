@@ -1,16 +1,16 @@
 import { randomBytes } from 'node:crypto'
 import request from 'supertest'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { createAuthQuotaStore } from '../../src/modules/auth/auth-throttle.persistence.js'
-import { createAuthThrottle } from '../../src/modules/auth/auth-throttle.service.js'
+import { createAuthQuotaStore } from '../../src/modules/auth/sessions/auth-throttle.persistence.js'
+import { createAuthThrottle } from '../../src/modules/auth/sessions/auth-throttle.service.js'
 import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
 import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
 import { createRegistrationNotifications } from '../../src/modules/notifications/notification.service.js'
-import { composeCustomerRoutes } from '../../src/modules/auth/auth.composition.js'
-import { loadEnvironment } from '../../src/config/environment.js'
+import { composeIdentityRoutes } from '../../src/setup.js'
+import { loadEnvironment } from '../../src/config/env.js'
 import { createApp } from '../../src/app.js'
-import { isolatedDatabase } from '../support/database.js'
-import { testEnvironment } from '../support/environment.js'
+import { isolatedDatabase } from '../helpers/database.js'
+import { testEnvironment } from '../helpers/environment.js'
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
 const secret = randomBytes(32).toString('hex')
 let time = Date.now()
@@ -18,10 +18,7 @@ const clock = () => time
 const store = () => createAuthQuotaStore(fixture.connection)
 beforeAll(async () => {
   fixture = await isolatedDatabase()
-  await initializeIdentityPersistence(
-    fixture.connection,
-    createIdentityModels(fixture.connection),
-  )
+  await initializeIdentityPersistence(fixture.connection, createIdentityModels(fixture.connection))
   await createRegistrationNotifications(fixture.connection).initialize()
 })
 beforeEach(async () => {
@@ -37,11 +34,7 @@ describe('P03-014 real shared auth quota persistence', () => {
     await s.verify()
     await s.increment('a'.repeat(64), new Date(time + 60000), 10)
     await s.initialize()
-    expect(
-      await fixture.connection.db
-        ?.collection('authRateLimits')
-        .countDocuments(),
-    ).toBe(1)
+    expect(await fixture.connection.db?.collection('authRateLimits').countDocuments()).toBe(1)
     await expect(
       fixture.connection.db
         ?.collection<{
@@ -59,9 +52,7 @@ describe('P03-014 real shared auth quota persistence', () => {
     ).rejects.toMatchObject({ code: 121 })
     await expect(
       fixture.connection.db
-        ?.collection<{ _id: string; count: number; expiresAt: Date }>(
-          'authRateLimits',
-        )
+        ?.collection<{ _id: string; count: number; expiresAt: Date }>('authRateLimits')
         .updateOne({ _id: 'a'.repeat(64) }, { $set: { count: 1.5 } }),
     ).rejects.toMatchObject({ code: 121 })
     expect(
@@ -87,10 +78,7 @@ describe('P03-014 real shared auth quota persistence', () => {
         'synthetic-network',
       ),
     ).toBeGreaterThan(0)
-    const rows = await fixture.connection.db
-      ?.collection('authRateLimits')
-      .find({})
-      .toArray()
+    const rows = await fixture.connection.db?.collection('authRateLimits').find({}).toArray()
     expect(
       rows?.every(
         (r) =>
@@ -103,64 +91,29 @@ describe('P03-014 real shared auth quota persistence', () => {
     const guard = createAuthThrottle(store(), secret, clock)
     for (let i = 0; i < 10; i++)
       expect(
-        await guard.consume(
-          'customer',
-          'recovery',
-          `network-${i}`,
-          'target@example.test',
-        ),
+        await guard.consume('customer', 'recovery', `network-${i}`, 'target@example.test'),
       ).toBe(0)
     expect(
-      await guard.consume(
-        'customer',
-        'recovery',
-        'new-network',
-        'target@example.test',
-      ),
+      await guard.consume('customer', 'recovery', 'new-network', 'target@example.test'),
     ).toBeGreaterThan(0)
-    expect(
-      await guard.consume(
-        'customer',
-        'recovery',
-        'new-network',
-        'missing@example.test',
-      ),
-    ).toBe(0)
-    expect(
-      await guard.consume(
-        'admin',
-        'recovery',
-        'new-network',
-        'target@example.test',
-      ),
-    ).toBe(0)
+    expect(await guard.consume('customer', 'recovery', 'new-network', 'missing@example.test')).toBe(
+      0,
+    )
+    expect(await guard.consume('admin', 'recovery', 'new-network', 'target@example.test')).toBe(0)
     const text = JSON.stringify(
-      await fixture.connection.db
-        ?.collection('authRateLimits')
-        .find({})
-        .toArray(),
+      await fixture.connection.db?.collection('authRateLimits').find({}).toArray(),
     )
     expect(text).not.toMatch(/target|missing|network|example|secret/)
   })
   it('resets fixed windows while expired rows remain awaiting TTL and saturates bounded counts', async () => {
     const guard = createAuthThrottle(store(), secret, clock)
-    for (let i = 0; i < 100; i++)
-      await guard.consume('customer', 'credentials', 'network')
-    expect(
-      await guard.consume('customer', 'credentials', 'network'),
-    ).toBeGreaterThan(0)
-    const oldRows = await fixture.connection.db
-      ?.collection('authRateLimits')
-      .find({})
-      .toArray()
+    for (let i = 0; i < 100; i++) await guard.consume('customer', 'credentials', 'network')
+    expect(await guard.consume('customer', 'credentials', 'network')).toBeGreaterThan(0)
+    const oldRows = await fixture.connection.db?.collection('authRateLimits').find({}).toArray()
     expect(oldRows?.every((r) => Number(r.count) <= 61)).toBe(true)
     time = Math.floor(time / 60000) * 60000 + 60000
     expect(await guard.consume('customer', 'credentials', 'network')).toBe(0)
-    expect(
-      await fixture.connection.db
-        ?.collection('authRateLimits')
-        .countDocuments(),
-    ).toBe(4)
+    expect(await fixture.connection.db?.collection('authRateLimits').countDocuments()).toBe(4)
   })
   it('fails readiness on missing/mismatched persistence without recreating it at HTTP startup', async () => {
     const db = fixture.connection.db
@@ -178,14 +131,12 @@ describe('P03-014 real shared auth quota persistence', () => {
     const guard = createAuthThrottle(store(), secret, clock)
     expect(await guard.consume('customer', 'credentials', 'network')).toBe(0)
     await fixture.connection.db?.collection('authRateLimits').drop()
-    await expect(
-      guard.consume('customer', 'credentials', 'network'),
-    ).rejects.toThrow('reviewed bootstrap')
-    expect(
-      await fixture.connection.db
-        ?.listCollections({ name: 'authRateLimits' })
-        .hasNext(),
-    ).toBe(false)
+    await expect(guard.consume('customer', 'credentials', 'network')).rejects.toThrow(
+      'reviewed bootstrap',
+    )
+    expect(await fixture.connection.db?.listCollections({ name: 'authRateLimits' }).hasNext()).toBe(
+      false,
+    )
     await store().initialize()
   })
   it('actual runtime shares counters across compositions and does not bypass CSRF or mutate an account', async () => {
@@ -201,10 +152,10 @@ describe('P03-014 real shared auth quota persistence', () => {
     }
     const config = loadEnvironment(env)
     const a = createApp({
-      apiRouter: await composeCustomerRoutes(fixture.connection, config),
+      apiRouter: await composeIdentityRoutes(fixture.connection, config),
     })
     const b = createApp({
-      apiRouter: await composeCustomerRoutes(fixture.connection, config),
+      apiRouter: await composeIdentityRoutes(fixture.connection, config),
     })
     for (let i = 0; i < 10; i++)
       await request(i % 2 ? a : b)
@@ -219,20 +170,13 @@ describe('P03-014 real shared auth quota persistence', () => {
       .send({ email: 'synthetic@example.test', password: 'invalid' })
       .expect(429)
     expect(Number(res.headers['retry-after'])).toBeGreaterThan(0)
-    expect(
-      await createIdentityModels(fixture.connection).users.countDocuments(),
-    ).toBe(0)
+    expect(await createIdentityModels(fixture.connection).users.countDocuments()).toBe(0)
     // Startup verifies only: a missing index stays missing and activation fails.
-    await fixture.connection.db
-      ?.collection('authRateLimits')
-      .dropIndex('auth_rate_limits_expiry')
-    await expect(
-      composeCustomerRoutes(fixture.connection, config),
-    ).rejects.toThrow('indexes require review')
-    expect(
-      (await fixture.connection.db?.collection('authRateLimits').indexes())
-        ?.length,
-    ).toBe(1)
+    await fixture.connection.db?.collection('authRateLimits').dropIndex('auth_rate_limits_expiry')
+    await expect(composeIdentityRoutes(fixture.connection, config)).rejects.toThrow(
+      'indexes require review',
+    )
+    expect((await fixture.connection.db?.collection('authRateLimits').indexes())?.length).toBe(1)
     await store().initialize()
   })
 })

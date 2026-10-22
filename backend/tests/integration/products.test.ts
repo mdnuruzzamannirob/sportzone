@@ -1,12 +1,12 @@
 import { Types } from 'mongoose'
 import { afterAll, beforeAll, beforeEach, expect, it } from 'vitest'
-import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../src/db/indexes.js'
-import { categoryModel } from '../../src/modules/categories/category.model.js'
-import { categoryService } from '../../src/modules/categories/category.service.js'
-import { productModels } from '../../src/modules/products/product.model.js'
-import { initializeProductPersistence } from '../../src/modules/products/product.persistence.js'
-import { productService } from '../../src/modules/products/product.service.js'
-import { isolatedDatabase } from '../support/database.js'
+import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../src/shared/database/indexes.js'
+import { categoryModel } from '../../src/modules/catalog/categories/category.model.js'
+import { categoryService } from '../../src/modules/catalog/categories/category.service.js'
+import { productModels } from '../../src/modules/catalog/products/product.model.js'
+import { initializeProductPersistence } from '../../src/modules/catalog/products/product.persistence.js'
+import { productService } from '../../src/modules/catalog/products/product.service.js'
+import { isolatedDatabase } from '../helpers/database.js'
 
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
 let categories: ReturnType<typeof categoryService>

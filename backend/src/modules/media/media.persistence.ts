@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from 'node:util'
 import type { Connection } from 'mongoose'
-import { verifyDeclaredIndexes } from '../../db/indexes.js'
+import { verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 import { mediaModel } from './media.model.js'
 type Shape = Record<string, unknown>
 const integer = {

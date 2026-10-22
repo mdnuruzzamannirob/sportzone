@@ -8,6 +8,14 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 22 October 2026 — Backend structure refactor
+
+- Migrated existing backend runtime/shared/provider/script and auth/catalog/media ownership to the approved
+  structure (P03-021). Added transitive boundary regressions, clean generated builds and backend formatting scope;
+  updated test/worker/operator consumers and current runbooks. The project owner reviewed and accepted P03-021
+  through the popup; no API/data migration, provider activation or milestone acceptance is implied.
+  [Evidence](docs/evidence/P03-021-backend-refactor.md).
+
 ## 22 October 2026 — Documentation organization
 
 - Consolidated project structure, naming and ownership in Architecture §§4–6 and UI component contracts in

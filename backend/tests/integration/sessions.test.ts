@@ -8,15 +8,15 @@ import {
   identityCollectionValidators,
 } from '../../src/modules/auth/identity.persistence.js'
 import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
-import { createSessionHttp } from '../../src/modules/auth/session.http.js'
+import { createSessionHttp } from '../../src/modules/auth/sessions/session.http.js'
 import {
   createSessionService,
   type SessionKind,
   type SessionOptions,
-} from '../../src/modules/auth/session.service.js'
-import { createLogger } from '../../src/observability/logger.js'
-import { respond } from '../../src/common/responses.js'
-import { isolatedDatabase } from '../support/database.js'
+} from '../../src/modules/auth/sessions/session.service.js'
+import { createLogger } from '../../src/shared/logger.js'
+import { respond } from '../../src/shared/responses.js'
+import { isolatedDatabase } from '../helpers/database.js'
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
 let models: ReturnType<typeof createIdentityModels>
 let service: ReturnType<typeof createSessionService>
@@ -41,9 +41,7 @@ async function user(role: SessionKind = 'customer') {
 beforeAll(async () => {
   fixture = await isolatedDatabase()
   if (!fixture.connection.db) throw new Error('Missing fixture database')
-  await fixture.connection.db
-    .admin()
-    .command({ setParameter: 1, ttlMonitorEnabled: false })
+  await fixture.connection.db.admin().command({ setParameter: 1, ttlMonitorEnabled: false })
   models = createIdentityModels(fixture.connection)
   await initializeIdentityPersistence(fixture.connection, models)
   service = createSessionService(fixture.connection, models, options, clock)
@@ -76,9 +74,7 @@ describe('real opaque session lifecycle', () => {
         userId: account._id,
         kind,
       })
-      expect(await service.verifyCsrfMaterial(kind, issued.token, issued.csrfToken)).toBe(
-        true,
-      )
+      expect(await service.verifyCsrfMaterial(kind, issued.token, issued.csrfToken)).toBe(true)
       expect(issued.expiresAt.getTime() - currentTime).toBe(
         (kind === 'customer' ? 600 : 300) * 1000,
       )
@@ -107,15 +103,9 @@ describe('real opaque session lifecycle', () => {
     const account = await user()
     const first = await service.issue('customer', account._id),
       second = await service.issue('customer', account._id)
-    expect(
-      await service.verifyCsrfMaterial('customer', first.token, second.csrfToken),
-    ).toBe(false)
-    expect(await service.verifyCsrfMaterial('customer', first.token, 'invalid')).toBe(
-      false,
-    )
-    expect(await service.verifyCsrfMaterial('customer', undefined, first.csrfToken)).toBe(
-      false,
-    )
+    expect(await service.verifyCsrfMaterial('customer', first.token, second.csrfToken)).toBe(false)
+    expect(await service.verifyCsrfMaterial('customer', first.token, 'invalid')).toBe(false)
+    expect(await service.verifyCsrfMaterial('customer', undefined, first.csrfToken)).toBe(false)
     await expect(service.authenticate('customer', 'invalid')).rejects.toMatchObject({
       code: 'AUTH_REQUIRED',
     })
@@ -130,15 +120,9 @@ describe('real opaque session lifecycle', () => {
     await expect(service.authenticate('customer', old.token)).rejects.toMatchObject({
       code: 'AUTH_REQUIRED',
     })
-    expect(await service.verifyCsrfMaterial('customer', next.token, old.csrfToken)).toBe(
-      false,
-    )
-    expect(await service.verifyCsrfMaterial('customer', old.token, next.csrfToken)).toBe(
-      false,
-    )
-    expect(await service.verifyCsrfMaterial('customer', next.token, next.csrfToken)).toBe(
-      true,
-    )
+    expect(await service.verifyCsrfMaterial('customer', next.token, old.csrfToken)).toBe(false)
+    expect(await service.verifyCsrfMaterial('customer', old.token, next.csrfToken)).toBe(false)
+    expect(await service.verifyCsrfMaterial('customer', next.token, next.csrfToken)).toBe(true)
     expect(await service.authenticate('customer', other.token)).toBeTruthy()
     await expect(service.rotate('customer', old.token)).rejects.toMatchObject({
       code: 'AUTH_REQUIRED',
@@ -192,9 +176,7 @@ describe('real opaque session lifecycle', () => {
       code: 'AUTH_REQUIRED',
     })
     expect(await service.authenticate('customer', second.token)).toBeTruthy()
-    expect(
-      await service.verifyCsrfMaterial('customer', first.token, first.csrfToken),
-    ).toBe(false)
+    expect(await service.verifyCsrfMaterial('customer', first.token, first.csrfToken)).toBe(false)
   })
   it('server expiry is authoritative while the TTL-retained record still exists', async () => {
     const account = await user(),
@@ -206,9 +188,7 @@ describe('real opaque session lifecycle', () => {
     await expect(service.rotate('customer', issued.token)).rejects.toMatchObject({
       code: 'AUTH_REQUIRED',
     })
-    expect(
-      await service.verifyCsrfMaterial('customer', issued.token, issued.csrfToken),
-    ).toBe(false)
+    expect(await service.verifyCsrfMaterial('customer', issued.token, issued.csrfToken)).toBe(false)
     expect(await models.sessions.countDocuments({ userId: account._id })).toBe(1)
   })
   it.each(['suspended', 'deletion_pending', 'deactivated'] as const)(
@@ -237,9 +217,9 @@ describe('real opaque session lifecycle', () => {
     })
     const refreshed = await service.issue('customer', account._id)
     await models.users.updateOne({ _id: account._id }, { $set: { role: 'admin' } })
-    await expect(service.authenticate('customer', refreshed.token)).rejects.toMatchObject(
-      { code: 'AUTH_REQUIRED' },
-    )
+    await expect(service.authenticate('customer', refreshed.token)).rejects.toMatchObject({
+      code: 'AUTH_REQUIRED',
+    })
     await expect(service.authenticate('admin', refreshed.token)).rejects.toMatchObject({
       code: 'AUTH_REQUIRED',
     })
@@ -257,8 +237,7 @@ describe('real opaque session lifecycle', () => {
       })
     expect(await service.authenticate('customer', foreign.token)).toBeTruthy()
     expect(
-      (await models.users.findById(account._id).select('+securityRevision'))
-        ?.securityRevision,
+      (await models.users.findById(account._id).select('+securityRevision'))?.securityRevision,
     ).toBe(1)
   })
   it('secret rotation fails closed for old sessions and material', async () => {
@@ -270,12 +249,12 @@ describe('real opaque session lifecycle', () => {
       { ...options, secret: randomBytes(32).toString('hex') },
       clock,
     )
-    await expect(
-      replacement.authenticate('customer', issued.token),
-    ).rejects.toMatchObject({ code: 'AUTH_REQUIRED' })
-    expect(
-      await replacement.verifyCsrfMaterial('customer', issued.token, issued.csrfToken),
-    ).toBe(false)
+    await expect(replacement.authenticate('customer', issued.token)).rejects.toMatchObject({
+      code: 'AUTH_REQUIRED',
+    })
+    expect(await replacement.verifyCsrfMaterial('customer', issued.token, issued.csrfToken)).toBe(
+      false,
+    )
   })
   it('rolls back old-session revocation when replacement insertion fails', async () => {
     const account = await user(),
@@ -348,12 +327,12 @@ describe('real HTTP cookie boundary using fixture-only routes', () => {
       a = await service.issue('admin', (await user('admin'))._id)
     const { app, lines } = httpFixture()
     const headers = `sz_customer_sid=${c.token}; sz_admin_sid=${a.token}`
-    expect(
-      (await request(app).get('/api/v1/customer').set('Cookie', headers)).body.data,
-    ).toEqual({ kind: 'customer' })
-    expect(
-      (await request(app).get('/api/v1/admin').set('Cookie', headers)).body.data,
-    ).toEqual({ kind: 'admin' })
+    expect((await request(app).get('/api/v1/customer').set('Cookie', headers)).body.data).toEqual({
+      kind: 'customer',
+    })
+    expect((await request(app).get('/api/v1/admin').set('Cookie', headers)).body.data).toEqual({
+      kind: 'admin',
+    })
     for (const path of ['/customer', '/admin']) {
       const response = await request(app)
         .get(`/api/v1${path}?token=${c.token}&role=admin`)
@@ -363,8 +342,7 @@ describe('real HTTP cookie boundary using fixture-only routes', () => {
       expect(response.headers['cache-control']).toBe('no-store')
     }
     expect(
-      (await request(app).get('/api/v1/admin').set('Cookie', `sz_admin_sid=${c.token}`))
-        .status,
+      (await request(app).get('/api/v1/admin').set('Cookie', `sz_admin_sid=${c.token}`)).status,
     ).toBe(401)
     expect(
       (
@@ -400,9 +378,7 @@ describe('real HTTP cookie boundary using fixture-only routes', () => {
       ])
         expect(cookie).toContain(part)
       expect(cookie).not.toMatch(/Domain=/i)
-      expect(cookie).not.toContain(
-        kind === 'customer' ? 'sz_admin_sid' : 'sz_customer_sid',
-      )
+      expect(cookie).not.toContain(kind === 'customer' ? 'sz_admin_sid' : 'sz_customer_sid')
       const cleared = String(
         (await request(app).get(`/api/v1/clear/${kind}`)).headers['set-cookie'],
       )
@@ -420,14 +396,10 @@ describe('real HTTP cookie boundary using fixture-only routes', () => {
   )
   it('permits only configured loopback HTTP testing exception and does not expose real auth routes', async () => {
     const { app } = httpFixture()
-    const cookie = String(
-      (await request(app).get('/api/v1/cookie/customer')).headers['set-cookie'],
-    )
+    const cookie = String((await request(app).get('/api/v1/cookie/customer')).headers['set-cookie'])
     expect(cookie).toContain('HttpOnly')
     expect(cookie).toContain('SameSite=Lax')
     expect(cookie).not.toContain('Secure')
-    expect((await request(createApp()).post('/api/v1/auth/login').send({})).status).toBe(
-      404,
-    )
+    expect((await request(createApp()).post('/api/v1/auth/login').send({})).status).toBe(404)
   })
 })

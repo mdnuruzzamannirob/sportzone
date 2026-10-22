@@ -23,13 +23,13 @@
   "scripts": {
     "dev": "node --watch dist/server.js",
     "start": "node dist/server.js",
-    "lint": "biome lint src tests tools vitest.config.ts vitest.integration.config.ts --error-on-warnings",
+    "lint": "biome lint src tests scripts vitest.config.ts vitest.integration.config.ts --error-on-warnings",
     "typecheck": "tsc --project tsconfig.check.json",
     "test:unit": "vitest run",
-    "build": "tsc --project tsconfig.json",
+    "build": "node scripts/build.mjs",
     "build:watch": "tsc --watch --project tsconfig.json",
     "test:smoke": "node tests/smoke.mjs",
     "test:integration": "vitest run --config vitest.integration.config.ts --reporter=default --reporter=json --outputFile=../test-results/database.json",
-    "db:local": "node tools/local-database.mjs"
+    "db:local": "node scripts/local-database.mjs"
   }
 }

@@ -1,5 +1,5 @@
 import type { Connection } from 'mongoose'
-import { ApiError } from '../../common/errors.js'
+import { ApiError } from '../../shared/errors/app-error.js'
 import { createMediaService } from './media.service.js'
 import type { MediaAccess, MediaProvider, MediaScanner } from './media.types.js'
 import type { MediaPolicy } from '../../config/media.js'
