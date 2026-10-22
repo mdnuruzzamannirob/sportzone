@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 22 October 2026
+**Updated:** 23 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical references:** [Architecture](./ARCHITECTURE.md) · [Database](./DATABASE.md)\
@@ -724,6 +724,23 @@ are exposed; the presence of a schema or operation-table row never registers an 
 Inactive products/categories (including inactive ancestors) are excluded; out-of-stock products may remain visible but cannot be purchased.
 `variants` include one default SKU when a product has no selectable options.
 Search/index details in Database §11; do not assume an external search service.
+For catalog reads, `category` and category-list `parent` are normalized category slugs; an absent
+`parent` lists all visible categories, while a supplied parent selects immediate children. Product category filters include visible descendants. Hidden or
+unknown category filters return empty pages. Search `q` is trimmed, 1–120 Unicode characters and at
+most ten whitespace-separated terms; all extracted words must match, without user search operators.
+Product sorts are `newest` (default), `price_asc`, `price_desc`; ties use durable product ID.
+A product card uses the cheapest valid active SKU's effective price and that same SKU's regular price;
+price bounds apply to this card price. `inStock=true/false` filters whether any valid active SKU has
+positive available stock. Products without a valid active SKU are excluded. Availability is
+`available` or `unavailable`, never a reservation guarantee. All associated categories must have active
+ancestry. Missing, cyclic or excessively deep ancestry fails visibility closed.
+Public categories expose only `id,name,slug,parentId?` and an eligible `image?`; category detail has the
+same projection. Card `thumbnail?` and category `image?` expose `{url,alt}` only through media-owned
+public reference checks; omit unavailable/unapproved images. `rating?` is `{average,count}` from the
+approved summary and omitted when no valid approved ratings exist. Internal counters, revisions, SKU
+metadata and media ownership/delivery secrets are excluded. Listing reads currently use `no-store`;
+controlled caching/revalidation belongs to P04-011.
+
 Product listings and homepage merchandising only include operator-approved media/content; no fabricated promotional claims.
 The homepage `banner` maps to `storeSettings.homepageBanner` with a validated public media asset and operator-approved content (API §10.1). Return `HomepageBanner:{assetId,title,alt,href?,image:MediaRef}` only when configured and eligible; otherwise omit it honestly. Banner capability is required by FR-03; publish only operator-approved content. Store the banner in settings rather than a separate collection.
 

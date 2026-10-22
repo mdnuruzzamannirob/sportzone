@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 22 October 2026
+**Updated:** 23 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -581,7 +581,7 @@ Explicit identity bootstrap adds this collection/index without modifying existin
 | `sortOrder`! | int | Nonnegative display sequence |
 | `revision`! | int | Nonnegative CAS revision; increment on every editable metadata, parent, status or sort change |
 
-**Indexes:** unique `{slug:1}`; `{parentId:1,status:1,sortOrder:1}`.
+**Indexes:** unique `{slug:1}`; `{parentId:1,status:1,sortOrder:1}`; public listing `{status:1,sortOrder:1,_id:1}`.
 
 **Rules:** reject cycles; verify category has active ancestry for public visibility; restrict deletion while products/subcategories depend on it unless reassigned in an approved operation.
 
@@ -610,7 +610,7 @@ existing database index helper, never automatic startup synchronization.
 | `ratingSummary` | embedded | `{approvedCount,average}` derived projection; not authority for review eligibility |
 | `revision`! | int | Nonnegative CAS revision; increment on every editable product/status/category/media change |
 
-**Indexes:** unique `{slug:1}`; `{status:1,categoryIds:1,createdAt:-1}`; `{status:1,featured:1,createdAt:-1}`; search index selected by representative query profile.
+**Indexes:** unique `{slug:1}`; `{status:1,categoryIds:1,createdAt:-1}`; `{status:1,featured:1,createdAt:-1}`; public newest `{status:1,createdAt:-1,_id:-1}`; compound native text `{status:1,name:"text",keywords:"text"}` with language `none`, weights name 5 / keywords 2. The status prefix is always constrained to active on public search.
 
 **Rules:** every purchasable product has at least one active `productVariants` document; deactivation does not erase historical order lines.
 
@@ -638,8 +638,9 @@ strict BSON collection validators. Slugs are trimmed lowercase ASCII kebab-case 
 SKUs are trimmed uppercase ASCII letters/digits with single `.`, `_` or `-` separators (64 characters).
 Names use the §2.2 120-character limit; descriptions are plain text, at most 2,000 Unicode characters,
 with HTML tags/control characters rejected. Future views must render them as text. Keywords are
-trimmed lowercase distinct terms, up to 30 terms of 120 characters. No search engine/index is chosen
-without the P04-009 representative query profile; the declared compound indexes remain authoritative.
+trimmed lowercase distinct terms, up to 30 terms of 120 characters. Native MongoDB text search is selected
+from the P04-009 synthetic query profile (Testing §13.1); no external search service is required.
+Index creation remains explicit and additive, with existing validators and extra indexes preserved.
 
 Internal aggregate creation accepts 1–100 variants and 1–30 distinct category references. Option maps
 contain up to 30 keys (64 characters) with values up to 120 characters, NFKC/lowercase/whitespace
@@ -1481,7 +1482,9 @@ MongoDB unique partial indexes constrain only matching documents; missing option
 | Query | Access path | Required behavior |
 | --- | --- | --- |
 | Public products by category/status | `products(status,categoryIds,createdAt)` + variant eligibility | Bounded pagination; filter invisible products |
-| Public featured/newest | `products(status,featured,createdAt)` | Stable sort with `_id` tie-break |
+| Public featured/newest | `products(status,featured,createdAt)` / `products(status,createdAt,_id)` | Stable sort with `_id` tie-break |
+| Public name/keyword search | Native compound text index with equality on status | Literal bounded Unicode terms; active category ancestry and valid active variants checked before projection |
+| Public category listing | `categories(status,sortOrder,_id)` + ancestor `_id` lookups | Stable pages; cycles/orphans and ancestry beyond 64 ancestors fail closed |
 | Product details | Unique product slug + variants by product ID | No query by unsafe client price |
 | Customer orders | `orders(userId,placedAt)` | Authenticated ownership, bounded pages |
 | Guest verification | `orders(orderNumber)` then challenge against stored checkout email | No unauthenticated order data disclosure |

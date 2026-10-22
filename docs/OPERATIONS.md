@@ -550,6 +550,16 @@ validators and additive indexes, preserves extra indexes and refuses incompatibl
 collection validators. Existing-data rollout requires a reviewed migration with duplicate
 slug/SKU/signature and numeric/stock preflight; never drop indexes or silently normalize collisions.
 Catalog integration/deployment must wire and verify bootstrap/readiness before exposing catalog mutations.
+Public catalog reads verify declared indexes and return a sanitized 503 if they are missing; they never
+bootstrap from HTTP. Before deploying those reads, use the explicit product initializer to add
+`product_public_search` and `product_public_newest`, and the existing declared-index helper on the
+canonical category model to add `category_public_sort`. Review existing text indexes before rollout:
+MongoDB permits one text index per collection, so an incompatible index needs a separate reviewed
+migration rather than an automatic drop. New indexes are additive; do not erase catalog records.
+Public reads retain no-store and fixed query deadlines, and do not set session cookies. Approved
+thumbnail delivery requires an explicitly composed media provider and clean attached public ledger
+references. Without that capability images are omitted; stored URLs are never used as a fallback.
+EXT-04 approval and deployed media verification remain separate.
 The current foundation performs no external media or inventory effects. Undoing code must preserve
 existing product/variant records and indexes; no data-erasing rollback is supplied.
 

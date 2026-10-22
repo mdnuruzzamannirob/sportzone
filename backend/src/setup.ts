@@ -1,3 +1,6 @@
+import { catalogService } from './modules/catalog/catalog.service.js'
+import { catalogRoutes } from './modules/catalog/catalog.routes.js'
+import { publicMediaService } from './modules/media/public-media.service.js'
 import { createResendAdapter } from './providers/email/resend.client.js'
 import type { EmailAdapter } from './modules/notifications/notification.types.js'
 import type { RetryPolicy } from './modules/notifications/notification.schema.js'
@@ -75,7 +78,11 @@ export async function composeApplication(
     config.CUSTOMER_AUTH_ENABLED || config.ADMIN_AUTH_ENABLED
       ? await composeIdentityRoutes(connection, config, media)
       : undefined
-  const apiRouter = createApiRouter(health, identity ? [identity] : [])
+  const catalog = catalogRoutes(
+    catalogService(connection, publicMediaService(connection, media?.provider)),
+    config.CORS_ALLOWED_ORIGINS,
+  )
+  const apiRouter = createApiRouter(health, [catalog, ...(identity ? [identity] : [])])
   if (media && !config.ADMIN_AUTH_ENABLED)
     throw new Error('Admin authentication required for media.')
   return createApp({ logger, apiRouter, mediaUploadsEnabled: Boolean(media) })

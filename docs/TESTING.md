@@ -693,6 +693,17 @@ Test snapshots, traces, screenshots and CI artifacts may contain personal/financ
 
 ### 13.1 Workload and measurement contract
 
+For the local catalog access-path regression, seed 1,000 products (900 active), one SKU each,
+including ten selective name matches. Require the selected native text index with fewer than 50
+product documents examined, and the newest compound index with at most 20 documents examined for
+its 20-row access path. Assert the actual search/category aggregations use the declared indexes;
+public categories use status/sort-order/ID indexing and ancestry traversal is limited to 64 ancestors.
+All catalog aggregations have a 3,000 ms database deadline and disable disk spilling; response pages
+remain at most 100. Price sorting and eligibility/count joins can process all matching active rows.
+These are bounded local regression checks, not a signed PERF-CAT latency/concurrency acceptance
+profile. Keep plans and observed measurements in the owning task evidence and local test report.
+
+
 PRD §12.1 requires **agreed targets before acceptance performance testing**; it does not specify a universal latency, throughput, page-weight or concurrency threshold. Record a signed profile with dataset size (products, variants, orders), customer/admin mix, load distribution, network/device classes, response-time/error budgets, and infrastructure limits before interpreting results.
 
 | Profile ID | Representative path | Measures | Acceptance source |
@@ -935,6 +946,7 @@ in evidence rather than being appended to the API operation inventory.
 | P04-003 | [Controlled media; EXT-04 remains blocked](./evidence/P04-003-controlled-media.md) |
 | P04-006 | [Inventory counters, atomic guards and movement replay](./evidence/P04-006-inventory-counters.md) |
 | P04-008 | [Transaction-scoped allocation primitives](./evidence/P04-008-inventory-allocation.md) |
+| P04-009 | [Public catalog filters, visibility and query profile](./evidence/P04-009-public-catalog.md) |
 
 ### 16.2 Functional requirement coverage register
 
