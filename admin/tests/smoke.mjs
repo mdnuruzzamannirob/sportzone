@@ -1,5 +1,5 @@
-import { verifyHeroUIStyles } from '../../tests/heroui-smoke.mjs'
-import { verifyThemeBootstrap } from '../../tests/theme-smoke.mjs'
+import { verifyHeroUIStyles } from '../../tests/helpers/heroui-smoke.mjs'
+import { verifyThemeBootstrap } from '../../tests/helpers/theme-smoke.mjs'
 import assert from 'node:assert/strict'
 import { preview } from 'vite'
 
@@ -42,14 +42,11 @@ try {
     const html = await response.text()
     assert.match(html, /<div id="root"><\/div>/)
     assert.match(html, /name="robots" content="noindex, nofollow"/)
-    if (index)
-      assert.equal(html, index, 'Deep links must receive the same SPA entry document')
+    if (index) assert.equal(html, index, 'Deep links must receive the same SPA entry document')
     index = html
     await verifyThemeBootstrap(html, origin, 'admin')
   }
-  console.log(
-    'ADMIN-SMOKE-01 Passed: entry/deep-link SPA fallback and no-store/noindex headers',
-  )
+  console.log('ADMIN-SMOKE-01 Passed: entry/deep-link SPA fallback and no-store/noindex headers')
   const js = index.match(/src="([^" ]+\.js)"/)
   const css = index.match(/href="([^" ]+\.css)"/)
   assert.ok(js && css, 'Built entry must reference compiled JS and CSS')

@@ -7,12 +7,12 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createApp } from '../../src/app.js'
 import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
 import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
-import { createSessionService } from '../../src/modules/auth/session.service.js'
-import { createBrowserSecurity } from '../../src/modules/auth/browser-security.service.js'
+import { createSessionService } from '../../src/modules/auth/sessions/session.service.js'
+import { createBrowserSecurity } from '../../src/modules/auth/sessions/browser-security.service.js'
 import { createProfileService } from '../../src/modules/customers/customer.service.js'
 import { profileRoutes } from '../../src/modules/customers/customer.routes.js'
 import { createAddressCoverage } from '../../src/modules/delivery/delivery-coverage.service.js'
-import { isolatedDatabase } from '../support/database.js'
+import { isolatedDatabase } from '../helpers/database.js'
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
 let models: ReturnType<typeof createIdentityModels>
 let sessions: ReturnType<typeof createSessionService>
@@ -30,10 +30,7 @@ const address = {
   areaKey: 'served',
   street: 'Synthetic fixture street',
 }
-async function account(
-  verified = true,
-  role: 'customer' | 'admin' = 'customer',
-) {
+async function account(verified = true, role: 'customer' | 'admin' = 'customer') {
   const user = await new models.users({
     name: 'Synthetic',
     emailNormalized: `fixture_${randomUUID()}@example.test`,
@@ -158,13 +155,8 @@ describe('profile/address ownership on real transactional persistence', () => {
     expect(JSON.stringify(result.body)).not.toMatch(
       /passwordHash|securityRevision|role|deletionRequest/,
     )
-    expect((await models.users.findById(other.user._id))?.name).toBe(
-      'Synthetic',
-    )
-    const get = await request(app)
-      .get('/api/v1/me')
-      .set('Cookie', own.cookie)
-      .expect(200)
+    expect((await models.users.findById(other.user._id))?.name).toBe('Synthetic')
+    const get = await request(app).get('/api/v1/me').set('Cookie', own.cookie).expect(200)
     expect(get.headers['cache-control']).toBe('no-store')
   })
   it.each([
@@ -183,9 +175,7 @@ describe('profile/address ownership on real transactional persistence', () => {
       a = await add(own),
       b = await add(own)
     expect(a.isDefault).toBe(false)
-    expect(
-      (await mutate('post', `/me/addresses/${a.id}/default`, own)).status,
-    ).toBe(200)
+    expect((await mutate('post', `/me/addresses/${a.id}/default`, own)).status).toBe(200)
     const updated = await mutate('patch', `/me/addresses/${b.id}`, own, {
       street: 'Updated synthetic street',
       isDefault: true,
@@ -196,13 +186,10 @@ describe('profile/address ownership on real transactional persistence', () => {
       .get('/api/v1/me/addresses')
       .set('Cookie', own.cookie)
       .expect(200)
-    expect(
-      listed.body.data.filter((item: { isDefault: boolean }) => item.isDefault),
-    ).toHaveLength(1)
-    expect(
-      listed.body.data.find((item: { id: string }) => item.id === a.id)
-        .isDefault,
-    ).toBe(false)
+    expect(listed.body.data.filter((item: { isDefault: boolean }) => item.isDefault)).toHaveLength(
+      1,
+    )
+    expect(listed.body.data.find((item: { id: string }) => item.id === a.id).isDefault).toBe(false)
     const deleted = await mutate('delete', `/me/addresses/${b.id}`, own)
     expect(deleted.status).toBe(204)
     expect(deleted.text).toBe('')
@@ -256,14 +243,12 @@ describe('profile/address ownership on real transactional persistence', () => {
       await fixture.connection.db
         ?.collection('deliveryCharges')
         .updateOne({ _id: exactId }, { $set: change })
-      expect(
-        (await mutate('post', '/me/addresses', own, address)).body.error.code,
-      ).toBe('UNSUPPORTED_DELIVERY_AREA')
+      expect((await mutate('post', '/me/addresses', own, address)).body.error.code).toBe(
+        'UNSUPPORTED_DELIVERY_AREA',
+      )
     }
     expect(await service.list(own.token)).toHaveLength(1)
-    expect((await mutate('delete', `/me/addresses/${a.id}`, own)).status).toBe(
-      204,
-    )
+    expect((await mutate('delete', `/me/addresses/${a.id}`, own)).status).toBe(204)
   })
   it('uses approved district fallback, exact precedence and fails closed for ambiguous/inactive zones', async () => {
     const own = await account()
@@ -290,9 +275,7 @@ describe('profile/address ownership on real transactional persistence', () => {
     await fixture.connection.db
       ?.collection('deliveryZones')
       .updateOne({ _id: zoneId }, { $set: { status: 'inactive' } })
-    expect((await mutate('post', '/me/addresses', own, address)).status).toBe(
-      400,
-    )
+    expect((await mutate('post', '/me/addresses', own, address)).status).toBe(400)
     await fixture.connection.db
       ?.collection('deliveryZones')
       .updateOne({ _id: zoneId }, { $set: { status: 'active' } })
@@ -304,14 +287,11 @@ describe('profile/address ownership on real transactional persistence', () => {
       amountPoisha: 100,
       ruleVersion: 2,
     })
-    expect((await mutate('post', '/me/addresses', own, address)).status).toBe(
-      400,
-    )
+    expect((await mutate('post', '/me/addresses', own, address)).status).toBe(400)
   })
   it('serializes concurrent tenth-address creation and default selection without lost updates', async () => {
     const own = await account()
-    for (let i = 0; i < 9; i++)
-      await add(own, { street: `Synthetic fixture ${i}` })
+    for (let i = 0; i < 9; i++) await add(own, { street: `Synthetic fixture ${i}` })
     const result = await Promise.all([
       mutate('post', '/me/addresses', own, address),
       mutate('post', '/me/addresses', own, address),
@@ -322,14 +302,10 @@ describe('profile/address ownership on real transactional persistence', () => {
     const ids = all.slice(0, 2).map((item) => item.id)
     expect(
       (
-        await Promise.all(
-          ids.map((id) => mutate('post', `/me/addresses/${id}/default`, own)),
-        )
+        await Promise.all(ids.map((id) => mutate('post', `/me/addresses/${id}/default`, own)))
       ).every((res) => res.status === 200),
     ).toBe(true)
-    expect(
-      (await service.list(own.token)).filter((item) => item.isDefault),
-    ).toHaveLength(1)
+    expect((await service.list(own.token)).filter((item) => item.isDefault)).toHaveLength(1)
     await Promise.all([
       mutate('patch', '/me', own, { name: 'Concurrent fixture' }),
       mutate('patch', `/me/addresses/${ids[0]}`, own, {
@@ -337,10 +313,9 @@ describe('profile/address ownership on real transactional persistence', () => {
       }),
     ])
     expect((await service.read(own.token)).name).toBe('Concurrent fixture')
-    expect(
-      (await service.list(own.token)).find((item) => item.id === ids[0])
-        ?.street,
-    ).toBe('Concurrent street')
+    expect((await service.list(own.token)).find((item) => item.id === ids[0])?.street).toBe(
+      'Concurrent street',
+    )
   })
   it('requires verified identity, deduplicates deletion intake, returns current review status and never changes account status', async () => {
     const unverified = await account(false)
@@ -361,9 +336,7 @@ describe('profile/address ownership on real transactional persistence', () => {
       }),
     ])
     expect(results.every((res) => res.status === 200)).toBe(true)
-    expect(results[0]?.body.data.requestId).toBe(
-      results[1]?.body.data.requestId,
-    )
+    expect(results[0]?.body.data.requestId).toBe(results[1]?.body.data.requestId)
     const stored = await models.users.findById(own.user._id)
     expect(stored?.status).toBe('active')
     expect(stored?.deletionRequest?.status).toBe('requested')
@@ -377,9 +350,7 @@ describe('profile/address ownership on real transactional persistence', () => {
       requestId: results[0]?.body.data.requestId,
       status: 'under_review',
     })
-    expect(
-      (await models.users.findById(unverified.user._id))?.deletionRequest,
-    ).toBeUndefined()
+    expect((await models.users.findById(unverified.user._id))?.deletionRequest).toBeUndefined()
   })
   it.each([
     [{ amountPoisha: 0 }, 201],
@@ -392,9 +363,7 @@ describe('profile/address ownership on real transactional persistence', () => {
     await fixture.connection.db
       ?.collection('deliveryCharges')
       .updateOne({ _id: exactId }, { $set: fields })
-    expect((await mutate('post', '/me/addresses', own, address)).status).toBe(
-      status,
-    )
+    expect((await mutate('post', '/me/addresses', own, address)).status).toBe(status)
   })
   it('keeps deletion requests separately owned and preserves original intake while returning terminal status', async () => {
     const a = await account(),
@@ -421,9 +390,9 @@ describe('profile/address ownership on real transactional persistence', () => {
       requestId: first.body.data.requestId,
       status: 'rejected',
     })
-    expect(
-      (await models.users.findById(a.user._id))?.deletionRequest?.reason,
-    ).toBe('Original synthetic reason')
+    expect((await models.users.findById(a.user._id))?.deletionRequest?.reason).toBe(
+      'Original synthetic reason',
+    )
     expect(
       (
         await mutate('post', '/me/deletion-requests', b, {
@@ -437,28 +406,17 @@ describe('profile/address ownership on real transactional persistence', () => {
     async (scenario) => {
       const own = await account()
       if (scenario === 'suspended')
-        await models.users.updateOne(
-          { _id: own.user._id },
-          { $set: { status: 'suspended' } },
-        )
+        await models.users.updateOne({ _id: own.user._id }, { $set: { status: 'suspended' } })
       if (scenario === 'revision')
-        await models.users.updateOne(
-          { _id: own.user._id },
-          { $inc: { securityRevision: 1 } },
-        )
+        await models.users.updateOne({ _id: own.user._id }, { $inc: { securityRevision: 1 } })
       if (scenario === 'expired') time += 600000
       await request(app).get('/api/v1/me').set('Cookie', own.cookie).expect(401)
-      expect((await mutate('post', '/me/addresses', own, address)).status).toBe(
-        403,
-      )
+      expect((await mutate('post', '/me/addresses', own, address)).status).toBe(403)
     },
   )
   it('rejects unknown query/body/path fields and does not guess missing delivery setup', async () => {
     const own = await account()
-    await request(app)
-      .get('/api/v1/me?userId=foreign')
-      .set('Cookie', own.cookie)
-      .expect(400)
+    await request(app).get('/api/v1/me?userId=foreign').set('Cookie', own.cookie).expect(400)
     expect(
       (
         await mutate('patch', '/me/addresses/invalid', own, {
@@ -475,9 +433,9 @@ describe('profile/address ownership on real transactional persistence', () => {
       ).status,
     ).toBe(400)
     await fixture.connection.db?.collection('deliveryCharges').deleteMany({})
-    expect(
-      (await mutate('post', '/me/addresses', own, address)).body.error.code,
-    ).toBe('UNSUPPORTED_DELIVERY_AREA')
+    expect((await mutate('post', '/me/addresses', own, address)).body.error.code).toBe(
+      'UNSUPPORTED_DELIVERY_AREA',
+    )
     expect(await service.list(own.token)).toEqual([])
   })
   it('retains historical snapshots and financial records through all profile/address/deletion mutations', async () => {
@@ -513,10 +471,7 @@ describe('profile/address ownership on real transactional persistence', () => {
     await mutate('delete', `/me/addresses/${a.id}`, own)
     await mutate('post', '/me/deletion-requests', own, {})
     expect(
-      await fixture.connection.db
-        ?.collection('orders')
-        .find({ userId: own.user._id })
-        .toArray(),
+      await fixture.connection.db?.collection('orders').find({ userId: own.user._id }).toArray(),
     ).toEqual(beforeOrders)
     expect(
       await fixture.connection.db
@@ -553,21 +508,14 @@ describe('profile/address ownership on real transactional persistence', () => {
     ).toBe(400)
     await sessions.logout('customer', own.token)
     await request(app).get('/api/v1/me').set('Cookie', own.cookie).expect(401)
-    expect(
-      (await mutate('patch', '/me', own, { name: 'Forbidden' })).status,
-    ).toBe(403)
+    expect((await mutate('patch', '/me', own, { name: 'Forbidden' })).status).toBe(403)
   })
 })
 
 describe('P03-020 narrow customer persistence capability', () => {
   it('exposes detached profile data and cannot persist injected credential/security fields', async () => {
     const own = await account()
-    const access = createCustomerAccountAccess(
-      fixture.connection,
-      models,
-      sessions,
-      clock,
-    )
+    const access = createCustomerAccountAccess(fixture.connection, models, sessions, clock)
     const before = await models.users
       .findById(own.user._id)
       .select('+passwordHash +securityRevision')
@@ -594,28 +542,17 @@ describe('P03-020 narrow customer persistence capability', () => {
       .select('+passwordHash +securityRevision')
     expect(after?.name).toBe('Allowed profile edit')
     expect(
-      [
-        'role',
-        'emailNormalized',
-        'status',
-        'passwordHash',
-        'securityRevision',
-      ].every((field) => before?.get(field) === after?.get(field)),
-    ).toBe(true)
-    expect(
-      (await sessions.authenticate('customer', own.token)).userId.equals(
-        own.user._id,
+      ['role', 'emailNormalized', 'status', 'passwordHash', 'securityRevision'].every(
+        (field) => before?.get(field) === after?.get(field),
       ),
     ).toBe(true)
+    expect((await sessions.authenticate('customer', own.token)).userId.equals(own.user._id)).toBe(
+      true,
+    )
   })
   it('cannot save through read-only or escaped transaction scopes', async () => {
     const own = await account()
-    const access = createCustomerAccountAccess(
-      fixture.connection,
-      models,
-      sessions,
-      clock,
-    )
+    const access = createCustomerAccountAccess(fixture.connection, models, sessions, clock)
     await expect(
       access.owned(
         own.token,
@@ -637,12 +574,7 @@ describe('P03-020 narrow customer persistence capability', () => {
   })
   it('rolls profile saves and authorization fences back when the coordinating operation fails', async () => {
     const own = await account()
-    const access = createCustomerAccountAccess(
-      fixture.connection,
-      models,
-      sessions,
-      clock,
-    )
+    const access = createCustomerAccountAccess(fixture.connection, models, sessions, clock)
     const before = await models.users.findById(own.user._id)
     await expect(
       access.owned(own.token, async (profile, { save }) => {

@@ -1,50 +1,42 @@
-import { createCustomerService } from '../../src/modules/auth/credentials.service.js'
-import { inTransaction } from '../../src/db/transaction.js'
+import { createCustomerService } from '../../src/modules/auth/credentials/credentials.service.js'
+import { inTransaction } from '../../src/shared/database/transaction.js'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { Router } from 'express'
 import { Types } from 'mongoose'
 import request from 'supertest'
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp } from '../../src/app.js'
-import { loadEnvironment } from '../../src/config/environment.js'
+import { loadEnvironment } from '../../src/config/env.js'
 import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
 import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
 import {
   createSessionService,
   loadSessionOptions,
-} from '../../src/modules/auth/session.service.js'
-import { createBrowserSecurity } from '../../src/modules/auth/browser-security.service.js'
-import { browserSecurityRoutes } from '../../src/modules/auth/browser-security.routes.js'
-import { createEmailChangeService } from '../../src/modules/auth/email-change.service.js'
-import { emailChangeRoutes } from '../../src/modules/auth/email-change.routes.js'
-import { composeCustomerRoutes } from '../../src/modules/auth/auth.composition.js'
-import { createRecoveryService } from '../../src/modules/auth/password-recovery.service.js'
+} from '../../src/modules/auth/sessions/session.service.js'
+import { createBrowserSecurity } from '../../src/modules/auth/sessions/browser-security.service.js'
+import { browserSecurityRoutes } from '../../src/modules/auth/sessions/browser-security.routes.js'
+import { createEmailChangeService } from '../../src/modules/auth/verification/email-change.service.js'
+import { emailChangeRoutes } from '../../src/modules/auth/verification/email-change.routes.js'
+import { composeIdentityRoutes } from '../../src/setup.js'
+import { createRecoveryService } from '../../src/modules/auth/recovery/password-recovery.service.js'
 import {
   createProofEncryption,
   proofHash,
-} from '../../src/modules/auth/proof.crypto.js'
+} from '../../src/modules/auth/verification/proof.crypto.js'
 import {
   createEmailChangeDelivery,
   createResetDelivery,
-} from '../../src/modules/auth/proof-delivery.service.js'
-import { hashPassword } from '../../src/modules/auth/password.service.js'
+} from '../../src/modules/auth/verification/proof-delivery.service.js'
+import { hashPassword } from '../../src/modules/auth/credentials/password.service.js'
+import { createRegistrationNotifications } from '../../src/modules/notifications/notification.service.js'
 import {
-  createRegistrationNotifications,
   passwordResetNotificationValidator,
   registrationNotificationValidator,
-} from '../../src/modules/notifications/notification.service.js'
-import { createNotificationWorker } from '../../src/modules/notifications/notification-worker.service.js'
+} from '../../src/modules/notifications/notification.persistence.js'
+import { createNotificationDeliveryService } from '../../src/modules/notifications/notification-delivery.service.js'
 import type { EmailMessage } from '../../src/modules/notifications/notification.types.js'
-import { testEnvironment } from '../support/environment.js'
-import { isolatedDatabase } from '../support/database.js'
+import { testEnvironment } from '../helpers/environment.js'
+import { isolatedDatabase } from '../helpers/database.js'
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
 let models: ReturnType<typeof createIdentityModels>
 let sessions: ReturnType<typeof createSessionService>
@@ -113,8 +105,7 @@ async function issue(owner: Account, target = email()) {
       consumedAt: { $exists: false },
     })
     .select('+deliveryEnvelope +scopeRevisionAtIssue')
-  if (!challenge?.deliveryNotificationId)
-    throw new Error('Missing synthetic challenge')
+  if (!challenge?.deliveryNotificationId) throw new Error('Missing synthetic challenge')
   const message = await delivery.message({
     id: challenge.deliveryNotificationId,
     userId: owner.user._id,
@@ -202,11 +193,9 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
     const raw = await fixture.connection.db
       ?.collection('authChallenges')
       .findOne({ _id: first.challenge._id })
-    const outbox = await fixture.connection.db
-      ?.collection('notifications')
-      .findOne({
-        _id: first.challenge.deliveryNotificationId ?? new Types.ObjectId(),
-      })
+    const outbox = await fixture.connection.db?.collection('notifications').findOne({
+      _id: first.challenge.deliveryNotificationId ?? new Types.ObjectId(),
+    })
     expect(raw?.emailNormalized).toBe(owner.user.emailNormalized)
     expect(raw?.targetEmailNormalized).toBe(target)
     expect(raw?.secretHash).toBe(proofHash(first.token, 'email_change'))
@@ -223,9 +212,7 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
       other = await sessions.issue('customer', owner.user._id),
       unrelated = await account(),
       target = email()
-    expect(
-      (await post('', { newEmail: ` ${target.toUpperCase()} ` }, owner)).status,
-    ).toBe(200)
+    expect((await post('', { newEmail: ` ${target.toUpperCase()} ` }, owner)).status).toBe(200)
     const challenge = await models.challenges.findOne({
       userId: owner.user._id,
       purpose: 'email_change',
@@ -250,46 +237,37 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
     })
     expect(String(res.headers['set-cookie']?.[0])).toMatch(/^sz_customer_sid=;/)
     for (const old of [owner.issued, other])
-      await expect(
-        sessions.authenticate('customer', old.token),
-      ).rejects.toMatchObject({ code: 'AUTH_REQUIRED' })
+      await expect(sessions.authenticate('customer', old.token)).rejects.toMatchObject({
+        code: 'AUTH_REQUIRED',
+      })
     expect(
-      (
-        await sessions.authenticate('customer', unrelated.issued.token)
-      ).userId.toHexString(),
+      (await sessions.authenticate('customer', unrelated.issued.token)).userId.toHexString(),
     ).toBe(unrelated.user._id.toHexString())
     expect(
-      (await models.users.findById(owner.user._id).select('+passwordHash'))
-        ?.passwordHash,
+      (await models.users.findById(owner.user._id).select('+passwordHash'))?.passwordHash,
     ).toBe(passwordHash)
     const renewed = await sessions.issue('customer', owner.user._id)
-    await expect(
-      service.confirm({ token }, renewed.token),
-    ).rejects.toMatchObject({ code: 'INVALID_REQUEST' })
+    await expect(service.confirm({ token }, renewed.token)).rejects.toMatchObject({
+      code: 'INVALID_REQUEST',
+    })
     expect(
-      (
-        await models.challenges
-          .findById(challenge._id)
-          .select('+deliveryEnvelope')
-      )?.deliveryEnvelope,
+      (await models.challenges.findById(challenge._id).select('+deliveryEnvelope'))
+        ?.deliveryEnvelope,
     ).toBeUndefined()
   })
   it('returns the same issuance response for occupied destinations and cooldown suppression', async () => {
     const owner = await account(),
       occupied = await account()
-    expect(
-      (await post('', { newEmail: occupied.user.emailNormalized }, owner)).body
-        .data,
-    ).toEqual({ verificationSent: true })
+    expect((await post('', { newEmail: occupied.user.emailNormalized }, owner)).body.data).toEqual({
+      verificationSent: true,
+    })
     expect(await models.challenges.countDocuments()).toBe(0)
     await issue(owner)
     expect((await post('', { newEmail: email() }, owner)).body.data).toEqual({
       verificationSent: true,
     })
     expect(await models.challenges.countDocuments()).toBe(1)
-    expect(
-      (await post('', { newEmail: owner.user.emailNormalized }, owner)).status,
-    ).toBe(409)
+    expect((await post('', { newEmail: owner.user.emailNormalized }, owner)).status).toBe(409)
   })
   it('permits exactly one of two customers concurrently claiming the same verified target', async () => {
     const first = await account(),
@@ -302,27 +280,18 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
       post('/confirm', { token: b.token }, second),
     ])
     expect(results.map((res) => res.status).sort()).toEqual([200, 409])
-    expect(await models.users.countDocuments({ emailNormalized: target })).toBe(
-      1,
-    )
+    expect(await models.users.countDocuments({ emailNormalized: target })).toBe(1)
     const loser =
-      results[0]?.status === 409
-        ? { owner: first, proof: a }
-        : { owner: second, proof: b }
+      results[0]?.status === 409 ? { owner: first, proof: a } : { owner: second, proof: b }
+    expect((await models.users.findById(loser.owner.user._id))?.emailNormalized).toBe(
+      loser.owner.user.emailNormalized,
+    )
     expect(
-      (await models.users.findById(loser.owner.user._id))?.emailNormalized,
-    ).toBe(loser.owner.user.emailNormalized)
-    expect(
-      (
-        await models.challenges
-          .findById(loser.proof.challenge._id)
-          .select('+deliveryEnvelope')
-      )?.deliveryEnvelope,
+      (await models.challenges.findById(loser.proof.challenge._id).select('+deliveryEnvelope'))
+        ?.deliveryEnvelope,
     ).toBeDefined()
     expect(
-      (
-        await sessions.authenticate('customer', loser.owner.issued.token)
-      ).userId.toHexString(),
+      (await sessions.authenticate('customer', loser.owner.issued.token)).userId.toHexString(),
     ).toBe(loser.owner.user._id.toHexString())
   })
   it('rolls back when a target is claimed after issuance, without consuming the proof or session', async () => {
@@ -333,9 +302,7 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
       { _id: other.user._id },
       { $set: { emailNormalized: first.target } },
     )
-    expect((await post('/confirm', { token: first.token }, owner)).status).toBe(
-      409,
-    )
+    expect((await post('/confirm', { token: first.token }, owner)).status).toBe(409)
     const challenge = await models.challenges
       .findById(first.challenge._id)
       .select('+deliveryEnvelope')
@@ -351,15 +318,10 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
     time += 61000
     const ctx = await service.request({ newEmail: email() }, owner.issued.token)
     expect(ctx).toEqual({ verificationSent: true })
-    expect((await post('/confirm', { token: first.token }, owner)).status).toBe(
-      400,
-    )
+    expect((await post('/confirm', { token: first.token }, owner)).status).toBe(400)
     expect(
-      (
-        await models.challenges
-          .findById(first.challenge._id)
-          .select('+deliveryEnvelope')
-      )?.deliveryEnvelope,
+      (await models.challenges.findById(first.challenge._id).select('+deliveryEnvelope'))
+        ?.deliveryEnvelope,
     ).toBeUndefined()
     const current = await models.challenges.findOne({
       userId: owner.user._id,
@@ -388,34 +350,22 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
     const owner = await account()
     await issue(owner)
     time += 61000
-    await Promise.all(
-      [0, 1].map(() =>
-        service.request({ newEmail: email() }, owner.issued.token),
-      ),
-    )
+    await Promise.all([0, 1].map(() => service.request({ newEmail: email() }, owner.issued.token)))
     expect(
       await models.challenges.countDocuments({
         userId: owner.user._id,
         invalidatedAt: { $exists: false },
       }),
     ).toBe(1)
-    expect(
-      await models.challenges.countDocuments({ userId: owner.user._id }),
-    ).toBe(2)
+    expect(await models.challenges.countDocuments({ userId: owner.user._id })).toBe(2)
   })
   it('rejects wrong owner, reset-purpose proof, expired proof and suspended sessions', async () => {
     const owner = await account(),
       other = await account(),
       first = await issue(owner)
-    expect((await post('/confirm', { token: first.token }, other)).status).toBe(
-      400,
-    )
+    expect((await post('/confirm', { token: first.token }, other)).status).toBe(400)
     const ctx = await security.issueContext('storefront')
-    await recovery.request(
-      { email: owner.user.emailNormalized },
-      ctx.token,
-      ctx.csrfToken,
-    )
+    await recovery.request({ email: owner.user.emailNormalized }, ctx.token, ctx.csrfToken)
     const reset = await models.challenges.findOne({
       userId: owner.user._id,
       purpose: 'password_reset',
@@ -437,21 +387,13 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
       ).status,
     ).toBe(400)
     time += 901000
-    expect((await post('/confirm', { token: first.token }, owner)).status).toBe(
-      400,
-    )
+    expect((await post('/confirm', { token: first.token }, owner)).status).toBe(400)
     await delivery.cleanup(10)
     expect(
-      (
-        await models.challenges
-          .findById(first.challenge._id)
-          .select('+deliveryEnvelope')
-      )?.deliveryEnvelope,
+      (await models.challenges.findById(first.challenge._id).select('+deliveryEnvelope'))
+        ?.deliveryEnvelope,
     ).toBeUndefined()
-    await models.users.updateOne(
-      { _id: owner.user._id },
-      { $set: { status: 'suspended' } },
-    )
+    await models.users.updateOne({ _id: owner.user._id }, { $set: { status: 'suspended' } })
     expect((await post('', { newEmail: email() }, owner)).status).toBe(403)
   })
   it('rolls issuance back with its scope/envelope when the outbox insert fails', async () => {
@@ -469,26 +411,21 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
       options,
       clock,
     )
-    await expect(
-      broken.request({ newEmail: email() }, owner.issued.token),
-    ).rejects.toThrow('Synthetic outbox failure')
+    await expect(broken.request({ newEmail: email() }, owner.issued.token)).rejects.toThrow(
+      'Synthetic outbox failure',
+    )
     expect(await models.challenges.countDocuments()).toBe(0)
+    expect(await fixture.connection.db?.collection('notifications').countDocuments()).toBe(0)
     expect(
-      await fixture.connection.db?.collection('notifications').countDocuments(),
-    ).toBe(0)
-    expect(
-      (
-        await models.users
-          .findById(owner.user._id)
-          .select('+challengeRevisions')
-      )?.challengeRevisions.email_change,
+      (await models.users.findById(owner.user._id).select('+challengeRevisions'))
+        ?.challengeRevisions.email_change,
     ).toBe(0)
   })
   it('retries confirmed rejection with the same new-address link and event key, without changing identity', async () => {
     const owner = await account(),
       first = await issue(owner),
       messages: EmailMessage[] = []
-    const worker = createNotificationWorker(
+    const worker = createNotificationDeliveryService(
       notifications,
       {
         send: async (message) => {
@@ -518,7 +455,7 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
     const owner = await account(),
       first = await issue(owner)
     let calls = 0
-    const worker = createNotificationWorker(
+    const worker = createNotificationDeliveryService(
       notifications,
       {
         send: async () => {
@@ -586,11 +523,9 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
         )
       if (failure === 'expired') time += 901000
       if (failure === 'consumed')
-        expect(
-          (await post('/confirm', { token: first.token }, owner)).status,
-        ).toBe(200)
+        expect((await post('/confirm', { token: first.token }, owner)).status).toBe(200)
       let calls = 0
-      await createNotificationWorker(
+      await createNotificationDeliveryService(
         notifications,
         {
           send: async () => {
@@ -605,11 +540,8 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
       ).runBatch()
       expect(calls).toBe(0)
       expect(
-        (
-          await notifications.status(
-            first.challenge.deliveryNotificationId ?? new Types.ObjectId(),
-          )
-        )?.status,
+        (await notifications.status(first.challenge.deliveryNotificationId ?? new Types.ObjectId()))
+          ?.status,
       ).toBe('failed')
     })
   it('password change and reset invalidate pending email-change proofs', async () => {
@@ -626,21 +558,13 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
         )
       else {
         const ctx = await security.issueContext('storefront')
-        await recovery.request(
-          { email: owner.user.emailNormalized },
-          ctx.token,
-          ctx.csrfToken,
-        )
+        await recovery.request({ email: owner.user.emailNormalized }, ctx.token, ctx.csrfToken)
         const reset = await models.challenges.findOne({
           userId: owner.user._id,
           purpose: 'password_reset',
         })
         if (!reset?.deliveryNotificationId) throw new Error('Missing reset')
-        const message = await createResetDelivery(
-          models,
-          options,
-          clock,
-        ).message({
+        const message = await createResetDelivery(models, options, clock).message({
           id: reset.deliveryNotificationId,
           userId: owner.user._id,
           challengeId: reset._id,
@@ -657,15 +581,12 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
         )
       }
       const renewed = await sessions.issue('customer', owner.user._id)
-      await expect(
-        service.confirm({ token: first.token }, renewed.token),
-      ).rejects.toMatchObject({ code: 'INVALID_REQUEST' })
+      await expect(service.confirm({ token: first.token }, renewed.token)).rejects.toMatchObject({
+        code: 'INVALID_REQUEST',
+      })
       expect(
-        (
-          await models.challenges
-            .findById(first.challenge._id)
-            .select('+deliveryEnvelope')
-        )?.deliveryEnvelope,
+        (await models.challenges.findById(first.challenge._id).select('+deliveryEnvelope'))
+          ?.deliveryEnvelope,
       ).toBeUndefined()
     }
   })
@@ -673,60 +594,39 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
     const owner = await account(),
       first = await issue(owner),
       ctx = await security.issueContext('storefront')
-    await recovery.request(
-      { email: owner.user.emailNormalized },
-      ctx.token,
-      ctx.csrfToken,
-    )
+    await recovery.request({ email: owner.user.emailNormalized }, ctx.token, ctx.csrfToken)
     const reset = await models.challenges.findOne({
       userId: owner.user._id,
       purpose: 'password_reset',
     })
+    expect((await models.challenges.findById(first.challenge._id))?.invalidatedAt).toBeUndefined()
+    expect((await post('/confirm', { token: first.token }, owner)).status).toBe(200)
     expect(
-      (await models.challenges.findById(first.challenge._id))?.invalidatedAt,
-    ).toBeUndefined()
-    expect((await post('/confirm', { token: first.token }, owner)).status).toBe(
-      200,
-    )
-    expect(
-      (await models.challenges.findById(reset?._id).select('+deliveryEnvelope'))
-        ?.invalidatedAt,
+      (await models.challenges.findById(reset?._id).select('+deliveryEnvelope'))?.invalidatedAt,
     ).toBeInstanceOf(Date)
-    expect(
-      (await models.users.findById(owner.user._id))?.addresses,
-    ).toHaveLength(0)
+    expect((await models.users.findById(owner.user._id))?.addresses).toHaveLength(0)
   })
   it('rolls back email, proof and sessions when revocation fails after the identity write', async () => {
     const owner = await account(),
       first = await issue(owner)
-    const failure = vi
-      .spyOn(models.sessions, 'updateMany')
-      .mockImplementationOnce(() => {
-        throw new Error('Synthetic revocation failure')
-      })
+    const failure = vi.spyOn(models.sessions, 'updateMany').mockImplementationOnce(() => {
+      throw new Error('Synthetic revocation failure')
+    })
     try {
-      expect(
-        (await post('/confirm', { token: first.token }, owner)).status,
-      ).toBe(500)
+      expect((await post('/confirm', { token: first.token }, owner)).status).toBe(500)
     } finally {
       failure.mockRestore()
     }
     expect((await models.users.findById(owner.user._id))?.emailNormalized).toBe(
       owner.user.emailNormalized,
     )
-    const proof = await models.challenges
-      .findById(first.challenge._id)
-      .select('+deliveryEnvelope')
+    const proof = await models.challenges.findById(first.challenge._id).select('+deliveryEnvelope')
     expect(proof?.consumedAt).toBeUndefined()
     expect(proof?.deliveryEnvelope).toBeDefined()
-    expect(
-      (
-        await sessions.authenticate('customer', owner.issued.token)
-      ).userId.toHexString(),
-    ).toBe(owner.user._id.toHexString())
-    expect((await post('/confirm', { token: first.token }, owner)).status).toBe(
-      200,
+    expect((await sessions.authenticate('customer', owner.issued.token)).userId.toHexString()).toBe(
+      owner.user._id.toHexString(),
     )
+    expect((await post('/confirm', { token: first.token }, owner)).status).toBe(200)
   })
   it('switches login identity only after confirmation and preserves saved address snapshots', async () => {
     const owner = await account(),
@@ -739,40 +639,18 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
         street: 'Synthetic street',
         isDefault: true,
       }
-    await models.users.updateOne(
-      { _id: owner.user._id },
-      { $push: { addresses: address } },
-    )
+    await models.users.updateOne({ _id: owner.user._id }, { $push: { addresses: address } })
     const first = await issue(owner),
-      before = (
-        await models.users.findById(owner.user._id)
-      )?.addresses.toObject()
-    expect((await post('/confirm', { token: first.token }, owner)).status).toBe(
-      200,
-    )
-    expect(
-      (await models.users.findById(owner.user._id))?.addresses.toObject(),
-    ).toEqual(before)
-    const auth = createCustomerService(
-        models,
-        sessions,
-        security,
-        notifications,
-      ),
+      before = (await models.users.findById(owner.user._id))?.addresses.toObject()
+    expect((await post('/confirm', { token: first.token }, owner)).status).toBe(200)
+    expect((await models.users.findById(owner.user._id))?.addresses.toObject()).toEqual(before)
+    const auth = createCustomerService(models, sessions, security, notifications),
       ctx = await security.issueContext('storefront')
     await expect(
-      auth.login(
-        { email: owner.user.emailNormalized, password },
-        ctx.token,
-        ctx.csrfToken,
-      ),
+      auth.login({ email: owner.user.emailNormalized, password }, ctx.token, ctx.csrfToken),
     ).rejects.toMatchObject({ code: 'INVALID_CREDENTIALS' })
     const next = await security.issueContext('storefront')
-    const signedIn = await auth.login(
-      { email: first.target, password },
-      next.token,
-      next.csrfToken,
-    )
+    const signedIn = await auth.login({ email: first.target, password }, next.token, next.csrfToken)
     expect(signedIn.account.id).toBe(owner.user._id.toHexString())
     expect(signedIn.account.email).toBe(first.target)
   })
@@ -780,16 +658,10 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
     const owner = await account(),
       admin = await account('admin')
     expect(
-      (
-        await request(app)
-          .post('/api/v1/me/email-changes')
-          .send({ newEmail: email() })
-      ).status,
+      (await request(app).post('/api/v1/me/email-changes').send({ newEmail: email() })).status,
     ).toBe(403)
     expect((await post('', { newEmail: email() }, admin)).status).toBe(403)
-    expect(
-      (await post('', { newEmail: email(), role: 'admin' }, owner)).status,
-    ).toBe(400)
+    expect((await post('', { newEmail: email(), role: 'admin' }, owner)).status).toBe(400)
     expect((await post('?x=1', { newEmail: email() }, owner)).status).toBe(400)
     const statuses: number[] = []
     for (let i = 0; i < 11; i++)
@@ -806,9 +678,9 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
       ),
       sessions.logout('customer', owner.issued.token),
     ])
-    await expect(
-      sessions.authenticate('customer', owner.issued.token),
-    ).rejects.toMatchObject({ code: 'AUTH_REQUIRED' })
+    await expect(sessions.authenticate('customer', owner.issued.token)).rejects.toMatchObject({
+      code: 'AUTH_REQUIRED',
+    })
     expect((await models.users.findById(owner.user._id))?.emailNormalized).toBe(
       result[0] === 'changed' ? first.target : owner.user.emailNormalized,
     )
@@ -817,11 +689,7 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
     const owner = await account(),
       first = await issue(owner),
       ctx = await security.issueContext('storefront')
-    await recovery.request(
-      { email: owner.user.emailNormalized },
-      ctx.token,
-      ctx.csrfToken,
-    )
+    await recovery.request({ email: owner.user.emailNormalized }, ctx.token, ctx.csrfToken)
     const reset = await models.challenges.findOne({
       userId: owner.user._id,
       purpose: 'password_reset',
@@ -868,9 +736,9 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
     ])
     expect(results.some((result) => result.status === 'fulfilled')).toBe(true)
     const renewed = await sessions.issue('customer', owner.user._id)
-    await expect(
-      service.confirm({ token: first.token }, renewed.token),
-    ).rejects.toMatchObject({ code: 'INVALID_REQUEST' })
+    await expect(service.confirm({ token: first.token }, renewed.token)).rejects.toMatchObject({
+      code: 'INVALID_REQUEST',
+    })
     expect(
       await models.challenges.countDocuments({
         userId: owner.user._id,
@@ -892,10 +760,7 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
       CORS_ALLOWED_ORIGINS: `${origin},http://localhost:5173`,
     }
     const disabled = createApp({
-      apiRouter: await composeCustomerRoutes(
-        fixture.connection,
-        loadEnvironment(base),
-      ),
+      apiRouter: await composeIdentityRoutes(fixture.connection, loadEnvironment(base)),
     })
     const owner = await account()
     const matching = createSessionService(
@@ -914,7 +779,7 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
     app = disabled
     expect((await post('', { newEmail: email() }, client)).status).toBe(404)
     app = createApp({
-      apiRouter: await composeCustomerRoutes(
+      apiRouter: await composeIdentityRoutes(
         fixture.connection,
         loadEnvironment({
           ...base,

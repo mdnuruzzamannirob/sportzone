@@ -1,15 +1,15 @@
 import { Schema, Types, type ClientSession } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server-core'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { DatabaseError, openDatabase } from '../../src/db/connection.js'
-import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../src/db/indexes.js'
+import { DatabaseError, openDatabase } from '../../src/config/database.js'
+import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../src/shared/database/indexes.js'
 import {
   integerField,
   mutableSchemaOptions,
   optionalObjectIdField,
-} from '../../src/db/schema.js'
-import { inTransaction } from '../../src/db/transaction.js'
-import { isolatedDatabase } from '../support/database.js'
+} from '../../src/shared/database/schema.js'
+import { inTransaction } from '../../src/shared/database/transaction.js'
+import { isolatedDatabase } from '../helpers/database.js'
 
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
 interface RecordData {
@@ -37,11 +37,7 @@ schema.index(
   },
 )
 function records() {
-  return fixture.connection.model<RecordData>(
-    'FixtureRecord',
-    schema,
-    'fixture_records',
-  )
+  return fixture.connection.model<RecordData>('FixtureRecord', schema, 'fixture_records')
 }
 beforeAll(async () => {
   fixture = await isolatedDatabase()
@@ -63,13 +59,9 @@ describe('real replica-set persistence foundation', () => {
     const model = records()
     expect(model.schema.options.autoIndex).toBe(false)
     await model.collection.createIndex({ currency: 1 }, { name: 'extra_preserved' })
-    expect((await verifyDeclaredIndexes(model)).extraIndexes).toContain(
-      'extra_preserved',
-    )
+    expect((await verifyDeclaredIndexes(model)).extraIndexes).toContain('extra_preserved')
     await createDeclaredIndexes(model)
-    expect(
-      (await model.listIndexes()).some((index) => index.name === 'extra_preserved'),
-    ).toBe(true)
+    expect((await model.listIndexes()).some((index) => index.name === 'extra_preserved')).toBe(true)
   })
   it('detects missing declared indexes before explicit additive repair', async () => {
     await records().collection.dropIndex('fixture_key_unique')
@@ -78,9 +70,7 @@ describe('real replica-set persistence foundation', () => {
     })
     await createDeclaredIndexes(records())
     expect(
-      (await records().listIndexes()).find(
-        (index) => index.name === 'fixture_key_unique',
-      )?.unique,
+      (await records().listIndexes()).find((index) => index.name === 'fixture_key_unique')?.unique,
     ).toBe(true)
   })
   it('enforces unique indexes under concurrent inserts', async () => {
@@ -121,9 +111,7 @@ describe('real replica-set persistence foundation', () => {
     })
     expect(completedSession?.hasEnded).toBe(true)
     expect(result).toBe('committed')
-    expect(
-      await records().countDocuments({ key: { $in: ['commit-a', 'commit-b'] } }),
-    ).toBe(2)
+    expect(await records().countDocuments({ key: { $in: ['commit-a', 'commit-b'] } })).toBe(2)
   })
   it('rolls back all writes on callback rejection', async () => {
     await expect(
@@ -137,17 +125,14 @@ describe('real replica-set persistence foundation', () => {
         throw new Error('Synthetic rollback')
       }),
     ).rejects.toThrow('Synthetic rollback')
-    expect(
-      await records().countDocuments({ key: { $in: ['abort-a', 'abort-b'] } }),
-    ).toBe(0)
+    expect(await records().countDocuments({ key: { $in: ['abort-a', 'abort-b'] } })).toBe(0)
   })
   it('rolls back a companion write when a unique-key insert fails', async () => {
     await expect(
       inTransaction(fixture.connection, async (session) => {
-        await records().create(
-          [{ key: 'before-duplicate', amount: 1, currency: 'BDT' }],
-          { session },
-        )
+        await records().create([{ key: 'before-duplicate', amount: 1, currency: 'BDT' }], {
+          session,
+        })
         await records().create([{ key: 'duplicate', amount: 2, currency: 'BDT' }], {
           session,
         })
@@ -236,10 +221,7 @@ describe('real replica-set persistence foundation', () => {
     }
   })
   it('supports an independent connect/close lifecycle', async () => {
-    const other = await openDatabase(
-      fixture.replica.getUri(),
-      'sportzone_test_lifecycle',
-    )
+    const other = await openDatabase(fixture.replica.getUri(), 'sportzone_test_lifecycle')
     expect(other.readyState).toBe(1)
     await other.close()
     expect(other.readyState).toBe(0)
@@ -251,12 +233,8 @@ it('rejects invalid database configuration without echoing input', async () => {
     ['invalid-private-value', 'sportzone_test'],
     ['mongodb://127.0.0.1:1', 'admin'],
   ]) {
-    await expect(openDatabase(uri ?? '', name ?? '')).rejects.toBeInstanceOf(
-      DatabaseError,
-    )
-    await expect(openDatabase(uri ?? '', name ?? '')).rejects.not.toThrow(
-      'invalid-private-value',
-    )
+    await expect(openDatabase(uri ?? '', name ?? '')).rejects.toBeInstanceOf(DatabaseError)
+    await expect(openDatabase(uri ?? '', name ?? '')).rejects.not.toThrow('invalid-private-value')
   }
 })
 

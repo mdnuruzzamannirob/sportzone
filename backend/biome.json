@@ -14,5 +14,9 @@
   },
   "javascript": {
     "jsxRuntime": "transparent"
-  }
+  },
+  "extends": [
+    "../biome.json"
+  ],
+  "root": false
 }

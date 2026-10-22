@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 20 October 2026
+**Updated:** 22 October 2026
 
 **Project:** Single-store sports e-commerce platform for Bangladesh (BDT)\
 **Scope:** Repository-root instructions for coding agents working in `sportzone/`\
@@ -51,7 +51,7 @@ Use the authority of each document **for its own subject matter**. `AGENTS.md` p
 | Source | Governs |
 | --- | --- |
 | [PRD](docs/PRD.md) | Product scope, business rules, acceptance criteria, launch boundaries |
-| [Architecture](docs/ARCHITECTURE.md) | Technology decisions, module ownership, trust boundaries, cross-module invariants |
+| [Architecture](docs/ARCHITECTURE.md) | Technology decisions, project structure/naming, module ownership, trust boundaries and cross-module invariants |
 | [Design](docs/DESIGN.md) | UI tokens, layouts, states, accessibility and interactions |
 | [Database](docs/DATABASE.md) | Persistence schemas, constraints, indexes, migrations and data lifecycle |
 | [API](docs/API.md) | HTTP routes, DTOs, authentication/CSRF, errors and idempotency contracts |
@@ -94,7 +94,32 @@ Inspect the live repository before using paths or commands from this target layo
 
 **MUST NOT** import Mongoose models or backend runtime services into either frontend. Shared pure types/contracts are optional only when justified by real duplication; do not introduce a shared UI library or new service without a demonstrated need.
 
-**Source organization:** Follow [Architecture §§4–6](docs/ARCHITECTURE.md#4-project-structure) and the implementation tasks in Plan §3.6. Frontends use feature-owned API/components/hooks/schemas/types with thin routes; backend modules use `<entity>.model/validation/service/controller/routes/types.ts` as needed. Current paths remain valid until their refactor verifies the move. Do not create empty template files, duplicate models or infer API namespaces from folders. Preserve pure `shared/` utilities and HeroUI foundations. Shared-collection access follows Database §4.2's narrow capabilities. Monorepo and CI changes preserve one locked dependency graph, one check inventory and fail-closed required statuses under Operations §5.5; remote settings and deployment readiness require actual evidence.
+**Source organization:** Read [Architecture](docs/ARCHITECTURE.md#4-project-structure) before adding/moving
+files; §§4–6 define the target structure, naming and ownership. Use feature ownership and the
+routes/controller/schema/service/model/types convention as needed; provider clients belong in
+providers/, root wiring in setup.ts/routes.ts, technical code in one shared/ boundary. Existing
+paths remain supported until the owning application refactor verifies their move. Do not duplicate
+models, infer public API namespaces from directories or create empty template files.
+
+**Keep organization proportional:** Before adding a file, identify its distinct responsibility and consumers.
+Use Architecture §§4–6 to decide placement; avoid argument-forwarding factories and separate one-consumer
+contract files that add no boundary. Preserve real private-module assembly and cohesive operation services.
+
+**Mandatory ongoing review:** Every implementation/refactor must identify its owner/target path,
+verify naming/import direction, keep private persistence private, keep controllers free of model
+imports and business logic, prohibit shared→business dependencies and keep provider protocol separate
+from business decisions. No frontend backend-runtime/provider/secret imports. Update executable
+boundary checks and negative fixtures with the owning refactor; a documentation statement alone does
+not prove enforcement. Use narrow capabilities for shared collections and preserve canonical models.
+
+**One application at a time:** P01-018 documentation review → P03-021 backend → P02-015 storefront →
+P02-016 admin. By default, accept each application before starting the next. When the owner explicitly
+requests a combined application/monorepo batch, implement and verify each application in sequence, then collect
+independent acceptance for every task in the final review; a batch request never self-approves a task or milestone.
+Move imports, tools, test discovery, aliases and actual CI inventory together; retain compatibility
+and existing user/staged edits. No new behavior, package/framework, collection or destructive cleanup
+is implied by source organization. Exceptions require an explicit architecture decision and checks.
+Keep native HeroUI defaults, app-owned UI/Link/theme boundaries and pure shared utilities intact.
 
 ## 4. Agent workflow & task execution
 
@@ -125,7 +150,7 @@ For higher-risk mutations, write state-transition and concurrency tests before e
 
 - Use TypeScript types and narrow interfaces at module boundaries; avoid `any`, unsafe casts and `@ts-ignore` that conceal errors.
 - Match the repository’s actual linter, formatter, naming and import conventions. Do not invent tools, versions or commands.
-- Run `npm run lint:boundaries` when source imports change. Keep the scoped `format:check` baseline passing; add application files during their owning refactor rather than bulk-formatting unrelated code.
+- Run `npm run lint:boundaries` when source imports change. Keep `format:check` passing across the adopted application, shared and tooling scope; avoid formatting unrelated content outside that inventory.
 - Keep Biome, TypeScript, Vitest and existing browser tooling. Any refactor moving tests/config/tool entry points must update imports, test discovery and CI inventory together; retain NodeNext `.js` backend import specifiers.
 - Keep code cohesive and explicit; validate external input; handle failures without leaking internal details.
 - Keep side effects in appropriately owned services; prefer pure calculations for monetary and business rules.
@@ -139,7 +164,7 @@ For higher-risk mutations, write state-transition and concurrency tests before e
 
 **Admin (`admin/`):** Follow React/Vite client-side routing and API-backed management forms. Enforce permission and ownership again on every backend mutation; route hiding is only a usability measure.
 
-Use `components/layout/` for shells, `components/ui/` for HeroUI defaults, and owning features for feature-only views. Keep reusable commerce/management compositions and existing theme behavior. Introduce target TanStack Query/frontend Zod only with the actual API/form integration task, pinned dependencies and checks; documentation does not establish installation. Clear private caches on identity change, enforce server/client import boundaries and prohibit automatic financial-mutation retries. Route groups and UI guards do not authorize data access.
+Use `components/layout/` for shells, `components/ui/` for HeroUI defaults, and owning features for feature-only views. Keep reusable commerce/management compositions and existing theme behavior. Use TanStack Query/frontend Zod through the owning API/form integration, with pinned dependencies and relevant checks; manifests establish installed versions. Clear private caches on identity change, enforce server/client import boundaries and prohibit automatic financial-mutation retries. Route groups and UI guards do not authorize data access.
 
 **UI implementation convention:** Use HeroUI v3 for new reusable interactive controls in both apps, with app-owned defaults in `src/components/ui/`. Keep components needed only by one feature with that feature; keep route files focused on composition and navigation. Import HeroUI only inside the owning app’s `src/components/ui/`; all routes, features, layouts and reusable compositions consume that boundary. Preserve native generic and compound APIs through thin UI facades; put theme/color/font/style entry points in the same UI directory. Existing Appearance controls, disclosures, links, alerts and panels use HeroUI. Preserve Next.js/React Router navigation through app-owned Link adapters. Native headings, text and page landmarks remain semantic HTML; use HeroUI for the corresponding interactive or visual primitive rather than maintaining a second custom implementation. Do not add another component library, theme store or a generic wrapper without a concrete need.
 
@@ -211,6 +236,10 @@ When scaffolding a workspace or adding its scripts/dependencies, update [ci-work
 ## 12. Documentation & change management
 
 - Update the **owning** document when a contract legitimately changes; then inspect references and dependent specifications. `AGENTS.md` and `README.md` must never silently overrule them.
+- Edit the existing owning section instead of appending dated updates, task summaries or parallel rules to specifications. Keep requirements and current procedures in specifications; execution status/reviewer decisions in Tasks; commands/results and implementation snapshots in task evidence; concise change history in Changelog.
+- Update documentation only when its contract, setup or procedure changes. A completed task does not require edits to every document. Link to the owning source rather than duplicating its details.
+- Reuse existing documents and evidence records. Create a new document only for a distinct subject with a clear owner and navigation entry; do not create separate structure/component guides already owned by Architecture and Design.
+- Before handoff, remove superseded instructions and duplicate paragraphs, reconcile current versus target paths, and check headings, contents and inbound links. Preserve historical acceptance and verification records; label their revision/environment instead of presenting old results as current guarantees.
 - Before a feature slice, reconcile affected [Database](docs/DATABASE.md), [API](docs/API.md) and [Testing](docs/TESTING.md) contracts. Update [Operations](docs/OPERATIONS.md) when configuration, migration, recovery, monitoring or deployment changes.
 - Keep PRD FR/NFR references, stable task IDs and approved acceptance rules traceable. Preserve existing IDs; do not renumber to make a report appear tidy.
 - Submit scope, architecture, UI-policy, merchant, legal or irreversible financial changes for appropriate approval. Record decision, owner, evidence, impact and linked source changes before execution.

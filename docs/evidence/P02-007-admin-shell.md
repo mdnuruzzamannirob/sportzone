@@ -48,7 +48,7 @@ The project owner explicitly accepted this task after reviewing the reported sco
 
 - [Admin shell](../../admin/src/components/layout/admin-shell.tsx)
 - [Navigation configuration](../../admin/src/components/layout/navigation.ts)
-- [Route access boundary](../../admin/src/features/auth/components/admin-access-boundary.tsx)
+- [Route access boundary](../../admin/src/app/require-admin.tsx)
 - [Shell interaction tests](../../admin/tests/shell.test.tsx)
 - [HeroUI Drawer reference](https://heroui.com/en/docs/react/components/drawer)
 

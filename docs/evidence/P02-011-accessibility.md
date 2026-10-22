@@ -58,8 +58,8 @@ The project owner independently accepted this foundation audit on 18 October 202
 ## References
 
 - [Playwright accessibility testing](https://playwright.dev/docs/accessibility-testing)
-- [Browser audit configuration](../../tests/ui/playwright.config.mts)
-- [Browser assertions](../../tests/ui/foundation.spec.ts)
+- [Browser audit configuration](../../tests/e2e/playwright.config.mts)
+- [Browser assertions](../../tests/e2e/foundation.spec.ts)
 
 ## Verified source revisions
 

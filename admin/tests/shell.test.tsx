@@ -48,7 +48,9 @@ async function visit(path: string) {
     window.dispatchEvent(new PopStateEvent('popstate'))
     root.render(
       <BrowserRouter>
-        <AdminShell title="Shell preview"><p>Shell layout fixture.</p></AdminShell>
+        <AdminShell title="Shell preview">
+          <p>Shell layout fixture.</p>
+        </AdminShell>
       </BrowserRouter>,
     )
   })
@@ -100,9 +102,7 @@ describe('admin navigation shell', () => {
       for (const [label, href] of group.links) {
         expect(nav?.querySelector(`a[href="${href}"]`)?.textContent).toBe(label)
       }
-    expect(nav?.querySelector('[aria-current="page"]')?.getAttribute('href')).toBe(
-      '/app/orders',
-    )
+    expect(nav?.querySelector('[aria-current="page"]')?.getAttribute('href')).toBe('/app/orders')
     expect(host.querySelector('h1')?.textContent).toBe('Shell preview')
     expect(host.textContent).toContain('Not signed in')
     expect(host.textContent).not.toMatch(/synthetic-private|Logout|Revenue|৳/)
@@ -144,18 +144,14 @@ describe('admin navigation shell', () => {
     await click(dialog()?.querySelector<HTMLAnchorElement>('a[href="/app/inventory"]'))
     expect(window.location.pathname).toBe('/app/inventory')
     expect(dialog()).toBeNull()
-    expect(host.querySelector('nav[aria-label="Page context"]')?.textContent).toContain(
-      'Inventory',
-    )
+    expect(host.querySelector('nav[aria-label="Page context"]')?.textContent).toContain('Inventory')
     expect(host.querySelector('h1')?.textContent).toBe('Shell preview')
     expect(host.querySelector('table, form')).toBeNull()
   })
   it('ADMIN-SHELL-04: explicit Close restores focus and switching to desktop dismisses the modal onto a visible control', async () => {
     await visit('/app')
     await click(trigger())
-    await click(
-      dialog()?.querySelector<HTMLButtonElement>('[data-slot="drawer-close-trigger"]'),
-    )
+    await click(dialog()?.querySelector<HTMLButtonElement>('[data-slot="drawer-close-trigger"]'))
     expect(dialog()).toBeNull()
     await vi.waitFor(
       async () => {
@@ -178,14 +174,10 @@ describe('admin navigation shell', () => {
   it('ADMIN-SHELL-05: longest section match distinguishes delivery settings; unknown paths are not reflected', async () => {
     await visit('/app/settings/delivery')
     expect(
-      host
-        .querySelector('nav[aria-label="Admin sidebar"] [aria-current]')
-        ?.getAttribute('href'),
+      host.querySelector('nav[aria-label="Admin sidebar"] [aria-current]')?.getAttribute('href'),
     ).toBe('/app/settings/delivery')
     await visit('/app/unrecognized-sensitive-id')
-    expect(
-      host.querySelector('nav[aria-label="Admin sidebar"] [aria-current]'),
-    ).toBeNull()
+    expect(host.querySelector('nav[aria-label="Admin sidebar"] [aria-current]')).toBeNull()
     expect(host.textContent).toContain('Unavailable destination')
     expect(host.textContent).not.toContain('unrecognized-sensitive-id')
   })
@@ -214,13 +206,9 @@ describe('admin navigation shell', () => {
       await new Promise((resolve) => setTimeout(resolve, 80))
     })
     expect(document.activeElement).toBe(input)
-    await click(
-      host.querySelector<HTMLButtonElement>('[aria-label="Page actions"] button'),
-    )
+    await click(host.querySelector<HTMLButtonElement>('[aria-label="Page actions"] button'))
     expect(action).toHaveBeenCalledOnce()
-    const appearance = host.querySelector<HTMLButtonElement>(
-      '[data-slot="disclosure-trigger"]',
-    )
+    const appearance = host.querySelector<HTMLButtonElement>('[data-slot="disclosure-trigger"]')
     await click(appearance)
     const select = host.querySelector('select')
     if (!select) throw new Error('Appearance select missing')
@@ -231,9 +219,7 @@ describe('admin navigation shell', () => {
     expect(document.documentElement.dataset.theme).toBe('dark')
     expect(host.querySelector('input[aria-label="Draft"]')).toBe(input)
     expect(input.value).toBe('edited draft')
-    expect(window.location.pathname + window.location.search).toBe(
-      '/app/products?filter=retained',
-    )
+    expect(window.location.pathname + window.location.search).toBe('/app/products?filter=retained')
     expect(host.querySelector('h1')?.textContent).toBe('Preview only')
   })
   it('ADMIN-SHELL-07: offline feedback clears on reconnect and listeners are removed on unmount', async () => {
@@ -243,9 +229,7 @@ describe('admin navigation shell', () => {
     expect(host.querySelector('[role="status"]')).toBeNull()
     online = false
     await act(() => window.dispatchEvent(new Event('offline')))
-    expect(host.querySelector('[role="status"]')?.textContent).toContain(
-      'You are offline',
-    )
+    expect(host.querySelector('[role="status"]')?.textContent).toContain('You are offline')
     online = true
     await act(() => window.dispatchEvent(new Event('online')))
     expect(host.querySelector('[role="status"]')).toBeNull()

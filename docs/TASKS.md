@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 21 October 2026
+**Updated:** 23 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -48,7 +48,7 @@ This document decomposes the approved implementation plan into independently ver
 ## 1. Overview & execution rules
 
 - Work from the approved source documents; check current requirements and affected business rules before starting a task.
-- Before each feature slice, update its `DATABASE.md` and `API.md` contracts and applicable `TESTING.md`/`OPERATIONS.md` sections; do not postpone first creation to Phase 12.
+- Before each feature slice, reconcile its Database/API contracts and applicable Testing/Operations sections. Update only changed requirements or procedures in place; do not postpone required contracts to Phase 12.
 - Implement complete vertical slices with real API integration; mocks are test doubles, never proof of external-service acceptance.
 - Follow declared dependencies rather than task ID alone. Parallel work is allowed once shared contracts exist.
 - Keep financial decisions in the Express backend; use integer poisha, immutable order snapshots, guarded state transitions, transactions and replay-safe operations as specified.
@@ -72,6 +72,10 @@ This document decomposes the approved implementation plan into independently ver
 | Evidence    | Test report, committed artifact, screenshot/record, provider validation or approver sign-off; add actual link after execution |
 | Blocked     | Capture missing prerequisite, owner, impact, permitted parallel work and next verification step                               |
 | Deferred    | Requires explicit scope/launch disposition; a mandatory safety or release criterion cannot be waived by status alone          |
+
+**Record placement:** Update each task's existing status, blocker and evidence fields in place. Keep detailed
+commands/results in its evidence record and acceptance in the review record. Specifications receive only changed
+requirements or procedures in their owning section; do not append a task-completion report to every specification.
 
 **Status changes:** Start each task as `Not Started`. Move to `Ready` only after dependencies and required external prerequisites are satisfied; `In Progress` indicates active work; `In Review` indicates submitted evidence awaiting verification. Mark `Done` and check the box only after independent acceptance. A blocked external provider or policy gate cannot be cleared by a mock. Task metadata may be updated as execution proceeds, while source-approved requirements stay unchanged.
 
@@ -101,14 +105,14 @@ retain their own approver, environment, artifacts, blockers and explicit decisio
 
 ## 3. Project progress dashboard
 
-The register contains 179 tasks across twelve phases, including seven engineering-foundation/refactor tasks and the P02-014 owner-requested UI migration added on 20 October 2026. Update phase totals when tasks are added or statuses change.
+The register contains 185 tasks across twelve phases. The owner-selected structure revision adds P01-018 documentation reconciliation and sequential P03-021/P02-015/P02-016 application refactors on 22 October 2026; P01-019 covers the owner-requested monorepo batch; earlier stable IDs/acceptance remain intact. Update phase totals when tasks are added or statuses change.
 
 | Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |   Done | Deferred |
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
-| 01 — Requirements Finalization and Planning   |      17 |           0 |     0 |           0 |       0 |         0 |     17 |        0 |
-| 02 — UI/UX Design                             |      14 |           0 |     0 |           0 |       0 |         0 |     14 |        0 |
-| 03 — Authentication and Core Backend          |      20 |           0 |     0 |           0 |       0 |         0 |     20 |        0 |
-| 04 — Product Catalog and Inventory            |      15 |          15 |     0 |           0 |       0 |         0 |      0 |        0 |
+| 01 — Requirements Finalization and Planning   |      20 |           0 |     0 |           0 |       0 |         0 |     20 |        0 |
+| 02 — UI/UX Design                             |      16 |           0 |     0 |           0 |       0 |         0 |     16 |        0 |
+| 03 — Authentication and Core Backend          |      21 |           0 |     0 |           0 |       0 |         0 |     21 |        0 |
+| 04 — Product Catalog and Inventory            |      15 |          12 |     0 |           0 |       1 |         0 |      2 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      20 |          20 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 07 — Payment Integration and Verification     |      17 |          17 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -117,7 +121,7 @@ The register contains 179 tasks across twelve phases, including seven engineerin
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **179** |     **128** | **0** |       **0** |   **0** |     **0** | **51** |    **0** |
+| **Total**                                     | **185** |     **125** | **0** |       **0** |   **1** |     **0** | **59** |    **0** |
 
 ## 4. Milestone tracker
 
@@ -142,12 +146,12 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
 
 ### Phase 01 — Requirements finalization and planning
 
-**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 01. **Associated gate:** M1. **Tasks:** 17.
+**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 01. **Associated gate:** M1. **Tasks:** 20.
 
 Current architecture reconciliation: [Phase 01 review and remaining closure evidence](./evidence/phase-01-reconciliation.md).
-All seventeen tasks are Done following recorded owner acceptance on 20 October 2026, successful hosted
+The original seventeen baseline tasks are Done following recorded owner acceptance on 20 October 2026, successful hosted
 execution and authenticated protection verification. M1 remains Not Accepted. Application structure changes remain
-owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
+owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 is the new structure documentation review; its application refactors remain P03-021/P02-015/P02-016.
 
 - [x] **P01-001 — Verify approved document baseline and paths**\
   **Status:** `Done` · **Area:** Planning · **Owner:** Codex\
@@ -299,9 +303,33 @@ owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
   **Acceptance:** Child failure/termination leaves no owned orphan servers; declared workspace dependencies and server/client/backend boundaries are checked; relevant tooling checks pass, test discovery preserved and actual scripts/inventory/README synchronized. Optional containers do not replace replica-set fixtures.\
   **Evidence:** [Development tooling verification](./evidence/P01-017-development-tooling.md). Thirty-one distinct focused repository/tooling cases were verified; actual UI/API startup returned HTTP 200 and termination released all three ports using synthetic local replica-set configuration. Project owner accepted P01-017 on 20 October 2026; see the linked acceptance record.
 
+- [x] **P01-018 — Reconcile the owner-selected project structure and conventions**\
+  **Status:** `Done` · **Area:** Documentation/architecture · **Owner:** Codex\
+  **Sources:** Owner instruction, 22 October 2026; Architecture §§4–6\
+  **Depends on:** `P01-015`\
+  **Deliverable:** Canonical detailed target, naming/import/ownership rules, account-group clarification, synchronized contracts/agent guidance and one-app-at-a-time task sequence.\
+  **Acceptance:** Repository links/Markdown and cross-document consistency verified; no source moves or release gate changes; independent documentation review.\
+  **Evidence:** [Target structure documentation and verification](./evidence/P01-018-project-structure.md). [Owner acceptance](./evidence/P01-018-project-structure.md#owner-acceptance), 22 October 2026.
+
+- [x] **P01-019 — Refactor monorepo tooling and cross-application verification**\
+  **Status:** `Done` · **Area:** Monorepo/tooling · **Owner:** Codex\
+  **Sources:** Owner combined-scope instruction; Architecture §4.2; Testing §§5,15; Operations §5\
+  **Depends on:** `P03-021`; integrated verification with `P02-015`, `P02-016`\
+  **Deliverable:** Cohesive CI/dev scripts, e2e/tooling/helpers test ownership, explicit pinned root tooling dependencies, one lockfile/check inventory and source-boundary guards.\
+  **Acceptance:** No dropped cases, required checks cannot disappear, scoped CI failures propagate, clean locked setup and affected cross-app checks pass; native UI and API/data contracts preserved; independent review.\
+  **Evidence:** [Monorepo refactor verification](./evidence/P01-019-monorepo-refactor.md). Full-project checks verified through initial and scoped environment-repair reruns, including 47 tooling cases and mandatory smoke/integration guards; [Owner acceptance](./evidence/P01-019-monorepo-refactor.md#owner-acceptance), 22 October 2026.
+
+- [x] **P01-020 — Audit and correct folder structure, placement and import ownership**\
+  **Status:** `Done` · **Area:** Repository/source organization · **Owner:** Codex\
+  **Sources:** Owner structure-audit correction, 22 October 2026; Architecture §§4–6\
+  **Depends on:** `P01-019`, `P03-021`\
+  **Deliverable:** Source/test/tool placement inventory, naming and duplicate/orphan/cycle review; domain-owned notification model/persistence/delivery policy, direct notification delivery, auth assembly and cohesive media context/types; executable structure guards.\
+  **Acceptance:** Import/discovery/operator parity, unchanged schema/index/behavior evidence and affected checks; justified retained app-owned duplicates; independent review.\
+  **Evidence:** [Folder structure audit](./evidence/P01-020-structure-audit.md). Initial audit and simplification verified; [follow-up owner acceptance](./evidence/P01-020-structure-audit.md#follow-up-acceptance), 23 October 2026.
+
 ### Phase 02 — UI/UX design
 
-**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 02. **Associated gate:** M1. **Tasks:** 14.
+**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 02. **Associated gate:** M1. **Tasks:** 16.
 
 - [x] **P02-001 — Scaffold Next.js storefront workspace**\
   **Status:** `Done` · **Area:** Frontend/storefront · **Owner:** Codex\
@@ -415,9 +443,25 @@ owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
   **Acceptance:** Both frontend types/lint/necessary interaction/display checks and builds/smoke verified; import boundary enforced; one preview uses real app modules; accessibility findings retained and explicitly dispositioned without waiving PRD gates; independent owner review.\
   **Evidence:** [Decision, research, implementation and verification](./evidence/P02-014-default-heroui.md). Implementation and focused functional checks passed; owner accepted the UI review corrections on 20 October 2026 (“এই সংশোধনগুলো accept করছি”). Owner subsequently requested “done koro”; P02-014 accepted as Done. Known native contrast findings subsequently fixed and all four affected Chromium accessibility cases passed (16 scans); see final correction evidence. No new milestone acceptance.
 
+- [x] **P02-015 — Refactor storefront to the new feature-based target**\
+  **Status:** `Done` · **Area:** Frontend/storefront · **Owner:** Codex\
+  **Sources:** Architecture §§4–5; Design\
+  **Depends on:** `P03-021`, `P02-012`\
+  **Deliverable:** Thin grouped routes, feature-owned code and target lib/UI naming, with preserved URLs/private caching/guest flows; migrate browser runner paths only with full discovery parity.\
+  **Acceptance:** Actual path/URL inventory, import/alias/CI updates, negative boundaries, affected lint/types/build/components and responsive/keyboard/light-dark/accessibility/browser evidence; independent application review.\
+  **Evidence:** [Storefront refactor verification](./evidence/P02-015-storefront-refactor.md). Local parity/browser/visual checks Passed; [Owner acceptance](./evidence/P02-015-storefront-refactor.md#owner-acceptance), 22 October 2026.
+
+- [x] **P02-016 — Refactor admin to the new feature-based target**\
+  **Status:** `Done` · **Area:** Frontend/admin · **Owner:** Codex\
+  **Sources:** Architecture §§4–5; Design\
+  **Depends on:** `P02-015`, `P02-013`\
+  **Deliverable:** Target router/providers/guard, feature-owned forms/API/state and reusable UI/layout boundaries; preserve actual commands and private session behavior.\
+  **Acceptance:** Actual path/route inventory, aliases/imports/CI/discovery, negative boundaries, affected lint/types/build/components and theme/keyboard/accessibility/browser parity; independent application review.\
+  **Evidence:** [Admin refactor verification](./evidence/P02-016-admin-refactor.md). Local parity/browser/visual checks Passed; [Owner acceptance](./evidence/P02-016-admin-refactor.md#owner-acceptance), 22 October 2026.
+
 ### Phase 03 — Authentication and core backend
 
-**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 03. **Associated gate:** M1. **Tasks:** 20.
+**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 03. **Associated gate:** M1. **Tasks:** 21.
 
 - [x] **P03-001 — Bootstrap modular Express API and shared middleware**\
   **Status:** `Done` · **Area:** Backend/core · **Owner:** Codex\
@@ -579,33 +623,42 @@ owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
   **Acceptance:** Real replica-set and HTTP parity for sessions, CSRF, profile/address, recovery and notification claims; exact validators/indexes and external-effect guards retained; update operation/runbook paths with moves. No bulk renames of unimplemented features.\
   **Evidence:** [Module ownership and file-convention parity](./evidence/P03-020-module-ownership.md). Customers uses an auth-owned narrow transactional capability; delivery coverage, provider adapter/config and entity-prefixed implemented files now have their owning boundaries. Canonical schema/validator and provider/claim bodies preserved. 331 unit/contract, 285 real MongoDB integration, 34 tooling and 6 three-engine API browser cases passed; lint/types/build/smoke/boundaries passed. Project owner explicitly accepted through the review popup on 21 October 2026; [acceptance recorded](./evidence/P03-020-module-ownership.md#owner-acceptance). No data migration or M1 approval claimed.
 
+- [x] **P03-021 — Refactor backend to the new modular target and enforce boundaries**\
+  **Status:** `Done` · **Area:** Backend/engineering · **Owner:** Codex\
+  **Sources:** Architecture §§4,6; Database §4.2; API §2\
+  **Depends on:** `P01-018`, `P03-020`\
+  **Deliverable:** Inventory and incrementally migrate setup/routes/config/shared/providers/scripts, grouped domain owners and cohesive services; update tests/tooling and executable negative import-boundary fixtures together.\
+  **Acceptance:** Preserve canonical models/indexes/validators, HTTP DTO/session/CSRF/idempotency and transaction invariants, worker/operator compatibility and unknown-outcome recovery. Verify controller/model, shared/module, provider/domain, nested foreign-persistence and frontend isolation rules; actual affected test/build/smoke parity and independent acceptance. No provider/milestone gate is waived.\
+  **Evidence:** [Backend target structure and parity](./evidence/P03-021-backend-refactor.md). Root setup/routes, typed config/shared, auth/catalog/media ownership, provider clients/schemas, jobs/scripts and test discovery migrated; negative boundary fixtures and clean build/format scope updated. 343 unit/contract, 327 real MongoDB integration, 40 tooling cases and 6 three-engine identity journeys passed; backend lint/types/build/smoke, boundaries, formatting and documentation checks passed. Project owner reviewed and accepted through the popup on 22 October 2026: “Review করেছি—accept করছি, Done করো”; [acceptance recorded](./evidence/P03-021-backend-refactor.md#owner-acceptance). EXT-04 and milestone gates unchanged.
+
 ### Phase 04 — Product catalog and inventory
 
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 04. **Associated gate:** M2. **Tasks:** 15.
 
-- [ ] **P04-001 — Model categories and hierarchy with activity rules**\
-  **Status:** `Not Started` · **Area:** Backend/catalog\
+- [x] **P04-001 — Model categories and hierarchy with activity rules**\
+  **Status:** `Done` · **Area:** Backend/catalog · **Owner:** Codex\
   **Sources:** FR-04; FR-24\
   **Depends on:** `P03-002`\
   **Deliverable:** Add hierarchical category schema, slug/index, active state and guarded deletion/reassignment semantics.\
   **Acceptance:** Products cannot be stranded by category deletion; inactive categories are excluded publicly.\
-  **Evidence to attach:** Schema and hierarchy tests.
+  **Evidence:** [Schema, transactional hierarchy and race verification](./evidence/P04-001-category-hierarchy.md). [Owner acceptance](./evidence/P04-001-category-hierarchy.md#owner-acceptance), 21 October 2026.
 
-- [ ] **P04-002 — Model products and default/option variants**\
-  **Status:** `Not Started` · **Area:** Backend/catalog\
+- [x] **P04-002 — Model products and default/option variants**\
+  **Status:** `Done` · **Area:** Backend/catalog · **Owner:** Codex\
   **Sources:** FR-05; FR-06; FR-23\
   **Depends on:** `P04-001`\
   **Deliverable:** Define products, images, prices/sale prices, searchable fields, variant SKUs and uniqueness indexes.\
   **Acceptance:** Product has at least one purchasable SKU; duplicate SKUs/slugs rejected.\
-  **Evidence to attach:** Model/index tests.
+  **Evidence:** [Canonical models, indexes, transaction/race verification](./evidence/P04-002-product-variants.md). [Owner acceptance](./evidence/P04-002-product-variants.md#owner-acceptance), 21 October 2026.
 
 - [ ] **P04-003 — Implement controlled Cloudinary media adapter**\
-  **Status:** `Not Started` · **Area:** Backend/media\
+  **Status:** `Blocked` · **Area:** Backend/media · **Owner:** Codex\
   **Sources:** FR-05; FR-23; Architecture §11\
   **Depends on:** `P03-003`, `P01-005`\
   **Deliverable:** Implement the mediaAssets ownership/upload-intent ledger, validation/quarantine, transactionally attached references, private evidence authorization and CAS-protected orphan cleanup; upload/delete provider calls stay outside DB transactions (Database §6.7).\
   **Acceptance:** Only authorized admin uploads; credentials never reach browser bundles.\
-  **Evidence to attach:** Media adapter/upload security tests.
+  **Evidence:** [Local adapter/ledger/auth verification and EXT-04 blocker](./evidence/P04-003-controlled-media.md).\
+  **Blocked:** EXT-04 — store administrator/project owner must supply approved staging account/configuration, media/scanner/retention policy and actual provider security evidence. Local implementation and focused checks passed; default runtime activation stays off. Next: protected input references, real staging upload/private-delivery/deletion validation and independent review.
 
 - [ ] **P04-004 — Implement admin category management**\
   **Status:** `Not Started` · **Area:** Admin/catalog\
@@ -1847,44 +1900,104 @@ Preserve IDs and dependency references; update phase totals and record milestone
 
 **20 October 2026 — Default HeroUI owner decision:** Added P02-014 (In Progress) under the explicit request to use the complete native default design system in both apps, centralize UI control, unify preview and remove obsolete/redundant visual tests. Register 178 → 179; prior acceptances preserved. Phase 02: 13 Done, 1 In Progress. Overall: 44 Done, 1 In Progress, 134 Not Started. No product/security/accessibility milestone waived.
 
-
 **20 October 2026 — P02-014 acceptance:** In Review → Done following owner acceptance of corrections and explicit “done koro”. Phase 02: 14/14 Done; overall: 45 Done, 134 Not Started. Native contrast findings remain open under P10-006; no WCAG or milestone gate accepted.
-
 
 **20 October 2026 — P02-014 verified correction:** Owner clarified that “done koro” meant finish the remaining work, not carry defects forward. Fixed the filled-button/footer contrast defects and reran the unsuppressed affected audit: four cases, 16 scans Passed. Done now reflects implemented and verified corrections; P10-006 retains its full feature/release scope.
 
-
 **20 October 2026 — P03-013:** Not Started → In Progress → In Review. Added shared transaction-local authorization/fencing for profile and email-change services, explicit admin session role middleware and safe fixed action classifications in operational logs. Scoped 91 unit and 88 real replica/HTTP cases passed, including forced logout/suspension races and owner denial; backend static/build/smoke checks passed. No new public routes, schema migration or milestone acceptance. Owner review pending.
-
 
 **20 October 2026 — P03-013 acceptance:** In Review → Done after explicit popup review/acceptance: “Review করেছি—accept করছি, Done করো”. Phase 03: 15 Done, 5 Not Started; overall: 46 Done, 133 Not Started. No milestone accepted.
 
-
 **21 October 2026 — P03-014:** Not Started → In Progress → In Review. Added shared atomic MongoDB auth quotas and an additive ephemeral counter bootstrap, bound recovery/login attempts independently of account existence, protected bootstrap, fail-closed schema/store handling and secret-free security audit reasons. Scoped 122 unit/contract and 173 real replica/HTTP cases passed; build/smoke/static checks passed. Owner review pending; deployment/proxy/collector and milestone gates unchanged.
-
 
 **21 October 2026 — P03-014 acceptance:** In Review → Done after explicit owner popup review/acceptance: “Review করেছি—accept করছি, Done করো”. Phase 03: 16 Done, 4 Not Started; overall: 47 Done, 132 Not Started. Deployment and milestone gates unchanged.
 
-
 **21 October 2026 — P03-015:** Not Started → In Progress → In Review. Connected customer/account and administrator identity UIs to existing APIs with pinned Query/Zod, fresh CSRF, abortable private caches, generation fencing, cross-tab invalidation and hydration-safe forms. Real replica-set/TLS browser flows pass in Chromium/Firefox/WebKit. Owner acceptance pending; Phase 03: 16 Done, 1 In Review, 3 Not Started; overall: 47 Done, 1 In Review, 131 Not Started. M1 remains unapproved. [Evidence](./evidence/P03-015-identity-interfaces.md).
-
 
 **21 October 2026 — P03-015 acceptance:** In Review → Done after explicit project-owner popup review/acceptance: “Review করেছি—accept করছি, Done করো”. Phase 03: 17/20 Done; overall: 48 Done, 131 Not Started, zero In Review. Existing verification retained; this status-only update does not repeat application tests. Live sender/deployment and M1 gates remain separate. [Acceptance](./evidence/P03-015-identity-interfaces.md#owner-acceptance).
 
-
 **21 October 2026 — P03-016:** Not Started → In Progress → In Review. Assembled M1 foundation/identity security evidence, executed the required local inventory and retained scoped corrections rather than rerunning unchanged passing checks. Real database/session/recovery/ownership and three-engine browser checks passed; no dependency exceptions. Independent task review pending; M1 remains Not Accepted. Overall: 48 Done, 1 In Review, 130 Not Started. [Evidence](./evidence/P03-016-identity-security.md).
-
 
 **21 October 2026 — P03-016 acceptance:** In Review → Done after explicit project-owner popup acceptance: “Review করেছি—accept করছি, Done করো”. Acceptance covers this verification task only; M1 remains Not Accepted. Phase 03: 18/20 Done; overall: 49 Done, 130 Not Started, zero In Review. Existing application/security results retained; only documentation checks repeated. [Acceptance](./evidence/P03-016-identity-security.md#owner-acceptance).
 
-
 **21 October 2026 — P03-019:** Not Started → In Progress → In Review. Extracted typed HTTP/worker composition and root registration, removed configuration re-serialization and moved common HTTP utilities with import parity. Scoped backend and real API browser verification passed. Owner acceptance pending; Phase 03: 18 Done, 1 In Review, 1 Not Started; overall: 49 Done, 1 In Review, 129 Not Started. [Evidence](./evidence/P03-019-backend-composition.md).
-
 
 **21 October 2026 — P03-019 acceptance:** In Review → Done after explicit project-owner popup acceptance: “Review করেছি—accept করছি, Done করো”. Phase 03: 19/20 Done; overall: 50 Done, 129 Not Started, zero In Review. P03-020 remains Not Started; M1 approval remains separate. Existing verification retained; only documentation checks repeated. [Acceptance](./evidence/P03-019-backend-composition.md#owner-acceptance).
 
-
 **21 October 2026 — P03-020:** Not Started → In Progress → In Review. Separated existing auth/customer/delivery/provider ownership through a bounded auth-owned customer capability and entity-prefixed files, preserving canonical schemas/indexes and external-effect rules. Scoped verification passed; task acceptance pending. Phase 03: 19 Done, 1 In Review; overall: 50 Done, 1 In Review, 128 Not Started. M1 remains Not Accepted. [Evidence](./evidence/P03-020-module-ownership.md).
 
-
 **21 October 2026 — P03-020 acceptance:** In Review → Done after explicit project-owner popup acceptance: “Review করেছি—accept করছি, Done করো”. Phase 03: 20/20 Done; overall: 51 Done, 128 Not Started, zero In Review. Existing verification retained; only documentation checks repeated for this status update. M1 remains Not Accepted and requires separate approval. [Acceptance](./evidence/P03-020-module-ownership.md#owner-acceptance).
+
+**21 October 2026 — P04-001:** Not Started → In Progress → In Review. Added category schema/indexes,
+transactional ancestry/CAS/deletion capabilities and eight real replica-set tests. Executor: Codex;
+independent reviewer pending. Phase 04: 14 Not Started, 1 In Review; overall: 127 Not Started,
+1 In Review, 51 Done. M2 remains Not Accepted. [Evidence](./evidence/P04-001-category-hierarchy.md).
+
+**21 October 2026 — P04-001 acceptance:** In Review → Done following explicit project-owner popup
+review/acceptance: “Review করেছি—accept করছি, Done করো”. Phase 04: 1 Done, 14 Not Started;
+overall: 52 Done, 127 Not Started, zero In Review. Existing implementation verification retained;
+this status-only update repeats documentation checks only. M2 remains Not Accepted.
+[Acceptance](./evidence/P04-001-category-hierarchy.md#owner-acceptance).
+
+**21 October 2026 — P04-002:** Not Started → In Progress → In Review. Added canonical product/variant
+schemas, BSON validators/index bootstrap and guarded atomic aggregate creation. Five focused unit
+and fourteen product replica-set tests passed; eight category regression cases retained. Executor:
+Codex; independent acceptance pending. Phase 04: 1 Done, 1 In Review, 13 Not Started; overall:
+52 Done, 1 In Review, 126 Not Started. M2 remains Not Accepted.
+[Evidence](./evidence/P04-002-product-variants.md).
+
+**21 October 2026 — P04-002 acceptance:** In Review → Done following explicit project-owner popup
+review/acceptance: “Review করেছি—accept করছি, Done করো”. Phase 04: 2 Done, 13 Not Started;
+overall: 53 Done, 126 Not Started, zero In Review. Existing implementation verification retained;
+this status-only update repeats documentation checks only. M2 remains Not Accepted.
+[Acceptance](./evidence/P04-002-product-variants.md#owner-acceptance).
+
+**21 October 2026 — P04-003:** Not Started → In Progress → Blocked (EXT-04). Implemented controlled
+media adapters, real admin upload/delete routes behind explicit composition, durable scoped ledger,
+CAS attachment/cleanup/holds and bounded maintenance. Passed 96 focused unit/regression and 22 real
+DB/composition cases, backend build/static/smoke checks. Real Cloudinary/scanner deployment and
+approved account/media/retention inputs were not supplied; “ok” acknowledges the request but is not
+provider/policy evidence. Executor: Codex; accountable external function: store administrator/project
+owner with backend/security/QA. Independent acceptance pending. Phase 04: 2 Done, 1 Blocked,
+12 Not Started; overall: 53 Done, 1 Blocked, 125 Not Started. M2 remains Not Accepted.
+[Evidence and next action](./evidence/P04-003-controlled-media.md).
+
+**22 October 2026 — New structure decision / P01-018:** Owner selected the new simple feature-based
+target and requested documentation first, then one application at a time. P01-018 Not Started →
+In Progress → In Review; P03-021/P02-015/P02-016 added Not Started in backend→storefront→admin order.
+Canonical structure/conventions, dependent contracts, README and AGENTS updated; no application
+files moved. Executor: Codex; independent documentation acceptance pending. Totals: 183 tasks,
+53 Done, 128 Not Started, 1 Blocked (P04-003/EXT-04), 1 In Review. Milestones unchanged.
+[Evidence](./evidence/P01-018-project-structure.md).
+
+**22 October 2026 — P01-018 acceptance:** In Review → Done following explicit project-owner popup
+review/acceptance: “Docs review করেছি—accept করছি, Done করো”. Phase 01: 18 Done; overall:
+54 Done, 128 Not Started, 1 Blocked, zero In Review. Documentation checks repeated; no application
+source changes or application refactor acceptance implied. Next scheduled task: P03-021 backend,
+then P02-015 storefront, then P02-016 admin after each application's independent acceptance.
+[Acceptance](./evidence/P01-018-project-structure.md#owner-acceptance).
+
+**22 October 2026 — Documentation consolidation correction:** At the owner's request, integrated
+structure/naming into Architecture §§4–6 and component usage into Design §6; removed standalone
+guides and repaired references. UI verification, operational procedures and implementation evidence
+references now sit in owning sections. P01-018 acceptance/history and refactor order remain unchanged;
+no application source moves or new provider/milestone acceptance. [Correction evidence](./evidence/P01-018-project-structure.md#documentation-consolidation-correction).
+
+**22 October 2026 — P03-021 review handoff:** Backend target structure and executable safeguards implemented;
+Not Started → In Progress → In Review after affected local parity checks. Independent acceptance pending;
+P02-015/P02-016 and EXT-04 remain unchanged. [Evidence](./evidence/P03-021-backend-refactor.md).
+
+**22 October 2026 — P03-021 acceptance:** In Review → Done after explicit project-owner popup review: “Review করেছি—accept করছি, Done করো”. Existing parity evidence retained; documentation checks rerun for closure. [Acceptance](./evidence/P03-021-backend-refactor.md#owner-acceptance). No milestone/provider acceptance or frontend refactor implied.
+
+**22 October 2026 — P02-015 / P02-016 / P01-019:** Owner-requested combined frontend/monorepo batch
+implemented and verified per app, then integrated. In Progress → In Review; all 23 local inventory checks passed
+with scoped reruns, and executor visual inspection completed. Independent owner acceptance pending; overall
+55 Done, 3 In Review, 1 Blocked, 125 Not Started. [Verification](./evidence/P01-019-monorepo-refactor.md).
+
+**22 October 2026 — P02-015 / P02-016 / P01-019 acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. Full-project recheck and the three refactors accepted; overall 58 Done, 1 Blocked, 125 Not Started. [Acceptance](./evidence/P01-019-monorepo-refactor.md#owner-acceptance). External provider, deployment and milestone gates remain unchanged.
+
+**22 October 2026 — P01-020 acceptance:** In Review → Done after explicit owner popup review: “Structure review করেছি—accept করছি, Done করো”. Structure audit and recorded corrections accepted; overall 59 Done, 1 Blocked, 125 Not Started. [Acceptance](./evidence/P01-020-structure-audit.md#owner-acceptance). Existing provider/deployment/milestone gates remain unchanged.
+
+**22 October 2026 — P01-020 simplification follow-up:** Done → In Progress → In Review after owner feedback about redundant layers. Removed three forwarding/contract files, kept actual private assembly and shared operation helpers, and verified scoped consumers. Initial acceptance remains historical; follow-up acceptance pending. Overall: 58 Done, 1 In Review, 1 Blocked, 125 Not Started. [Follow-up](./evidence/P01-020-structure-audit.md#simplification-follow-up).
+
+**23 October 2026 — P01-020 follow-up acceptance:** In Review → Done after explicit owner popup review: “সংশোধিত structure accept করছি—Done করো”. Simplified wiring and recorded checks accepted; overall 59 Done, 1 Blocked, 125 Not Started. [Acceptance](./evidence/P01-020-structure-audit.md#follow-up-acceptance). Provider/deployment/milestone gates remain unchanged.

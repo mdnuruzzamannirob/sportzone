@@ -1,10 +1,10 @@
 import { Types, type ClientSession, type Connection } from 'mongoose'
-import { inTransaction } from '../../db/transaction.js'
-import { ApiError } from '../../common/errors.js'
-import { authorizeAccount } from './authorization.service.js'
-import { accountDto } from './account.dto.js'
+import { inTransaction } from '../../shared/database/transaction.js'
+import { ApiError } from '../../shared/errors/app-error.js'
+import { authorizeAccount } from './sessions/authorization.service.js'
+import { accountDto } from './credentials/account.dto.js'
 import type { IdentityModels } from './auth.model.js'
-import type { SessionService } from './session.service.js'
+import type { SessionService } from './sessions/session.service.js'
 
 type User = InstanceType<IdentityModels['users']>
 type Deletion = NonNullable<User['deletionRequest']>
@@ -54,12 +54,8 @@ export function createCustomerAccountAccess(
                   status: deletion.status,
                   requestedAt: new Date(deletion.requestedAt),
                   verifiedAt: new Date(deletion.verifiedAt),
-                  ...(deletion.reason !== undefined
-                    ? { reason: deletion.reason }
-                    : {}),
-                  ...(deletion.decisionAt
-                    ? { decisionAt: new Date(deletion.decisionAt) }
-                    : {}),
+                  ...(deletion.reason !== undefined ? { reason: deletion.reason } : {}),
+                  ...(deletion.decisionAt ? { decisionAt: new Date(deletion.decisionAt) } : {}),
                   ...(deletion.decisionReason !== undefined
                     ? { decisionReason: deletion.decisionReason }
                     : {}),
@@ -71,8 +67,7 @@ export function createCustomerAccountAccess(
           transaction,
           view: () => accountDto(user),
           async save() {
-            if (!transaction.inTransaction())
-              throw new ApiError('AUTH_REQUIRED')
+            if (!transaction.inTransaction()) throw new ApiError('AUTH_REQUIRED')
             if (!mutating) throw new ApiError('FORBIDDEN')
             // Never persist supplied email, role, status, credentials, revisions or arbitrary paths.
             user.name = profile.name
@@ -92,9 +87,7 @@ export function createCustomerAccountAccess(
                 status: 'requested',
                 requestedAt: new Date(request.requestedAt),
                 verifiedAt: new Date(request.verifiedAt),
-                ...(request.reason !== undefined
-                  ? { reason: request.reason }
-                  : {}),
+                ...(request.reason !== undefined ? { reason: request.reason } : {}),
               }
             }
             await user.save({ session: transaction })
@@ -104,6 +97,4 @@ export function createCustomerAccountAccess(
     },
   }
 }
-export type CustomerAccountAccess = ReturnType<
-  typeof createCustomerAccountAccess
->
+export type CustomerAccountAccess = ReturnType<typeof createCustomerAccountAccess>

@@ -31,8 +31,7 @@ export function ThemePreferenceSelect() {
           { value: 'system', label: 'System' },
         ]}
         onChange={(value) => {
-          if (value === 'light' || value === 'dark' || value === 'system')
-            setThemePreference(value)
+          if (value === 'light' || value === 'dark' || value === 'system') setThemePreference(value)
         }}
       />
     </div>

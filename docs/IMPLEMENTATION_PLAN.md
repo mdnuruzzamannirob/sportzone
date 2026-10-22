@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 20 October 2026
+**Updated:** 22 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -134,44 +134,51 @@ Do not assign arbitrary completion dates. Estimate work after evaluating develop
 
 ### 3.6 Engineering foundation and incremental refactor
 
-Architecture §§4–6,14 define application organization and engineering decisions; Operations §§5.5–5.7 define CI, source control and promotion, and Testing §15 defines verification. Reconcile these contracts before implementation. Source reorganization preserves the existing stack, business behavior and release gates.
+Refactor one application at a time to the approved feature-based structure. [Architecture §§4–6](./ARCHITECTURE.md#4-project-structure) define target
+trees/naming/ownership. The task register records migration progress and acceptance; prior refactor evidence does not establish parity for a subsequent source move.
 
-| Step | Task | Outcome and prerequisite |
+| Order | Task | Outcome / prerequisite |
 | --- | --- | --- |
-| 1 | P01-015 | Reconcile engineering contracts and submit documentation verification for independent acceptance |
-| 2 | P01-016 / P01-017 | Keep inventory-driven CI and development tooling minimal; validate command failures and affected checks without repeated full-suite runs |
-| 3 | P03-019 | Extract typed composition/configuration and route registration; preserve runtime/worker/tool behavior |
-| 4 | P03-020 | Separate auth/customer/delivery boundaries, standardize cohesive backend files and provider adapters; depends on P03-019 |
-| 5 | P02-012 / P02-013 | Refactor storefront/admin routes, layouts and feature placement independently after documentation acceptance |
-| 6 | Existing feature tasks | Integrate customer/admin auth, then admin catalog → public catalog → inventory/cart → quote/COD order/admin processing; honor declared prerequisites |
-| 7 | Existing P07/P08 tasks | Verified online payment/reconciliation and after-sales; required channels and launch gates unchanged |
+| 1 | P01-018 | Reconcile target organization, contracts, agent rules and documentation; independent review |
+| 2 | P03-021 | Backend refactor and executable boundary/tool/test parity; depends on P01-018 |
+| 3 | P02-015 | Storefront refactor, URL/cache/HeroUI/browser parity; depends on P03-021 |
+| 4 | P02-016 | Admin refactor, router/session/forms/browser parity; depends on P02-015 |
+| 5 | P01-019 | Monorepo tooling, browser discovery and locked setup parity for the frontend batch |
 
-**Current execution priority:** Continue with P03-019, followed by P03-020 and the two frontend refactors,
-using the accepted P01-015 architecture and P01-017 tooling baseline. P01-016 hosted CI/settings closure
-is a separate follow-up; it is not a declared prerequisite of these refactor tasks in TASKS.md. Do not
-restart completed tooling work merely because remote verification is unavailable. This sequencing does
-not waive P01-016 acceptance, protected-main checks or release gates. Finish and review one refactor task
-before starting the next; use change-based checks under Testing §15.5.
+Do not begin source moves as part of P01-018. Normally complete and review each application before the next.
+For an explicitly owner-requested combined batch, verify each app before moving to the next and collect separate
+task acceptances in the final review; milestone and external gates remain independent. Within an application use small verified slices, not one bulk destructive
+rename. Feature work must follow the target conventions and preserve security/financial invariants.
 
-Do not start a bulk rename across all apps. For each slice, record current-to-target paths, preserve public URLs, error/DTO/session/CSRF contracts and collection/index identities, move/update imports and operational entry points together, then run the owning checks. Refactor tasks do not recreate already accepted foundations or mark dependent business features complete. Pre-existing accepted evidence is retained as historical evidence; new behavior/parity evidence accompanies refactored code.
+| Area | Required organization / continuity |
+| --- | --- |
+| Backend runtime | setup.ts/routes.ts with cross-domain wiring at root; config/env.ts and config/database.ts |
+| Backend technical code | One shared/ boundary for errors, logging, middleware and database mechanics |
+| Backend providers/operator tools | providers/ client/schema pairs; scripts/ Node entry points with existing input/environment restrictions |
+| Backend domains | Auth subfeatures, catalog products/variants/categories, cohesive media services; one model registration per collection |
+| Storefront | Target route/feature/transport tree; account group adds no URL segment; migrate browser discovery together |
+| Admin | Target router/guard/feature tree; backend auth remains mandatory |
 
-Initial current-to-target inventory (not executed):
+Current implementation and acceptance are recorded by the corresponding task; this table defines ownership,
+not a second progress register. Unimplemented domains do not need empty folders or templates.
 
-| Current code | Target responsibility | Task |
-| --- | --- | --- |
-| `backend/src/server.ts`, `modules/auth/composition.ts` | Process lifecycle plus root `composition.ts` and typed options | P03-019 |
-| `backend/src/config/environment.ts`, `routes.ts`, `middleware/`, `shared/` | `config/env.ts`, `routes/index.ts`, cohesive `common/` utilities | P03-019 |
-| `backend/src/modules/auth/profile.ts`, `profile-routes.ts`, `account-dto.ts` | Customer validation/service/controller/routes/DTO ownership; canonical identity persistence retained | P03-020 |
-| `backend/src/modules/settings/coverage.ts` | Delivery coverage read service | P03-020 |
-| `backend/src/modules/notifications/email.ts` | Email provider integration; intent/claims stay in notifications | P03-020 |
-| `storefront/src/app/(public)`, `(private)`, root shell/header components | Target route groups, components/layout and consuming features, keeping URLs/cache rules | P02-012 |
-| `admin/src/app/routes.tsx`, `components/admin/`, `styles.css` | Router/providers, components/layout, feature auth guard and styles/globals.css | P02-013 |
+Each refactor must inventory actual current→target paths, imports, script commands, test runner globs,
+aliases, generated output, safe startup/shutdown and affected CI checks before moves. Preserve existing
+public URLs, DTOs, cookies/session/CSRF, idempotency/If-Match, DB names/indexes and external-effect
+recovery. One canonical model registration per collection; inventory receives only stock capabilities.
+Do not invent a second collection or use a generic repository layer to conceal ownership changes.
 
-Keep `db/`, `observability/`, reusable UI/management/commerce foundations, pure root shared utilities and operator tools unless a specific dependency requires a verified move. Do not implement planned products/inventory models solely to complete a refactor checklist.
+Update automated checks for frontend/backend isolation, nested module/private persistence boundaries,
+controllers→models, shared→modules and provider/business separation with negative fixtures. Keep
+Biome/TypeScript/Vitest/browser tooling and one locked graph; no new frameworks or infrastructure.
+Update ci-workspaces.json only for actual script/inventory changes; no skipped/passing placeholders.
+Retain existing pure shared utilities/reusable UI and operator entry points until consumers and
+compatibility are verified. Tests stay outside src/; preserve browser/theme/accessibility coverage.
 
-TanStack Query/frontend Zod are selected target dependencies for later integrated API/forms work, not dependencies to add during layout-only moves. Add compatible locked versions and CI checks with their consuming feature. Do not reorganize the phase roadmap to hide incomplete prerequisites. Recovery for a code-only move is the prior compatible build after shutdown/lease handling; migrations and external financial retries require their own contracts and safeguards.
-
-Tooling work may proceed independently where its inputs are stable, but a source move must update the current runner/inventory rather than depend on an unimplemented CI design. Application/container deployment, migration jobs and protected environment configuration remain within the existing Phase 11 implementation work; specification does not imply deployed infrastructure. New automation runs no production financial activity.
+Use change-based verification (Testing §15.5). Record actual commands/environment/results, source
+revision, parity evidence, reviewer decision and rollback. Reverse code moves only with compatible
+config/entry points; never roll back by erasing business/financial/audit records or replaying unknown
+provider effects. Source refactors do not clear EXT-04 or accept milestones/release/provider gates.
 
 ---
 
@@ -238,7 +245,7 @@ Frontend applications must not import Mongoose models or backend runtime service
 
 ### 4.5 Shared design foundation
 
-Implement the approved semantic CSS tokens, theme bootstrap, font loading, responsive primitives, form controls, buttons, overlays, navigation patterns, status components, and accessibility utilities in the applications where needed. Storefront and admin components may remain separate while using the same token definitions. Maintain the Light / Dark / System preference, system default before override, persistence before first visible paint, and uninterrupted form state on theme changes.
+Use the native HeroUI semantic tokens, system typography and app-owned theme/control boundaries defined in Design §2. Build responsive forms, overlays, navigation, status displays and accessibility utilities as required by each application; do not introduce custom fonts, a parallel palette or a shared UI runtime. Maintain the Light / Dark / System preference, system default before override, persistence before first visible paint, and uninterrupted form state on theme changes.
 
 ---
 
@@ -297,8 +304,8 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 **Work packages:**
 
-1. Initialize the Next.js storefront and React + Vite admin workspaces, then use the default HeroUI theme through app-owned UI facades in both applications, following the P02-014 owner decision.
-2. Set up Inter, Plus Jakarta Sans, Bengali-capable fallbacks, consistent spacing/radii, icon conventions, and BDT formatting.
+1. Initialize the Next.js storefront and React + Vite admin workspaces, then use the default HeroUI theme through app-owned UI facades in both applications, following Design §2.
+2. Use native HeroUI/Tailwind system typography, spacing, radii and component variants; preserve Bangla fallback rendering, consistent icons and integer-poisha BDT formatting under Design §2.
 3. Implement responsive storefront and admin shells, navigation, theme preference, keyboard-accessible menus/drawers, and error/not-found/loading boundaries.
 4. Implement the appropriate basic primitives: inputs, buttons, alerts, status badges, pagination, dialogs, file upload, tables, cards, and skeletons as needed for upcoming slices.
 5. Establish form-error, focus, disabled, selection, loading, confirmation, and reduced-motion patterns using real component states in both themes.
@@ -309,9 +316,6 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 **Deliverable:** Reusable and tested UI foundations in both applications.
 
 **Exit gate:** Applicable design-system primitives and route shells can support Phase 03–04 work without revisiting core visual decisions.
-
-
-**20 October 2026 owner decision (P02-014):** Replace the custom palette/fonts/adapter with native default HeroUI design, enforce app-owned UI import/theme boundaries, unify the preview and retire obsolete visual assertions while retaining interaction/security/accessibility gates. Stock-theme findings must be reported; no milestone is implicitly accepted.
 
 ### Phase 03 — Authentication and core backend
 
@@ -785,7 +789,7 @@ Confirm production administrator ownership, live merchant channel activation and
 
 ### 13.2 Change control
 
-Every change request records the requested behavior, justification, source sections affected, impacted modules/pages, security/financial implications, testing impact, priority, and approval decision. Update the approved source document first when its contract changes; then revise this plan and dependent task records. Do not change the architecture, theme tokens, stock/payment/refund invariants, or scope only because an agent suggests a simpler implementation.
+Every change request records the requested behavior, justification, source sections affected, impacted modules/pages, security/financial implications, testing impact, priority, and approval decision. Update the approved source document first when its contract changes; then revise this plan or dependent task records only where the decision changes their content. Keep implementation commands/results in evidence and acceptance/status in Tasks; update specifications in their owning sections instead of appending dated task reports. Do not change the architecture, theme tokens, stock/payment/refund invariants, or scope only because an agent suggests a simpler implementation.
 
 ### 13.3 Blocker reporting
 

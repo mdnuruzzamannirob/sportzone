@@ -18,9 +18,7 @@ export function CommerceSkeleton({
       </p>
       <Card aria-hidden="true" className="">
         <Card.Content className="space-y-4">
-          {kind === 'product' && (
-            <Skeleton className="aspect-square w-full " />
-          )}
+          {kind === 'product' && <Skeleton className="aspect-square w-full " />}
           {kind === 'cart-line' && <Skeleton className="h-24 w-24 " />}
           <Skeleton className="h-5 w-3/4" />
           <Skeleton className="h-4 w-1/2" />

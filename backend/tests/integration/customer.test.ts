@@ -6,21 +6,19 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createApp } from '../../src/app.js'
 import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
 import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
-import { createSessionService } from '../../src/modules/auth/session.service.js'
-import { createBrowserSecurity } from '../../src/modules/auth/browser-security.service.js'
-import { browserSecurityRoutes } from '../../src/modules/auth/browser-security.routes.js'
-import { createCustomerService } from '../../src/modules/auth/credentials.service.js'
-import { customerRoutes } from '../../src/modules/auth/customer-auth.routes.js'
-import {
-  createRegistrationNotifications,
-  registrationNotificationValidator,
-} from '../../src/modules/notifications/notification.service.js'
-import { composeCustomerRoutes } from '../../src/modules/auth/auth.composition.js'
-import { loadEnvironment } from '../../src/config/environment.js'
+import { createSessionService } from '../../src/modules/auth/sessions/session.service.js'
+import { createBrowserSecurity } from '../../src/modules/auth/sessions/browser-security.service.js'
+import { browserSecurityRoutes } from '../../src/modules/auth/sessions/browser-security.routes.js'
+import { createCustomerService } from '../../src/modules/auth/credentials/credentials.service.js'
+import { customerRoutes } from '../../src/modules/auth/credentials/customer-auth.routes.js'
+import { createRegistrationNotifications } from '../../src/modules/notifications/notification.service.js'
+import { registrationNotificationValidator } from '../../src/modules/notifications/notification.persistence.js'
+import { composeIdentityRoutes } from '../../src/setup.js'
+import { loadEnvironment } from '../../src/config/env.js'
 import { startServer } from '../../src/server.js'
-import { createLogger } from '../../src/observability/logger.js'
-import { testEnvironment } from '../support/environment.js'
-import { isolatedDatabase } from '../support/database.js'
+import { createLogger } from '../../src/shared/logger.js'
+import { testEnvironment } from '../helpers/environment.js'
+import { isolatedDatabase } from '../helpers/database.js'
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
 let models: ReturnType<typeof createIdentityModels>
 let sessions: ReturnType<typeof createSessionService>
@@ -52,9 +50,7 @@ function makeApp() {
   return createApp({ apiRouter: router })
 }
 async function context(cookie?: string) {
-  let req = request(app)
-    .get('/api/v1/auth/csrf?sessionKind=context')
-    .set('Origin', origin)
+  let req = request(app).get('/api/v1/auth/csrf?sessionKind=context').set('Origin', origin)
   if (cookie) req = req.set('Cookie', cookie)
   const res = await req.expect(200)
   return {
@@ -90,12 +86,7 @@ beforeAll(async () => {
   await initializeIdentityPersistence(fixture.connection, models)
   notifications = createRegistrationNotifications(fixture.connection)
   await notifications.initialize()
-  sessions = createSessionService(
-    fixture.connection,
-    models,
-    settings,
-    () => new Date(time),
-  )
+  sessions = createSessionService(fixture.connection, models, settings, () => new Date(time))
   security = createBrowserSecurity(
     fixture.connection,
     models,
@@ -134,9 +125,7 @@ describe('customer credential routes with real MongoDB and adaptive passwords', 
     expect(res.body.data.account.email).toBe(address)
     expect(res.body.data.verificationRequired).toBe(true)
     expect(res.headers['set-cookie']).toBeUndefined()
-    const user = await models.users
-      .findOne({ emailNormalized: address })
-      .select('+passwordHash')
+    const user = await models.users.findOne({ emailNormalized: address }).select('+passwordHash')
     expect(user?.role).toBe('customer')
     expect(user?.passwordHash).toMatch(/^scrypt\$/)
     const intents = await fixture.connection.db
@@ -151,18 +140,10 @@ describe('customer credential routes with real MongoDB and adaptive passwords', 
       payload: {},
     })
     expect(JSON.stringify(intents)).not.toContain(password)
-    expect(JSON.stringify(res.body)).not.toMatch(
-      /passwordHash|securityRevision|tokenHash|role/,
+    expect(JSON.stringify(res.body)).not.toMatch(/passwordHash|securityRevision|tokenHash|role/)
+    expect((await post('register', { name: 'Replay', email: email(), password }, ctx)).status).toBe(
+      403,
     )
-    expect(
-      (
-        await post(
-          'register',
-          { name: 'Replay', email: email(), password },
-          ctx,
-        )
-      ).status,
-    ).toBe(403)
   })
   it.each([
     { role: 'admin' },
@@ -183,14 +164,10 @@ describe('customer credential routes with real MongoDB and adaptive passwords', 
     const address = email(),
       contexts = [await context(), await context()]
     const results = await Promise.all(
-      contexts.map((ctx) =>
-        post('register', { name: 'Synthetic', email: address, password }, ctx),
-      ),
+      contexts.map((ctx) => post('register', { name: 'Synthetic', email: address, password }, ctx)),
     )
     expect(results.map((r) => r.status).sort()).toEqual([201, 409])
-    expect(
-      await models.users.countDocuments({ emailNormalized: address }),
-    ).toBe(1)
+    expect(await models.users.countDocuments({ emailNormalized: address })).toBe(1)
     const user = await models.users.findOne({ emailNormalized: address })
     expect(
       await fixture.connection.db
@@ -212,13 +189,7 @@ describe('customer credential routes with real MongoDB and adaptive passwords', 
     })
     try {
       expect(
-        (
-          await post(
-            'register',
-            { name: 'Synthetic', email: address, password },
-            ctx,
-          )
-        ).status,
+        (await post('register', { name: 'Synthetic', email: address, password }, ctx)).status,
       ).toBe(500)
       expect(await models.users.exists({ emailNormalized: address })).toBeNull()
     } finally {
@@ -228,13 +199,7 @@ describe('customer credential routes with real MongoDB and adaptive passwords', 
       })
     }
     expect(
-      (
-        await post(
-          'register',
-          { name: 'Synthetic', email: address, password },
-          ctx,
-        )
-      ).status,
+      (await post('register', { name: 'Synthetic', email: address, password }, ctx)).status,
     ).toBe(201)
   })
   it('logs in, rotates context and predecessor, projects current account and logs out with fresh CSRF', async () => {
@@ -245,27 +210,13 @@ describe('customer credential routes with real MongoDB and adaptive passwords', 
     const cookie = String(login.headers['set-cookie']?.[0]).split(';')[0] ?? ''
     expect(cookie).toMatch(/^sz_customer_sid=/)
     expect(login.headers['set-cookie']?.[0]).toContain('HttpOnly')
-    const current = await request(app)
-      .get('/api/v1/auth/session')
-      .set('Cookie', cookie)
-      .expect(200)
+    const current = await request(app).get('/api/v1/auth/session').set('Cookie', cookie).expect(200)
     expect(current.body.data.account.id).toBe(account.id)
-    expect(
-      (await post('login', { email: account.email, password }, ctx)).status,
-    ).toBe(403)
-    const next = await post(
-      'login',
-      { email: account.email, password },
-      await context(),
-      cookie,
-    )
+    expect((await post('login', { email: account.email, password }, ctx)).status).toBe(403)
+    const next = await post('login', { email: account.email, password }, await context(), cookie)
     expect(next.status).toBe(200)
-    await request(app)
-      .get('/api/v1/auth/session')
-      .set('Cookie', cookie)
-      .expect(401)
-    const nextCookie =
-      String(next.headers['set-cookie']?.[0]).split(';')[0] ?? ''
+    await request(app).get('/api/v1/auth/session').set('Cookie', cookie).expect(401)
+    const nextCookie = String(next.headers['set-cookie']?.[0]).split(';')[0] ?? ''
     const logout = await request(app)
       .post('/api/v1/auth/logout')
       .set('Origin', origin)
@@ -273,13 +224,8 @@ describe('customer credential routes with real MongoDB and adaptive passwords', 
       .set('X-CSRF-Token', next.body.data.csrfToken)
       .expect(200)
     expect(logout.body.data.revoked).toBe(true)
-    expect(String(logout.headers['set-cookie'])).toContain(
-      'Expires=Thu, 01 Jan 1970',
-    )
-    await request(app)
-      .get('/api/v1/auth/session')
-      .set('Cookie', nextCookie)
-      .expect(401)
+    expect(String(logout.headers['set-cookie'])).toContain('Expires=Thu, 01 Jan 1970')
+    await request(app).get('/api/v1/auth/session').set('Cookie', nextCookie).expect(401)
   })
   it.each(['missing', 'wrong', 'suspended', 'admin'] as const)(
     'returns indistinguishable login failure for %s',
@@ -294,10 +240,7 @@ describe('customer credential routes with real MongoDB and adaptive passwords', 
             { $set: { status: 'suspended' } },
           )
         if (kind === 'admin')
-          await models.users.updateOne(
-            { emailNormalized: address },
-            { $set: { role: 'admin' } },
-          )
+          await models.users.updateOne({ emailNormalized: address }, { $set: { role: 'admin' } })
       }
       const response = await post(
         'login',
@@ -350,11 +293,7 @@ describe('customer credential routes with real MongoDB and adaptive passwords', 
         .set('X-Forwarded-For', `192.0.2.${i}`)
         .send({})
         .expect(403)
-    await request(app)
-      .post('/api/v1/auth/login')
-      .set('Origin', origin)
-      .send({})
-      .expect(429)
+    await request(app).post('/api/v1/auth/login').set('Origin', origin).send({}).expect(429)
   })
   it('commits one concurrent login for one context and rolls back failed session issuance', async () => {
     const account = await register(),
@@ -368,8 +307,7 @@ describe('customer credential routes with real MongoDB and adaptive passwords', 
     const collection = await fixture.connection.db
       ?.listCollections({ name: 'sessions' }, { nameOnly: false })
       .next()
-    if (!collection?.options?.validator)
-      throw new Error('Missing session validator')
+    if (!collection?.options?.validator) throw new Error('Missing session validator')
     await fixture.connection.db?.command({
       collMod: 'sessions',
       validator: {
@@ -380,20 +318,14 @@ describe('customer credential routes with real MongoDB and adaptive passwords', 
       },
     })
     try {
-      expect(
-        (await post('login', { email: account.email, password }, retained))
-          .status,
-      ).toBe(500)
+      expect((await post('login', { email: account.email, password }, retained)).status).toBe(500)
     } finally {
       await fixture.connection.db?.command({
         collMod: 'sessions',
         validator: collection.options.validator,
       })
     }
-    expect(
-      (await post('login', { email: account.email, password }, retained))
-        .status,
-    ).toBe(200)
+    expect((await post('login', { email: account.email, password }, retained)).status).toBe(200)
   })
   it('keeps registration intent unique under retry and validates raw outbox writes', async () => {
     const account = await register(),
@@ -406,22 +338,17 @@ describe('customer credential routes with real MongoDB and adaptive passwords', 
       )
     })
     expect(
-      await fixture.connection.db
-        ?.collection('notifications')
-        .countDocuments({ userId: user._id }),
+      await fixture.connection.db?.collection('notifications').countDocuments({ userId: user._id }),
     ).toBe(1)
     await expect(
-      fixture.connection.db
-        ?.collection('notifications')
-        .insertOne({ eventKey: 'invalid' }),
+      fixture.connection.db?.collection('notifications').insertOne({ eventKey: 'invalid' }),
     ).rejects.toMatchObject({ code: 121 })
   })
   it('composes enabled production entry point only after validated persistence is ready', async () => {
     const reservation = createServer().listen(0, '127.0.0.1')
     await new Promise<void>((resolve) => reservation.once('listening', resolve))
     const address = reservation.address()
-    if (!address || typeof address === 'string')
-      throw new Error('Missing test port')
+    if (!address || typeof address === 'string') throw new Error('Missing test port')
     await new Promise<void>((resolve, reject) =>
       reservation.close((error) => (error ? reject(error) : resolve())),
     )
@@ -437,9 +364,7 @@ describe('customer credential routes with real MongoDB and adaptive passwords', 
       SESSION_COOKIE_SAME_SITE: 'lax',
       PORT: String(address.port),
     })
-    await expect(
-      composeCustomerRoutes(fixture.connection, config),
-    ).resolves.toBeDefined()
+    await expect(composeIdentityRoutes(fixture.connection, config)).resolves.toBeDefined()
     const runtime = await startServer(
       config,
       createLogger(config, () => {}),
@@ -453,9 +378,7 @@ describe('customer credential routes with real MongoDB and adaptive passwords', 
     } finally {
       await runtime.close()
     }
-    await fixture.connection.db
-      ?.collection('notifications')
-      .dropIndex('notifications_retry_queue')
+    await fixture.connection.db?.collection('notifications').dropIndex('notifications_retry_queue')
     try {
       await expect(
         startServer(

@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 21 October 2026
+**Updated:** 22 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical references:** [Architecture](./ARCHITECTURE.md) · [Database](./DATABASE.md)\
@@ -76,10 +76,9 @@ change (PRD §3.3).
 
 ### 2.1 Runtime and request path
 
-P03-019 implements the composition root in `backend/src/composition.ts`, root registration in
-`backend/src/routes/index.ts`, and technical HTTP utilities in `backend/src/common/`. Parsed runtime identity
-options are wired directly into HTTP/worker capabilities; there is no environment-string round trip. Endpoint,
-DTO, cookie, CSRF, rate-limit, error and persistence contracts are unchanged by these source moves.
+Source ownership and filenames follow [Architecture §§4–6](./ARCHITECTURE.md#4-project-structure).
+Module regrouping changes no public URL, DTO, access/session/CSRF, cache/error or retry contract.
+Runtime availability and activation are recorded in Tasks and Operations; an operation specification alone does not enable a route.
 
 ```mermaid
 flowchart LR
@@ -101,16 +100,22 @@ gateway. Scheduled jobs call shared services without bypassing invariants.
 
 | Module                                                                        | Primary route namespace(s)                                                             | Ownership                                                             |
 | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `auth`, `customers`, `guest-access`                                           | `/auth`, `/me`, `/guest-access`, `/admin/auth`                                         | Identity, scoped access and sessions                                  |
-| `products`, `categories`, `inventory`                                         | `/products`, `/categories`, `/admin/products`, `/admin/categories`, `/admin/inventory` | Visibility, SKUs, stock movement                                      |
-| `carts`, `wishlists`, `coupons`, `reviews`                                    | `/cart`, `/wishlist`, `/coupons`, `/reviews`, `/admin/coupons`                         | Cart, quotas, verification, moderation                                |
+| `auth` (including guest access), `customers`                                           | `/auth`, `/me`, `/guest-access`, `/admin/auth`                                         | Identity, scoped access and sessions                                  |
+| `catalog`, `inventory`                                         | `/products`, `/categories`, `/admin/products`, `/admin/categories`, `/admin/inventory` | Visibility, SKUs, stock movement                                      |
+| `cart`, `promotions`, `reviews`                                    | `/cart`, `/wishlist`, `/coupons`, `/reviews`, `/admin/coupons`                         | Cart, quotas, verification, moderation                                |
 | `checkout`, `orders`, `delivery`                                              | `/checkout`, `/orders`, `/delivery`, `/admin/orders`, `/admin/delivery`                | Snapshots, submissions, fulfillment, charge rules                     |
 | `payments`, `refunds`, `returns`                                              | `/orders/{id}/payments`, `/payments`, `/claims`, `/refunds`, `/admin/...`              | Verification, collections, claims, payouts                            |
-| `notifications`, `support`, `admin-operations`, `settings`, `media`, `health` | Existing operations in §§14, 16 and Appendix D only                                    | Correspondence, reporting, configuration, authorized media and health |
+| `notifications`, `support`, `reporting`, `settings`, `media`, `health` | Existing operations in §§14, 16 and Appendix D only                                    | Correspondence, reporting, configuration, authorized media and health |
 
 Domain services coordinate cross-module mutations within MongoDB transactions. No external HTTP call occurs while a database transaction remains open.
 
-**Implementation mapping:** Architecture §§4–6 define target filenames and feature ownership. Legacy `catalog`/`shopping`/`promotions` references below name business domains, mapping to products/categories, carts/wishlists and coupons. Delivery rules belong to delivery; asset lifecycle belongs to media. This mapping preserves URLs, operation IDs, DTOs, response/errors, cookies, CSRF, idempotency and authorization. Implemented-path descriptions remain current references until their refactor tasks update them. Controllers map HTTP inputs/results; services enforce business rules through public module capabilities. Frontend transports and query caching follow Architecture §§5.4–5.6. Notification delivery remains restricted to the documented surfaces; module organization adds no endpoint. This specification and executable validators/contract tests define the API; any future OpenAPI output must be checked against them before adoption.
+**Implementation mapping:** Architecture §§4–6 define target filenames and ownership. Target catalog groups products/variants/categories; cart groups cart/wishlist;
+promotions owns coupon operations; auth contains guest-access; reporting groups existing admin
+aggregates. Delivery and media remain distinct owners. This mapping changes no URL, operation ID,
+DTO, response/error, cookie, CSRF, idempotency or authorization contract. Implemented-path references
+remain valid until verified migration. Controllers map HTTP inputs/results; services enforce domain
+rules through public capabilities. Notification surfaces stay restricted. This specification and
+executable validators/contract tests define the API; future OpenAPI output must be checked against them.
 
 ## 3. HTTP conventions & versioning
 
@@ -215,7 +220,7 @@ sequenceDiagram
 Persistence maps to Database §§5.2–5.6: authenticated sessions retain a private `csrfSecretHash`; pre-auth
 `browserContexts.audience` is server-selected `storefront` or `admin`. Bootstrap/verification must preserve that audience
 and route-selected session kind; neither a body role nor an unrelated valid context can switch namespaces. These private
-fields add no public DTO properties. Executable validators and protocol/replay tests are owned by P03-018/005/006.
+fields add no public DTO properties. Validate protocol/replay behavior under Testing §§8–9, 12.
 
 ### 4.3 Authentication lifecycle expectations
 
@@ -229,15 +234,13 @@ fields add no public DTO properties. Executable validators and protocol/replay t
 | Password reset/change              | Single-use challenge consumption; advance security revision and invalidate affected sessions                  |
 | Guest proof                        | Single-use challenge grants **one order** and explicitly expires; cannot be used as general customer identity |
 
-### 4.4 Implemented customer/admin session boundary
+### 4.4 Customer and administrator session contract
 
-`backend/src/modules/auth/session.service.ts` implements the internal session lifecycle; `session.http.ts` supplies route-selected
-cookie parsing, set/clear controls and session-required middleware. The production router remains health-only until the
-Customer activation composes credential verification with P03-006's Origin/CSRF defenses; administrator login remains separate. No endpoint may
-issue a session from a client-supplied user ID alone. The internal issuer accepts only the verified principal selected by
-the owning customer/admin authentication flow and rechecks active role/status.
+Session issuance accepts only the verified principal selected by the owning customer/admin authentication flow
+and rechecks active role/status. No endpoint may issue a session from a client-supplied user ID alone.
+Apply the session lifecycle below together with §4.5's route-selected Origin/CSRF controls.
 
-| Concern               | Implemented contract                                                                                                                                                                                                                                                |
+| Concern               | Required contract                                                                                                                                                                                                                                                   |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Opaque credentials    | Independent CSPRNG 32-byte session and CSRF values, unpadded base64url (43 characters); no user/order/role claims in either token                                                                                                                                   |
 | Session storage       | HMAC-SHA-256 using the decoded 32-byte SESSION_SECRET; lowercase hex digest; message `sportzone:session:v1:<kind>::<token>`; kind is route-selected customer/admin                                                                                                  |
@@ -250,29 +253,28 @@ the owning customer/admin authentication flow and rechecks active role/status.
 | Fresh login           | Always create fresh random values; optional predecessor revocation is conditional on same user/kind; an unrelated account/namespace credential is never revoked by replacement                                                                                      |
 | Logout                | Idempotently revoke only supplied route-kind credential and clear only that cookie using matching attributes; repeated/expired/missing credential does not revoke another session; public logout still requires §4.2's valid Origin/CSRF and fresh context response |
 | Principal revocation  | Atomically advance principal securityRevision and mark its route-kind sessions revoked; other principals unaffected; status/role/revision changes deny old access even before cleanup                                                                               |
-| Secret rotation       | New SESSION_SECRET immediately rejects old digests on processes using it; drain/restart all old-key processes before declaring revocation complete; no dual-key acceptance is implemented                                                                           |
+| Secret rotation       | New SESSION_SECRET immediately rejects old digests on processes using it; drain/restart all old-key processes before declaring revocation complete; no dual-key acceptance is permitted by this contract                                                                           |
 
-`loadSessionOptions(process.env)` validates these session-specific settings when session composition is activated; no
-lifetime/SameSite fallback is supplied; explicit customer activation requires these settings. Configuration
-errors identify fields only. Operators must approve deployed values and verify real same-site domains/TLS/cookie behavior.
-Cookie expiry is advisory; server-side lookup remains authoritative. Set a cookie only after successful committed issuance;
-await durable logout before reporting server revocation, then perform P03-006's safe CSRF/context refresh.
+The configuration boundary validates explicit session lifetime and SameSite settings before composition;
+no fallback policy is supplied. Configuration errors identify fields only. Operations §13.3 owns activation,
+secret rotation and deployed domain/TLS verification. Cookie expiry is advisory; server-side lookup is authoritative.
+Set cookies only after committed issuance, await durable logout before reporting revocation, and refresh CSRF/context
+under §4.5 after the identity transition.
 
-**P03-013 authorization enforcement:** Customer profile/address and email-change services recheck the selected credential and active matching-role principal inside their owning transaction. Protected mutations fence both records with conditional timestamp writes, so concurrent logout/suspension/revision changes cause retry and reauthorization rather than a stale permission grant. Fixed expiry is unchanged. Nested address IDs are resolved only within that principal's embedded addresses; foreign and absent IDs return the same 404, and owner/role input fields remain forbidden. Admin session access uses the admin cookie/role guard; customer routes do not accept admin authority. No unimplemented commerce/admin mutation route is activated by this foundation.
+**Authorization at the transaction boundary:** Customer profile/address and email-change services recheck the selected credential and active matching-role principal inside their owning transaction. Protected mutations fence both records with conditional timestamp writes, so concurrent logout/suspension/revision changes cause retry and reauthorization rather than a stale permission grant. Fixed expiry is unchanged. Nested address IDs are resolved only within that principal's embedded addresses; foreign and absent IDs return the same 404, and owner/role input fields remain forbidden. Admin session access uses the admin cookie/role guard; customer routes do not accept admin authority. Apply the same authorization discipline when activating additional commerce/admin mutations.
 
-Sensitive identity actions are classified from a server-owned method/registered-route allowlist in operational request logs. Records contain action, HTTP status/outcome and server request correlation; never submitted IDs, credentials, proof material, email or body/query/header values. These operational records do not replace transactional `auditLogs` required by future administrative/financial mutations. P03-014 adds the shared throttles and fixed security audit reasons in §4.9.
+Sensitive identity actions are classified from a server-owned method/registered-route allowlist in operational request logs. Records contain action, HTTP status/outcome and server request correlation; never submitted IDs, credentials, proof material, email or body/query/header values. These operational records do not replace transactional `auditLogs` required by future administrative/financial mutations. Shared throttles and fixed security audit reasons are defined in §4.9.
 
 The service's authenticate result is an explicit internal principal projection; never serialize a raw session document.
 The private lookup explicitly selects its CSRF verifier for the session service; ordinary model projections still exclude
-all credential verifiers. Guest sessions remain P06-015. Browser protection is implemented in §4.5 and customer credentials
-in §4.6. Customer password recovery/change is implemented under the P03-010 contract below; verification, administrator
-credentials, broader throttles/audit and integrated gates remain with their owning tasks.
+all credential verifiers. Guest-order access is independently scoped under §9.2; neither a customer nor an
+administrator session may be treated as guest proof for an arbitrary order.
 
-### 4.5 Browser security implementation boundary
+### 4.5 Browser Origin and CSRF contract
 
 `browserSecurityRoutes` composes `GET /auth/csrf` and `GET /admin/auth/csrf` under `/api/v1` with
-`createBrowserSecurity` and the session service. The executable composes customer identity routes when `CUSTOMER_AUTH_ENABLED=true` after persistence readiness checks.
-The default remains health-only; administrator credential routes remain P03-012.
+`createBrowserSecurity` and the session service. Customer and administrator capabilities activate independently after persistence readiness checks, using
+`CUSTOMER_AUTH_ENABLED` and `ADMIN_AUTH_ENABLED`. Both default to false; Operations §13.3 owns activation.
 Bootstrap requires the exact corresponding frontend `Origin`, returns `{csrfToken,expiresAt}` with `no-store`, and
 sets only its audience's context cookie when anonymous. `HEAD` returns no content and creates no context.
 
@@ -298,7 +300,7 @@ principal from the storefront. Unknown/duplicate query parameters are invalid. G
 
 ### 4.6 Customer credentials and registration delivery intent
 
-P03-007 implements `/auth/register`, `/auth/login`, `/auth/session` and `/auth/logout` with the §9.1 DTOs.
+Customer registration, login, session and logout use the §9.1 routes and DTOs.
 New passwords require 12–128 Unicode characters and at most 512 UTF-8 bytes; spaces are allowed and passwords are never
 trimmed or normalized. The owning `newPasswordPolicy`
 implements this rule. Login verifies the stored credential without applying today's new-password minimum; a 4096-byte
@@ -326,11 +328,11 @@ session cookie. It revokes only the supplied customer credential, clears that co
 the anonymous context and returns fresh CSRF after persistence succeeds. Failure during context replacement does not
 undo durable revocation; re-bootstrap before retry. Administrator/guest cookies are never cleared/revoked here.
 
-Activated composition uses P03-014’s shared MongoDB throttles (§4.9) alongside the existing KDF concurrency cap. Standalone router factories retain a bounded local guard for isolated adapters; the executable never falls back to it on quota-store failure. No credentials or raw network identity are logged.
+Activated composition uses the shared MongoDB throttles (§4.9) alongside the existing KDF concurrency cap. Standalone router factories retain a bounded local guard for isolated adapters; the executable never falls back to it on quota-store failure. No credentials or raw network identity are logged.
 
 ### 4.7 Customer profile, addresses and deletion intake
 
-With customer auth enabled, P03-008 exposes the existing §9.1 `/me`, address and deletion-request operations. All resolve
+Customer-authenticated `/me`, address and deletion-request operations follow §9.1. All resolve
 only the active customer session; browser mutations additionally require storefront Origin and current customer CSRF.
 Query parameters and body/path fields outside their DTOs are rejected. Output uses the same account/address allowlists as
 session/login responses; internal review records, roles, revisions and credentials never enter Account.
@@ -363,10 +365,8 @@ orders, receipt/payment/refund evidence, audit and immutable historical snapshot
 
 ### 4.8 Registration notification delivery foundation
 
-P03-009 connects the existing transactional registration intent to a server-only Resend HTTP adapter and explicit
-one-batch worker. No notification HTTP route, arbitrary email submission or automatic email send from registration is
-added. Registration uses `registration`/`registration-v1` with empty payload and server-owned plain-text content. P03-010/011/012 add
-explicitly activated customer-reset/email-change/admin-reset proof renderers under §9.1; other proof/commerce templates remain disabled.
+Registration intent is dispatched by a server-only email adapter and explicit one-batch worker. No notification HTTP route, arbitrary email submission or automatic email send from registration is
+added. Registration uses `registration`/`registration-v1` with empty payload and server-owned plain-text content. Customer-reset/email-change/admin-reset proof renderers activate explicitly under §9.1; other proof/commerce templates remain disabled.
 
 A majority-acknowledged conditional claim moves queued/retry_wait to sending, increments attemptCount and records a fresh
 claimId/expiry before any provider request. Only the active claim can settle it. Explicit rate-limit rejection may enter
@@ -388,13 +388,21 @@ timeout, lease and batch policy are explicit protected configuration. The fixed 
 rejected, responses are bounded and provider errors/credentials are never reflected. Verified sender/domain, provider
 activation and real mailbox acceptance remain operational gates.
 
-### 4.9 Auth/recovery throttles and audit safety (P03-014)
+### 4.9 Auth/recovery throttles and audit safety
 
 Activated identity composition uses a MongoDB-backed, atomic fixed-window throttle shared by API instances; no process-memory fallback on database failure. Every audience has a shared network budget of 60 requests/minute. Credential, recovery and email-change mutations additionally share 10 network attempts/minute per group; normalized supplied email targets share 10 attempts/minute per audience/group across source addresses. CSRF bootstrap/refresh uses the audience network budget. Customer/admin budgets and groups are independent; successful and failed attempts consume equally and no account lookup determines a limit. This is a request throttle, not an account suspension or lockout mutation.
 
 Use only the socket address while trust proxy remains false; forwarded/client identity headers are ignored. Keys are domain-separated HMAC digests derived from SESSION_SECRET and bind audience/group/window; plaintext address/email/proof is never persisted or logged. Fixed minute boundaries govern reset even before TTL cleanup. A rejected quota returns generic 429 RATE_LIMITED plus integer Retry-After; no matching-account detail or counter key is exposed. Counter-store failure returns generic 503 SERVICE_UNAVAILABLE and never proceeds to credentials/recovery. Rotate the shared session secret consistently across API instances; rotation resets counter key namespaces and invalidates old sessions as already documented.
 
 Operational request audit records classify CSRF/login/recovery and other existing sensitive identity actions and include only fixed `securityReason` values for throttling/store unavailability. Generic recovery responses, response floors, Origin/CSRF, proof single-use and credential/role checks are retained. Durable domain auditLogs for commerce remain governed by Database §10.3; these security events use the existing protected operational collector.
+
+### 4.10 Browser identity clients
+
+Both app-owned identity clients validate allowlisted responses and use public build-time API origin configuration, credentials include, no-store and no-referrer. All browser mutations fetch a fresh correct-namespace CSRF context/session token first, then send one JSON mutation without automatic retry/replay. Authentication/identity changes cancel/clear private queries; no credential/proof/password is stored in query variables, browser storage or URLs beyond the incoming fragment. Requests from an obsolete identity generation cannot populate the new cache. UI guards never authorize API access.
+
+Expose only API-backed identity actions. When registration verification or delivery-coverage discovery is unavailable,
+show that state accurately. Frontend route guards never replace server authorization. Public API origins, HTTPS,
+cookie topology and rebuild requirements are defined in Operations §13.3.
 
 ---
 
@@ -612,24 +620,23 @@ Admin recovery uses the existing `password_reset` challenge purpose **bound to t
 No new unapproved `authChallenges.purpose` enum is implied.
 Public responses stay enumeration-safe; account reactivation/recovery requires the approved operational security policy.
 
-#### Customer password recovery and change implementation
+#### Customer password recovery and change
 
-Customer reset issuance returns the same `{accepted:true}` for missing, inactive and noncustomer identities. Reset confirmation uses a 32-byte base64url proof, returns `400 INVALID_REQUEST` for unavailable/expired/replayed proofs, and never creates a session. Confirmation changes password, increments security and password-reset scope revisions, revokes customer sessions and removes outstanding reset envelopes atomically. Authenticated password change verifies the current credential, invalidates reset challenges, revokes existing customer sessions and issues a replacement customer cookie and CSRF token in the same transaction. Neither path verifies email or changes account eligibility. P03-014 shared network/target rate limits cover these routes; a per-account issuance cooldown silently suppresses repeated emails. The explicit common response floor (100–5000 ms) reduces ordinary timing differences; operators must size it above measured issuance latency and verify the deployed P03-014 shared limits. It is not a constant-time network guarantee. Deployed shared-control and proxy verification remains an operational gate.
+Customer reset issuance returns the same `{accepted:true}` for missing, inactive and noncustomer identities. Reset confirmation uses a 32-byte base64url proof, returns `400 INVALID_REQUEST` for unavailable/expired/replayed proofs, and never creates a session. Confirmation changes password, increments security and password-reset scope revisions, revokes customer sessions and removes outstanding reset envelopes atomically. Authenticated password change verifies the current credential, invalidates reset challenges, revokes existing customer sessions and issues a replacement customer cookie and CSRF token in the same transaction. Neither path verifies email or changes account eligibility. Shared network/target rate limits (§4.9) cover these routes; a per-account issuance cooldown silently suppresses repeated emails. The explicit common response floor (100–5000 ms) reduces ordinary timing differences; operators must size it above measured issuance latency and verify the deployed shared limits. It is not a constant-time network guarantee. Deployed shared-control and proxy verification remains an operational gate.
 
-Recovery activates only with explicit `PASSWORD_RECOVERY_ENABLED=true`, a bounded `PASSWORD_RESET_TTL_SECONDS` (60–1800), `PASSWORD_RESET_COOLDOWN_SECONDS` (60–3600), separate versioned 256-bit envelope keys and the fixed configured HTTPS storefront origin. No Host/request URL supplies email links. Proofs use the `/reset-password#token=…` fragment for the later frontend screen; the backend accepts tokens only in the confirmation JSON body. Key loss/tamper fails closed; expiry cleanup runs independently of MongoDB TTL in the notification worker.
+Recovery activates only with explicit `PASSWORD_RECOVERY_ENABLED=true`, a bounded `PASSWORD_RESET_TTL_SECONDS` (60–1800), `PASSWORD_RESET_COOLDOWN_SECONDS` (60–3600), separate versioned 256-bit envelope keys and the fixed configured HTTPS storefront origin. No Host/request URL supplies email links. Proofs use the `/reset-password#token=…` fragment for the frontend screen; the backend accepts tokens only in the confirmation JSON body. Key loss/tamper fails closed; expiry cleanup runs independently of MongoDB TTL in the notification worker.
 
+#### Verified email change
 
-#### Verified email-change implementation
+Customer-only `/me/email-changes` and `/me/email-changes/confirm` require Origin/session CSRF, strict JSON and §4.9 shared rate limits. Issuance persists a time-limited single-use proof for the normalized new destination without changing the account. Existing/occupied targets and cooldown suppression return the same `{verificationSent:true}`; this acknowledges handling, not inbox delivery or availability. A target equal to the current email returns `409 STATE_CONFLICT`. Confirmation requires both a current customer session owning the challenge and its proof. Wrong, expired, consumed, invalidated or stale proofs yield `400 INVALID_REQUEST`; a target claimed concurrently yields `409 STATE_CONFLICT` with the entire transaction rolled back.
 
-P03-011 implements customer-only `/me/email-changes` and `/me/email-changes/confirm` with Origin/session CSRF, strict JSON and P03-014 shared rate limits. Issuance persists a time-limited single-use proof for the normalized new destination without changing the account. Existing/occupied targets and cooldown suppression return the same `{verificationSent:true}`; this acknowledges handling, not inbox delivery or availability. A target equal to the current email returns `409 STATE_CONFLICT`. Confirmation requires both a current customer session owning the challenge and its proof. Wrong, expired, consumed, invalidated or stale proofs yield `400 INVALID_REQUEST`; a target claimed concurrently yields `409 STATE_CONFLICT` with the entire transaction rolled back.
-
-Confirmation atomically changes the unique email, marks that destination verified, advances security and challenge revisions, invalidates pending identity challenges and revokes all customer sessions. It returns the Account allowlist and clears the customer cookie; it does not silently sign in to the changed identity or return a new CSRF token. The customer must bootstrap/login again. Password reset/change also invalidates pending email-change/verification proofs. Existing order-time email/address snapshots and saved addresses remain untouched. Email-change delivery uses the fixed HTTPS storefront path `/account/email-change#token=…`; the later authenticated frontend submits proof only in the JSON body.
+Confirmation atomically changes the unique email, marks that destination verified, advances security and challenge revisions, invalidates pending identity challenges and revokes all customer sessions. It returns the Account allowlist and clears the customer cookie; it does not silently sign in to the changed identity or return a new CSRF token. The customer must bootstrap/login again. Password reset/change also invalidates pending email-change/verification proofs. Existing order-time email/address snapshots and saved addresses remain untouched. Email-change delivery uses the fixed HTTPS storefront path `/account/email-change#token=…`; the authenticated frontend submits proof only in the JSON body.
 
 EMAIL_CHANGE_ENABLED defaults false and is independent of PASSWORD_RECOVERY_ENABLED. Activation requires customer authentication, the existing protected versioned proof keys/HTTPS storefront origin, and explicit EMAIL_CHANGE_TTL_SECONDS (60–1800), EMAIL_CHANGE_COOLDOWN_SECONDS (60–3600), EMAIL_CHANGE_RESPONSE_FLOOR_MS (100–5000). Shared-ingress protection, measured response-floor sizing, sender readiness and frontend screens remain their owning gates.
 
-#### Administrator credential implementation
+#### Administrator credentials
 
-P03-012 provides only the listed `/admin/auth/login`, `/session`, `/logout`, `/password-resets` and `/password-resets/confirm` operations, plus existing admin CSRF bootstrap. There is no administrator signup route. The backend selects admin role, Origin audience, cookie and proof namespace; clients cannot choose these fields. Admin login/current-session require an active admin and use the existing password policy, adaptive hash and session revision guards. Logout is repeatable with valid admin session CSRF or admin pre-auth context, including after expiry, and clears only the admin cookie.
+Administrator credentials use only the listed `/admin/auth/login`, `/session`, `/logout`, `/password-resets` and `/password-resets/confirm` operations, plus existing admin CSRF bootstrap. There is no administrator signup route. The backend selects admin role, Origin audience, cookie and proof namespace; clients cannot choose these fields. Admin login/current-session require an active admin and use the existing password policy, adaptive hash and session revision guards. Logout is repeatable with valid admin session CSRF or admin pre-auth context, including after expiry, and clears only the admin cookie.
 
 Admin reset uses the existing password_reset challenge purpose bound to the admin user, with an independent admin verifier domain, admin-bound AEAD and admin-password-reset-v1 delivery template. A customer-issued proof cannot become an admin proof after a role change. Confirmation consumes context/proof and updates password/security revisions/revokes admin sessions atomically; it grants no new session. Responses remain ambiguous about account existence. Admin recovery has independent TTL/cooldown/response-floor configuration and a fixed HTTPS ADMIN_ORIGIN reset link. ADMIN_AUTH_ENABLED defaults false, independently of CUSTOMER_AUTH_ENABLED; active admin configuration requires explicit session/context and ADMIN_PASSWORD_RESET policy plus protected proof keys. Existing shared-ingress/security audit/release gates remain separately owned.
 
@@ -648,9 +655,9 @@ An attacker cannot enumerate orders by timing, HTTP status or message difference
 Subsequent guest order actions use the same `/orders/{orderId}` routes as a customer, but with *exact* bound order ID checks.
 Do not include a public `GET /orders?email=...` endpoint.
 
-### 9.3 Executable identity contract baseline
+### 9.3 Identity validation and replay contract
 
-`backend/src/modules/auth/auth.validation.ts` defines strict request, path/query and response schemas for all 26 §9.1
+`backend/src/modules/auth/auth.schema.ts` defines strict request, path/query and response schemas for all 26 §9.1
 operations. It is a contract module, not an Express router: no authentication/account route becomes available merely by
 importing it. Controllers must validate requests before service delegation and validate/allowlist outputs before the
 success envelope. Internal invalid output is a server fault, never a client validation failure; no raw document is returned.
@@ -683,9 +690,10 @@ obligations; it does not replace session lookup, Origin/CORS/CSRF middleware, ha
   documented account/verificationRequired shape and does not imply successful email delivery or an undocumented login.
 - Logout: repeated valid-context requests return the same revoked:true shape while each may return fresh CSRF; missing/
   stale context or invalid Origin remains 403 CSRF_INVALID, even when the session has expired. No other namespace is revoked.
-- Challenge confirmation: expired, consumed, invalidated, revision-stale, attempt-exhausted, wrong-purpose or wrong-principal
-  proof is rejected. Map invalid proof to generic 400 VALIDATION_FAILED with token/INVALID_PROOF detail, without revealing
-  which condition failed. Password-reset admin/customer role/principal binding is checked independently.
+- Challenge preconditions: reject expired, consumed, invalidated, revision-stale, attempt-exhausted, wrong-purpose or
+  wrong-principal state without revealing which condition failed. The pure contract validator reports
+  `VALIDATION_FAILED` with `token/INVALID_PROOF`; password-reset and email-change HTTP services use the generic
+  `400 INVALID_REQUEST` contract specified in §9.1. Check admin/customer role and principal binding independently.
 - `isChallengeCurrent` checks only expiry, lifecycle, scope/purpose/revision and attempt-bound preconditions after trusted
   record lookup; it neither verifies a secret nor consumes anything. Services must verify the supplied token digest and
   execute consume/reissue plus revision changes atomically per Database §5.6. Two calls on unchanged fresh state can both
@@ -693,10 +701,10 @@ obligations; it does not replace session lookup, Origin/CORS/CSRF middleware, ha
 
 The safe error register implements INVALID_CREDENTIALS (401), GUEST_PROOF_REQUIRED (401), FORBIDDEN/CSRF_INVALID (403) and
 RATE_LIMITED (429) alongside existing envelope errors. Registered errors do not imply enforcement middleware exists.
-Tests verify exact wire schemas, pure replay preconditions and redacted Express error/envelope behavior; actual identity
-index races, token consumption, cookie/session rotation, CORS/CSRF enforcement and deployed-origin tests remain required by
-P03-004–014/P03-016. Guest request/proof/scoped-session persistence and order ownership remain P06-015, before dependent
-order actions; §9.2 is a future contract, not a live endpoint. No guest, provider or financial route is registered here.
+Wire-schema and pure precondition checks do not establish identity-index races, atomic token consumption,
+cookie/session rotation, CORS/CSRF enforcement or deployed origins. Verify those separately under Testing §§8–9, 12.
+Guest-order exchange requires the scoped persistence and order-ownership contract in §9.2 before dependent actions
+are exposed; the presence of a schema or operation-table row never registers an endpoint.
 
 ## 10. Catalog, cart, promotions & reviews APIs
 
@@ -1200,6 +1208,12 @@ sequenceDiagram
 
 ### 14.1 Catalog, categories and variants (admin)
 
+Internal product metadata/variant-batch service arguments do not define an alternate HTTP request shape.
+Use the canonical DTOs below and the normalization/validation constraints in Database §§6.2–6.3.
+Media attachment requires the controlled media ledger. Category hierarchy/dependency guards may advance
+revisions and invalidate earlier ETags (Database §6.1); no category deletion route is defined.
+Implementation and integration status are maintained in [Tasks](./TASKS.md).
+
 Every route below is **A only** and requires session, Origin, CSRF and audit for mutations.
 `If-Match` is required where shown; the API must derive a strong ETag from a durable revision/CAS field and reject stale writes.
 Database v1.0 defines CAS `revision` for every affected master; every successful edit increments it, while server-only `storeSettings.deliveryCoverageRevision` serializes delivery changes across all zones; `deliveryZones.coverageRevision` is only a per-zone sequence (API §14.1).
@@ -1487,6 +1501,26 @@ Claim uploads require the **path `orderId`** to match current C owner or G-scope
 Return an **opaque** private evidence identifier; no public Cloudinary URL to confidential photos.
 `assetId` is the opaque ID of `mediaAssets` (Database §6.7), mapping one server-generated Cloudinary identity to owner/order/item scope, access, validation state and transactional attachment references (Database §6.7). Create upload intent before the external call; return attachable references only after validation. Attach and target update commit together under asset CAS. Cleanup atomically claims expired unreferenced assets as `deleting`, excluding concurrent attachment; reconcile unknown provider outcomes. Private evidence retrieval requires current C/G ownership or A permission and short-lived authorized delivery. No separate generic `assets` collection is implied.
 Cleanup of unreferenced uploads is asynchronous and must not delete assets attached to immutable order/claim/audit evidence.
+
+**Media activation boundary:** optional typed media composition exposes the two admin routes
+above only with verified ledger persistence, active admin identity, scanner/provider and retention
+capabilities. Default HTTP startup does not activate media; `MEDIA_ENABLED` is not automatic account
+approval or route activation. The multipart route accepts exactly one `file`, rejects other fields,
+query parameters, compression and unsupported content, and bounds encoded input to the approved
+file limit plus 16 KiB framing. Origin/session/CSRF and a separate media throttle run before parsing
+(10 admissions/minute/network, within the existing 60/minute shared admin network cap; credential
+budgets remain separate). Other routes retain their JSON-only admission rules.
+
+Known upload success returns the table's allowlisted DTO only after clean validation and provider
+metadata agreement. Unknown/quarantined provider outcomes return `SERVICE_UNAVAILABLE` with durable
+intent retained; invalid file/scanner rejection returns `VALIDATION_FAILED`. Safe deletion returns
+204 only after confirmed provider absence/deletion and ledger finalization; unknown returns
+`SERVICE_UNAVAILABLE`, dependency/policy conflicts use `STATE_CONFLICT`. No credential or raw provider
+payload is returned. Private signed delivery expires in at most the configured 300-second hard cap
+and is issued after current C/G ownership or A authorization. The evidence upload/claim routes and
+current order/guest proof integration remain P08-012; their injected capability defaults to deny.
+Ledger helpers add no new private-read endpoint or public claim URL. Real provider/policy acceptance
+remains blocked by EXT-04 until recorded staging evidence exists.
 Configure upload limits and scanning under the environment media policy in Operations Appendix B.
 
 ### 16.3 Transactional email and public notifications
@@ -1522,7 +1556,7 @@ No marketing consent workflows are implied by transactional messaging.
 | `GET`  | `/health/live`  | Internal/operational | `200` when server process responds; no sensitive dependency details                                    |
 | `GET`  | `/health/ready` | Restricted monitor   | `200` only when essential services ready, otherwise `503`; no credentials, topology or DB data in body |
 
-Implemented operational probe contract (P03-003): liveness returns `{data:{status:"live"},meta:{requestId}}`. Readiness requires `Authorization: Bearer <HEALTH_MONITOR_TOKEN>` with the separately configured 32-byte hex monitor credential; session cookies, query parameters and user-supplied correlation IDs do not authenticate it. Missing/invalid monitor proof returns `401 AUTH_REQUIRED` with `WWW-Authenticate: Bearer`. Authorized readiness returns `{data:{status:"ready"},meta:{requestId}}` only while serving with a connected MongoDB and successful bounded ping; otherwise `503 SERVICE_UNAVAILABLE` with a generic message. No readiness response reveals which dependency, topology, URI or secret failed. Both endpoints use `no-store`. This credential authorizes only the operational probe and grants no customer/admin/business access. Protect operational ingress and TLS under Operations; credential provisioning/rotation is an operator responsibility.
+**Operational probe responses:** liveness returns `{data:{status:"live"},meta:{requestId}}`. Readiness requires `Authorization: Bearer <HEALTH_MONITOR_TOKEN>` with the separately configured 32-byte hex monitor credential; session cookies, query parameters and user-supplied correlation IDs do not authenticate it. Missing/invalid monitor proof returns `401 AUTH_REQUIRED` with `WWW-Authenticate: Bearer`. Authorized readiness returns `{data:{status:"ready"},meta:{requestId}}` only while serving with a connected MongoDB and successful bounded ping; otherwise `503 SERVICE_UNAVAILABLE` with a generic message. No readiness response reveals which dependency, topology, URI or secret failed. Both endpoints use `no-store`. This credential authorizes only the operational probe and grants no customer/admin/business access. Protect operational ingress and TLS under Operations; credential provisioning/rotation is an operator responsibility.
 
 Health endpoints may be served outside `/api/v1` by infrastructure **only if consistently configured and documented**; the baseline here uses `/api/v1/health/*`. Do not make a public readiness endpoint reveal internal deployment information.
 
@@ -1965,18 +1999,3 @@ Any difference between this matrix and the route's own explicitly stated `201`/`
 
 **Registry maintenance:** Keep every method/path, response status, DTO and error profile aligned with OpenAPI, runtime
 validation and contract tests. Add an operation entry, DTO mapping and test coverage slot in the same change as a new route.
-
-
-### P03-015 frontend consumption
-
-Both app-owned identity clients validate allowlisted responses and use public build-time API origin configuration, credentials include, no-store and no-referrer. All browser mutations fetch a fresh correct-namespace CSRF context/session token first, then send one JSON mutation without automatic retry/replay. Authentication/identity changes cancel/clear private queries; no credential/proof/password is stored in query variables, browser storage or URLs beyond the incoming fragment. Requests from an obsolete identity generation cannot populate the new cache. UI guards never authorize API access.
-
-Existing endpoints/DTOs and backend business rules are unchanged. Registration verification and delivery-coverage discovery are not fabricated when their APIs remain unimplemented. Frontend dependencies are pinned with this consuming task; there is no new auth provider or shared UI package.
-
-### P03-020 module ownership implementation
-
-Customer profile/address/deletion-intake routes are implemented by `modules/customers/customer.routes.ts`; they
-retain their existing `/me` method/path/DTO contracts. Auth owns canonical identity schemas, credential/role checks,
-transaction fencing and the narrow customer-account persistence capability. Delivery owns the existing coverage
-read service. Notifications and the email adapter communicate through provider-neutral message/outcome types.
-Entity-prefixed file paths do not create or rename public API namespaces. Missing future endpoints remain planned.

@@ -1,18 +1,15 @@
 import { Types, type ClientSession } from 'mongoose'
-import { parseInput } from '../../common/middleware/validation.js'
-import { ApiError } from '../../common/errors.js'
+import { parseInput } from '../../shared/middleware/validate.js'
+import { ApiError } from '../../shared/errors/app-error.js'
 import type { AddressCoverage } from '../delivery/delivery-coverage.service.js'
-import type {
-  CustomerAccountAccess,
-  CustomerProfile,
-} from '../auth/customer-account.service.js'
+import type { CustomerAccountAccess, CustomerProfile } from '../auth/customer-account.service.js'
 import {
   profilePatch,
   addressInput,
   addressPatch,
   addressId,
   deletionInput,
-} from './customer.validation.js'
+} from './customer.schema.js'
 
 const addressDto = (address: CustomerProfile['addresses'][number]) => ({
   ...address,
@@ -27,9 +24,7 @@ export function createProfileService(
     address: { districtKey: string; areaKey: string },
     session: ClientSession,
   ) {
-    if (
-      !(await coverage.supports(address.districtKey, address.areaKey, session))
-    )
+    if (!(await coverage.supports(address.districtKey, address.areaKey, session)))
       throw new ApiError('UNSUPPORTED_DELIVERY_AREA')
   }
   function find(user: CustomerProfile, id: string) {
@@ -81,8 +76,7 @@ export function createProfileService(
         await supported(merged, session)
         Object.assign(current, merged)
         if (isDefault === true)
-          for (const item of user.addresses)
-            item.isDefault = item.id === current.id
+          for (const item of user.addresses) item.isDefault = item.id === current.id
         else if (isDefault === false) current.isDefault = false
         await save()
         return addressDto(current)
@@ -99,8 +93,7 @@ export function createProfileService(
       return owned(token, async (user, { transaction: session, save }) => {
         const current = find(user, id)
         await supported(current, session)
-        for (const item of user.addresses)
-          item.isDefault = item.id === current.id
+        for (const item of user.addresses) item.isDefault = item.id === current.id
         await save()
         return addressDto(current)
       })
@@ -121,8 +114,7 @@ export function createProfileService(
           await save()
         }
         const request = user.deletionRequest
-        if (!request)
-          throw new Error('Deletion request persistence unavailable.')
+        if (!request) throw new Error('Deletion request persistence unavailable.')
         return { requestId: request.id, status: request.status }
       })
     },

@@ -72,10 +72,7 @@ export function ListPagination({
   const previous = !isPending && page > 1
   const next = !isPending && page < totalPages
   return (
-    <HeroPagination
-      aria-label="Results pagination"
-      className="flex flex-wrap items-center gap-3"
-    >
+    <HeroPagination aria-label="Results pagination" className="flex flex-wrap items-center gap-3">
       <HeroPagination.Summary>
         <span role="status">
           {totalItems === 0
@@ -86,7 +83,6 @@ export function ListPagination({
       <HeroPagination.Content>
         <HeroPagination.Item>
           <HeroPagination.Previous
-
             isDisabled={!previous}
             onPress={() => {
               if (previous) onPageChange(page - 1)
@@ -97,7 +93,6 @@ export function ListPagination({
         </HeroPagination.Item>
         <HeroPagination.Item>
           <HeroPagination.Next
-
             isDisabled={!next}
             onPress={() => {
               if (next) onPageChange(page + 1)

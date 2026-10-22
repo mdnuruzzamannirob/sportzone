@@ -1,5 +1,5 @@
-import { verifyHeroUIStyles } from '../../tests/heroui-smoke.mjs'
-import { verifyThemeBootstrap } from '../../tests/theme-smoke.mjs'
+import { verifyHeroUIStyles } from '../../tests/helpers/heroui-smoke.mjs'
+import { verifyThemeBootstrap } from '../../tests/helpers/theme-smoke.mjs'
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
@@ -13,9 +13,7 @@ await once(socket, 'listening')
 const address = socket.address()
 assert.ok(address && typeof address !== 'string')
 const port = address.port
-await new Promise((resolve, reject) =>
-  socket.close((error) => (error ? reject(error) : resolve())),
-)
+await new Promise((resolve, reject) => socket.close((error) => (error ? reject(error) : resolve())))
 const server = spawn(
   process.execPath,
   [
@@ -44,8 +42,7 @@ const exit = once(server, 'exit')
 try {
   let ready = false
   for (let attempt = 0; attempt < 200; attempt++) {
-    if (server.exitCode !== null)
-      throw new Error('Production server exited before readiness')
+    if (server.exitCode !== null) throw new Error('Production server exited before readiness')
     try {
       const probe = await fetch(origin, { signal: AbortSignal.timeout(1000) })
       if (probe.ok) {
@@ -76,9 +73,7 @@ try {
 
   verifyHeroUIStyles(stylesheet)
   assert.match(stylesheet, /color:var\(--muted\)/)
-  console.log(
-    'SMOKE-01 Passed: public route, landmark and compiled Tailwind CSS',
-  )
+  console.log('SMOKE-01 Passed: public route, landmark and compiled Tailwind CSS')
 
   for (const identity of ['synthetic-a', 'synthetic-b']) {
     const account = await fetch(`${origin}/account`, {
@@ -91,15 +86,24 @@ try {
     const body = await account.text()
     assert.match(body, /Checking your session/)
     assert.match(body, /name="robots" content="noindex, nofollow"/)
-    assert.ok(
-      !body.includes(identity),
-      'No request-cookie value may enter the scaffold output',
-    )
+    assert.ok(!body.includes(identity), 'No request-cookie value may enter the scaffold output')
   }
   console.log(
     'SMOKE-02 Passed: private route no-store/noindex and no cookie echo across two contexts',
   )
-  for (const path of ['/products', '/search', '/wishlist', '/cart', '/contact', '/support', '/policies/shipping', '/policies/cancellation', '/policies/returns-refunds', '/policies/privacy', '/policies/terms']) {
+  for (const path of [
+    '/products',
+    '/search',
+    '/wishlist',
+    '/cart',
+    '/contact',
+    '/support',
+    '/policies/shipping',
+    '/policies/cancellation',
+    '/policies/returns-refunds',
+    '/policies/privacy',
+    '/policies/terms',
+  ]) {
     const response = await fetch(origin + path)
     assert.equal(response.status, 200, path)
     const body = await response.text()
@@ -110,17 +114,29 @@ try {
   }
   assert.match(html, /aria-label="Mobile navigation"/)
   assert.match(html, /aria-expanded="false"/)
-  console.log('SMOKE-04 Passed: 11 honest noindex destinations, consistent shell and closed mobile navigation')
-  for (const path of ['/not-a-route', '/%28public%29', '/%28private%29', '/%28store%29', '/%28account%29', '/account/not-a-route', '/products/not-a-product']) {
+  console.log(
+    'SMOKE-04 Passed: 11 honest noindex destinations, consistent shell and closed mobile navigation',
+  )
+  for (const path of [
+    '/not-a-route',
+    '/%28public%29',
+    '/%28private%29',
+    '/%28store%29',
+    '/%28shop%29',
+    '/%28information%29',
+    '/%28auth%29',
+    '/policies/not-a-policy',
+    '/%28account%29',
+    '/account/not-a-route',
+    '/products/not-a-product',
+  ]) {
     const response = await fetch(origin + path)
     assert.equal(response.status, 404)
     const missing = await response.text()
     assert.match(missing, /Page not found/)
     assert.match(missing, /Support and policies/)
   }
-  console.log(
-    'SMOKE-03 Passed: unknown routes and internal route-group names return 404',
-  )
+  console.log('SMOKE-03 Passed: unknown routes and internal route-group names return 404')
 } catch (error) {
   console.error(output)
   throw error

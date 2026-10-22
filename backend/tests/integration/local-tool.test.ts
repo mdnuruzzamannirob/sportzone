@@ -3,7 +3,7 @@ import { once } from 'node:events'
 import { it, expect } from 'vitest'
 
 it('starts and stops an owned ephemeral local replica without using an external URI', async () => {
-  const child = spawn(process.execPath, ['tools/local-database.mjs'], {
+  const child = spawn(process.execPath, ['scripts/local-database.mjs'], {
     env: {
       ...process.env,
       MONGODB_URI: 'mongodb://invalid-synthetic.invalid:1/private',
@@ -14,10 +14,7 @@ it('starts and stops an owned ephemeral local replica without using an external 
   try {
     let output = ''
     await new Promise<void>((resolve, reject) => {
-      const timeout = setTimeout(
-        () => reject(new Error('Local replica startup timed out')),
-        30000,
-      )
+      const timeout = setTimeout(() => reject(new Error('Local replica startup timed out')), 30000)
       child.stdout.on('data', (data) => {
         output += String(data)
         if (output.includes('MONGODB_URI=')) {

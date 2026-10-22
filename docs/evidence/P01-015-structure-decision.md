@@ -15,7 +15,7 @@ The baseline retains Next.js, React/Vite, Express, MongoDB/Mongoose, HeroUI and 
 | [Architecture](../ARCHITECTURE.md) §§4–6,14 | Application structures, naming, monorepo/dependencies, module boundaries and engineering rationale |
 | [Database](../DATABASE.md) §4.2 | Canonical model registration and restricted shared-collection writes |
 | [API](../API.md) §2.2 | Concrete module mapping; existing HTTP and security contracts preserved |
-| [Design](../DESIGN.md), [UI Components](../UI_COMPONENTS.md) | Component placement and implementation transition |
+| [Design](../DESIGN.md), [UI Components](../DESIGN.md#65-app-owned-ui-boundary-and-component-apis) | Component placement and implementation transition |
 | [Implementation Plan](../IMPLEMENTATION_PLAN.md) §3.6, [Tasks](../TASKS.md) | Tooling/refactor sequence, stable IDs, dependencies and actual statuses |
 | [Testing](../TESTING.md) §15 | Regression parity, discovery, CI failure/skip/cancellation and evidence requirements |
 | [Operations](../OPERATIONS.md) §§5,11, Appendix C | CI execution/security/caching, Git policy, artifact/deployment compatibility and environment acceptance |

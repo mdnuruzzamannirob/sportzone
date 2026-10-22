@@ -4,11 +4,7 @@ import { ThemePreferenceSelect } from '../ui/theme-preference'
 
 export function PublicLayout() {
   return (
-    <main
-      id="main-content"
-      tabIndex={-1}
-      className="mx-auto min-h-dvh max-w-xl px-6 py-16"
-    >
+    <main id="main-content" tabIndex={-1} className="mx-auto min-h-dvh max-w-xl px-6 py-16">
       <div className="mb-6">
         <ThemePreferenceSelect />
       </div>
@@ -20,4 +16,3 @@ export function PublicLayout() {
     </main>
   )
 }
-

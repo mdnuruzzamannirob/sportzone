@@ -2,7 +2,7 @@
 
 import { Card } from '../ui/index'
 import { useId } from 'react'
-import { formatBdt } from '../../lib/format-bdt'
+import { formatBdt } from '../../lib/format'
 
 // Presentation input: adapt the API quote or immutable order pricing snapshot at the feature boundary.
 export type SummaryAmounts = {
@@ -41,11 +41,7 @@ export function OrderSummary({
     ],
     ['Delivery charge', formatBdt(amounts.deliveryChargePoisha)],
     [
-      kind === 'estimate'
-        ? 'Estimated total'
-        : kind === 'quote'
-          ? 'Quoted total'
-          : 'Order total',
+      kind === 'estimate' ? 'Estimated total' : kind === 'quote' ? 'Quoted total' : 'Order total',
       formatBdt(amounts.finalTotalPoisha),
     ],
   ]
@@ -65,9 +61,7 @@ export function OrderSummary({
             </div>
           ))}
         </dl>
-        <p className="text-sm">
-          Payment method: {method ? methods[method] : 'Not selected'}
-        </p>
+        <p className="text-sm">Payment method: {method ? methods[method] : 'Not selected'}</p>
         <p className="text-sm text-muted">
           {kind === 'order'
             ? 'Recorded order amounts. Payment status is shown separately.'

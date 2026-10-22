@@ -14,7 +14,10 @@
 }
 
 /* Owner-approved interaction fixes; native tokens and focus treatment remain. */
-.link, .breadcrumbs__link { text-decoration: none; }
+.link,
+.breadcrumbs__link {
+  text-decoration: none;
+}
 .link:not([aria-disabled="true"]):is(:hover, [data-hovered="true"], :active, [data-pressed="true"]),
 .breadcrumbs__link:not([data-current="true"]):is(:hover, [data-hovered="true"]) {
   color: var(--accent);
@@ -34,10 +37,18 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.disclosure__indicator { flex-shrink: 0; }
-.radio-group[data-invalid="true"] .radio__control { border-color: var(--danger); }
-.radio-group[data-invalid="true"] .radio:has(input:checked) .radio__control { background: var(--danger); }
-.radio-group[data-invalid="true"] .radio:has(input:checked) .radio__indicator::before { background: var(--danger-foreground); }
+.disclosure__indicator {
+  flex-shrink: 0;
+}
+.radio-group[data-invalid="true"] .radio__control {
+  border-color: var(--danger);
+}
+.radio-group[data-invalid="true"] .radio:has(input:checked) .radio__control {
+  background: var(--danger);
+}
+.radio-group[data-invalid="true"] .radio:has(input:checked) .radio__indicator::before {
+  background: var(--danger-foreground);
+}
 
 /* Contrast correction: retain native hues and APIs, deepen only filled actions. */
 .button--primary {

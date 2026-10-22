@@ -21,11 +21,7 @@ export function Notice({
   actions?: ReactNode
 }) {
   return (
-    <Alert
-      status={statuses[tone]}
-      role={tone === 'error' ? 'alert' : 'status'}
-
-    >
+    <Alert status={statuses[tone]} role={tone === 'error' ? 'alert' : 'status'}>
       <Alert.Indicator aria-hidden="true" />
       <Alert.Content>
         <Alert.Title>{title}</Alert.Title>

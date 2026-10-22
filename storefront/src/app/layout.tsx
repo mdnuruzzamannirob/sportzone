@@ -1,16 +1,14 @@
-import { IdentityProvider } from '../features/auth/api/session'
+import { AppProviders } from './providers'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import './globals.css'
+import '../styles/globals.css'
 
 export const metadata: Metadata = {
   title: { default: 'SportZone', template: '%s | SportZone' },
   description: 'SportZone — sports essentials for Bangladesh.',
 }
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: ReactNode }>) {
+export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     // The blocking bootstrap changes only root appearance attributes before hydration.
     <html lang="en" suppressHydrationWarning>
@@ -18,7 +16,7 @@ export default function RootLayout({
         <script src="/theme-bootstrap.js" />
       </head>
       <body suppressHydrationWarning>
-        <IdentityProvider>{children}</IdentityProvider>
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   )

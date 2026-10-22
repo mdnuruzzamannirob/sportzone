@@ -10,5 +10,16 @@
       "quoteStyle": "single",
       "semicolons": "asNeeded"
     }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
+  "files": {
+    "includes": [
+      "**",
+      "!**/next-env.d.ts"
+    ]
   }
 }

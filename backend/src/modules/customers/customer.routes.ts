@@ -1,12 +1,12 @@
 import { Router, type RequestHandler } from 'express'
 import { z } from 'zod'
-import { parseInput } from '../../common/middleware/validation.js'
-import { respond } from '../../common/responses.js'
-import type { BrowserSecurity } from '../auth/browser-security.service.js'
+import { parseInput } from '../../shared/middleware/validate.js'
+import { respond } from '../../shared/responses.js'
+import type { BrowserSecurity } from '../auth/sessions/browser-security.service.js'
 import type { ProfileService } from './customer.service.js'
-import { addressId } from './customer.validation.js'
-import { createSessionHttp, readSessionCookie } from '../auth/session.http.js'
-import type { SessionService } from '../auth/session.service.js'
+import { addressId } from './customer.schema.js'
+import { createSessionHttp, readSessionCookie } from '../auth/sessions/session.http.js'
+import type { SessionService } from '../auth/sessions/session.service.js'
 
 export function profileRoutes(
   service: ProfileService,
@@ -36,12 +36,10 @@ export function profileRoutes(
     http.require('customer'),
     noQuery,
   )
-  const token = (req: import('express').Request) =>
-    readSessionCookie(req.get('Cookie'), 'customer')
+  const token = (req: import('express').Request) => readSessionCookie(req.get('Cookie'), 'customer')
   const id = (req: import('express').Request) =>
     parseInput(z.strictObject({ addressId }), req.params).addressId
-  const empty = (value: unknown) =>
-    parseInput(z.union([z.undefined(), z.strictObject({})]), value)
+  const empty = (value: unknown) => parseInput(z.union([z.undefined(), z.strictObject({})]), value)
   router.get('/me', async (req, res) => {
     parseInput(z.undefined(), req.body)
     respond(res, await service.read(token(req)))

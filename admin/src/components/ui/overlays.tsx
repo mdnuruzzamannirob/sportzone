@@ -31,9 +31,7 @@ export function FormDialog({
       <Button variant="outline">{triggerLabel}</Button>
       <Modal.Backdrop isDismissable={!isPending} isKeyboardDismissDisabled={isPending}>
         <Modal.Container placement="center" scroll="inside">
-          <Modal.Dialog
-            aria-describedby={description ? id : undefined}
-          >
+          <Modal.Dialog aria-describedby={description ? id : undefined}>
             <Modal.Header>
               <Modal.Heading>{title}</Modal.Heading>
               {description && (
@@ -44,7 +42,9 @@ export function FormDialog({
             </Modal.Header>
             <Modal.Body>{children}</Modal.Body>
             <Modal.Footer>
-              <Button slot="close" aria-label="Cancel" variant="secondary" isDisabled={isPending}>Cancel</Button>
+              <Button slot="close" aria-label="Cancel" variant="secondary" isDisabled={isPending}>
+                Cancel
+              </Button>
               {actions}
             </Modal.Footer>
           </Modal.Dialog>
@@ -82,7 +82,9 @@ export function FormDrawer({
             </Drawer.Header>
             <Drawer.Body>{children}</Drawer.Body>
             <Drawer.Footer>
-              <Button slot="close" aria-label="Cancel" variant="secondary" isDisabled={isPending}>Cancel</Button>
+              <Button slot="close" aria-label="Cancel" variant="secondary" isDisabled={isPending}>
+                Cancel
+              </Button>
               {actions}
             </Drawer.Footer>
           </Drawer.Dialog>

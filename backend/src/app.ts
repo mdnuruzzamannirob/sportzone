@@ -1,22 +1,24 @@
-import { securityAction } from './observability/security-actions.js'
+import { securityAction } from './shared/security-actions.js'
 import express, { type Router } from 'express'
 import { randomUUID } from 'node:crypto'
-import { handleError } from './common/middleware/errors.js'
+import { handleError } from './shared/middleware/handle-error.js'
 import type { HealthDependencies } from './modules/health/health.service.js'
-import type { Logger } from './observability/logger.js'
-import { createApiRouter } from './routes/index.js'
-import { ApiError } from './common/errors.js'
+import type { Logger } from './shared/logger.js'
+import { createApiRouter } from './routes.js'
+import { ApiError } from './shared/errors/app-error.js'
 
 export function createApp({
   apiRouter,
   health,
   logger,
   jsonBodyLimitBytes = 102400,
+  mediaUploadsEnabled = false,
 }: {
   apiRouter?: Router
   health?: HealthDependencies
   logger?: Logger
   jsonBodyLimitBytes?: number
+  mediaUploadsEnabled?: boolean
 } = {}) {
   if (!Number.isSafeInteger(jsonBodyLimitBytes) || jsonBodyLimitBytes < 1)
     throw new RangeError('Invalid JSON body limit')
@@ -40,8 +42,7 @@ export function createApp({
         if (recorded) return
         recorded = true
         // Only the registered pattern, never originalUrl/baseUrl/params/query/header/body.
-        const route =
-          typeof req.route?.path === 'string' ? req.route.path : 'unmatched'
+        const route = typeof req.route?.path === 'string' ? req.route.path : 'unmatched'
         const action = securityAction(req.method, route)
         const reason: unknown = res.locals.securityReason
         logger.request({
@@ -49,7 +50,9 @@ export function createApp({
           method: req.method,
           route,
           ...(action ? { securityAction: action } : {}),
-          ...(reason === 'rate_limited' || reason === 'throttle_unavailable' ? { securityReason: reason } : {}),
+          ...(reason === 'rate_limited' || reason === 'throttle_unavailable'
+            ? { securityReason: reason }
+            : {}),
           status: res.writableFinished ? res.statusCode : 499,
           durationMs: performance.now() - started,
           ...(res.locals.errorCode ? { errorCode: res.locals.errorCode } : {}),
@@ -68,13 +71,20 @@ export function createApp({
     const hasBody =
       req.headers['transfer-encoding'] !== undefined ||
       Number(req.headers['content-length'] ?? 0) > 0
+    if (
+      mediaUploadsEnabled &&
+      req.method === 'POST' &&
+      req.path === '/api/v1/admin/media/uploads' &&
+      req.is('multipart/form-data')
+    ) {
+      next()
+      return
+    }
     if (hasBody && !req.is('application/json')) {
       next(new ApiError('INVALID_REQUEST'))
       return
     }
-    json(req, res, (error?: unknown) =>
-      next(error ? new ApiError('INVALID_REQUEST') : undefined),
-    )
+    json(req, res, (error?: unknown) => next(error ? new ApiError('INVALID_REQUEST') : undefined))
   })
   app.use('/api/v1', apiRouter ?? createApiRouter(health))
   app.use((_req, _res, next) => next(new ApiError('NOT_FOUND')))

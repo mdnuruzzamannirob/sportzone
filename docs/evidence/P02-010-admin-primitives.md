@@ -10,7 +10,7 @@
 - [Task register](../TASKS.md#phase-02--uiux-design): P02-010; P02-007 and P02-008 independently accepted.
 - [Design](../DESIGN.md): §§4, 6, 8.4 and 9 — local table overflow, status/filter/actions, confirmation and upload feedback.
 - [API](../API.md): §7 pagination and §16.2 media contract; the owning features retain DTOs, request security and upload lifecycle.
-- [Usage guide](../UI_COMPONENTS.md#admin-management-compositions): props, state ownership, exact upload constraints and backend boundaries.
+- [Usage guide](../DESIGN.md#63-administrative-components): props, state ownership, exact upload constraints and backend boundaries.
 
 No business/API/database contract or dependency changed. Components are not integrated authenticated pages. No live table data, upload request, authorization, inventory mutation or financial action is simulated as implemented.
 

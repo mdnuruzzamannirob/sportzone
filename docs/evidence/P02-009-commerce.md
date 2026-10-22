@@ -10,7 +10,7 @@
 - [Task](../TASKS.md#phase-02--uiux-design): P02-009; P02-008 is accepted.
 - [Design §§6–7](../DESIGN.md#6-ui-components): product/variant/cart/summary, status and loading presentation.
 - [API §6 and Appendix D.2](../API.md#62-dto-registry): integer-poisha money, public product/rating data, estimated cart amounts, authoritative quote and immutable order pricing.
-- [Usage guide](../UI_COMPONENTS.md#commerce-compositions): presentation props, caller-owned state, image sources and integration boundaries.
+- [Usage guide](../DESIGN.md#62-product-and-commerce-components): presentation props, caller-owned state, image sources and integration boundaries.
 
 No business/API/database contract changed. No cart write, checkout calculation, stock reservation, payment effect or live product data was implemented by this UI task.
 

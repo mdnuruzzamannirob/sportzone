@@ -54,8 +54,7 @@ const exited = once(child, 'exit')
 try {
   let response
   for (let attempt = 0; attempt < 50; attempt++) {
-    if (child.exitCode !== null)
-      throw new Error('Compiled backend stopped before serving')
+    if (child.exitCode !== null) throw new Error('Compiled backend stopped before serving')
     try {
       response = await fetch(`http://127.0.0.1:${port}/api/v1/unimplemented`, {
         signal: AbortSignal.timeout(1000),
@@ -72,10 +71,7 @@ try {
   assert.equal(body.error.code, 'NOT_FOUND')
   assert.equal(body.meta.requestId, response.headers.get('x-request-id'))
   assert.equal((await fetch(`http://127.0.0.1:${port}/api/v1/health/live`)).status, 200)
-  assert.equal(
-    (await fetch(`http://127.0.0.1:${port}/api/v1/health/ready`)).status,
-    401,
-  )
+  assert.equal((await fetch(`http://127.0.0.1:${port}/api/v1/health/ready`)).status, 401)
   assert.equal(
     (
       await fetch(`http://127.0.0.1:${port}/api/v1/health/ready`, {

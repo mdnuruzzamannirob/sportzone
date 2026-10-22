@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import AccountPage from '../../../features/account/components/account-page'
+import AccountPage from '../../../features/account/account-page'
 
 export const metadata: Metadata = { title: 'Account' }
 

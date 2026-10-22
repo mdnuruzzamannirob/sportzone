@@ -7,7 +7,7 @@ import { StorefrontHeader } from '../src/components/layout/storefront-header'
 import { StorefrontShell, supportLinks } from '../src/components/layout/storefront-shell'
 import { NetworkStatus } from '../src/components/layout/network-status'
 import { LoadingPage, MissingPage } from '../src/components/ui/storefront-states'
-import PublicError from '../src/app/(store)/error'
+import PublicError from '../src/app/(shop)/error'
 
 const navigation = vi.hoisted(() => ({ pathname: '/' }))
 vi.mock('next/navigation', () => ({ usePathname: () => navigation.pathname }))
@@ -33,9 +33,7 @@ afterEach(async () => {
 async function click(element: Element | null) {
   expect(element).not.toBeNull()
   await act(() =>
-    element?.dispatchEvent(
-      new MouseEvent('click', { bubbles: true, cancelable: true }),
-    ),
+    element?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })),
   )
 }
 function panel() {
@@ -59,9 +57,7 @@ describe('responsive storefront shell', () => {
     const first = panel()?.querySelector('a')
     first?.focus()
     await act(() =>
-      first?.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
-      ),
+      first?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })),
     )
     expect(trigger()?.getAttribute('aria-expanded')).toBe('false')
     expect(document.activeElement).toBe(trigger())
@@ -69,9 +65,7 @@ describe('responsive storefront shell', () => {
     const close = panel()?.querySelector('button')
     close?.focus()
     await act(() =>
-      close?.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
-      ),
+      close?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })),
     )
     expect(trigger()?.getAttribute('aria-expanded')).toBe('false')
     expect(document.activeElement).toBe(trigger())
@@ -104,9 +98,7 @@ describe('responsive storefront shell', () => {
     media.matches = true
     await act(() => media.dispatchEvent(new Event('change')))
     expect(disclosure()?.hasAttribute('hidden')).toBe(true)
-    expect(document.activeElement).toBe(
-      host.querySelector('a[aria-label="SportZone home"]'),
-    )
+    expect(document.activeElement).toBe(host.querySelector('a[aria-label="SportZone home"]'))
   })
   it('SHELL-04: shell exposes one main/skip target, responsive navigation, policy/support entries and appearance', () => {
     const html = renderToStaticMarkup(
@@ -141,9 +133,7 @@ describe('responsive storefront shell', () => {
   it('SHELL-06: error uses safe text and real retry callback; loading and 404 expose recovery/status semantics', async () => {
     const reset = vi.fn()
     await act(() =>
-      root.render(
-        <PublicError error={new Error('sensitive synthetic detail')} reset={reset} />,
-      ),
+      root.render(<PublicError error={new Error('sensitive synthetic detail')} reset={reset} />),
     )
     expect(host.querySelector('[role="alert"]')).not.toBeNull()
     expect(host.textContent).not.toContain('sensitive synthetic detail')

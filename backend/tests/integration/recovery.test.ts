@@ -1,37 +1,37 @@
-import { composeCustomerRoutes } from '../../src/modules/auth/auth.composition.js'
-import { loadEnvironment } from '../../src/config/environment.js'
-import { testEnvironment } from '../support/environment.js'
+import { composeIdentityRoutes } from '../../src/setup.js'
+import { loadEnvironment } from '../../src/config/env.js'
+import { testEnvironment } from '../helpers/environment.js'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { Router } from 'express'
 import { Types } from 'mongoose'
 import request from 'supertest'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createApp } from '../../src/app.js'
-import { inTransaction } from '../../src/db/transaction.js'
+import { inTransaction } from '../../src/shared/database/transaction.js'
 import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
 import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
-import { createBrowserSecurity } from '../../src/modules/auth/browser-security.service.js'
-import { browserSecurityRoutes } from '../../src/modules/auth/browser-security.routes.js'
-import { createSessionService } from '../../src/modules/auth/session.service.js'
-import { createRecoveryService } from '../../src/modules/auth/password-recovery.service.js'
-import { recoveryRoutes } from '../../src/modules/auth/password-recovery.routes.js'
+import { createBrowserSecurity } from '../../src/modules/auth/sessions/browser-security.service.js'
+import { browserSecurityRoutes } from '../../src/modules/auth/sessions/browser-security.routes.js'
+import { createSessionService } from '../../src/modules/auth/sessions/session.service.js'
+import { createRecoveryService } from '../../src/modules/auth/recovery/password-recovery.service.js'
+import { recoveryRoutes } from '../../src/modules/auth/recovery/password-recovery.routes.js'
 import {
   createProofEncryption,
   proofHash,
-} from '../../src/modules/auth/proof.crypto.js'
-import { createResetDelivery } from '../../src/modules/auth/proof-delivery.service.js'
+} from '../../src/modules/auth/verification/proof.crypto.js'
+import { createResetDelivery } from '../../src/modules/auth/verification/proof-delivery.service.js'
 import {
   hashPassword,
   verifyPassword,
-} from '../../src/modules/auth/password.service.js'
+} from '../../src/modules/auth/credentials/password.service.js'
+import { createRegistrationNotifications } from '../../src/modules/notifications/notification.service.js'
 import {
-  createRegistrationNotifications,
   foundationNotificationValidator,
   registrationNotificationValidator,
-} from '../../src/modules/notifications/notification.service.js'
-import { createNotificationWorker } from '../../src/modules/notifications/notification-worker.service.js'
+} from '../../src/modules/notifications/notification.persistence.js'
+import { createNotificationDeliveryService } from '../../src/modules/notifications/notification-delivery.service.js'
 import type { EmailMessage } from '../../src/modules/notifications/notification.types.js'
-import { isolatedDatabase } from '../support/database.js'
+import { isolatedDatabase } from '../helpers/database.js'
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
 let models: ReturnType<typeof createIdentityModels>
 let sessions: ReturnType<typeof createSessionService>
@@ -95,8 +95,8 @@ async function post(path: string, body: object, ctx = context()) {
 }
 async function issue(account: Awaited<ReturnType<typeof user>>) {
   time = Math.max(time, Date.now())
-  await post('/auth/password-resets', { email: account.emailNormalized }).then(
-    (res) => expect(res.status).toBe(200),
+  await post('/auth/password-resets', { email: account.emailNormalized }).then((res) =>
+    expect(res.status).toBe(200),
   )
   const challenge = await models.challenges
     .findOne({
@@ -105,8 +105,7 @@ async function issue(account: Awaited<ReturnType<typeof user>>) {
       consumedAt: { $exists: false },
     })
     .select('+deliveryEnvelope +scopeRevisionAtIssue')
-  if (!challenge?.deliveryNotificationId)
-    throw new Error('Missing synthetic challenge')
+  if (!challenge?.deliveryNotificationId) throw new Error('Missing synthetic challenge')
   const message = await delivery.message({
     id: challenge.deliveryNotificationId,
     userId: account._id,
@@ -207,11 +206,9 @@ describe('customer password reset/change on replica MongoDB and HTTP', () => {
     const raw = await fixture.connection.db
       ?.collection('authChallenges')
       .findOne({ _id: challenge._id })
-    const notification = await fixture.connection.db
-      ?.collection('notifications')
-      .findOne({
-        _id: challenge.deliveryNotificationId ?? new Types.ObjectId(),
-      })
+    const notification = await fixture.connection.db?.collection('notifications').findOne({
+      _id: challenge.deliveryNotificationId ?? new Types.ObjectId(),
+    })
     expect(raw?.secretHash).toBe(proofHash(token))
     expect(JSON.stringify(raw)).not.toContain(token)
     expect(Object.keys(notification?.payload ?? {})).toEqual(['challengeId'])
@@ -229,32 +226,21 @@ describe('customer password reset/change on replica MongoDB and HTTP', () => {
     expect(res.body.data).toEqual({ reset: true })
     expect(res.headers['set-cookie']).toBeUndefined()
     expect(await passwordMatches(account._id, newPassword)).toBe(true)
-    await expect(
-      sessions.authenticate('customer', old.token),
-    ).rejects.toMatchObject({ code: 'AUTH_REQUIRED' })
-    const consumed = await models.challenges
-      .findById(challenge._id)
-      .select('+deliveryEnvelope')
+    await expect(sessions.authenticate('customer', old.token)).rejects.toMatchObject({
+      code: 'AUTH_REQUIRED',
+    })
+    const consumed = await models.challenges.findById(challenge._id).select('+deliveryEnvelope')
     expect(consumed?.consumedAt).toBeInstanceOf(Date)
     expect(consumed?.deliveryEnvelope).toBeUndefined()
-    expect(
-      (await models.users.findById(account._id))?.emailVerifiedAt,
-    ).toBeUndefined()
-    expect(
-      (await post('/auth/password-resets/confirm', { token, newPassword }))
-        .status,
-    ).toBe(400)
+    expect((await models.users.findById(account._id))?.emailVerifiedAt).toBeUndefined()
+    expect((await post('/auth/password-resets/confirm', { token, newPassword })).status).toBe(400)
   })
   it('allows exactly one concurrent consume with different contexts', async () => {
     const { token } = await issue(await user()),
       contexts = [await context(), await context()]
     const results = await Promise.all(
       contexts.map((ctx) =>
-        post(
-          '/auth/password-resets/confirm',
-          { token, newPassword },
-          Promise.resolve(ctx),
-        ),
+        post('/auth/password-resets/confirm', { token, newPassword }, Promise.resolve(ctx)),
       ),
     )
     expect(results.map((r) => r.status).sort()).toEqual([200, 400])
@@ -268,11 +254,7 @@ describe('customer password reset/change on replica MongoDB and HTTP', () => {
     const contexts = [await context(), await context()]
     const results = await Promise.all(
       contexts.map((ctx) =>
-        post(
-          '/auth/password-resets',
-          { email: account.emailNormalized },
-          Promise.resolve(ctx),
-        ),
+        post('/auth/password-resets', { email: account.emailNormalized }, Promise.resolve(ctx)),
       ),
     )
     expect(results.map((r) => r.status)).toEqual([200, 200])
@@ -283,11 +265,8 @@ describe('customer password reset/change on replica MongoDB and HTTP', () => {
     ).toBe(1)
     expect(await models.challenges.countDocuments()).toBe(2)
     expect(
-      (
-        await models.challenges
-          .findById(first.challenge._id)
-          .select('+deliveryEnvelope')
-      )?.deliveryEnvelope,
+      (await models.challenges.findById(first.challenge._id).select('+deliveryEnvelope'))
+        ?.deliveryEnvelope,
     ).toBeUndefined()
     expect(
       (
@@ -301,17 +280,11 @@ describe('customer password reset/change on replica MongoDB and HTTP', () => {
   it('refuses expired proofs despite TTL lag and strips expired envelopes before TTL deletion', async () => {
     const { token, challenge } = await issue(await user())
     time += 901000
-    expect(
-      (await post('/auth/password-resets/confirm', { token, newPassword }))
-        .status,
-    ).toBe(400)
+    expect((await post('/auth/password-resets/confirm', { token, newPassword })).status).toBe(400)
     await delivery.cleanup(10)
     expect(
-      (
-        await models.challenges
-          .findById(challenge._id)
-          .select('+deliveryEnvelope')
-      )?.deliveryEnvelope,
+      (await models.challenges.findById(challenge._id).select('+deliveryEnvelope'))
+        ?.deliveryEnvelope,
     ).toBeUndefined()
   })
   it('rejects admin-scoped, suspended and wrong-purpose challenges', async () => {
@@ -319,15 +292,9 @@ describe('customer password reset/change on replica MongoDB and HTTP', () => {
       const account = await user(),
         { token, challenge } = await issue(account)
       if (kind === 'admin')
-        await models.users.updateOne(
-          { _id: account._id },
-          { $set: { role: 'admin' } },
-        )
+        await models.users.updateOne({ _id: account._id }, { $set: { role: 'admin' } })
       if (kind === 'suspended')
-        await models.users.updateOne(
-          { _id: account._id },
-          { $set: { status: 'suspended' } },
-        )
+        await models.users.updateOne({ _id: account._id }, { $set: { status: 'suspended' } })
       if (kind === 'email')
         await models.users.updateOne(
           { _id: account._id },
@@ -338,10 +305,7 @@ describe('customer password reset/change on replica MongoDB and HTTP', () => {
           { _id: challenge._id },
           { $set: { purpose: 'email_verify' } },
         )
-      expect(
-        (await post('/auth/password-resets/confirm', { token, newPassword }))
-          .status,
-      ).toBe(400)
+      expect((await post('/auth/password-resets/confirm', { token, newPassword })).status).toBe(400)
       expect(await passwordMatches(account._id, initialPassword)).toBe(true)
     }
   })
@@ -355,13 +319,7 @@ describe('customer password reset/change on replica MongoDB and HTTP', () => {
       csrf: first.csrfToken,
     })
     expect(
-      (
-        await post(
-          '/me/password-change',
-          { currentPassword: 'wrong', newPassword },
-          auth,
-        )
-      ).status,
+      (await post('/me/password-change', { currentPassword: 'wrong', newPassword }, auth)).status,
     ).toBe(401)
     const res = await post(
       '/me/password-change',
@@ -371,37 +329,25 @@ describe('customer password reset/change on replica MongoDB and HTTP', () => {
     expect(res.status).toBe(200)
     expect(res.body.data.changed).toBe(true)
     expect(res.body.data.csrfToken).not.toBe(first.csrfToken)
-    const replacement = String(res.headers['set-cookie']?.[0])
-      .split(';')[0]
-      ?.split('=')[1]
-    expect(
-      (
-        await sessions.authenticate('customer', replacement)
-      ).userId.toHexString(),
-    ).toBe(account._id.toHexString())
+    const replacement = String(res.headers['set-cookie']?.[0]).split(';')[0]?.split('=')[1]
+    expect((await sessions.authenticate('customer', replacement)).userId.toHexString()).toBe(
+      account._id.toHexString(),
+    )
     for (const old of [first, other])
-      await expect(
-        sessions.authenticate('customer', old.token),
-      ).rejects.toMatchObject({ code: 'AUTH_REQUIRED' })
-    expect(
-      (await post('/auth/password-resets/confirm', { token, newPassword }))
-        .status,
-    ).toBe(400)
+      await expect(sessions.authenticate('customer', old.token)).rejects.toMatchObject({
+        code: 'AUTH_REQUIRED',
+      })
+    expect((await post('/auth/password-resets/confirm', { token, newPassword })).status).toBe(400)
   })
   it('serializes concurrent password changes against one credential version', async () => {
     const account = await user(),
       issued = await sessions.issue('customer', account._id)
     const results = await Promise.all(
       [0, 1].map(() =>
-        service
-          .change(
-            { currentPassword: initialPassword, newPassword },
-            issued.token,
-          )
-          .then(
-            () => 'ok',
-            () => 'denied',
-          ),
+        service.change({ currentPassword: initialPassword, newPassword }, issued.token).then(
+          () => 'ok',
+          () => 'denied',
+        ),
       ),
     )
     expect(results.sort()).toEqual(['denied', 'ok'])
@@ -424,25 +370,19 @@ describe('customer password reset/change on replica MongoDB and HTTP', () => {
     )
     const ctx = await security.issueContext('storefront')
     await expect(
-      broken.request(
-        { email: account.emailNormalized },
-        ctx.token,
-        ctx.csrfToken,
-      ),
+      broken.request({ email: account.emailNormalized }, ctx.token, ctx.csrfToken),
     ).rejects.toThrow('Synthetic storage failure')
     expect(await models.challenges.countDocuments()).toBe(0)
+    expect(await fixture.connection.db?.collection('notifications').countDocuments()).toBe(0)
     expect(
-      await fixture.connection.db?.collection('notifications').countDocuments(),
-    ).toBe(0)
-    expect(
-      (await models.users.findById(account._id).select('+challengeRevisions'))
-        ?.challengeRevisions.password_reset,
+      (await models.users.findById(account._id).select('+challengeRevisions'))?.challengeRevisions
+        .password_reset,
     ).toBe(0)
   })
   it('delivers reference-only proof after commit and retries only known rejection with the same link/key', async () => {
     await issue(await user())
     const messages: EmailMessage[] = []
-    const worker = createNotificationWorker(
+    const worker = createNotificationDeliveryService(
       notifications,
       {
         send: async (message) => {
@@ -462,16 +402,15 @@ describe('customer password reset/change on replica MongoDB and HTTP', () => {
     expect(messages).toHaveLength(2)
     expect(messages[0]).toEqual(messages[1])
     expect(messages[0]?.text).toContain(`${origin}/reset-password#token=`)
-    expect(
-      (await fixture.connection.db?.collection('notifications').findOne({}))
-        ?.status,
-    ).toBe('sent')
+    expect((await fixture.connection.db?.collection('notifications').findOne({}))?.status).toBe(
+      'sent',
+    )
   })
   it('does not resend uncertain proof delivery and explicit reissue invalidates the old proof', async () => {
     const account = await user(),
       first = await issue(account)
     let sends = 0
-    const worker = createNotificationWorker(
+    const worker = createNotificationDeliveryService(
       notifications,
       {
         send: async () => {
@@ -548,7 +487,7 @@ describe('customer password reset/change on replica MongoDB and HTTP', () => {
           { $set: { emailNormalized: 'other@example.test' } },
         )
       let sends = 0
-      await createNotificationWorker(
+      await createNotificationDeliveryService(
         notifications,
         {
           send: async () => {
@@ -562,11 +501,8 @@ describe('customer password reset/change on replica MongoDB and HTTP', () => {
       ).runBatch()
       expect(sends).toBe(failure === 'superseded' ? 1 : 0)
       expect(
-        (
-          await notifications.status(
-            first.challenge.deliveryNotificationId ?? new Types.ObjectId(),
-          )
-        )?.status,
+        (await notifications.status(first.challenge.deliveryNotificationId ?? new Types.ObjectId()))
+          ?.status,
       ).toBe('failed')
     })
   it('enforces Origin, context/session CSRF, query/unknown-field validation and bounded IP abuse', async () => {
@@ -602,10 +538,7 @@ describe('customer password reset/change on replica MongoDB and HTTP', () => {
     ).toBe(403)
     const statuses: number[] = []
     for (let i = 0; i < 11; i++)
-      statuses.push(
-        (await post('/auth/password-resets', { email: 'missing@example.test' }))
-          .status,
-      )
+      statuses.push((await post('/auth/password-resets', { email: 'missing@example.test' })).status)
     expect(statuses).toContain(429)
   })
   it('rejects proof-envelope transplant to another principal and keeps candidate password untouched', async () => {
@@ -658,9 +591,7 @@ describe('customer password reset/change on replica MongoDB and HTTP', () => {
     expect(
       await passwordMatches(
         account._id,
-        results.includes('reset')
-          ? newPassword
-          : 'Synthetic alternate password',
+        results.includes('reset') ? newPassword : 'Synthetic alternate password',
       ),
     ).toBe(true)
   })
@@ -672,21 +603,13 @@ describe('customer password reset/change on replica MongoDB and HTTP', () => {
       issueContext = await security.issueContext('storefront')
     const results = await Promise.all([
       service
-        .confirm(
-          { token: first.token, newPassword },
-          resetContext.token,
-          resetContext.csrfToken,
-        )
+        .confirm({ token: first.token, newPassword }, resetContext.token, resetContext.csrfToken)
         .then(
           () => 'reset',
           () => 'denied',
         ),
       service
-        .request(
-          { email: account.emailNormalized },
-          issueContext.token,
-          issueContext.csrfToken,
-        )
+        .request({ email: account.emailNormalized }, issueContext.token, issueContext.csrfToken)
         .then(() => 'issued'),
     ])
     expect(results[1]).toBe('issued')
@@ -724,13 +647,9 @@ describe('customer password reset/change on replica MongoDB and HTTP', () => {
       clock,
     )
     const ctx = await security.issueContext('storefront')
-    expect(
-      await missingKeys.confirm(
-        { token, newPassword },
-        ctx.token,
-        ctx.csrfToken,
-      ),
-    ).toEqual({ reset: true })
+    expect(await missingKeys.confirm({ token, newPassword }, ctx.token, ctx.csrfToken)).toEqual({
+      reset: true,
+    })
     expect(await passwordMatches(account._id, newPassword)).toBe(true)
   })
   it('rolls back password change and session revocation on a transaction failure', async () => {
@@ -752,15 +671,12 @@ describe('customer password reset/change on replica MongoDB and HTTP', () => {
       clock,
     )
     await expect(
-      broken.change(
-        { currentPassword: initialPassword, newPassword },
-        old.token,
-      ),
+      broken.change({ currentPassword: initialPassword, newPassword }, old.token),
     ).rejects.toThrow('Synthetic session storage failure')
     expect(await passwordMatches(account._id, initialPassword)).toBe(true)
-    expect(
-      (await sessions.authenticate('customer', old.token)).userId.toHexString(),
-    ).toBe(account._id.toHexString())
+    expect((await sessions.authenticate('customer', old.token)).userId.toHexString()).toBe(
+      account._id.toHexString(),
+    )
     const challenge = await models.challenges
       .findById(first.challenge._id)
       .select('+deliveryEnvelope')
@@ -778,29 +694,47 @@ describe('customer password reset/change on replica MongoDB and HTTP', () => {
         })
       ).status,
     ).toBe(400)
-    expect(
-      (await post('/auth/password-resets/confirm', { token, newPassword }))
-        .status,
-    ).toBe(200)
+    expect((await post('/auth/password-resets/confirm', { token, newPassword })).status).toBe(200)
     const ctx = await security.issueContext('storefront'),
       started = performance.now()
     expect(
-      await service.request(
-        { email: 'missing@example.test' },
-        ctx.token,
-        ctx.csrfToken,
-      ),
+      await service.request({ email: 'missing@example.test' }, ctx.token, ctx.csrfToken),
     ).toEqual({ accepted: true })
     expect(performance.now() - started).toBeGreaterThanOrEqual(95)
   })
   it('activates only configured recovery routes through the real customer composition', async () => {
-    const base = { ...testEnvironment(), CUSTOMER_AUTH_ENABLED: 'true', CUSTOMER_SESSION_TTL_SECONDS: '600', ADMIN_SESSION_TTL_SECONDS: '300', BROWSER_CONTEXT_TTL_SECONDS: '120', SESSION_COOKIE_SAME_SITE: 'lax', STOREFRONT_ORIGIN: origin,
-      CORS_ALLOWED_ORIGINS: `${origin},http://localhost:5173` }
-    const disabled = createApp({ apiRouter: await composeCustomerRoutes(fixture.connection, loadEnvironment(base)) })
+    const base = {
+      ...testEnvironment(),
+      CUSTOMER_AUTH_ENABLED: 'true',
+      CUSTOMER_SESSION_TTL_SECONDS: '600',
+      ADMIN_SESSION_TTL_SECONDS: '300',
+      BROWSER_CONTEXT_TTL_SECONDS: '120',
+      SESSION_COOKIE_SAME_SITE: 'lax',
+      STOREFRONT_ORIGIN: origin,
+      CORS_ALLOWED_ORIGINS: `${origin},http://localhost:5173`,
+    }
+    const disabled = createApp({
+      apiRouter: await composeIdentityRoutes(fixture.connection, loadEnvironment(base)),
+    })
     expect((await request(disabled).post('/api/v1/auth/password-resets').send({})).status).toBe(404)
-    app = createApp({ apiRouter: await composeCustomerRoutes(fixture.connection, loadEnvironment({ ...base, PASSWORD_RECOVERY_ENABLED: 'true', PASSWORD_RESET_TTL_SECONDS: '900', PASSWORD_RESET_COOLDOWN_SECONDS: '60', PASSWORD_RESET_RESPONSE_FLOOR_MS: '100', AUTH_PROOF_ACTIVE_KEY_VERSION: 'active', AUTH_PROOF_KEYS_JSON: JSON.stringify({ active: randomBytes(32).toString('hex') }) })) })
+    app = createApp({
+      apiRouter: await composeIdentityRoutes(
+        fixture.connection,
+        loadEnvironment({
+          ...base,
+          PASSWORD_RECOVERY_ENABLED: 'true',
+          PASSWORD_RESET_TTL_SECONDS: '900',
+          PASSWORD_RESET_COOLDOWN_SECONDS: '60',
+          PASSWORD_RESET_RESPONSE_FLOOR_MS: '100',
+          AUTH_PROOF_ACTIVE_KEY_VERSION: 'active',
+          AUTH_PROOF_KEYS_JSON: JSON.stringify({ active: randomBytes(32).toString('hex') }),
+        }),
+      ),
+    })
     const account = await user()
-    expect((await post('/auth/password-resets', { email: account.emailNormalized })).status).toBe(200)
+    expect((await post('/auth/password-resets', { email: account.emailNormalized })).status).toBe(
+      200,
+    )
     expect(await models.challenges.countDocuments({ userId: account._id })).toBe(1)
   })
   it('migrates the exact P03-009 validator additively without deleting old intent data', async () => {

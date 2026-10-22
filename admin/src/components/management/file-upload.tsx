@@ -48,17 +48,15 @@ export function FileUpload({
   const disabled = isDisabled || pending
   const issue = selectionError || error
   const validProgress =
-    progress !== undefined &&
-    Number.isFinite(progress) &&
-    progress >= 0 &&
-    progress <= 100
+    progress !== undefined && Number.isFinite(progress) && progress >= 0 && progress <= 100
   return (
     <div className="min-w-0 space-y-3">
       <label htmlFor={id} className="block font-medium">
         {label}
       </label>
       <p id={`${id}-help`} className="break-words text-sm text-muted">
-        {acceptedTypes.map(type => type.split('/')[1].toUpperCase()).join(', ')} · Up to {Math.round(maxBytes / 1024)} KB
+        {acceptedTypes.map((type) => type.split('/')[1].toUpperCase()).join(', ')} · Up to{' '}
+        {Math.round(maxBytes / 1024)} KB
       </p>
       <FileInput
         id={id}
@@ -75,9 +73,7 @@ export function FileUpload({
             candidate.size > maxBytes ||
             candidate.size === 0
           ) {
-            setSelectionError(
-              'Choose a nonempty file of a supported type within the size limit.',
-            )
+            setSelectionError('Choose a nonempty file of a supported type within the size limit.')
             return
           }
           setSelectionError(undefined)

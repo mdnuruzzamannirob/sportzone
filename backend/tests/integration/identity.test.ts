@@ -11,8 +11,8 @@ import {
   consumeUserChallenge,
   findActiveBrowserContext,
   findActiveUserSession,
-} from '../../src/modules/auth/session.persistence.js'
-import { isolatedDatabase } from '../support/database.js'
+} from '../../src/modules/auth/sessions/session.persistence.js'
+import { isolatedDatabase } from '../helpers/database.js'
 
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
 let models: ReturnType<typeof createIdentityModels>
@@ -95,10 +95,7 @@ describe('identity model and database contracts', () => {
     )
       .flat()
       .filter((index) => index.name !== '_id_')
-    const spec = readFileSync(
-      new URL('../../../docs/DATABASE.md', import.meta.url),
-      'utf8',
-    )
+    const spec = readFileSync(new URL('../../../docs/DATABASE.md', import.meta.url), 'utf8')
     const table = spec.slice(
       spec.indexOf('### 5.6 Identity indexes'),
       spec.indexOf('### 5.7 Identity implementation'),
@@ -172,9 +169,7 @@ describe('identity model and database contracts', () => {
       }),
     ).rejects.toThrow()
     const saved = address()
-    await expect(
-      userCreate({ ...userInput(), addresses: [saved, saved] }),
-    ).rejects.toThrow()
+    await expect(userCreate({ ...userInput(), addresses: [saved, saved] })).rejects.toThrow()
     await expect(
       userCreate({
         ...userInput(),
@@ -201,10 +196,7 @@ describe('identity model and database contracts', () => {
     await expect(
       db()
         .collection('users')
-        .updateOne(
-          { _id: user._id },
-          { $set: { emailNormalized: 'bad..email@example.test' } },
-        ),
+        .updateOne({ _id: user._id }, { $set: { emailNormalized: 'bad..email@example.test' } }),
     ).rejects.toMatchObject({ code: 121 })
     for (const change of [
       { phone: null },
@@ -226,10 +218,7 @@ describe('identity model and database contracts', () => {
     await expect(
       db()
         .collection('users')
-        .updateOne(
-          { _id: user._id },
-          { $set: { emailNormalized: 'UPPER@example.test' } },
-        ),
+        .updateOne({ _id: user._id }, { $set: { emailNormalized: 'UPPER@example.test' } }),
     ).rejects.toMatchObject({ code: 121 })
   })
   it.each(['customer', 'admin', 'guest_order'] as const)(
@@ -281,56 +270,45 @@ describe('identity model and database contracts', () => {
       securityRevisionAtIssue: 0,
       expiresAt: future(),
     }
-    await expect(
-      sessionCreate({ ...input, userId: input.userId.toHexString() }),
-    ).rejects.toThrow()
-    await expect(
-      sessionCreate({ ...input, expiresAt: future().toISOString() }),
-    ).rejects.toThrow()
+    await expect(sessionCreate({ ...input, userId: input.userId.toHexString() })).rejects.toThrow()
+    await expect(sessionCreate({ ...input, expiresAt: future().toISOString() })).rejects.toThrow()
     await expect(sessionCreate({ ...input, orderId: null })).rejects.toThrow()
   })
-  it.each([
-    'email_verify',
-    'email_change',
-    'password_reset',
-    'guest_order_access',
-  ] as const)('validates %s challenge scope and private envelope', async (purpose) => {
-    const input = {
-      purpose,
-      secretHash: digest(),
-      emailNormalized: userInput().emailNormalized,
-      scopeRevisionAtIssue: 0,
-      expiresAt: future(),
-      ...(purpose === 'guest_order_access'
-        ? { orderId: new Types.ObjectId() }
-        : { userId: new Types.ObjectId() }),
-      ...(purpose === 'email_change'
-        ? { targetEmailNormalized: 'target@example.test' }
-        : {}),
-    }
-    const challenge = await challengeCreate(input)
-    expect(await models.challenges.findById(challenge._id).lean()).not.toHaveProperty(
-      'secretHash',
-    )
-    await expect(
-      db()
-        .collection('authChallenges')
-        .updateOne(
-          { _id: challenge._id },
-          {
-            $set: {
-              purpose:
-                purpose === 'guest_order_access'
-                  ? 'password_reset'
-                  : 'guest_order_access',
+  it.each(['email_verify', 'email_change', 'password_reset', 'guest_order_access'] as const)(
+    'validates %s challenge scope and private envelope',
+    async (purpose) => {
+      const input = {
+        purpose,
+        secretHash: digest(),
+        emailNormalized: userInput().emailNormalized,
+        scopeRevisionAtIssue: 0,
+        expiresAt: future(),
+        ...(purpose === 'guest_order_access'
+          ? { orderId: new Types.ObjectId() }
+          : { userId: new Types.ObjectId() }),
+        ...(purpose === 'email_change' ? { targetEmailNormalized: 'target@example.test' } : {}),
+      }
+      const challenge = await challengeCreate(input)
+      expect(await models.challenges.findById(challenge._id).lean()).not.toHaveProperty(
+        'secretHash',
+      )
+      await expect(
+        db()
+          .collection('authChallenges')
+          .updateOne(
+            { _id: challenge._id },
+            {
+              $set: {
+                purpose: purpose === 'guest_order_access' ? 'password_reset' : 'guest_order_access',
+              },
             },
-          },
-        ),
-    ).rejects.toMatchObject({ code: 121 })
-    await expect(challengeCreate(input)).rejects.toMatchObject({
-      code: 11000,
-    })
-  })
+          ),
+      ).rejects.toMatchObject({ code: 121 })
+      await expect(challengeCreate(input)).rejects.toMatchObject({
+        code: 11000,
+      })
+    },
+  )
   it('rejects missing/extraneous target email and partial encrypted envelopes', async () => {
     const input = {
       purpose: 'password_reset',
@@ -406,10 +384,7 @@ describe('real identity expiry, revocation and transactional consumption', () =>
     )
     expect(await findActiveUserSession(models, input)).toBeNull()
     await models.users.updateOne({ _id: user._id }, { $set: { status: 'active' } })
-    await models.sessions.updateOne(
-      { _id: session._id },
-      { $set: { revokedAt: new Date() } },
-    )
+    await models.sessions.updateOne({ _id: session._id }, { $set: { revokedAt: new Date() } })
     expect(await findActiveUserSession(models, input)).toBeNull()
     expect(await models.sessions.exists({ _id: session._id })).toBeTruthy()
   })
@@ -443,10 +418,7 @@ describe('real identity expiry, revocation and transactional consumption', () =>
         audience: 'admin',
       }),
     ).toBeNull()
-    await models.contexts.updateOne(
-      { _id: context._id },
-      { $set: { rotatedAt: new Date() } },
-    )
+    await models.contexts.updateOne({ _id: context._id }, { $set: { rotatedAt: new Date() } })
     expect(await findActiveBrowserContext(models, contextInput)).toBeNull()
     const dates = {
       createdAt: new Date(Date.now() - 20000),
@@ -486,8 +458,8 @@ describe('real identity expiry, revocation and transactional consumption', () =>
     ).rejects.toThrow('Challenge is unavailable.')
     expect((await models.challenges.findById(challenge._id))?.consumedAt).toBeUndefined()
     expect(
-      (await models.users.findById(user._id).select('+challengeRevisions'))
-        ?.challengeRevisions?.password_reset,
+      (await models.users.findById(user._id).select('+challengeRevisions'))?.challengeRevisions
+        ?.password_reset,
     ).toBe(0)
   })
   it('database guards concurrent eleventh-address and default-address writes', async () => {
@@ -523,11 +495,7 @@ describe('real identity expiry, revocation and transactional consumption', () =>
       session,
       userId,
     }: Parameters<Parameters<typeof consumeUserChallenge>[3]>[0]) => {
-      await models.users.updateOne(
-        { _id: userId },
-        { $inc: { securityRevision: 1 } },
-        { session },
-      )
+      await models.users.updateOne({ _id: userId }, { $inc: { securityRevision: 1 } }, { session })
       return 'applied'
     }
     const results = await Promise.allSettled([
@@ -535,18 +503,15 @@ describe('real identity expiry, revocation and transactional consumption', () =>
       consumeUserChallenge(fixture.connection, models, input, effect),
     ])
     expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1)
-    const stored = await models.challenges
-      .findById(challenge._id)
-      .select('+deliveryEnvelope')
+    const stored = await models.challenges.findById(challenge._id).select('+deliveryEnvelope')
     expect(stored?.consumedAt).toBeInstanceOf(Date)
     expect(stored?.deliveryEnvelope).toBeUndefined()
     expect(
-      (await models.users.findById(user._id).select('+securityRevision'))
-        ?.securityRevision,
+      (await models.users.findById(user._id).select('+securityRevision'))?.securityRevision,
     ).toBe(1)
-    await expect(
-      consumeUserChallenge(fixture.connection, models, input, effect),
-    ).rejects.toThrow('Challenge is unavailable.')
+    await expect(consumeUserChallenge(fixture.connection, models, input, effect)).rejects.toThrow(
+      'Challenge is unavailable.',
+    )
   })
   it('rolls back consumption, revision and envelope removal when the effect fails', async () => {
     const { user, challenge, input } = await proofFixture()
@@ -561,86 +526,76 @@ describe('real identity expiry, revocation and transactional consumption', () =>
     ).toBeDefined()
     expect((await models.challenges.findById(challenge._id))?.consumedAt).toBeUndefined()
     expect(
-      (await models.users.findById(user._id).select('+challengeRevisions'))
-        ?.challengeRevisions?.password_reset,
+      (await models.users.findById(user._id).select('+challengeRevisions'))?.challengeRevisions
+        ?.password_reset,
     ).toBe(0)
   })
-  it.each([
-    'expired',
-    'invalidated',
-    'attempts',
-    'revision',
-    'role',
-    'principal',
-  ] as const)('rejects %s proof without running the effect', async (failure) => {
-    const { user, challenge, input } = await proofFixture()
-    if (failure === 'expired')
-      await db()
-        .collection('authChallenges')
-        .updateOne(
-          { _id: challenge._id },
-          {
-            $set: {
-              createdAt: new Date(Date.now() - 20000),
-              expiresAt: new Date(Date.now() - 10000),
+  it.each(['expired', 'invalidated', 'attempts', 'revision', 'role', 'principal'] as const)(
+    'rejects %s proof without running the effect',
+    async (failure) => {
+      const { user, challenge, input } = await proofFixture()
+      if (failure === 'expired')
+        await db()
+          .collection('authChallenges')
+          .updateOne(
+            { _id: challenge._id },
+            {
+              $set: {
+                createdAt: new Date(Date.now() - 20000),
+                expiresAt: new Date(Date.now() - 10000),
+              },
+              $unset: { deliveryEnvelope: 1 },
             },
-            $unset: { deliveryEnvelope: 1 },
-          },
-        )
-    if (failure === 'invalidated') {
-      await expect(
-        models.challenges.updateOne(
+          )
+      if (failure === 'invalidated') {
+        await expect(
+          models.challenges.updateOne(
+            { _id: challenge._id },
+            { $set: { invalidatedAt: new Date() } },
+          ),
+        ).rejects.toMatchObject({ code: 121 })
+        await models.challenges.updateOne(
           { _id: challenge._id },
-          { $set: { invalidatedAt: new Date() } },
+          { $set: { invalidatedAt: new Date() }, $unset: { deliveryEnvelope: 1 } },
+        )
+      }
+      if (failure === 'attempts')
+        await models.challenges.updateOne({ _id: challenge._id }, { $set: { attemptCount: 5 } })
+      if (failure === 'revision')
+        await models.users.updateOne(
+          { _id: user._id },
+          { $inc: { 'challengeRevisions.password_reset': 1 } },
+        )
+      let ran = false
+      await expect(
+        consumeUserChallenge(
+          fixture.connection,
+          models,
+          {
+            ...input,
+            ...(failure === 'role' ? { role: 'admin' as const } : {}),
+            ...(failure === 'principal' ? { userId: new Types.ObjectId() } : {}),
+          },
+          async () => {
+            ran = true
+          },
         ),
-      ).rejects.toMatchObject({ code: 121 })
-      await models.challenges.updateOne(
-        { _id: challenge._id },
-        { $set: { invalidatedAt: new Date() }, $unset: { deliveryEnvelope: 1 } },
-      )
-    }
-    if (failure === 'attempts')
-      await models.challenges.updateOne(
-        { _id: challenge._id },
-        { $set: { attemptCount: 5 } },
-      )
-    if (failure === 'revision')
-      await models.users.updateOne(
-        { _id: user._id },
-        { $inc: { 'challengeRevisions.password_reset': 1 } },
-      )
-    let ran = false
-    await expect(
-      consumeUserChallenge(
-        fixture.connection,
-        models,
-        {
-          ...input,
-          ...(failure === 'role' ? { role: 'admin' as const } : {}),
-          ...(failure === 'principal' ? { userId: new Types.ObjectId() } : {}),
-        },
-        async () => {
-          ran = true
-        },
-      ),
-    ).rejects.toThrow('Challenge is unavailable.')
-    expect(ran).toBe(false)
-    expect(await models.challenges.exists({ _id: challenge._id })).toBeTruthy()
-  })
+      ).rejects.toThrow('Challenge is unavailable.')
+      expect(ran).toBe(false)
+      expect(await models.challenges.exists({ _id: challenge._id })).toBeTruthy()
+    },
+  )
   it('refuses an existing unreviewed validator without silently changing it', async () => {
     await db().command({
       collMod: 'browserContexts',
       validationLevel: 'moderate',
     })
-    await expect(
-      initializeIdentityPersistence(fixture.connection, models),
-    ).rejects.toThrow('reviewed migration')
+    await expect(initializeIdentityPersistence(fixture.connection, models)).rejects.toThrow(
+      'reviewed migration',
+    )
     expect(
-      (
-        await db()
-          .listCollections({ name: 'browserContexts' }, { nameOnly: false })
-          .next()
-      )?.options?.validationLevel,
+      (await db().listCollections({ name: 'browserContexts' }, { nameOnly: false }).next())?.options
+        ?.validationLevel,
     ).toBe('moderate')
   })
 })

@@ -26,16 +26,9 @@ export function StorefrontShell({ children }: Readonly<{ children: ReactNode }>)
       </main>
       <footer className="border-t border-border py-6 text-sm text-foreground">
         <p>SportZone · Made for your next game.</p>
-        <nav
-          aria-label="Support and policies"
-          className="mt-4 flex flex-wrap gap-x-6 gap-y-2"
-        >
+        <nav aria-label="Support and policies" className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
           {supportLinks.map(([label, href]) => (
-            <Link
-              key={href}
-              href={href}
-              className="inline-flex  items-center"
-            >
+            <Link key={href} href={href} className="inline-flex  items-center">
               {label}
             </Link>
           ))}
