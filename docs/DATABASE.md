@@ -259,8 +259,7 @@ flowchart LR
 
 Both controllers and scheduled jobs invoke shared backend **domain services**, never each other's HTTP endpoint. Cross-module transaction coordination remains inside backend-controlled services (Architecture §§3, 6).
 
-**Target ownership:** [PROJECT_STRUCTURE §2.1](./PROJECT_STRUCTURE.md#21-module-ownership), delegated
-by Architecture §6.1, groups products/variants/categories under catalog, carts/wishlists under cart,
+**Target ownership:** [Architecture §6.1](./ARCHITECTURE.md#61-modules-and-ownership) groups products/variants/categories under catalog, carts/wishlists under cart,
 coupon operations under promotions, guest access under auth, and existing reports/audit under
 reporting/audit. The table below describes canonical capabilities; legacy labels do not require old
 source folders. P03-021 must preserve schema/collection/index identities, validators, transaction and

@@ -32,11 +32,6 @@ This document owns the visual system, page composition, navigation, interactions
 
 ---
 
-The 22 October 2026 source-layout target is [PROJECT_STRUCTURE](./PROJECT_STRUCTURE.md), delegated
-by Architecture. Earlier source-path examples below remain UI responsibility illustrations until
-P02-015/P02-016 migrate them; the canonical target takes precedence for placement/naming only.
-Screen behavior, product rules and native HeroUI/accessibility/theme requirements are unchanged.
-
 ## 1. Design overview
 
 ### 1.1 Experience goals
@@ -255,7 +250,25 @@ The authenticated admin shell exposes these navigation groups. Group labels orga
 - **Order summary:** Subtotal, product discounts, coupon discount, delivery charge, total payable, and payment method. Display confirmed server-calculated values before final submission.
 - **Payment method choice:** Show COD and only gateway channels currently enabled. Use the provider's recognizable channel labels without implying unavailable activation.
 
-**Implementation:** Storefront [commerce components](../storefront/src/components/commerce/product-card.tsx) follow the [usage/state contracts](./UI_COMPONENTS.md#commerce-compositions). Price/line/summary amounts are supplied by the consuming feature/API; quantity controls and variant options express requests/eligibility without reserving stock. Status text remains explicit; payment, funding and fulfillment are never inferred from a monetary total. These components do not populate unavailable catalog/cart pages with synthetic products.
+**Implementation:** Storefront [commerce components](../storefront/src/components/commerce/product-card.tsx) follow the state contracts below. Price/line/summary amounts are supplied by the consuming feature/API; quantity controls and variant options express requests/eligibility without reserving stock. Status text remains explicit; payment, funding and fulfillment are never inferred from a monetary total. These components do not populate unavailable catalog/cart pages with synthetic products.
+
+| Module                  | Contract                                                                                                                                                               |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `price.tsx`             | Display exact nonnegative integer poisha through the existing formatter; show regular-price comparison only when regular is higher; no discount percentage calculation |
+| `product-card.tsx`      | Name/link, controlled image/fallback, supplied prices, availability text and approved rating summary when valid; optional action is outside the product link           |
+| `product-image.tsx`     | Next Image with explicit dimensions/sizes, source-keyed failure recovery and an honest missing-image state                                                             |
+| `variant-selector.tsx`  | Controlled complete-variant options with backend-supplied eligibility; disabled choices, loading/error/empty states and selection/stock announcements                  |
+| `cart-line.tsx`         | Supplied estimated unit/line amounts, variant/SKU, bounded quantity requests, pending/removal, stock/price warnings and no-reservation notice                          |
+| `status-badge.tsx`      | Textual status/availability using neutral surfaces and semantic foregrounds; caller maps verified backend states to labels/tones                                       |
+| `order-summary.tsx`     | Regular subtotal, product/coupon discounts, delivery and supplied final total, labelled estimate/quote/order; payment method is separate from payment outcome          |
+| `commerce-skeleton.tsx` | Product, cart-line and summary layouts with one loading announcement and hidden decorative placeholders                                                                |
+
+- `ProductCard` receives only an approved public rating summary; omit it when unavailable. Pass an approved local/allowed remote image source and descriptive alt text. Next.js remote-host configuration belongs to the media/catalog feature. Key image replacements by source; do not keep a failed old image state for a replacement asset.
+- Variant options represent complete valid combinations from the owning feature/API. A selected ID must still be eligible before a consuming Add to cart action can run. The primitive does not perform inventory arithmetic or grant purchase permission.
+- Product-card actions may include a feature-owned wishlist/cart action, but they must enforce its pending/eligibility state and server checks. No purchase action is built in by default. Do not nest buttons in the product link.
+- Cart `maxQuantity` is a backend/feature-supplied integer limit (zero disables edits); quantity changes are requests, never reservations. Keep the server-supplied estimated line amount visible until a replacement arrives; do not multiply quantity and unit amount to establish checkout truth. A reduced stock limit preserves the requested quantity and displays recovery guidance.
+- Adapt `SummaryAmounts` from CheckoutQuote or the immutable order pricing snapshot. `kind="quote"` does not prove quote freshness, reserve stock or complete payment. The consuming checkout feature owns expiry/consent validation and authoritative submission. Display payment/fulfillment/refund statuses separately; never infer Paid from a total or receipt amount.
+- Example catalog data belongs only in tests/previews. Existing public unavailable pages stay unchanged until their feature tasks integrate real data.
 
 ### 6.3 Administrative components
 
@@ -265,13 +278,79 @@ The authenticated admin shell exposes these navigation groups. Group labels orga
 - **Financial actions:** Show source transaction, eligible amount, pending commitments, intended payout method, and confirmation before submission. Never mark payout complete from an optimistic UI update.
 - **Audit context:** Display available actor, timestamp, and action details for sensitive changes without exposing secrets.
 
-Implementation foundation: admin table/filter/pagination, file upload and guarded confirmation compositions are defined in the [component usage guide](./UI_COMPONENTS.md#admin-management-compositions). Feature integrations supply authoritative rows, upload policy and eligible actions; these primitives do not grant administrator access or execute business operations.
+Implementation foundation: admin table/filter/pagination, file upload and guarded confirmation compositions are defined in the administrative contracts below. Feature integrations supply authoritative rows, upload policy and eligible actions; these primitives do not grant administrator access or execute business operations.
+
+| Module               | Contract                                                                                                                                                                                                        |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data-table.tsx`     | HeroUI table with stable row IDs, header associations, controlled sort requests, textual loading/error/empty states, retry and retained-result notice; a labelled focusable region contains horizontal overflow |
+| `list-controls.tsx`  | Controlled search draft, explicit apply/clear and optional feature filters; HeroUI previous/next pagination uses supplied PageMeta values without deriving counts from rows                                     |
+| `file-upload.tsx`    | HeroUI file input with explicit MIME/byte constraints, linked errors, selected-file summary, raster preview with object-URL cleanup, progress, removal and retry                                                |
+| `guarded-action.tsx` | Confirmation dialog with descriptive context, optional required reason, changing eligibility, pending dismissal/submission guards and retained rejection feedback                                               |
+
+- Tables display caller-supplied rows in their original order; sort/filter/page events are requests to the owning feature. Keep essential status/actions in the first columns. Use concise labelled row-action buttons, not whole-row click-only navigation. No bulk selection exists until a real approved bulk operation needs it. Use mobile summaries for workflows requiring frequent phone use.
+- Keep filter drafts and applied query state in the feature; applying or clearing resets the API page where appropriate. Pass pending state to disable conflicting controls. Pagination accepts API page metadata, including an empty result or a page made stale by concurrent deletion; recover an out-of-range page in the feature rather than inventing a new count.
+- Upload `acceptedTypes` are explicit exact MIME strings, with a positive integer `maxBytes` from the approved environment media policy. The browser checks these for usability only; the backend must validate bytes, scanning, authorization and attachment lifecycle. A locally selected file is not uploaded. Set `state="uploaded"` only from a verified server response. Keep the selected File in the parent on errors; retry must respect the owning upload operation and uncertain provider outcomes. Only JPEG/PNG/WebP receive local previews; object URLs are revoked on replacement/unmount. No private URL or secret enters this primitive.
+- Guarded actions receive backend-eligible state and feature-owned reason/context. Context must identify the target, historical facts and applicable amount/source/commitment before high-impact confirmation. Keep reason state outside the dialog. The feature owns authorization, CSRF, If-Match, idempotency and request lifecycle; set pending immediately, retain ambiguous outcomes, and only show success/close after authoritative confirmation. The primitive never grants permission, initiates financial effects or converts a click into a successful status.
+- `FormDialog` supplies focus containment, Escape/cancel and trigger focus restoration. Pending actions lock dismissal; the feature must settle pending/error state and provide recovery. Multiple action instances have distinct reason-field IDs. Optional `isOpen`/`onOpenChange` lets the feature close the dialog after a verified result; the confirmation callback itself never closes it.
 
 ### 6.4 Component state contract
 
 Every interactive component must define: default, hover (where applicable), focus-visible, active/selected, disabled, pending/loading, validation error, and successful completion states **in both themes**. Disabled actions that matter to users should include an explanation nearby.
 
-**Implementation:** Both apps provide HeroUI field/form/feedback/overlay compositions in `src/components/ui/`; usage and state ownership are documented in [UI components](./UI_COMPONENTS.md). Appearance selects, connectivity notices and storefront loading feedback consume these primitives. Parent editors retain controlled drafts across overlay dismissal; pending panels block Escape/backdrop/Cancel until the caller settles. Field errors and linked summaries use explicit accessible associations; summary focus is requested only after a failed submission.
+**Implementation:** Both apps provide HeroUI field/form/feedback/overlay compositions in `src/components/ui/`; usage and state ownership follow this section. Appearance selects, connectivity notices and storefront loading feedback consume these primitives. Parent editors retain controlled drafts across overlay dismissal; pending panels block Escape/backdrop/Cancel until the caller settles. Field errors and linked summaries use explicit accessible associations; summary focus is requested only after a failed submission.
+
+
+### 6.5 App-owned UI boundary and component APIs
+
+Architecture §§4–5 own placement. Both apps consume native HeroUI through their own components/ui;
+no app imports the other app's runtime components. Preserve compound/generic APIs, default themes
+and system fonts, router-aware Link adapters and keyboard/focus/input-retention behavior. Theme CSS
+owns styling entry points; global styles forward to it. Do not add duplicate component implementations,
+custom palettes/font skins or empty providers. Component filenames/exports below describe existing
+facades until the owning refactor updates consumers and tests; they do not create public HTTP DTOs.
+
+| Module         | Exports                                                     | Responsibility                                                                                                             |
+| -------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `button.tsx`   | `Button`                                                    | All native variants/sizes; disabled/pending handling and optional visible pending text                            |
+| `fields.tsx`   | `TextInput`, `SelectField`, `CheckboxField`, `RadioChoices` | HeroUI labels, helper/error associations and controlled/uncontrolled input support; `TextInput multiline` renders TextArea |
+| `form.tsx`     | `Form`, `FormErrorSummary`                                  | Prevent navigation/repeated pending submissions; link safe field errors and focus the summary after a failed submit        |
+| `feedback.tsx` | `Notice`, `LoadingState`, `EmptyState`                      | Persistent textual feedback, announcement roles, decorative progress/skeletons and caller-supplied recovery actions        |
+| `overlays.tsx` | `FormDialog`, `FormDrawer`                                  | Titled modal/drawer with description, Escape/Cancel, focus restoration, scrollable body and a pending dismissal lock       |
+| `link.tsx`     | `Link`                                                      | HeroUI styling/behavior with Next.js `href` or React Router `to`; use the appropriate app adapter                          |
+
+### 6.6 Fields and validation
+
+- Give text/select fields unique stable IDs and visible labels. Provide `name` when the value belongs in form submission. Required fields include visible text and programmatic required state.
+- Pass safe, user-facing `error` text to the field; HeroUI associates it with the input. Native/custom validation remains available on TextInput through the underlying TextField props. Domain rules and server validation remain owned by the feature and API contract.
+- Use `TextInput multiline` for notes, and use `SelectField` for a list of labelled options with optional disabled entries. Do not encode permission or business eligibility solely through disabled controls.
+- `Form` prevents default navigation and ignores submissions while `isPending` is true. The caller owns request lifecycle, field errors, result handling, retries and backend idempotency. Changing a button to pending is not backend duplicate protection.
+- `FormErrorSummary` accepts `{ fieldId, message }` entries. Pass a `focusKey` counter and increment it after each failed submission. Ordinary keystrokes must not increment it. Each link focuses the corresponding field; do not send raw exception details to this component.
+- Keep values when validation or requests fail. Explicitly clear only after an authoritative success or a user-requested reset. Avoid retaining sensitive drafts beyond their required UI lifetime.
+
+### 6.7 Feedback and pending actions
+
+`Notice` accepts `info`, `success`, `warning` or `error`. Errors use an assertive alert; other feedback uses a polite status. Important confirmations remain on the page. A success notice is appropriate only after the owning operation verifies success. Pass a recovery action only when that retry is safe.
+
+Pending Buttons keep their accessible progress text and block activation through HeroUI. Forms also guard submit events, including keyboard submissions. Explain significant disabled actions nearby. A danger variant supplies presentation only; destructive/financial confirmation and authorization remain feature responsibilities.
+
+`LoadingState` provides one polite status with decorative Spinner/Skeleton content. `EmptyState` provides a title, explanation and optional recovery action; show it only after a successful empty result, not while loading or after an error.
+
+### 6.8 Dialogs and drawers
+
+- Render the parent editor outside the overlay. Keep draft values in that parent and pass controlled field values into the panel, so unmounting/reopening the overlay preserves the intended draft. Uncontrolled fields inside an unmounted panel are not retained automatically.
+- Supply descriptive `title`, `triggerLabel` and optional `description`. Place the form fields in `children` and caller-owned actions in `actions`. If an action is outside its form, explicitly associate it through the form ID or use an explicit handler.
+- Panels restore focus to their trigger on ordinary dismissal. HeroUI owns modal focus containment and keyboard behavior. The body scrolls within the viewport; the drawer permits vertical touch panning.
+- While `isPending`, Escape, backdrop dismissal and Cancel are disabled. The caller must settle pending state and show a verified result/error; the panel does not start, retry or complete an operation itself. Never leave a panel permanently locked after a failed request.
+- Optional `isOpen`/`onOpenChange` support caller-controlled lifecycle. Do not add a public preview route or synthetic authenticated session to demonstrate a foundation component.
+
+### 6.9 Native control refinements
+
+Link and Breadcrumb hover use the native accent token without underlines. Invalid RadioGroup controls use danger colors, including selected controls. Disclosure triggers keep their indicator on one line; wrap a potentially long title in a span so it truncates with ellipsis. Both app UI theme entries explicitly scan their own source so the single preview includes real app layout utilities.
+
+Admin `components/ui/file-input.tsx` centralizes a native, keyboard-accessible file picker behind a modern upload surface. It forwards native input props (including accept/capture/disabled/ref) and accepts `prompt` and wrapper `className`; `management/FileUpload` still owns file-policy checks, progress, selected file state, retries and object-URL cleanup. The surface does not claim drag-and-drop support. App fields/feedback/management preview specimens have independent labelled sections and mobile reflow. No production routes or upload APIs are added.
+
+Verification is governed by Testing §7.5. DOM checks, browser interaction and owner visual
+acceptance remain distinct; component examples and synthetic previews do not prove feature integration.
 
 ---
 
@@ -309,6 +388,12 @@ Every interactive component must define: default, hover (where applicable), focu
 | **My Reviews** | Submitted reviews, product context, moderation state, edit action | Ineligible edit or missing review state |
 
 Account pages must not expose another customer's records. If a session expires, show a clear reauthentication path without leaking private data.
+
+#### Implemented identity interface compatibility
+
+Customer routes `/login`, `/register`, `/forgot-password`, `/reset-password`, `/account` and `/account/email-change` use native app-owned HeroUI forms and real Express identity APIs. Administrator `/login`, `/forgot-password`, `/reset-password` and `/app/*` use the separate administrator namespace; there is no admin signup. Registration email-verification issuance/confirmation is not implemented, so the account accurately identifies unverified email without a pretend verification button. Addresses use currently supported district/area values with authoritative save-time coverage rejection; delivery option discovery remains the delivery feature contract.
+
+Private/auth storefront routes are noindex/no-store; no account data or proof enters SSR shared caches. Fragment proofs are captured once in memory, removed from the location and only submitted explicitly in a JSON body. Failed forms preserve inputs; pending guards stop double submission, errors/status are accessible, and password fields clear after confirmed success. Session checks and reauthentication hide denied/expired private views. Admin navigation is presentation only and only renders a signed-in identity after the server session response; unimplemented management features stay honestly unavailable.
 
 ### 7.3 Checkout, payment, and guest access
 
@@ -677,26 +762,3 @@ A page specification is ready for implementation when it defines the following. 
 ### 14.3 Relationship to implementation
 
 Use these specifications as the UI/UX baseline for both applications. `ARCHITECTURE.md` remains authoritative for technical boundaries and financial state transitions; the PRD remains authoritative for product scope and business rules. Implementation tasks, route-by-route coding details, and project schedules belong in `IMPLEMENTATION_PLAN.md` and `TASKS.md`, not here.
-
-
-### P03-015 implemented account interfaces
-
-Customer routes `/login`, `/register`, `/forgot-password`, `/reset-password`, `/account` and `/account/email-change` use native app-owned HeroUI forms and real Express identity APIs. Administrator `/login`, `/forgot-password`, `/reset-password` and `/app/*` use the separate administrator namespace; there is no admin signup. Registration email-verification issuance/confirmation is not implemented, so the account accurately identifies unverified email without a pretend verification button. Addresses use currently supported district/area values with authoritative save-time coverage rejection; delivery option discovery remains the delivery feature contract.
-
-Private/auth storefront routes are noindex/no-store; no account data or proof enters SSR shared caches. Fragment proofs are captured once in memory, removed from the location and only submitted explicitly in a JSON body. Failed forms preserve inputs; pending guards stop double submission, errors/status are accessible, and password fields clear after confirmed success. Session checks and reauthentication hide denied/expired private views. Admin navigation is presentation only and only renders a signed-in identity after the server session response; unimplemented management features stay honestly unavailable.
-
-
-## Source organization convention — 22 October 2026
-
-[PROJECT_STRUCTURE §3](./PROJECT_STRUCTURE.md#3-storefront-and-admin), delegated by Architecture,
-defines frontend route groups, feature naming and app-owned UI/layout boundaries. Features stay flat
-until their size requires subfolders; create/edit reuse one form. Route files compose views rather
-than pricing/stock/financial logic. Native HeroUI defaults, themes, typography, Link adapters,
-accessibility and private-state behavior remain required. Existing commerce/management components
-are not deleted by a diagram; classify reusable versus feature-owned consumers during the refactor.
-
-(account)/account/ means an organization-only group plus the /account URL segment. Existing account,
-order, address, return and settings URLs must be mapped and preserved; grouping never grants access
-or makes private content cacheable. Guest proof/payment-return/claim flows remain intact. P02-015
-and P02-016 require responsive/keyboard/light-dark/accessibility/browser evidence separate from CI
-and owner visual acceptance. This documentation change supplies no new screen or visual acceptance.

@@ -51,7 +51,7 @@ Use the authority of each document **for its own subject matter**. `AGENTS.md` p
 | Source | Governs |
 | --- | --- |
 | [PRD](docs/PRD.md) | Product scope, business rules, acceptance criteria, launch boundaries |
-| [Architecture](docs/ARCHITECTURE.md) | Technology decisions, module ownership, trust boundaries, cross-module invariants; delegates detailed source layout to [PROJECT_STRUCTURE](docs/PROJECT_STRUCTURE.md) |
+| [Architecture](docs/ARCHITECTURE.md) | Technology decisions, project structure/naming, module ownership, trust boundaries and cross-module invariants |
 | [Design](docs/DESIGN.md) | UI tokens, layouts, states, accessibility and interactions |
 | [Database](docs/DATABASE.md) | Persistence schemas, constraints, indexes, migrations and data lifecycle |
 | [API](docs/API.md) | HTTP routes, DTOs, authentication/CSRF, errors and idempotency contracts |
@@ -94,8 +94,8 @@ Inspect the live repository before using paths or commands from this target layo
 
 **MUST NOT** import Mongoose models or backend runtime services into either frontend. Shared pure types/contracts are optional only when justified by real duplication; do not introduce a shared UI library or new service without a demonstrated need.
 
-**Source organization:** Read [PROJECT_STRUCTURE](docs/PROJECT_STRUCTURE.md) before adding/moving
-files; Architecture §§4–6 delegate the 22 October 2026 target to it. Use feature ownership and the
+**Source organization:** Read [Architecture](docs/ARCHITECTURE.md#4-project-structure) before adding/moving
+files; §§4–6 define the target structure, naming and ownership. Use feature ownership and the
 routes/controller/schema/service/model/types convention as needed; provider clients belong in
 providers/, root wiring in setup.ts/routes.ts, technical code in one shared/ boundary. Existing
 paths remain supported until the owning application refactor verifies their move. Do not duplicate

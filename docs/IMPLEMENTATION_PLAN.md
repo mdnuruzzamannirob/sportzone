@@ -135,8 +135,8 @@ Do not assign arbitrary completion dates. Estimate work after evaluating develop
 ### 3.6 Engineering foundation and incremental refactor
 
 The project owner selected the new simple feature-based target on 22 October 2026 and requested
-one application at a time. [PROJECT_STRUCTURE](./PROJECT_STRUCTURE.md), delegated by Architecture
-§§4–6, defines target trees/naming/ownership. Earlier P01-015–017/P03-019–020/P02-012–014 work and
+one application at a time. [Architecture §§4–6](./ARCHITECTURE.md#4-project-structure) define target
+trees/naming/ownership. Earlier P01-015–017/P03-019–020/P02-012–014 work and
 acceptance remain historical evidence; they do not prove this new target has been implemented.
 
 | Order | Task | Outcome / prerequisite |

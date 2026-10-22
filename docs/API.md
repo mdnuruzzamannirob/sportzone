@@ -76,13 +76,9 @@ change (PRD §3.3).
 
 ### 2.1 Runtime and request path
 
-**Target source organization (22 October 2026):** [PROJECT_STRUCTURE](./PROJECT_STRUCTURE.md)
-defines setup.ts/routes.ts, providers/.client.ts, shared/ technical helpers and grouped catalog,
-cart, promotions, auth/guest-access, reporting/audit responsibilities. Module names in older tables
-and implementation records below identify existing business capabilities/paths, not a requirement
-to retain the old folders. P03-021 migrates them while preserving every URL, DTO, access/CSRF/session,
-cache/error, idempotency/If-Match and provider-verification contract. No public endpoint is inferred
-from a target folder; no runtime migration is claimed by this documentation update.
+Source ownership and filenames follow [Architecture §§4–6](./ARCHITECTURE.md#4-project-structure).
+Module regrouping changes no public URL, DTO, access/session/CSRF, cache/error or retry contract;
+source-path descriptions below remain implemented references until their verified migration.
 
 P03-019 implements the composition root in `backend/src/composition.ts`, root registration in
 `backend/src/routes/index.ts`, and technical HTTP utilities in `backend/src/common/`. Parsed runtime identity
@@ -118,8 +114,7 @@ gateway. Scheduled jobs call shared services without bypassing invariants.
 
 Domain services coordinate cross-module mutations within MongoDB transactions. No external HTTP call occurs while a database transaction remains open.
 
-**Implementation mapping:** Architecture §§4–6 delegate target filenames and ownership to
-PROJECT_STRUCTURE. Target catalog groups products/variants/categories; cart groups cart/wishlist;
+**Implementation mapping:** Architecture §§4–6 define target filenames and ownership. Target catalog groups products/variants/categories; cart groups cart/wishlist;
 promotions owns coupon operations; auth contains guest-access; reporting groups existing admin
 aggregates. Delivery and media remain distinct owners. This mapping changes no URL, operation ID,
 DTO, response/error, cookie, CSRF, idempotency or authorization contract. Implemented-path references

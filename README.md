@@ -66,13 +66,10 @@ sportzone/
 └── package-lock.json           # Locked workspace links
 ```
 
-[Architecture §4](docs/ARCHITECTURE.md#4-project-structure) defines application/module boundaries.
-
-The new owner-selected target is [Project structure and coding conventions](docs/PROJECT_STRUCTURE.md),
-delegated by Architecture §§4–6. It specifies complete backend/storefront/admin trees, naming,
-module ownership, import direction, account route groups and test/tool conventions. These are target
-paths, not a claim that current composition/common/db/integrations/tools paths have already moved.
-Existing commands below remain the setup reference until the owning refactor verifies replacements.
+[Architecture §§4–6](docs/ARCHITECTURE.md#4-project-structure) define project trees, naming,
+module ownership and dependency rules. [Design §6](docs/DESIGN.md#6-ui-components) defines UI
+component contracts. Existing commands below remain the setup reference until the owning refactor
+verifies replacement; target paths do not imply that application files have already moved.
 
 [Implementation Plan §3.6](docs/IMPLEMENTATION_PLAN.md#36-engineering-foundation-and-incremental-refactor)
 sequences P01-018 documentation → P03-021 backend → P02-015 storefront → P02-016 admin, one application
@@ -145,12 +142,9 @@ All HeroUI imports are confined to `components/ui/`; fonts, colors and styles re
 App-owned Button defaults live in `src/components/ui/button.tsx`. HeroUI Link adapters preserve native anchors and app routing; Select, Disclosure, Card, Alert and Spinner
 provide the existing controls, panels and feedback states. See [Design](docs/DESIGN.md#2-design-system) for visual direction and component conventions.
 
-App-owned form/feedback primitives and their state/validation conventions are described in [UI components](docs/UI_COMPONENTS.md).
-
-Storefront commerce primitives live in `src/components/commerce/`; see the [commerce usage contracts](docs/UI_COMPONENTS.md#commerce-compositions).
-They are presentation foundations; catalog/cart/checkout routes retain their separate real-data integration tasks.
-
-Admin management foundations live in `admin/src/components/management/`; see the [component guide](docs/UI_COMPONENTS.md#admin-management-compositions) for server-owned list data, upload constraints and guarded-action integration.
+[Design §6](docs/DESIGN.md#6-ui-components) documents app-owned forms/feedback, commerce and admin
+management component APIs/state contracts. Existing components/commerce and components/management
+remain presentation foundations; real API integrations and acceptance belong to their feature tasks.
 
 Browser foundation audits use Playwright and axe. After building both apps, run `npx playwright install --with-deps chromium firefox webkit`, then `npm run test:ui`. The root browser inventory runs the same audit; admin's `test:a11y` remains a compatibility alias. Tests reserve loopback ports 3100, 5273 and 5180; the component fixture is never included in application builds. Reports and screenshots are generated under `test-results/`. See [audit scope and environment notes](docs/evidence/P02-011-accessibility.md).
 

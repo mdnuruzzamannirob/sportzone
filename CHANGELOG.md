@@ -8,13 +8,18 @@ This changelog tracks the documentation baseline. Application releases are recor
 
 ## Documentation changes — 22 October 2026
 
+- Consolidated project structure/naming into Architecture §§4–6 and component contracts into Design §6
+  at the owner's request; removed the two standalone guides. Moved UI verification and operational
+  procedures into their existing owning sections, removed duplicate dated addenda and repaired links
+  in README/agent rules/specifications/evidence. No application source or acceptance gates changed.
+
+
 - Recorded explicit project-owner popup acceptance of P01-018 and marked it Done. Phase 01: 18 Done;
   overall: 54 Done, 128 Not Started, 1 Blocked. The agreed application sequence remains P03-021
   backend → P02-015 storefront → P02-016 admin; no source refactor or milestone acceptance implied.
   [Acceptance](docs/evidence/P01-018-project-structure.md#owner-acceptance).
 
-- Recorded the owner-selected simple feature-based target in PROJECT_STRUCTURE, delegated by
-  Architecture. Synchronized naming, domain/import ownership, physical account route grouping,
+- Recorded the owner-selected simple feature-based target, now maintained in Architecture §§4–6. Synchronized naming, domain/import ownership, physical account route grouping,
   API/data/design/test/operational compatibility and mandatory agent review rules. Added P01-018
   documentation review and sequential P03-021 backend → P02-015 storefront → P02-016 admin refactors.
   No application source moved, automated rule enforcement or provider activation claimed. Earlier
@@ -173,7 +178,7 @@ and personal data from change entries.
 
 - Implemented P02-007 admin sidebar/mobile HeroUI Drawer, shared navigation groups, title/action shell, Appearance and offline/signed-out presentation; project owner accepted the task on 18 October 2026 after local verification; browser checks remain Not Run. Evidence: [admin shell evidence](docs/evidence/P02-007-admin-shell.md).
 
-- Implemented P02-008 HeroUI field, form/error-summary, feedback and overlay foundations in both apps; reused them in Appearance/connectivity/loading consumers. Project owner accepted the foundation on 18 October 2026; browser/manual keyboard checks remain Not Run. Usage: [UI components](docs/UI_COMPONENTS.md); evidence: [form foundation evidence](docs/evidence/P02-008-forms.md).
+- Implemented P02-008 HeroUI field, form/error-summary, feedback and overlay foundations in both apps; reused them in Appearance/connectivity/loading consumers. Project owner accepted the foundation on 18 October 2026; browser/manual keyboard checks remain Not Run. Usage: [UI components](docs/DESIGN.md#65-app-owned-ui-boundary-and-component-apis); evidence: [form foundation evidence](docs/evidence/P02-008-forms.md).
 
 - Implemented P02-009 HeroUI commerce cards, variants, bounded cart quantities, explicit status/availability, exact price/summary display and skeletons; real catalog/cart/checkout integration remains with its feature tasks. Evidence: [commerce primitives](docs/evidence/P02-009-commerce.md).
 

@@ -301,7 +301,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 is the new struct
 
 - [x] **P01-018 — Reconcile the owner-selected project structure and conventions**\
   **Status:** `Done` · **Area:** Documentation/architecture · **Owner:** Codex\
-  **Sources:** Owner instruction, 22 October 2026; Architecture §§4–6; PROJECT_STRUCTURE\
+  **Sources:** Owner instruction, 22 October 2026; Architecture §§4–6\
   **Depends on:** `P01-015`\
   **Deliverable:** Canonical detailed target, naming/import/ownership rules, account-group clarification, synchronized contracts/agent guidance and one-app-at-a-time task sequence.\
   **Acceptance:** Repository links/Markdown and cross-document consistency verified; no source moves or release gate changes; independent documentation review.\
@@ -425,7 +425,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 is the new struct
 
 - [ ] **P02-015 — Refactor storefront to the new feature-based target**\
   **Status:** `Not Started` · **Area:** Frontend/storefront\
-  **Sources:** PROJECT_STRUCTURE §§3–5; Architecture §5; Design\
+  **Sources:** Architecture §§4–5; Design\
   **Depends on:** `P03-021`, `P02-012`\
   **Deliverable:** Thin grouped routes, feature-owned code and target lib/UI naming, with preserved URLs/private caching/guest flows; migrate browser runner paths only with full discovery parity.\
   **Acceptance:** Actual path/URL inventory, import/alias/CI updates, negative boundaries, affected lint/types/build/components and responsive/keyboard/light-dark/accessibility/browser evidence; independent application review.\
@@ -433,7 +433,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 is the new struct
 
 - [ ] **P02-016 — Refactor admin to the new feature-based target**\
   **Status:** `Not Started` · **Area:** Frontend/admin\
-  **Sources:** PROJECT_STRUCTURE §§3–5; Architecture §5; Design\
+  **Sources:** Architecture §§4–5; Design\
   **Depends on:** `P02-015`, `P02-013`\
   **Deliverable:** Target router/providers/guard, feature-owned forms/API/state and reusable UI/layout boundaries; preserve actual commands and private session behavior.\
   **Acceptance:** Actual path/route inventory, aliases/imports/CI/discovery, negative boundaries, affected lint/types/build/components and theme/keyboard/accessibility/browser parity; independent application review.\
@@ -605,7 +605,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 is the new struct
 
 - [ ] **P03-021 — Refactor backend to the new modular target and enforce boundaries**\
   **Status:** `Not Started` · **Area:** Backend/engineering\
-  **Sources:** PROJECT_STRUCTURE §§2,4,5; Architecture §§4,6; Database §4.2; API §2\
+  **Sources:** Architecture §§4,6; Database §4.2; API §2\
   **Depends on:** `P01-018`, `P03-020`\
   **Deliverable:** Inventory and incrementally migrate setup/routes/config/shared/providers/scripts, grouped domain owners and cohesive services; update tests/tooling and executable negative import-boundary fixtures together.\
   **Acceptance:** Preserve canonical models/indexes/validators, HTTP DTO/session/CSRF/idempotency and transaction invariants, worker/operator compatibility and unknown-outcome recovery. Verify controller/model, shared/module, provider/domain, nested foreign-persistence and frontend isolation rules; actual affected test/build/smoke parity and independent acceptance. No provider/milestone gate is waived.\
@@ -1977,3 +1977,10 @@ review/acceptance: “Docs review করেছি—accept করছি, Done �
 source changes or application refactor acceptance implied. Next scheduled task: P03-021 backend,
 then P02-015 storefront, then P02-016 admin after each application's independent acceptance.
 [Acceptance](./evidence/P01-018-project-structure.md#owner-acceptance).
+
+
+**22 October 2026 — Documentation consolidation correction:** At the owner's request, integrated
+structure/naming into Architecture §§4–6 and component usage into Design §6; removed standalone
+guides and repaired references. UI verification, operational procedures and implementation evidence
+references now sit in owning sections. P01-018 acceptance/history and refactor order remain unchanged;
+no application source moves or new provider/milestone acceptance. [Correction evidence](./evidence/P01-018-project-structure.md#documentation-consolidation-correction).

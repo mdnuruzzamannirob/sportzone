@@ -9,7 +9,7 @@
 
 - [Task](../TASKS.md#phase-02--uiux-design): P02-008; accepted dependencies P02-003 and P02-004.
 - [Design §§6, 9–10](../DESIGN.md#6-ui-components): input/selection, validation, feedback, pending, overlay and recovery states.
-- [Usage guide](../UI_COMPONENTS.md): actual component API, state ownership and integration conventions.
+- [Usage guide](../DESIGN.md#65-app-owned-ui-boundary-and-component-apis): actual component API, state ownership and integration conventions.
 - No API, database or business-operation contract changed. No login/commerce form, authenticated preview route, financial mutation or external request was added.
 
 ## Delivered foundations

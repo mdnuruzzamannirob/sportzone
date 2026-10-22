@@ -118,32 +118,72 @@ Public category and product pages use Next.js server rendering or controlled rev
 
 ## 4. Project structure
 
-The owner-approved 22 October 2026 target is the feature-based modular monolith detailed in
-[Project structure and coding conventions](./PROJECT_STRUCTURE.md). That document is the canonical
-source-organization companion to Architecture §§4–6: complete trees, naming, module responsibilities,
-frontend account groups, dependency rules and verification obligations. It supersedes the earlier
-source-layout target without changing product/API/data/security/provider acceptance requirements.
+SportZone uses three npm workspaces in a feature-based modular monolith. The following target
+organization is implemented incrementally under Implementation Plan §3.6; existing paths remain
+supported until the owning application refactor verifies replacement. Source moves preserve product
+scope, public API/data identities and security/financial/provider acceptance gates. Create files when
+needed, not empty scaffolding. Existing uppercase specification filenames remain canonical.
 
-Three root npm workspaces remain storefront/, admin/ and backend/, with one root lockfile. Backend
-targets server.ts/app.ts/routes.ts/setup.ts, config/, modules/, providers/, jobs/ and shared/. Frontends
-use thin app routes, feature-owned code, components/ui and components/layout plus lib transports.
-Tests and thin operator scripts stay outside production src/. Detailed trees live only in the linked
-companion to prevent contradictory copies. Existing paths are historical/implemented references until
-P03-021/P02-015/P02-016 migrate and verify them; documentation does not imply source moves occurred.
+```text
+sportzone/
+├── storefront/                  # Next.js customer application
+├── admin/                       # React/Vite administration application
+├── backend/                     # Express business API and jobs
+├── docs/
+│   ├── PRD.md
+│   ├── ARCHITECTURE.md
+│   ├── API.md
+│   ├── DATABASE.md
+│   ├── DESIGN.md
+│   ├── IMPLEMENTATION_PLAN.md
+│   ├── TASKS.md
+│   ├── TESTING.md
+│   ├── OPERATIONS.md
+│   ├── decisions/               # Meaningful decisions when needed
+│   └── evidence/
+├── scripts/                     # Repository/dev/CI orchestration
+├── tests/e2e/                   # Target cross-app browser journeys
+├── .github/workflows/
+├── AGENTS.md
+├── README.md
+├── CHANGELOG.md
+├── .env.example
+├── .gitignore
+├── .nvmrc
+├── biome.json
+├── package.json                 # npm workspaces
+└── package-lock.json            # One locked dependency graph
+```
+
+No apps/ relocation, speculative shared package, second lockfile, new component library or build
+orchestrator. Existing root shared pure utilities and tests/ui remain supported until their consumers,
+runner configuration and CI inventory are migrated together; this decision does not authorize deleting them.
 
 ### 4.1 Naming and placement
 
-Follow PROJECT_STRUCTURE §§2–5: kebab-case files/folders, entity-prefixed responsibility suffixes,
-.schema.ts for input validation, .model.ts for persistence, .client.ts for provider transport and
-explicit unit names. Preserve framework-reserved filenames and backend NodeNext .js imports.
-Small features stay flat; larger cohesive domains use subfeatures. No empty template files, automatic
-barrels, speculative repository/base-service/DI layers or duplicate common/shared/utils buckets.
+| Item | Convention / example |
+| --- | --- |
+| Folders/files | kebab-case; guest-access/, payment-receipt.model.ts |
+| Responsibility suffixes | .routes, .controller, .schema, .service, .model, .types; optional .dto/.policy/.persistence |
+| Provider files | provider.client.ts for transport; provider.schema.ts for protocol validation |
+| Components/types/interfaces | PascalCase: ProductForm, Order, CreateOrderInput; no I prefix |
+| Functions/variables | camelCase, action-specific: reserveStock, verifyReceipt |
+| Zod inputs/hooks | createOrderSchema; useOrders |
+| Constants/environment | Fixed global constants and env keys UPPER_SNAKE_CASE |
+| Entities/resources | Singular entity filenames; plural collection/HTTP resource names per existing contracts |
+| Units | regularPricePoisha, timeoutMs, ttlSeconds, reservedQuantity |
+| Flags/dates/IDs | isActive/hasStock/canCancel; expiresAt; orderId/providerTransactionId |
+| Tests | .test.ts for unit/integration; .spec.ts for browser journeys |
+| Framework/compatibility exceptions | page.tsx/layout.tsx/main.tsx; NodeNext .js imports; retained specification filenames |
 
-HeroUI remains mandatory behind app-owned components/ui, with native themes/fonts and Link adapters.
-Existing reusable commerce/management compositions and root pure shared utilities remain supported
-until a reviewed consumer migration; feature-only code stays in features. Account route grouping
-uses (account)/account/ as two physical levels: the group adds no URL segment. Existing public URLs,
-guest checkout and private cache/session/ownership rules remain unchanged by directory organization.
+Avoid misc.ts/manager.ts/processData, redundant handwritten types, speculative shared abstractions
+and automatic index.ts barrels. API status/error/pagination/idempotency/If-Match conventions and
+integer-poisha/immutable snapshot/unique-index rules remain governed by API/Database, not filenames.
+
+UI shells belong in components/layout; app-owned HeroUI primitives, theme and navigation adapters
+belong in components/ui. Feature-specific code belongs in features. Existing reusable commerce/
+management compositions remain supported until a verified consumer move; root pure shared utilities
+are not removed merely to match a diagram. Design §6 owns component behavior and usage contracts.
 
 ### 4.2 Monorepo and dependency management
 
@@ -189,25 +229,96 @@ Use client-side routing with an authenticated application shell. Feature screens
 
 Both applications use consistent BDT formatting, Bangladesh address/phone input handling, accessible form feedback, and typed API error handling. UI components need not be shared across applications unless a real maintenance benefit emerges.
 
+Small features stay flat: product-list.tsx, product-details.tsx, product-card.tsx, product.api.ts,
+product.hooks.ts, product.schema.ts, product.types.ts. Admin adds product-list-page.tsx,
+product-create-page.tsx, product-edit-page.tsx, product-form.tsx and product-table.tsx as needed.
+Large features may gain components/api/hooks subfolders. Create/edit reuse one form.
+
+Routes compose feature views and metadata, not business calculations. Feature API files own endpoint
+functions; lib owns transport/CSRF/error handling. Keep server and browser imports separate. Private
+queries are not shared-cacheable; identity change clears private query state. Financial mutations
+have no automatic retry. Existing TanStack Query/Zod and native HeroUI policy remain unchanged.
+Only components/ui imports HeroUI, with app-owned Link adapters, default themes/system fonts and
+visible accessible states. globals.css forwards theme entry points. Existing reusable commerce/
+management compositions are retained until a verified placement decision; do not flatten/delete
+working reusable components to fill the diagram. Feature-specific code stays in its feature.
+
 ### 5.4 Storefront route and feature structure
 
-[PROJECT_STRUCTURE §3](./PROJECT_STRUCTURE.md#3-storefront-and-admin) defines the target route groups,
-account tree, complete feature list, flat feature convention and lib/api-server.ts versus api-client.ts.
-Groups are (shop), (auth), (account), (guest) and (information); keep existing URL contracts when moving
-routes. (account)/account/orders/page.tsx represents /account/orders, not /account/account/orders.
-Record every existing→target route path before implementation; order details, claims, payment returns,
-verification and guest proof flows must survive. Root layout remains a Server Component; providers
-are scoped to consumers. Route groups neither authorize requests nor make private data cache-safe.
-Catalog views compose cart-owned mutations and do not own pricing/stock authority.
+```text
+storefront/src/
+├── app/
+│   ├── (shop)/                   # Home, products, categories, search, cart, wishlist, checkout
+│   ├── (auth)/                   # Login/register/verification/recovery
+│   ├── (account)/
+│   │   └── account/
+│   │       ├── page.tsx
+│   │       ├── orders/
+│   │       ├── addresses/
+│   │       ├── returns/
+│   │       └── settings/
+│   ├── (guest)/                  # Guest proof and scoped order journeys
+│   ├── (information)/            # Contact, support, policy pages
+│   ├── layout.tsx
+│   ├── providers.tsx
+│   ├── loading.tsx
+│   ├── error.tsx
+│   ├── not-found.tsx
+│   ├── sitemap.ts
+│   └── robots.ts
+├── features/                     # Feature-owned views/API/hooks/forms
+├── components/
+│   ├── ui/                       # HeroUI facade, navigation adapters and theme
+│   └── layout/                   # Header/footer/shells
+├── lib/
+│   ├── api-client.ts
+│   ├── api-server.ts             # Enforced server-only public transport
+│   ├── api-error.ts
+│   ├── query-client.ts
+│   └── format.ts
+└── styles/globals.css
+```
+
+The path (account)/account/ contains two physical directory levels, not a repeated URL segment:
+(account) is an organization-only route group; account contributes /account. For example, the target
+orders/page.tsx location gives /account/orders, not /account/account/orders. The account layout
+composes shared chrome and session UX; Express still authorizes every request. Keep all existing
+approved order-detail, claim, verification, payment-return and guest URLs; a route map must precede
+moves. Group names do not authorize access, imply cache safety or remove guest checkout.
+
+Storefront features: home, auth, catalog, cart, wishlist, checkout, orders, payments, account,
+guest-access, reviews, returns, support, policies. Refund status may be composed into the owning
+order/return views without a speculative standalone feature.
 
 ### 5.5 Admin route and feature structure
 
-[PROJECT_STRUCTURE §3](./PROJECT_STRUCTURE.md#3-storefront-and-admin) owns the target admin tree and
-feature list. main.tsx mounts app providers/router; app/router.tsx retains React Router Declarative
-Mode and app/require-admin.tsx presents session UX. Backend authorization remains authoritative.
-Feature pages compose reusable forms/tables; create/edit share one form. components/ui remains the
-HeroUI/theme/navigation boundary; shells live in components/layout. Existing management compositions
-are retained until a verified consumer move. No new brand or notification administration is implied.
+```text
+admin/src/
+├── app/
+│   ├── router.tsx
+│   ├── providers.tsx
+│   └── require-admin.tsx
+├── features/
+├── components/
+│   ├── ui/
+│   └── layout/
+├── lib/
+│   ├── api-client.ts
+│   ├── api-error.ts
+│   ├── query-client.ts
+│   └── format.ts
+├── styles/globals.css
+└── main.tsx
+```
+
+Admin features: auth, dashboard,
+catalog/products, catalog/categories, inventory, orders, payments, returns, refunds, customers,
+promotions, reviews, delivery, support, settings. No new brand/notification administration.
+
+main.tsx mounts router/providers; app/require-admin.tsx presents session UX, while Express remains
+authoritative. Retain React Router Declarative Mode. Admin feature pages compose reusable forms and
+tables; create/edit reuse one feature-owned form. Browser transport/CSRF/error handling belongs in
+lib/api-client.ts; endpoint functions belong to the feature. App-owned UI contracts are in Design §6.
 
 ### 5.6 State, fetching and validation decisions
 
@@ -248,20 +359,134 @@ flowchart TB
 
 This is a **logical module diagram**, not a set of microservices. Arrows indicate primary coordination paths, not an exhaustive call graph. Notification delivery and other supporting module details remain in the ownership table and §§6.3/10.6.
 
-Target module ownership is defined in [PROJECT_STRUCTURE §2.1](./PROJECT_STRUCTURE.md#21-module-ownership).
-The source grouping changes are catalog/products|variants|categories, cart/cart|wishlist,
-promotions/coupons, auth/guest-access and reporting for existing admin aggregates. Audit groups the
-existing durable audit responsibility; it adds no feature or collection. Other domain owners remain
-separate, especially inventory, checkout, orders, payments, returns, refunds and delivery.
+Backend target organization:
 
-Each collection has one canonical registration: users under auth, productVariants under catalog with
-stock-only inventory capabilities, mediaAssets under media. Public service/capability boundaries and
-explicit shared transaction contexts replace foreign private-model imports. Logical diagrams above
-are business groupings, not mandatory directory names or permission to bypass these boundaries.
+```text
+backend/
+├── src/
+│   ├── server.ts                # Configuration/connection/listen/shutdown lifecycle
+│   ├── app.ts                   # Express construction, middleware and errors
+│   ├── routes.ts                # Feature-router registration under /api/v1
+│   ├── setup.ts                 # Wire typed config, services, models and clients
+│   ├── config/
+│   │   ├── env.ts
+│   │   ├── database.ts          # Database connection lifecycle
+│   │   ├── security.ts
+│   │   ├── payments.ts
+│   │   ├── media.ts
+│   │   └── notifications.ts
+│   ├── modules/
+│   │   ├── auth/
+│   │   ├── customers/
+│   │   ├── catalog/
+│   │   │   ├── products/
+│   │   │   ├── variants/
+│   │   │   └── categories/
+│   │   ├── inventory/
+│   │   ├── cart/                # Cart and wishlist subfeatures
+│   │   ├── promotions/          # Coupons/discounts, no new promotion scope
+│   │   ├── checkout/
+│   │   ├── orders/
+│   │   ├── payments/
+│   │   ├── returns/
+│   │   ├── refunds/
+│   │   ├── reviews/
+│   │   ├── delivery/
+│   │   ├── media/
+│   │   ├── notifications/
+│   │   ├── support/
+│   │   ├── settings/
+│   │   ├── reporting/           # Existing dashboard/report aggregation
+│   │   ├── audit/               # Existing durable audit responsibility
+│   │   └── health/
+│   ├── providers/
+│   │   ├── cloudinary/
+│   │   │   ├── cloudinary.client.ts
+│   │   │   └── cloudinary.schema.ts
+│   │   ├── sslcommerz/
+│   │   │   ├── sslcommerz.client.ts
+│   │   │   └── sslcommerz.schema.ts
+│   │   ├── email/resend.client.ts
+│   │   └── antivirus/clamav.client.ts
+│   ├── jobs/                    # Thin coordinators calling domain services
+│   │   ├── expire-checkout.job.ts
+│   │   ├── expire-reservations.job.ts
+│   │   ├── reconcile-payments.job.ts
+│   │   ├── reconcile-refunds.job.ts
+│   │   ├── send-notifications.job.ts
+│   │   └── cleanup-media.job.ts
+│   └── shared/
+│       ├── errors/app-error.ts
+│       ├── middleware/
+│       │   ├── authenticate.ts
+│       │   ├── require-admin.ts
+│       │   ├── verify-csrf.ts
+│       │   ├── rate-limit.ts
+│       │   ├── validate.ts
+│       │   ├── request-context.ts
+│       │   └── handle-error.ts
+│       ├── database/
+│       │   ├── transaction.ts
+│       │   └── indexes.ts
+│       ├── logger.ts
+│       ├── pagination.ts
+│       └── money.ts
+├── tests/
+│   ├── unit/                    # Feature-organized
+│   ├── integration/             # Feature-organized
+│   ├── fixtures/
+│   └── helpers/
+├── scripts/
+│   ├── provision-admin.ts
+│   ├── seed-development.ts
+│   ├── migrate.ts
+│   ├── run-job.ts
+│   └── migrations/
+├── package.json
+├── tsconfig.json
+├── tsconfig.build.json
+├── vitest.config.ts
+└── vitest.integration.config.ts
+```
 
-Historical P03-019/P03-020 composition/common/db/integrations paths and earlier flat products/categories
-owners remain implemented-path references until P03-021 passes. Their acceptance evidence is preserved;
-new source grouping is not evidence of a migration, provider activation or dependent feature completion.
+These names are targets, not new commands. Preserve live operator entry points or provide tested
+compatibility during moves. app.ts has no implicit DB connection/listen side effect. Config parses
+once and returns typed options; setup constructs dependencies. Services do not read process.env.
+Route registration and provider construction for multiple domains do not belong inside auth.
+
+Module ownership:
+
+| Module | Responsibility |
+| --- | --- |
+| auth | Customer/admin credentials, sessions, recovery, verification, scoped guest access |
+| customers | Profiles, addresses, customer administration; no credential authority |
+| catalog | Products, variants, categories, descriptions and base/sale prices |
+| inventory | Counters, reservations, commitments and movements through stock-only capabilities |
+| cart | Cart and wishlist; neither reserves stock |
+| promotions | Existing coupons, eligibility, limits and deterministic discounts |
+| checkout | Authoritative quotes and submission coordination |
+| orders | Historical snapshots, lifecycle, cancellation and fulfillment |
+| payments | Attempts, independently verified receipts, allocation and COD collection |
+| returns | Physical-return/shortage claims and inspection |
+| refunds | Obligations/source limits, payout attempts and reconciliation |
+| reviews | Purchase qualification, moderation, rating projections |
+| delivery | Coverage, zones and charge rules |
+| media | Ownership/intents, scanning, references, private access and safe cleanup |
+| notifications | Durable intent, deduplication, templates, delivery and retries |
+| support | Existing complaints and support records |
+| settings | Store configuration, policies and homepage content |
+| reporting | Read aggregation; never a second source of financial/stock authority |
+| audit | Existing audit records; distinct from diagnostic logging |
+| health | Liveness and restricted readiness |
+
+Target grouping does not add a feature, endpoint, collection or provider. users has one auth-owned
+registration. productVariants has one catalog-owned registration; inventory receives only stock
+operations. Cross-module coordination uses public services/capabilities and a shared transaction context.
+
+Historical composition/common/db/integrations paths remain supported until P03-021 verifies the
+move. Existing accepted source-path evidence is historical; no new behavior or provider activation
+is inferred from changing directory names. Logical diagrams describe domain coordination rather
+than mandatory source-directory names.
 
 ### 6.2 Request processing
 
@@ -275,16 +500,53 @@ new source grouping is not evidence of a migration, provider activation or depen
 
 Cross-module financial operations use a coordinating service with explicit transaction boundaries. Never keep a database transaction open while waiting for an external network request.
 
-Standard module convention follows [PROJECT_STRUCTURE §2.2](./PROJECT_STRUCTURE.md#22-cohesive-files):
-<entity>.routes/controller/schema/service/model/types.ts as needed; .dto/.policy/.persistence only for
-actual responsibilities. Controllers do not import models or contain business decisions. Services do
-not receive Express req/res or read process.env. Provider clients own protocol/authentication/response
-validation; domain eligibility and financial decisions stay in services. shared imports no modules.
+Standard module convention:
 
-Typed options are wired by setup.ts; config/env.ts validates once. app.ts constructs HTTP middleware,
-routes.ts registers the API and server.ts owns process lifecycle. Cross-domain wiring is not placed
-inside auth. Provider transports live in providers/, with antivirus separate from Cloudinary.
-See PROJECT_STRUCTURE §2.3 for required executable boundary coverage during the refactors.
+```text
+modules/reviews/
+├── review.routes.ts
+├── review.controller.ts
+├── review.schema.ts
+├── review.service.ts
+├── review.model.ts
+└── review.types.ts
+```
+
+Routes bind endpoint/middleware; controllers map HTTP input/output; schema files validate inputs;
+services enforce business rules/ownership and coordinate transactions; models own schemas/indexes.
+Optional .dto.ts, .policy.ts and .persistence.ts require an actual projection, reusable rule or
+persistence/bootstrap need. Derive types when safe; request input, response DTO and stored document
+are distinct. Do not create empty files or repositories/base classes just to match a template.
+
+Large modules use responsibility subfeatures: auth/credentials, sessions, recovery, verification,
+guest-access; catalog/products, variants, categories. Auth retains one user model. Media separates
+upload.service.ts, attachment.service.ts, access.service.ts and cleanup.service.ts; shared media
+model/schema/types stay at module root. Payments separates verification, reconciliation, allocation
+and COD operations where implemented. Notifications owns templates and durable delivery; provider
+transport remains in providers/. Split by responsibility, not a fixed line-count threshold.
+
+Dependency and execution rules:
+
+Route → admission/validation → controller → service → owned persistence or provider → response.
+
+- Controllers never import models; services never receive Express req/res.
+- A module never imports another module's private model/persistence. Explicit public capabilities
+  replace raw model injection. Nested catalog subfeatures still have distinct stock/media boundaries.
+- shared imports no business module. Providers implement protocols and validate responses, not
+  business eligibility or funding decisions; they receive typed configuration.
+- Provider clients may import public type-only protocol interfaces, never domain model/service implementations.
+- Jobs call domain services, not HTTP endpoints or bypassing raw stock/financial writes.
+- External calls stay outside MongoDB transactions and retry callbacks. Transaction participants
+  share the coordinator session and do not open nested transactions.
+- No frontend imports backend runtime/models, secrets or privileged provider clients.
+- No broad barrel exports, circular dependencies, generic repository/DI/event-bus infrastructure
+  or second shared/helpers/common/utils bucket without demonstrated need.
+
+Typed configuration is wired by setup.ts; config/env.ts validates once. app.ts constructs HTTP
+middleware, routes.ts registers endpoints and server.ts owns process lifecycle. Shared authenticate/
+authorize middleware delegates to auth; ownership and business eligibility are rechecked in services.
+Automated boundary verification and test/tool migration requirements are owned by Testing §15.5 and
+Implementation Plan §3.6; no new enforcement is claimed from a documentation edit alone.
 
 ### 6.3 Background processing
 
@@ -654,7 +916,7 @@ Run lint, type checks, tests, and application builds before deployment. Apply an
 | Repository | npm workspaces monorepo; independent application builds |
 | Task orchestration | Existing Node runner and shared CI inventory; one hosted job with a single install and reusable application builds |
 | Source control | Protected main, short task branches, reviewed squash merges; operational enforcement in Operations §5.6 |
-| Source organization | Feature-based UIs and cohesive backend modules; PROJECT_STRUCTURE naming/ownership and one-app-at-a-time refactors under Implementation Plan §3.6 |
+| Source organization | Feature-based UIs and cohesive backend modules; Architecture §§4–6 naming/ownership and one-app-at-a-time refactors under Implementation Plan §3.6 |
 | Client server state | TanStack Query for interactive server data; Server Components for public rendering; feature-owned Zod inputs |
 | Database | MongoDB + Mongoose with atomic writes and transactions where necessary |
 | API | Versioned REST API under `/api/v1` |

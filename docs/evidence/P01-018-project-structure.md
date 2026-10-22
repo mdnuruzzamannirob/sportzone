@@ -6,7 +6,7 @@ Independent documentation acceptance: project owner, 22 October 2026, explicit p
 
 ## Delivered
 
-- PROJECT_STRUCTURE is the detailed canonical companion delegated by Architecture §§4–6. It records
+- The structure conventions are now maintained directly in Architecture §§4–6. They record
   full workspace/backend/frontend targets, domain ownership, entry-point responsibilities, cohesive
   modules, naming, provider/jobs/scripts boundaries, test organization and ongoing review obligations.
 - Architecture replaces the previous target, retains historical implemented-path references and
@@ -66,3 +66,15 @@ provider/milestone readiness. P03-021/P02-015/P02-016 remain Not Started in the 
 Acceptance update checks: `npm run lint` and `git diff --check` passed. No application tests rerun
 because this acceptance update changes documentation only. Earlier verification counts above are
 historical at submission; current totals are 183 tasks: 54 Done, 128 Not Started, 1 Blocked.
+
+
+## Documentation consolidation correction
+
+On 22 October 2026 the owner requested removal of the separate structure/component guides and
+integration into existing owning specifications. Structure/naming/ownership now live in Architecture
+§§4–6; component APIs/state contracts in Design §6; verification and runbooks in their appropriate
+Testing/Operations sections. Duplicate dated appendices and self-delegating references were removed.
+README, AGENTS, Plan, Tasks, API, Database, historical evidence and changelog links were updated.
+Original review/acceptance history remains historical; no source refactor or provider gate changed.
+Verification: `npm run lint`, `git diff --check`, deleted-guide reference scan and task-count audit
+passed. Application tests/builds Not Run because this correction changes Markdown only.
