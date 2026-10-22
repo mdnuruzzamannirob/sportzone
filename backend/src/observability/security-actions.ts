@@ -1,5 +1,7 @@
 // Registered route patterns only. Never classify or log raw paths, IDs or input.
 const actions = {
+  'POST /admin/media/uploads': 'admin.media.upload',
+  'DELETE /admin/media/:assetId': 'admin.media.delete',
   'GET /auth/csrf': 'customer.csrf.issue',
   'GET /admin/auth/csrf': 'admin.csrf.issue',
   'POST /auth/register': 'customer.register',

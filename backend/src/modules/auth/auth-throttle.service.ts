@@ -4,7 +4,7 @@ import { ApiError } from '../../common/errors.js'
 import type { QuotaStore } from './auth-throttle.persistence.js'
 
 type Audience = 'customer' | 'admin'
-type Group = 'credentials' | 'recovery' | 'email' | 'bootstrap'
+type Group = 'credentials' | 'recovery' | 'email' | 'bootstrap' | 'media'
 export function createAuthThrottle(
   store: QuotaStore,
   secret: string,

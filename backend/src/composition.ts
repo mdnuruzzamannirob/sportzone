@@ -1,3 +1,4 @@
+import type { MediaDependencies } from './modules/media/media.composition.js'
 import type { loadNotificationWorker } from './config/notifications.js'
 import type { Connection } from 'mongoose'
 import { createApp } from './app.js'
@@ -19,11 +20,14 @@ export async function composeApplication(
   config: RuntimeConfig,
   health: HealthDependencies,
   logger: Logger,
+  media?: MediaDependencies,
 ) {
   const apiRouter = createApiRouter(health)
   if (config.CUSTOMER_AUTH_ENABLED || config.ADMIN_AUTH_ENABLED)
-    apiRouter.use(await composeCustomerRoutes(connection, config))
-  return createApp({ logger, apiRouter })
+    apiRouter.use(await composeCustomerRoutes(connection, config, media))
+  if (media && !config.ADMIN_AUTH_ENABLED)
+    throw new Error('Admin authentication required for media.')
+  return createApp({ logger, apiRouter, mediaUploadsEnabled: Boolean(media) })
 }
 
 export async function composeNotificationWorker(

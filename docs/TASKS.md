@@ -108,7 +108,7 @@ The register contains 179 tasks across twelve phases, including seven engineerin
 | 01 — Requirements Finalization and Planning   |      17 |           0 |     0 |           0 |       0 |         0 |     17 |        0 |
 | 02 — UI/UX Design                             |      14 |           0 |     0 |           0 |       0 |         0 |     14 |        0 |
 | 03 — Authentication and Core Backend          |      20 |           0 |     0 |           0 |       0 |         0 |     20 |        0 |
-| 04 — Product Catalog and Inventory            |      15 |          13 |     0 |           0 |       0 |         0 |      2 |        0 |
+| 04 — Product Catalog and Inventory            |      15 |          12 |     0 |           0 |       1 |         0 |      2 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      20 |          20 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 07 — Payment Integration and Verification     |      17 |          17 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -117,7 +117,7 @@ The register contains 179 tasks across twelve phases, including seven engineerin
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **179** |     **126** | **0** |       **0** |   **0** |     **0** | **53** |    **0** |
+| **Total**                                     | **179** |     **125** | **0** |       **0** |   **1** |     **0** | **53** |    **0** |
 
 ## 4. Milestone tracker
 
@@ -600,12 +600,13 @@ owned by P03-019/P03-020/P02-012/P02-013, not by Phase 01 closure.
   **Evidence:** [Canonical models, indexes, transaction/race verification](./evidence/P04-002-product-variants.md). [Owner acceptance](./evidence/P04-002-product-variants.md#owner-acceptance), 21 October 2026.
 
 - [ ] **P04-003 — Implement controlled Cloudinary media adapter**\
-  **Status:** `Not Started` · **Area:** Backend/media\
+  **Status:** `Blocked` · **Area:** Backend/media · **Owner:** Codex\
   **Sources:** FR-05; FR-23; Architecture §11\
   **Depends on:** `P03-003`, `P01-005`\
   **Deliverable:** Implement the mediaAssets ownership/upload-intent ledger, validation/quarantine, transactionally attached references, private evidence authorization and CAS-protected orphan cleanup; upload/delete provider calls stay outside DB transactions (Database §6.7).\
   **Acceptance:** Only authorized admin uploads; credentials never reach browser bundles.\
-  **Evidence to attach:** Media adapter/upload security tests.
+  **Evidence:** [Local adapter/ledger/auth verification and EXT-04 blocker](./evidence/P04-003-controlled-media.md).\
+  **Blocked:** EXT-04 — store administrator/project owner must supply approved staging account/configuration, media/scanner/retention policy and actual provider security evidence. Local implementation and focused checks passed; default runtime activation stays off. Next: protected input references, real staging upload/private-delivery/deletion validation and independent review.
 
 - [ ] **P04-004 — Implement admin category management**\
   **Status:** `Not Started` · **Area:** Admin/catalog\
@@ -1916,3 +1917,14 @@ review/acceptance: “Review করেছি—accept করছি, Done কর�
 overall: 53 Done, 126 Not Started, zero In Review. Existing implementation verification retained;
 this status-only update repeats documentation checks only. M2 remains Not Accepted.
 [Acceptance](./evidence/P04-002-product-variants.md#owner-acceptance).
+
+
+**21 October 2026 — P04-003:** Not Started → In Progress → Blocked (EXT-04). Implemented controlled
+media adapters, real admin upload/delete routes behind explicit composition, durable scoped ledger,
+CAS attachment/cleanup/holds and bounded maintenance. Passed 96 focused unit/regression and 22 real
+DB/composition cases, backend build/static/smoke checks. Real Cloudinary/scanner deployment and
+approved account/media/retention inputs were not supplied; “ok” acknowledges the request but is not
+provider/policy evidence. Executor: Codex; accountable external function: store administrator/project
+owner with backend/security/QA. Independent acceptance pending. Phase 04: 2 Done, 1 Blocked,
+12 Not Started; overall: 53 Done, 1 Blocked, 125 Not Started. M2 remains Not Accepted.
+[Evidence and next action](./evidence/P04-003-controlled-media.md).

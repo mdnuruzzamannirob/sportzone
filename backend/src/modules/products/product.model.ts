@@ -1,6 +1,12 @@
 import { Schema, Types, type Connection, type InferSchemaType } from 'mongoose'
 import { integerField, mutableSchemaOptions } from '../../db/schema.js'
-import { attributeSignature, attributes, description, slug, sku } from './product.validation.js'
+import {
+  attributeSignature,
+  attributes,
+  description,
+  sku,
+  slug,
+} from './product.validation.js'
 
 function text(max: number) {
   return {
@@ -37,7 +43,10 @@ const image = new Schema(
 const productSchema = new Schema(
   {
     name: text(120),
-    slug: { ...text(160), validate: (value: string) => slug.safeParse(value).data === value },
+    slug: {
+      ...text(160),
+      validate: (value: string) => slug.safeParse(value).data === value,
+    },
     description: {
       ...text(2000),
       validate: (value: string) => description.safeParse(value).data === value,
@@ -50,9 +59,14 @@ const productSchema = new Schema(
         values.length > 0 &&
         values.length <= 30 &&
         values.every((value) => value instanceof Types.ObjectId) &&
-        new Set(values.map((value) => value.toHexString())).size === values.length,
+        new Set(values.map((value) => value.toHexString())).size ===
+          values.length,
     },
-    images: { type: [image], default: [], validate: (values: unknown[]) => values.length <= 12 },
+    images: {
+      type: [image],
+      default: [],
+      validate: (values: unknown[]) => values.length <= 12,
+    },
     keywords: {
       type: [String],
       default: [],
@@ -61,7 +75,9 @@ const productSchema = new Schema(
         new Set(values).size === values.length &&
         values.every(
           (value) =>
-            value.length > 0 && [...value].length <= 120 && value === value.trim().toLowerCase(),
+            value.length > 0 &&
+            [...value].length <= 120 &&
+            value === value.trim().toLowerCase(),
         ),
     },
     status: {
@@ -114,7 +130,12 @@ const variantSchema = new Schema(
     attributeSignature: text(40000),
     regularPricePoisha: { ...integerField(), required: true },
     salePricePoisha: { ...integerField(), default: undefined },
-    status: { type: String, enum: ['active', 'inactive'], required: true, default: 'active' },
+    status: {
+      type: String,
+      enum: ['active', 'inactive'],
+      required: true,
+      default: 'active',
+    },
     stock: {
       type: stock,
       required: true,
@@ -134,13 +155,25 @@ variantSchema.pre('validate', function () {
     this.attributeSignature !== attributeSignature(options)
   )
     this.invalidate('attributes', 'Noncanonical variant attributes')
-  if (this.salePricePoisha != null && this.salePricePoisha > this.regularPricePoisha)
+  if (
+    this.salePricePoisha != null &&
+    this.salePricePoisha > this.regularPricePoisha
+  )
     this.invalidate('salePricePoisha', 'Sale exceeds regular price')
-  if (this.stock && this.stock.reserved > this.stock.physical - this.stock.committed)
+  if (
+    this.stock &&
+    this.stock.reserved > this.stock.physical - this.stock.committed
+  )
     this.invalidate('stock', 'Invalid available stock')
 })
-variantSchema.index({ skuNormalized: 1 }, { unique: true, name: 'variant_sku_unique' })
-variantSchema.index({ productId: 1, status: 1 }, { name: 'variant_product_status' })
+variantSchema.index(
+  { skuNormalized: 1 },
+  { unique: true, name: 'variant_sku_unique' },
+)
+variantSchema.index(
+  { productId: 1, status: 1 },
+  { name: 'variant_product_status' },
+)
 variantSchema.index(
   { productId: 1, attributeSignature: 1 },
   { unique: true, name: 'variant_product_signature_unique' },
@@ -154,6 +187,10 @@ export function productModels(connection: Connection) {
       : connection.model<Product>('Product', productSchema, 'products'),
     variants: connection.models.ProductVariant
       ? connection.model<ProductVariant>('ProductVariant')
-      : connection.model<ProductVariant>('ProductVariant', variantSchema, 'productVariants'),
+      : connection.model<ProductVariant>(
+          'ProductVariant',
+          variantSchema,
+          'productVariants',
+        ),
   }
 }

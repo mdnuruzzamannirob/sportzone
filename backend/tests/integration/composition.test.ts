@@ -148,3 +148,33 @@ it('preserves compiled bootstrap/migration entry points and safe worker prefligh
     'Notification worker failed; inspect protected configuration and durable status.',
   )
 })
+
+it('enables media only with explicit dependencies and verified persistence, retaining real admin auth and safe logs', async () => {
+  const { initializeMediaPersistence } = await import('../../src/modules/media/media.persistence.js')
+  const { fakeMediaProvider, mediaPolicy, png } = await import('../support/media.js')
+  const { createSessionService } = await import('../../src/modules/auth/session.service.js')
+  const config = loadEnvironment(identityEnvironment())
+  const lines: string[] = []
+  const logger = createLogger(config, line => lines.push(line))
+  const fake = fakeMediaProvider()
+  const media = { provider: fake.adapter, scanner: async () => 'clean' as const, policy: mediaPolicy, canDelete: async () => true }
+  await expect(composeApplication(fixture.connection, config, { isReady: async () => true }, logger, media)).rejects.toThrow('Media collection')
+  await initializeMediaPersistence(fixture.connection)
+  const withoutMedia = await composeApplication(fixture.connection, config, { isReady: async () => true }, logger)
+  await request(withoutMedia).post('/api/v1/admin/media/uploads').attach('file', png, 'synthetic.png').expect(400)
+  const app = await composeApplication(fixture.connection, config, { isReady: async () => true }, logger, media)
+  const models = createIdentityModels(fixture.connection)
+  const user = await models.users.create({ name: 'Synthetic', emailNormalized: 'media-admin@example.test', passwordHash: 'synthetic_hash', role: 'admin' })
+  if (!config.identity) throw new Error('Missing fixture identity policy')
+  const session = await createSessionService(fixture.connection, models, config.identity.sessions).issue('admin', user._id)
+  await request(app).post('/api/v1/admin/media/uploads').set('Origin', config.ADMIN_ORIGIN).set('Cookie', `sz_admin_sid=${session.token}`).set('X-CSRF-Token', session.csrfToken).attach('file', png, 'synthetic.png').expect(201)
+  await request(app).post('/api/v1/not-a-media-route').attach('file', png, 'synthetic.png').expect(400)
+  for (let index = 0; index < 9; index++) {
+    await request(app).post('/api/v1/admin/media/uploads').set('Origin', config.ADMIN_ORIGIN).set('Cookie', `sz_admin_sid=${session.token}`).set('X-CSRF-Token', session.csrfToken).attach('file', png, 'invalid.jpg').expect(400)
+  }
+  await request(app).post('/api/v1/admin/media/uploads').set('Origin', config.ADMIN_ORIGIN).set('Cookie', `sz_admin_sid=${session.token}`).set('X-CSRF-Token', session.csrfToken).attach('file', png, 'synthetic.png').expect(429)
+  expect(fake.state.uploads).toBe(1)
+  expect(lines.some(line => line.includes('admin.media.upload'))).toBe(true)
+  expect(lines.join('\n')).not.toContain(session.token)
+  expect(lines.join('\n')).not.toContain(user.emailNormalized)
+})

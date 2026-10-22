@@ -3,7 +3,11 @@ import { ApiError } from '../../common/errors.js'
 import { inTransaction } from '../../db/transaction.js'
 import type { categoryService } from '../categories/category.service.js'
 import { productModels } from './product.model.js'
-import { attributeSignature, productInput, variantBatch } from './product.validation.js'
+import {
+  attributeSignature,
+  productInput,
+  variantBatch,
+} from './product.validation.js'
 
 export function productService(
   connection: Connection,
@@ -15,13 +19,22 @@ export function productService(
     async create(product: unknown, variants: unknown) {
       const parsed = productInput.safeParse(product)
       const batch = variantBatch.safeParse(variants)
-      if (!parsed.success || !batch.success) throw new ApiError('VALIDATION_FAILED')
+      if (!parsed.success || !batch.success)
+        throw new ApiError('VALIDATION_FAILED')
       const data = parsed.data
-      if (data.status === 'active' && !batch.data.some((variant) => variant.status === 'active'))
+      if (
+        data.status === 'active' &&
+        !batch.data.some((variant) => variant.status === 'active')
+      )
         throw new ApiError('STATE_CONFLICT')
       return inTransaction(connection, async (session) => {
         for (const categoryId of data.categoryIds) {
-          await categories.guardAncestry(categoryId, session, undefined, data.status === 'active')
+          await categories.guardAncestry(
+            categoryId,
+            session,
+            undefined,
+            data.status === 'active',
+          )
         }
         const saved = await new models.products(data).save({ session })
         const savedVariants = []
@@ -39,8 +52,15 @@ export function productService(
         return { product: saved, variants: savedVariants }
       })
     },
-    async hasCategoryReferences(categoryId: Types.ObjectId, session: ClientSession) {
-      return Boolean(await models.products.exists({ categoryIds: categoryId }).session(session))
+    async hasCategoryReferences(
+      categoryId: Types.ObjectId,
+      session: ClientSession,
+    ) {
+      return Boolean(
+        await models.products
+          .exists({ categoryIds: categoryId })
+          .session(session),
+      )
     },
   }
 }

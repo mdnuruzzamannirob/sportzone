@@ -1781,3 +1781,56 @@ slug/SKU/signature and numeric/stock preflight; never drop indexes or silently n
 P04-005/deployment work must wire and verify bootstrap/readiness before exposing catalog mutations.
 The current foundation performs no external media or inventory effects. Undoing code must preserve
 existing product/variant records and indexes; no data-erasing rollback is supplied.
+
+
+### P04-003 controlled media operation and external gate
+
+Owner: store administrator with backend/security/QA, under EXT-04. Account/control, permitted asset
+rights and approved MIME/byte/pixel/scan/temporary/private-delivery/retention/legal-hold policy were
+not supplied for this execution. Acknowledging the request for references does not provide them.
+Real Cloudinary upload, authenticated original/derived privacy, short-lived download and provider
+deletion/reconciliation acceptance remain Blocked. Local synthetic fixtures are safe independent
+work; no staging/account activation is inferred. Keep ordinary HTTP startup media-disabled.
+
+`loadMediaConfiguration` reads server-only `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`,
+`CLOUDINARY_API_SECRET`, `MEDIA_PROVIDER_TIMEOUT_MS`, `MEDIA_SCANNER=clamav`, `MEDIA_SCANNER_HOST`,
+`MEDIA_SCANNER_PORT`, `MEDIA_SCANNER_TIMEOUT_MS`, `MEDIA_POLICY_JSON` and existing
+`MEDIA_TEMP_TTL_SECONDS`, requiring `MEDIA_ENABLED=true` for explicit loading. JSON holds maxBytes,
+maxPixels, allowedFormats and privateUrlTtlSeconds; temporary lifetime has only the existing key.
+No defaults imply policy approval. Hard caps: 20 MiB file, 100 million pixels, allowed subset of
+PNG/JPEG/WebP, 60 seconds–7 days temporary lifetime, 1–300 seconds private delivery, at most 60 seconds
+per provider/scanner call. These are defensive implementation ceilings, not approved operational
+values. Scanner host must be a protected operator-controlled private endpoint with current virus
+signatures; the TCP scanner protocol itself supplies no authentication/TLS. Do not expose it publicly.
+A fake scanner response does not prove actual antivirus coverage or signature freshness.
+
+Before explicit composition, bootstrap `initializeMediaPersistence` against a new authorized database
+and verify strict validators/indexes. Existing drift requires a reviewed additive migration; no
+startup repair or TTL cleanup occurs. Pass validated policy, Cloudinary/ClamAV adapters, current admin
+access and an approved `canDelete` retention capability into the typed media composition. Account/
+environment isolation and protected references require operator evidence, not just config strings.
+No production bootstrap/deletion was performed here; standard `startServer` has no media activation
+hook. Wire a reviewed operator composition/deployment only after EXT-04 approval/evidence. P08-012
+must supply current customer/guest order/claim access before private evidence HTTP is registered.
+
+Invoke `maintenanceBatch(1..100)` only from the restricted durable scheduled-job/operator boundary.
+It performs sequential, bounded reconciliation/cleanup and returns examined/deleted/reconciled/
+pending/blocked counts. It does not claim pending status lookups as completed uploads. Polling never
+reuploads an uncertain intent or blindly repeats an uncertain delete. If an uploading object is
+missing, retain the intent and investigate the original process/outcome. If deleting is still present,
+retain the deletion claim and supervise reconciliation; do not reset it to temporary to force a retry.
+New holds and target references must participate in the asset revision boundary. `protect` only adds
+holds/extends retention; removing a hold requires a separately approved operational procedure.
+
+Run the staging gate using licensed/synthetic media only: real admin upload; invalid/scanner-down
+rejection; authenticated original and transformation URL denial without authorized delivery; timed
+private URL expiry; owner/order/item denial; attach/cleanup race; referenced/held retention; delete
+confirmation and unknown-outcome reconciliation. Record operator, account/environment references,
+scanner freshness/version, commands and sanitized receipts. Do not log secrets, signed private URLs,
+filenames or evidence contents. `admin.media.upload/delete` are registered safe log actions.
+
+Rollback stops admissions and maintenance, preserving mediaAssets, references, intents and external
+objects. Never drop the ledger or infer provider deletion from code rollback. Reconcile outstanding
+uploading/deleting states against the same deterministic identity after recovery. Attaching real
+product/category/settings targets is owned by their integration tasks and must use the same session;
+private claim attachment is owned by P08-012. No new endpoint or cleanup schedule is silently enabled.

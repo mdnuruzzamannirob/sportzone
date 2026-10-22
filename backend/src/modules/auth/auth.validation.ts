@@ -59,7 +59,11 @@ export function createIdentityContracts(policy: {
       path: ['areaKey'],
       message: 'Unsupported delivery area',
     })
-  const address = z.strictObject({ ...addressFields, id, isDefault: z.boolean() })
+  const address = z.strictObject({
+    ...addressFields,
+    id,
+    isDefault: z.boolean(),
+  })
   const addresses = z
     .array(address)
     .max(10)
@@ -85,7 +89,11 @@ export function createIdentityContracts(policy: {
   const accountResult = z.strictObject({ account })
   const loginResult = z.strictObject({ account, csrfToken: opaque })
   const credentials = z.strictObject({ email, password: credential })
-  const register = z.strictObject({ name: text(120), email, password: newPassword })
+  const register = z.strictObject({
+    name: text(120),
+    email,
+    password: newPassword,
+  })
   const reset = z.strictObject({ token: opaque, newPassword })
   const profile = z
     .strictObject({ name: text(120).optional(), phone: phone.optional() })
@@ -93,13 +101,28 @@ export function createIdentityContracts(policy: {
   const deletion = z.strictObject({ reason: text(2000).optional() })
   const deletionResult = z.strictObject({
     requestId: id,
-    status: z.enum(['requested', 'under_review', 'approved', 'rejected', 'completed']),
+    status: z.enum([
+      'requested',
+      'under_review',
+      'approved',
+      'rejected',
+      'completed',
+    ]),
   })
-  const passwordChange = z.strictObject({ currentPassword: credential, newPassword })
-  const changed = z.strictObject({ changed: z.literal(true), csrfToken: opaque })
+  const passwordChange = z.strictObject({
+    currentPassword: credential,
+    newPassword,
+  })
+  const changed = z.strictObject({
+    changed: z.literal(true),
+    csrfToken: opaque,
+  })
   const verified = z.strictObject({ verified: z.literal(true) })
   const resetResult = z.strictObject({ reset: z.literal(true) })
-  const registerResult = z.strictObject({ account, verificationRequired: z.boolean() })
+  const registerResult = z.strictObject({
+    account,
+    verificationRequired: z.boolean(),
+  })
   const sent = z.strictObject({ verificationSent: z.literal(true) })
   type Access = 'public' | 'public_csrf' | 'customer' | 'admin'
   type Replay = 'read' | 'ordinary' | 'single_use' | 'idempotent_logout'
@@ -140,7 +163,14 @@ export function createIdentityContracts(policy: {
       201,
     ),
     operation('POST', '/auth/login', 'public_csrf', credentials, loginResult),
-    operation('GET', '/auth/session', 'customer', noBody, accountResult, 'read'),
+    operation(
+      'GET',
+      '/auth/session',
+      'customer',
+      noBody,
+      accountResult,
+      'read',
+    ),
     operation(
       'POST',
       '/auth/logout',
@@ -149,7 +179,13 @@ export function createIdentityContracts(policy: {
       logout,
       'idempotent_logout',
     ),
-    operation('POST', '/auth/email-verifications', 'public_csrf', emailRequest, accepted),
+    operation(
+      'POST',
+      '/auth/email-verifications',
+      'public_csrf',
+      emailRequest,
+      accepted,
+    ),
     operation(
       'POST',
       '/auth/email-verifications/confirm',
@@ -158,7 +194,13 @@ export function createIdentityContracts(policy: {
       verified,
       'single_use',
     ),
-    operation('POST', '/auth/password-resets', 'public_csrf', emailRequest, accepted),
+    operation(
+      'POST',
+      '/auth/password-resets',
+      'public_csrf',
+      emailRequest,
+      accepted,
+    ),
     operation(
       'POST',
       '/auth/password-resets/confirm',
@@ -184,7 +226,13 @@ export function createIdentityContracts(policy: {
       account,
       'single_use',
     ),
-    operation('POST', '/me/password-change', 'customer', passwordChange, changed),
+    operation(
+      'POST',
+      '/me/password-change',
+      'customer',
+      passwordChange,
+      changed,
+    ),
     operation('GET', '/me/addresses', 'customer', noBody, addresses, 'read'),
     operation(
       'POST',
@@ -195,7 +243,13 @@ export function createIdentityContracts(policy: {
       'ordinary',
       201,
     ),
-    operation('PATCH', '/me/addresses/{addressId}', 'customer', addressPatch, address),
+    operation(
+      'PATCH',
+      '/me/addresses/{addressId}',
+      'customer',
+      addressPatch,
+      address,
+    ),
     operation(
       'DELETE',
       '/me/addresses/{addressId}',
@@ -212,10 +266,29 @@ export function createIdentityContracts(policy: {
       emptyBody,
       address,
     ),
-    operation('POST', '/me/deletion-requests', 'customer', deletion, deletionResult),
+    operation(
+      'POST',
+      '/me/deletion-requests',
+      'customer',
+      deletion,
+      deletionResult,
+    ),
     operation('GET', '/admin/auth/csrf', 'public', noBody, csrf, 'read'),
-    operation('POST', '/admin/auth/login', 'public_csrf', credentials, loginResult),
-    operation('GET', '/admin/auth/session', 'admin', noBody, accountResult, 'read'),
+    operation(
+      'POST',
+      '/admin/auth/login',
+      'public_csrf',
+      credentials,
+      loginResult,
+    ),
+    operation(
+      'GET',
+      '/admin/auth/session',
+      'admin',
+      noBody,
+      accountResult,
+      'read',
+    ),
     operation(
       'POST',
       '/admin/auth/logout',

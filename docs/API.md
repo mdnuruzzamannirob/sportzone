@@ -1498,6 +1498,26 @@ Claim uploads require the **path `orderId`** to match current C owner or G-scope
 Return an **opaque** private evidence identifier; no public Cloudinary URL to confidential photos.
 `assetId` is the opaque ID of `mediaAssets` (Database §6.7), mapping one server-generated Cloudinary identity to owner/order/item scope, access, validation state and transactional attachment references (Database §6.7). Create upload intent before the external call; return attachable references only after validation. Attach and target update commit together under asset CAS. Cleanup atomically claims expired unreferenced assets as `deleting`, excluding concurrent attachment; reconcile unknown provider outcomes. Private evidence retrieval requires current C/G ownership or A permission and short-lived authorized delivery. No separate generic `assets` collection is implied.
 Cleanup of unreferenced uploads is asynchronous and must not delete assets attached to immutable order/claim/audit evidence.
+
+**P04-003 local implementation:** optional typed media composition exposes the two admin routes
+above only with verified ledger persistence, active admin identity, scanner/provider and retention
+capabilities. Default HTTP startup does not activate media; `MEDIA_ENABLED` is not automatic account
+approval or route activation. The multipart route accepts exactly one `file`, rejects other fields,
+query parameters, compression and unsupported content, and bounds encoded input to the approved
+file limit plus 16 KiB framing. Origin/session/CSRF and a separate media throttle run before parsing
+(10 admissions/minute/network, within the existing 60/minute shared admin network cap; credential
+budgets remain separate). Other routes retain their JSON-only admission rules.
+
+Known upload success returns the table's allowlisted DTO only after clean validation and provider
+metadata agreement. Unknown/quarantined provider outcomes return `SERVICE_UNAVAILABLE` with durable
+intent retained; invalid file/scanner rejection returns `VALIDATION_FAILED`. Safe deletion returns
+204 only after confirmed provider absence/deletion and ledger finalization; unknown returns
+`SERVICE_UNAVAILABLE`, dependency/policy conflicts use `STATE_CONFLICT`. No credential or raw provider
+payload is returned. Private signed delivery expires in at most the configured 300-second hard cap
+and is issued after current C/G ownership or A authorization. The evidence upload/claim routes and
+current order/guest proof integration remain P08-012; their injected capability defaults to deny.
+Ledger helpers add no new private-read endpoint or public claim URL. Real provider/policy acceptance
+remains blocked by EXT-04 until recorded staging evidence exists.
 Configure upload limits and scanning under the environment media policy in Operations Appendix B.
 
 ### 16.3 Transactional email and public notifications

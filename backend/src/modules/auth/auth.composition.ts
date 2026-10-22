@@ -1,3 +1,7 @@
+import { createMediaAdminAccess } from './media-access.service.js'
+import { composeMediaService, type MediaDependencies } from '../media/media.composition.js'
+import { mediaRoutes } from '../media/media.routes.js'
+import { verifyMediaPersistence } from '../media/media.service.js'
 import { createCustomerAccountAccess } from './customer-account.service.js'
 import {
   createAdminResetDelivery,
@@ -29,6 +33,7 @@ import { createSessionService } from './session.service.js'
 export async function composeCustomerRoutes(
   connection: Connection,
   config: RuntimeConfig,
+  media?: MediaDependencies,
 ) {
   const models = createIdentityModels(connection)
   await verifyIdentityPersistence(connection, models)
@@ -136,6 +141,23 @@ export async function composeCustomerRoutes(
           )(req, res, next),
       ),
     )
+  if (media) {
+    if (!config.ADMIN_AUTH_ENABLED) throw new Error('Admin authentication required for media.')
+    await verifyMediaPersistence(connection)
+    router.use(
+      mediaRoutes(
+        composeMediaService(
+          connection,
+          createMediaAdminAccess(models, sessions),
+          media,
+        ),
+        security,
+        sessions,
+        media.policy.maxBytes,
+        throttle.middleware('admin', 'media'),
+      ),
+    )
+  }
   return router
 }
 

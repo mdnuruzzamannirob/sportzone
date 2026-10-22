@@ -1,5 +1,5 @@
-import { isDeepStrictEqual } from 'node:util'
 import type { Connection } from 'mongoose'
+import { isDeepStrictEqual } from 'node:util'
 import { verifyDeclaredIndexes } from '../../db/indexes.js'
 import { productModels } from './product.model.js'
 
@@ -10,7 +10,11 @@ const integer = {
   maximum: Number.MAX_SAFE_INTEGER,
   multipleOf: 1,
 }
-const text = (maxLength: number): Shape => ({ bsonType: 'string', minLength: 1, maxLength })
+const text = (maxLength: number): Shape => ({
+  bsonType: 'string',
+  minLength: 1,
+  maxLength,
+})
 const object = (properties: Shape, required: string[]): Shape => ({
   bsonType: 'object',
   additionalProperties: false,
@@ -50,13 +54,22 @@ const productValidator = {
           ['publicId', 'url', 'alt', 'position'],
         ),
       },
-      keywords: { bsonType: 'array', maxItems: 30, uniqueItems: true, items: text(120) },
+      keywords: {
+        bsonType: 'array',
+        maxItems: 30,
+        uniqueItems: true,
+        items: text(120),
+      },
       status: { enum: ['draft', 'active', 'inactive'] },
       featured: { bsonType: 'bool' },
       ratingSummary: object(
         {
           approvedCount: integer,
-          average: { bsonType: ['int', 'long', 'double'], minimum: 0, maximum: 5 },
+          average: {
+            bsonType: ['int', 'long', 'double'],
+            minimum: 0,
+            maximum: 5,
+          },
         },
         ['approvedCount', 'average'],
       ),
@@ -84,19 +97,25 @@ const variantValidator = {
         {
           ...base,
           productId: { bsonType: 'objectId' },
-          skuNormalized: { ...text(64), pattern: '^[A-Z0-9]+(?:[._-][A-Z0-9]+)*$' },
-          attributes: { bsonType: 'object', maxProperties: 30, additionalProperties: text(120) },
+          skuNormalized: {
+            ...text(64),
+            pattern: '^[A-Z0-9]+(?:[._-][A-Z0-9]+)*$',
+          },
+          attributes: {
+            bsonType: 'object',
+            maxProperties: 30,
+            additionalProperties: text(120),
+          },
           attributeSignature: text(40000),
           regularPricePoisha: integer,
           salePricePoisha: integer,
           lowStockThreshold: integer,
           status: { enum: ['active', 'inactive'] },
           revision: integer,
-          stock: object({ physical: integer, reserved: integer, committed: integer }, [
-            'physical',
-            'reserved',
-            'committed',
-          ]),
+          stock: object(
+            { physical: integer, reserved: integer, committed: integer },
+            ['physical', 'reserved', 'committed'],
+          ),
         },
         [
           ...requiredBase,
@@ -114,9 +133,17 @@ const variantValidator = {
     {
       $expr: {
         $and: [
-          { $lte: ['$stock.reserved', { $subtract: ['$stock.physical', '$stock.committed'] }] },
           {
-            $lte: [{ $ifNull: ['$salePricePoisha', '$regularPricePoisha'] }, '$regularPricePoisha'],
+            $lte: [
+              '$stock.reserved',
+              { $subtract: ['$stock.physical', '$stock.committed'] },
+            ],
+          },
+          {
+            $lte: [
+              { $ifNull: ['$salePricePoisha', '$regularPricePoisha'] },
+              '$regularPricePoisha',
+            ],
           },
         ],
       },
@@ -132,7 +159,9 @@ export const productCollectionValidators = {
 export async function initializeProductPersistence(connection: Connection) {
   if (!connection.db) throw new Error('Product database is unavailable.')
   for (const [name, validator] of Object.entries(productCollectionValidators)) {
-    const existing = await connection.db.listCollections({ name }, { nameOnly: false }).next()
+    const existing = await connection.db
+      .listCollections({ name }, { nameOnly: false })
+      .next()
     if (existing) {
       if (
         !isDeepStrictEqual(existing.options?.validator, validator) ||

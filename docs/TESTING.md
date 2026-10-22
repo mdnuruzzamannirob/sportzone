@@ -906,6 +906,15 @@ architecture or tooling research only when a concrete requirement, compatibility
 
 ---
 
+P04-003 media foundation: `backend/tests/media.test.ts`,
+`backend/tests/integration/media.test.ts` and the media case in `composition.test.ts` cover
+REL-09/REL-11 adapter/ledger portions: file bounds and type/dimension validation, scanner protocol,
+real admin session/Origin/CSRF/throttle, upload-intent quarantine/reconciliation, atomic target
+callbacks, attach/delete and duplicate-cleanup races, retention/holds, scoped private capabilities,
+strict BSON/indexes and safe optional activation/logging. Provider transport and ClamAV server are
+explicit local doubles; order/claim/guest proof fixtures do not establish their later domain/API
+acceptance. [Observed results and EXT-04 blocker](./evidence/P04-003-controlled-media.md).
+
 P04-002 product/variant foundation: `backend/tests/products.test.ts` and
 `backend/tests/integration/products.test.ts` cover CAT-01/CAT-02 persistence portions: bounded metadata,
 SKU/option normalization, default/option exclusivity, sale money, protected-input rejection,

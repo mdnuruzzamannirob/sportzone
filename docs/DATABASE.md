@@ -716,7 +716,10 @@ category/SKU eligibility is enforced by owning services, not by foreign model ac
 | `publicId`! / `assetKind`! | string / enum(`public_media`,`claim_evidence`) | Server-generated unique provider object identity; not a client URL |
 | `owner`! | embedded | `{kind:admin or customer or guest_order,principalId}`; userId for accounts, orderId for guest_order; resolved server-side, never a client-selected ownership field |
 | `orderId`? / `claimType`? / `orderItemIds[]` | ObjectId / enum / ObjectId[] | Required for evidence; immutable scope validated before upload |
-| `mimeType`! / `size`! / `access`! | string / int / enum(`public`,`private`) | Verified file metadata; evidence always private |
+| `mimeType`! / `size`! / `access`! | string / int / enum(`public`,`private`) | Header-validated expected metadata in intent; checked against provider on completion; evidence always private |
+| `format`! / `digest`! | enum(`png`,`jpg`,`webp`) / string | Inspected image format and SHA-256 of exact uploaded bytes; immutable intent metadata checked during reconciliation |
+| `scanStatus`! | enum(`pending`,`clean`,`rejected`) | Durable scanner verdict; unknown/unavailable scanning never implies clean |
+| `legalHold`! / `retainUntil`? | bool / Date | Default false hold plus optional minimum retention; protection writes share asset CAS; no generic hold-release API |
 | `status`! | enum(`uploading`,`temporary`,`attached`,`deleting`,`deleted`,`quarantined`) | Quarantine until validation/scanning passes |
 | `references[]` | embedded[] | Bounded unique `{targetType,targetId,slot}` links; attaching/detaching and target mutation share one transaction |
 | `expiresAt`? / `deletedAt`? / `revision`! | Date / Date / int | Temporary cleanup deadline, actual deletion evidence and CAS guard |
@@ -733,6 +736,37 @@ all references before provider deletion. Timeout remains `deleting` for status r
 asset or declare provider deletion from a local timeout. Private retrieval rechecks current order/claim ownership and
 issues only a short-lived authorized URL (never a permanent public evidence URL). Exact size/MIME/scan/retention values
 are configured under API §16.2 and Operations §13.3.
+
+**P04-003 implementation:** media owns a single strict/error BSON schema and explicit additive
+bootstrap/index verification. `publicId=sportzone/<server ObjectId>` is generated before upload;
+there is no TTL index or client-selected provider identity. Public uploads require transaction-fenced
+admin access. Private upload/read/attach capabilities require the current order/item authorization
+provider and exact stored owner; guest principal identity equals the order ID. Evidence stays
+Cloudinary `authenticated`, including derived assets. Public media cannot attach to a claim and
+private evidence cannot attach to catalog/settings or be reused for another claim.
+
+Scanner acceptance is persisted before the provider call; incomplete/rejected scanning quarantines
+without uploading. Byte signature, extension, MIME, configured byte/pixel bounds and image dimensions
+are checked first; provider-decoded format/size/dimensions and digest context must match before
+`temporary`. Unknown upload outcomes remain `uploading`; reconciliation queries the same identity,
+never reuploads or deletes an unresolved in-flight intent. Missing upload lookups remain pending.
+
+Target services use `attach`/`detach` with a caller-owned active transaction and their own guarded
+mutation callback. That callback must validate the target/claim's immutable order/items and perform
+its CAS update in the provided session; no target collection/model is passed into media. Public
+references may be reused (at most 40 unique target/slot links); private references are single-claim
+and cannot be detached through the generic capability. Duplicate/expired/deleting/quarantined assets
+cannot be attached. Last public detach renews its temporary cleanup deadline.
+
+`protect` can only add a legal hold or extend minimum retention, under current admin authorization
+and asset revision. Holds cannot race past a deletion claim; adding protection to `deleting/deleted`
+is rejected for investigation. Cleanup requires no references, eligible state/deadline, no hold,
+expired minimum retention and a required owning retention-policy capability, rechecked after claim.
+The sole fresh CAS claimant may call provider deletion. Timeout stays `deleting`; later passes only
+query provider status. Provider absence confirms deletion; an object still present requires supervised
+reconciliation rather than another blind delete. The bounded maintenance batch reports known,
+pending and blocked outcomes separately and does not erase ledger rows. Operational policy must
+coordinate additional retention/legal-hold decisions through this same asset fence.
 
 ## 7. Orders, delivery, and inventory collections
 

@@ -12,11 +12,13 @@ export function createApp({
   health,
   logger,
   jsonBodyLimitBytes = 102400,
+  mediaUploadsEnabled = false,
 }: {
   apiRouter?: Router
   health?: HealthDependencies
   logger?: Logger
   jsonBodyLimitBytes?: number
+  mediaUploadsEnabled?: boolean
 } = {}) {
   if (!Number.isSafeInteger(jsonBodyLimitBytes) || jsonBodyLimitBytes < 1)
     throw new RangeError('Invalid JSON body limit')
@@ -68,6 +70,15 @@ export function createApp({
     const hasBody =
       req.headers['transfer-encoding'] !== undefined ||
       Number(req.headers['content-length'] ?? 0) > 0
+    if (
+      mediaUploadsEnabled &&
+      req.method === 'POST' &&
+      req.path === '/api/v1/admin/media/uploads' &&
+      req.is('multipart/form-data')
+    ) {
+      next()
+      return
+    }
     if (hasBody && !req.is('application/json')) {
       next(new ApiError('INVALID_REQUEST'))
       return

@@ -8,6 +8,13 @@ This changelog tracks the documentation baseline. Application releases are recor
 
 ## Development changes — 21 October 2026
 
+- Implemented P04-003 controlled media ledger/CAS lifecycle, Cloudinary and fail-closed ClamAV adapters,
+  admin multipart upload/safe deletion behind explicit typed composition, scoped private capabilities,
+  retention/hold protection and bounded reconciliation. Local verification: 96 unit/regression and 22
+  database/composition cases plus backend build/static/smoke checks passed. Blocked on EXT-04 approved
+  account/policy and real service evidence; default activation stays off and no provider success is
+  inferred from doubles. [Evidence](docs/evidence/P04-003-controlled-media.md).
+
 - Recorded explicit project-owner popup acceptance of P04-002 and marked it Done. Phase 04: 2 Done,
   13 Not Started; overall: 53 Done, 126 Not Started. M2 remains Not Accepted.
   [Acceptance](docs/evidence/P04-002-product-variants.md#owner-acceptance).
