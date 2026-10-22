@@ -220,6 +220,7 @@ test('CI-11: configured failing command propagates to pipeline exit and report; 
 test('CI-12: a failing workspace build propagates to pipeline failure', (t) => {
   const { root, put, config } = fixture(t)
   config.storefront.state = 'active'
+  config.storefront.checks = [...baseChecks, 'test:smoke']
   put('ci-workspaces.json', config)
   cpSync(resolve('scripts'), join(root, 'scripts'), { recursive: true })
   put('package-lock.json', { lockfileVersion: 3 })
@@ -242,7 +243,10 @@ test('CI-12: a failing workspace build propagates to pipeline failure', (t) => {
     name: 'storefront',
     private: true,
     scripts: Object.fromEntries(
-      baseChecks.map((c) => [c, c === 'build' ? 'node -e "process.exit(9)"' : 'node --version']),
+      [...baseChecks, 'test:smoke'].map((c) => [
+        c,
+        c === 'build' ? 'node -e "process.exit(9)"' : 'node --version',
+      ]),
     ),
   })
   const child = spawnSync(process.execPath, ['scripts/ci/run.mjs'], {
@@ -259,10 +263,16 @@ function activeFixture(t) {
   const f = fixture(t)
   for (const name of ['storefront', 'admin', 'backend']) {
     f.config[name].state = 'active'
+    const checks = [
+      ...baseChecks,
+      'test:smoke',
+      ...(name === 'backend' ? ['test:integration'] : []),
+    ]
+    f.config[name].checks = checks
     f.put(`${name}/package.json`, {
       name,
       private: true,
-      scripts: Object.fromEntries(baseChecks.map((c) => [c, 'node --version'])),
+      scripts: Object.fromEntries(checks.map((c) => [c, 'node --version'])),
     })
   }
   f.put('ci-workspaces.json', f.config)
@@ -275,7 +285,7 @@ test('CI-13: one ordered inventory runs every configured check', (t) => {
     plan.map((s) => s.name),
     scopeNames,
   )
-  assert.equal(plan.flatMap((s) => s.checks).length, 19)
+  assert.equal(plan.flatMap((s) => s.checks).length, 23)
 })
 test('CI-14: mandatory browser checks cannot disappear', (t) => {
   const { root, put, config } = activeFixture(t)
@@ -439,5 +449,21 @@ test('CI-27: required boundary and formatting checks cannot be removed from the 
     ].filter((check) => check !== name)
     put('ci-workspaces.json', config)
     assert.throws(() => ciPlan(root), /Missing required repository/)
+  }
+})
+
+test('CI-28: smoke and backend integration checks cannot disappear from active inventory', (t) => {
+  const { root, put, config } = activeFixture(t)
+  for (const [name, check] of [
+    ['storefront', 'test:smoke'],
+    ['admin', 'test:smoke'],
+    ['backend', 'test:smoke'],
+    ['backend', 'test:integration'],
+  ]) {
+    const previous = config[name].checks
+    config[name].checks = previous.filter((entry) => entry !== check)
+    put('ci-workspaces.json', config)
+    assert.throws(() => ciPlan(root), new RegExp(`Missing required ${name} check: ${check}`))
+    config[name].checks = previous
   }
 })

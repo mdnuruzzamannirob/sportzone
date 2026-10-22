@@ -13,8 +13,9 @@ environment limits and independent acceptance. Historical UI or source layouts m
 - Refactored storefront routes/features/providers and admin routing/auth ownership; separated feature endpoints
   from transport/query defaults and reusable forms. Preserved existing URLs, native HeroUI and private-session behavior.
 - Organized CI/dev tooling and e2e/helpers/tooling tests, declared pinned root fixture dependencies and strengthened
-  ownership/required-check guards under one lockfile/inventory. All local checks passed; independent acceptance
-  pending for P02-015, P02-016 and P01-019. [Evidence](docs/evidence/P01-019-monorepo-refactor.md).
+  ownership/required-check guards under one lockfile/inventory. Full-project recheck also made application smoke
+  and backend integration inventory entries mandatory, with removal regressions. All applicable local checks passed; the project owner
+  reviewed and accepted P02-015, P02-016 and P01-019 through the popup. [Evidence](docs/evidence/P01-019-monorepo-refactor.md).
 
 ## 22 October 2026 — Backend structure refactor
 

@@ -15,6 +15,9 @@ const required = {
   repository: {
     checks: ['workspaces:check', 'lint', 'test:unit', 'lint:boundaries', 'format:check'],
   },
+  storefront: { checks: ['test:smoke'] },
+  admin: { checks: ['test:smoke'] },
+  backend: { checks: ['test:smoke', 'test:integration'] },
   browser: { checks: ['test:ui'] },
   'supply-chain': { checks: ['test:security'] },
 }
@@ -32,10 +35,12 @@ export function ciPlan(root) {
       new Set(entry.checks).size !== entry.checks.length
     )
       throw new Error(`Invalid CI scope: ${name}`)
-    if (!workspace) {
+    if (!workspace || workspace.state === 'Configured') {
       for (const check of required[name].checks)
         if (!entry.checks.includes(check))
           throw new Error(`Missing required ${name} check: ${check}`)
+    }
+    if (!workspace) {
       for (const check of entry.checks) {
         if (
           !/^[a-z][a-z0-9:-]*$/.test(check) ||

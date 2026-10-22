@@ -2,7 +2,7 @@
 
 **Date:** 22 October 2026\
 **Baseline:** `8979834`\
-**Status:** In Review — local verification passed; independent acceptance pending
+**Status:** Done — accepted by project owner on 22 October 2026
 
 ## Scope and delivery
 
@@ -40,4 +40,10 @@ Integrated CI/browser, keyboard/theme/accessibility and executor visual inspecti
 
 Use the complete prior frontend artifact/configuration for rollback; do not mix stale Next generated routes or
 staging-baked public origins with another deployment. API/data/provider contracts and EXT-04 are unchanged.
-Owner visual/task acceptance is pending; no browser CI pass substitutes for that independent review.
+Owner visual/task acceptance is recorded below; a browser CI pass alone does not establish independent review.
+
+## Owner acceptance
+
+On 22 October 2026, the project owner reviewed the full-project recheck and storefront/admin/monorepo refactors
+and explicitly accepted P02-015, P02-016 and P01-019 through the popup: “Review করেছি—accept করছি, Done করো”.
+This accepts these tasks and their recorded verification; it does not accept deployment, providers or milestones.

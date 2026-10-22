@@ -2,7 +2,7 @@
 
 **Date:** 22 October 2026\
 **Baseline:** `8979834`\
-**Status:** In Review — local verification passed; independent acceptance pending
+**Status:** Done — accepted by project owner on 22 October 2026
 
 ## Scope and delivery
 
@@ -33,4 +33,10 @@ Integrated browser/theme/keyboard/accessibility and executor visual inspection P
 
 Roll back with the matching complete frontend artifact and public origin configuration; backend sessions, identity,
 notification/audit records and provider evidence remain intact. No database migration or production change is run.
-Owner visual/task acceptance is pending. EXT-04 and all milestone/operator/provider gates remain independent.
+Owner visual/task acceptance is recorded below. EXT-04 and all milestone/operator/provider gates remain independent.
+
+## Owner acceptance
+
+On 22 October 2026, the project owner reviewed the full-project recheck and storefront/admin/monorepo refactors
+and explicitly accepted P02-015, P02-016 and P01-019 through the popup: “Review করেছি—accept করছি, Done করো”.
+This accepts these tasks and their recorded verification; it does not accept deployment, providers or milestones.

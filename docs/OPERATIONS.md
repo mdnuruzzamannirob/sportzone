@@ -341,7 +341,9 @@ Successful foundation CI is evidence for its configured checks only, not applica
 module paths cannot survive a source move. The local watch coordinator also clears it before initial compilation.
 Build the backend before invoking operator scripts; do not mix generated modules from different revisions.
 
-CI must reject missing required scripts rather than silently skip checks. Pin compatible runtime/tool versions and
+CI must reject missing required scripts rather than silently skip checks. Active application inventories require
+production smoke checks, and the backend inventory also requires real database integration checks; removing those
+entries fails planning even if core lint/types/unit/build checks remain. Pin compatible runtime/tool versions and
 preserve tested build outputs with commit SHA, dependency lock digest and signed/traceable artifact identity where
 supported. Do not embed secrets or prefilled `.env` in release archives.
 

@@ -109,8 +109,8 @@ The register contains 184 tasks across twelve phases. The owner-selected structu
 
 | Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |   Done | Deferred |
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
-| 01 — Requirements Finalization and Planning   |      19 |           0 |     0 |           0 |       0 |         1 |     18 |        0 |
-| 02 — UI/UX Design                             |      16 |           0 |     0 |           0 |       0 |         2 |     14 |        0 |
+| 01 — Requirements Finalization and Planning   |      19 |           0 |     0 |           0 |       0 |         0 |     19 |        0 |
+| 02 — UI/UX Design                             |      16 |           0 |     0 |           0 |       0 |         0 |     16 |        0 |
 | 03 — Authentication and Core Backend          |      21 |           0 |     0 |           0 |       0 |         0 |     21 |        0 |
 | 04 — Product Catalog and Inventory            |      15 |          12 |     0 |           0 |       1 |         0 |      2 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -121,7 +121,7 @@ The register contains 184 tasks across twelve phases. The owner-selected structu
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **184** |     **125** | **0** |       **0** |   **1** |     **3** | **55** |    **0** |
+| **Total**                                     | **184** |     **125** | **0** |       **0** |   **1** |     **0** | **58** |    **0** |
 
 ## 4. Milestone tracker
 
@@ -311,13 +311,13 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 is the new struct
   **Acceptance:** Repository links/Markdown and cross-document consistency verified; no source moves or release gate changes; independent documentation review.\
   **Evidence:** [Target structure documentation and verification](./evidence/P01-018-project-structure.md). [Owner acceptance](./evidence/P01-018-project-structure.md#owner-acceptance), 22 October 2026.
 
-- [ ] **P01-019 — Refactor monorepo tooling and cross-application verification**\
-  **Status:** `In Review` · **Area:** Monorepo/tooling · **Owner:** Codex\
+- [x] **P01-019 — Refactor monorepo tooling and cross-application verification**\
+  **Status:** `Done` · **Area:** Monorepo/tooling · **Owner:** Codex\
   **Sources:** Owner combined-scope instruction; Architecture §4.2; Testing §§5,15; Operations §5\
   **Depends on:** `P03-021`; integrated verification with `P02-015`, `P02-016`\
   **Deliverable:** Cohesive CI/dev scripts, e2e/tooling/helpers test ownership, explicit pinned root tooling dependencies, one lockfile/check inventory and source-boundary guards.\
   **Acceptance:** No dropped cases, required checks cannot disappear, scoped CI failures propagate, clean locked setup and affected cross-app checks pass; native UI and API/data contracts preserved; independent review.\
-  **Evidence:** [Monorepo refactor verification](./evidence/P01-019-monorepo-refactor.md). All 23 local inventory checks Passed after scoped corrections; independent acceptance pending.
+  **Evidence:** [Monorepo refactor verification](./evidence/P01-019-monorepo-refactor.md). Full-project checks verified through initial and scoped environment-repair reruns, including 47 tooling cases and mandatory smoke/integration guards; [Owner acceptance](./evidence/P01-019-monorepo-refactor.md#owner-acceptance), 22 October 2026.
 
 ### Phase 02 — UI/UX design
 
@@ -435,21 +435,21 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 is the new struct
   **Acceptance:** Both frontend types/lint/necessary interaction/display checks and builds/smoke verified; import boundary enforced; one preview uses real app modules; accessibility findings retained and explicitly dispositioned without waiving PRD gates; independent owner review.\
   **Evidence:** [Decision, research, implementation and verification](./evidence/P02-014-default-heroui.md). Implementation and focused functional checks passed; owner accepted the UI review corrections on 20 October 2026 (“এই সংশোধনগুলো accept করছি”). Owner subsequently requested “done koro”; P02-014 accepted as Done. Known native contrast findings subsequently fixed and all four affected Chromium accessibility cases passed (16 scans); see final correction evidence. No new milestone acceptance.
 
-- [ ] **P02-015 — Refactor storefront to the new feature-based target**\
-  **Status:** `In Review` · **Area:** Frontend/storefront · **Owner:** Codex\
+- [x] **P02-015 — Refactor storefront to the new feature-based target**\
+  **Status:** `Done` · **Area:** Frontend/storefront · **Owner:** Codex\
   **Sources:** Architecture §§4–5; Design\
   **Depends on:** `P03-021`, `P02-012`\
   **Deliverable:** Thin grouped routes, feature-owned code and target lib/UI naming, with preserved URLs/private caching/guest flows; migrate browser runner paths only with full discovery parity.\
   **Acceptance:** Actual path/URL inventory, import/alias/CI updates, negative boundaries, affected lint/types/build/components and responsive/keyboard/light-dark/accessibility/browser evidence; independent application review.\
-  **Evidence:** [Storefront refactor verification](./evidence/P02-015-storefront-refactor.md). Local parity/browser/visual checks Passed; independent acceptance pending.
+  **Evidence:** [Storefront refactor verification](./evidence/P02-015-storefront-refactor.md). Local parity/browser/visual checks Passed; [Owner acceptance](./evidence/P02-015-storefront-refactor.md#owner-acceptance), 22 October 2026.
 
-- [ ] **P02-016 — Refactor admin to the new feature-based target**\
-  **Status:** `In Review` · **Area:** Frontend/admin · **Owner:** Codex\
+- [x] **P02-016 — Refactor admin to the new feature-based target**\
+  **Status:** `Done` · **Area:** Frontend/admin · **Owner:** Codex\
   **Sources:** Architecture §§4–5; Design\
   **Depends on:** `P02-015`, `P02-013`\
   **Deliverable:** Target router/providers/guard, feature-owned forms/API/state and reusable UI/layout boundaries; preserve actual commands and private session behavior.\
   **Acceptance:** Actual path/route inventory, aliases/imports/CI/discovery, negative boundaries, affected lint/types/build/components and theme/keyboard/accessibility/browser parity; independent application review.\
-  **Evidence:** [Admin refactor verification](./evidence/P02-016-admin-refactor.md). Local parity/browser/visual checks Passed; independent acceptance pending.
+  **Evidence:** [Admin refactor verification](./evidence/P02-016-admin-refactor.md). Local parity/browser/visual checks Passed; [Owner acceptance](./evidence/P02-016-admin-refactor.md#owner-acceptance), 22 October 2026.
 
 ### Phase 03 — Authentication and core backend
 
@@ -1985,3 +1985,5 @@ P02-015/P02-016 and EXT-04 remain unchanged. [Evidence](./evidence/P03-021-backe
 implemented and verified per app, then integrated. In Progress → In Review; all 23 local inventory checks passed
 with scoped reruns, and executor visual inspection completed. Independent owner acceptance pending; overall
 55 Done, 3 In Review, 1 Blocked, 125 Not Started. [Verification](./evidence/P01-019-monorepo-refactor.md).
+
+**22 October 2026 — P02-015 / P02-016 / P01-019 acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. Full-project recheck and the three refactors accepted; overall 58 Done, 1 Blocked, 125 Not Started. [Acceptance](./evidence/P01-019-monorepo-refactor.md#owner-acceptance). External provider, deployment and milestone gates remain unchanged.
