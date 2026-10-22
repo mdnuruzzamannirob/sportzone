@@ -841,8 +841,16 @@ Do not restart an unchanged full pipeline merely to produce a new all-green summ
 | Backend/API/persistence | Affected unit/contract/integration cases; include authorization, transactions, races and retries when touched |
 | Dependencies, shared configuration or broad refactor | Checks for all affected consumers; use full CI when impact genuinely spans the repository |
 
-Full verification belongs to hosted integration and release candidates, or a locally justified cross-project
-change. Financial/security/provider acceptance requirements remain mandatory. Report checks not run explicitly;
+At each phase closeout, the final unfinished task coordinates one consolidated regression run against the
+phase's final integrated revision before phase acceptance. Cover the implemented repository's applicable
+lint/type/build, unit/contract/integration and smoke suites, plus relevant browser/accessibility, security,
+recovery and phase-exit scenarios. Do not create placeholder suites for unimplemented features. Link the
+consolidated results from that task and the phase gate; task-level focused verification remains mandatory.
+A blocked prerequisite prevents phase closeout even if executable local checks pass.
+
+Do not repeat this full run after every task. Repeat only checks affected by subsequent fixes, expanding
+scope when integration risk warrants it. Hosted integration and release candidates retain their configured
+full verification. Financial/security/provider acceptance requirements remain mandatory. Report checks not run explicitly;
 do not present older application results as verification of a newer application revision. Revisit settled
 architecture or tooling research only when a concrete requirement, compatibility issue or new evidence warrants it.
 
@@ -924,6 +932,7 @@ in evidence rather than being appended to the API operation inventory.
 | P04-001 | [Category hierarchy](./evidence/P04-001-category-hierarchy.md) |
 | P04-002 | [Products and variants](./evidence/P04-002-product-variants.md) |
 | P04-003 | [Controlled media; EXT-04 remains blocked](./evidence/P04-003-controlled-media.md) |
+| P04-006 | [Inventory counters, atomic guards and movement replay](./evidence/P04-006-inventory-counters.md) |
 
 ### 16.2 Functional requirement coverage register
 

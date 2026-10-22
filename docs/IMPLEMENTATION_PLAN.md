@@ -109,6 +109,11 @@ For higher-risk work, write state-transition and concurrency tests before enabli
 
 Each phase in §6 identifies its objective, prerequisite, implementation work, verification, deliverables, and exit gate. Backend, storefront, and administration work appear only when relevant. Cross-cutting standards in §§9–12 apply to every phase and should not be implemented a second time as separate competing features.
 
+Before closing a phase, its final unfinished task coordinates the consolidated regression and exit-gate
+evidence defined in [Testing §15.5](./TESTING.md#155-change-based-local-verification). Earlier tasks run
+focused checks as they deliver changes; phase closeout does not defer their required safety tests or
+replace independent task/milestone acceptance.
+
 ### 3.3 Feature-level definition of done
 
 An implementation work package is done when all applicable conditions are met:

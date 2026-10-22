@@ -8,6 +8,18 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 23 October 2026 — Verification cadence
+
+- Clarified focused verification per task and one consolidated regression at phase closeout, coordinated
+  by the final unfinished task. Required safety tests, external gates and independent acceptance remain intact.
+
+## 23 October 2026 — Inventory counter foundation
+
+- Added narrow catalog stock access, atomic safe-integer counter guards and transactional append-only
+  inventory movements with replay protection. Verified concurrency, rollback and persistence protection
+  on isolated MongoDB; HTTP/UI adjustments remain a separate task. The owner accepted P04-006 on 23 October 2026.
+  [Evidence](docs/evidence/P04-006-inventory-counters.md).
+
 ## 22 October 2026 — Source structure audit
 
 - Simplification follow-up removes the forwarding notification job and redundant media composition/type files;

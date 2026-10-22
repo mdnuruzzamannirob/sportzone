@@ -553,6 +553,20 @@ Catalog integration/deployment must wire and verify bootstrap/readiness before e
 The current foundation performs no external media or inventory effects. Undoing code must preserve
 existing product/variant records and indexes; no data-erasing rollback is supplied.
 
+#### Inventory persistence rollout constraint
+
+After product persistence is established, `initializeInventoryPersistence` in
+`backend/src/modules/inventory/inventory.persistence.ts` provides explicit additive bootstrap
+of `inventoryMovements` through an authorized runner. No CLI or HTTP startup migration is supplied.
+It verifies strict/error validation and declared indexes, preserves extra indexes and refuses an
+incompatible existing validator. Review existing-data rollout separately; never drop history to
+satisfy validation. Internal adjustments verify persistence before changing counters and fail closed
+when required protection is absent. HTTP adjustments and operator views require their own integration.
+
+Rollback must preserve both variant counters and movement history. Restore them together from a
+consistent backup and reconcile subsequent effects before resuming writes; never reset counters or
+delete movements as a code rollback.
+
 ### 7.3 Health and reconciliation invariants
 
 | Query/observation | Required safe behavior |

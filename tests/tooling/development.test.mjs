@@ -461,3 +461,22 @@ test('STRUCTURE-06: job/composition factories must add assembly or orchestration
   )
   assert.deepEqual(checkBoundaries(root).errors, [])
 })
+
+test('INVENTORY-BOUNDARY-01: inventory consumes stock capabilities instead of catalog private models', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/modules/catalog/variants/variant.model.ts', 'export const model = 1')
+  put(
+    'backend/src/modules/inventory/inventory.service.ts',
+    'import "../catalog/variants/variant.model.js"',
+  )
+  assert.ok(checkBoundaries(root).errors.some((error) => error.includes('private persistence')))
+  put(
+    'backend/src/modules/catalog/variants/variant.service.ts',
+    'import "./variant.model.js"; export const stock = 1',
+  )
+  put(
+    'backend/src/modules/inventory/inventory.service.ts',
+    'import "../catalog/variants/variant.service.js"',
+  )
+  assert.deepEqual(checkBoundaries(root).errors, [])
+})

@@ -112,7 +112,7 @@ The register contains 185 tasks across twelve phases. The owner-selected structu
 | 01 — Requirements Finalization and Planning   |      20 |           0 |     0 |           0 |       0 |         0 |     20 |        0 |
 | 02 — UI/UX Design                             |      16 |           0 |     0 |           0 |       0 |         0 |     16 |        0 |
 | 03 — Authentication and Core Backend          |      21 |           0 |     0 |           0 |       0 |         0 |     21 |        0 |
-| 04 — Product Catalog and Inventory            |      15 |          12 |     0 |           0 |       1 |         0 |      2 |        0 |
+| 04 — Product Catalog and Inventory            |      15 |          11 |     0 |           0 |       1 |         0 |      3 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      20 |          20 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 07 — Payment Integration and Verification     |      17 |          17 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -121,7 +121,7 @@ The register contains 185 tasks across twelve phases. The owner-selected structu
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **185** |     **125** | **0** |       **0** |   **1** |     **0** | **59** |    **0** |
+| **Total**                                     | **185** |     **124** | **0** |       **0** |   **1** |     **0** | **60** |    **0** |
 
 ## 4. Milestone tracker
 
@@ -676,13 +676,13 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 is the new struct
   **Acceptance:** Form errors reflect uniqueness/invalid variants and saved data appears through API.\
   **Evidence to attach:** Admin product CRUD/E2E.
 
-- [ ] **P04-006 — Establish physical/reserved/committed counters**\
-  **Status:** `Not Started` · **Area:** Backend/inventory\
+- [x] **P04-006 — Establish physical/reserved/committed counters**\
+  **Status:** `Done` · **Owner:** Codex · **Area:** Backend/inventory\
   **Sources:** FR-13; FR-25\
   **Depends on:** `P04-002`\
   **Deliverable:** Implement nonnegative counters and Available = Physical - Reserved - Committed using atomic guards.\
   **Acceptance:** Concurrent adjustments cannot produce negative availability or duplicate movement effects.\
-  **Evidence to attach:** Stock arithmetic/concurrency tests.
+  **Evidence:** [Atomic counters, replay, rollback and replica-set verification](./evidence/P04-006-inventory-counters.md). [Owner acceptance](./evidence/P04-006-inventory-counters.md#review-and-acceptance), 23 October 2026; HTTP adjustments and audit views remain P04-007.
 
 - [ ] **P04-007 — Implement inventory adjustments and audit views**\
   **Status:** `Not Started` · **Area:** Admin/inventory\
@@ -2001,3 +2001,7 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **22 October 2026 — P01-020 simplification follow-up:** Done → In Progress → In Review after owner feedback about redundant layers. Removed three forwarding/contract files, kept actual private assembly and shared operation helpers, and verified scoped consumers. Initial acceptance remains historical; follow-up acceptance pending. Overall: 58 Done, 1 In Review, 1 Blocked, 125 Not Started. [Follow-up](./evidence/P01-020-structure-audit.md#simplification-follow-up).
 
 **23 October 2026 — P01-020 follow-up acceptance:** In Review → Done after explicit owner popup review: “সংশোধিত structure accept করছি—Done করো”. Simplified wiring and recorded checks accepted; overall 59 Done, 1 Blocked, 125 Not Started. [Acceptance](./evidence/P01-020-structure-audit.md#follow-up-acceptance). Provider/deployment/milestone gates remain unchanged.
+
+**23 October 2026 — P04-006:** Not Started → In Progress → In Review. Added stock-only catalog access, guarded counter writes and transactional append-only movements. Counter concurrency/replay/overflow and catalog regressions passed on isolated MongoDB. Independent owner acceptance pending. P04-003 remains blocked by EXT-04; M2 remains unaccepted. [Evidence](./evidence/P04-006-inventory-counters.md).
+
+**23 October 2026 — P04-006 acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. Overall: 60 Done, 1 Blocked, 124 Not Started. P04-003/EXT-04 and M2 gates remain unchanged. [Acceptance](./evidence/P04-006-inventory-counters.md#review-and-acceptance).
