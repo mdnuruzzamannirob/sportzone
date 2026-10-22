@@ -11,7 +11,7 @@ import {
   registrationNotificationValidator,
 } from '../../src/modules/notifications/notification.persistence.js'
 import { createResendAdapter } from '../../src/providers/email/resend.client.js'
-import { createNotificationWorker } from '../../src/jobs/send-notifications.job.js'
+import { createNotificationDeliveryService } from '../../src/modules/notifications/notification-delivery.service.js'
 import { inTransaction } from '../../src/shared/database/transaction.js'
 import { isolatedDatabase } from '../helpers/database.js'
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
@@ -113,7 +113,7 @@ describe('durable registration email pipeline with real MongoDB and local HTTP p
     const user = await enqueue(),
       before = (await models.users.findById(user._id))?.toObject()
     now += 10
-    const worker = createNotificationWorker(store, adapter(), policy, clock)
+    const worker = createNotificationDeliveryService(store, adapter(), policy, clock)
     expect(await worker.runBatch()).toEqual({ processed: 1 })
     expect(await worker.runBatch()).toEqual({ processed: 0 })
     expect(calls).toHaveLength(1)
@@ -136,7 +136,7 @@ describe('durable registration email pipeline with real MongoDB and local HTTP p
     const user = await enqueue()
     now += 10
     responseStatus = 429
-    const worker = createNotificationWorker(store, adapter(), policy, clock)
+    const worker = createNotificationDeliveryService(store, adapter(), policy, clock)
     await worker.runBatch()
     expect((await row(user._id)).status).toBe('retry_wait')
     expect(await worker.runBatch()).toEqual({ processed: 0 })
@@ -156,7 +156,12 @@ describe('durable registration email pipeline with real MongoDB and local HTTP p
     const user = await enqueue()
     now += 10
     responseStatus = 429
-    const worker = createNotificationWorker(store, adapter(), { ...policy, maxDelayMs: 150 }, clock)
+    const worker = createNotificationDeliveryService(
+      store,
+      adapter(),
+      { ...policy, maxDelayMs: 150 },
+      clock,
+    )
     await worker.runBatch()
     now += 100
     await worker.runBatch()
@@ -172,7 +177,7 @@ describe('durable registration email pipeline with real MongoDB and local HTTP p
     const user = await enqueue()
     now += 10
     responseStatus = 429
-    const worker = createNotificationWorker(store, adapter(), policy, clock)
+    const worker = createNotificationDeliveryService(store, adapter(), policy, clock)
     await worker.runBatch()
     now += 100
     await worker.runBatch()
@@ -194,7 +199,7 @@ describe('durable registration email pipeline with real MongoDB and local HTTP p
     const user = await enqueue()
     now += 10
     responseStatus = status
-    const worker = createNotificationWorker(store, adapter(), policy, clock)
+    const worker = createNotificationDeliveryService(store, adapter(), policy, clock)
     await worker.runBatch()
     now += 1000000
     await worker.runBatch()
@@ -207,7 +212,7 @@ describe('durable registration email pipeline with real MongoDB and local HTTP p
       const user = await enqueue()
       now += 10
       responseStatus = status
-      const worker = createNotificationWorker(store, adapter(), policy, clock)
+      const worker = createNotificationDeliveryService(store, adapter(), policy, clock)
       await worker.runBatch()
       now += 2 * 86400000
       await worker.runBatch()
@@ -219,10 +224,10 @@ describe('durable registration email pipeline with real MongoDB and local HTTP p
     const user = await enqueue()
     now += 10
     timeout = true
-    await createNotificationWorker(store, adapter(50), policy, clock).runBatch()
+    await createNotificationDeliveryService(store, adapter(50), policy, clock).runBatch()
     now += 1000000
     timeout = false
-    await createNotificationWorker(store, adapter(), policy, clock).runBatch()
+    await createNotificationDeliveryService(store, adapter(), policy, clock).runBatch()
     expect((await row(user._id)).status).toBe('delivery_uncertain')
     expect(calls).toHaveLength(1)
     expect(await models.users.exists({ _id: user._id })).not.toBeNull()
@@ -231,8 +236,8 @@ describe('durable registration email pipeline with real MongoDB and local HTTP p
     const user = await enqueue()
     now += 10
     await Promise.all([
-      createNotificationWorker(store, adapter(), policy, clock).runBatch(),
-      createNotificationWorker(store, adapter(), policy, clock).runBatch(),
+      createNotificationDeliveryService(store, adapter(), policy, clock).runBatch(),
+      createNotificationDeliveryService(store, adapter(), policy, clock).runBatch(),
     ])
     expect(calls).toHaveLength(1)
     expect((await row(user._id)).attemptCount).toBe(1)
@@ -243,7 +248,7 @@ describe('durable registration email pipeline with real MongoDB and local HTTP p
     const claim = await store.claim(clock(), policy.claimTtlMs, policy.maxAttempts)
     expect(claim).not.toBeNull()
     now += policy.claimTtlMs
-    await createNotificationWorker(store, adapter(), policy, clock).runBatch()
+    await createNotificationDeliveryService(store, adapter(), policy, clock).runBatch()
     expect((await row(user._id)).status).toBe('delivery_uncertain')
     expect(calls).toHaveLength(0)
     if (!claim) throw new Error('Missing claim')
@@ -297,7 +302,7 @@ describe('durable registration email pipeline with real MongoDB and local HTTP p
     await enqueue()
     now += 10
     expect(
-      await createNotificationWorker(
+      await createNotificationDeliveryService(
         store,
         adapter(),
         { ...policy, batchSize: 1 },
@@ -323,7 +328,7 @@ describe('durable registration email pipeline with real MongoDB and local HTTP p
   it('refuses worker and provider dispatch inside a business transaction before any side effect', async () => {
     await enqueue()
     now += 10
-    const worker = createNotificationWorker(store, adapter(), policy, clock)
+    const worker = createNotificationDeliveryService(store, adapter(), policy, clock)
     await expect(
       inTransaction(fixture.connection, async () => worker.runBatch()),
     ).rejects.toMatchObject({ code: 'EXTERNAL_EFFECT_IN_TRANSACTION' })
@@ -356,7 +361,7 @@ describe('durable registration email pipeline with real MongoDB and local HTTP p
       }),
     ).rejects.toThrow('Synthetic rollback')
     now += 10
-    await createNotificationWorker(store, adapter(), policy, clock).runBatch()
+    await createNotificationDeliveryService(store, adapter(), policy, clock).runBatch()
     expect(calls).toHaveLength(0)
     expect(await fixture.connection.db?.collection('notifications').countDocuments()).toBe(0)
   })
@@ -411,7 +416,7 @@ describe('durable registration email pipeline with real MongoDB and local HTTP p
         throw new Error('synthetic-private-key:recipient@example.test')
       },
     }
-    await createNotificationWorker(store, failing, policy, clock).runBatch()
+    await createNotificationDeliveryService(store, failing, policy, clock).runBatch()
     const result = await row(user._id)
     expect(result.status).toBe('delivery_uncertain')
     expect(result.lastErrorCode).toBe('PROVIDER_UNCERTAIN')

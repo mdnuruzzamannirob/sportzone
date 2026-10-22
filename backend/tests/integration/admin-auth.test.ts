@@ -33,7 +33,7 @@ import {
   emailChangeNotificationValidator,
   registrationNotificationValidator,
 } from '../../src/modules/notifications/notification.persistence.js'
-import { createNotificationWorker } from '../../src/jobs/send-notifications.job.js'
+import { createNotificationDeliveryService } from '../../src/modules/notifications/notification-delivery.service.js'
 import type { EmailMessage } from '../../src/modules/notifications/notification.types.js'
 import { isolatedDatabase } from '../helpers/database.js'
 import { testEnvironment } from '../helpers/environment.js'
@@ -630,7 +630,7 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
     const admin = await user(),
       first = await issue(admin),
       messages: EmailMessage[] = []
-    const worker = createNotificationWorker(
+    const worker = createNotificationDeliveryService(
       notifications,
       {
         send: async (message) => {
@@ -673,7 +673,7 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
         }
       },
     }
-    await createNotificationWorker(
+    await createNotificationDeliveryService(
       notifications,
       adapter,
       retry,
@@ -681,7 +681,7 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
       createResetDelivery(models, options, clock),
     ).runBatch()
     expect(sends).toBe(0)
-    const worker = createNotificationWorker(
+    const worker = createNotificationDeliveryService(
       notifications,
       adapter,
       retry,

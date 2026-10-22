@@ -438,3 +438,26 @@ test('STRUCTURE-05: Mongoose schema definitions belong in model files, including
   )
   assert.deepEqual(checkBoundaries(root).errors, [])
 })
+
+test('STRUCTURE-06: job/composition factories must add assembly or orchestration rather than forward arguments', (t) => {
+  const { root, put } = fixture(t)
+  put(
+    'backend/src/modules/email/email.service.ts',
+    'export function createDelivery(...args: unknown[]) { return {} }',
+  )
+  put(
+    'backend/src/jobs/send.job.ts',
+    'import {createDelivery} from "../modules/email/email.service.js"; export function createWorker(...args: unknown[]) { return createDelivery(...args) }',
+  )
+  assert.ok(checkBoundaries(root).errors.some((e) => e.includes('forwarding factory')))
+  put(
+    'backend/src/jobs/send.job.ts',
+    'import {createDelivery} from "../modules/email/email.service.js"; export function runScheduledBatch() { return createDelivery().runBatch() }',
+  )
+  assert.deepEqual(checkBoundaries(root).errors, [])
+  put(
+    'backend/src/modules/email/email.composition.ts',
+    'import {createDelivery} from "./email.service.js"; export function composeEmail(options: unknown) { return createDelivery({options, verify: true}) }',
+  )
+  assert.deepEqual(checkBoundaries(root).errors, [])
+})

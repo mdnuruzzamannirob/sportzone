@@ -35,12 +35,7 @@ export async function createAuthRuntime(
   const options = config.identity
   if (!options) throw new Error('Validated identity configuration required.')
   const sessions = createSessionService(connection, models, options.sessions)
-  const security = createBrowserSecurity(
-    connection,
-    models,
-    sessions,
-    options.browser,
-  )
+  const security = createBrowserSecurity(connection, models, sessions, options.browser)
   const quota = createAuthQuotaStore(connection)
   await quota.verify()
   const throttle = createAuthThrottle(quota, config.SESSION_SECRET)
@@ -48,10 +43,11 @@ export async function createAuthRuntime(
   // Separate bootstrap adapters select their audience from the registered route.
   router.use(
     browserSecurityRoutes(security, sessions, undefined, (req, res, next) =>
-      throttle.middleware(
-        req.path.startsWith('/admin/') ? 'admin' : 'customer',
-        'bootstrap',
-      )(req, res, next),
+      throttle.middleware(req.path.startsWith('/admin/') ? 'admin' : 'customer', 'bootstrap')(
+        req,
+        res,
+        next,
+      ),
     ),
   )
   if (config.CUSTOMER_AUTH_ENABLED)
@@ -82,13 +78,7 @@ export async function createAuthRuntime(
   if (options.emailChange)
     router.use(
       emailChangeRoutes(
-        createEmailChangeService(
-          connection,
-          models,
-          sessions,
-          notifications,
-          options.emailChange,
-        ),
+        createEmailChangeService(connection, models, sessions, notifications, options.emailChange),
         security,
         sessions,
         throttle.middleware('customer', 'email'),
@@ -97,13 +87,7 @@ export async function createAuthRuntime(
   if (options.adminRecovery)
     router.use(
       adminRoutes(
-        createCustomerService(
-          models,
-          sessions,
-          security,
-          notifications,
-          'admin',
-        ),
+        createCustomerService(models, sessions, security, notifications, 'admin'),
         createRecoveryService(
           connection,
           models,
@@ -140,9 +124,7 @@ export function composeProofDeliveries(
 ) {
   const models = createIdentityModels(connection)
   return {
-    reset: options?.recovery
-      ? createResetDelivery(models, options.recovery)
-      : undefined,
+    reset: options?.recovery ? createResetDelivery(models, options.recovery) : undefined,
     emailChange: options?.emailChange
       ? createEmailChangeDelivery(models, options.emailChange)
       : undefined,

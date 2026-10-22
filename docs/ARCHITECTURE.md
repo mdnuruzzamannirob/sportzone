@@ -420,12 +420,11 @@ backend/
 │   │   │   └── sslcommerz.schema.ts
 │   │   ├── email/resend.client.ts
 │   │   └── antivirus/clamav.client.ts
-│   ├── jobs/                    # Thin coordinators calling domain services
+│   ├── jobs/                    # Add only for real scheduling/coordination
 │   │   ├── expire-checkout.job.ts
 │   │   ├── expire-reservations.job.ts
 │   │   ├── reconcile-payments.job.ts
 │   │   ├── reconcile-refunds.job.ts
-│   │   ├── send-notifications.job.ts
 │   │   └── cleanup-media.job.ts
 │   └── shared/
 │       ├── errors/app-error.ts
@@ -528,12 +527,17 @@ modules/reviews/
 Routes bind endpoint/middleware; controllers map HTTP input/output; schema files validate inputs;
 services enforce business rules/ownership and coordinate transactions; models own schemas/indexes.
 Optional .dto.ts, .policy.ts and .persistence.ts require an actual projection, reusable rule or
-persistence/bootstrap need. Module-local .composition.ts files assemble that module’s routers/services;
-domain implementations and dependency contracts do not import their composition layer. Configuration
-imports domain schemas rather than job entry points. Mongoose schema/index registration belongs in
-.model.ts; collection validators/bootstrap belong in .persistence.ts. Jobs delegate delivery policy and
-durable transitions to domain services. Derive types when safe; request input, response DTO and stored document
-are distinct. Do not create empty files or repositories/base classes just to match a template.
+persistence/bootstrap need. Mongoose schema/index registration belongs in .model.ts; collection
+validators/bootstrap belong in .persistence.ts. Derive types when safe; request input, response DTO
+and stored document are distinct.
+
+Start with the existing owning file. Add a file only for distinct behavior, ownership or a reused
+contract; do not introduce argument-forwarding factories, empty templates or generic repositories.
+Cross-module wiring stays in setup.ts. Use a module-local .composition.ts only for actual assembly
+of private models, services and routers; domain implementation/contracts never import that layer.
+Keep internal dependency types with their service/context when a separate file adds no boundary.
+Configuration imports domain schemas rather than jobs. A job performs actual scheduling/coordination
+and delegates business decisions to domain services; operator scripts may call those services directly.
 
 Large modules use responsibility subfeatures: auth/credentials, sessions, recovery, verification,
 guest-access; catalog/products, variants, categories. Auth retains one user model. Media separates

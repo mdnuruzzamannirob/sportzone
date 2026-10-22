@@ -1,7 +1,7 @@
 import { createResendAdapter } from './providers/email/resend.client.js'
 import type { EmailAdapter } from './modules/notifications/notification.types.js'
 import type { RetryPolicy } from './modules/notifications/notification.schema.js'
-import type { MediaDependencies } from './modules/media/media-dependencies.types.js'
+import { ApiError } from './shared/errors/app-error.js'
 import type { loadNotificationWorker } from './config/notifications.js'
 import type { Connection } from 'mongoose'
 import { createApp } from './app.js'
@@ -9,15 +9,18 @@ import type { RuntimeConfig } from './config/env.js'
 import { createAuthRuntime, composeProofDeliveries } from './modules/auth/auth.composition.js'
 import type { HealthDependencies } from './modules/health/health.service.js'
 import { createRegistrationNotifications } from './modules/notifications/notification.service.js'
-import { createNotificationWorker } from './jobs/send-notifications.job.js'
+import { createNotificationDeliveryService } from './modules/notifications/notification-delivery.service.js'
 import type { Logger } from './shared/logger.js'
 import { createApiRouter } from './routes.js'
 import { createAddressCoverage } from './modules/delivery/delivery-coverage.service.js'
 import { createProfileService } from './modules/customers/customer.service.js'
 import { profileRoutes } from './modules/customers/customer.routes.js'
-import { composeMediaService } from './modules/media/media.composition.js'
+import {
+  createMediaService,
+  verifyMediaPersistence,
+  type MediaDependencies,
+} from './modules/media/media.service.js'
 import { mediaRoutes } from './modules/media/media.routes.js'
-import { verifyMediaPersistence } from './modules/media/media.service.js'
 
 // Only the root composition coordinates independent domain routers and capabilities.
 export async function composeIdentityRoutes(
@@ -40,7 +43,17 @@ export async function composeIdentityRoutes(
     await verifyMediaPersistence(connection)
     auth.router.use(
       mediaRoutes(
-        composeMediaService(connection, auth.mediaAdmin, media),
+        createMediaService(connection, {
+          ...media,
+          access: {
+            admin: auth.mediaAdmin,
+            evidence:
+              media.evidence ??
+              (async () => {
+                throw new ApiError('FORBIDDEN')
+              }),
+          },
+        }),
         auth.security,
         auth.sessions,
         media.policy.maxBytes,
@@ -80,7 +93,7 @@ export async function composeNotificationWorker(
   const store = createRegistrationNotifications(connection)
   await store.verifyIndexes()
   const delivery = composeProofDeliveries(connection, config.identity)
-  return createNotificationWorker(
+  return createNotificationDeliveryService(
     store,
     adapter,
     settings,

@@ -29,7 +29,7 @@ import {
   foundationNotificationValidator,
   registrationNotificationValidator,
 } from '../../src/modules/notifications/notification.persistence.js'
-import { createNotificationWorker } from '../../src/jobs/send-notifications.job.js'
+import { createNotificationDeliveryService } from '../../src/modules/notifications/notification-delivery.service.js'
 import type { EmailMessage } from '../../src/modules/notifications/notification.types.js'
 import { isolatedDatabase } from '../helpers/database.js'
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
@@ -382,7 +382,7 @@ describe('customer password reset/change on replica MongoDB and HTTP', () => {
   it('delivers reference-only proof after commit and retries only known rejection with the same link/key', async () => {
     await issue(await user())
     const messages: EmailMessage[] = []
-    const worker = createNotificationWorker(
+    const worker = createNotificationDeliveryService(
       notifications,
       {
         send: async (message) => {
@@ -410,7 +410,7 @@ describe('customer password reset/change on replica MongoDB and HTTP', () => {
     const account = await user(),
       first = await issue(account)
     let sends = 0
-    const worker = createNotificationWorker(
+    const worker = createNotificationDeliveryService(
       notifications,
       {
         send: async () => {
@@ -487,7 +487,7 @@ describe('customer password reset/change on replica MongoDB and HTTP', () => {
           { $set: { emailNormalized: 'other@example.test' } },
         )
       let sends = 0
-      await createNotificationWorker(
+      await createNotificationDeliveryService(
         notifications,
         {
           send: async () => {

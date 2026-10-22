@@ -101,6 +101,10 @@ providers/, root wiring in setup.ts/routes.ts, technical code in one shared/ bou
 paths remain supported until the owning application refactor verifies their move. Do not duplicate
 models, infer public API namespaces from directories or create empty template files.
 
+**Keep organization proportional:** Before adding a file, identify its distinct responsibility and consumers.
+Use Architecture §§4–6 to decide placement; avoid argument-forwarding factories and separate one-consumer
+contract files that add no boundary. Preserve real private-module assembly and cohesive operation services.
+
 **Mandatory ongoing review:** Every implementation/refactor must identify its owner/target path,
 verify naming/import direction, keep private persistence private, keep controllers free of model
 imports and business logic, prohibit shared→business dependencies and keep provider protocol separate

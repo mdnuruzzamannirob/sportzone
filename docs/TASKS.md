@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 22 October 2026
+**Updated:** 23 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -323,9 +323,9 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 is the new struct
   **Status:** `Done` · **Area:** Repository/source organization · **Owner:** Codex\
   **Sources:** Owner structure-audit correction, 22 October 2026; Architecture §§4–6\
   **Depends on:** `P01-019`, `P03-021`\
-  **Deliverable:** Source/test/tool placement inventory, naming and duplicate/orphan/cycle review; domain-owned notification model/persistence/delivery policy, thin job, auth composition and isolated dependency types; executable structure guards.\
+  **Deliverable:** Source/test/tool placement inventory, naming and duplicate/orphan/cycle review; domain-owned notification model/persistence/delivery policy, direct notification delivery, auth assembly and cohesive media context/types; executable structure guards.\
   **Acceptance:** Import/discovery/operator parity, unchanged schema/index/behavior evidence and affected checks; justified retained app-owned duplicates; independent review.\
-  **Evidence:** [Folder structure audit](./evidence/P01-020-structure-audit.md). Six placement/type-direction corrections verified; [Owner acceptance](./evidence/P01-020-structure-audit.md#owner-acceptance), 22 October 2026.
+  **Evidence:** [Folder structure audit](./evidence/P01-020-structure-audit.md). Initial audit and simplification verified; [follow-up owner acceptance](./evidence/P01-020-structure-audit.md#follow-up-acceptance), 23 October 2026.
 
 ### Phase 02 — UI/UX design
 
@@ -1997,3 +1997,7 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **22 October 2026 — P02-015 / P02-016 / P01-019 acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. Full-project recheck and the three refactors accepted; overall 58 Done, 1 Blocked, 125 Not Started. [Acceptance](./evidence/P01-019-monorepo-refactor.md#owner-acceptance). External provider, deployment and milestone gates remain unchanged.
 
 **22 October 2026 — P01-020 acceptance:** In Review → Done after explicit owner popup review: “Structure review করেছি—accept করছি, Done করো”. Structure audit and recorded corrections accepted; overall 59 Done, 1 Blocked, 125 Not Started. [Acceptance](./evidence/P01-020-structure-audit.md#owner-acceptance). Existing provider/deployment/milestone gates remain unchanged.
+
+**22 October 2026 — P01-020 simplification follow-up:** Done → In Progress → In Review after owner feedback about redundant layers. Removed three forwarding/contract files, kept actual private assembly and shared operation helpers, and verified scoped consumers. Initial acceptance remains historical; follow-up acceptance pending. Overall: 58 Done, 1 In Review, 1 Blocked, 125 Not Started. [Follow-up](./evidence/P01-020-structure-audit.md#simplification-follow-up).
+
+**23 October 2026 — P01-020 follow-up acceptance:** In Review → Done after explicit owner popup review: “সংশোধিত structure accept করছি—Done করো”. Simplified wiring and recorded checks accepted; overall 59 Done, 1 Blocked, 125 Not Started. [Acceptance](./evidence/P01-020-structure-audit.md#follow-up-acceptance). Provider/deployment/milestone gates remain unchanged.

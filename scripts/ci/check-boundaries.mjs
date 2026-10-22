@@ -79,6 +79,45 @@ export function checkBoundaries(root = process.cwd()) {
       )
     )
       errors.push(`${relative(root, file)}: source filenames must use kebab-case`)
+    if (
+      isWithin(file, backendSource) &&
+      (file.endsWith('.composition.ts') || file.endsWith('.job.ts'))
+    ) {
+      for (const statement of source.statements) {
+        if (
+          !ts.isFunctionDeclaration(statement) ||
+          !/^(?:create|compose)/.test(statement.name?.text ?? '') ||
+          statement.body?.statements.length !== 1
+        )
+          continue
+        const result = statement.body.statements[0]
+        if (
+          !ts.isReturnStatement(result) ||
+          !result.expression ||
+          !ts.isCallExpression(result.expression)
+        )
+          continue
+        const call = result.expression
+        if (
+          ts.isIdentifier(call.expression) &&
+          statement.parameters.length === call.arguments.length &&
+          statement.parameters.every((parameter, index) => {
+            const argument = call.arguments[index]
+            return (
+              ts.isIdentifier(parameter.name) &&
+              ((ts.isIdentifier(argument) && argument.text === parameter.name.text) ||
+                (parameter.dotDotDotToken &&
+                  ts.isSpreadElement(argument) &&
+                  ts.isIdentifier(argument.expression) &&
+                  argument.expression.text === parameter.name.text))
+            )
+          })
+        )
+          errors.push(
+            `${relative(root, file)}: call the owning service directly instead of adding a forwarding factory`,
+          )
+      }
+    }
     if (isWithin(file, moduleRoot) && !file.endsWith('.model.ts')) {
       const constructors = new Set()
       for (const statement of source.statements) {

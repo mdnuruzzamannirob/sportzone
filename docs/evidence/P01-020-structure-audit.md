@@ -2,9 +2,52 @@
 
 **Date:** 22 October 2026\
 **Baseline:** 8d7c2ab\
-**Status:** Done — accepted by project owner on 22 October 2026
+**Status:** Done — simplification follow-up accepted on 23 October 2026
 
-## Scope and findings
+## Simplification follow-up
+
+The owner requested simpler organization after the initial accepted audit. Follow-up baseline: 607b1c0.
+Removed three files: jobs/send-notifications.job.ts (argument-only forwarding), media/media.composition.ts
+(root-owned access wiring) and media/media-dependencies.types.ts (single internal dependency contract).
+setup.ts now calls the notification delivery service directly and supplies media access/default denial directly.
+MediaDependencies lives with the reused media.context helpers and is exposed as a type through the media service.
+The now-empty jobs directory is removed; future jobs require real coordination.
+
+Auth composition remains because it assembles private models, admission/security and multiple routers; moving it
+into root setup would expose private persistence. Media context remains because four operation services share
+its validated policy/model/clock and ID/transaction helpers. Upload, access, attachment and cleanup remain
+separate real responsibilities. Notification model/persistence/schema remain distinct data/bootstrap/policy owners.
+No other composition/job forwarding factory remains; boundary regression STRUCTURE-06 rejects that pattern.
+The ordinary UI facades and independently deployed app boundaries remain required by the approved design.
+
+Follow-up checks passed as recorded below. The initial results/acceptance that follow describe the
+previous revision; they do not approve this follow-up. Existing operator scripts and root composeNotificationWorker
+remain stable; the internal forwarding factory is removed. No API, model, validator/index, provider policy or
+financial behavior is changed.
+
+### Follow-up verification
+
+| Check / command | Observed result |
+| --- | --- |
+| npm run lint:boundaries | Passed: 190 source files, no violations |
+| npm run test:unit | Passed: 53 tooling cases, including the new forwarding-factory regression |
+| npm run lint --workspace=backend; npm run typecheck --workspace=backend; npm run test:unit --workspace=backend | Passed: 343 backend unit/contract cases |
+| npm run build --workspace=backend; npm run test:smoke --workspace=backend | Passed: actual DB startup/readiness/shutdown and clean compiled operator consumers |
+| npm exec --workspace=backend -- vitest run --config vitest.integration.config.ts tests/integration/notifications.test.ts tests/integration/recovery.test.ts tests/integration/email-change.test.ts tests/integration/admin-auth.test.ts tests/integration/media.test.ts tests/integration/composition.test.ts | Passed: final 6-file / 118-case real MongoDB run |
+| Literal source/test/tool graph | Passed: 275 files, no orphan source modules or runtime/type import cycles |
+| Auth assembly formatting parity | Passed: parsed AST unchanged; retained private assembly responsibilities |
+| npm run format:check; npm run lint; git diff --check | Passed: 288 formatted files; repository/local-link checks and diff whitespace |
+
+The first integration attempt failed with ERR_INVALID_PACKAGE_CONFIG in worker startup during a concurrent
+backend/package.json key-order edit. Its current JSON/scripts/dependencies are valid and the user edit was preserved;
+the complete affected six-file suite was then rerun and passed. This failure is not counted as a passed run.
+Logs: /tmp/sportzone-simple-integration.log (initial), /tmp/sportzone-simple-integration-final.log (118 passed),
+/tmp/sportzone-simple-tooling.log, /tmp/sportzone-simple-backend.log, /tmp/sportzone-simple-static-final.log,
+/tmp/sportzone-simple-format-final.log and /tmp/sportzone-simple-docs-final.log. Graph outputs are
+/tmp/sportzone-simple-inventory.log and /tmp/sportzone-simple-types-inventory.log. Frontend/browser/security
+suites are Not Run for this follow-up: their source/dependencies/visuals are unchanged. No schema migration is run.
+
+## Initial audit scope and findings
 
 The owner clarified that the requested review concerns folder structure and related naming, placement,
 import direction, ownership, duplicates and unused files. This is separate from the accepted P01-019 CI recheck.
@@ -43,7 +86,7 @@ The audit deliberately retains catalog-local model/validation helpers, auth-owne
 delivery-owned coverage capability, provider client/schema separation, backend operator scripts and cross-app test helpers.
 Historical task evidence is retained as historical; current source consumers use the new paths.
 
-## Verification
+## Initial audit verification
 
 Linux x64, Node 24.20.0, npm 11.19.0; isolated transaction-capable MongoDB fixtures. No live provider or production changes.
 
@@ -69,12 +112,18 @@ cover the moved backend behavior. Prior accepted full-check results are not rela
 
 ## Review and recovery
 
-Independent owner acceptance is recorded below. Existing accepted task statuses, EXT-04 and milestone gates remain intact.
+Initial and follow-up owner acceptances are recorded below. Existing accepted task statuses, EXT-04 and milestone gates remain intact.
 Roll back source/tests as one compatible artifact and rebuild backend output; no database migration or durable-state
-rollback is required. Operator command names and worker factory remain stable.
+rollback is required. Operator command names and root worker composition remain stable.
 
 ## Owner acceptance
 
 On 22 October 2026, the project owner reviewed the structure audit, six corrections and verification evidence
 and explicitly accepted P01-020 through the popup: “Structure review করেছি—accept করছি, Done করো”.
 This accepts the structure-audit task; provider, deployment and milestone acceptance remain separate.
+
+## Follow-up acceptance
+
+On 23 October 2026, the project owner reviewed the simplified structure and its verification evidence and
+explicitly accepted the follow-up through the popup: “সংশোধিত structure accept করছি—Done করো”.
+P01-020 returns to Done; the initial acceptance remains historical and external gates remain unchanged.

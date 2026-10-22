@@ -33,7 +33,7 @@ import {
   passwordResetNotificationValidator,
   registrationNotificationValidator,
 } from '../../src/modules/notifications/notification.persistence.js'
-import { createNotificationWorker } from '../../src/jobs/send-notifications.job.js'
+import { createNotificationDeliveryService } from '../../src/modules/notifications/notification-delivery.service.js'
 import type { EmailMessage } from '../../src/modules/notifications/notification.types.js'
 import { testEnvironment } from '../helpers/environment.js'
 import { isolatedDatabase } from '../helpers/database.js'
@@ -425,7 +425,7 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
     const owner = await account(),
       first = await issue(owner),
       messages: EmailMessage[] = []
-    const worker = createNotificationWorker(
+    const worker = createNotificationDeliveryService(
       notifications,
       {
         send: async (message) => {
@@ -455,7 +455,7 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
     const owner = await account(),
       first = await issue(owner)
     let calls = 0
-    const worker = createNotificationWorker(
+    const worker = createNotificationDeliveryService(
       notifications,
       {
         send: async () => {
@@ -525,7 +525,7 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
       if (failure === 'consumed')
         expect((await post('/confirm', { token: first.token }, owner)).status).toBe(200)
       let calls = 0
-      await createNotificationWorker(
+      await createNotificationDeliveryService(
         notifications,
         {
           send: async () => {

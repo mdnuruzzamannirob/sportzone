@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 22 October 2026
+**Updated:** 23 October 2026
 
 Material documentation and development changes are recorded below; these are not application releases.
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
@@ -10,6 +10,9 @@ environment limits and independent acceptance. Historical UI or source layouts m
 
 ## 22 October 2026 — Source structure audit
 
+- Simplification follow-up removes the forwarding notification job and redundant media composition/type files;
+  setup wires actual services directly, and private context types stay with their consumers. Added a narrow
+  forwarding-factory regression. The project owner accepted this P01-020 follow-up on 23 October 2026.
 - Corrected notification model/persistence/policy ownership, reduced its job to delegation, renamed auth assembly,
   isolated media dependency types and aligned formatter-test names. Removed preview type coupling; added source
   naming, job/configuration, composition and model-placement guards. Contracts and approved root layout remain
