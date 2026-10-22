@@ -4,8 +4,8 @@ import { createMediaUploads } from './upload.service.js'
 import { createMediaAccess } from './access.service.js'
 import { createMediaAttachments } from './attachment.service.js'
 import { createMediaCleanup } from './cleanup.service.js'
-import type { MediaDependencies } from './media.composition.js'
 import type { MediaAccess } from './media.types.js'
+import type { MediaDependencies } from './media-dependencies.types.js'
 
 export function createMediaService(
   connection: Connection,

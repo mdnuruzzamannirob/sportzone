@@ -1,5 +1,4 @@
 import { useState, type ReactNode } from 'react'
-import type { PreviewUI } from './catalog'
 import { CartLine } from '../../../storefront/src/components/commerce/cart-line'
 import { ProductCard } from '../../../storefront/src/components/commerce/product-card'
 import { ProductImage } from '../../../storefront/src/components/commerce/product-image'
@@ -18,6 +17,8 @@ import {
   FilterToolbar,
   ListPagination,
 } from '../../../admin/src/components/management/list-controls'
+
+export type PreviewUI = Omit<typeof import('../../../admin/src/components/ui/index'), 'Link'>
 
 function Sample({
   title,

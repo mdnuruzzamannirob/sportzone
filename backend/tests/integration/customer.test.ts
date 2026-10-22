@@ -11,10 +11,8 @@ import { createBrowserSecurity } from '../../src/modules/auth/sessions/browser-s
 import { browserSecurityRoutes } from '../../src/modules/auth/sessions/browser-security.routes.js'
 import { createCustomerService } from '../../src/modules/auth/credentials/credentials.service.js'
 import { customerRoutes } from '../../src/modules/auth/credentials/customer-auth.routes.js'
-import {
-  createRegistrationNotifications,
-  registrationNotificationValidator,
-} from '../../src/modules/notifications/notification.service.js'
+import { createRegistrationNotifications } from '../../src/modules/notifications/notification.service.js'
+import { registrationNotificationValidator } from '../../src/modules/notifications/notification.persistence.js'
 import { composeIdentityRoutes } from '../../src/setup.js'
 import { loadEnvironment } from '../../src/config/env.js'
 import { startServer } from '../../src/server.js'

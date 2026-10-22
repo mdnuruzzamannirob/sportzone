@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { ConfigurationError } from '../shared/errors/configuration-error.js'
 import { validateEmailOptions } from '../providers/email/resend.schema.js'
-import { validateRetryPolicy } from '../jobs/send-notifications.job.js'
+import { validateRetryPolicy } from '../modules/notifications/notification.schema.js'
 
 export function loadNotificationWorker(environment: NodeJS.ProcessEnv) {
   const number = (name: string) =>

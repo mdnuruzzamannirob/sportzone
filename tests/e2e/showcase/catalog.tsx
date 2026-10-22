@@ -1,6 +1,6 @@
 // One local preview of the actual app-owned UI modules and selected app theme.
 import { type ReactNode, useEffect, useState } from 'react'
-import { AppCompositions } from './compositions'
+import { AppCompositions, type PreviewUI } from './compositions'
 const sizes = ['sm', 'md', 'lg'] as const
 const buttonVariants = [
   'primary',
@@ -48,7 +48,6 @@ const components = [
   'Management',
 ] as const
 type ComponentName = (typeof components)[number]
-export type PreviewUI = Omit<typeof import('../../../admin/src/components/ui/index'), 'Link'>
 export function createShowcase(
   H: PreviewUI,
   application: 'admin' | 'storefront',

@@ -28,11 +28,11 @@ import {
   createResetDelivery,
 } from '../../src/modules/auth/verification/proof-delivery.service.js'
 import { hashPassword } from '../../src/modules/auth/credentials/password.service.js'
+import { createRegistrationNotifications } from '../../src/modules/notifications/notification.service.js'
 import {
-  createRegistrationNotifications,
   passwordResetNotificationValidator,
   registrationNotificationValidator,
-} from '../../src/modules/notifications/notification.service.js'
+} from '../../src/modules/notifications/notification.persistence.js'
 import { createNotificationWorker } from '../../src/jobs/send-notifications.job.js'
 import type { EmailMessage } from '../../src/modules/notifications/notification.types.js'
 import { testEnvironment } from '../helpers/environment.js'

@@ -8,6 +8,13 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 22 October 2026 — Source structure audit
+
+- Corrected notification model/persistence/policy ownership, reduced its job to delegation, renamed auth assembly,
+  isolated media dependency types and aligned formatter-test names. Removed preview type coupling; added source
+  naming, job/configuration, composition and model-placement guards. Contracts and approved root layout remain
+  unchanged; the project owner reviewed and accepted P01-020 through the popup. [Evidence](docs/evidence/P01-020-structure-audit.md).
+
 ## 22 October 2026 — Frontend and monorepo structure
 
 - Refactored storefront routes/features/providers and admin routing/auth ownership; separated feature endpoints

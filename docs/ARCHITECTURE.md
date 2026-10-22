@@ -528,7 +528,11 @@ modules/reviews/
 Routes bind endpoint/middleware; controllers map HTTP input/output; schema files validate inputs;
 services enforce business rules/ownership and coordinate transactions; models own schemas/indexes.
 Optional .dto.ts, .policy.ts and .persistence.ts require an actual projection, reusable rule or
-persistence/bootstrap need. Derive types when safe; request input, response DTO and stored document
+persistence/bootstrap need. Module-local .composition.ts files assemble that module’s routers/services;
+domain implementations and dependency contracts do not import their composition layer. Configuration
+imports domain schemas rather than job entry points. Mongoose schema/index registration belongs in
+.model.ts; collection validators/bootstrap belong in .persistence.ts. Jobs delegate delivery policy and
+durable transitions to domain services. Derive types when safe; request input, response DTO and stored document
 are distinct. Do not create empty files or repositories/base classes just to match a template.
 
 Large modules use responsibility subfeatures: auth/credentials, sessions, recovery, verification,

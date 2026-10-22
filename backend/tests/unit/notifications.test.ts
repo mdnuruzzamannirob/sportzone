@@ -4,7 +4,7 @@ import {
   createResendAdapter,
   validateEmailOptions,
 } from '../../src/providers/email/resend.client.js'
-import { validateRetryPolicy } from '../../src/jobs/send-notifications.job.js'
+import { validateRetryPolicy } from '../../src/modules/notifications/notification.schema.js'
 const settings = {
   apiKey: 'synthetic-provider-key',
   from: 'sender@example.test',

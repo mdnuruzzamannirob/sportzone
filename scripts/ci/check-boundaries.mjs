@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { builtinModules } from 'node:module'
-import { dirname, extname, join, relative, resolve } from 'node:path'
+import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import ts from 'typescript'
 
@@ -73,6 +73,34 @@ export function checkBoundaries(root = process.cwd()) {
   const moduleOwner = (path) =>
     isWithin(path, moduleRoot) ? relative(moduleRoot, path).split('/')[0] : undefined
   for (const [file, source] of sources) {
+    if (
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)*\.[cm]?[jt]sx?$/.test(
+        basename(file),
+      )
+    )
+      errors.push(`${relative(root, file)}: source filenames must use kebab-case`)
+    if (isWithin(file, moduleRoot) && !file.endsWith('.model.ts')) {
+      const constructors = new Set()
+      for (const statement of source.statements) {
+        if (
+          ts.isImportDeclaration(statement) &&
+          statement.moduleSpecifier.text === 'mongoose' &&
+          statement.importClause?.namedBindings &&
+          ts.isNamedImports(statement.importClause.namedBindings)
+        )
+          for (const binding of statement.importClause.namedBindings.elements)
+            if ((binding.propertyName ?? binding.name).text === 'Schema')
+              constructors.add(binding.name.text)
+      }
+      const inspect = (node) => {
+        if (ts.isNewExpression(node) && constructors.has(node.expression.getText(source)))
+          errors.push(
+            `${relative(root, file)}: Mongoose schemas belong in the owning .model.ts file`,
+          )
+        ts.forEachChild(node, inspect)
+      }
+      inspect(source)
+    }
     const owner = workspaces.find((name) => isWithin(file, join(root, name)))
     const manifest = JSON.parse(readFileSync(join(root, owner ?? '', 'package.json'), 'utf8'))
     const dependencies = {
@@ -172,6 +200,18 @@ export function checkBoundaries(root = process.cwd()) {
         (_target, edge) => edge.typeOnly,
       )
     }
+    if (moduleOwner(file) || isWithin(file, join(backendSource, 'config'))) {
+      walk(file, (target) => {
+        if (isWithin(target, join(backendSource, 'jobs')))
+          errors.push(`${label}: domain/configuration cannot depend on job entry points`)
+      })
+    }
+    if (moduleOwner(file) && !file.endsWith('.composition.ts')) {
+      walk(file, (target) => {
+        if (target.endsWith('.composition.ts'))
+          errors.push(`${label}: domain implementation and contracts cannot depend on composition`)
+      })
+    }
     if (moduleOwner(file)) {
       walk(
         file,
@@ -186,12 +226,12 @@ export function checkBoundaries(root = process.cwd()) {
         (_target, edge) => edge.typeOnly,
       )
     }
-    if (/\.(?:controller|routes)\.ts$/.test(file)) {
+    if (/\.(?:controller|routes|job)\.ts$/.test(file)) {
       walk(
         file,
         (target) => {
           if (isPrivatePersistence(target))
-            errors.push(`${label}: controllers/routes must delegate persistence to services`)
+            errors.push(`${label}: controllers/routes/jobs must delegate persistence to services`)
         },
         (target) => /\.service\.ts$/.test(target),
       )

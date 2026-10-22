@@ -105,11 +105,11 @@ retain their own approver, environment, artifacts, blockers and explicit decisio
 
 ## 3. Project progress dashboard
 
-The register contains 184 tasks across twelve phases. The owner-selected structure revision adds P01-018 documentation reconciliation and sequential P03-021/P02-015/P02-016 application refactors on 22 October 2026; P01-019 covers the owner-requested monorepo batch; earlier stable IDs/acceptance remain intact. Update phase totals when tasks are added or statuses change.
+The register contains 185 tasks across twelve phases. The owner-selected structure revision adds P01-018 documentation reconciliation and sequential P03-021/P02-015/P02-016 application refactors on 22 October 2026; P01-019 covers the owner-requested monorepo batch; earlier stable IDs/acceptance remain intact. Update phase totals when tasks are added or statuses change.
 
 | Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |   Done | Deferred |
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
-| 01 — Requirements Finalization and Planning   |      19 |           0 |     0 |           0 |       0 |         0 |     19 |        0 |
+| 01 — Requirements Finalization and Planning   |      20 |           0 |     0 |           0 |       0 |         0 |     20 |        0 |
 | 02 — UI/UX Design                             |      16 |           0 |     0 |           0 |       0 |         0 |     16 |        0 |
 | 03 — Authentication and Core Backend          |      21 |           0 |     0 |           0 |       0 |         0 |     21 |        0 |
 | 04 — Product Catalog and Inventory            |      15 |          12 |     0 |           0 |       1 |         0 |      2 |        0 |
@@ -121,7 +121,7 @@ The register contains 184 tasks across twelve phases. The owner-selected structu
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **184** |     **125** | **0** |       **0** |   **1** |     **0** | **58** |    **0** |
+| **Total**                                     | **185** |     **125** | **0** |       **0** |   **1** |     **0** | **59** |    **0** |
 
 ## 4. Milestone tracker
 
@@ -146,7 +146,7 @@ Each task records its source, dependencies, deliverable, acceptance criteria and
 
 ### Phase 01 — Requirements finalization and planning
 
-**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 01. **Associated gate:** M1. **Tasks:** 19.
+**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 01. **Associated gate:** M1. **Tasks:** 20.
 
 Current architecture reconciliation: [Phase 01 review and remaining closure evidence](./evidence/phase-01-reconciliation.md).
 The original seventeen baseline tasks are Done following recorded owner acceptance on 20 October 2026, successful hosted
@@ -318,6 +318,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 is the new struct
   **Deliverable:** Cohesive CI/dev scripts, e2e/tooling/helpers test ownership, explicit pinned root tooling dependencies, one lockfile/check inventory and source-boundary guards.\
   **Acceptance:** No dropped cases, required checks cannot disappear, scoped CI failures propagate, clean locked setup and affected cross-app checks pass; native UI and API/data contracts preserved; independent review.\
   **Evidence:** [Monorepo refactor verification](./evidence/P01-019-monorepo-refactor.md). Full-project checks verified through initial and scoped environment-repair reruns, including 47 tooling cases and mandatory smoke/integration guards; [Owner acceptance](./evidence/P01-019-monorepo-refactor.md#owner-acceptance), 22 October 2026.
+
+- [x] **P01-020 — Audit and correct folder structure, placement and import ownership**\
+  **Status:** `Done` · **Area:** Repository/source organization · **Owner:** Codex\
+  **Sources:** Owner structure-audit correction, 22 October 2026; Architecture §§4–6\
+  **Depends on:** `P01-019`, `P03-021`\
+  **Deliverable:** Source/test/tool placement inventory, naming and duplicate/orphan/cycle review; domain-owned notification model/persistence/delivery policy, thin job, auth composition and isolated dependency types; executable structure guards.\
+  **Acceptance:** Import/discovery/operator parity, unchanged schema/index/behavior evidence and affected checks; justified retained app-owned duplicates; independent review.\
+  **Evidence:** [Folder structure audit](./evidence/P01-020-structure-audit.md). Six placement/type-direction corrections verified; [Owner acceptance](./evidence/P01-020-structure-audit.md#owner-acceptance), 22 October 2026.
 
 ### Phase 02 — UI/UX design
 
@@ -1987,3 +1995,5 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 55 Done, 3 In Review, 1 Blocked, 125 Not Started. [Verification](./evidence/P01-019-monorepo-refactor.md).
 
 **22 October 2026 — P02-015 / P02-016 / P01-019 acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. Full-project recheck and the three refactors accepted; overall 58 Done, 1 Blocked, 125 Not Started. [Acceptance](./evidence/P01-019-monorepo-refactor.md#owner-acceptance). External provider, deployment and milestone gates remain unchanged.
+
+**22 October 2026 — P01-020 acceptance:** In Review → Done after explicit owner popup review: “Structure review করেছি—accept করছি, Done করো”. Structure audit and recorded corrections accepted; overall 59 Done, 1 Blocked, 125 Not Started. [Acceptance](./evidence/P01-020-structure-audit.md#owner-acceptance). Existing provider/deployment/milestone gates remain unchanged.

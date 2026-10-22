@@ -901,6 +901,7 @@ in evidence rather than being appended to the API operation inventory.
 | Task | Implementation verification record |
 | --- | --- |
 | P01-019 | [Monorepo tooling and discovery parity](./evidence/P01-019-monorepo-refactor.md) |
+| P01-020 | [Folder structure and ownership audit](./evidence/P01-020-structure-audit.md) |
 | P02-015 | [Storefront structure and behavior parity](./evidence/P02-015-storefront-refactor.md) |
 | P02-016 | [Admin structure and behavior parity](./evidence/P02-016-admin-refactor.md) |
 | P03-004 | [Identity persistence](./evidence/P03-004-identity-models.md) |

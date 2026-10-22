@@ -263,7 +263,7 @@ test('BACKEND-BOUNDARY-02: controllers and routes access models only through dom
   for (const suffix of ['controller', 'routes']) {
     put(`backend/src/modules/orders/order.${suffix}.ts`, 'import "./helper.js"')
     assert.ok(
-      checkBoundaries(root).errors.some((e) => e.includes('controllers/routes must delegate')),
+      checkBoundaries(root).errors.some((e) => e.includes('controllers/routes/jobs must delegate')),
     )
     put(`backend/src/modules/orders/order.${suffix}.ts`, 'import "./order.service.js"')
   }
@@ -371,5 +371,70 @@ test('FRONTEND-BOUNDARY-05: route composition consumes feature views instead of 
   assert.ok(checkBoundaries(root).errors.some((e) => e.includes('routes compose feature views')))
   put('storefront/src/features/home/home-page.tsx', 'export const Home = 1')
   put('storefront/src/app/(shop)/page.tsx', 'import "../../features/home/home-page"')
+  assert.deepEqual(checkBoundaries(root).errors, [])
+})
+
+test('STRUCTURE-01: source filenames use kebab-case while framework entry names remain valid', (t) => {
+  const { root, put } = fixture(t)
+  put('admin/src/lib/ApiClient.ts', 'export const value = 1')
+  put('storefront/src/app/(account)/account/[orderId]/page.tsx', 'export default 1')
+  assert.deepEqual(
+    checkBoundaries(root).errors.map((e) => e.split(': ')[1]),
+    ['source filenames must use kebab-case'],
+  )
+})
+test('STRUCTURE-02: configuration and domain contracts cannot import jobs through helpers', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/jobs/send.job.ts', 'export type Policy = {}; export const run = 1')
+  put('backend/src/config/helper.ts', 'export * from "../jobs/send.job.js"')
+  put('backend/src/config/email.ts', 'import "./helper.js"')
+  put(
+    'backend/src/modules/email/email.types.ts',
+    'import type {Policy} from "../../jobs/send.job.js"',
+  )
+  assert.equal(checkBoundaries(root).errors.filter((e) => e.includes('depend on job')).length, 3)
+})
+test('STRUCTURE-03: domain service/context/types do not depend on composition, including type-only imports', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/modules/media/media.composition.ts', 'export type Dependencies = {}')
+  for (const suffix of ['service', 'context', 'types'])
+    put(
+      `backend/src/modules/media/media.${suffix}.ts`,
+      'import type {Dependencies} from "./media.composition.js"',
+    )
+  assert.equal(
+    checkBoundaries(root).errors.filter((e) => e.includes('depend on composition')).length,
+    3,
+  )
+})
+test('STRUCTURE-04: jobs delegate persistence to domain services rather than importing models through helpers', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/modules/email/email.model.ts', 'export const model = 1')
+  put('backend/src/jobs/helper.ts', 'export * from "../modules/email/email.model.js"')
+  put('backend/src/jobs/send.job.ts', 'import "./helper.js"')
+  assert.ok(checkBoundaries(root).errors.some((e) => e.includes('jobs must delegate persistence')))
+  put('backend/src/modules/email/email.service.ts', 'import "./email.model.js"')
+  put('backend/src/jobs/helper.ts', 'export * from "../modules/email/email.service.js"')
+  assert.deepEqual(checkBoundaries(root).errors, [])
+})
+
+test('STRUCTURE-05: Mongoose schema definitions belong in model files, including aliased imports', (t) => {
+  const { root, put } = fixture(t)
+  put(
+    'backend/package.json',
+    JSON.stringify({ private: true, dependencies: { mongoose: '9.11.2' } }),
+  )
+  put(
+    'backend/src/modules/email/email.service.ts',
+    'import {Schema as MongoSchema} from "mongoose"; const schema = new MongoSchema({});',
+  )
+  assert.ok(
+    checkBoundaries(root).errors.some((e) => e.includes('schemas belong in the owning .model.ts')),
+  )
+  put('backend/src/modules/email/email.service.ts', 'import "./email.model.js"')
+  put(
+    'backend/src/modules/email/email.model.ts',
+    'import {Schema} from "mongoose"; const schema = new Schema({});',
+  )
   assert.deepEqual(checkBoundaries(root).errors, [])
 })

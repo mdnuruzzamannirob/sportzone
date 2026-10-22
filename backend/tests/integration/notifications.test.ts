@@ -5,11 +5,11 @@ import type { Types } from 'mongoose'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
 import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
+import { createRegistrationNotifications } from '../../src/modules/notifications/notification.service.js'
 import {
-  createRegistrationNotifications,
   legacyRegistrationNotificationValidator,
   registrationNotificationValidator,
-} from '../../src/modules/notifications/notification.service.js'
+} from '../../src/modules/notifications/notification.persistence.js'
 import { createResendAdapter } from '../../src/providers/email/resend.client.js'
 import { createNotificationWorker } from '../../src/jobs/send-notifications.job.js'
 import { inTransaction } from '../../src/shared/database/transaction.js'
