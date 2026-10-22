@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 22 October 2026
+**Updated:** 23 October 2026
 
 **Product reference:** [SportZone PRD v1.0](./PRD.md) (`docs/PRD.md` in the repository)\
 **Scope:** Single-store sports e-commerce platform serving Bangladesh\
@@ -494,7 +494,8 @@ Module ownership:
 
 Target grouping does not add a feature, endpoint, collection or provider. users has one auth-owned
 registration. productVariants has one catalog-owned registration; inventory receives only stock
-operations. Cross-module coordination uses public services/capabilities and a shared transaction context.
+operations. The catalog counter capability is private to inventory and root wiring; other modules and jobs
+use inventory domain services. Cross-module coordination uses public services/capabilities and a shared transaction context.
 
 Backend root wiring uses setup.ts/routes.ts; technical helpers use shared/, provider transports use providers/
 and operator entry points use scripts/. Implementation Plan §3.6 governs subsequent source moves. Logical diagrams
@@ -778,6 +779,14 @@ flowchart TD
 ```
 
 This diagram summarizes **allocation outcomes**, not every inventory-counter operation. Released allocations return to available capacity; shipped items leave physical stock, and only inspected resellable returns add physical stock back. Each transition updates stock counters and inventory movement history atomically. Release/commit/shipment actions are idempotent. Cart additions and wishlists never reserve stock. A returned item increases physical stock only after inspection approves resale.
+
+Inventory allocation primitives require an active caller transaction. The caller verifies current order,
+funding, risk, cancellation and coupon eligibility in that same transaction and aborts on failure; a
+primitive result alone does not authorize fulfillment. Capture one server `heldAt` for all lines and
+the coupon generation. Replay preserves the original hold clock and returns the existing allocation's
+current state. New generations follow a released predecessor; shipped generations cannot reopen.
+Release explicitly expects held or committed state, preventing an expiry worker from releasing a
+newly committed allocation. Counter, reservation and movement writes commit or roll back together.
 
 **Coupon capacity:** One coupon per order. Coupons with per-customer limits require a registered customer ID; guest checkout can use only coupons without such limits. Checkout email is not an authorization or quota identity. Online redemption capacity is held with inventory and confirmed after verified payment; failed/expired holds release once. Accepted COD orders confirm redemption. Eligible pre-shipment cancellations release the applicable coupon redemption once, including accepted COD cancellations. Completed orders later refunded do not automatically restore coupon usage. Enforce overall and per-customer limits under concurrency.
 

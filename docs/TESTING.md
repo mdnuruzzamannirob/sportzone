@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 22 October 2026
+**Updated:** 23 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -562,6 +562,7 @@ Each scenario follows: **Fixture / action → expected HTTP+business outcome →
 | `INV-01` | `FX-STOCK-01`, two simultaneous competing checkouts | One allocation maximum; no negative availability, movement duplicated or stale winner | 13 |
 | `INV-02` | Online checkout at 10:00, expiry at 10:15, safely reconciled retry/reacquisition at 10:20 | First hold releases once; new generation has heldAt 10:20 and expiry 10:35 for every stock line and coupon; replay does not extend expiry, expiry/payment races cannot double release/commit | 09, 12–13 |
 | `INV-03` | Commit → shipment → inspected resellable return | Shipment reduces physical/committed once; only inspected recovered goods restocked | 13–14, 17 |
+| `INV-04` | Internal transaction-scoped reserve/COD commit/hold commit/release/ship; replay and competing transitions | Fifteen-minute generation clock never extended; one stock effect; expected-state release cannot undo payment commit; shipment/cancellation race has one winner; caller or ledger failure rolls back all records; missing schema/index fails closed. Does not substitute for checkout INV-01–03 integration. | 13 |
 | `ORD-01` | Pending → Confirmed → Processing → Shipped → Delivered | Only guarded transitions succeed; timestamps/history accurate; invalid/replayed transition blocked | 14, 26 |
 | `ORD-02` | Customer requests cancellation in Pending/Confirmed/Processing | Admin approves/rejects explicitly; before-dispatch recheck is atomic; not cancelled by request itself | 15 |
 | `ORD-03` | Concurrent cancel approval and shipment | Exactly one eligible transition wins; no duplicate stock release or shipment reversal | 14–15 |
@@ -933,6 +934,7 @@ in evidence rather than being appended to the API operation inventory.
 | P04-002 | [Products and variants](./evidence/P04-002-product-variants.md) |
 | P04-003 | [Controlled media; EXT-04 remains blocked](./evidence/P04-003-controlled-media.md) |
 | P04-006 | [Inventory counters, atomic guards and movement replay](./evidence/P04-006-inventory-counters.md) |
+| P04-008 | [Transaction-scoped allocation primitives](./evidence/P04-008-inventory-allocation.md) |
 
 ### 16.2 Functional requirement coverage register
 

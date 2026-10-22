@@ -8,6 +8,14 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 23 October 2026 — Inventory allocation primitives
+
+- Added transaction-scoped reserve, direct COD commit, held-stock commit, expected-state release and
+  shipment operations with durable reservation generations and atomic movement history. Added private
+  stock-capability guards and focused race/rollback tests. The owner accepted P04-008 on 23 October 2026;
+  checkout/payment/order orchestration and admin inventory UI remain separate.
+  [Evidence](docs/evidence/P04-008-inventory-allocation.md).
+
 ## 23 October 2026 — Verification cadence
 
 - Clarified focused verification per task and one consolidated regression at phase closeout, coordinated

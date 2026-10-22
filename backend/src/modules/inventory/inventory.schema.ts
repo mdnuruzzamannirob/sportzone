@@ -12,20 +12,29 @@ const reason = z
   .trim()
   .min(1)
   .refine((value) => [...value].length <= 2000)
+const operationKey = z
+  .string()
+  .min(1)
+  .max(128)
+  .refine(
+    (value) =>
+      value === value.trim() &&
+      [...value].every(
+        (character) => character.charCodeAt(0) > 31 && character.charCodeAt(0) !== 127,
+      ),
+  )
+export const allocationInput = z.strictObject({
+  variantId: objectId,
+  orderId: objectId,
+  quantity: z.int().min(1).max(50),
+  generation: z.int().min(1).max(Number.MAX_SAFE_INTEGER),
+  operationKey,
+  reason,
+})
 export const adjustmentInput = z.strictObject({
   variantId: objectId,
   actorId: objectId,
-  operationKey: z
-    .string()
-    .min(1)
-    .max(128)
-    .refine(
-      (value) =>
-        value === value.trim() &&
-        [...value].every(
-          (character) => character.charCodeAt(0) > 31 && character.charCodeAt(0) !== 127,
-        ),
-    ),
+  operationKey,
   deltaPhysical: z
     .number()
     .int()

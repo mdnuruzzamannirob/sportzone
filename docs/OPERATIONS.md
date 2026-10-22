@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 22 October 2026
+**Updated:** 23 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -561,9 +561,14 @@ of `inventoryMovements` through an authorized runner. No CLI or HTTP startup mig
 It verifies strict/error validation and declared indexes, preserves extra indexes and refuses an
 incompatible existing validator. Review existing-data rollout separately; never drop history to
 satisfy validation. Internal adjustments verify persistence before changing counters and fail closed
-when required protection is absent. HTTP adjustments and operator views require their own integration.
+when required protection is absent. `initializeAllocationPersistence` in the same file additionally
+bootstraps `inventoryReservations`, its generation/active-allocation unique indexes and status/expiry
+index. It verifies both reservation and movement protection; incompatible validators require a reviewed
+migration. Reservations have no TTL: elapsed time alone never releases stock. Allocation primitives
+require the caller transaction; expiry/order/payment orchestration remains separately integrated.
+HTTP adjustments and operator views require their own integration.
 
-Rollback must preserve both variant counters and movement history. Restore them together from a
+Rollback must preserve variant counters, reservation generations and movement history. Restore them together from a
 consistent backup and reconcile subsequent effects before resuming writes; never reset counters or
 delete movements as a code rollback.
 

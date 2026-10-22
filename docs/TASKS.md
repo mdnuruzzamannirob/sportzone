@@ -112,7 +112,7 @@ The register contains 185 tasks across twelve phases. The owner-selected structu
 | 01 — Requirements Finalization and Planning   |      20 |           0 |     0 |           0 |       0 |         0 |     20 |        0 |
 | 02 — UI/UX Design                             |      16 |           0 |     0 |           0 |       0 |         0 |     16 |        0 |
 | 03 — Authentication and Core Backend          |      21 |           0 |     0 |           0 |       0 |         0 |     21 |        0 |
-| 04 — Product Catalog and Inventory            |      15 |          11 |     0 |           0 |       1 |         0 |      3 |        0 |
+| 04 — Product Catalog and Inventory            |      15 |          10 |     0 |           0 |       1 |         0 |      4 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      20 |          20 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 07 — Payment Integration and Verification     |      17 |          17 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -121,7 +121,7 @@ The register contains 185 tasks across twelve phases. The owner-selected structu
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **185** |     **124** | **0** |       **0** |   **1** |     **0** | **60** |    **0** |
+| **Total**                                     | **185** |     **123** | **0** |       **0** |   **1** |     **0** | **61** |    **0** |
 
 ## 4. Milestone tracker
 
@@ -692,13 +692,13 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 is the new struct
   **Acceptance:** Each adjustment has actor/reason/movement; reserved and committed values are distinct.\
   **Evidence to attach:** Admin stock audit test.
 
-- [ ] **P04-008 — Define reusable reservation/commit/ship/release service interface**\
-  **Status:** `Not Started` · **Area:** Backend/inventory\
+- [x] **P04-008 — Define reusable reservation/commit/ship/release service interface**\
+  **Status:** `Done` · **Owner:** Codex · **Area:** Backend/inventory\
   **Sources:** FR-13; Architecture §§7,10\
   **Depends on:** `P04-006`\
   **Deliverable:** Implement transaction-friendly allocation primitives for later checkout and fulfillment.\
   **Acceptance:** Operations are guarded and idempotent; no direct inventory manipulation outside service boundaries.\
-  **Evidence to attach:** Unit and concurrency tests.
+  **Evidence:** [Allocation state machine, replay, race and rollback checks](./evidence/P04-008-inventory-allocation.md). [Owner acceptance](./evidence/P04-008-inventory-allocation.md#independent-review), 23 October 2026; checkout/order/payment orchestration and P04-007 admin UI remain separate.
 
 - [ ] **P04-009 — Implement public catalog listing and search**\
   **Status:** `Not Started` · **Area:** Backend/catalog\
@@ -2005,3 +2005,7 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **23 October 2026 — P04-006:** Not Started → In Progress → In Review. Added stock-only catalog access, guarded counter writes and transactional append-only movements. Counter concurrency/replay/overflow and catalog regressions passed on isolated MongoDB. Independent owner acceptance pending. P04-003 remains blocked by EXT-04; M2 remains unaccepted. [Evidence](./evidence/P04-006-inventory-counters.md).
 
 **23 October 2026 — P04-006 acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. Overall: 60 Done, 1 Blocked, 124 Not Started. P04-003/EXT-04 and M2 gates remain unchanged. [Acceptance](./evidence/P04-006-inventory-counters.md#review-and-acceptance).
+
+**23 October 2026 — P04-008:** Not Started → In Progress → In Review. Delivered transaction-scoped allocation primitives, durable reservation generations, exact hold expiry and expected-state release, with counter/movement atomicity and enforced stock-capability ownership. Focused 27 unit, 31 MongoDB integration and 55 tooling tests passed; owner acceptance pending. P04-007 remains Not Started; EXT-04 and milestone gates unchanged. [Evidence](./evidence/P04-008-inventory-allocation.md).
+
+**23 October 2026 — P04-008 acceptance:** In Review → Done following explicit owner popup review: “Review করেছি—accept করছি, Done করো”. Overall: 61 Done, 1 Blocked, 123 Not Started. P04-007, EXT-04 and milestone gates remain separate. [Acceptance](./evidence/P04-008-inventory-allocation.md#independent-review).

@@ -216,6 +216,25 @@ export function checkBoundaries(root = process.cwd()) {
   }
   for (const file of files.filter((path) => isWithin(path, backendSource))) {
     const label = relative(root, file)
+    if (
+      moduleOwner(file) !== 'inventory' &&
+      (moduleOwner(file) || isWithin(file, join(backendSource, 'jobs')))
+    ) {
+      walk(
+        file,
+        (target, edge) => {
+          if (
+            !edge.typeOnly &&
+            target === join(backendSource, 'modules/catalog/variants/variant.service.ts')
+          )
+            errors.push(
+              `${label}: stock counter capability is private to inventory; use inventory services`,
+            )
+        },
+        (target, edge) =>
+          edge.typeOnly || (moduleOwner(target) === 'inventory' && target.endsWith('.service.ts')),
+      )
+    }
     if (isWithin(file, join(backendSource, 'shared'))) {
       walk(file, (target) => {
         if (isWithin(target, backendSource) && !isWithin(target, join(backendSource, 'shared')))

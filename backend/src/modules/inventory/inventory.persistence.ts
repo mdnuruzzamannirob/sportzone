@@ -1,7 +1,7 @@
 import type { Connection } from 'mongoose'
 import { isDeepStrictEqual } from 'node:util'
 import { verifyDeclaredIndexes } from '../../shared/database/indexes.js'
-import { inventoryMovementModel } from './inventory.model.js'
+import { inventoryMovementModel, inventoryReservationModel } from './inventory.model.js'
 
 const objectId = { bsonType: 'objectId' }
 const integer = {
@@ -94,4 +94,114 @@ export async function initializeInventoryPersistence(connection: Connection) {
   }
   await inventoryMovementModel(connection).createIndexes()
   await verifyInventoryPersistence(connection)
+}
+
+export const inventoryReservationValidator = {
+  $jsonSchema: {
+    bsonType: 'object',
+    additionalProperties: false,
+    required: ['_id', 'orderId', 'variantId', 'quantity', 'generation', 'status'],
+    properties: {
+      _id: objectId,
+      orderId: objectId,
+      variantId: objectId,
+      quantity: { ...integer, minimum: 1, maximum: 50 },
+      generation: { ...integer, minimum: 1 },
+      status: { enum: ['held', 'committed', 'released', 'shipped'] },
+      activeKey: { enum: ['active'] },
+      heldAt: { bsonType: 'date' },
+      expiresAt: { bsonType: 'date' },
+      committedAt: { bsonType: 'date' },
+      releasedAt: { bsonType: 'date' },
+      shippedAt: { bsonType: 'date' },
+      releaseReason: { bsonType: 'string', minLength: 1, maxLength: 2000 },
+      lastOperationKey: { bsonType: 'string', minLength: 1, maxLength: 128 },
+    },
+    oneOf: [
+      {
+        properties: { status: { enum: ['held'] } },
+        required: ['activeKey', 'heldAt', 'expiresAt'],
+        not: {
+          anyOf: [
+            { required: ['committedAt'] },
+            { required: ['releasedAt'] },
+            { required: ['shippedAt'] },
+          ],
+        },
+      },
+      {
+        properties: { status: { enum: ['committed'] } },
+        required: ['activeKey', 'committedAt'],
+        not: {
+          anyOf: [
+            { required: ['expiresAt'] },
+            { required: ['releasedAt'] },
+            { required: ['shippedAt'] },
+          ],
+        },
+      },
+      {
+        properties: { status: { enum: ['released'] } },
+        required: ['releasedAt', 'releaseReason'],
+        not: {
+          anyOf: [
+            { required: ['activeKey'] },
+            { required: ['expiresAt'] },
+            { required: ['shippedAt'] },
+          ],
+        },
+      },
+      {
+        properties: { status: { enum: ['shipped'] } },
+        required: ['shippedAt', 'committedAt'],
+        not: {
+          anyOf: [
+            { required: ['activeKey'] },
+            { required: ['expiresAt'] },
+            { required: ['releasedAt'] },
+          ],
+        },
+      },
+    ],
+  },
+  $expr: {
+    $or: [{ $ne: ['$status', 'held'] }, { $eq: ['$expiresAt', { $add: ['$heldAt', 900000] }] }],
+  },
+}
+export async function verifyAllocationPersistence(connection: Connection) {
+  await verifyInventoryPersistence(connection)
+  if (!connection.db) throw new Error('Inventory database is unavailable.')
+  const collection = await connection.db
+    .listCollections({ name: 'inventoryReservations' }, { nameOnly: false })
+    .next()
+  if (
+    !collection ||
+    !isDeepStrictEqual(collection.options?.validator, inventoryReservationValidator) ||
+    collection.options?.validationLevel !== 'strict' ||
+    collection.options?.validationAction !== 'error'
+  )
+    throw new Error('Inventory reservation validator unavailable.')
+  await verifyDeclaredIndexes(inventoryReservationModel(connection))
+}
+export async function initializeAllocationPersistence(connection: Connection) {
+  if (!connection.db) throw new Error('Inventory database is unavailable.')
+  const collection = await connection.db
+    .listCollections({ name: 'inventoryReservations' }, { nameOnly: false })
+    .next()
+  if (
+    collection &&
+    (!isDeepStrictEqual(collection.options?.validator, inventoryReservationValidator) ||
+      collection.options?.validationLevel !== 'strict' ||
+      collection.options?.validationAction !== 'error')
+  )
+    throw new Error('Inventory reservations require a reviewed migration.')
+  await initializeInventoryPersistence(connection)
+  if (!collection)
+    await connection.db.createCollection('inventoryReservations', {
+      validator: inventoryReservationValidator,
+      validationLevel: 'strict',
+      validationAction: 'error',
+    })
+  await inventoryReservationModel(connection).createIndexes()
+  await verifyAllocationPersistence(connection)
 }
