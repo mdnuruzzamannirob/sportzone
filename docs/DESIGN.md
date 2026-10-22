@@ -63,7 +63,9 @@ The storefront serves guests and registered customers; the admin portal serves t
 
 ### 2.1 Visual direction
 
-**Owner decision, 20 October 2026:** Both frontends use the installed HeroUI v3 default design system exactly: native colors, system fonts, spacing, radii, sizes, shadows, variants, focus and motion. This supersedes the earlier monochrome/blue palette, fixed Inter/Jakarta/Bengali font stack, custom radius/control tokens and shared CSS adapter. The owner explicitly requested centralized app-owned `components/ui/` boundaries, a single Admin/Storefront light/dark preview and removal of obsolete design-specific tests.
+Both frontends use the native HeroUI v3 default design system: colors, system fonts, spacing, radii,
+sizes, shadows, variants, focus and motion. Each app owns its `components/ui/` boundary and theme entry.
+A single local preview supports Admin/Storefront and Light/Dark inspection; Testing §7.5 owns verification.
 
 Keep native styles except explicit owner-approved refinements. The current refinements are accent-colored, underline-free Link/Breadcrumb hover; a flexible native file picker surface; invalid RadioGroup controls matching checkbox danger colors; single-line disclosure labels with truncation; and contrast-corrected primary/danger filled buttons. Filled actions deepen the native hue through local button variables, including hover/pressed states; the global native palette stays intact. Do not copy the documentation website’s chrome. App-owned UI modules are the customization boundary; features, routes, layouts and commerce/management compositions consume those modules instead of importing HeroUI directly. Keep native generic/compound APIs intact. No new shared runtime UI package is introduced.
 
@@ -87,7 +89,7 @@ Keep HeroUI’s native component size, radius, padding, border, elevation and va
 
 All native primitives and app navigation adapters are exposed through each app’s `components/ui/`. Small behavior compositions (field labels/errors, pending submit labels and focus-preserving dialogs) remain there; they do not replace native styling. Generic compound primitives use a thin facade to preserve native types/statics, avoiding fragile clones of the library API. The approved import-boundary check enforces this convention.
 
-A single local `showcase.html` renders the actual app UI boundary, with Admin/Storefront and Light/Dark controls, all currently used component families and supported visual variant axes. Switching apps reloads its selected CSS entry so future per-app customization cannot leak across previews. Obsolete standalone native/reference and app-gallery HTML entries are removed.
+A single local `showcase.html` renders the actual app UI boundary, with Admin/Storefront and Light/Dark controls, all currently used component families and supported visual variant axes. Switching apps reloads its selected CSS entry so future per-app customization cannot leak across previews. Keep this development preview outside production routes and builds.
 
 **Accessibility remains a release requirement:** PRD §12.7 and this document §12 continue to target WCAG 2.2 AA. Stock HeroUI palette contrast findings already observed in the reference are tracked findings, not automatic acceptance or a waived gate. Preserve real accessibility checks and report actual results. The owner’s default-theme choice authorizes reversible visual implementation; it does not prove release accessibility or accept a milestone.
 
@@ -299,7 +301,6 @@ Every interactive component must define: default, hover (where applicable), focu
 
 **Implementation:** Both apps provide HeroUI field/form/feedback/overlay compositions in `src/components/ui/`; usage and state ownership follow this section. Appearance selects, connectivity notices and storefront loading feedback consume these primitives. Parent editors retain controlled drafts across overlay dismissal; pending panels block Escape/backdrop/Cancel until the caller settles. Field errors and linked summaries use explicit accessible associations; summary focus is requested only after a failed submission.
 
-
 ### 6.5 App-owned UI boundary and component APIs
 
 Architecture §§4–5 own placement. Both apps consume native HeroUI through their own components/ui;
@@ -389,9 +390,9 @@ acceptance remain distinct; component examples and synthetic previews do not pro
 
 Account pages must not expose another customer's records. If a session expires, show a clear reauthentication path without leaking private data.
 
-#### Implemented identity interface compatibility
+#### Identity interface behavior
 
-Customer routes `/login`, `/register`, `/forgot-password`, `/reset-password`, `/account` and `/account/email-change` use native app-owned HeroUI forms and real Express identity APIs. Administrator `/login`, `/forgot-password`, `/reset-password` and `/app/*` use the separate administrator namespace; there is no admin signup. Registration email-verification issuance/confirmation is not implemented, so the account accurately identifies unverified email without a pretend verification button. Addresses use currently supported district/area values with authoritative save-time coverage rejection; delivery option discovery remains the delivery feature contract.
+Customer routes `/login`, `/register`, `/forgot-password`, `/reset-password`, `/account` and `/account/email-change` use native app-owned HeroUI forms and real Express identity APIs. Administrator `/login`, `/forgot-password`, `/reset-password` and `/app/*` use the separate administrator namespace; there is no admin signup. Show email verification state accurately; expose verification actions only when the corresponding backend capability is available. Addresses use currently supported district/area values with authoritative save-time coverage rejection; delivery option discovery remains the delivery feature contract.
 
 Private/auth storefront routes are noindex/no-store; no account data or proof enters SSR shared caches. Fragment proofs are captured once in memory, removed from the location and only submitted explicitly in a JSON body. Failed forms preserve inputs; pending guards stop double submission, errors/status are accessible, and password fields clear after confirmed success. Session checks and reauthentication hide denied/expired private views. Admin navigation is presentation only and only renders a signed-in identity after the server session response; unimplemented management features stay honestly unavailable.
 

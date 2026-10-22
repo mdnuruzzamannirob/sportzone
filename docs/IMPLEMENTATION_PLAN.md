@@ -134,10 +134,8 @@ Do not assign arbitrary completion dates. Estimate work after evaluating develop
 
 ### 3.6 Engineering foundation and incremental refactor
 
-The project owner selected the new simple feature-based target on 22 October 2026 and requested
-one application at a time. [Architecture §§4–6](./ARCHITECTURE.md#4-project-structure) define target
-trees/naming/ownership. Earlier P01-015–017/P03-019–020/P02-012–014 work and
-acceptance remain historical evidence; they do not prove this new target has been implemented.
+Refactor one application at a time to the approved feature-based structure. [Architecture §§4–6](./ARCHITECTURE.md#4-project-structure) define target
+trees/naming/ownership. The task register records migration progress and acceptance; prior refactor evidence does not establish parity for a subsequent source move.
 
 | Order | Task | Outcome / prerequisite |
 | --- | --- | --- |
@@ -243,7 +241,7 @@ Frontend applications must not import Mongoose models or backend runtime service
 
 ### 4.5 Shared design foundation
 
-Implement the approved semantic CSS tokens, theme bootstrap, font loading, responsive primitives, form controls, buttons, overlays, navigation patterns, status components, and accessibility utilities in the applications where needed. Storefront and admin components may remain separate while using the same token definitions. Maintain the Light / Dark / System preference, system default before override, persistence before first visible paint, and uninterrupted form state on theme changes.
+Use the native HeroUI semantic tokens, system typography and app-owned theme/control boundaries defined in Design §2. Build responsive forms, overlays, navigation, status displays and accessibility utilities as required by each application; do not introduce custom fonts, a parallel palette or a shared UI runtime. Maintain the Light / Dark / System preference, system default before override, persistence before first visible paint, and uninterrupted form state on theme changes.
 
 ---
 
@@ -302,8 +300,8 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 **Work packages:**
 
-1. Initialize the Next.js storefront and React + Vite admin workspaces, then use the default HeroUI theme through app-owned UI facades in both applications, following the P02-014 owner decision.
-2. Set up Inter, Plus Jakarta Sans, Bengali-capable fallbacks, consistent spacing/radii, icon conventions, and BDT formatting.
+1. Initialize the Next.js storefront and React + Vite admin workspaces, then use the default HeroUI theme through app-owned UI facades in both applications, following Design §2.
+2. Use native HeroUI/Tailwind system typography, spacing, radii and component variants; preserve Bangla fallback rendering, consistent icons and integer-poisha BDT formatting under Design §2.
 3. Implement responsive storefront and admin shells, navigation, theme preference, keyboard-accessible menus/drawers, and error/not-found/loading boundaries.
 4. Implement the appropriate basic primitives: inputs, buttons, alerts, status badges, pagination, dialogs, file upload, tables, cards, and skeletons as needed for upcoming slices.
 5. Establish form-error, focus, disabled, selection, loading, confirmation, and reduced-motion patterns using real component states in both themes.
@@ -314,9 +312,6 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 **Deliverable:** Reusable and tested UI foundations in both applications.
 
 **Exit gate:** Applicable design-system primitives and route shells can support Phase 03–04 work without revisiting core visual decisions.
-
-
-**20 October 2026 owner decision (P02-014):** Replace the custom palette/fonts/adapter with native default HeroUI design, enforce app-owned UI import/theme boundaries, unify the preview and retire obsolete visual assertions while retaining interaction/security/accessibility gates. Stock-theme findings must be reported; no milestone is implicitly accepted.
 
 ### Phase 03 — Authentication and core backend
 
@@ -790,7 +785,7 @@ Confirm production administrator ownership, live merchant channel activation and
 
 ### 13.2 Change control
 
-Every change request records the requested behavior, justification, source sections affected, impacted modules/pages, security/financial implications, testing impact, priority, and approval decision. Update the approved source document first when its contract changes; then revise this plan and dependent task records. Do not change the architecture, theme tokens, stock/payment/refund invariants, or scope only because an agent suggests a simpler implementation.
+Every change request records the requested behavior, justification, source sections affected, impacted modules/pages, security/financial implications, testing impact, priority, and approval decision. Update the approved source document first when its contract changes; then revise this plan or dependent task records only where the decision changes their content. Keep implementation commands/results in evidence and acceptance/status in Tasks; update specifications in their owning sections instead of appending dated task reports. Do not change the architecture, theme tokens, stock/payment/refund invariants, or scope only because an agent suggests a simpler implementation.
 
 ### 13.3 Blocker reporting
 

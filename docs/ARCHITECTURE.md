@@ -139,8 +139,8 @@ sportzone/
 │   ├── TASKS.md
 │   ├── TESTING.md
 │   ├── OPERATIONS.md
-│   ├── decisions/               # Meaningful decisions when needed
 │   └── evidence/
+├── shared/                      # Existing pure utilities
 ├── scripts/                     # Repository/dev/CI orchestration
 ├── tests/e2e/                   # Target cross-app browser journeys
 ├── .github/workflows/
@@ -191,7 +191,7 @@ Use npm workspaces with the existing three root application directories and one 
 
 Use the existing task inventory and Node orchestration scripts. Additional build orchestrators, remote task caches, an `apps/` relocation and publishable shared packages are not part of the initial architecture. Reconsider task caching only against measured repeated-build cost, invalidation requirements and operational ownership. Pure shared utilities and styles do not grant frontend access to backend runtime code. Enforce import direction in automated repository checks during tooling implementation.
 
-Development orchestration must start the two UIs, backend compiler/watch process and API with coordinated termination and visible failures. Retain the isolated replica-set database tool. Optional local containers supplement this setup; they must not replace transaction-capable fixtures with standalone MongoDB. P01-017 provides `npm run dev` for this workflow on Linux/macOS/WSL; Operations §5.2 owns configuration and process-lifecycle details. The compiler retains the last successful API on compilation errors; an API runtime exit stops the coordinator. Verify actual readiness separately.
+Development orchestration must start the two UIs, backend compiler/watch process and API with coordinated termination and visible failures. Retain the isolated replica-set database tool. Optional local containers supplement this setup; they must not replace transaction-capable fixtures with standalone MongoDB. `npm run dev` provides this workflow on Linux/macOS/WSL; Operations §5.2 owns configuration and process-lifecycle details. The compiler retains the last successful API on compilation errors; an API runtime exit stops the coordinator. Verify actual readiness separately.
 
 ---
 
@@ -325,15 +325,15 @@ lib/api-client.ts; endpoint functions belong to the feature. App-owned UI contra
 | Concern | Target |
 | --- | --- |
 | Public storefront catalog | Next.js Server Component reads from Express; explicit controlled public caching |
-| Admin and authenticated interactive server state | TanStack Query, introduced with the first API integration task |
+| Admin and authenticated interactive server state | TanStack Query through feature-owned API integration |
 | Filters/sort/page | Validated URL search parameters; separate unapplied form drafts where needed |
 | Disclosure/dialog/input drafts | Local React state; avoid copying query results unless editing requires a draft |
 | Guest cart | Local item persistence per PRD; authoritative backend eligibility/prices and eligible merge after login |
 | Registered cart/wishlist | Backend persistence; client cache is a projection |
-| Appearance | Existing browser-local preference and shared semantic styles |
+| Appearance | Browser-local preference and each app’s native HeroUI theme |
 | Validation | Existing backend Zod; feature-owned frontend Zod for complex forms/filter inputs |
 
-Introduce TanStack Query and frontend Zod with their consuming API/form features, using compatible pinned dependencies and relevant verification. No additional form library or global state store is required. Clear private query caches on logout, identity change and expired-session resolution; do not persist them in browser storage. Configure bounded read retries excluding auth/validation failures, explicit invalidation and no automatic financial-mutation retries. HTTP no-store/private policy still applies independently of in-memory query caching. Idempotency/If-Match and uncertain-result recovery remain API-owned contracts. Server-only and client-only modules must not be accidentally combined in barrel exports. Installed versions and implementation status are recorded by manifests and task evidence.
+Use TanStack Query and frontend Zod through their consuming API/form features, using compatible pinned dependencies and relevant verification. No additional form library or global state store is required. Clear private query caches on logout, identity change and expired-session resolution; do not persist them in browser storage. Configure bounded read retries excluding auth/validation failures, explicit invalidation and no automatic financial-mutation retries. HTTP no-store/private policy still applies independently of in-memory query caching. Idempotency/If-Match and uncertain-result recovery remain API-owned contracts. Server-only and client-only modules must not be accidentally combined in barrel exports. Installed versions and implementation status are recorded by manifests and task evidence.
 
 ---
 
@@ -483,9 +483,7 @@ Target grouping does not add a feature, endpoint, collection or provider. users 
 registration. productVariants has one catalog-owned registration; inventory receives only stock
 operations. Cross-module coordination uses public services/capabilities and a shared transaction context.
 
-Historical composition/common/db/integrations paths remain supported until P03-021 verifies the
-move. Existing accepted source-path evidence is historical; no new behavior or provider activation
-is inferred from changing directory names. Logical diagrams describe domain coordination rather
+Existing composition/common/db/integrations paths remain supported until their verified migration under Implementation Plan §3.6. Logical diagrams describe domain coordination rather
 than mandatory source-directory names.
 
 ### 6.2 Request processing
@@ -942,7 +940,7 @@ Run lint, type checks, tests, and application builds before deployment. Apply an
 | Immutable release artifacts and separate worker process | Trace deployed behavior to source/configuration and recover jobs without inventing a second business API |
 | Managed hosting and database capabilities | Reduce infrastructure administration; provider/region selection must satisfy verified runtime, backup and access requirements under Operations, not assumptions about a vendor |
 
-GitHub Actions implements CI; Operations §5.5 specifies execution, caching and supply-chain controls, and Testing §15 specifies evidence and acceptance. P01-016 uses one inventory-driven job with a single install; local and hosted acceptance remain separately evidenced. Hosting accounts, budget, recovery objectives and provider activation are environment prerequisites with named roles and evidence requirements, not unresolved application-architecture alternatives.
+GitHub Actions implements CI; Operations §5.5 specifies execution, caching and supply-chain controls, and Testing §15 specifies evidence and acceptance. CI uses one inventory-driven job with a single install; local and hosted acceptance require separate evidence. Hosting accounts, budget, recovery objectives and provider activation are environment prerequisites with named roles and evidence requirements, not unresolved application-architecture alternatives.
 
 **Document ownership:** PRD owns product rules; Design owns UI behavior; Architecture owns component, security, and consistency decisions. `DATABASE.md` and `API.md` own detailed data and HTTP contracts. `TESTING.md` owns verification procedures; `OPERATIONS.md` owns deployment and operating procedures. Implement these contracts with each feature slice and verify them against code and test evidence. Root README and AGENTS own setup/navigation and agent execution instructions.
 
