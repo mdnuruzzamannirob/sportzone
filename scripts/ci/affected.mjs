@@ -10,7 +10,8 @@ export function affectedScopes(paths, forceAll = false) {
     if (path.startsWith('backend/')) selected.add('backend')
     else if (path.startsWith('storefront/') || path.startsWith('admin/')) {
       // Browser audit consumes both builds and the real API fixture.
-      for (const name of ['storefront', 'admin', 'backend', 'browser']) selected.add(name)
+      for (const name of ['repository', 'storefront', 'admin', 'backend', 'browser'])
+        selected.add(name)
     } else if (path.startsWith('docs/') || /^(README|AGENTS|CHANGELOG)\.md$/.test(path)) continue
     else return { scope: 'all', browser: true }
   }
