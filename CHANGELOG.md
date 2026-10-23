@@ -8,6 +8,11 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 23 October 2026 — Database startup diagnostics
+
+- Preserve safe database reason codes in startup failure logs without logging driver errors or secrets.
+  Clarified local replica-set lifecycle and URI refresh steps for development connection failures.
+
 ## 23 October 2026 — Catalog freshness and SEO foundation
 
 - Added request-time, credential-free public SSR, configured canonical metadata/structured data, readable

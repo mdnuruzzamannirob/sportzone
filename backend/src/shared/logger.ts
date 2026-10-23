@@ -1,6 +1,7 @@
 import type { SecurityAction } from './security-actions.js'
 import { randomUUID } from 'node:crypto'
 import type { ErrorCode } from './errors/app-error.js'
+import { DatabaseError } from './errors/database-error.js'
 
 type LifecycleEvent =
   | 'starting'
@@ -42,7 +43,7 @@ export function createLogger(
     eventType,
   })
   return {
-    lifecycle(event: LifecycleEvent) {
+    lifecycle(event: LifecycleEvent, error?: unknown) {
       sink(
         JSON.stringify({
           ...base(
@@ -57,6 +58,9 @@ export function createLogger(
           status: event,
           errorCode:
             event.includes('failed') || event === 'database_error' ? 'SERVICE_UNAVAILABLE' : null,
+          ...(event === 'startup_failed' && error instanceof DatabaseError
+            ? { reasonCode: error.code }
+            : {}),
         }),
       )
     },

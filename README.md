@@ -95,6 +95,12 @@ process cleanup; the database terminal has a separate lifecycle. The API validat
 opening HTTP. Only the API reads the optional root `.env`; existing process variables take precedence.
 No credentials, persistence bootstrap or email worker are created automatically.
 
+If the API exits after about five seconds with `startup_failed` / `CONNECTION_FAILED`, check that
+the separate database terminal is still running. Each `db:local` restart prints a new URI; update
+the private root `.env` `MONGODB_URI` to that URI before restarting `npm run dev`.
+On Ubuntu 26, use `MONGOMS_DISTRO=ubuntu-24.04 npm run db:local --workspace=backend`.
+`REPLICA_SET_REQUIRED` means the configured MongoDB lacks the required replica-set/session support.
+
 For one application, use `npm run dev --workspace=storefront`, `--workspace=admin`, or the backend's
 `build:watch` with its compiled server. Inspect `npm run --workspace=<name>` for available commands.
 Production smoke checks require a completed build; Vite preview is for local verification.

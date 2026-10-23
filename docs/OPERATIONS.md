@@ -311,6 +311,12 @@ using the same versions already locked for the workspaces.
 
 API startup calls `openDatabase(uri, dbName)` after configuration validation, before binding HTTP. Use an isolated explicit database name; `admin`, `local` and `config` are rejected. Pools are bounded to ten connections, with five-second selection/connect/queue waits and a fifteen-second socket timeout. Startup failures return static database codes without URI/driver text; failed connections are destroyed. Connections require replica-set topology and logical sessions. Automatic collection/index creation and command buffering are disabled.
 
+Database startup failures include a safe `reasonCode` in the `startup_failed` lifecycle record:
+`CONNECTION_FAILED` indicates connection/selection failure; `REPLICA_SET_REQUIRED` indicates unsupported
+topology/session support. Raw exceptions and connection strings are never logged. For local connection
+failures, keep the separate replica-set tool running and copy its current URI into the private root
+`.env` before restarting development; a restarted ephemeral tool may use a different port.
+
 `npm run db:local --workspace=backend` starts a single-member, loopback-only, ephemeral MongoDB 8.0.16 replica set and prints its credential-free local URI. Its data disappears on shutdown; never use it for real/customer data or durability/backup acceptance. Integration tests generate their own random database on their own replica and never read external `MONGODB_URI`. `MONGOMS_DISTRO=ubuntu-24.04` selects the compatible official binary on this Ubuntu 26 host; supported Ubuntu 24 CI resolves it normally. First use downloads the pinned binary and requires network access; there is no mock/standalone fallback. Close the local tool with SIGINT/SIGTERM to clean its owned processes/data.
 
 Index changes are explicit/additive through `createDeclaredIndexes` and checked by `verifyDeclaredIndexes`; extra indexes are reported and preserved. No `syncIndexes`, global drop or automatic destructive migration is added. Domain models/index plans remain owned by their feature tasks. Transactions use primary/snapshot/majority with a ten-second driver retry deadline and five-second commit limit. Work may rerun: only sequential database effects belong in the callback, every write must carry its session, and external effects must stay outside. Nested independent transactions are rejected. Retain deployment-grade failover/restore/replication evidence for staging/operations gates.
