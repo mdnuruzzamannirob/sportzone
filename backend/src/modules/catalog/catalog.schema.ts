@@ -84,3 +84,21 @@ export const productCard = z.strictObject({
     })
     .optional(),
 })
+
+export const publicVariant = z
+  .strictObject({
+    id: z.string().regex(/^[a-f0-9]{24}$/),
+    sku: z.string().min(1).max(64),
+    attributes: z.record(z.string(), z.string()),
+    regularPricePoisha: money,
+    effectivePricePoisha: money,
+    availableQty: z.int().nonnegative(),
+  })
+  .refine((value) => value.effectivePricePoisha <= value.regularPricePoisha)
+export const productDetail = productCard.safeExtend({
+  description: text(2000),
+  categories: z.array(categoryCard).min(1).max(30),
+  images: z.array(publicImage).max(12),
+  variants: z.array(publicVariant).min(1).max(100),
+  relatedProducts: z.array(productCard).max(6),
+})

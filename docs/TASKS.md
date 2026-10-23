@@ -112,7 +112,7 @@ The register contains 185 tasks across twelve phases. The owner-selected structu
 | 01 — Requirements Finalization and Planning   |      20 |           0 |     0 |           0 |       0 |         0 |     20 |        0 |
 | 02 — UI/UX Design                             |      16 |           0 |     0 |           0 |       0 |         0 |     16 |        0 |
 | 03 — Authentication and Core Backend          |      21 |           0 |     0 |           0 |       0 |         0 |     21 |        0 |
-| 04 — Product Catalog and Inventory            |      15 |           9 |     0 |           0 |       1 |         0 |      5 |        0 |
+| 04 — Product Catalog and Inventory            |      15 |           8 |     0 |           0 |       1 |         0 |      6 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      20 |          20 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 07 — Payment Integration and Verification     |      17 |          17 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -121,7 +121,7 @@ The register contains 185 tasks across twelve phases. The owner-selected structu
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **185** |     **122** | **0** |       **0** |   **1** |     **0** | **62** |    **0** |
+| **Total**                                     | **185** |     **121** | **0** |       **0** |   **1** |     **0** | **63** |    **0** |
 
 ## 4. Milestone tracker
 
@@ -708,13 +708,13 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 is the new struct
   **Acceptance:** Inactive products/categories not disclosed; price/availability data is safe for display.\
   **Evidence:** [Public API, visibility/filter regressions and query plans](./evidence/P04-009-public-catalog.md). [Owner acceptance](./evidence/P04-009-public-catalog.md#independent-review), 23 October 2026; details, storefront integration/caching and EXT-04 remain separate.
 
-- [ ] **P04-010 — Implement product details/variant availability API**\
-  **Status:** `Not Started` · **Area:** Backend/catalog\
+- [x] **P04-010 — Implement product details/variant availability API**\
+  **Status:** `Done` · **Owner:** Codex · **Area:** Backend/catalog\
   **Sources:** FR-05; FR-06\
   **Depends on:** `P04-009`\
   **Deliverable:** Expose images, descriptions, valid variant combinations, stock cue and related products.\
   **Acceptance:** Unavailable combinations cannot be selected as purchasable and disabled SKUs are guarded.\
-  **Evidence to attach:** Product details API tests.
+  **Evidence:** [Default/option SKUs, public galleries, related/visibility guards and API regression checks](./evidence/P04-010-product-details.md). [Owner acceptance](./evidence/P04-010-product-details.md#independent-review), 23 October 2026; storefront selection/cart/checkout and external media acceptance remain separate.
 
 - [ ] **P04-011 — Establish catalog caching, invalidation and SEO contracts**\
   **Status:** `Not Started` · **Area:** Storefront/catalog\
@@ -2013,3 +2013,7 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **23 October 2026 — P04-009:** Not Started → In Progress → In Review. Added public product/category discovery with active ancestry, safe SKU price/availability projections, literal search, filters and stable pagination. Selected additive native text/newest/category indexes using a 1,000-product synthetic profile. Focused tests and backend static/build/startup checks passed; owner acceptance pending. [Evidence](./evidence/P04-009-public-catalog.md).
 
 **23 October 2026 — P04-009 acceptance:** In Review → Done following explicit owner popup review: “Review করেছি—accept করছি, Done করো”. Overall: 62 Done, 1 Blocked, 122 Not Started. Product details, storefront/cache integration, EXT-04 and milestone gates remain separate. [Acceptance](./evidence/P04-009-public-catalog.md#independent-review).
+
+**23 October 2026 — P04-010:** Not Started → In Progress → In Review. Added public slug detail with plain description, visible categories, approved galleries, actual active SKU combinations and available quantities, plus bounded eligible related cards. Reused catalog eligibility/projections and extended media results per target/asset. Focused 26 unit and 46 MongoDB integration tests, backend lint/types/build and boundary/format/docs checks passed. Independent acceptance pending. [Evidence](./evidence/P04-010-product-details.md).
+
+**23 October 2026 — P04-010 acceptance:** In Review → Done following explicit owner popup review: “Review করেছি—accept করছি, Done করো”. Overall: 63 Done, 1 Blocked, 121 Not Started. Frontend selection/cart/checkout, EXT-04 and milestone gates remain separate. [Acceptance](./evidence/P04-010-product-details.md#independent-review).

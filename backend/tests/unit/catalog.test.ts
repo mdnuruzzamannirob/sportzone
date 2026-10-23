@@ -3,6 +3,8 @@ import {
   productQuery,
   categoryQuery,
   productCard,
+  publicVariant,
+  productDetail,
 } from '../../src/modules/catalog/catalog.schema.js'
 it('defaults bounded pages and explicitly normalizes literal Unicode search words', () => {
   expect(productQuery.parse({})).toEqual({ page: 1, pageSize: 20, sort: 'newest' })
@@ -43,4 +45,73 @@ it('keeps category queries strict and prevents stock/revision fields in public D
   }
   expect(productCard.safeParse(card).success).toBe(true)
   expect(productCard.safeParse({ ...card, stock: { physical: 5 } }).success).toBe(false)
+})
+
+it('validates detail quantity/price projections and disallows private variant fields', () => {
+  const variant = {
+    id: '535a00000000000000000001',
+    sku: 'BALL',
+    attributes: {},
+    regularPricePoisha: 100,
+    effectivePricePoisha: 90,
+    availableQty: 0,
+  }
+  expect(publicVariant.safeParse(variant).success).toBe(true)
+  for (const patch of [
+    { availableQty: -1 },
+    { availableQty: 1.5 },
+    { effectivePricePoisha: 101 },
+    { stock: { physical: 5 } },
+    { revision: 1 },
+  ])
+    expect(publicVariant.safeParse({ ...variant, ...patch }).success).toBe(false)
+})
+it('requires bounded nonempty actual variants and related card allowlists', () => {
+  const data = {
+    id: 'id',
+    name: 'Ball',
+    slug: 'ball',
+    regularPricePoisha: 100,
+    effectivePricePoisha: 100,
+    availability: 'unavailable',
+    description: 'Plain text',
+    categories: [{ id: 'category', name: 'Sports', slug: 'sports' }],
+    images: [],
+    variants: [
+      {
+        id: '535a00000000000000000001',
+        sku: 'BALL',
+        attributes: {},
+        regularPricePoisha: 100,
+        effectivePricePoisha: 100,
+        availableQty: 0,
+      },
+    ],
+    relatedProducts: [],
+  }
+  expect(productDetail.safeParse(data).success).toBe(true)
+  expect(productDetail.safeParse({ ...data, variants: [] }).success).toBe(false)
+  const card = {
+    id: data.id,
+    name: data.name,
+    slug: data.slug,
+    regularPricePoisha: data.regularPricePoisha,
+    effectivePricePoisha: data.effectivePricePoisha,
+    availability: data.availability,
+  }
+  expect(productDetail.safeParse({ ...data, relatedProducts: Array(6).fill(card) }).success).toBe(
+    true,
+  )
+  expect(productDetail.safeParse({ ...data, relatedProducts: Array(7).fill(card) }).success).toBe(
+    false,
+  )
+  expect(
+    productDetail.safeParse({ ...data, variants: Array(101).fill(data.variants[0]) }).success,
+  ).toBe(false)
+  expect(
+    productDetail.safeParse({
+      ...data,
+      images: Array(13).fill({ url: 'https://media.example.test/ball.png', alt: 'Ball' }),
+    }).success,
+  ).toBe(false)
 })

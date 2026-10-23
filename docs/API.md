@@ -450,7 +450,7 @@ scoped operational fields; external provider evidence is redacted even to admini
 | DTO                 | Public or private contract (allowlist)                                                                                                                                                                                                          | Excluded by design                                                                                                    |
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | `ProductCard`       | `id,slug,name,thumbnail,regularPricePoisha,effectivePricePoisha,rating,availability`                                                                                                                                                            | Internal stock counters, media credentials                                                                            |
-| `ProductDetail`     | Card + `description,categories,images,variants[{id,sku,attributes,regularPricePoisha,effectivePricePoisha,availableQty?}]`                                                                                                                      | Inventory movement and hidden draft data                                                                              |
+| `ProductDetail`     | Card + `description,categories,images,variants[{id,sku,attributes,regularPricePoisha,effectivePricePoisha,availableQty}],relatedProducts[]`                                                                                                                      | Inventory movement and hidden draft data                                                                              |
 | `Account`           | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry)                                                                                                                                                     | `passwordHash`, challenge/session tokens, other accounts                                                              |
 | `Cart`              | `items[{variantId,quantity,product,estimatedUnitPoisha,availability}],estimatedSubtotalPoisha,revision`                                                                                                                                         | Reservation claims; cart does **not** reserve stock                                                                   |
 | `CheckoutQuote`     | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry)                                                                                                                                                     | A guaranteed confirmation-relative absolute deadline before the confirmation event, payment guarantee, or reservation |
@@ -740,6 +740,18 @@ public reference checks; omit unavailable/unapproved images. `rating?` is `{aver
 approved summary and omitted when no valid approved ratings exist. Internal counters, revisions, SKU
 metadata and media ownership/delivery secrets are excluded. Listing reads currently use `no-store`;
 controlled caching/revalidation belongs to P04-011.
+
+Product detail uses the same active ancestry/SKU eligibility as listing; hidden, missing or inactive-only
+products return 404. It returns all valid active SKU rows (at most 100), including out-of-stock rows
+with `availableQty:0`; no inactive SKU or fabricated Cartesian option combination is returned. Attributes
+are canonical maps; the no-options SKU uses `{}`. `availableQty` is derived physical minus reserved minus
+committed, a display snapshot rather than purchase permission. Consumers disable zero-quantity rows and
+revalidate selection/stock through cart and checkout. Description is plain text. `images` contains only
+approved public `{url,alt}` values in configured position order, at most twelve; omitted media capability
+means an empty image list. `categories` uses the visible category projection. `relatedProducts` contains
+at most six other eligible cards sharing an assigned category, newest first with descending ID tie-break;
+there is no unrelated fallback. Review content, return-policy publication and cart/checkout actions have
+separate owning endpoints/tasks; this detail read does not fabricate them.
 
 Product listings and homepage merchandising only include operator-approved media/content; no fabricated promotional claims.
 The homepage `banner` maps to `storeSettings.homepageBanner` with a validated public media asset and operator-approved content (API §10.1). Return `HomepageBanner:{assetId,title,alt,href?,image:MediaRef}` only when configured and eligible; otherwise omit it honestly. Banner capability is required by FR-03; publish only operator-approved content. Store the banner in settings rather than a separate collection.

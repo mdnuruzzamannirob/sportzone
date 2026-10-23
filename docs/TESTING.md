@@ -542,6 +542,7 @@ Each scenario follows: **Fixture / action → expected HTTP+business outcome →
 | `CAT-03` | Search/filter/sort/paginate seeded active and inactive catalog | Stable pages and tie-break, correct facets/availability, no inactive leakage | 04 |
 | `CAT-04` | Clear sale price/threshold override, remove category image, reparent a child to root with explicit null, then omit fields | Null performs only declared clear operations; omission retains current data; stored optional fields absent; stale ETag rejected. Later regular-price change uses regular price after sale cleared; old order snapshots unchanged | 06, 23–25 |
 | `CAT-05` | Configure/change/remove homepage banner with approved and foreign/private/invalid media references | Public home shows only approved banner; internal href/alt enforced; logo unaffected; no arbitrary URL attachment; absent content does not waive FR-03 | 03, 23, 34 |
+| `CAT-06` | Read product detail with default/options SKUs, zero availability, approved/private galleries and related candidates | Only actual valid active combinations; paired prices and derived quantity; hidden records excluded; ordered approved gallery; bounded eligible related cards; strict detail allowlist and query rejection. Cart/checkout purchase validation remains separate. | 05–06 |
 | `SHP-01` | Guest cart → user cart after login, quantities and repeated adds | Consistent permitted merge/persistence; cart does **not** reserve inventory | 07–08 |
 | `SHP-02` | Customer A adds/re-adds item, logs out, starts a new session, logs back in, removes item and repeats login; Customer B and guest attempt access | Same item persists without duplicates across authenticated sessions; removal persists; inactive product behavior follows contract; guest and cross-owner access cannot expose A's list | 08 |
 | `PRM-01` | `FX-MONEY-01/02` percentage/fixed coupons with sale prices | Server matches integer/rounding example, proportional largest remainder, delivery excluded | 09, 11 |
@@ -947,6 +948,7 @@ in evidence rather than being appended to the API operation inventory.
 | P04-006 | [Inventory counters, atomic guards and movement replay](./evidence/P04-006-inventory-counters.md) |
 | P04-008 | [Transaction-scoped allocation primitives](./evidence/P04-008-inventory-allocation.md) |
 | P04-009 | [Public catalog filters, visibility and query profile](./evidence/P04-009-public-catalog.md) |
+| P04-010 | [Product detail, galleries and variant availability](./evidence/P04-010-product-details.md) |
 
 ### 16.2 Functional requirement coverage register
 

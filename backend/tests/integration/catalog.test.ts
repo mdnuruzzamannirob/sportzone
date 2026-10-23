@@ -554,3 +554,296 @@ it('denies unpublished or unsafe generated media URLs and keeps category access 
     await createDeclaredIndexes(categoryModel(db.connection))
   }
 })
+
+it('returns a default SKU detail with plain description, visible categories and no fabricated optional content', async () => {
+  const product = await make('default-ball', 200, {
+    description: 'Synthetic ball\nPlain text details',
+  })
+  const response = await request(app)
+    .get('/api/v1/products/default-ball')
+    .set('Origin', origin)
+    .expect(200)
+  expect(response.body.data).toMatchObject({
+    id: product.product.id,
+    slug: 'default-ball',
+    description: 'Synthetic ball\nPlain text details',
+    images: [],
+    relatedProducts: [],
+    availability: 'unavailable',
+    variants: [
+      {
+        id: product.variants[0]?.id,
+        sku: 'DEFAULT-BALL',
+        attributes: {},
+        regularPricePoisha: 200,
+        effectivePricePoisha: 200,
+        availableQty: 0,
+      },
+    ],
+    categories: [
+      { id: child.toHexString(), name: 'Cricket', slug: 'cricket', parentId: root.toHexString() },
+    ],
+  })
+  expect(response.headers['cache-control']).toBe('no-store')
+  expect(response.headers['set-cookie']).toBeUndefined()
+  expect(Object.keys(response.body.data).sort()).toEqual(
+    [
+      'id',
+      'name',
+      'slug',
+      'regularPricePoisha',
+      'effectivePricePoisha',
+      'availability',
+      'description',
+      'images',
+      'variants',
+      'categories',
+      'relatedProducts',
+    ].sort(),
+  )
+})
+it('returns only actual active variant combinations with exact available quantity and paired sale prices', async () => {
+  const product = await make('bat-options', 100, {}, [
+    {
+      sku: 'BAT-S-RED',
+      attributes: { size: 's', color: 'red' },
+      regularPricePoisha: 500,
+      salePricePoisha: 300,
+    },
+    { sku: 'BAT-L-BLUE', attributes: { size: 'l', color: 'blue' }, regularPricePoisha: 200 },
+    {
+      sku: 'BAT-X-RED',
+      attributes: { size: 'x', color: 'red' },
+      regularPricePoisha: 1,
+      status: 'inactive',
+    },
+  ])
+  await productModels(db.connection).variants.updateOne(
+    { _id: product.variants[0]?._id },
+    { $set: { stock: { physical: 10, reserved: 3, committed: 5 } } },
+  )
+  const data = (await request(app).get('/api/v1/products/bat-options').expect(200)).body.data
+  expect(data.availability).toBe('available')
+  expect(data.variants).toHaveLength(2)
+  expect(data.variants).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        sku: 'BAT-S-RED',
+        attributes: { size: 's', color: 'red' },
+        regularPricePoisha: 500,
+        effectivePricePoisha: 300,
+        availableQty: 2,
+      }),
+      expect.objectContaining({
+        sku: 'BAT-L-BLUE',
+        attributes: { size: 'l', color: 'blue' },
+        availableQty: 0,
+      }),
+    ]),
+  )
+  expect(
+    data.variants.some(
+      (v: { attributes: { size: string; color: string } }) =>
+        v.attributes.size === 's' && v.attributes.color === 'blue',
+    ),
+  ).toBe(false)
+  expect(Object.keys(data.variants[0]).sort()).toEqual(
+    [
+      'id',
+      'sku',
+      'attributes',
+      'regularPricePoisha',
+      'effectivePricePoisha',
+      'availableQty',
+    ].sort(),
+  )
+  expect(JSON.stringify(data)).not.toMatch(
+    /skuNormalized|attributeSignature|revision|physical|reserved|committed|lastOperationKey/,
+  )
+})
+it('rejects missing/hidden details, inactive-only SKUs and hidden ancestry without revealing drafts', async () => {
+  const product = await make('ball', 100)
+  await request(app).get('/api/v1/products/missing').expect(404)
+  await productModels(db.connection).products.updateOne(
+    { _id: product.product._id },
+    { $set: { status: 'draft' } },
+  )
+  await request(app).get('/api/v1/products/ball').expect(404)
+  await productModels(db.connection).products.updateOne(
+    { _id: product.product._id },
+    { $set: { status: 'active' } },
+  )
+  await productModels(db.connection).variants.updateMany(
+    { productId: product.product._id },
+    { $set: { status: 'inactive' } },
+  )
+  await request(app).get('/api/v1/products/ball').expect(404)
+  await productModels(db.connection).variants.updateMany(
+    { productId: product.product._id },
+    { $set: { status: 'active' } },
+  )
+  await categoryModel(db.connection).updateOne({ _id: root }, { $set: { status: 'inactive' } })
+  await request(app).get('/api/v1/products/ball').expect(404)
+})
+it('publishes multiple approved detail images in position order without collapsing one product gallery', async () => {
+  const product = await make('gallery-ball', 100)
+  const first = `sportzone/${new Types.ObjectId().toHexString()}`,
+    second = `sportzone/${new Types.ObjectId().toHexString()}`,
+    unsafe = `sportzone/${new Types.ObjectId().toHexString()}`
+  await productModels(db.connection).products.updateOne(
+    { _id: product.product._id },
+    {
+      $set: {
+        images: [
+          {
+            publicId: second,
+            url: 'https://ignored.example.test/second',
+            alt: 'Second ball',
+            position: 2,
+          },
+          {
+            publicId: unsafe,
+            url: 'https://private.example.test/never-return',
+            alt: 'Unapproved',
+            position: 0,
+          },
+          {
+            publicId: first,
+            url: 'https://ignored.example.test/first',
+            alt: 'First ball',
+            position: 1,
+          },
+        ],
+      },
+    },
+  )
+  for (const { publicId, slot } of [
+    { publicId: first, slot: 'image:1' },
+    { publicId: second, slot: 'image:2' },
+  ])
+    await mediaModel(db.connection).create({
+      publicId,
+      assetKind: 'public_media',
+      owner: { kind: 'admin', principalId: new Types.ObjectId() },
+      mimeType: 'image/png',
+      format: 'png',
+      size: 1,
+      digest: 'a'.repeat(64),
+      scanStatus: 'clean',
+      access: 'public',
+      status: 'attached',
+      references: [{ targetType: 'product', targetId: product.product._id, slot }],
+    })
+  const data = (await request(app).get('/api/v1/products/gallery-ball').expect(200)).body.data
+  expect(data.images).toEqual([
+    { url: `https://media.example.test/${first}.png`, alt: 'First ball' },
+    { url: `https://media.example.test/${second}.png`, alt: 'Second ball' },
+  ])
+  expect(data.thumbnail).toEqual(data.images[0])
+  expect(JSON.stringify(data)).not.toContain('private.example.test')
+  expect(JSON.stringify(data)).not.toContain('ignored.example.test')
+})
+it('returns at most six eligible related cards, excluding self, hidden categories, disabled SKUs and unrelated products', async () => {
+  await make('main-ball', 100)
+  for (let i = 0; i < 8; i++) await make(`related-${i}`, 100 + i)
+  const hidden = await make('related-hidden', 1)
+  await productModels(db.connection).variants.updateMany(
+    { productId: hidden.product._id },
+    { $set: { status: 'inactive' } },
+  )
+  await make('related-draft', 1, { status: 'draft' })
+  await make('unrelated', 1, { categoryIds: [root.toHexString()] })
+  const data = (await request(app).get('/api/v1/products/main-ball').expect(200)).body.data
+  expect(data.relatedProducts).toHaveLength(6)
+  expect(data.relatedProducts.map((v: { slug: string }) => v.slug)).toEqual([
+    'related-7',
+    'related-6',
+    'related-5',
+    'related-4',
+    'related-3',
+    'related-2',
+  ])
+  expect(data.relatedProducts.every((v: { slug: string }) => v.slug !== 'main-ball')).toBe(true)
+  expect(data.relatedProducts[0]).not.toHaveProperty('variants')
+})
+it('validates detail reads, CORS and input bodies and preserves no-store HEAD/preflight behavior', async () => {
+  await make('ball', 100)
+  await request(app).get('/api/v1/products/ball?variantId=forged').expect(400)
+  await request(app).get('/api/v1/products/Bad_Slug').expect(400)
+  await request(app).get('/api/v1/products/ball').send({ stock: 100 }).expect(400)
+  await request(app)
+    .get('/api/v1/products/ball')
+    .set('Origin', 'https://foreign.example.test')
+    .expect(403)
+  await request(app)
+    .options('/api/v1/products/ball')
+    .set('Origin', origin)
+    .set('Access-Control-Request-Method', 'GET')
+    .expect(204)
+  const head = await request(app).head('/api/v1/products/ball').expect(200)
+  expect(head.text).toBeUndefined()
+  await request(app).post('/api/v1/products/ball').send({}).expect(404)
+})
+it('uses the durable slug index for detail and fails closed on corrupt variant identity', async () => {
+  const product = await make('ball', 100)
+  const models = productModels(db.connection)
+  const spy = vi.spyOn(models.products, 'aggregate')
+  let pipeline: PipelineStage[] | undefined
+  try {
+    await request(app).get('/api/v1/products/ball').expect(200)
+    pipeline = spy.mock.calls[0]?.[0]
+  } finally {
+    spy.mockRestore()
+  }
+  if (!pipeline) throw new Error('Missing actual detail pipeline')
+  const plan = await models.products
+    .aggregate(pipeline)
+    .option({ maxTimeMS: 3000, allowDiskUse: false })
+    .explain('executionStats')
+  expect(JSON.stringify(plan)).toContain('product_slug_unique')
+  await models.variants.collection.updateOne(
+    { productId: product.product._id },
+    { $set: { attributeSignature: 'not-the-actual-combination' } },
+  )
+  await request(app).get('/api/v1/products/ball').expect(503)
+})
+
+it('omits galleries without a composed provider and fails detail reads closed when required indexes are missing', async () => {
+  const product = await make('ball', 100)
+  const composed = await composeApplication(
+    db.connection,
+    loadEnvironment(testEnvironment()),
+    { isReady: async () => true },
+    { request: () => {}, lifecycle: () => {} },
+  )
+  expect(
+    (await request(composed).get('/api/v1/products/ball').expect(200)).body.data.images,
+  ).toEqual([])
+  await productModels(db.connection).variants.collection.dropIndex('variant_product_status')
+  try {
+    await request(app).get('/api/v1/products/ball').expect(503)
+  } finally {
+    await initializeProductPersistence(db.connection)
+  }
+  await productModels(db.connection).products.collection.updateOne(
+    { _id: product.product._id },
+    { $set: { description: '<script>untrusted</script>' } },
+  )
+  await request(app).get('/api/v1/products/ball').expect(503)
+})
+it('excludes related products with a hidden secondary category and returns safe single-parent category roots', async () => {
+  await make('main-ball', 100, { categoryIds: [root.toHexString()] })
+  const related = await make('hidden-related', 100, { categoryIds: [root.toHexString()] })
+  const hidden = await categoryService(db.connection).create({
+    name: 'Hidden',
+    slug: 'hidden',
+    status: 'inactive',
+  })
+  await productModels(db.connection).products.updateOne(
+    { _id: related.product._id },
+    { $push: { categoryIds: hidden._id } },
+  )
+  const data = (await request(app).get('/api/v1/products/main-ball').expect(200)).body.data
+  expect(data.relatedProducts).toEqual([])
+  expect(data.categories).toEqual([{ id: root.toHexString(), name: 'Sports', slug: 'sports' }])
+})

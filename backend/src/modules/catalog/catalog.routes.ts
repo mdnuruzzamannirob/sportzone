@@ -40,10 +40,15 @@ export function catalogRoutes(
     parseInput(z.undefined(), req.body)
     next()
   }
-  for (const path of ['/products', '/categories', '/categories/:slug']) router.options(path, cors)
+  for (const path of ['/products', '/products/:slug', '/categories', '/categories/:slug'])
+    router.options(path, cors)
   router.get('/products', cors, async (req, res) => {
     const result = await service.products(req.query)
     respond(res, result.data, 200, result.page)
+  })
+  router.get('/products/:slug', cors, async (req, res) => {
+    parseInput(z.strictObject({}), req.query)
+    respond(res, await service.product(String(req.params.slug)))
   })
   router.get('/categories', cors, async (req, res) => {
     const result = await service.categories(req.query)

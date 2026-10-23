@@ -15,7 +15,7 @@ export function publicMediaService(
   provider?: Pick<MediaProvider, 'publicUrl'>,
 ) {
   return async (candidates: readonly PublicImageCandidate[]) => {
-    const images = new Map<string, { url: string; alt: string }>()
+    const images = new Map<string, Map<string, { url: string; alt: string }>>()
     if (!provider || !candidates.length) return images
     if (candidates.length > 100) throw new RangeError('Public media batch is too large')
     const model = mediaModel(connection)
@@ -51,7 +51,10 @@ export function publicMediaService(
       const url = new URL(generated)
       if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash)
         continue
-      images.set(candidate.targetId.toHexString(), { url: url.href, alt: candidate.alt })
+      const target = candidate.targetId.toHexString()
+      const assets = images.get(target) ?? new Map<string, { url: string; alt: string }>()
+      assets.set(candidate.publicId, { url: url.href, alt: candidate.alt })
+      images.set(target, assets)
     }
     return images
   }

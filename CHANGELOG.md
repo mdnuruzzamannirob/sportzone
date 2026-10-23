@@ -8,6 +8,13 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 23 October 2026 — Product detail API
+
+- Added public slug detail with approved multi-image galleries, active variant combinations and derived
+  quantities, visible categories, and up to six eligible related cards. Reused catalog visibility and
+  media publication boundaries; no new collection, index or purchase mutation. The owner accepted
+  P04-010 on 23 October 2026. [Evidence](docs/evidence/P04-010-product-details.md).
+
 ## 23 October 2026 — Public catalog discovery
 
 - Added public product search/filter/sort/pagination and visible category reads, safe public projections,

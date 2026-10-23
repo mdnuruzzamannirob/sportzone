@@ -3,6 +3,7 @@ import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { pageMeta } from '../../shared/pagination.js'
 import { verifyDeclaredIndexes } from '../../shared/database/indexes.js'
+import { description as descriptionInput } from './products/product.schema.js'
 import { productModels } from './products/product.model.js'
 import { categoryModel } from './categories/category.model.js'
 import {
@@ -11,7 +12,9 @@ import {
   categorySlug,
   productCard,
   productQuery,
+  productDetail,
 } from './catalog.schema.js'
+import { attributes, attributeSignature } from './variants/variant.schema.js'
 import type { publicMediaService, PublicImageCandidate } from '../media/public-media.service.js'
 
 // A parent is singular. Reaching an active root proves the chain terminated; cycles/orphans
@@ -66,7 +69,7 @@ const validNumber = (path: string) => [
   { $lte: [path, Number.MAX_SAFE_INTEGER] },
   { $eq: [{ $mod: [path, 1] }, 0] },
 ]
-const offers: LookupPipeline = [
+const validVariants: LookupPipeline = [
   {
     $match: {
       status: 'active',
@@ -102,6 +105,9 @@ const offers: LookupPipeline = [
       },
     },
   },
+]
+const offers: LookupPipeline = [
+  ...validVariants,
   { $sort: { _effective: 1, _id: 1 } },
   {
     $group: {
@@ -112,6 +118,69 @@ const offers: LookupPipeline = [
     },
   },
 ]
+const visibleProducts = (category?: string): PipelineStage[] => [
+  {
+    $lookup: {
+      from: 'categories',
+      localField: 'categoryIds',
+      foreignField: '_id',
+      pipeline: ancestry,
+      as: '_categories',
+    },
+  },
+  {
+    $match: {
+      $expr: {
+        $and: [
+          { $gt: [{ $size: '$categoryIds' }, 0] },
+          { $eq: [{ $size: '$_categories' }, { $size: '$categoryIds' }] },
+        ],
+      },
+      ...(category
+        ? {
+            $or: [{ '_categories.slug': category }, { '_categories._ancestors.slug': category }],
+          }
+        : {}),
+    },
+  },
+  {
+    $lookup: {
+      from: 'productVariants',
+      localField: '_id',
+      foreignField: 'productId',
+      pipeline: offers,
+      as: '_offer',
+    },
+  },
+  { $unwind: '$_offer' },
+]
+const cardProjection: PipelineStage.Project = {
+  $project: {
+    _id: 0,
+    id: { $toString: '$_id' },
+    name: 1,
+    slug: 1,
+    regularPricePoisha: '$_offer.regular',
+    effectivePricePoisha: '$_offer.effective',
+    availability: { $cond: ['$_offer.inStock', 'available', 'unavailable'] },
+    _image: {
+      $arrayElemAt: [{ $sortArray: { input: '$images', sortBy: { position: 1 } } }, 0],
+    },
+    rating: {
+      $cond: [
+        {
+          $and: [
+            { $gt: ['$ratingSummary.approvedCount', 0] },
+            { $gte: ['$ratingSummary.average', 1] },
+            { $lte: ['$ratingSummary.average', 5] },
+          ],
+        },
+        { average: '$ratingSummary.average', count: '$ratingSummary.approvedCount' },
+        '$$REMOVE',
+      ],
+    },
+  },
+}
 const facet = (page: number, pageSize: number): PipelineStage => ({
   $facet: {
     rows: [{ $skip: (page - 1) * pageSize }, { $limit: pageSize }],
@@ -162,7 +231,7 @@ export function catalogService(
     )
     const approved = await images(candidates)
     return rows.map(({ _image, ...row }) => {
-      const image = approved.get(row.id)
+      const image = _image ? approved.get(row.id)?.get(_image.publicId) : undefined
       return kind === 'product'
         ? productCard.parse({ ...row, ...(image ? { thumbnail: image } : {}) })
         : categoryCard.parse({ ...row, ...(image ? { image } : {}) })
@@ -197,43 +266,7 @@ export function catalogService(
         ...(input.sort === 'newest'
           ? [{ $sort: { createdAt: -1 as const, _id: -1 as const } }]
           : []),
-        {
-          $lookup: {
-            from: 'categories',
-            localField: 'categoryIds',
-            foreignField: '_id',
-            pipeline: ancestry,
-            as: '_categories',
-          },
-        },
-        {
-          $match: {
-            $expr: {
-              $and: [
-                { $gt: [{ $size: '$categoryIds' }, 0] },
-                { $eq: [{ $size: '$_categories' }, { $size: '$categoryIds' }] },
-              ],
-            },
-            ...(input.category
-              ? {
-                  $or: [
-                    { '_categories.slug': input.category },
-                    { '_categories._ancestors.slug': input.category },
-                  ],
-                }
-              : {}),
-          },
-        },
-        {
-          $lookup: {
-            from: 'productVariants',
-            localField: '_id',
-            foreignField: 'productId',
-            pipeline: offers,
-            as: '_offer',
-          },
-        },
-        { $unwind: '$_offer' },
+        ...visibleProducts(input.category),
         {
           $match: {
             ...(input.inStock !== undefined ? { '_offer.inStock': input.inStock } : {}),
@@ -257,33 +290,7 @@ export function catalogService(
                 },
               },
             ]),
-        {
-          $project: {
-            _id: 0,
-            id: { $toString: '$_id' },
-            name: 1,
-            slug: 1,
-            regularPricePoisha: '$_offer.regular',
-            effectivePricePoisha: '$_offer.effective',
-            availability: { $cond: ['$_offer.inStock', 'available', 'unavailable'] },
-            _image: {
-              $arrayElemAt: [{ $sortArray: { input: '$images', sortBy: { position: 1 } } }, 0],
-            },
-            rating: {
-              $cond: [
-                {
-                  $and: [
-                    { $gt: ['$ratingSummary.approvedCount', 0] },
-                    { $gte: ['$ratingSummary.average', 1] },
-                    { $lte: ['$ratingSummary.average', 5] },
-                  ],
-                },
-                { average: '$ratingSummary.average', count: '$ratingSummary.approvedCount' },
-                '$$REMOVE',
-              ],
-            },
-          },
-        },
+        cardProjection,
         facet(input.page, input.pageSize),
       ]
       const result = await run(pipeline, 'product')
@@ -291,6 +298,145 @@ export function catalogService(
         data: await projectMedia(result.rows, 'product'),
         page: pageMeta(input, result.total[0]?.count ?? 0),
       }
+    },
+    async product(slug: string) {
+      const input = parseInput(categorySlug, { slug })
+      await verify('product')
+      type DetailRow = Row & {
+        description: string
+        categoryIds: Types.ObjectId[]
+        _categories: { id: string; name: string; slug: string; parentId?: string }[]
+        _images: { publicId: string; alt: string; position: number }[]
+        _variants: {
+          id: string
+          sku: string
+          attributes: Record<string, string>
+          regularPricePoisha: number
+          effectivePricePoisha: number
+          availableQty: number
+          _signature: string
+        }[]
+      }
+      const detailPipeline: PipelineStage[] = [
+        { $match: { slug: input.slug, status: 'active' } },
+        ...visibleProducts(),
+        {
+          $lookup: {
+            from: 'productVariants',
+            localField: '_id',
+            foreignField: 'productId',
+            pipeline: [
+              ...validVariants,
+              { $sort: { _id: 1 } },
+              { $limit: 101 },
+              {
+                $project: {
+                  _id: 0,
+                  id: { $toString: '$_id' },
+                  sku: '$skuNormalized',
+                  attributes: 1,
+                  regularPricePoisha: 1,
+                  effectivePricePoisha: '$_effective',
+                  availableQty: '$_available',
+                  _signature: '$attributeSignature',
+                },
+              },
+            ],
+            as: '_variants',
+          },
+        },
+        {
+          $project: {
+            ...cardProjection.$project,
+            description: 1,
+            categoryIds: 1,
+            _images: { $sortArray: { input: '$images', sortBy: { position: 1 } } },
+            _variants: 1,
+            _categories: {
+              $map: {
+                input: '$_categories',
+                as: 'c',
+                in: {
+                  id: { $toString: '$$c._id' },
+                  name: '$$c.name',
+                  slug: '$$c.slug',
+                  parentId: {
+                    $cond: [
+                      { $eq: [{ $type: '$$c.parentId' }, 'objectId'] },
+                      { $toString: '$$c.parentId' },
+                      '$$REMOVE',
+                    ],
+                  },
+                },
+              },
+            },
+          },
+        },
+      ]
+      const [row] = await models.products
+        .aggregate<DetailRow>(detailPipeline)
+        .option({ maxTimeMS: 3000, allowDiskUse: false })
+        .catch(() => {
+          throw new ApiError('SERVICE_UNAVAILABLE')
+        })
+      if (!row) throw new ApiError('NOT_FOUND')
+      if (row._images.length > 12 || row._variants.length > 100 || row._categories.length > 30)
+        throw new ApiError('SERVICE_UNAVAILABLE')
+      if (!descriptionInput.safeParse(row.description).success)
+        throw new ApiError('SERVICE_UNAVAILABLE')
+      const variants = row._variants.map(({ _signature, ...variant }) => {
+        const parsed = attributes.safeParse(variant.attributes)
+        if (!parsed.success || attributeSignature(parsed.data) !== _signature)
+          throw new ApiError('SERVICE_UNAVAILABLE')
+        return { ...variant, attributes: parsed.data }
+      })
+      const approved = await images(
+        row._images.map((image) => ({
+          targetId: new Types.ObjectId(row.id),
+          targetType: 'product',
+          publicId: image.publicId,
+          alt: image.alt,
+        })),
+      )
+      const gallery = row._images.flatMap((image) => {
+        const value = approved.get(row.id)?.get(image.publicId)
+        return value ? [value] : []
+      })
+      const related = await models.products
+        .aggregate<Row>([
+          {
+            $match: {
+              _id: { $ne: new Types.ObjectId(row.id) },
+              status: 'active',
+              categoryIds: { $in: row.categoryIds },
+            },
+          },
+          { $sort: { createdAt: -1, _id: -1 } },
+          ...visibleProducts(),
+          { $limit: 6 },
+          cardProjection,
+        ])
+        .option({ maxTimeMS: 3000, allowDiskUse: false })
+        .catch(() => {
+          throw new ApiError('SERVICE_UNAVAILABLE')
+        })
+      const detail = productDetail.safeParse({
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        regularPricePoisha: row.regularPricePoisha,
+        effectivePricePoisha: row.effectivePricePoisha,
+        availability: row.availability,
+        ...(row.rating ? { rating: row.rating } : {}),
+        ...(gallery[0] ? { thumbnail: gallery[0] } : {}),
+        description: row.description,
+        categories: row._categories,
+        images: gallery,
+        variants,
+        relatedProducts: await projectMedia(related, 'product'),
+      })
+      if (!detail.success) throw new ApiError('SERVICE_UNAVAILABLE')
+      return detail.data
     },
     async categories(query: unknown) {
       const input = parseInput(categoryQuery, query)
