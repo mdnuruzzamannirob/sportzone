@@ -213,7 +213,7 @@ releases, commit exact versions and lockfile, and record installed versions in r
 
 Architecture §§4–6 owns application placement. Keep backend tests outside production `src/` and organize
 them by feature under `tests/unit/` and `tests/integration/`; use fixtures/helpers for shared test setup.
-Frontend tests may remain near their components; cross-app browser journeys target root `tests/e2e/`.
+Frontend tests live in each owning application's `tests/` directory; cross-app browser journeys target root `tests/e2e/`.
 Root tooling regressions live in tests/tooling, reusable app contracts in tests/helpers and browser journeys in
 tests/e2e. Preserve discovery, fixture imports and CI inventory together when moving tests.
 
@@ -325,7 +325,7 @@ For rounding and proportional allocation, generate property-based comparisons ac
 | Surface | Assertions | Primary suites |
 | --- | --- | --- |
 | Home/navigation | Correct routes, categories, banners only when approved, header/cart/wishlist counters and support/policy links | `UI-HOME`, `UI-CONTENT` |
-| Catalog/search | Active-only visibility, search, sorting, pagination, empty state, filters, revalidation after admin changes | `CAT-*`, `UI-CAT` |
+| Catalog/search | Active-only visibility, search, sorting, pagination, empty state, filters, next-request freshness after admin changes | `CAT-*`, `UI-CAT` |
 | Product details | Correct SKU/variant selection, display price/availability, unavailable disables purchase | `CAT-*`, `UI-CAT` |
 | Cart/wishlist | Guest cart behavior, authenticated persistence, dedupe/quantity limits, session boundaries | `SHP-*`, `UI-SHP` |
 | Account/profile | Registration/recovery, address validation, protected histories, visible field errors | `IDN-*`, `UI-ACCOUNT` |
@@ -445,7 +445,7 @@ acceptance stay in owning task evidence, not a second component specification.
 | Pagination/search | Default/max page sizing, deterministic tie-break, bounded filters, no leakage of private data via search |
 | Resource revision | Strong ETag and `If-Match` required where API defines them; stale writes return correct `412`, missing precondition `428` |
 | Idempotency | Same scoped key/fingerprint replays; changed fingerprint conflicts; old key never makes duplicate order |
-| Response cache | Private responses `no-store`; public catalog safely revalidated after admin changes; no session cross-contamination |
+| Response cache | Private responses `no-store`; public catalog follows Architecture §5.1 no-store and next-request freshness; no session cross-contamination |
 | Provider endpoints | Verify callback transport/acknowledgment matrix; externally supplied body is untrusted until server verification |
 | Fault responses | Network loss, DB conflict, provider timeout return recoverable state without fabricated success |
 
@@ -509,7 +509,7 @@ The existing generic DB/runtime foundation tests do not prove these identity beh
 | SEC-10 | Default and explicit API projections omit verifiers/envelopes; reference-only notification payload, old-envelope removal, key/tamper failure and uncertain-send behavior | P03-009, P03-010, P03-011, P03-018 |
 | DB-07, DB-08, DB-10 | Identity migration detects collisions without PII output; replay/backfill safe; rollback does not revive revoked credentials; deletion review retains financial snapshots/source balances | P03-004, P03-008; P10-011 for restore |
 
-Execution results for these assertions are indexed in §16.1. Fixture-only routes and synthetic credentials do not
+Record execution results for these assertions through the evidence convention in §16.1. Fixture-only routes and synthetic credentials do not
 establish deployed browser security, provider delivery or release acceptance. Retained expired records must still be
 rejected; tests may disable TTL monitoring only on their owned disposable MongoDB process.
 
@@ -727,7 +727,7 @@ Capture run-specific workload, commit, data seed, test machine, server shape, wa
 | `REL-02` | Mongo transaction abort/temporary network failure | All-or-nothing records; bounded retry only for safe transaction errors |
 | `REL-03` | Scheduled expiry executes twice or concurrently | Single eligible release, no double counter decrement |
 | `REL-04` | IPN missing, arrives late, duplicated or precedes redirect | Durable reconciliation, exactly-once business effect per verified collection |
-| `REL-05` | Email provider rejects or times out | Notification marked retryable; business order/refund not rolled back/replayed |
+| `REL-05` | Email provider rejects or times out | Known retryable rejection uses bounded retry; ambiguous/timeout outcome stays uncertain for reconciliation; business order/refund not rolled back/replayed |
 | `REL-06` | Refund provider times out after possible request acceptance | Unknown result investigated before authorized retry; never assumed failed or completed |
 | `REL-07` | Job restarts while holding lease / worker crashes | Lease recovery and monotonic progress; no duplicate fulfillment/refund |
 | `REL-08` | Restore point precedes later gateway and locally committed changes | Identify loss window and freeze affected mutations; independently re-query externally verifiable payment/refund events, compare surviving logs/outbox/manual records, enumerate **unreconstructable gaps** and obtain authorized disposition before reopening writes |
@@ -827,7 +827,7 @@ Operations §5.5 owns execution/caching/security and §5.6 owns promotion. Selec
 
 ### 15.4 Refactor regression and pipeline verification
 
-Source refactors preserve existing scenario IDs and accepted historical evidence. Record before/after discovered cases when changing test paths; update Vitest globs, test TypeScript projects, browser fixture imports and smoke entry points together. A green run that silently drops tests fails acceptance. Application tests remain in their owning tests/ directories outside production src, following Architecture §§4–6. Enforce feature/server/client/backend import direction as an automated guard. The current formatting scope is listed in §5.3; keep backend coverage and add frontend files with their owning refactor. Formatting is separate from behavior changes.
+Source refactors preserve existing scenario IDs and accepted historical evidence. Record before/after discovered cases when changing test paths; update Vitest globs, test TypeScript projects, browser fixture imports and smoke entry points together. A green run that silently drops tests fails acceptance. Application tests remain in their owning tests/ directories outside production src, following Architecture §§4–6. Enforce feature/server/client/backend import direction as an automated guard. Preserve the formatting inventory listed in §5.3 when moving files. Formatting is separate from behavior changes.
 
 | Scope | Required parity evidence |
 | --- | --- |
@@ -859,7 +859,7 @@ that application's final revision before stage acceptance. Cover the owning appl
 lint/type/build, unit/contract/integration and smoke suites, plus relevant browser/accessibility, security,
 recovery and phase-exit scenarios. Do not create placeholder suites for unimplemented features. Link the
 consolidated results from that task and the phase gate; task-level focused verification remains mandatory.
-A blocked prerequisite prevents phase closeout even if executable local checks pass.
+A blocked prerequisite prevents the affected application-stage closeout even if executable local checks pass.
 
 P01-024, P03-022, P09-010 and P02-017 are the foundation, backend, admin and storefront closeouts.
 Backend user journeys are exercised through HTTP/API and real persistence, including guest proof,
@@ -920,42 +920,10 @@ Detailed requirement/owner mappings are maintained in [P01-003](./evidence/P01-0
 
 For each acceptance row, the mapped `DOMAIN-NN` scenario must eventually resolve to a runnable case and execution artifact. Suite names and fixture/evidence keys alone never satisfy acceptance. Separately report: documented scenario outlines, API slots, implemented test functions, executed cases, passed cases, blocked cases and reviewed acceptance items. Do not aggregate these categories into one misleading “number of tests.”
 
-Implemented foundation coverage is recorded in the task evidence below. These reports preserve
-observed results and limits; they do not replace the normative scenario/assertion matrices or imply
-that a later source revision/provider deployment has passed. Task-specific command histories stay
-in evidence rather than being appended to the API operation inventory.
-
-| Task | Implementation verification record |
-| --- | --- |
-| P01-019 | [Monorepo tooling and discovery parity](./evidence/P01-019-monorepo-refactor.md) |
-| P01-020 | [Folder structure and ownership audit](./evidence/P01-020-structure-audit.md) |
-| P02-015 | [Storefront structure and behavior parity](./evidence/P02-015-storefront-refactor.md) |
-| P02-016 | [Admin structure and behavior parity](./evidence/P02-016-admin-refactor.md) |
-| P03-004 | [Identity persistence](./evidence/P03-004-identity-models.md) |
-| P03-005 | [Session lifecycle](./evidence/P03-005-sessions.md) |
-| P03-006 | [Browser Origin/CSRF](./evidence/P03-006-browser-security.md) |
-| P03-007 | [Customer authentication](./evidence/P03-007-customer-auth.md) |
-| P03-008 | [Profile and addresses](./evidence/P03-008-profile-addresses.md) |
-| P03-009 | [Notification delivery](./evidence/P03-009-notifications.md) |
-| P03-010 | [Password recovery/change](./evidence/P03-010-password-recovery.md) |
-| P03-011 | [Verified email change](./evidence/P03-011-email-change.md) |
-| P03-012 | [Administrator credentials](./evidence/P03-012-admin-auth.md) |
-| P03-013 | [Identity authorization](./evidence/P03-013-authorization.md) |
-| P03-014 | [Shared authentication throttles](./evidence/P03-014-auth-throttles.md) |
-| P03-015 | [Customer/admin identity interfaces](./evidence/P03-015-identity-interfaces.md) |
-| P03-016 | [Identity/security verification](./evidence/P03-016-identity-security.md) |
-| P03-018 | [Identity API contracts](./evidence/P03-018-api-contracts.md) |
-| P03-019 | [Backend runtime composition](./evidence/P03-019-backend-composition.md) |
-| P03-020 | [Backend module ownership](./evidence/P03-020-module-ownership.md) |
-| P03-021 | [Backend target structure and parity](./evidence/P03-021-backend-refactor.md) |
-| P04-001 | [Category hierarchy](./evidence/P04-001-category-hierarchy.md) |
-| P04-002 | [Products and variants](./evidence/P04-002-product-variants.md) |
-| P04-003 | [Controlled media; EXT-04 remains blocked](./evidence/P04-003-controlled-media.md) |
-| P04-006 | [Inventory counters, atomic guards and movement replay](./evidence/P04-006-inventory-counters.md) |
-| P04-008 | [Transaction-scoped allocation primitives](./evidence/P04-008-inventory-allocation.md) |
-| P04-009 | [Public catalog filters, visibility and query profile](./evidence/P04-009-public-catalog.md) |
-| P04-010 | [Product detail, galleries and variant availability](./evidence/P04-010-product-details.md) |
-| P04-011 | [Request-time catalog freshness and SEO](./evidence/P04-011-catalog-seo.md) |
+Implementation status and evidence links are maintained in [Tasks](./TASKS.md). Each linked record
+identifies its tested revision, environment and observed results; historical results do not certify a
+later revision or deployed provider. Keep command histories and acceptance decisions in those records,
+not in this specification or its operation inventory.
 
 ### 16.2 Functional requirement coverage register
 
@@ -1081,7 +1049,7 @@ Publish a per-feature report: planned/executed/pass/fail/blocked counts, critica
 | **M7 — Production Ready** | Approved policies, 3 online channels + COD, HTTPS, monitoring, live-safe smoke, restore **REL-08** and deployment rollback **DEP-01/02** rehearsal evidence | Explicit release authorization; missing channels block unless PRD formally revised |
 | **M8 — Handover Accepted** | Test/defect/evidence archive, runbooks, operator ownership, constraints, known issue disposition | Documented operations and support acceptance |
 
-Milestone dependencies and Phase 10/11 scheduling are governed by Implementation Plan §11. Mark no milestone accepted in this planning revision.
+Milestone dependencies and Phase 10/11 scheduling are governed by Implementation Plan §11. Record milestone acceptance in Tasks with the applicable run and independent review evidence.
 
 ### 18.2 Release blocking rules
 
@@ -1129,89 +1097,89 @@ The entries below preserve the **meaning and ordering** of PRD §14. They are pl
 
 ### B.1 Customer acceptance (PRD §14.1)
 
-| Acceptance ID | PRD acceptance condition | Planned cases / evidence | Status |
-| --- | --- | --- | --- |
-| `AC-C01` | Customers can register, log in, and reset passwords. | `API-01, SEC-01, SEC-03` | Not Run |
-| `AC-C02` | Customers can manage profiles and addresses. | `ACC-01`–`ACC-05`, `SEC-06` | Not Run |
-| `AC-C03` | Guests can place orders without creating accounts. | `CHK-01, ORD-07` | Not Run |
-| `AC-C04` | Guests can access only their own orders after email verification. | `API-09, SEC-05, ORD-07` | Not Run |
-| `AC-C05` | Product browsing, search, filtering, and sorting work. | `CAT-01, CAT-03, UI-CAT` | Not Run |
-| `AC-C06` | Product variants and stock are handled correctly. | `CAT-02, INV-01` | Not Run |
-| `AC-C07` | Shopping carts persist appropriately. | `SHP-01` | Not Run |
-| `AC-C08` | Wishlists work across sessions. | `SHP-02` (cross-session persistence) | Not Run |
-| `AC-C09` | Product discounts calculate correctly. | `PRM-01, FX-MONEY-01/02` | Not Run |
-| `AC-C10` | Concurrent coupon use respects limits; expired holds are released. | `PRM-03, PRM-04, INV-02` | Not Run |
-| `AC-C11` | Eligible customers can submit reviews. | `REV-01` | Not Run |
-| `AC-C12` | Reviews are moderated appropriately. | `REV-01, UI-ADMIN` | Not Run |
-| `AC-C13` | Checkout calculates accurate order totals. | `CHK-03, PRM-01` | Not Run |
-| `AC-C14` | Customers can place COD orders. | `CHK-02, PAY-12, GATE-COD` | Not Run |
-| `AC-C15` | bKash payments work through approved integration. | `PAY-01, GATE-BKASH` | Not Run |
-| `AC-C16` | Nagad payments work through approved integration. | `PAY-01, GATE-NAGAD` | Not Run |
-| `AC-C17` | Rocket payments work through approved integration. | `PAY-01, GATE-ROCKET` | Not Run |
-| `AC-C18` | Online payments are verified server-side. | `PAY-01, PAY-02, PAY-03` | Not Run |
-| `AC-C19` | Payment retries create no duplicate orders or repeated effects for the same collection; independently paid attempts remain recorded and excess collections enter correction/refund resolution. | `CHK-04, PAY-04, PAY-09, RFD-05` | Not Run |
-| `AC-C20` | Customers can view order status. | `ORD-01, UI-ORD` | Not Run |
-| `AC-C21` | Customers can request eligible cancellations. | `ORD-02, ORD-03` | Not Run |
-| `AC-C22` | Customers can request eligible returns. | `RET-01, RET-05` | Not Run |
-| `AC-C23` | Physical returns are inspected before related refunds are approved; approved missing-item/shortage claims do not require a fictional physical return. | `RET-02, RET-03` | Not Run |
-| `AC-C24` | Guest coupon eligibility respects the account requirement for per-customer limits. | `PRM-02` | Not Run |
-| `AC-C25` | COD placement commits allocation once and remains Pending until administrator confirmation. | `CHK-02, INV-01` | Not Run |
-| `AC-C26` | Customers can track refund status. | `RFD-03, RFD-09, UI-AFTERSALES` | Not Run |
-| `AC-C27` | Customers receive important transactional notifications. | `NTC-01`–`NTC-12`, `REL-05` | Not Run |
+| Acceptance ID | PRD acceptance condition | Planned cases / evidence |
+| --- | --- | --- |
+| `AC-C01` | Customers can register, log in, and reset passwords. | `API-01, SEC-01, SEC-03` |
+| `AC-C02` | Customers can manage profiles and addresses. | `ACC-01`–`ACC-05`, `SEC-06` |
+| `AC-C03` | Guests can place orders without creating accounts. | `CHK-01, ORD-07` |
+| `AC-C04` | Guests can access only their own orders after email verification. | `API-09, SEC-05, ORD-07` |
+| `AC-C05` | Product browsing, search, filtering, and sorting work. | `CAT-01, CAT-03, UI-CAT` |
+| `AC-C06` | Product variants and stock are handled correctly. | `CAT-02, INV-01` |
+| `AC-C07` | Shopping carts persist appropriately. | `SHP-01` |
+| `AC-C08` | Wishlists work across sessions. | `SHP-02` (cross-session persistence) |
+| `AC-C09` | Product discounts calculate correctly. | `PRM-01, FX-MONEY-01/02` |
+| `AC-C10` | Concurrent coupon use respects limits; expired holds are released. | `PRM-03, PRM-04, INV-02` |
+| `AC-C11` | Eligible customers can submit reviews. | `REV-01` |
+| `AC-C12` | Reviews are moderated appropriately. | `REV-01, UI-ADMIN` |
+| `AC-C13` | Checkout calculates accurate order totals. | `CHK-03, PRM-01` |
+| `AC-C14` | Customers can place COD orders. | `CHK-02, PAY-12, GATE-COD` |
+| `AC-C15` | bKash payments work through approved integration. | `PAY-01, GATE-BKASH` |
+| `AC-C16` | Nagad payments work through approved integration. | `PAY-01, GATE-NAGAD` |
+| `AC-C17` | Rocket payments work through approved integration. | `PAY-01, GATE-ROCKET` |
+| `AC-C18` | Online payments are verified server-side. | `PAY-01, PAY-02, PAY-03` |
+| `AC-C19` | Payment retries create no duplicate orders or repeated effects for the same collection; independently paid attempts remain recorded and excess collections enter correction/refund resolution. | `CHK-04, PAY-04, PAY-09, RFD-05` |
+| `AC-C20` | Customers can view order status. | `ORD-01, UI-ORD` |
+| `AC-C21` | Customers can request eligible cancellations. | `ORD-02, ORD-03` |
+| `AC-C22` | Customers can request eligible returns. | `RET-01, RET-05` |
+| `AC-C23` | Physical returns are inspected before related refunds are approved; approved missing-item/shortage claims do not require a fictional physical return. | `RET-02, RET-03` |
+| `AC-C24` | Guest coupon eligibility respects the account requirement for per-customer limits. | `PRM-02` |
+| `AC-C25` | COD placement commits allocation once and remains Pending until administrator confirmation. | `CHK-02, INV-01` |
+| `AC-C26` | Customers can track refund status. | `RFD-03, RFD-09, UI-AFTERSALES` |
+| `AC-C27` | Customers receive important transactional notifications. | `NTC-01`–`NTC-12`, `REL-05` |
 
 ### B.2 Administrator acceptance (PRD §14.2)
 
-| Acceptance ID | PRD acceptance condition | Planned cases / evidence | Status |
-| --- | --- | --- | --- |
-| `AC-A01` | Administrator authentication is secure. | `SEC-02, SEC-03, UI-ADMIN-AUTH` | Not Run |
-| `AC-A02` | Products and variants can be managed. | `CAT-01, CAT-02, UI-ADMIN` | Not Run |
-| `AC-A03` | Categories can be managed. | `CAT-01, UI-ADMIN` | Not Run |
-| `AC-A04` | Physical, reserved, committed, and available stock remain consistent. | `INV-01, INV-03, DB-09` | Not Run |
-| `AC-A05` | Delivery zones can be configured. | `ADM-05, ORD-05` | Not Run |
-| `AC-A06` | Delivery charges can be changed. | `ADM-05, ORD-05, API-04` | Not Run |
-| `AC-A07` | Updated charges apply only to future orders. | `ADM-05, ORD-05, DB-07` | Not Run |
-| `AC-A08` | Orders can be managed. | `ORD-01, ORD-04, UI-ADMIN` | Not Run |
-| `AC-A09` | Customer complaints can be recorded and resolved. | `SUP-01`–`SUP-04`, `REL-10` | Not Run |
-| `AC-A10` | COD collections can be recorded. | `PAY-12` | Not Run |
-| `AC-A11` | Payment records can be reviewed. | `PAY-05, PAY-09, UI-ADMIN` | Not Run |
-| `AC-A12` | Coupons can be managed. | `PRM-02, PRM-03, UI-ADMIN` | Not Run |
-| `AC-A13` | Reviews can be moderated. | `REV-01, UI-ADMIN` | Not Run |
-| `AC-A14` | Return requests can be processed. | `RET-01, RET-05` | Not Run |
-| `AC-A15` | Full and partial refunds can be processed. | `RFD-01, RFD-02, RFD-07` | Not Run |
-| `AC-A16` | Refund history is preserved. | `DB-08, RFD-03, RFD-04` | Not Run |
-| `AC-A17` | Dashboard metrics account for refunds and COD. | `ADM-06, RFD-05, PAY-12` | Not Run |
-| `AC-A18` | Sensitive administrative actions are logged. | `SEC-12, DB-08` | Not Run |
+| Acceptance ID | PRD acceptance condition | Planned cases / evidence |
+| --- | --- | --- |
+| `AC-A01` | Administrator authentication is secure. | `SEC-02, SEC-03, UI-ADMIN-AUTH` |
+| `AC-A02` | Products and variants can be managed. | `CAT-01, CAT-02, UI-ADMIN` |
+| `AC-A03` | Categories can be managed. | `CAT-01, UI-ADMIN` |
+| `AC-A04` | Physical, reserved, committed, and available stock remain consistent. | `INV-01, INV-03, DB-09` |
+| `AC-A05` | Delivery zones can be configured. | `ADM-05, ORD-05` |
+| `AC-A06` | Delivery charges can be changed. | `ADM-05, ORD-05, API-04` |
+| `AC-A07` | Updated charges apply only to future orders. | `ADM-05, ORD-05, DB-07` |
+| `AC-A08` | Orders can be managed. | `ORD-01, ORD-04, UI-ADMIN` |
+| `AC-A09` | Customer complaints can be recorded and resolved. | `SUP-01`–`SUP-04`, `REL-10` |
+| `AC-A10` | COD collections can be recorded. | `PAY-12` |
+| `AC-A11` | Payment records can be reviewed. | `PAY-05, PAY-09, UI-ADMIN` |
+| `AC-A12` | Coupons can be managed. | `PRM-02, PRM-03, UI-ADMIN` |
+| `AC-A13` | Reviews can be moderated. | `REV-01, UI-ADMIN` |
+| `AC-A14` | Return requests can be processed. | `RET-01, RET-05` |
+| `AC-A15` | Full and partial refunds can be processed. | `RFD-01, RFD-02, RFD-07` |
+| `AC-A16` | Refund history is preserved. | `DB-08, RFD-03, RFD-04` |
+| `AC-A17` | Dashboard metrics account for refunds and COD. | `ADM-06, RFD-05, PAY-12` |
+| `AC-A18` | Sensitive administrative actions are logged. | `SEC-12, DB-08` |
 
 ### B.3 Reliability and security acceptance (PRD §14.3)
 
-| Acceptance ID | PRD acceptance condition | Planned cases / evidence | Status |
-| --- | --- | --- | --- |
-| `AC-R01` | Duplicate checkout submissions do not create duplicate orders. | `CHK-04, CHK-05` | Not Run |
-| `AC-R02` | Concurrent purchases cannot oversell stock. | `INV-01` | Not Run |
-| `AC-R03` | Expired payment reservations are released. | `INV-02, REL-03` | Not Run |
-| `AC-R04` | Duplicate payment callbacks do not duplicate financial effects. | `PAY-04` | Not Run |
-| `AC-R05` | Combined pending and completed refunds never exceed the collected payment. | `RFD-02, DB-12` | Not Run |
-| `AC-R06` | Duplicate refunds are prevented. | `RFD-02, RFD-04` | Not Run |
-| `AC-R07` | Partial refunds use original item prices, discounts, and quantities. | `RFD-01, FX-MONEY-03` | Not Run |
-| `AC-R08` | Unauthorized users cannot access protected data. | `API-03, SEC-06` | Not Run |
-| `AC-R09` | Invalid order status transitions are rejected. | `ORD-01, ORD-03` | Not Run |
-| `AC-R10` | Core customer and admin workflows pass functional testing. | `UI-HOME, UI-CAT, UI-CHECKOUT, UI-ADMIN` | Not Run |
-| `AC-R11` | SSLCOMMERZ IPN and browser-return paths are independently reconciled with validated provider status. | `PAY-01, PAY-02, PAY-05` | Not Run |
-| `AC-R12` | Payment validation rejects mismatched transaction reference, amount, currency or merchant account. | `PAY-03, PAY-10, PAY-14` | Not Run |
-| `AC-R13` | Risk-flagged transactions remain on hold pending authorized review. | `PAY-08` | Not Run |
-| `AC-R14` | Late verified payments recheck inventory and coupon capacity only for eligible non-cancelled orders; unavailable capacity holds fulfillment for refund or admin resolution. | `PAY-06` | Not Run |
-| `AC-R15` | A verified payment after cancellation is recorded without reopening fulfillment. | `PAY-07` | Not Run |
-| `AC-R16` | Duplicate collections remain recorded and can be refunded against their own source balance without duplicating fulfillment. | `PAY-09, RFD-05` | Not Run |
-| `AC-R17` | Final failed-delivery closure records custody/disposition; only recovered inspected resellable goods are restocked. | `ORD-04, RET-06` | Not Run |
-| `AC-R18` | Refund initiation and verified refund completion are recorded as distinct events. | `RFD-03, RFD-08` | Not Run |
-| `AC-R19` | COD payment remains unpaid until collection is verified. | `PAY-12` | Not Run |
-| `AC-R20` | Checkout shows applicable delivery deadlines; complaints receive a tracked response. | `ORD-06, SUP-04, REL-10` | Not Run |
-| `AC-R21` | Payment and refund sandbox tests pass. | `PAY-01, RFD-08 + sandbox evidence` | Not Run |
-| `AC-R22` | Database backup and restore procedures are verified. | `REL-08, DB-10` (loss-gap reconciliation) | Not Run |
-| `AC-R23` | Production services use HTTPS. | `SEC-11, ENV-01` | Not Run |
-| `AC-R24` | Website functions across supported devices and browsers. | `§14 device/browser matrix` | Not Run |
+| Acceptance ID | PRD acceptance condition | Planned cases / evidence |
+| --- | --- | --- |
+| `AC-R01` | Duplicate checkout submissions do not create duplicate orders. | `CHK-04, CHK-05` |
+| `AC-R02` | Concurrent purchases cannot oversell stock. | `INV-01` |
+| `AC-R03` | Expired payment reservations are released. | `INV-02, REL-03` |
+| `AC-R04` | Duplicate payment callbacks do not duplicate financial effects. | `PAY-04` |
+| `AC-R05` | Combined pending and completed refunds never exceed the collected payment. | `RFD-02, DB-12` |
+| `AC-R06` | Duplicate refunds are prevented. | `RFD-02, RFD-04` |
+| `AC-R07` | Partial refunds use original item prices, discounts, and quantities. | `RFD-01, FX-MONEY-03` |
+| `AC-R08` | Unauthorized users cannot access protected data. | `API-03, SEC-06` |
+| `AC-R09` | Invalid order status transitions are rejected. | `ORD-01, ORD-03` |
+| `AC-R10` | Core customer and admin workflows pass functional testing. | `UI-HOME, UI-CAT, UI-CHECKOUT, UI-ADMIN` |
+| `AC-R11` | SSLCOMMERZ IPN and browser-return paths are independently reconciled with validated provider status. | `PAY-01, PAY-02, PAY-05` |
+| `AC-R12` | Payment validation rejects mismatched transaction reference, amount, currency or merchant account. | `PAY-03, PAY-10, PAY-14` |
+| `AC-R13` | Risk-flagged transactions remain on hold pending authorized review. | `PAY-08` |
+| `AC-R14` | Late verified payments recheck inventory and coupon capacity only for eligible non-cancelled orders; unavailable capacity holds fulfillment for refund or admin resolution. | `PAY-06` |
+| `AC-R15` | A verified payment after cancellation is recorded without reopening fulfillment. | `PAY-07` |
+| `AC-R16` | Duplicate collections remain recorded and can be refunded against their own source balance without duplicating fulfillment. | `PAY-09, RFD-05` |
+| `AC-R17` | Final failed-delivery closure records custody/disposition; only recovered inspected resellable goods are restocked. | `ORD-04, RET-06` |
+| `AC-R18` | Refund initiation and verified refund completion are recorded as distinct events. | `RFD-03, RFD-08` |
+| `AC-R19` | COD payment remains unpaid until collection is verified. | `PAY-12` |
+| `AC-R20` | Checkout shows applicable delivery deadlines; complaints receive a tracked response. | `ORD-06, SUP-04, REL-10` |
+| `AC-R21` | Payment and refund sandbox tests pass. | `PAY-01, RFD-08 + sandbox evidence` |
+| `AC-R22` | Database backup and restore procedures are verified. | `REL-08, DB-10` (loss-gap reconciliation) |
+| `AC-R23` | Production services use HTTPS. | `SEC-11, ENV-01` |
+| `AC-R24` | Website functions across supported devices and browsers. | `§14 device/browser matrix` |
 
-**Mapping rule:** `GATE-*` and `NTF-*` are planned evidence keys, and `+ sandbox evidence` is an external verification requirement—not a test ID. `FX-*` are fixtures and `UI-*`/`ADM-METRICS` are planned suites. Each acceptance row must be linked to an executable case, a real run artifact and a reviewer before acceptance. `Not Run` remains accurate until then.
+**Mapping rule:** `GATE-*` and `NTF-*` are planned evidence keys, and `+ sandbox evidence` is an external verification requirement—not a test ID. `FX-*` are fixtures and `UI-*`/`ADM-METRICS` are planned suites. Each acceptance row must be linked to an executable case, a real run artifact and a reviewer before acceptance. Record execution status in the linked run/task record; this mapping does not report current pass or acceptance status.
 
 ---
 

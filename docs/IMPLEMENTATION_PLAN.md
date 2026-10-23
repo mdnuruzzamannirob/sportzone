@@ -45,7 +45,7 @@ Turn the approved product, architecture, and design baselines into an executable
 1. Deliver the PRD's initial-release functionality for guests, customers, and the single authorized administrator role.
 2. Preserve correct order, payment, stock, coupon, return, and refund behavior under retries and concurrent requests.
 3. Build the Next.js storefront, React + Vite administration portal, and modular Express API within the approved npm-workspaces monorepo.
-4. Apply the approved design system, including accessible mobile-first layouts and matching light/dark brand tokens.
+4. Apply the approved native HeroUI design system, accessible mobile-first layouts and light/dark semantic tokens.
 5. Establish repeatable tests, safe deployment procedures, monitoring, backup/recovery, and operational handover.
 6. Keep every functional requirement and important non-functional requirement traceable to a phase and test evidence.
 
@@ -197,7 +197,7 @@ Before feature work, confirm that the current PRD, architecture, and design revi
 
 ### 4.2 Repository and application setup
 
-Create the repository layout defined in Architecture §4. Establish the minimal npm-workspaces shell in Phase 01, initialize the two frontend application shells in Phase 02, and complete the backend application/tooling foundation in Phase 03; these activities are not deferred until Phase 04:
+Architecture §4 owns the repository layout. The workspace and application foundations established under Phases 01–03 are retained; the foundation stage reconciles their actual commands, boundaries and readiness through P01-024. Inspect existing implementation before adding setup or scaffolding:
 
 ```text
 sportzone/
@@ -222,7 +222,7 @@ sportzone/
 └── package.json         # npm workspaces
 ```
 
-Use supported mutually compatible package versions and commit the lockfile. Configure workspace scripts for development, linting, type checking, testing, and independent application builds. Install code-formatting and lint rules appropriate to each application. Add a CI baseline that fails on broken types, tests, lint, or builds; expand its coverage as features arrive. Verify `AGENTS.md` during Phase 01 with source-document precedence, scope constraints, task/evidence conventions, and required verification; keep it aligned with this plan and `TASKS.md`.
+Retain supported mutually compatible package versions and the committed lockfile. Workspace development, lint, type-check, test and build commands must work independently. Reconcile existing tooling through P01-022 so backend-private work runs without starting frontends or installing browsers. Keep applicable failures blocking and retain full integrated/release verification under Testing §15. Confirm executable support before documenting a command as available.
 
 Foundation includes scoped development/CI tooling and the automatic API artifacts defined in API §18.3. These capabilities require implementation evidence; specification changes do not establish tool availability.
 
@@ -272,7 +272,7 @@ The twelve phase labels below classify requirement ownership and preserve existi
 | 06 — Checkout, Orders, and Delivery Rules | Server totals, delivery config, COD, order lifecycle, guest lookup, hold foundation | Catalog, inventory, promotions, identity | Verified COD journey and payment-ready checkout |
 | 07 — Payment Integration and Verification | Hosted payments, independent verification, retries, reconciliation | Checkout intents, reservation/coupon holds | Verified online collection and allocation |
 | 08 — Returns and Refunds | Cancellation financial resolution, returns, inspection, gateway/manual refund handling | Orders, collections, snapshots | Safe post-purchase workflows |
-| 09 — Admin Management and Reports | Remaining management workflows, reporting, operational oversight | Feature-level admin screens and financial history | Complete administration capability |
+| 09 — Admin Management and Reports | Management APIs, screens, reporting and operational oversight | Domain APIs and financial history; backend acceptance before screens | Complete administration capability |
 | 10 — Testing, Security Review, and Bug Fixing | Full regression, concurrency, accessibility, performance, recovery | Integrated feature coverage | Evidence-backed release candidate |
 | 11 — Deployment and Production Verification | Staging-to-production release, live configuration, smoke tests | Acceptance gates and operator approvals | Approved, monitored production release |
 | 12 — Documentation and Handover | Source, operations, configuration, runbooks, limitations | Verified production implementation | Accepted handover |
@@ -330,7 +330,7 @@ The twelve phase labels below classify requirement ownership and preserve existi
 
 **Objective:** Establish the modular Express API and secure identity foundation used by customer, admin, and later guest workflows.
 
-**Prerequisites:** Phase 01 readiness, transaction-capable development/test database, Phase 02 UI foundations where required.
+**Prerequisites:** Foundation-stage acceptance and a transaction-capable development/test database. Backend API work has no frontend UI prerequisite; client identity integration belongs to its owning application stage.
 
 **Backend work packages:**
 
@@ -353,7 +353,7 @@ The twelve phase labels below classify requirement ownership and preserve existi
 
 **Objective:** Make approved products discoverable and purchasable by SKU while establishing authoritative stock accounting.
 
-**Prerequisites:** Protected admin API, data and UI foundations; Cloudinary account, upload policy, and credential readiness confirmed or tracked as a media-acceptance blocker. Product-media integration itself is implemented in this phase.
+**Prerequisites:** Protected admin API and data foundation; client work additionally requires its owning stage and UI foundation. Cloudinary account, upload policy and credentials must be confirmed or tracked as media-acceptance blockers.
 
 **Backend work packages:**
 
@@ -475,9 +475,9 @@ The twelve phase labels below classify requirement ownership and preserve existi
 
 ### Phase 09 — Admin management and reports
 
-**Objective:** Complete cross-feature administration and reporting over already-implemented domain data; do not defer earlier workflow-critical admin screens to this phase.
+**Objective:** Complete cross-feature management APIs during backend, then implement all administration screens during admin using the domain work packages in Phases 04–08 and this phase.
 
-**Prerequisites:** Catalog, checkout, payment, returns/refunds, and administrative access working through real APIs.
+**Prerequisites:** Backend management/reporting packages require their domain data and administrative authorization. Screen implementation requires accepted backend closeout P03-022; admin closeout is P09-010. Integrated staging deployment follows storefront closeout P02-017.
 
 **Work packages:**
 
@@ -495,7 +495,7 @@ The twelve phase labels below classify requirement ownership and preserve existi
 
 **Deliverable:** Integrated store-management portal and basic reporting capability.
 
-**Exit gate:** All required administration tasks in the PRD can be completed using authorized screens and verified backend outcomes; the integrated staging deployment is available for Phase 10 acceptance.
+**Exit gate:** P09-010 confirms all required administration tasks can be completed using authorized screens and verified backend outcomes. P09-011/P09-012 separately provide integrated staging for Phase 10 after storefront acceptance; earlier isolated infrastructure/provider provisioning may support backend verification.
 
 ### Phase 10 — Testing, security review, and bug fixing
 
@@ -643,7 +643,7 @@ Independent work may proceed within the active application stage once prerequisi
 
 ### 8.2 Interface and workflow coverage
 
-- **Storefront:** Home, Products, Category, Product Details, Cart, Wishlist, account/authentication, Profile, Addresses, My Orders/Order Details, Reviews, Checkout, Payment Result, Order Confirmation, Guest Order Lookup, Returns, Refund Details, Contact, and policy/help pages are implemented in the phases supporting their corresponding behavior.
+- **Storefront:** Home, Products, Category, Product Details, Cart, Wishlist, account/authentication, Profile, Addresses, My Orders/Order Details, Reviews, Checkout, Payment Result, Order Confirmation, Guest Order Lookup, Returns, Refund Details, Contact, and policy/help pages are implemented during the storefront stage using the corresponding domain contracts.
 - **Admin:** Login, Dashboard, Products/Add/Edit, Categories, Inventory, Orders/Details, Customers, Delivery Settings, Payments, Coupons, Reviews, Returns, Refunds, Reports, and Store Settings must exist where required by the design. Complaints may be managed within customer/order context rather than a separate page.
 - **Critical flows:** Registration/recovery, browse-to-cart, COD, hosted online payment, missing/duplicate IPN, guest access, fulfillment, failed delivery, cancellation, return, refund, review moderation, and administrative exception handling require linked E2E or integration evidence.
 
@@ -738,11 +738,11 @@ Block release for a defect that can permit unauthorized access, duplicate/incorr
 
 | Milestone | Evidence required | Decision |
 | --- | --- | --- |
-| M1 — Foundation Ready | Builds/type checks, API/DB health, session separation, baseline CI and token tests | Approve feature slices |
-| M2 — Catalog Ready | Admin CRUD, unique SKU/slug, stock invariants, public search/variant flows | Approve shopping work |
-| M3 — COD Commerce Ready | Guest/customer checkout, accurate quote, duplicate safety, stock/coupon commitment, order/guest access | Approve provider integration |
-| M4 — Payment Ready | Gateway sandbox verification, IPN/retry/reconcile, late pay, risk hold, duplicate-collection evidence | Approve financial after-sales integration |
-| M5 — After-Sales Ready | Valid return/inspection, refund caps and allocation, verified gateway/manual payout, audit history | Approve final admin/report review |
+| M1 — Foundation Ready | Builds/type checks, API/DB health, session separation, baseline CI and token tests | Accept product foundation evidence |
+| M2 — Catalog Ready | Admin CRUD, unique SKU/slug, stock invariants, public search/variant flows | Accept integrated catalog evidence |
+| M3 — COD Commerce Ready | Guest/customer checkout, accurate quote, duplicate safety, stock/coupon commitment, order/guest access | Accept integrated COD commerce evidence |
+| M4 — Payment Ready | Gateway sandbox verification, IPN/retry/reconcile, late pay, risk hold, duplicate-collection evidence | Accept integrated payment evidence |
+| M5 — After-Sales Ready | Valid return/inspection, refund caps and allocation, verified gateway/manual payout, audit history | Accept integrated after-sales evidence |
 | M6 — Feature Complete / Release Candidate | FR-01–FR-34 coverage, completed required admin UI, NFR/security/accessibility/concurrency regression on staging | Approve production-candidate promotion |
 | M7 — Production Ready | Approved policies/merchant channels, HTTPS, rollback, backup/restore, monitoring, live-safe smoke checks | Authorize production launch |
 | M8 — Handover Accepted | Repository, configuration, runbooks, operator guide, ownership, support boundaries, known limitations | Close implementation |
@@ -761,7 +761,7 @@ Architecture §13 owns topology and environment isolation. [Operations](./OPERAT
 
 ### 12.2 Continuous integration and deployment
 
-- CI runs lint, type checking, applicable tests, and separate storefront/admin/backend builds before promotion.
+- CI selects affected application and repository checks under Testing §15. Backend-private changes require no frontend build, UI tests or browser installation. Shared changes select their affected consumers; integrated promotion verifies all applications.
 - Deployment verifies schema/index compatibility and any safe data/configuration migration before serving dependent code.
 - Provision and deploy integrated staging before Phase 10; validate deployed origins for credentialed cookies, CORS/CSRF, payment IPNs, hosted returns, guest links, and administrator sessions.
 - Production release proceeds only after explicit acceptance; record artifact/version, environment changes, secrets-rotation needs, and rollback trigger.

@@ -93,7 +93,8 @@ multi-vendor/multi-currency and additional administrator permission tiers are no
 
 ### 1.3 Source precedence and delivery timing
 
-Establish the baseline during **Phase 01**, add operational contracts with each feature slice, provision integrated
+Establish the operational baseline in the foundation stage and maintain affected procedures as backend,
+admin and storefront capabilities are implemented under Implementation Plan §3.1. Provision integrated
 staging before Phase 10, execute production readiness in **Phase 11 / M7**, and reconcile the document to deployed
 reality during **Phase 12 / M8**. Production topology must match Architecture §13. Out-of-date runbooks are a
 release blocker when they are necessary to recover a critical flow.
@@ -130,10 +131,10 @@ independently bypass the authoritative domain rules.
 
 | Component | Deployment characteristic | Health/recovery expectation | Sensitive boundary |
 | --- | --- | --- | --- |
-| Storefront | Next.js-capable runtime; required SSR/revalidation supported | Pages render; public catalog cache invalidation tested | No merchant/DB secrets or private shared caches |
+| Storefront | Next.js-capable runtime; request-time catalog SSR under Architecture §5.1 | Pages render; next-request freshness and unavailable/404 behavior verified | No merchant/DB secrets or private shared caches |
 | Admin portal | Versioned Vite static assets; SPA fallback | Deep-link navigation and admin login function | Frontend environment variables are public |
 | Express API | Independent deployable Node.js service; approved host/origin | `/api/v1/health/live` and restricted `/api/v1/health/ready` | All authenticated commerce actions enforced server-side |
-| MongoDB | Transaction-capable replica set/cluster with index management | Connections, transaction capability, backups and restoration verified | Private network, least-privilege service account |
+| MongoDB | Transaction-capable deployment with index management | Connections, transaction capability, backups and restoration verified | Restricted network access, least-privilege database identity |
 | Scheduled worker | Durable leased/claimed job execution using backend services | Lag, failures, expired leases and restart safety visible | No public unauthenticated job execution endpoints |
 | SSLCOMMERZ | Approved sandbox vs live credentials and callback URLs | Server-side transaction/refund verification available | Secrets stay in backend; live channel activation evidenced |
 | Cloudinary/email | Restricted backend-controlled adapters | Retry/error observation and credential ownership | Private return evidence; no raw secret leakage |
@@ -267,6 +268,22 @@ flowchart TD
 
 ### 5.2 Reproducible build interface
 
+#### Database setup
+
+Use a transaction-capable MongoDB deployment. Supply its private
+connection URI as `MONGODB_URI` and an isolated application database as `MONGODB_DB_NAME`; Mongoose
+uses these through the existing backend configuration boundary. Provision a database identity and
+network access for the actual backend environment, keep credentials out of browser/public variables,
+and verify replica/session/transaction capability before enabling dependent writes. Apply the explicit
+bootstrap/index procedures in §7. Development, staging and production must use separated data/access;
+integration tests retain their own disposable replica sets and never target application data.
+The repository's local database tool below provides a disposable development replica set.
+MongoDB Atlas is an optional managed hosting choice; record its network, identity, backup and billing
+configuration in the protected environment inventory when selected. Cloud hosting is not a local
+development prerequisite.
+
+#### Build and verification commands
+
 The monorepo uses `storefront/`, `admin/` and `backend/` workspaces (Architecture §4).
 [Testing §5.3](./TESTING.md#53-standard-execution-interface) owns the executable check inventory.
 For a backend candidate, use the existing owning-workspace interface with isolated test prerequisites:
@@ -283,6 +300,8 @@ independent lint/type/unit/build and HTTP smoke commands in [ci-workspaces.json]
 not production static hosting; configure fallback and noindex/private document headers at the deployment host. No automated production deployment, migration or restore
 command is supplied; local storefront build/start is not a production deployment procedure. See
 [Testing §5.3](./TESTING.md#53-standard-execution-interface) for current coverage and the complete required interface.
+
+#### Local development lifecycle
 
 `npm run dev` coordinates local development on Linux/macOS/WSL: one TypeScript watch compiler and both UI dev servers.
 The compiler uses the existing backend tsconfig; its first successful emit starts the API and later
@@ -302,6 +321,8 @@ Both checks are in
 the CI inventory and fail on violations. Their pinned Biome/TypeScript tools are declared at the root,
 using the same versions already locked for the workspaces.
 
+#### Backend configuration and startup
+
 API startup calls `openDatabase(uri, dbName)` after configuration validation, before binding HTTP. Use an isolated explicit database name; `admin`, `local` and `config` are rejected. Pools are bounded to ten connections, with five-second selection/connect/queue waits and a fifteen-second socket timeout. Startup failures return static database codes without URI/driver text; failed connections are destroyed. Connections require replica-set topology and logical sessions. Automatic collection/index creation and command buffering are disabled.
 
 Database startup failures include a safe `reasonCode` in the `startup_failed` lifecycle record:
@@ -314,7 +335,7 @@ failures, keep the separate replica-set tool running and copy its current URI in
 
 Index changes are explicit/additive through `createDeclaredIndexes` and checked by `verifyDeclaredIndexes`; extra indexes are reported and preserved. No `syncIndexes`, global drop or automatic destructive migration is added. Domain models/index plans remain owned by their feature tasks. Transactions use primary/snapshot/majority with a ten-second driver retry deadline and five-second commit limit. Work may rerun: only sequential database effects belong in the callback, every write must carry its session, and external effects must stay outside. Nested independent transactions are rejected. Retain deployment-grade failover/restore/replication evidence for staging/operations gates.
 
-The compiled backend starts with `npm run start --workspace=backend` after build, using injected process variables. Local files are loaded only by an explicit Node flag, e.g. root command `node --env-file=.env backend/dist/server.js`. The environment validator requires NODE_ENV, APP_ENV, RELEASE_ID, MongoDB URI/name, API/storefront/admin origins and exact allowed-origin pair, plus separate SESSION_SECRET and HEALTH_MONITOR_TOKEN. Secrets use 64 lowercase hex characters representing 32 cryptographically random bytes; provision them privately with a cryptographic generator, never committed examples. The customer/admin session service uses the session secret for domain-separated HMAC digests; public login/CSRF composition is not activated by health-only startup. Unknown environment keys are ignored so inactive provider adapters do not become fake startup dependencies.
+The compiled backend starts with `npm run start --workspace=backend` after build, using injected process variables. Local files are loaded only by an explicit Node flag, e.g. root command `node --env-file=.env backend/dist/server.js`. The environment validator requires NODE_ENV, APP_ENV, RELEASE_ID, MongoDB URI/name, API/storefront/admin origins and exact allowed-origin pair, plus separate SESSION_SECRET and HEALTH_MONITOR_TOKEN. Secrets use 64 lowercase hex characters representing 32 cryptographically random bytes; provision them privately with a cryptographic generator, never committed examples. The customer/admin session service uses the session secret for domain-separated HMAC digests; identity HTTP routes require their explicit activation flags. Unknown environment keys are ignored so inactive provider adapters do not become fake startup dependencies.
 
 APP_ENV is local/test/staging/production, paired with NODE_ENV development/test/production respectively (staging uses production). Staging/production origins require HTTPS and reject localhost/loopback conventions. RELEASE_ID is bounded nonsecret deployment metadata. PORT defaults to 4000 and must be 1–65535. API_BIND_HOST defaults to 127.0.0.1 and permits only documented loopback/wildcard bind addresses. Production/wildcard listeners require the approved TLS proxy/firewall/operational ingress; a bind option is not deployment acceptance. Missing/invalid values fail before DB/network access and emit only safe configuration key names, never values.
 
@@ -330,7 +351,7 @@ processes before declaring revocation; no compatibility key ring or plaintext to
 incidents may also use per-principal revision/revocation through the authorized identity service. Preserve audit/incident
 evidence without raw tokens; do not log Set-Cookie/Cookie/CSRF headers. TTL cleanup is not expiry or revocation authority.
 
-Startup verifies MongoDB replica/session capability before opening HTTP. Runtime disconnect/error events emit static codes; readiness checks connection state and a primary DB ping bounded to one second. SIGTERM/SIGINT mark draining before closing HTTP, allow at most ten seconds before force-closing HTTP connections, then destroy the DB connection. Repeated close calls share one shutdown operation. In-flight business effects in later features still require durable intent/reconciliation; shutdown is not rollback of financial effects. Logs are JSON with UTC/environment/service/release/level/event metadata, generated request or lifecycle operation IDs, status, error code and request duration. Request route labels use registered templates only; unmatched paths are labelled `unmatched`, with no original URL/query/params/headers/body or raw exception text. Known configured secrets are also scrubbed from emitted metadata. Liveness is independent of a runtime DB outage; restricted readiness is not financial correctness.
+Startup verifies MongoDB replica/session capability before opening HTTP. Runtime disconnect/error events emit static codes; readiness checks connection state and a primary DB ping bounded to one second. SIGTERM/SIGINT mark draining before closing HTTP, allow at most ten seconds before force-closing HTTP connections, then destroy the DB connection. Repeated close calls share one shutdown operation. In-flight business effects require durable intent/reconciliation; shutdown is not rollback of financial effects. Logs are JSON with UTC/environment/service/release/level/event metadata, generated request or lifecycle operation IDs, status, error code and request duration. Request route labels use registered templates only; unmatched paths are labelled `unmatched`, with no original URL/query/params/headers/body or raw exception text. Known configured secrets are also scrubbed from emitted metadata. Liveness is independent of a runtime DB outage; restricted readiness is not financial correctness.
 
 Every application response retains a fresh server UUID, no-store and nosniff; private errors remain generic. Ordinary JSON parsing is strict, uncompressed and limited to 102400 bytes by default. Unsupported media/parser/limit input maps to API 400 INVALID_REQUEST. Provider/media parsers must be added under their owning contracts. Customer/admin sessions, browser CORS/CSRF, external-provider capability gates and deployed telemetry/alerts remain their owning tasks.
 
@@ -363,6 +384,47 @@ HTTP and notification-worker composition use the same validated identity policy.
 email/retry policy once. HTTP startup verifies persistence without creating collections or repairing validators;
 explicit bootstrap and migration follow §7.2. Listener/readiness/draining, signals and database cleanup remain
 process-lifecycle responsibilities.
+
+#### Storefront catalog runtime
+
+Set API_PUBLIC_ORIGIN and STOREFRONT_ORIGIN in the storefront server process or its own environment
+file. They are exact origins: HTTPS for deployed hosts, or explicit loopback HTTP for local tests.
+The server uses API_PUBLIC_ORIGIN for public catalog reads; browser identity still uses the separate
+NEXT_PUBLIC_API_ORIGIN build value. Do not copy backend session, mail, provider or database secrets
+into frontend configuration. Root .env alone does not configure the storefront.
+
+Architecture §5.1 owns the request-time freshness policy. Missing/invalid API origin renders a generic
+unavailable/noindex state; missing site origin omits canonical/structured URLs and disables indexing.
+Verify canonical URLs against the approved storefront origin, next-request product/category changes,
+confirmed 404/noindex, stock disclaimers and credential-free upstream requests after deployment.
+No cache purge secret or invalidation endpoint is required by this mode. Existing browser tabs are
+snapshots; Refresh catalog or navigation requests current content. Do not enable shared catalog caching
+without verified write-linked invalidation. Rollback uses a complete prior storefront artifact and
+its matching configuration; it never changes backend records or identity state.
+
+#### Browser identity rollout
+
+Build storefront with `NEXT_PUBLIC_API_ORIGIN` and admin with `VITE_API_ORIGIN`, each an exact canonical API origin
+without a trailing slash/path. These are public build-time values. Never copy session/proof/mail keys into either
+frontend environment. Align existing API_PUBLIC_ORIGIN, STOREFRONT_ORIGIN, ADMIN_ORIGIN and CORS_ALLOWED_ORIGINS
+with the real HTTPS deployments and verify Secure/HttpOnly, separate customer/admin cookies and CSRF from browsers.
+Root `.env` alone does not feed frontend builds; changed public values require rebuilding assets. Unset/invalid
+values disable requests with a service-unavailable message rather than guessing a backend. Local loopback HTTP is
+accepted as explicit configuration but does not prove the production Secure-cookie flow; isolated browser tests
+use TLS proxies and a real API/MongoDB replica set.
+
+Auth/account pages remain no-store/private and noindex; proof fragments are captured once into component memory
+and removed before explicit confirmation. Do not capture auth traffic/proofs/cookies in analytics, replay tools,
+network traces or support logs. Recovery messages preserve generic acknowledgement. Browser caches are not
+persisted; identity changes cancel/clear private reads and broadcast only an invalidation signal to other tabs.
+A failed sign-out clears the private view and offers explicit revocation retry without claiming the server session
+was revoked. No mutation is automatically retried, including CSRF/network failure.
+
+Validate actual deployed login/recovery inbox delivery, link origins, browser cookie/CORS behavior, suspension and
+cross-tab expiry before environment acceptance. Registration verification delivery is not implemented; the UI does
+not fabricate it. Delivery-coverage discovery remains the delivery feature; address save checks existing server
+coverage. Rollback restores previous compatible frontend assets/configuration and preserves all backend identity,
+challenge, notification and audit data. Frontend asset rollback does not roll back backend schema or identity state.
 
 ### 5.3 Deployment runbook (OP-REL-01)
 
@@ -517,8 +579,7 @@ Identity collection bootstrap is explicit in `backend/src/modules/auth/identity.
 it rejects existing validator mismatches without collMod/drop. Before a deployed invocation, follow Database §15.1:
 record migration/environment authority, duplicate/invalid-data preflight, backup/recovery compatibility and index results.
 A partial empty bootstrap must be inventoried and resumed safely; do not infer that an existing environment is empty or
-relax a validator to make startup pass. Real customer/credential migrations and production provisioning were not executed
-by the identity persistence suite. The test-only TTL-monitor override is confined to the owned ephemeral replica.
+relax a validator to make startup pass. Customer/credential migrations and production provisioning require separate deployment authorization and verification. The test-only TTL-monitor override is confined to the owned ephemeral replica.
 
 ### 7.2 Index and migration runbook (OP-DB-01)
 
@@ -544,7 +605,7 @@ restore/reconciliation if state was damaged.
 
 The product/variant foundation exposes `initializeProductPersistence` in
 `backend/src/modules/catalog/products/product.persistence.ts` for explicit new-environment bootstrap.
-It is not registered in HTTP startup or deployed by this change. It creates strict/error BSON
+It is not registered in HTTP startup. It creates strict/error BSON
 validators and additive indexes, preserves extra indexes and refuses incompatible existing
 collection validators. Existing-data rollout requires a reviewed migration with duplicate
 slug/SKU/signature and numeric/stock preflight; never drop indexes or silently normalize collisions.
@@ -559,7 +620,7 @@ Public reads retain no-store and fixed query deadlines, and do not set session c
 thumbnail delivery requires an explicitly composed media provider and clean attached public ledger
 references. Without that capability images are omitted; stored URLs are never used as a fallback.
 EXT-04 approval and deployed media verification remain separate.
-The current foundation performs no external media or inventory effects. Undoing code must preserve
+Product persistence bootstrap performs no external media or inventory effects. Undoing code must preserve
 existing product/variant records and indexes; no data-erasing rollback is supplied.
 
 #### Inventory persistence rollout constraint
@@ -655,7 +716,7 @@ Registration commits its intent without invoking email. Build the backend; use t
 EMAIL_MAX_ATTEMPTS, EMAIL_RETRY_BASE_MS, EMAIL_RETRY_MAX_MS, EMAIL_CLAIM_TTL_MS and EMAIL_BATCH_SIZE for the separate command
 `node --env-file=.env backend/scripts/notification-worker.mjs`. Each invocation processes at most the configured batch;
 processed counts claims, not confirmed inbox deliveries. No background loop is implicitly started by HTTP startup.
-Keep the worker disabled until sender/domain and provider credentials are verified. No live send was performed here.
+Keep the worker disabled until sender/domain and provider credentials are verified.
 
 Production requires EMAIL_MODE=live. Local/test/staging require EMAIL_MODE=test and an explicitly approved
 EMAIL_TEST_RECIPIENT; every outgoing recipient is redirected to that inbox. Sender/API keys remain separate per environment
@@ -670,7 +731,7 @@ limits and deployment capacity. Only known HTTP 429 rejection automatically retr
 ambiguous/network/timeout/5xx outcomes stop in delivery_uncertain. Resend acceptance is not recipient delivery proof.
 
 For an existing owned local/test P03-007/008 database, explicitly run
-`node --env-file=.env backend/scripts/migrate-notifications.mjs` before updated identity startup/worker readiness. It upgrades
+`node --env-file=.env backend/scripts/migrate-notifications.mjs` before identity startup/worker readiness. It upgrades
 only the known strict P03-007/009/010/011 predecessor validators and ensures the claim-expiry index, preserving all records and statuses; repeat
 migration is safe. Fresh local/test bootstrap creates the current schema. Neither HTTP startup nor the worker migrates.
 Production migration needs normal operator change control; the convenience migration command refuses deployed environments.
@@ -678,13 +739,13 @@ Production migration needs normal operator change control; the convenience migra
 Expired/missing-lease sending becomes uncertain, never automatically requeued, even after provider idempotency retention.
 Inspect protected event/claim metadata and provider records; do not reset attempt counters or generate a new key merely
 because delivery timed out. A verified acceptance for the same retained claim can record providerMessageId/sentAt. Any
-manual retry or no-send conclusion needs authorized reconciliation outside this foundation's public API. The worker
+manual retry or no-send conclusion needs authorized reconciliation through the authorized operational change process. The worker
 cannot undo customer creation or commerce state. Recovery never repeats the business transaction.
 
 Rollback: stop/disable the worker first, preserve notifications, accepted provider IDs, claims and business data. The
 schema expansion accepts prior registration data, but old binaries with exact old-validator readiness checks will refuse
 restart. Use a compatible rollback build; do not erase new lease/receipt fields or downgrade validation destructively.
-Production provider/recipient checks, reconciliation exercises and operator approval remain unrun release gates.
+Verify provider/recipient behavior, reconciliation exercises and operator approval separately in the target environment.
 
 ### 8.3 Schedule and ownership record
 
@@ -743,7 +804,7 @@ return evidence, raw authentication challenges, full addresses, provider signatu
 Sensitive security incidents may require protected forensic retention with explicit authorization and limited
 distribution.
 
-Identity action logging includes optional `securityAction` and `outcome` to the existing `request_completed` event for allowlisted identity action patterns. `outcome` is `succeeded` for 2xx/3xx, `denied` for 4xx and `failed` otherwise. Classification comes from server-owned method/registered-route pairs; unmatched routes and denials before route matching retain the normal safe request record without a fabricated action. No submitted ID, actor claim, email, body, query or proof is added. Correlate by the server-issued request ID. These stdout operational records require the normal protected collector/retention setup; they do not implement the append-only business `auditLogs` contract or the domain audit infrastructure owned by later feature tasks. Throttling adds fixed `securityReason` values (`rate_limited`, `throttle_unavailable`) and CSRF issuance action classifications without identifiers or counter keys.
+Identity action logging includes optional `securityAction` and `outcome` to the existing `request_completed` event for allowlisted identity action patterns. `outcome` is `succeeded` for 2xx/3xx, `denied` for 4xx and `failed` otherwise. Classification comes from server-owned method/registered-route pairs; unmatched routes and denials before route matching retain the normal safe request record without a fabricated action. No submitted ID, actor claim, email, body, query or proof is added. Correlate by the server-issued request ID. These stdout operational records require the normal protected collector/retention setup; they do not implement the append-only business `auditLogs` contract or the domain audit infrastructure. Throttling adds fixed `securityReason` values (`rate_limited`, `throttle_unavailable`) and CSRF issuance action classifications without identifiers or counter keys.
 
 ### 9.4 Dashboard and alert design
 
@@ -1167,15 +1228,14 @@ The separate `sz_browser_ctx` and `sz_admin_browser_ctx` cookies are API-host-on
 SESSION_SECRET rotation also invalidates all browser contexts; drain old-key processes as for sessions. CSRF errors
 remain generic `403 CSRF_INVALID`; do not log cookies, CSRF headers, context hashes or raw Origin values. Before deploying
 identity routes, verify real approved-origin browser cookies/preflights and logout/recovery composition. Provider routes
-stay segregated and require their own verified outcome handling. No live browser-origin deployment is asserted by the
-local MongoDB/HTTP suite.
+stay segregated and require their own verified outcome handling. Verify deployed-origin behavior separately from local MongoDB/HTTP tests.
 
 #### Customer identity activation and rollback
 
 `CUSTOMER_AUTH_ENABLED` defaults to false and accepts only true/false. Enable only with explicit
 CUSTOMER_SESSION_TTL_SECONDS, ADMIN_SESSION_TTL_SECONDS, SESSION_COOKIE_SAME_SITE and BROWSER_CONTEXT_TTL_SECONDS,
-the approved origins, private SESSION_SECRET and a transaction-capable database. Enabled startup checks all four identity
-validators/indexes plus registration notification validator/indexes before binding; it never creates or rewrites them.
+the approved origins, private SESSION_SECRET and a transaction-capable database. Enabled startup checks the four base identity
+collections, shared authentication throttles and notification validators/indexes before binding; it never creates or rewrites them.
 Configuration and readiness failures remain secret-safe and close the database connection.
 
 For an owned local/test database, build the backend and run
@@ -1201,7 +1261,7 @@ verification call. Review package/metadata updates through the normal dependency
 Saved-address eligibility requires approved currently effective active delivery rules and active zones. Missing masters
 return UNSUPPORTED_DELIVERY_AREA; do not fix this by seeding guessed districts or charges. P06-001 owns master setup,
 indexes and global coverage revisions. Address acceptance does not reserve a rate; checkout must price current rules.
-Existing unserved addresses can be viewed/deleted. No new user schema, secret or environment setting is introduced.
+Existing unserved addresses can be viewed/deleted.
 
 Deletion intake is a verified customer's review request only, and repeat POST returns its current status. Inspect the
 protected user record through approved operational tooling; do not expose a generic customer review/status mutation.
@@ -1217,7 +1277,7 @@ Deploy the additive notification validator migration before new HTTP/worker proc
 
 The configured worker additionally delivers eligible password-reset challenges and removes expired/consumed/invalidated envelopes in bounded batches independently of TTL deletion. Schedule it often enough for the configured reset TTL. Provider rejection retries keep the same proof/link/event key; uncertain sends do not automatically retry. Explicit reissue after cooldown invalidates the predecessor. A mail already in flight may arrive after invalidation but cannot reset an account; proof consumption still checks the current scope. Missing/tampered envelopes fail without a provider call and record PROOF_UNAVAILABLE; restore key custody before requesting a fresh challenge, rather than blindly requeueing a failed row.
 
-Key rotation: distribute the new active key plus still-needed old versions to all API/worker processes before switching issuance. Retain old versions only until outstanding envelopes expire or are invalidated and cleaned; never reuse key bytes or reset versions. Key loss blocks delivery, not hash-based confirmation of already received proofs. After a restore, disable recovery/worker first, revoke restored sessions/challenges through the reviewed incident process, reconcile uncertain email records, remove inactive envelopes and provision a new active key before reopening. Do not replay restored intents or downgrade validators destructively. Disabling recovery leaves authenticated password-change routes unavailable with that slice; retain sessions and business records and use a compatible rollback build. Live sender, deployed timing/ingress, secret-store custody and storefront reset-screen acceptance are separate gates.
+Key rotation: distribute the new active key plus still-needed old versions to all API/worker processes before switching issuance. Retain old versions only until outstanding envelopes expire or are invalidated and cleaned; never reuse key bytes or reset versions. Key loss blocks delivery, not hash-based confirmation of already received proofs. After a restore, disable recovery/worker first, revoke restored sessions/challenges through the reviewed incident process, reconcile uncertain email records, remove inactive envelopes and provision a new active key before reopening. Do not replay restored intents or downgrade validators destructively. Disabling recovery leaves authenticated password-change routes unavailable while recovery is disabled; retain sessions and business records and use a compatible rollback build. Live sender, deployed timing/ingress, secret-store custody and storefront reset-screen acceptance are separate gates.
 
 #### Verified email-change activation and recovery
 
@@ -1235,7 +1295,7 @@ ADMIN_AUTH_ENABLED defaults false and is independent of CUSTOMER_AUTH_ENABLED. A
 
 Build the backend and bootstrap owned local/test identity persistence through the existing explicit command; migrate notifications through `node --env-file=.env backend/scripts/migrate-notifications.mjs`. The additive migration accepts the exact P03-011 predecessor and admin-password-reset-v1 reference-only intents. HTTP startup never migrates. Operator-controlled production rollout and a compatible rollback build must preserve expanded records, claims and provider receipts.
 
-For owned local/test initial provisioning, pipe a protected secret-source JSON object `{name,email,password}` into `node --env-file=.env backend/scripts/provision-admin.mjs`. Input is noninteractive and limited to 8192 bytes; the command prints only generic success/failure and never credentials. Do not type passwords in process arguments, commit an input file, use a shared default credential or expose this function as an HTTP route. The command verifies existing strict persistence without creating collections/indexes, inserts the reserved initial administrator and refuses replay, existing admins, occupied identities and customer upgrades. Concurrent attempts serialize through the reserved _id. Staging/production are refused by this convenience command. Production initial provisioning requires an authorized operator to review the same service against verified persistence, privately inject credentials, record a secret-free change record and verify namespace/role/session behavior; no production action is claimed here.
+For owned local/test initial provisioning, pipe a protected secret-source JSON object `{name,email,password}` into `node --env-file=.env backend/scripts/provision-admin.mjs`. Input is noninteractive and limited to 8192 bytes; the command prints only generic success/failure and never credentials. Do not type passwords in process arguments, commit an input file, use a shared default credential or expose this function as an HTTP route. The command verifies existing strict persistence without creating collections/indexes, inserts the reserved initial administrator and refuses replay, existing admins, occupied identities and customer upgrades. Concurrent attempts serialize through the reserved _id. Staging/production are refused by this convenience command. Production initial provisioning requires an authorized operator to review the same service against verified persistence, privately inject credentials, record a secret-free change record and verify namespace/role/session behavior.
 
 Admin recovery uses the same one-batch email worker with admin activation/key/origin policy supplied. Only the admin-specific template is claimed by the enabled admin renderer. Admin links use the configured admin HTTPS origin; customer proof/cookie/context cannot substitute, including after a role change. Known provider rejection retains stable challenge/event identity; uncertainty stops automatic resend. Bounded cleanup, key rotation, restore invalidation and reconciliation follow the existing proof procedures. Successful reset revokes admin sessions, consumes the proof and creates no session. Repeat logout requires fresh admin context when the session is unavailable. Suspended/ineligible accounts remain inaccessible; recovery cannot reactivate or privilege-upgrade them. Live inbox, deployed ingress/browser/TLS, secret-store, audit rollout and milestone approvals remain separate gates.
 
@@ -1247,48 +1307,7 @@ Use one protected SESSION_SECRET and synchronized clocks across the API instance
 
 Network limits use the socket address; an unreviewed proxy must not be trusted through client Forwarded/X-Forwarded-For values. Behind a proxy, verify the documented topology and capacity before enabling traffic; do not silently weaken quota or trust proxy. Monitor fixed securityAction/securityReason/errorCode counts for rate limiting (429) and unavailable storage (503), and verify the protected collector and alert delivery in the deployed environment. No raw email, address, proof, cookie or HMAC key enters logs; retain security logs under the existing approved access/retention policy. Target limits apply equally to supplied existing/missing accounts, temporarily bound requests and do not change account status. Recovery cooldowns, generic responses and single-use proofs remain independent defenses.
 
-Rollback uses the prior compatible build and preserves identity/proof/notification/audit state; the new ephemeral collection can stay in place. A rollback to a build without shared enforcement requires traffic restriction or verified equivalent edge protection before reopening auth traffic. No operator migration, live sender, deployed collector/proxy or M1 acceptance is claimed by local tests.
-
-#### Storefront catalog runtime
-
-Set API_PUBLIC_ORIGIN and STOREFRONT_ORIGIN in the storefront server process or its own environment
-file. They are exact origins: HTTPS for deployed hosts, or explicit loopback HTTP for local tests.
-The server uses API_PUBLIC_ORIGIN for public catalog reads; browser identity still uses the separate
-NEXT_PUBLIC_API_ORIGIN build value. Do not copy backend session, mail, provider or database secrets
-into frontend configuration. Root .env alone does not configure the storefront.
-
-Architecture §5.1 owns the request-time freshness policy. Missing/invalid API origin renders a generic
-unavailable/noindex state; missing site origin omits canonical/structured URLs and disables indexing.
-Verify canonical URLs against the approved storefront origin, next-request product/category changes,
-confirmed 404/noindex, stock disclaimers and credential-free upstream requests after deployment.
-No cache purge secret or invalidation endpoint is required by this mode. Existing browser tabs are
-snapshots; Refresh catalog or navigation requests current content. Do not enable shared catalog caching
-without verified write-linked invalidation. Rollback uses a complete prior storefront artifact and
-its matching configuration; it never changes backend records or identity state.
-
-#### Browser identity rollout
-
-Build storefront with `NEXT_PUBLIC_API_ORIGIN` and admin with `VITE_API_ORIGIN`, each an exact canonical API origin
-without a trailing slash/path. These are public build-time values. Never copy session/proof/mail keys into either
-frontend environment. Align existing API_PUBLIC_ORIGIN, STOREFRONT_ORIGIN, ADMIN_ORIGIN and CORS_ALLOWED_ORIGINS
-with the real HTTPS deployments and verify Secure/HttpOnly, separate customer/admin cookies and CSRF from browsers.
-Root `.env` alone does not feed frontend builds; changed public values require rebuilding assets. Unset/invalid
-values disable requests with a service-unavailable message rather than guessing a backend. Local loopback HTTP is
-accepted as explicit configuration but does not prove the production Secure-cookie flow; isolated browser tests
-use TLS proxies and a real API/MongoDB replica set.
-
-Auth/account pages remain no-store/private and noindex; proof fragments are captured once into component memory
-and removed before explicit confirmation. Do not capture auth traffic/proofs/cookies in analytics, replay tools,
-network traces or support logs. Recovery messages preserve generic acknowledgement. Browser caches are not
-persisted; identity changes cancel/clear private reads and broadcast only an invalidation signal to other tabs.
-A failed sign-out clears the private view and offers explicit revocation retry without claiming the server session
-was revoked. No mutation is automatically retried, including CSRF/network failure.
-
-Validate actual deployed login/recovery inbox delivery, link origins, browser cookie/CORS behavior, suspension and
-cross-tab expiry before environment acceptance. Registration verification delivery is not implemented; the UI does
-not fabricate it. Delivery-coverage discovery remains the delivery feature; address save checks existing server
-coverage. Rollback restores previous compatible frontend assets/configuration and preserves all backend identity,
-challenge, notification and audit data. Frontend asset rollback does not roll back backend schema or identity state.
+Rollback uses the prior compatible build and preserves identity/proof/notification/audit state; the new ephemeral collection can stay in place. A rollback to a build without shared enforcement requires traffic restriction or verified equivalent edge protection before reopening auth traffic. Local tests do not replace deployed migration, sender, collector/proxy or milestone verification.
 
 ### 13.4 Security incident evidence
 
@@ -1337,7 +1356,7 @@ latency, API tail latency, transaction retries, connection pools, worker lag and
 
 | Workload | Operational lever | Safety boundary |
 | --- | --- | --- |
-| Public browsing/search | Public-content caching, paginated indexed queries, controlled invalidation | Prices/availability can be briefly stale; checkout must reprice and recheck stock |
+| Public browsing/search | Paginated indexed queries, bounded request-time SSR, optimized media | Follow Architecture §5.1 no-store policy; checkout must reprice and recheck stock |
 | Cart/account/checkout | API scaling within DB/provider capacity, no-store private caching | Shared edge caches must not contain sessions, PII or order status |
 | Transaction-heavy checkout | Idempotent retries, DB contention metrics, bounded transactional work | Never keep DB transaction open during gateway call |
 | Inventory/job bursts | Batch limits, durable leases and scaled worker capacity | Prevent double stock release, coupon redemption or payout |
@@ -1548,18 +1567,18 @@ remain separate M7 decisions.
 
 ### 17.1 Acceptance gate matrix
 
-| Gate | Operational acceptance | Evidence owner/status |
+| Gate | Operational acceptance | Required evidence |
 | --- | --- | --- |
-| M1 — Foundation | Baseline documents, source precedence, external readiness register | Planned; task evidence needed |
-| M3 — COD Commerce | Transactional inventory/checkout, COD record and retries, delivery rules | Planned; see Testing and Tasks |
-| M4 — Payment Ready | Provider sandbox checks, IPN/risk/late/partial/excess reconciliation | Planned; no provider success assumed |
-| M5 — After-Sales Ready | Source-funded partial/full refund and unknown payout recovery | Planned; refund sandbox verification required |
-| M6 — Release Candidate | Full staging integration, security/NFR/regression, restoration rehearsal | Planned; not accepted |
-| **M7 — Production Ready** | Live domain/merchant/policy, monitoring, backup, recovery, safe production smoke and launch approval | **Not accepted** |
-| **M8 — Handover Accepted** | Reproducible runbooks, real provider/credential ownership, accepted limitations/support | **Not accepted** |
+| M1 — Foundation | Baseline documents, source precedence, external readiness register | Reviewed baseline and dependency records |
+| M3 — COD Commerce | Transactional inventory/checkout, COD record and retries, delivery rules | Transaction, replay and COD collection assertions |
+| M4 — Payment Ready | Provider sandbox checks, IPN/risk/late/partial/excess reconciliation | Independent provider verification and reconciliation cases |
+| M5 — After-Sales Ready | Source-funded partial/full refund and unknown payout recovery | Refund sandbox and uncertainty-recovery results |
+| M6 — Release Candidate | Full staging integration, security/NFR/regression, restoration rehearsal | Integrated candidate and restore-drill records |
+| **M7 — Production Ready** | Live domain/merchant/policy, monitoring, backup, recovery, safe production smoke and launch approval | Named production approval with §17.2 evidence |
+| **M8 — Handover Accepted** | Reproducible runbooks, real provider/credential ownership, accepted limitations/support | Receiving operator and owner sign-off under §17.3 |
 
-M2 and the other phase milestones still follow Implementation Plan §11; this table emphasizes operating evidence
-and does not redefine or waive any gate.
+M2 and the other phase milestones follow Implementation Plan §11; this table emphasizes operating evidence
+and does not redefine or waive any gate. Tasks records actual acceptance status and evidence links.
 
 ### 17.2 M7 production readiness checklist
 
@@ -1682,10 +1701,12 @@ Use this configuration vocabulary consistently in runtime validation, `.env.exam
 Keep secret values outside Git and frontend bundles. Record environment-specific values through protected
 secret/configuration references in the operating inventory.
 
-The current [.env.example](../.env.example) is a minimal local template with twelve keys. Its localhost origins and
-sandbox mode are development conventions; blank secrets, proof-key version and quote/upload lifetimes are not valid
-deployed configuration. No runtime validator consumes this template yet. Add exact adapter/runtime keys with their owning
-implementation and per-key validation; complete all applicable categories below before deploying the corresponding service.
+The [.env.example](../.env.example) template documents supported configuration without providing credentials.
+Backend runtime validation checks required configuration and conditional feature settings; blank secrets
+must be supplied privately before activation. Localhost origins are development conventions. Add exact
+adapter/runtime keys with their owning implementation and validation, and complete the applicable
+categories below before deploying the corresponding service. This inventory includes planned capabilities;
+the template and runtime validator determine which exact keys are currently supported.
 
 | Configuration category | Identifiers / contents | Exposure / validation |
 | --- | --- | --- |

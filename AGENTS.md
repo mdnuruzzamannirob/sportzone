@@ -112,7 +112,7 @@ from business decisions. No frontend backend-runtime/provider/secret imports. Up
 boundary checks and negative fixtures with the owning refactor; a documentation statement alone does
 not prove enforcement. Use narrow capabilities for shared collections and preserve canonical models.
 
-**One application at a time:** Follow Implementation Plan §3.1: foundation → backend → admin → storefront → integrated release. Historical refactor IDs retain their recorded acceptance. By default, accept each application before starting the next. When the owner explicitly
+**One application at a time:** Follow Implementation Plan §3.1: foundation → backend → admin → storefront → integrated release. The stage closeouts are P01-024, P03-022, P09-010 and P02-017 respectively; consult Tasks for their dependencies and evidence. Historical refactor IDs retain their recorded acceptance. Accept each application before starting the next. When the owner explicitly
 requests a combined application/monorepo batch, implement and verify each application in sequence, then collect
 independent acceptance for every task in the final review; a batch request never self-approves a task or milestone.
 Move imports, tools, test discovery, aliases and actual CI inventory together; retain compatibility
@@ -240,7 +240,7 @@ When scaffolding a workspace or adding its scripts/dependencies, update [ci-work
 - Treat an accepted documentation baseline as settled. Reopen its owning section only for a concrete defect, an approved requirement/decision change or a changed executable procedure. Do not append implementation progress to specifications or repeat editorial refactors after routine task completion.
 - Reuse existing documents and evidence records. Create a new document only for a distinct subject with a clear owner and navigation entry; do not create separate structure/component guides already owned by Architecture and Design.
 - Before handoff, remove superseded instructions and duplicate paragraphs, reconcile current versus target paths, and check headings, contents and inbound links. Preserve historical acceptance and verification records; label their revision/environment instead of presenting old results as current guarantees.
-- Before a feature slice, reconcile affected [Database](docs/DATABASE.md), [API](docs/API.md) and [Testing](docs/TESTING.md) contracts. Update [Operations](docs/OPERATIONS.md) when configuration, migration, recovery, monitoring or deployment changes.
+- Before an implementation work package, reconcile affected [Database](docs/DATABASE.md), [API](docs/API.md) and [Testing](docs/TESTING.md) contracts. Update [Operations](docs/OPERATIONS.md) when configuration, migration, recovery, monitoring or deployment changes.
 - Keep PRD FR/NFR references, stable task IDs and approved acceptance rules traceable. Preserve existing IDs; do not renumber to make a report appear tidy.
 - Submit scope, architecture, UI-policy, merchant, legal or irreversible financial changes for appropriate approval. Record decision, owner, evidence, impact and linked source changes before execution.
 - Record meaningful changes in [CHANGELOG.md](CHANGELOG.md), distinguishing documentation revisions from released software; do not fabricate release tags, migrations or production dates.

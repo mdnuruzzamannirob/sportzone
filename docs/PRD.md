@@ -1002,6 +1002,12 @@ FR-01 through FR-34 are the authoritative statements of initial-release product 
 - Activate or deactivate categories.
 - Prevent destructive deletion of categories with dependent products.
 
+**Business Rules:**
+
+- Products must belong to at least one active category.
+- Categories containing products require reassignment before permanent deletion.
+- Inactive categories are excluded from public navigation.
+
 **Priority:** High
 
 ### FR-25: Inventory management — Admin
@@ -1410,7 +1416,8 @@ This is a product-level information inventory. It identifies information that mu
 
 ## 11. State management and Edge cases
 
-These are product state summaries. API and database contracts define the complete transition, retry and persistence rules.
+These state summaries follow FR-12 through FR-18. Those functional requirements govern business
+eligibility and outcomes; API and Database define the HTTP, concurrency and persistence mechanisms.
 
 ### 11.1 Order lifecycle
 

@@ -41,7 +41,7 @@ This document owns the visual system, page composition, navigation, interactions
 - Keep guest checkout usable without requiring account creation.
 - Make administrative decisions explicit, auditable, and difficult to trigger accidentally.
 - Provide consistent feedback for slow networks, expired sessions, payment uncertainty, and invalid operations.
-- Target **WCAG 2.2 AA** and current stable Chrome, Firefox, Edge, Brave, and Safari, as required by PRD §12.7.
+- Target **WCAG 2.2 AA** and current stable Chrome, Firefox, Edge, Brave, and Safari, as required by PRD §§12.6–12.7.
 
 ### 1.2 Design principles
 
@@ -91,7 +91,9 @@ All native primitives and app navigation adapters are exposed through each app�
 
 A single local `showcase.html` renders the actual app UI boundary, with Admin/Storefront and Light/Dark controls, all currently used component families and supported visual variant axes. Switching apps reloads its selected CSS entry so future per-app customization cannot leak across previews. Keep this development preview outside production routes and builds.
 
-**Accessibility remains a release requirement:** PRD §12.7 and this document §12 continue to target WCAG 2.2 AA. Stock HeroUI palette contrast findings already observed in the reference are tracked findings, not automatic acceptance or a waived gate. Preserve real accessibility checks and report actual results. The owner’s default-theme choice authorizes reversible visual implementation; it does not prove release accessibility or accept a milestone.
+**Accessibility:** PRD §12.6 and this document §12 require WCAG 2.2 AA verification. Check contrast in
+the actual component/theme combinations and track findings in test evidence. Native defaults and
+approved visual refinements require the same accessibility acceptance as other UI changes.
 
 ---
 
@@ -159,7 +161,7 @@ Main: page title/actions → filters/summary → content → pagination
 
 Provide the Light / Dark / System control in the administrator account/appearance menu. Group related destinations without creating extra permission levels. Show current section and contextual actions. Keep the administrator's session and access separate from customer sessions. Complaint handling is available from the order/customer context where relevant; a standalone complaint screen is not required by the PRD.
 
-**Admin shell behavior:** [Admin shell](../admin/src/components/layout/admin-shell.tsx) uses a persistent sidebar from 1024px and a HeroUI left Drawer below that breakpoint. The five groups and 14 destinations share one navigation source. Selected items use native default/accent semantic tokens. Drawer navigation, Escape/Close and desktop transitions dismiss the overlay; the body scrolls vertically. Page title/actions and Appearance are reusable compositions. Render protected management content only after server-confirmed admin identity; signed-out, expired and denied states must not expose management data. Navigation availability does not establish completion of its destination workflows. Lazy administration loading exposes a live status; route render/chunk failures show a safe alert and Reload page action without exception details.
+**Admin shell behavior:** Use a persistent sidebar from 1024px and a HeroUI left Drawer below that breakpoint. Navigation groups and destinations follow §5.2 through one navigation source. Selected items use native default/accent semantic tokens. Drawer navigation, Escape/Close and desktop transitions dismiss the overlay; the body scrolls vertically. Page title/actions and Appearance are reusable compositions. Render protected management content only after server-confirmed admin identity; signed-out, expired and denied states must not expose management data. Lazy administration loading exposes a live status; route render/chunk failures show a safe alert and Reload page action without exception details.
 
 ### 4.4 Shared layout states
 
@@ -252,7 +254,7 @@ The authenticated admin shell exposes these navigation groups. Group labels orga
 - **Order summary:** Subtotal, product discounts, coupon discount, delivery charge, total payable, and payment method. Display confirmed server-calculated values before final submission.
 - **Payment method choice:** Show COD and only gateway channels currently enabled. Use the provider's recognizable channel labels without implying unavailable activation.
 
-**Implementation:** Storefront [commerce components](../storefront/src/components/commerce/product-card.tsx) follow the state contracts below. Price/line/summary amounts are supplied by the consuming feature/API; quantity controls and variant options express requests/eligibility without reserving stock. Status text remains explicit; payment, funding and fulfillment are never inferred from a monetary total. These components do not populate unavailable catalog/cart pages with synthetic products.
+**Commerce component contracts:** Price/line/summary amounts are supplied by the consuming feature/API; quantity controls and variant options express requests/eligibility without reserving stock. Status text remains explicit; payment, funding and fulfillment are never inferred from a monetary total. Production pages must not substitute synthetic products for unavailable API data.
 
 | Module                  | Contract                                                                                                                                                               |
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -270,7 +272,7 @@ The authenticated admin shell exposes these navigation groups. Group labels orga
 - Product-card actions may include a feature-owned wishlist/cart action, but they must enforce its pending/eligibility state and server checks. No purchase action is built in by default. Do not nest buttons in the product link.
 - Cart `maxQuantity` is a backend/feature-supplied integer limit (zero disables edits); quantity changes are requests, never reservations. Keep the server-supplied estimated line amount visible until a replacement arrives; do not multiply quantity and unit amount to establish checkout truth. A reduced stock limit preserves the requested quantity and displays recovery guidance.
 - Adapt `SummaryAmounts` from CheckoutQuote or the immutable order pricing snapshot. `kind="quote"` does not prove quote freshness, reserve stock or complete payment. The consuming checkout feature owns expiry/consent validation and authoritative submission. Display payment/fulfillment/refund statuses separately; never infer Paid from a total or receipt amount.
-- Example catalog data belongs only in tests/previews. Existing public unavailable pages stay unchanged until their feature tasks integrate real data.
+- Example catalog data belongs only in tests/previews; production views use authoritative API data and honest unavailable states.
 
 ### 6.3 Administrative components
 
@@ -280,7 +282,7 @@ The authenticated admin shell exposes these navigation groups. Group labels orga
 - **Financial actions:** Show source transaction, eligible amount, pending commitments, intended payout method, and confirmation before submission. Never mark payout complete from an optimistic UI update.
 - **Audit context:** Display available actor, timestamp, and action details for sensitive changes without exposing secrets.
 
-Implementation foundation: admin table/filter/pagination, file upload and guarded confirmation compositions are defined in the administrative contracts below. Feature integrations supply authoritative rows, upload policy and eligible actions; these primitives do not grant administrator access or execute business operations.
+**Administrative component contracts:** Feature integrations supply authoritative rows, upload policy and eligible actions; these primitives do not grant administrator access or execute business operations.
 
 | Module               | Contract                                                                                                                                                                                                        |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -299,7 +301,7 @@ Implementation foundation: admin table/filter/pagination, file upload and guarde
 
 Every interactive component must define: default, hover (where applicable), focus-visible, active/selected, disabled, pending/loading, validation error, and successful completion states **in both themes**. Disabled actions that matter to users should include an explanation nearby.
 
-**Implementation:** Both apps provide HeroUI field/form/feedback/overlay compositions in `src/components/ui/`; usage and state ownership follow this section. Appearance selects, connectivity notices and storefront loading feedback consume these primitives. Parent editors retain controlled drafts across overlay dismissal; pending panels block Escape/backdrop/Cancel until the caller settles. Field errors and linked summaries use explicit accessible associations; summary focus is requested only after a failed submission.
+Both apps use HeroUI field/form/feedback/overlay compositions in `src/components/ui/`; usage and state ownership follow this section. Appearance selects, connectivity notices and storefront loading feedback consume these primitives. Parent editors retain controlled drafts across overlay dismissal; pending panels block Escape/backdrop/Cancel until the caller settles. Field errors and linked summaries use explicit accessible associations; summary focus is requested only after a failed submission.
 
 ### 6.5 App-owned UI boundary and component APIs
 
@@ -307,8 +309,8 @@ Architecture §§4–5 own placement. Both apps consume native HeroUI through th
 no app imports the other app's runtime components. Preserve compound/generic APIs, default themes
 and system fonts, router-aware Link adapters and keyboard/focus/input-retention behavior. Theme CSS
 owns styling entry points; global styles forward to it. Do not add duplicate component implementations,
-custom palettes/font skins or empty providers. Component filenames/exports below describe existing
-facades until the owning refactor updates consumers and tests; they do not create public HTTP DTOs.
+custom palettes/font skins or empty providers. Component filenames/exports below define the app-owned
+facades; they do not create public HTTP DTOs.
 
 | Module         | Exports                                                     | Responsibility                                                                                                             |
 | -------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
@@ -403,7 +405,7 @@ Private/auth storefront routes are noindex/no-store; no account data or proof en
 | **Checkout** | Contact details, delivery address/district/area, optional notes, delivery charge and deadline, coupon field, payment method, order summary, terms acceptance, final action | Guest or signed-in; saved address selection; revalidate stock, prices, coupon, and delivery; duplicate-submit prevention |
 | **Payment Result** | Verification-in-progress, confirmed paid, failed, cancelled, or pending/unresolved result | Never trust browser redirect alone; show refresh/check-status path; do not encourage duplicate payment while status is uncertain |
 | **Order Confirmation** | Order number, summary, payment/fulfillment status, next steps, receipt of submitted order | COD shown as unpaid until collection; pending online payment not mislabeled as paid |
-| **Order Lookup** | Order number + checkout email; request verification link/code; verified order view | Rate-limited, time-limited proof; scoped cancellation, return, and refund tracking only when eligible |
+| **Order Lookup** | Order number + checkout email; request single-use verification link; verified order view | Rate-limited, time-limited proof; scoped cancellation, return, and refund tracking only when eligible |
 
 **Checkout composition:** Keep contact/address first, then delivery area and charge, coupon, payment choice, and final summary. On desktop, a persistent summary column may be used; on mobile, show a compact summary during entry and the full total before the final action. A rejected checkout retains entered details and identifies the exact item or field requiring attention. Final confirmation submits the server-issued quote reference internally, as specified in API §11.1. Changed or expired quotes display current terms for explicit confirmation using plain-language feedback. Never automatically approve or resubmit a refreshed quote. Keep the same idempotency key during uncertain replay of an already submitted operation.
 
@@ -615,7 +617,7 @@ flowchart TD
     GuestCart --> GuestOrder[Guest order confirmation]
     Path -->|Look up guest order| Lookup[Order number and checkout email]
     GuestOrder -.->|Later, if needed| Lookup
-    Lookup --> Proof[Email verification link or code]
+    Lookup --> Proof[Single-use email verification link]
     Proof --> Valid{Verification valid?}
     Valid -->|No| Retry[Safe retry or expiry guidance]
     Valid -->|Yes| Scoped[Verified order details]

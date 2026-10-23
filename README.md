@@ -43,6 +43,8 @@ loyalty and international shipping are outside the initial release.
 
 The Express `/api/v1` API owns prices, stock, permissions, order transitions, payment verification and refunds. Frontends
 consume allowlisted DTOs. Private sessions, carts, checkout, orders and financial data never enter shared caches.
+The complete technology baseline, including API generation, containers, validation, jobs and tooling, is in
+[Architecture §2](docs/ARCHITECTURE.md#2-technology-stack); this table is an orientation summary.
 
 ## 3. Repository structure
 
@@ -72,17 +74,19 @@ Use **Node.js 24.20.0 / npm 11.19.0**, as recorded in `.nvmrc` and `package.json
 Read [AGENTS](AGENTS.md), the assigned [task](docs/TASKS.md) and its owning specification before editing.
 
 ```sh
-npm ci
+npm ci --ignore-scripts --no-audit --no-fund
 npm run workspaces:check
 ```
 
-Start an isolated, disposable MongoDB replica set in a separate terminal:
+Configure a transaction-capable MongoDB deployment through private root `.env` values `MONGODB_URI`
+and `MONGODB_DB_NAME`. The application connects through Mongoose. For disposable local development,
+keep the repository's replica-set tool running in a separate terminal:
 
 ```sh
 npm run db:local --workspace=backend
 ```
 
-Create a private root `.env` from [.env.example](.env.example), supply the local replica URI/database and
+Create a private root `.env` from [.env.example](.env.example), supply the MongoDB URI/database and
 independently generated `SESSION_SECRET` and `HEALTH_MONITOR_TOKEN`. For the backend stage, start only
 its compiler and API from the repository root:
 
@@ -101,8 +105,10 @@ process cleanup; the database terminal has a separate lifecycle. The API validat
 opening HTTP. Only the API reads the optional root `.env`; existing process variables take precedence.
 No credentials, persistence bootstrap or email worker are created automatically.
 
-If the API exits after about five seconds with `startup_failed` / `CONNECTION_FAILED`, check that
-the separate database terminal is still running. Each `db:local` restart prints a new URI; update
+For database identity/network setup and deployment choices, see
+[Operations setup](docs/OPERATIONS.md#52-reproducible-build-interface).
+If the API exits after about five seconds with `startup_failed` / `CONNECTION_FAILED`, check database
+reachability and access. When using `db:local`, keep its terminal running. Each restart prints a new URI; update
 the private root `.env` `MONGODB_URI` to that URI before restarting `npm run dev`.
 On Ubuntu 26, use `MONGOMS_DISTRO=ubuntu-24.04 npm run db:local --workspace=backend`.
 `REPLICA_SET_REQUIRED` means the configured MongoDB lacks the required replica-set/session support.

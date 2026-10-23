@@ -2,6 +2,57 @@
 
 **Date:** 23 October 2026 · **Executor:** Codex · **Status:** Done
 
+## Complete-document correction
+
+The owner reopened the accepted submission because incremental additions had left fragmented guidance,
+technology/provider conflation and cross-document inconsistencies. This correction covers the twelve core
+documents: PRD, Architecture, Design, Database, API, Implementation Plan, Tasks, Testing, Operations,
+README, AGENTS and Changelog. Existing historical evidence and acceptance remain records of their original
+revision; this review does not recertify historical application/provider tests.
+
+| Finding | Correction in the owning document |
+| --- | --- |
+| Technology inventory incomplete and mixed with provider choice | Architecture §2 consolidates frameworks, validation, sessions, API artifacts, Docker, jobs, providers and verification tooling. MongoDB/Mongoose is the data technology; Operations §5.2 contains the optional managed-hosting choice and URI setup. |
+| Repeated catalog cache rules disagreed | Architecture §§3, 5, 12, API §§8, 10, 17, Testing §§7–8 and Operations §§2, 14 consistently follow request-time no-store catalog freshness; future caching needs reviewed invalidation. |
+| Existing collection omitted from inventory | Database §§3, 16 count all 38 collections, including the already specified authRateLimits; no schema was added. |
+| Editorial pass dropped existing category rules | PRD FR-24 retains active-category membership, dependent-product reassignment before deletion and inactive-navigation rules in their authoritative requirement. |
+| Guest link/code descriptions disagreed | API and Design follow Database §5.3's existing high-entropy single-use link baseline. |
+| Plan still implied UI prerequisites during backend or feature-first implementation | Plan §§4, 6, 8, 11–12 and AGENTS align work-package execution with foundation → backend → admin → storefront, separating application closeouts from integrated M1–M8 acceptance. |
+| Task dependency lists repeated transitive prerequisites | Reduced direct lists in 132 unfinished tasks; all 209 tasks retain identical prerequisite ancestor sets. Stable IDs, scope and the other accepted records are preserved. |
+| Specifications accumulated execution diaries and duplicate status lists | Testing references Tasks/evidence instead of maintaining a second task-evidence list or per-acceptance execution-status table. Operations removes task-era commentary and its duplicate milestone status column. |
+| Frontend rollout instructions were buried in security controls | Operations §5.2 groups catalog/browser build and rollout procedures; §13 retains authentication/security operation controls. README setup and links follow those locations. |
+| Email timeout incorrectly implied an automatic retry | Testing REL-05 distinguishes known retryable rejection from uncertain delivery, consistent with the worker recovery procedure. |
+| Stale setup and visual guidance | README uses the locked install policy; Design uses current shell/component contracts and correct accessibility references; accepted refactors are not scheduled for recreation. |
+
+**Research:** Checked the official [MongoDB connection guide](https://www.mongodb.com/docs/manual/connect-to-cluster/),
+[replication/transaction capability](https://www.mongodb.com/docs/manual/replication/),
+[Mongoose transaction guide](https://mongoosejs.com/docs/transactions.html) and
+[OpenAPI specification](https://spec.openapis.org/oas/v3.1.1.html) against the relevant boundaries.
+No dependency version upgrade, provider selection or account activation is implied by those references.
+
+**Verification environment:** Local working tree, Node.js 24.20.0; documentation-only changes over the
+existing staged package. The read-only audit uses HEAD/index task snapshots exported with `git show`.
+This avoids the sandbox restriction on spawning Git inside Node; no escalation or repository mutation is needed.
+
+| Check | Observed result |
+| --- | --- |
+| `npm run lint` | Passed: 421 files, 1,202 local links, 0 errors |
+| `node /tmp/sportzone-documentation-audit.mjs` | Passed: 209 unique tasks; fields, checkboxes, counts, valid dependencies, no cycles/reverse-stage prerequisites, complete stage closeout coverage and unchanged prerequisite reachability. PRD has 34 FRs; Database has 38 unique collections; all 164 API operations match Testing method/path/success-status slots. |
+| `git diff --check` | Passed |
+| Diff review | Twelve core files reconciled; prior staged work preserved, no application/configuration files changed |
+| Application/build/browser/provider suites | Not Run: runtime unchanged; no provider or deployment acceptance claimed |
+
+The project owner independently accepted this correction through the review popup on 23 October 2026:
+“Review করেছি—accept করছি, Done করো”. P01-021 moved In Review → Done under AGENTS §13.
+Current register: **65 Done, 143 Not Started, 1 Blocked, zero In Review**.
+P01-022/P01-023/P01-024 remain implementation/verification tasks;
+scoped hosted CI and automatic OpenAPI/Postman artifacts are specified, not implemented by this change.
+
+## Earlier accepted submission
+
+The following sections preserve the previous submission and its acceptance. Their staged-PRD assertion,
+link counts and task totals describe that earlier revision, not the correction above.
+
 ## Scope and review
 
 Owner requested a complete, usable documentation baseline before further application implementation.

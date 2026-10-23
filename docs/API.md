@@ -105,7 +105,7 @@ gateway. Scheduled jobs call shared services without bypassing invariants.
 | `cart`, `promotions`, `reviews`                                    | `/cart`, `/wishlist`, `/coupons`, `/reviews`, `/admin/coupons`                         | Cart, quotas, verification, moderation                                |
 | `checkout`, `orders`, `delivery`                                              | `/checkout`, `/orders`, `/delivery`, `/admin/orders`, `/admin/delivery`                | Snapshots, submissions, fulfillment, charge rules                     |
 | `payments`, `refunds`, `returns`                                              | `/orders/{id}/payments`, `/payments`, `/claims`, `/refunds`, `/admin/...`              | Verification, collections, claims, payouts                            |
-| `notifications`, `support`, `reporting`, `settings`, `media`, `health` | Existing operations in §§14, 16 and Appendix D only                                    | Correspondence, reporting, configuration, authorized media and health |
+| `notifications`, `support`, `reporting`, `settings`, `media`, `health` | Operations defined in §§14, 16 and Appendix D                                    | Correspondence, reporting, configuration, authorized media and health |
 
 Domain services coordinate cross-module mutations within MongoDB transactions. No external HTTP call occurs while a database transaction remains open.
 
@@ -555,7 +555,7 @@ successful refund request is **not** confirmed payout.
 | Catalog filtering | `category`, `minPricePoisha`, `maxPricePoisha`, `inStock`, with server type and range checks          |
 | Admin filtering   | Allowlisted status/date/customer references; no arbitrary client query operators                      |
 | Result            | `{data:[...],meta:{page,pageSize,totalItems,totalPages,requestId}}`                                   |
-| Public cache      | Optional controlled ETag/revalidation; stale display is possible; checkout requotes live stock/prices |
+| Public cache      | Public catalog uses `Cache-Control: no-store` under §10; Architecture §5.1 owns rendering freshness; checkout requotes live stock/prices |
 | Private cache     | `Cache-Control: no-store`; prevent CDN/SSR shared caching for auth, account, cart, orders and money   |
 
 For large audit/financial histories, use an opaque cursor with stable ordering **if approved by query profiling**; do not
@@ -649,7 +649,7 @@ Admin reset uses the existing password_reset challenge purpose bound to the admi
 | `GET`  | `/guest-access/session`    | G                           | `— → {orderId,expiresAt}`                                                              |
 | `POST` | `/guest-access/logout`     | Public+CSRF (guest context) | `— → {revoked:true,csrfToken}`                                                         |
 
-Guest proof is email-delivered as one-time code or secure link, issued against **both** order number and checkout email, rate-limited and never exposed in an API response or logs.
+Guest proof is email-delivered as a high-entropy single-use secure link, issued against **both** order number and checkout email, rate-limited and never exposed in an API response or logs. Short numeric codes require a separately reviewed guessing/attempt-limit design under Database §5.3.
 Proof exchange atomically consumes `authChallenges` and grants only the verified `orders._id` through a `guest_order` session (Database §§5.2–5.3).
 An attacker cannot enumerate orders by timing, HTTP status or message differences.
 Subsequent guest order actions use the same `/orders/{orderId}` routes as a customer, but with *exact* bound order ID checks.
@@ -738,8 +738,8 @@ Public categories expose only `id,name,slug,parentId?` and an eligible `image?`;
 same projection. Card `thumbnail?` and category `image?` expose `{url,alt}` only through media-owned
 public reference checks; omit unavailable/unapproved images. `rating?` is `{average,count}` from the
 approved summary and omitted when no valid approved ratings exist. Internal counters, revisions, SKU
-metadata and media ownership/delivery secrets are excluded. Listing reads currently use `no-store`;
-controlled caching/revalidation belongs to P04-011.
+metadata and media ownership/delivery secrets are excluded. Public catalog reads use `no-store`;
+Architecture §5.1 owns storefront rendering and freshness policy.
 
 Product detail uses the same active ancestry/SKU eligibility as listing; hidden, missing or inactive-only
 products return 404. It returns all valid active SKU rows (at most 100), including out-of-stock rows
@@ -1603,7 +1603,7 @@ Health endpoints may be served outside `/api/v1` by infrastructure **only if con
 | Request bounds             | Limit body size, field lengths, page size, search complexity and timeouts; protect provider callbacks separately    |
 | Provider security          | Server-only credential validation, independent verification, constant operation identity and reconciliation         |
 | Observability              | Request ID, event/attempt IDs and safe redacted logs; audit admin financial and stock decisions                     |
-| Cache                      | Private endpoints and auth/bootstrap `no-store`; public catalog cache invalidated on approved changes               |
+| Cache                      | Private endpoints, auth/bootstrap and public catalog use `no-store`; storefront freshness follows Architecture §5.1 |
 | Performance                | Indexed bounded queries, stable sorting, no N+1 sensitive fanout, measured budgets from PRD NFRs                    |
 | API change                 | OpenAPI/typed contract parity, backwards-compatible additive evolution in `/api/v1`, planned deprecation only       |
 
@@ -1654,8 +1654,8 @@ arbitrary redirect URL from request input.
 | FR-32–FR-33         | §13 admin claims/refunds                        |
 | FR-34               | §14.3 settings/policy versioning                |
 
-Use this mapping to implement contract tests with each feature slice. Apply PRD §14 acceptance criteria, follow
-Follow Implementation Plan §3.1 application sequencing and §6 domain requirements; attach execution evidence in `TASKS.md`. Keep the delivered OpenAPI/types aligned
+Use this mapping to implement contract tests with each feature slice. Apply PRD §14 acceptance criteria,
+follow Implementation Plan §3.1 application sequencing and §6 domain requirements; attach execution evidence in `TASKS.md`. Keep the delivered OpenAPI/types aligned
 with this specification.
 
 ### 18.3 Change and sign-off procedure
@@ -1669,9 +1669,7 @@ collection must not present planned operations as available. Verify registered-r
 freshness in the backend contract scope. Generation must not import a listening server or require a live DB.
 Postman environment templates contain placeholders only; never export credentials, cookies, proof tokens
 or real customer examples. Concrete commands, artifact paths and tooling dependencies are recorded when
-implemented. Automatic OpenAPI/Postman generation is currently **not implemented**.
-
-P01-023 owns implementation and verification of this pipeline. Backend changes maintain its registry
+implemented, with delivery status and evidence in Tasks. Backend changes maintain the registry
 and artifacts as part of their owning task; UI implementation is not required to validate the contract.
 
 1. Identify changed FR, Architecture invariant, Database field/index or Design interaction and note exact source section.

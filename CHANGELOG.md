@@ -8,6 +8,17 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 23 October 2026 — Documentation consistency correction
+
+- Reopened P01-021 after owner feedback. Consolidated the technology baseline, separated MongoDB/Mongoose
+  from hosting choices, corrected collection inventory and catalog freshness rules, and reconciled
+  application-stage prerequisites with milestone acceptance. Removed task diaries/status duplication from
+  specifications, organized deployment procedures and corrected uncertain email-delivery verification.
+  Task dependencies are shorter with identical prerequisite reachability; accepted history is retained.
+  [Correction review and checks](docs/evidence/P01-021-documentation-refactor.md#complete-document-correction).
+  Runtime, credentials and CI behavior were not changed. The owner independently accepted the corrected
+  package on 23 October 2026; P01-021 is Done.
+
 ## 23 October 2026 — Application-stage documentation reconciliation
 
 - Reconciled application-stage execution, module ownership, scoped verification and current setup procedures.

@@ -68,8 +68,9 @@ This document decomposes the approved implementation plan into independently ver
 | Integrated | Original catalog/shopping/COD/payment/after-sales gates, integrated staging and P10 release-candidate verification after P02-017. |
 | Release / Handover | P11 production/merchant/legal/launch gates, then P12 final ownership and handover. |
 
-**Decomposition:** Original task IDs retain their complete outcomes. Backend API prerequisites are explicit P04-016–019, P05-014–016, P07-018, P08-019 and P09-013–018. P05-017, P06-021 and P06-022 deliver admin portions of formerly mixed tasks; their original customer-facing tasks depend on them. P05-003 remains browser merge integration and depends on P05-014 API merge. P09-002 no longer waits for dashboard UI; P09-006 no longer waits for storefront review submission. These dependency changes preserve scope and remove reverse application-stage dependencies.
-
+**Dependency convention:** Each task lists its immediate prerequisites; their own prerequisites apply transitively.
+Original IDs retain their complete outcomes when backend or UI work is split into separate tasks. Stage metadata
+identifies the owning application; original domain closeouts retain integrated acceptance after both clients.
 
 ## 2. Task management conventions
 
@@ -349,7 +350,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P01-020`\
   **Deliverable:** Reconcile execution order, API/UI task decomposition, documentation ownership, current tooling limits and contract-generation requirements in existing specifications.\
   **Acceptance:** Foundation → backend → admin → storefront order is consistent; current commands and planned tooling are distinguished; prior acceptance and product/provider gates are preserved; documentation checks pass and owner independently reviews.\
-  **Evidence:** [Documentation refactor review](./evidence/P01-021-documentation-refactor.md). [Revised package accepted by owner](./evidence/P01-021-documentation-refactor.md#independent-review), 23 October 2026.
+  **Evidence:** [Complete-document correction and verification](./evidence/P01-021-documentation-refactor.md#complete-document-correction). Project owner independently accepted the corrected package on 23 October 2026: “Review করেছি—accept করছি, Done করো”. Earlier acceptance remains historical; no milestone or provider gate is accepted by this decision.
 
 - [ ] **P01-022 — Isolate application development and CI scopes**\
   **Status:** `Not Started` · **Area:** Foundation/tooling\
@@ -373,7 +374,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Foundation\
   **Stage:** `Foundation`\
   **Sources:** Plan §3.1; Testing §15; Operations §5\
-  **Depends on:** `P01-021`, `P01-022`, `P01-023`\
+  **Depends on:** `P01-023`\
   **Deliverable:** Verify reproducible backend-only setup, isolated transaction-capable DB, actual scoped checks and generated contracts; inventory external credentials/policies and their affected backend acceptance gates.\
   **Acceptance:** No UI build/browser requirement for backend iteration; no placeholder CI checks; unresolved external inputs have owners and gate impacts. Foundation acceptance does not approve product milestones or merchant readiness.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
@@ -514,7 +515,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Storefront\
   **Stage:** `Storefront`\
   **Sources:** FR-01–FR-20 customer surfaces; Plan §3.1; Testing §15\
-  **Depends on:** `P09-010`, `P04-012`, `P04-013`, `P04-014`, `P05-001`, `P05-003`, `P05-010`, `P05-011`, `P05-012`, `P06-002`, `P06-018`, `P06-019`, `P07-014`, `P08-012`, `P08-013`, `P08-017`, `P09-008`\
+  **Depends on:** `P04-012`, `P05-011`, `P06-018`, `P06-019`, `P07-014`, `P08-012`, `P08-013`, `P08-017`, `P09-008`\
   **Deliverable:** Consolidate customer/guest browsing, cart, checkout, payment, account, tracking, reviews and after-sales journeys against real APIs; verify SEO/privacy/freshness, keyboard/reflow/both themes and target browser behavior.\
   **Acceptance:** All storefront dependencies and owning regression pass on one revision with independent review. No mock checkout/payment success establishes acceptance; integrated product milestones and live launch remain separate.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
@@ -695,7 +696,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-01–FR-34 backend surfaces; Plan §3.1; Testing §15\
-  **Depends on:** `P01-024`, `P09-011`, `P04-003`, `P05-002`, `P05-004`, `P05-005`, `P05-006`, `P05-007`, `P05-009`, `P06-001`, `P06-003`, `P06-004`, `P06-005`, `P06-006`, `P06-007`, `P06-008`, `P06-009`, `P06-010`, `P06-011`, `P06-012`, `P06-013`, `P06-014`, `P06-015`, `P06-016`, `P06-017`, `P07-001`, `P07-002`, `P07-003`, `P07-004`, `P07-005`, `P07-006`, `P07-007`, `P07-008`, `P07-009`, `P07-010`, `P07-011`, `P07-012`, `P07-013`, `P07-016`, `P08-001`, `P08-002`, `P08-003`, `P08-004`, `P08-005`, `P08-006`, `P08-007`, `P08-008`, `P08-009`, `P08-010`, `P08-011`, `P08-016`, `P09-002`, `P04-016`, `P04-017`, `P04-018`, `P04-019`, `P05-014`, `P05-015`, `P05-016`, `P07-018`, `P08-019`, `P09-013`, `P09-014`, `P09-015`, `P09-016`, `P09-017`, `P09-018`\
+  **Depends on:** `P09-011`, `P05-004`, `P06-016`, `P07-016`, `P08-004`, `P04-017`, `P04-019`, `P05-014`, `P05-015`, `P05-016`, `P09-014`, `P09-016`, `P09-017`, `P09-018`\
   **Deliverable:** Consolidate all customer/admin API, validator/index, transaction/race/replay, job/recovery, secret/privacy and required real provider evidence against one backend revision. Reconcile generated OpenAPI/Postman and operator procedures.\
   **Acceptance:** All backend-stage dependencies and applicable provider gates pass; no frontend server/build/test or browser engine is required. API scenario tests prove guest/customer/admin workflows. Independent owner acceptance permits admin stage; M1–M8 product gates remain separate.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
@@ -724,7 +725,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Blocked` · **Area:** Backend/media · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-05; FR-23; Architecture §11\
-  **Depends on:** `P03-003`, `P01-005`, `P01-024`\
+  **Depends on:** `P01-024`\
   **Deliverable:** Implement the mediaAssets ownership/upload-intent ledger, validation/quarantine, transactionally attached references, private evidence authorization and CAS-protected orphan cleanup; upload/delete provider calls stay outside DB transactions (Database §6.7).\
   **Acceptance:** Only authorized admin uploads; credentials never reach browser bundles.\
   **Evidence:** [Local adapter/ledger/auth verification and EXT-04 blocker](./evidence/P04-003-controlled-media.md).\
@@ -734,7 +735,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Admin/catalog\
   **Stage:** `Admin`\
   **Sources:** FR-24\
-  **Depends on:** `P04-001`, `P03-013`, `P02-010`, `P04-016`, `P03-022`\
+  **Depends on:** `P03-022`\
   **Deliverable:** Create/edit/deactivate categories and image controls through protected API and admin UI; explicit null removes a parent/image after hierarchy/reference checks, omission preserves it.\
   **Acceptance:** Dependent-product deletion is guarded; status changes propagate safely.\
   **Evidence to attach:** Admin category CRUD integration.
@@ -743,7 +744,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Admin/catalog\
   **Stage:** `Admin`\
   **Sources:** FR-23; FR-06\
-  **Depends on:** `P04-002`, `P04-003`, `P03-013`, `P02-010`, `P04-017`, `P03-022`\
+  **Depends on:** `P03-022`\
   **Deliverable:** Build create/edit/deactivate, prices, featured settings, variants/SKUs and image management, including explicit null→unset for sale price/threshold; omitted fields remain unchanged.\
   **Acceptance:** Form errors reflect uniqueness/invalid variants and saved data appears through API.\
   **Evidence to attach:** Admin product CRUD/E2E.
@@ -760,7 +761,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Admin/inventory\
   **Stage:** `Admin`\
   **Sources:** FR-25\
-  **Depends on:** `P04-006`, `P03-013`, `P02-010`, `P04-018`, `P03-022`\
+  **Depends on:** `P03-022`\
   **Deliverable:** Build authorized adjustments, low-stock thresholds, counters and movement history displays.\
   **Acceptance:** Each adjustment has actor/reason/movement; reserved and committed values are distinct.\
   **Evidence to attach:** Admin stock audit test.
@@ -801,7 +802,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Storefront/catalog\
   **Stage:** `Storefront`\
   **Sources:** FR-03\
-  **Depends on:** `P04-009`, `P04-011`, `P02-006`, `P04-019`, `P09-005`, `P09-010`\
+  **Depends on:** `P04-011`, `P09-010`\
   **Deliverable:** Implement approved storeSettings.homepageBanner and its public-media reference/input/projection (API §10.1), categories, featured/new/discounted products, search, account/cart/wishlist cues and policy/support contact links; logo and banner are separate.\
   **Acceptance:** Empty/unconfigured sections are honest; navigation and responsive states work.\
   **Evidence to attach:** Home content and link audit.
@@ -810,7 +811,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Storefront/catalog\
   **Stage:** `Storefront`\
   **Sources:** FR-04\
-  **Depends on:** `P04-009`, `P04-011`, `P02-009`, `P09-010`\
+  **Depends on:** `P04-011`, `P09-010`\
   **Deliverable:** Build search, filters, sort, pagination, empty/loading/error and preserved URL state.\
   **Acceptance:** Mobile filter drawer usable; returning from details retains filter context.\
   **Evidence to attach:** Catalog UI E2E and accessibility checks.
@@ -819,7 +820,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Storefront/catalog\
   **Stage:** `Storefront`\
   **Sources:** FR-05; FR-06\
-  **Depends on:** `P04-010`, `P04-013`, `P02-009`, `P05-002`, `P05-004`, `P05-016`, `P05-001`, `P09-010`\
+  **Depends on:** `P04-013`, `P05-001`\
   **Deliverable:** Build gallery, pricing, SKU/availability, quantity, related products, real approved reviews and cart/wishlist actions against the completed APIs; no placeholder claims of shopping readiness.\
   **Acceptance:** Out-of-stock/inactive variants cannot be purchased; selection feedback is accessible.\
   **Evidence to attach:** Product detail UI/API tests.
@@ -828,7 +829,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Quality/catalog\
   **Stage:** `Integrated`\
   **Sources:** FR-03; FR-04; FR-05; FR-06; FR-13; FR-23; FR-24; FR-25\
-  **Depends on:** `P04-005`, `P04-004`, `P04-007`, `P04-008`, `P04-012`, `P04-013`, `P04-014`, `P03-016`, `P02-017`\
+  **Depends on:** `P03-016`, `P02-017`\
   **Deliverable:** Execute admin-to-storefront publishing, unique identities, concurrent stock and public visibility tests.\
   **Acceptance:** No static mock implies purchase readiness; M2 evidence demonstrates real API-backed catalog.\
   **Evidence to attach:** M2 catalog acceptance suite.
@@ -837,7 +838,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-24; API §14.1\
-  **Depends on:** `P04-001`, `P03-013`, `P04-003`, `P01-024`\
+  **Depends on:** `P04-001`, `P03-013`, `P04-003`\
   **Deliverable:** Register category list/create/edit/deactivate APIs over existing category services; enforce hierarchy, active assignment, safe deletion and null-versus-omitted parent/image semantics.\
   **Acceptance:** Admin/session/CSRF and conditional-update checks apply; category cycles, dependent deletion and invalid media references fail. HTTP integration proves writes and public visibility without UI.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
@@ -846,7 +847,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-06; FR-23; API §14.1\
-  **Depends on:** `P04-002`, `P04-003`, `P04-016`, `P01-024`\
+  **Depends on:** `P04-002`, `P04-016`\
   **Deliverable:** Register product/variant CRUD, pricing, featured flags, SKU identity and approved image references over canonical services.\
   **Acceptance:** Unique slug/SKU, stale edits, invalid combinations and foreign media references fail; explicit null unsets permitted fields while omitted fields remain unchanged. Public projections follow saved state.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
@@ -855,7 +856,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-13; FR-25; API §14.1\
-  **Depends on:** `P04-006`, `P04-008`, `P03-013`, `P01-024`\
+  **Depends on:** `P04-008`, `P03-013`, `P01-024`\
   **Deliverable:** Expose authorized counters, low-stock queries, threshold edits, adjustments and bounded movement history; require actor/reason/replay identity.\
   **Acceptance:** HTTP replay/race tests preserve nonnegative availability and exactly-once movement; reserved and committed stock remain separate and private model access is not exposed.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
@@ -864,7 +865,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-03; API §10.1\
-  **Depends on:** `P09-013`, `P04-009`, `P04-003`, `P01-024`\
+  **Depends on:** `P09-013`, `P04-009`\
   **Deliverable:** Implement homepageBanner input/media references and safe public home projection, categories and featured/new/discounted sections with store contact/policy links; logo and banner remain separate.\
   **Acceptance:** Unconfigured content is represented honestly; inactive/quarantined/private assets never publish; persisted admin updates appear on a subsequent public read.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
@@ -877,7 +878,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Storefront/shopping\
   **Stage:** `Storefront`\
   **Sources:** FR-07\
-  **Depends on:** `P04-010`, `P02-009`, `P09-010`\
+  **Depends on:** `P09-010`\
   **Deliverable:** Keep guest selections and quantities locally with stable SKU identity.\
   **Acceptance:** Cart never reserves stock; unavailable variants show recoverable errors.\
   **Evidence to attach:** Guest cart persistence test.
@@ -895,7 +896,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Storefront/shopping\
   **Stage:** `Storefront`\
   **Sources:** FR-07\
-  **Depends on:** `P05-001`, `P05-002`, `P05-014`, `P09-010`\
+  **Depends on:** `P05-001`\
   **Deliverable:** Deduplicate SKU/variant lines, resolve quantities and refresh current prices/availability.\
   **Acceptance:** Login merge does not oversell/reserve stock; changed products are flagged.\
   **Evidence to attach:** Cart merge integration tests.
@@ -922,7 +923,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/promotions\
   **Stage:** `Backend`\
   **Sources:** FR-09\
-  **Depends on:** `P05-005`, `P03-002`, `P01-024`\
+  **Depends on:** `P05-005`\
   **Deliverable:** Validate fixed/percentage, dates, min subtotal, one-code rule, activation and overall/per-customer limits. Per-customer-limited coupons require a registered account; guest email is not a quota identity. Preserve quoted live-hold terms until expiry and revalidate current terms after expiry.\
   **Acceptance:** Delivery excluded; discounts nonnegative; errors are stable and safe.\
   **Evidence to attach:** Coupon business-rule tests.
@@ -931,7 +932,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/promotions\
   **Stage:** `Backend`\
   **Sources:** FR-09\
-  **Depends on:** `P05-006`, `P03-002`, `P01-024`\
+  **Depends on:** `P05-006`\
   **Deliverable:** Support atomic capacity reservation, confirm and exactly-once release for checkout coordination.\
   **Acceptance:** Simultaneous final redemption cannot exceed limit; cart actions never hold capacity.\
   **Evidence to attach:** Coupon race and release tests.
@@ -940,7 +941,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Admin/promotions\
   **Stage:** `Admin`\
   **Sources:** FR-30\
-  **Depends on:** `P05-006`, `P05-007`, `P02-010`, `P03-013`, `P05-015`, `P03-022`\
+  **Depends on:** `P03-022`\
   **Deliverable:** Build coupon create/edit/deactivate, validity, limits and redemption reporting.\
   **Acceptance:** Invalid policy is rejected; history distinguishes held and committed usage.\
   **Evidence to attach:** Admin coupon CRUD/E2E.
@@ -958,7 +959,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Storefront/reviews\
   **Stage:** `Storefront`\
   **Sources:** FR-10; FR-31\
-  **Depends on:** `P05-009`, `P04-014`, `P02-010`, `P05-016`, `P05-017`, `P09-010`\
+  **Depends on:** `P04-014`\
   **Deliverable:** Integrate approved review display with real review APIs and the independently accepted P05-017 admin moderation controls; retain the original public/moderation aggregate outcome.\
   **Acceptance:** Admin never rewrites a customer's rating as customer-originated; ineligible submission remains disabled.\
   **Evidence to attach:** Moderation/view integration.
@@ -967,7 +968,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Storefront/shopping\
   **Stage:** `Storefront`\
   **Sources:** FR-07; FR-09\
-  **Depends on:** `P05-003`, `P05-005`, `P05-006`, `P02-009`, `P09-010`\
+  **Depends on:** `P05-003`\
   **Deliverable:** Build cart lines, quantity editing, subtotal and revalidation errors plus coupon preview.\
   **Acceptance:** Totals labeled estimated until backend checkout quote; input remains after errors.\
   **Evidence to attach:** Cart and coupon UI E2E.
@@ -976,7 +977,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Storefront/shopping\
   **Stage:** `Storefront`\
   **Sources:** FR-08; FR-10\
-  **Depends on:** `P05-004`, `P05-010`, `P02-006`, `P09-010`\
+  **Depends on:** `P05-010`\
   **Deliverable:** Show saved products, wishlist-to-cart actions, owned reviews and moderation states.\
   **Acceptance:** Nonmembers cannot mutate data; unavailable products remain clearly identified.\
   **Evidence to attach:** Wishlist/review route tests.
@@ -985,7 +986,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Quality/shopping\
   **Stage:** `Integrated`\
   **Sources:** FR-07; FR-08; FR-09; FR-10; FR-30; FR-31\
-  **Depends on:** `P05-008`, `P05-007`, `P05-011`, `P05-012`, `P02-017`\
+  **Depends on:** `P02-017`\
   **Deliverable:** Verify guest/auth cart, merge, coupons under contention and review moderation guards.\
   **Acceptance:** All checkout prerequisites pass while delivered-review submissions remain correctly gated.\
   **Evidence to attach:** P05 suite and prerequisite record.
@@ -994,7 +995,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-07; API §10.2\
-  **Depends on:** `P05-002`, `P04-010`, `P01-024`\
+  **Depends on:** `P05-002`, `P04-010`\
   **Deliverable:** Validate the documented guest selection payload and merge into the authenticated cart, deduplicating variants and refreshing current prices/availability. Browser storage is not a prerequisite.\
   **Acceptance:** Repeated merge and quantity conflicts follow API rules; foreign/inactive variants are rejected or flagged without stock reservation; ownership and maximum inputs are enforced.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
@@ -1003,7 +1004,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-09; FR-30; API §§10.3,14.3\
-  **Depends on:** `P05-006`, `P05-007`, `P03-013`, `P01-024`\
+  **Depends on:** `P05-007`, `P03-013`\
   **Deliverable:** Implement protected coupon configuration, edit/deactivation and bounded held/committed usage history using promotion services.\
   **Acceptance:** Invalid policy and stale edits fail; live holds retain approved quoted terms; history and quotas remain replay/concurrency safe.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
@@ -1012,7 +1013,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-10; FR-31; API §§10.3,14.2\
-  **Depends on:** `P05-009`, `P08-016`, `P03-013`, `P01-024`\
+  **Depends on:** `P08-016`\
   **Deliverable:** Expose approved public ratings/reviews, customer-owned history and eligible submit/edit, and protected moderation queues/actions with reasons and audit history.\
   **Acceptance:** Eligibility, one active review, moderation-after-edit and public allowlists are verified through HTTP; administrators cannot attribute altered rating values to customers.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
@@ -1021,7 +1022,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Admin\
   **Stage:** `Admin`\
   **Sources:** FR-31; Design §7\
-  **Depends on:** `P05-016`, `P02-010`, `P03-022`\
+  **Depends on:** `P03-022`\
   **Deliverable:** Implement review queue, reasons, approve/reject/hide controls and mutation feedback against real review APIs; supports the admin part originally grouped in P05-010.\
   **Acceptance:** Only permitted state changes occur; author rating stays immutable to admin; failures preserve entered reasons and both themes/keyboard use work.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
@@ -1034,7 +1035,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/delivery\
   **Stage:** `Backend`\
   **Sources:** FR-16; FR-28\
-  **Depends on:** `P03-002`, `P03-013`, `P01-007`, `P09-013`, `P01-024`\
+  **Depends on:** `P09-013`\
   **Deliverable:** Use the primary settings singleton established by P09-013 before delivery writes (Database §10.4); create district/area zone/charge schema and admin CRUD; acquire shared storeSettings.deliveryCoverageRevision before every charge/zone-status transaction, including cross-zone scheduling, supersession and activation.\
   **Acceptance:** Prices never negative; past orders unchanged; concurrent different-zone writers cannot approve overlapping windows for the same coverageKey. No zone-local guard substitutes for the global guard.\
   **Evidence to attach:** Delivery setting and snapshot tests.
@@ -1043,7 +1044,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Storefront/delivery\
   **Stage:** `Storefront`\
   **Sources:** FR-16; FR-28\
-  **Depends on:** `P06-001`, `P02-008`, `P02-010`, `P06-021`, `P09-010`\
+  **Depends on:** `P09-010`\
   **Deliverable:** Integrate available district/area selection and unavailable-location feedback with delivery APIs and the independently accepted P06-021 admin settings; retain both original outcomes.\
   **Acceptance:** Only active zones are selectable; controls are accessible.\
   **Evidence to attach:** Delivery UI integration.
@@ -1052,7 +1053,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/orders\
   **Stage:** `Backend`\
   **Sources:** FR-16; FR-26\
-  **Depends on:** `P06-001`, `P01-007`, `P01-024`\
+  **Depends on:** `P06-001`\
   **Deliverable:** Display the applicable deadline rule/status and estimated date from approved configuration/verified law. Preserve the checkout rule basis; calculate a confirmation-based absolute deadline only after actual confirmation (Database §7.2; API §11.3).\
   **Acceptance:** 14-day planning target cannot override shorter applicable requirements; uncertain policy blocks final publication.\
   **Evidence to attach:** Deadline examples and compliance sign-off reference.
@@ -1061,7 +1062,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/checkout\
   **Stage:** `Backend`\
   **Sources:** FR-11; FR-09\
-  **Depends on:** `P05-005`, `P05-006`, `P04-008`, `P06-001`, `P01-024`\
+  **Depends on:** `P05-006`, `P04-008`, `P06-001`\
   **Deliverable:** Revalidate identity/contact, email, Bangladesh phone, terms, SKU stock, coupon and delivery with integer-poisha totals.\
   **Acceptance:** Invalid price/stock/area/coupon/terms rejected; quote is authoritative at calculation time; submission revalidates changes and obtains renewed confirmation rather than guaranteeing a stale price.\
   **Evidence to attach:** Checkout quote unit/integration suite.
@@ -1070,7 +1071,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/orders\
   **Stage:** `Backend`\
   **Sources:** FR-11; FR-14\
-  **Depends on:** `P06-004`, `P03-002`, `P01-024`\
+  **Depends on:** `P06-004`\
   **Deliverable:** Store unique order number, immutable item/variant/unit/discount/delivery/address/deadline-rule values with separate event-derived delivery commitments and payment/fulfillment states.\
   **Acceptance:** Historical changes do not rewrite snapshots; invalid transitions rejected.\
   **Evidence to attach:** Order model/index tests.
@@ -1079,7 +1080,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/checkout\
   **Stage:** `Backend`\
   **Sources:** FR-11; Architecture §§8,10\
-  **Depends on:** `P06-005`, `P01-024`\
+  **Depends on:** `P06-005`\
   **Deliverable:** Deduplicate repeated user/guest submissions and persist operation outcome.\
   **Acceptance:** Concurrent identical intent creates one order and returns/safely resumes existing outcome.\
   **Evidence to attach:** Duplicate-intent concurrency tests.
@@ -1088,7 +1089,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/checkout\
   **Stage:** `Backend`\
   **Sources:** FR-09; FR-13\
-  **Depends on:** `P06-006`, `P04-008`, `P05-007`, `P01-024`\
+  **Depends on:** `P06-006`, `P05-007`\
   **Deliverable:** Atomically create/commit/release inventory and coupon allocations and movements with guarded transitions.\
   **Acceptance:** No negative available stock or breached coupon capacity under concurrent checkouts.\
   **Evidence to attach:** Transaction/last-unit/final-coupon tests.
@@ -1097,7 +1098,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/orders\
   **Stage:** `Backend`\
   **Sources:** FR-11; FR-12; FR-13\
-  **Depends on:** `P06-007`, `P06-001`, `P01-024`\
+  **Depends on:** `P06-007`\
   **Deliverable:** Accept COD order once as Pending, commit allocations, create a pending payment aggregate (no unverified paymentCollections receipt), and order_received notification. Administrator confirmation separately moves eligible fulfillment to Confirmed.\
   **Acceptance:** COD Paid status requires later collection evidence; no provider payment falsely created.\
   **Evidence to attach:** COD checkout integration.
@@ -1106,7 +1107,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/checkout\
   **Stage:** `Backend`\
   **Sources:** FR-11; FR-13; FR-09\
-  **Depends on:** `P06-007`, `P06-006`, `P01-024`\
+  **Depends on:** `P06-007`\
   **Deliverable:** Create order and temporary stock/coupon reservations for a future online payment attempt.\
   **Acceptance:** Each held generation expires 15 minutes after its own server heldAt; all stock/coupon clocks agree, replay never extends them. Provider calls remain disabled until Phase 07 integration.\
   **Evidence to attach:** Hold lifecycle tests.
@@ -1115,7 +1116,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/jobs\
   **Stage:** `Backend`\
   **Sources:** FR-13; FR-09\
-  **Depends on:** `P06-009`, `P03-003`, `P01-024`\
+  **Depends on:** `P06-009`\
   **Deliverable:** Expire only eligible unpaid holds using idempotent scheduled service and durable claims when needed.\
   **Acceptance:** TTL document deletion does not release business capacity; attempts preserve audit history.\
   **Evidence to attach:** Expiry/restart/retry tests.
@@ -1124,7 +1125,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/orders\
   **Stage:** `Backend`\
   **Sources:** FR-14; FR-16; FR-26\
-  **Depends on:** `P06-008`, `P04-008`, `P06-003`, `P01-024`\
+  **Depends on:** `P06-008`, `P06-003`\
   **Deliverable:** Enforce Pending/Confirmed/Processing/Shipped/Delivered/Cancelled transitions and shipment decrement of physical+committed.\
   **Acceptance:** Admin cannot skip forbidden transitions; shipping/failed delivery retains event history.\
   **Evidence to attach:** State-machine and shipment tests.
@@ -1133,7 +1134,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/payments\
   **Stage:** `Backend`\
   **Sources:** FR-12; FR-26; FR-29\
-  **Depends on:** `P06-011`, `P03-013`, `P01-024`\
+  **Depends on:** `P06-011`\
   **Deliverable:** Record collected COD only on authorized confirmation with ledger and audit reference.\
   **Acceptance:** Delivery alone never marks COD Paid; duplicate confirmation has single effect.\
   **Evidence to attach:** COD collection audit test.
@@ -1142,7 +1143,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/orders\
   **Stage:** `Backend`\
   **Sources:** FR-15; FR-26\
-  **Depends on:** `P06-011`, `P06-007`, `P01-024`\
+  **Depends on:** `P06-011`\
   **Deliverable:** Require administrator approval/rejection of every customer cancellation request; atomically recheck eligibility and dispatch status, retain reasons, release eligible allocation once, and create collected-payment refund obligations. Unpaid online cancellations keep provider reconciliation active for any later collection.\
   **Acceptance:** Shipped orders cannot use ordinary cancellation; uncollected COD has no monetary refund.\
   **Evidence to attach:** Cancellation race/state tests.
@@ -1151,7 +1152,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/storefront\
   **Stage:** `Backend`\
   **Sources:** FR-14\
-  **Depends on:** `P06-011`, `P03-013`, `P01-024`\
+  **Depends on:** `P06-011`\
   **Deliverable:** Expose own orders and independent fulfillment/payment history with pending/returned states where available.\
   **Acceptance:** Cross-account access denied; order totals use historical snapshots.\
   **Evidence to attach:** Order ownership tests.
@@ -1160,7 +1161,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/guest-access\
   **Stage:** `Backend`\
   **Sources:** FR-19\
-  **Depends on:** `P06-005`, `P03-009`, `P01-024`\
+  **Depends on:** `P06-005`\
   **Deliverable:** Require order number+email followed by expiring single-use email verification proof.\
   **Acceptance:** Non-enumerating rate-limited lookup and order-scoped eligible actions; no access by lookup text alone.\
   **Evidence to attach:** Guest proof replay/ownership tests.
@@ -1169,7 +1170,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/notifications\
   **Stage:** `Backend`\
   **Sources:** FR-20\
-  **Depends on:** `P06-011`, `P06-013`, `P03-009`, `P01-024`\
+  **Depends on:** `P06-013`\
   **Deliverable:** Persist accurate order reference/status events with reliable independent delivery and retry.\
   **Acceptance:** Repeated transitions do not email duplicate customer updates; mail failure cannot reverse orders.\
   **Evidence to attach:** Notification event/dedup suite.
@@ -1178,7 +1179,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/admin\
   **Stage:** `Backend`\
   **Sources:** FR-16; FR-26; FR-34\
-  **Depends on:** `P06-011`, `P06-003`, `P03-013`, `P01-024`\
+  **Depends on:** `P06-011`\
   **Deliverable:** Track failed attempts and retry while Shipped; final non-delivery closure requires authorized custody/disposition for all shipped quantities. Close exceptionally as Cancelled, resolve eligible collected refunds, and restock only physically recovered inspected resellable units without re-running pre-shipment release. Track contacts, complaints, and resolution with scoped access.\
   **Acceptance:** Failure leads to documented retry/resolution; deadlines and customer updates remain accurate.\
   **Evidence to attach:** Delivery-exception and complaint test.
@@ -1187,7 +1188,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Storefront/checkout\
   **Stage:** `Storefront`\
   **Sources:** FR-11; FR-16\
-  **Depends on:** `P06-004`, `P06-008`, `P06-002`, `P02-008`, `P09-010`\
+  **Depends on:** `P06-002`\
   **Deliverable:** Build guest/account checkout, address, terms, coupon, order summary, COD and online-pending presentation.\
   **Acceptance:** Final server charges and applicable deadline rule/status visible before submission; pending online not represented as paid.\
   **Evidence to attach:** Mobile/desktop checkout E2E.
@@ -1196,7 +1197,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Storefront/orders\
   **Stage:** `Storefront`\
   **Sources:** FR-14; FR-15; FR-19; FR-26\
-  **Depends on:** `P06-014`, `P06-015`, `P06-013`, `P06-012`, `P06-017`, `P02-010`, `P06-022`, `P09-010`\
+  **Depends on:** `P09-010`\
   **Deliverable:** Build My Orders/Details, guest proof and cancellation feedback; integrate the independently accepted P06-022 admin order/exception/COD interface to retain the original aggregate outcome.\
   **Acceptance:** Only currently eligible actions appear; cancellation requests show pending administrator review without changing fulfillment. Unpaid online cancellation and later verified collection show separate cancelled/correction states; the server remains authoritative.\
   **Evidence to attach:** Guest/customer/admin lifecycle E2E.
@@ -1205,7 +1206,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Quality/checkout\
   **Stage:** `Integrated`\
   **Sources:** FR-09; FR-11; FR-13; FR-14; FR-15; FR-16; FR-19; FR-20; FR-26; FR-28; FR-29\
-  **Depends on:** `P06-018`, `P06-019`, `P06-010`, `P06-016`, `P04-015`, `P05-013`, `P02-017`\
+  **Depends on:** `P04-015`, `P05-013`\
   **Deliverable:** Verify guest+registered COD, concurrency, coupon limits, totals, idempotency, collection and cancellation.\
   **Acceptance:** M3 acceptance proves COD and online-hold foundation, not live payment.\
   **Evidence to attach:** COD E2E, concurrency and M3 gate report.
@@ -1214,7 +1215,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Admin\
   **Stage:** `Admin`\
   **Sources:** FR-28; Design §7\
-  **Depends on:** `P06-001`, `P02-010`, `P03-022`\
+  **Depends on:** `P03-022`\
   **Deliverable:** Implement zone/charge creation, scheduling, activation and stale-edit feedback; fulfills the admin component originally grouped in P06-002.\
   **Acceptance:** Only server-confirmed changes appear saved; invalid overlapping coverage and authorization failures are clear; old order charges remain unchanged.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
@@ -1223,7 +1224,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Admin\
   **Stage:** `Admin`\
   **Sources:** FR-26; FR-29; Design §7\
-  **Depends on:** `P06-011`, `P06-012`, `P06-013`, `P06-017`, `P02-010`, `P03-022`\
+  **Depends on:** `P03-022`\
   **Deliverable:** Build order list/detail, cancellation review, shipping/delivery, failed-delivery custody and COD collection controls; fulfills the admin component of P06-019.\
   **Acceptance:** Confirmations use current backend eligibility; cancelled fulfillment never reopens after late payment; failed writes never imply financial or shipping success.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
@@ -1236,7 +1237,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/payments\
   **Stage:** `Backend`\
   **Sources:** FR-12; Architecture §10\
-  **Depends on:** `P06-009`, `P01-006`, `P03-003`, `P01-024`\
+  **Depends on:** `P06-009`, `P01-006`\
   **Deliverable:** Define sandbox configuration, init/validate/status integration and provider-specific safe error translation.\
   **Acceptance:** Merchant credentials remain server-only; unknown provider outcome is preserved as uncertain.\
   **Evidence to attach:** Provider contract test with sandbox/mocks.
@@ -1245,7 +1246,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/payments\
   **Stage:** `Backend`\
   **Sources:** FR-12; FR-29\
-  **Depends on:** `P06-005`, `P03-002`, `P01-024`\
+  **Depends on:** `P06-005`\
   **Deliverable:** Track provider scoped tran_id, attempts, merchant refs, amount, BDT, expiry, risk and paid collections.\
   **Acceptance:** Distinct retries never reuse reference; all attempts remain auditable.\
   **Evidence to attach:** Unique-index/payment-model tests.
@@ -1254,7 +1255,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/storefront\
   **Stage:** `Backend`\
   **Sources:** FR-12\
-  **Depends on:** `P07-001`, `P01-006`, `P01-024`\
+  **Depends on:** `P07-001`\
   **Deliverable:** Return available online channels from verified merchant configuration and COD from store config.\
   **Acceptance:** Disabled/unknown bKash, Nagad or Rocket channels are never offered as activated.\
   **Evidence to attach:** Method-availability tests.
@@ -1263,7 +1264,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/payments\
   **Stage:** `Backend`\
   **Sources:** FR-11; FR-12\
-  **Depends on:** `P07-002`, `P07-003`, `P06-009`, `P01-024`\
+  **Depends on:** `P07-002`, `P07-003`\
   **Deliverable:** Persist new unique attempt then request hosted URL for same order; ensure financial intent exists before provider calls.\
   **Acceptance:** Retry cannot silently create another order; expired holds require safe reallocation.\
   **Evidence to attach:** Payment-init integration.
@@ -1272,7 +1273,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/payments\
   **Stage:** `Backend`\
   **Sources:** FR-12\
-  **Depends on:** `P07-004`, `P03-001`, `P01-024`\
+  **Depends on:** `P07-004`\
   **Deliverable:** Accept return as UI signal and IPN as untrusted provider input pending independent validation.\
   **Acceptance:** Browser success never marks Paid; CSRF exemption applies only to the documented provider IPN/return endpoints; they grant no customer/admin access, and any financial transition requires independent provider verification. Normal browser initiation/retry APIs remain CSRF-protected.\
   **Evidence to attach:** Return/IPN endpoint tests.
@@ -1281,7 +1282,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/payments\
   **Stage:** `Backend`\
   **Sources:** FR-12\
-  **Depends on:** `P07-005`, `P07-001`, `P07-002`, `P01-024`\
+  **Depends on:** `P07-005`\
   **Deliverable:** Validate merchant, order, transaction, amount, BDT, accepted status and risk using provider status/validation APIs.\
   **Acceptance:** Mismatched or forged results cannot mark Paid; only verified provider collection changes status.\
   **Evidence to attach:** Provider mismatch/fraud tests.
@@ -1290,7 +1291,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/payments\
   **Stage:** `Backend`\
   **Sources:** FR-12\
-  **Depends on:** `P07-006`, `P03-002`, `P01-024`\
+  **Depends on:** `P07-006`\
   **Deliverable:** Enforce provider-scoped unique references and guarded paid/failure transitions on all attempts.\
   **Acceptance:** Multiple callbacks have single business effect and history remains intact.\
   **Evidence to attach:** Concurrent/IPN idempotency tests.
@@ -1299,7 +1300,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/payments\
   **Stage:** `Backend`\
   **Sources:** FR-12; FR-13; FR-09\
-  **Depends on:** `P07-007`, `P06-007`, `P01-024`\
+  **Depends on:** `P07-007`\
   **Deliverable:** After verified collection atomically transition eligible live holds to committed allocation.\
   **Acceptance:** One order only fulfilled once; failed attempt cannot release another active/paid allocation.\
   **Evidence to attach:** Payment/allocation concurrency tests.
@@ -1308,7 +1309,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/payments\
   **Stage:** `Backend`\
   **Sources:** FR-12; FR-13; FR-09\
-  **Depends on:** `P07-008`, `P06-010`, `P01-024`\
+  **Depends on:** `P07-008`, `P06-010`\
   **Deliverable:** Check fulfillment eligibility first. For Cancelled orders, preserve collection, keep Cancelled, and create a payment-correction obligation without reallocation. For eligible orders, recheck both capacities atomically; otherwise preserve Paid and hold fulfillment for resolution.\
   **Acceptance:** Cancelled fulfillment never reopens or reallocates after collection; eligible orders confirm only with inventory/coupon allocation and cleared risk review. No false payment failure or forced allocation with insufficient capacity.\
   **Evidence to attach:** Expired-hold late-payment tests.
@@ -1317,7 +1318,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/payments\
   **Stage:** `Backend`\
   **Sources:** FR-12; FR-29\
-  **Depends on:** `P07-006`, `P07-008`, `P01-024`\
+  **Depends on:** `P07-008`\
   **Deliverable:** Model risk_level=1/other provider flags independently of allocation outcome and add authorized resolution.\
   **Acceptance:** Risk review cannot automatically release payment or fulfill without valid allocation.\
   **Evidence to attach:** Risk decision/audit tests.
@@ -1326,7 +1327,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/payments\
   **Stage:** `Backend`\
   **Sources:** FR-12; FR-18\
-  **Depends on:** `P07-007`, `P07-008`, `P01-024`\
+  **Depends on:** `P07-008`\
   **Deliverable:** Record each independently collected attempt; flag excess collection for authorized financial resolution. Keep per-collection balances and separate payment-correction refunds from merchandise refund summaries.\
   **Acceptance:** Exactly one fulfillment/allocation despite multiple paid attempts.\
   **Evidence to attach:** Dual-paid-attempt test.
@@ -1335,7 +1336,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/jobs\
   **Stage:** `Backend`\
   **Sources:** FR-12; FR-29\
-  **Depends on:** `P07-007`, `P03-003`, `P01-024`\
+  **Depends on:** `P07-007`\
   **Deliverable:** Query status for missing/delayed IPNs with leases, retries, safe timeouts and admin escalation.\
   **Acceptance:** Timeouts never prove Failed; restart and duplicate job runs do not double-apply collection.\
   **Evidence to attach:** Reconciliation/restart tests.
@@ -1344,7 +1345,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/payments\
   **Stage:** `Backend`\
   **Sources:** FR-12\
-  **Depends on:** `P07-012`, `P07-009`, `P01-024`\
+  **Depends on:** `P07-012`, `P07-009`\
   **Deliverable:** Reconcile prior outcome and atomically reacquire expired stock/coupon capacity with a new shared heldAt/expiry before issuing fresh tran_id for the same order; preserve immutable order pricing or return a reviewed conflict if current coupon terms cannot honor it.\
   **Acceptance:** No double paid order, stale hold reuse or premature release across overlapping attempts.\
   **Evidence to attach:** Retry/race tests.
@@ -1353,7 +1354,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Storefront/payments\
   **Stage:** `Storefront`\
   **Sources:** FR-12\
-  **Depends on:** `P07-003`, `P07-004`, `P07-013`, `P02-008`, `P09-010`\
+  **Depends on:** `P09-010`\
   **Deliverable:** Expose provider hosted redirect and poll/refetch backend-authoritative status.\
   **Acceptance:** Paid/unresolved/failed/cancelled and paid-but-hold-fulfillment states are distinguishable.\
   **Evidence to attach:** Sandbox storefront payment E2E.
@@ -1362,7 +1363,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Admin/payments\
   **Stage:** `Admin`\
   **Sources:** FR-29; FR-12\
-  **Depends on:** `P07-010`, `P07-011`, `P07-012`, `P02-010`, `P07-018`, `P03-022`\
+  **Depends on:** `P03-022`\
   **Deliverable:** Show attempts, references, COD/online status, verification/risk holds and resolution actions.\
   **Acceptance:** Sensitive actions are authorized, confirmed and audited; no optimistic financial completion.\
   **Evidence to attach:** Admin payment exception E2E.
@@ -1371,7 +1372,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/notifications\
   **Stage:** `Backend`\
   **Sources:** FR-20\
-  **Depends on:** `P07-006`, `P07-007`, `P03-009`, `P01-024`\
+  **Depends on:** `P07-007`\
   **Deliverable:** Send verified success/failure/pending changes with accurate references, retry and deduplication.\
   **Acceptance:** Repeated callbacks cannot produce duplicate event emails.\
   **Evidence to attach:** Payment notification tests.
@@ -1380,7 +1381,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Quality/payments\
   **Stage:** `Integrated`\
   **Sources:** FR-12; FR-13; FR-29\
-  **Depends on:** `P07-014`, `P07-015`, `P07-016`, `P07-011`, `P07-009`, `P07-010`, `P07-012`, `P06-020`, `P02-017`\
+  **Depends on:** `P06-020`\
   **Deliverable:** Run success/fail/cancel/uncertain, forged/mismatched/duplicate IPN, double collection, risk and late holds.\
   **Acceptance:** M4 requires provider-backed sandbox evidence; unsupported live channels remain disabled.\
   **Evidence to attach:** M4 sandbox and fault-injection report.
@@ -1389,7 +1390,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-12; FR-29; API §§12,14\
-  **Depends on:** `P07-010`, `P07-011`, `P07-012`, `P07-013`, `P03-013`, `P01-024`\
+  **Depends on:** `P07-010`, `P07-011`, `P07-013`\
   **Deliverable:** Expose authorized attempt/collection searches, risk decisions, unmatched/excess investigation and reconciliation status through allowlisted DTOs.\
   **Acceptance:** Sensitive mutations enforce authorization, CSRF, audit and replay guards; resolved risk alone never bypasses stock/funding gates; raw provider credentials/payloads stay private.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
@@ -1402,7 +1403,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/returns\
   **Stage:** `Backend`\
   **Sources:** FR-17; FR-32\
-  **Depends on:** `P06-005`, `P03-002`, `P01-024`\
+  **Depends on:** `P06-005`\
   **Deliverable:** Track order items, quantities, reasons, access-controlled evidence metadata/references and independent claim history.\
   **Acceptance:** Parallel physical-return and shortage claims together cannot exceed eligible unclaimed item quantity, including previously resolved/refunded merchandise.\
   **Evidence to attach:** Return-quantity race tests.
@@ -1411,7 +1412,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/returns\
   **Stage:** `Backend`\
   **Sources:** FR-17\
-  **Depends on:** `P08-001`, `P06-011`, `P01-007`, `P01-024`\
+  **Depends on:** `P08-001`, `P06-011`\
   **Deliverable:** Enforce delivered status, development-baseline seven-day window and legally protected exceptions via approved policy.\
   **Acceptance:** Unsupported blanket rejection cannot override applicable rights; ineligible claims have clear reasons.\
   **Evidence to attach:** Eligibility boundary tests.
@@ -1420,7 +1421,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/returns\
   **Stage:** `Backend`\
   **Sources:** FR-17; FR-32\
-  **Depends on:** `P08-002`, `P03-013`, `P04-003`, `P06-015`, `P01-024`\
+  **Depends on:** `P08-002`, `P06-015`\
   **Deliverable:** Implement Requested/Under Review/Approved/Awaiting Return/Received/Inspected/Completed, rejection history and customer-scoped supporting-image upload using a separately authorized media path.\
   **Acceptance:** Invalid transitions and unauthorized approval are blocked; physical returns cannot skip receipt/inspection; approved missing-item/shortage claims have a non-physical path without receipt/inspection/restock; optional evidence enforces type/size checks, verified customer or scoped guest authorization, private retrieval and safe orphan/retention cleanup.\
   **Evidence to attach:** Return state/authorization and evidence-upload/access/cleanup tests.
@@ -1429,7 +1430,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/inventory\
   **Stage:** `Backend`\
   **Sources:** FR-17; FR-13; FR-32\
-  **Depends on:** `P08-003`, `P04-008`, `P01-024`\
+  **Depends on:** `P08-003`\
   **Deliverable:** Require inspection to mark resellable quantities and atomically add physical stock.\
   **Acceptance:** Request/approval alone never restocks; duplicate receipt cannot double-add stock.\
   **Evidence to attach:** Inspection/restock test.
@@ -1438,7 +1439,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/refunds\
   **Stage:** `Backend`\
   **Sources:** FR-18; FR-33\
-  **Depends on:** `P07-002`, `P06-013`, `P08-003`, `P01-024`\
+  **Depends on:** `P07-002`, `P06-013`, `P08-003`\
   **Deliverable:** Separate refunds from returns and store approval/payout attempts, status and source collection.\
   **Acceptance:** Original order fulfillment history remains immutable; pending vs completed are distinct.\
   **Evidence to attach:** Refund model/state tests.
@@ -1447,7 +1448,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/refunds\
   **Stage:** `Backend`\
   **Sources:** FR-18; FR-33\
-  **Depends on:** `P08-005`, `P05-005`, `P06-005`, `P01-024`\
+  **Depends on:** `P08-005`\
   **Deliverable:** Use purchase-time item/allocated coupon amounts, physical-return/shortage quantity limits, delivery-charge policy and prior commitments. Payment corrections consume source-collection financial capacity independently of merchandise-return quantities.\
   **Acceptance:** No current-catalog price used; deterministic rounding; no refund for uncollected COD.\
   **Evidence to attach:** Refund amount/rounding unit tests.
@@ -1456,7 +1457,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/refunds\
   **Stage:** `Backend`\
   **Sources:** FR-18\
-  **Depends on:** `P08-006`, `P03-002`, `P01-024`\
+  **Depends on:** `P08-006`\
   **Deliverable:** Reserve refundable capacity before payout and guard against concurrent attempts.\
   **Acceptance:** Pending+completed commitments never exceed independently verified collections at either source-collection or order level; duplicate-collection refunds do not consume merchandise quantity entitlement.\
   **Evidence to attach:** Parallel partial-refund tests.
@@ -1465,7 +1466,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/refunds\
   **Stage:** `Backend`\
   **Sources:** FR-18; FR-33\
-  **Depends on:** `P08-007`, `P07-001`, `P01-006`, `P01-024`\
+  **Depends on:** `P08-007`, `P07-001`\
   **Deliverable:** Use original bank_tran_id and supported provider API; record refund identifiers and attempt states.\
   **Acceptance:** Provider acceptance leaves refund Processing until independently verified payout.\
   **Evidence to attach:** Sandbox refund-init contract tests.
@@ -1474,7 +1475,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/jobs\
   **Stage:** `Backend`\
   **Sources:** FR-18; FR-33\
-  **Depends on:** `P08-008`, `P03-003`, `P01-024`\
+  **Depends on:** `P08-008`\
   **Deliverable:** Query supported status, reconcile uncertainty and guard authorized retry without duplicate payout.\
   **Acceptance:** Unknown result never marked Completed; duplicate callbacks and job restarts are safe.\
   **Evidence to attach:** Refund reconciliation tests.
@@ -1483,7 +1484,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/refunds\
   **Stage:** `Backend`\
   **Sources:** FR-18; FR-33\
-  **Depends on:** `P08-007`, `P06-012`, `P03-013`, `P01-024`\
+  **Depends on:** `P08-007`, `P06-012`\
   **Deliverable:** Record consent where required, verified transfer and admin confirmation for COD/bank/mobile wallet.\
   **Acceptance:** Uncollected COD cannot be refunded; no Completed state without payout evidence.\
   **Evidence to attach:** Manual transfer security/audit test.
@@ -1492,7 +1493,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/notifications\
   **Stage:** `Backend`\
   **Sources:** FR-20; FR-17; FR-18\
-  **Depends on:** `P08-003`, `P08-009`, `P08-010`, `P03-009`, `P01-024`\
+  **Depends on:** `P08-009`, `P08-010`\
   **Deliverable:** Record approvals, rejection reasons, retry/failure and accurate customer status email.\
   **Acceptance:** Return completion never sends unverified refund-completed claim; notifications deduplicate.\
   **Evidence to attach:** Return/refund event tests.
@@ -1501,7 +1502,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Storefront/returns\
   **Stage:** `Storefront`\
   **Sources:** FR-17\
-  **Depends on:** `P08-003`, `P08-002`, `P02-008`, `P08-019`, `P09-010`\
+  **Depends on:** `P09-010`\
   **Deliverable:** Build eligible item/quantity selection, reason, optional image, deadlines, My Returns and status feedback.\
   **Acceptance:** Duplicate/invalid claims and unauthorized image uploads prevented server-side; upload progress, validation/failure and retry states preserve other form input.\
   **Evidence to attach:** Return customer E2E/a11y test.
@@ -1510,7 +1511,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Storefront/refunds\
   **Stage:** `Storefront`\
   **Sources:** FR-18\
-  **Depends on:** `P08-005`, `P08-011`, `P02-009`, `P08-019`, `P09-010`\
+  **Depends on:** `P09-010`\
   **Deliverable:** Consume canonical Refund.approvedAt, safe items/timeline and persisted timing snapshot; show original collection, amount/method, approved calendar/shorter-rule target, status and failure/support path. Missing approved timing basis is under_review with no guessed target date.\
   **Acceptance:** Processing is not shown as completed; deadline labels distinguish business/calendar days.\
   **Evidence to attach:** Refund details UI tests.
@@ -1519,7 +1520,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Admin/returns\
   **Stage:** `Admin`\
   **Sources:** FR-32\
-  **Depends on:** `P08-004`, `P08-003`, `P02-010`, `P08-019`, `P03-022`\
+  **Depends on:** `P03-022`\
   **Deliverable:** Review claims/evidence, approve/reject, record receipt, inspection and resellability.\
   **Acceptance:** Confirmed action preserves history and does not bypass backend eligibility.\
   **Evidence to attach:** Admin return E2E.
@@ -1528,7 +1529,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Admin/refunds\
   **Stage:** `Admin`\
   **Sources:** FR-33\
-  **Depends on:** `P08-009`, `P08-010`, `P02-010`, `P08-019`, `P03-022`\
+  **Depends on:** `P03-022`\
   **Deliverable:** Show eligible collected balance, partial quantities, pending commitments, provider/manual methods, attempts and retry actions.\
   **Acceptance:** No optimistic Completed and every financial action needs authorization/confirmation/audit.\
   **Evidence to attach:** Admin refund E2E.
@@ -1537,7 +1538,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/reviews\
   **Stage:** `Backend`\
   **Sources:** FR-10; FR-31\
-  **Depends on:** `P05-009`, `P06-011`, `P08-003`, `P08-005`, `P01-024`\
+  **Depends on:** `P05-009`, `P08-005`\
   **Deliverable:** Require qualifying delivered purchase and block new verification after fully returned/refunded purchase unless another qualifies.\
   **Acceptance:** Legitimate prior reviews are not auto-deleted solely by refund; edited reviews return to moderation when required.\
   **Evidence to attach:** Verified purchase/return review tests.
@@ -1546,7 +1547,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Storefront/reviews\
   **Stage:** `Storefront`\
   **Sources:** FR-10; FR-31\
-  **Depends on:** `P08-016`, `P05-010`, `P05-012`, `P09-010`\
+  **Depends on:** `P05-012`\
   **Deliverable:** Build product/My Reviews submit/edit controls with purchased-product eligibility and moderation feedback.\
   **Acceptance:** Guest or ineligible accounts cannot post; edited reviews return to moderation where required.\
   **Evidence to attach:** Customer verified-review E2E.
@@ -1555,7 +1556,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Quality/returns/refunds\
   **Stage:** `Integrated`\
   **Sources:** FR-10; FR-15; FR-17; FR-18; FR-32; FR-33\
-  **Depends on:** `P08-012`, `P08-013`, `P08-014`, `P08-015`, `P08-016`, `P08-017`, `P08-011`, `P08-006`, `P08-007`, `P07-017`, `P02-017`\
+  **Depends on:** `P07-017`\
   **Deliverable:** Exercise customer return/refund/review interfaces and item/quantity races, evidence uploads, approval/inspection, multiple partial refunds, manual/gateway payout evidence and failed outcomes.\
   **Acceptance:** M5 safety gates pass; every Completed refund has verified payout proof.\
   **Evidence to attach:** M5 after-sales test report.
@@ -1564,7 +1565,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-17; FR-18; FR-19; API §13\
-  **Depends on:** `P08-003`, `P08-011`, `P06-015`, `P01-024`\
+  **Depends on:** `P08-011`\
   **Deliverable:** Complete customer/guest and admin claim/refund list/detail/decision surfaces, evidence access and safe timelines using return/refund services; include timing snapshots and investigation status.\
   **Acceptance:** Nested ownership, guest proof scope, private image retrieval, quantity/source caps and verified payout status are proven by API tests; missing policy timing never produces a guessed deadline.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
@@ -1577,7 +1578,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Admin/analytics\
   **Stage:** `Admin`\
   **Sources:** FR-22\
-  **Depends on:** `P06-011`, `P08-005`, `P04-006`, `P03-013`, `P09-014`, `P03-022`\
+  **Depends on:** `P03-022`\
   **Deliverable:** Implement full canonical DashboardMetrics/DashboardCounts: product/customer/order and status counts, pending physical returns, lowStockItems/recentOrders (≤20 each), cutoff/date basis, outstanding COD and financial fields.\
   **Acceptance:** Statistics correspond to authoritative API; access restricted to administrator.\
   **Evidence to attach:** Dashboard dataset/route tests.
@@ -1586,7 +1587,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/reports\
   **Stage:** `Backend`\
   **Sources:** FR-22; FR-29\
-  **Depends on:** `P06-011`, `P07-002`, `P06-012`, `P08-005`, `P01-024`\
+  **Depends on:** `P06-012`, `P08-005`\
   **Deliverable:** Calculate gross merchandise, sale/coupon discounts, verified paid collections, outstanding COD, pending/completed refunds and net collected revenue.\
   **Acceptance:** Uncollected COD does not inflate collected revenue; refund and duplicate attempt aggregates remain accurate.\
   **Evidence to attach:** Financial sample-ledger tests.
@@ -1595,7 +1596,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Admin/customers\
   **Stage:** `Admin`\
   **Sources:** FR-27; PRD §10.2; Architecture §7.5\
-  **Depends on:** `P03-013`, `P03-008`, `P06-014`, `P08-005`, `P01-007`, `P09-015`, `P03-022`\
+  **Depends on:** `P03-022`\
   **Deliverable:** Build customer list/search, authorized order/return/refund history, suspend/reactivate controls and verified account-deletion request review/retention-safe processing.\
   **Acceptance:** Sensitive data is minimized; suspended sessions are revoked; deletion requests require verified ownership and approved retention handling, preserve required financial/audit records, and record operator decisions without inventing a self-service deletion feature.\
   **Evidence to attach:** Customer admin security E2E.
@@ -1604,7 +1605,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Admin/support\
   **Stage:** `Admin`\
   **Sources:** FR-16; FR-26; FR-34\
-  **Depends on:** `P06-017`, `P03-013`, `P09-016`, `P06-022`, `P03-022`\
+  **Depends on:** `P06-022`\
   **Deliverable:** Provide complaint record, contact, order context, status, resolution and customer response path. Anonymous input requires contactName/contactEmail; authenticated omissions resolve only from own profile/verified order, never fabricated values.\
   **Acceptance:** Deadlines/complaint response rules are policy-verified before launch; duplicate actions preserve history.\
   **Evidence to attach:** Complaint workflow integration.
@@ -1613,7 +1614,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Admin/settings\
   **Stage:** `Admin`\
   **Sources:** FR-34; FR-28\
-  **Depends on:** `P06-001`, `P04-006`, `P03-013`, `P01-007`, `P09-013`, `P04-019`, `P03-022`\
+  **Depends on:** `P03-022`\
   **Deliverable:** Build branding, homepage banner selection, store address, contact, support details, low-stock threshold and approved policy publishing through the completed settings/home APIs.\
   **Acceptance:** Unapproved placeholders cannot be published as law; existing order snapshots remain stable.\
   **Evidence to attach:** Settings/configuration E2E.
@@ -1622,7 +1623,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Admin/reviews\
   **Stage:** `Admin`\
   **Sources:** FR-10; FR-31\
-  **Depends on:** `P08-016`, `P05-017`, `P03-013`, `P03-022`\
+  **Depends on:** `P05-017`\
   **Deliverable:** Complete approved/rejected/hidden and edited-review queue with audit reasons.\
   **Acceptance:** Only approved verified reviews publicly display; rating cannot be attributed falsely to customer edits by admin.\
   **Evidence to attach:** Review moderation E2E.
@@ -1631,7 +1632,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Admin/operations\
   **Stage:** `Admin`\
   **Sources:** FR-25; FR-26; FR-29; FR-33\
-  **Depends on:** `P07-015`, `P08-015`, `P04-007`, `P09-002`, `P09-017`, `P03-022`\
+  **Depends on:** `P07-015`, `P08-015`, `P04-007`\
   **Deliverable:** Provide pending reconciliation, stock adjustments, failed refunds and actor/action/timestamp history.\
   **Acceptance:** Sensitive financial actions remain backend guarded and never show optimistic outcomes.\
   **Evidence to attach:** Admin exception/audit tests.
@@ -1640,7 +1641,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Storefront/content\
   **Stage:** `Storefront`\
   **Sources:** FR-03; FR-16; FR-34\
-  **Depends on:** `P09-005`, `P09-004`, `P02-006`, `P09-010`\
+  **Depends on:** `P09-010`\
   **Deliverable:** Serve Contact, Shipping Policy, Return & Refund Policy, Privacy and Terms from approved content; expose basic contact/complaint submission path.\
   **Acceptance:** All policy/footer links resolve without login; no placeholder legal promises; complaints record safely.\
   **Evidence to attach:** Public policy/contact page and complaint E2E.
@@ -1649,7 +1650,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Admin/reports\
   **Stage:** `Admin`\
   **Sources:** FR-22; FR-27\
-  **Depends on:** `P09-002`, `P09-001`, `P02-010`, `P09-018`, `P03-022`\
+  **Depends on:** `P09-001`\
   **Deliverable:** Show bounded report periods/filters, empty/loading/error states and accurate monetary labels.\
   **Acceptance:** No invented advanced BI feature; totals reconcile with authoritative data.\
   **Evidence to attach:** Report UI tests.
@@ -1658,7 +1659,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Quality/admin\
   **Stage:** `Admin`\
   **Sources:** FR-21; FR-22; FR-23; FR-24; FR-25; FR-26; FR-27; FR-28; FR-29; FR-30; FR-31; FR-32; FR-33; FR-34\
-  **Depends on:** `P04-004`, `P04-005`, `P04-007`, `P05-008`, `P07-015`, `P08-014`, `P08-015`, `P09-001`, `P09-003`, `P09-004`, `P09-005`, `P09-006`, `P09-007`, `P09-009`, `P05-017`, `P06-021`, `P06-022`, `P03-022`\
+  **Depends on:** `P04-004`, `P04-005`, `P05-008`, `P08-014`, `P09-003`, `P09-004`, `P09-005`, `P09-006`, `P09-007`, `P09-009`, `P06-021`\
   **Deliverable:** Consolidate complete admin sitemap, real management journeys, mutation authorization/failure states, responsive/keyboard/both-theme browser review and admin regression against the accepted backend. Record independent admin-stage acceptance.\
   **Acceptance:** All required operations are usable without frontend-only authorization assumptions.\
   **Evidence to attach:** Admin sitemap/accessibility review.
@@ -1667,16 +1668,16 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend/staging\
   **Stage:** `Backend`\
   **Sources:** Architecture §13; Implementation Plan §§4.1,12\
-  **Depends on:** `P03-003`, `P01-005`, `P03-002`, `P01-024`\
-  **Deliverable:** Configure isolated API, MongoDB, workers, secret management, sandbox providers and test email for backend acceptance; prepare storefront/admin hosting and origin configuration without requiring their builds or deployment. P09-012 deploys the complete integrated applications.\
-  **Acceptance:** Staging uses no production credentials; HTTPS/origin/session plans testable.\
+  **Depends on:** `P01-024`\
+  **Deliverable:** Configure isolated API, MongoDB, workers, secret management, sandbox providers and test email for backend acceptance. Build a reviewed Docker image from locked backend dependencies with separate HTTP/worker entry commands and runtime-injected secrets; prepare storefront/admin hosting and origins without requiring their builds or deployment. P09-012 deploys the complete integrated applications.\
+  **Acceptance:** Staging uses no production credentials; database connectivity and transaction capability, image health/draining, worker restart and absence of embedded secrets are verified; HTTPS/origin/session plans are testable.\
   **Evidence to attach:** Staging configuration review.
 
 - [ ] **P09-012 — Deploy integrated feature-complete build to staging**\
   **Status:** `Not Started` · **Area:** DevOps/staging\
   **Stage:** `Integrated`\
   **Sources:** Implementation Plan Phase 09; §12.2\
-  **Depends on:** `P03-016`, `P04-015`, `P05-013`, `P06-020`, `P07-017`, `P08-018`, `P09-008`, `P09-010`, `P09-011`, `P02-017`\
+  **Depends on:** `P08-018`\
   **Deliverable:** Deploy applications/workers, verify indexes, deployed CSRF/CORS/cookies, callbacks and guest links.\
   **Acceptance:** Feature-complete staging includes accepted M1–M5 phase gates, public policy/contact pages and admin functionality; Phase 10 receives an isolated deployed environment with known fixture/reset process.\
   **Evidence to attach:** Staging deploy manifest and smoke tests.
@@ -1685,7 +1686,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-03; FR-34; API §§10.1,14.3\
-  **Depends on:** `P03-013`, `P04-003`, `P01-007`, `P01-024`\
+  **Depends on:** `P03-013`, `P04-003`, `P01-007`\
   **Deliverable:** Implement canonical settings singleton bootstrap, branding/contact/address, low-stock threshold and approved versioned policies with protected input and safe public projections.\
   **Acceptance:** Unapproved policy placeholders never publish; stale writes fail; contact/policy projections exclude private configuration and media references are validated. Delivery settings reuse the same canonical singleton.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
@@ -1694,7 +1695,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-22; API §14.4\
-  **Depends on:** `P09-002`, `P04-018`, `P03-013`, `P01-024`\
+  **Depends on:** `P09-002`, `P04-018`\
   **Deliverable:** Expose canonical DashboardMetrics/DashboardCounts, financial summaries, bounded recentOrders/lowStockItems and Asia/Dhaka cutoff/date basis.\
   **Acceptance:** Metrics reconcile to authoritative collections, discounts, COD and refunds; admin-only access and bounded query profiles pass. No dashboard screen is required.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
@@ -1703,7 +1704,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-27; PRD §10.2; API §14.2\
-  **Depends on:** `P03-008`, `P06-014`, `P08-019`, `P01-007`, `P01-024`\
+  **Depends on:** `P03-008`, `P06-014`, `P08-019`\
   **Deliverable:** Implement customer search, authorized history, suspension/reactivation and verified deletion-request review with retention/legal-hold-safe decisions.\
   **Acceptance:** Suspension revokes relevant sessions; foreign access and unsafe deletion fail; required order/financial/audit history remains and sensitive data is minimized.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
@@ -1712,7 +1713,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-16; FR-26; FR-34; API §14.4\
-  **Depends on:** `P06-017`, `P03-013`, `P09-013`, `P01-024`\
+  **Depends on:** `P06-017`\
   **Deliverable:** Expose public/scoped complaint intake and admin search/contact/status/resolution with order context, deadline policy and durable customer-response events.\
   **Acceptance:** Anonymous inputs require contactName/contactEmail; authenticated defaults use verified own data only; replay/throttle/access tests preserve history and notification truth.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
@@ -1721,7 +1722,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-25; FR-26; FR-29; FR-33; API §14.4\
-  **Depends on:** `P07-018`, `P08-019`, `P04-018`, `P09-002`, `P01-024`\
+  **Depends on:** `P07-018`, `P08-019`, `P04-018`, `P09-002`\
   **Deliverable:** Expose bounded sanitized audit/history and stock, payment, refund and reconciliation exception queues; domain services retain mutation authority.\
   **Acceptance:** Restricted queries enforce admin access and safe pagination; immutable actor/action/time history remains; no operational screen is needed to prove the backend contract.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
@@ -1730,7 +1731,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-22; FR-27; API §14.4\
-  **Depends on:** `P09-002`, `P09-015`, `P01-024`\
+  **Depends on:** `P09-002`, `P09-015`\
   **Deliverable:** Expose documented period/filter/pagination reports with explicit timezone/cutoff and collected-versus-outstanding monetary labels.\
   **Acceptance:** Bounded query/index profiles and synthetic ledger reconciliations pass; no advanced BI scope, duplicate collection inflation or private leakage.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
@@ -1743,7 +1744,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Quality/release\
   **Stage:** `Integrated`\
   **Sources:** PRD §5; §14; Implementation Plan §8\
-  **Depends on:** `P09-012`, `P01-003`, `P02-017`\
+  **Depends on:** `P09-012`\
   **Deliverable:** Execute customer, guest, admin and cross-module acceptance on deployed staging against the P01-003 subrequirement, PRD §14 and P01-004 NFR check register.\
   **Acceptance:** Every applicable FR subrequirement, business rule, PRD §14 check and NFR/release gate has a pass/fail evidence link or an explicit release-blocking issue; no test mock is marked launch accepted.\
   **Evidence to attach:** FR traceability matrix and regression results.
@@ -1752,7 +1753,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Quality/reliability\
   **Stage:** `Integrated`\
   **Sources:** FR-09; FR-11; FR-13\
-  **Depends on:** `P10-001`, `P02-017`\
+  **Depends on:** `P10-001`\
   **Deliverable:** Repeat last-unit inventory, coupon final redemption, checkout retries and expiry races on transactional DB.\
   **Acceptance:** Counters stay nonnegative; no duplicate order/holds or capacity breaches.\
   **Evidence to attach:** Concurrency report with run IDs.
@@ -1761,7 +1762,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Quality/payments\
   **Stage:** `Integrated`\
   **Sources:** FR-12; FR-29\
-  **Depends on:** `P10-001`, `P02-017`\
+  **Depends on:** `P10-001`\
   **Deliverable:** Exercise sandbox IPN uncertainty, invalid merchant/amount, delayed/late verified payment including already-cancelled orders, risk flags, multiple paid attempts and reconciliation.\
   **Acceptance:** Collected money preserved; fulfillment allocation occurs at most once.\
   **Evidence to attach:** Payment fault-injection evidence.
@@ -1770,7 +1771,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Quality/refunds\
   **Stage:** `Integrated`\
   **Sources:** FR-18; FR-33\
-  **Depends on:** `P10-001`, `P02-017`\
+  **Depends on:** `P10-001`\
   **Deliverable:** Exercise overlapping physical/shortage claims, final failed-delivery stock recovery, excess-collection corrections, overcommit attempts, unknown gateway payout and duplicate/manual retries.\
   **Acceptance:** Source-collection/order caps hold; Completed requires confirmed payout. Physical-return refunds cannot bypass required inspection; approved shortage/payment-correction cases do not require fictional inspection or restock.\
   **Evidence to attach:** Refund fault-injection evidence.
@@ -1779,7 +1780,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Quality/security\
   **Stage:** `Integrated`\
   **Sources:** FR-01; FR-19; FR-21; PRD §12\
-  **Depends on:** `P10-001`, `P02-017`\
+  **Depends on:** `P10-001`\
   **Deliverable:** Verify client/admin session isolation, guest proof replay, nested ownership, Origin/CSRF, uploads, rate limits, log safety and authorization/retention safeguards for account-deletion requests.\
   **Acceptance:** Unauthorized access/financial changes denied across all sensitive routes.\
   **Evidence to attach:** Security regression report.
@@ -1788,7 +1789,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Quality/UI\
   **Stage:** `Integrated`\
   **Sources:** Design §§3,12,14\
-  **Depends on:** `P10-001`, `P02-017`\
+  **Depends on:** `P10-001`\
   **Deliverable:** Run automated and manual keyboard/screen-reader checks on discovery, checkout, guest proof, returns, admin dialogs/tables.\
   **Acceptance:** Labels, focus, reflow, contrast, reduced motion and approved native HeroUI themes meet the design target.\
   **Evidence to attach:** Accessibility findings/resolution record. The [P02-014 contrast correction](./evidence/P02-014-default-heroui.md#contrast-correction-and-verified-completion) resolves the known foundation findings; full feature-flow and manual release accessibility verification remains required.
@@ -1797,7 +1798,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Quality/UI\
   **Stage:** `Integrated`\
   **Sources:** PRD §12.7; Design §1\
-  **Depends on:** `P10-001`, `P02-017`\
+  **Depends on:** `P10-001`\
   **Deliverable:** Test current stable Chrome, Firefox, Edge, Brave and Safari at representative viewports.\
   **Acceptance:** No blocking navigation/checkout issues or page-level horizontal overflow.\
   **Evidence to attach:** Browser/device matrix.
@@ -1806,7 +1807,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Quality/performance\
   **Stage:** `Integrated`\
   **Sources:** PRD §12.1; Architecture §12\
-  **Depends on:** `P10-001`, `P02-017`\
+  **Depends on:** `P10-001`\
   **Deliverable:** Record approved measurable performance budgets and catalog/load/device/network profiles in `TESTING.md` before measuring pagination/index selection, image optimization, catalog rendering, and checkout latency. Compare measurements with the approved budgets.\
   **Acceptance:** No unbounded result sets or invalid shared caching; findings have disposition.\
   **Evidence to attach:** Performance/query report.
@@ -1815,7 +1816,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Quality/security\
   **Stage:** `Integrated`\
   **Sources:** FR-04; FR-05; Architecture §5\
-  **Depends on:** `P10-001`, `P02-017`\
+  **Depends on:** `P10-001`\
   **Deliverable:** Validate product metadata/canonicals, catalog invalidation and no shared caching of sessions, cart, order or guest data.\
   **Acceptance:** Search metadata corresponds to active content and private responses remain private.\
   **Evidence to attach:** Cache/SEO inspection report.
@@ -1824,7 +1825,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Quality/operations\
   **Stage:** `Integrated`\
   **Sources:** FR-20\
-  **Depends on:** `P10-001`, `P02-017`\
+  **Depends on:** `P10-001`\
   **Deliverable:** Check registration/recovery, order, payment, cancel, shipment/delivery, return, refund events and retries after restarts.\
   **Acceptance:** No duplicate events and failed mail cannot roll back business operations.\
   **Evidence to attach:** Notification event matrix and worker tests.
@@ -1833,7 +1834,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Quality/operations\
   **Stage:** `Integrated`\
   **Sources:** PRD §12.3; §18; Architecture §13\
-  **Depends on:** `P09-012`, `P10-003`, `P10-004`, `P02-017`\
+  **Depends on:** `P10-003`, `P10-004`\
   **Deliverable:** Restore test data and reconcile payment/refund events received after backup snapshot.\
   **Acceptance:** Data recovered without inventing collections or losing audit/payment records.\
   **Evidence to attach:** Timestamped restoration/reconciliation runbook test.
@@ -1842,7 +1843,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Quality/release\
   **Stage:** `Integrated`\
   **Sources:** Implementation Plan §10.4\
-  **Depends on:** `P10-002`, `P10-003`, `P10-004`, `P10-005`, `P10-006`, `P10-007`, `P10-008`, `P10-009`, `P10-010`, `P10-011`, `P02-017`\
+  **Depends on:** `P10-002`, `P10-005`, `P10-006`, `P10-007`, `P10-008`, `P10-009`, `P10-010`, `P10-011`\
   **Deliverable:** Triage severity with reproduced defects, fixes, affected regression and approved exceptions.\
   **Acceptance:** No unresolved critical financial, security, privacy, stock, checkout or recovery defects.\
   **Evidence to attach:** Defect tracker and regression rerun links.
@@ -1851,7 +1852,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Quality/release\
   **Stage:** `Integrated`\
   **Sources:** PRD §14; Implementation Plan §§10-11\
-  **Depends on:** `P10-012`, `P10-001`, `P02-017`\
+  **Depends on:** `P10-012`\
   **Deliverable:** Publish FR/NFR evidence, blocked/deferred dispositions, test artifacts and release approver decision.\
   **Acceptance:** Production promotion is blocked until all mandatory gates pass.\
   **Evidence to attach:** M6 signed acceptance record.
@@ -1864,7 +1865,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** DevOps/production\
   **Stage:** `Release`\
   **Sources:** Architecture §13\
-  **Depends on:** `P10-013`, `P01-005`\
+  **Depends on:** `P10-013`\
   **Deliverable:** Configure Next.js-capable storefront, static Vite admin SPA, protected Express service, TLS and approved same-site origins.\
   **Acceptance:** Each app independently deploys; secrets stay server-side and environments isolated.\
   **Evidence to attach:** Production topology/configuration review.
@@ -1873,8 +1874,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** DevOps/data\
   **Stage:** `Release`\
   **Sources:** PRD §12.3; Architecture §13\
-  **Depends on:** `P11-001`, `P03-002`\
-  **Deliverable:** Provision replica-set-capable MongoDB, apply unique/conditional indexes and encrypted protected backups.\
+  **Depends on:** `P11-001`\
+  **Deliverable:** Provision transaction-capable MongoDB with the approved hosting provider, apply unique/conditional indexes and encrypted protected backups under the environment plan.\
   **Acceptance:** Index compatibility verified before serving commerce writes; restore steps exist.\
   **Evidence to attach:** DB/index and backup verification.
 
@@ -1882,7 +1883,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** DevOps/security\
   **Stage:** `Release`\
   **Sources:** FR-01; FR-21; Architecture §9\
-  **Depends on:** `P11-001`, `P11-002`\
+  **Depends on:** `P11-002`\
   **Deliverable:** Validate host-only customer/admin cookies, approved origins, HTTPS and IPN/callback URLs.\
   **Acceptance:** No cross-role session access and no exposed merchant/provider secrets.\
   **Evidence to attach:** Live-origin security smoke test.
@@ -1891,7 +1892,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** DevOps/operations\
   **Stage:** `Release`\
   **Sources:** FR-12; FR-18; FR-20\
-  **Depends on:** `P11-002`, `P11-003`\
+  **Depends on:** `P11-003`\
   **Deliverable:** Run durable expiry, payment/refund status and notification jobs with claims and health alerts.\
   **Acceptance:** Restart/overlap cannot duplicate financial mutations; unresolved status appears for operators.\
   **Evidence to attach:** Worker monitoring test.
@@ -1900,7 +1901,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** External/payment\
   **Stage:** `Release`\
   **Sources:** FR-12; FR-18\
-  **Depends on:** `P01-006`, `P11-003`\
+  **Depends on:** `P11-003`\
   **Deliverable:** Obtain documented activation, limits, validation, and payout support for all three required bKash/Nagad/Rocket channels. A missing channel blocks baseline launch; any restricted release first requires an approved PRD scope revision.\
   **Acceptance:** Unsupported channels hidden; no unapproved live financial testing.\
   **Evidence to attach:** Merchant activation/approval evidence.
@@ -1909,7 +1910,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Operations/content\
   **Stage:** `Release`\
   **Sources:** FR-03; FR-16; FR-23; FR-28; FR-34\
-  **Depends on:** `P11-002`, `P09-005`, `P01-005`\
+  **Depends on:** `P11-002`\
   **Deliverable:** Publish actual catalog/stock, delivery coverage/charges, support contact and store identity.\
   **Acceptance:** Customer prices/availability accurate; no placeholder policies or invented products.\
   **Evidence to attach:** Owner sign-off and configuration snapshot.
@@ -1919,7 +1920,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Stage:** `Release`\
   **Accountable role:** Store owner / authorized release approver; actual named delegation recorded before review.\
   **Sources:** FR-16; FR-17; FR-18; FR-34\
-  **Depends on:** `P01-007`, `P11-006`\
+  **Depends on:** `P11-006`\
   **Deliverable:** Verify current Bangladesh delivery deadlines, the applicable complaint-response period, refund obligations and approved shipping, cancellation, return, refund, privacy and terms copy.\
   **Acceptance:** Policy baselines are not misrepresented as operative law; checkout terms reference approved version.\
   **Evidence to attach:** Dated authority/operator approval record.
@@ -1928,7 +1929,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Quality/production\
   **Stage:** `Release`\
   **Sources:** FR-11; FR-19; FR-21; FR-26\
-  **Depends on:** `P11-003`, `P11-004`, `P11-006`, `P11-007`\
+  **Depends on:** `P11-004`, `P11-007`\
   **Deliverable:** Check browsing, customer/admin login, guest verification, configured delivery, safe COD and order visibility through approved production scenarios.\
   **Acceptance:** Results are authoritative; testing does not create unapproved orders or charge customers.\
   **Evidence to attach:** Production smoke log.
@@ -1946,7 +1947,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** DevOps/production\
   **Stage:** `Release`\
   **Sources:** PRD §12; §18\
-  **Depends on:** `P11-004`, `P11-009`, `P10-011`\
+  **Depends on:** `P11-009`\
   **Deliverable:** Confirm health/error alerts, protected logs, escalation, rollback triggers and backup/restoration evidence.\
   **Acceptance:** Application rollback cannot erase financial history; incidents route to authorized reconciliation.\
   **Evidence to attach:** Observability and incident drill record.
@@ -1955,7 +1956,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Release\
   **Stage:** `Release`\
   **Sources:** PRD §14; §18\
-  **Depends on:** `P11-010`, `P11-007`, `P11-008`, `P11-009`\
+  **Depends on:** `P11-010`\
   **Deliverable:** Record approved deploy version, tests, enabled channels, owner decision and unresolved limitations.\
   **Acceptance:** No unsafe or unverified money/security/policy gate is accepted as complete; all PRD-required channels pass, or an approved revised PRD explicitly defines the accepted channel set.\
   **Evidence to attach:** M7 launch approval record.
@@ -1986,7 +1987,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Documentation\
   **Stage:** `Handover`\
   **Sources:** PRD §18; Architecture §13\
-  **Depends on:** `P11-010`, `P12-001`\
+  **Depends on:** `P12-001`\
   **Deliverable:** Finalize existing `OPERATIONS.md` sections for CI/CD, environments, index rollout, health checks, worker restart, backup/restore, escalation, and operator/provider procedures. Reconcile existing `TESTING.md` commands, fixtures, scenarios, and evidence with release verification.\
   **Acceptance:** Operator can rehearse incident without exposing secrets or erasing records.\
   **Evidence to attach:** Runbook restoration walk-through.
@@ -1995,7 +1996,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Documentation\
   **Stage:** `Handover`\
   **Sources:** PRD §18; FR-26; FR-33\
-  **Depends on:** `P09-010`, `P12-001`\
+  **Depends on:** `P12-001`\
   **Deliverable:** Explain catalog, stock, delivery, orders, COD, risk holds, refunds, reviews, customer support and settings.\
   **Acceptance:** Guides reflect real UI, decision permissions and verified statuses.\
   **Evidence to attach:** Operator walkthrough checklist.
@@ -2004,7 +2005,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Documentation\
   **Stage:** `Handover`\
   **Sources:** FR-12; FR-18; FR-29\
-  **Depends on:** `P11-009`, `P12-003`\
+  **Depends on:** `P12-003`\
   **Deliverable:** Describe gateway channel/config ownership, attempt search, IPN reconciliation, refund status and manual payout evidence.\
   **Acceptance:** No merchant credentials in docs; uncertain payments stay investigable.\
   **Evidence to attach:** Provider runbook review.
@@ -2031,7 +2032,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Planning/handover\
   **Stage:** `Handover`\
   **Sources:** Implementation Plan §14.3\
-  **Depends on:** `P12-002`, `P12-003`, `P12-007`\
+  **Depends on:** `P12-002`, `P12-007`\
   **Deliverable:** Audit all TASKS.md checkboxes, evidence references, blocker disposition and final FR/NFR acceptance.\
   **Acceptance:** No Done without evidence; M1–M7 have recorded decisions and owners; M8 has a complete evidence package and named approver, with its acceptance still pending P12-009.\
   **Evidence to attach:** Final task/evidence reconciliation.
@@ -2381,3 +2382,7 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **23 October 2026 — P01-021 resubmission:** In Progress → In Review after completing the revised documentation package and verifying all 209 task IDs, status/counts, stage coverage, dependency direction/cycles and preserved acceptance records. Documentation/link and diff checks passed. [Revised evidence](./evidence/P01-021-documentation-refactor.md). Owner acceptance is pending; implementation begins with P01-022 after acceptance.
 
 **23 October 2026 — P01-021 acceptance:** In Review → Done after explicit owner review: “সংশোধিত docs review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-021-documentation-refactor.md#independent-review). Overall: 209 tasks, 65 Done, 143 Not Started, 1 Blocked, zero In Review. P01-022 is the next implementation task; no foundation-stage, product milestone or external-provider acceptance is inferred.
+
+**23 October 2026 — P01-021 complete-document correction:** Done → In Progress → In Review following owner feedback about fragmented edits, technology/provider conflation and specification quality. Corrected the existing owning sections across the twelve core documents; preserved previous acceptance history and all other accepted tasks. Verified unchanged prerequisite reachability, stage direction/closeouts, 209-task counts and API/data/FR inventories. [Correction findings and verification](./evidence/P01-021-documentation-refactor.md#complete-document-correction). Overall: 64 Done, 143 Not Started, 1 Blocked and 1 In Review; revised owner acceptance pending.
+
+**23 October 2026 — P01-021 correction acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. [Accepted correction](./evidence/P01-021-documentation-refactor.md#complete-document-correction). Overall: 209 tasks, 65 Done, 143 Not Started, 1 Blocked and zero In Review. P01-022 is next; application-stage, milestone and external-provider gates remain separate.
