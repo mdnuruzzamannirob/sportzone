@@ -8,6 +8,14 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 23 October 2026 — Catalog freshness and SEO foundation
+
+- Added request-time, credential-free public SSR, configured canonical metadata/structured data, readable
+  slug/category URLs and stock disclaimers. Global early loading fallback was removed so confirmed missing
+  resources return 404 before streaming; refresh keeps local pending feedback. Verified actual Next
+  freshness/privacy and responsive themes. P04-011 was independently accepted by the owner on 23 October 2026 and marked Done.
+  [Evidence](docs/evidence/P04-011-catalog-seo.md).
+
 ## 23 October 2026 — Product detail API
 
 - Added public slug detail with approved multi-image galleries, active variant combinations and derived

@@ -109,6 +109,8 @@ Frontend builds read public `NEXT_PUBLIC_API_ORIGIN` and `VITE_API_ORIGIN` from 
 `.env.local`. Root `.env` does not configure them. Align exact API Origin/CORS allowlists and HTTPS cookie
 topology with [identity rollout](docs/OPERATIONS.md#browser-identity-rollout).
 Never expose backend secrets through public frontend variables.
+The server-rendered catalog also needs runtime `API_PUBLIC_ORIGIN` and `STOREFRONT_ORIGIN`; see
+[catalog runtime](docs/OPERATIONS.md#storefront-catalog-runtime). Unconfigured catalog pages remain noindex.
 
 Identity, recovery, notifications and media require explicit activation and prepared persistence. Follow
 [Operations §13](docs/OPERATIONS.md#13-security--access-operations) and the

@@ -219,7 +219,21 @@ Use the App Router for customer pages, nested layouts, loading/error boundaries,
 | Forms | Client-side usability checks followed by mandatory backend validation |
 | Errors | Accessible loading, empty, retry, and failure states without exposing private internals |
 
-**Caching policy:** Public catalog content may be cached and revalidated after product/category updates. Public prices and availability may be briefly stale; checkout must always revalidate current values. Customer sessions, order details, payment status, cart, and checkout totals must not use shared caches. Use framework-version-compatible caching primitives when implementing this policy.
+**Caching policy:** Public catalog currently uses request-time server rendering: catalog routes are
+force-dynamic and public API fetches use no-store with credentials omitted. React request memoization
+may deduplicate a single render, but no public data/full-route cache survives to another request.
+Product/category edits therefore appear on the next request; Refresh catalog requests a fresh server
+render. This is the initial revalidation strategy, with no scheduled freshness window or purge endpoint.
+A future shared catalog cache requires mutation-linked invalidation and verified removal/visibility
+behavior before activation. Public prices/availability remain snapshots; checkout revalidates live values.
+Customer sessions, orders, payments, carts and checkout totals never enter these public readers/caches.
+
+Catalog URLs are `/products`, `/products/{slug}` and `/categories/{slug}`. Canonicals derive only from
+configured STOREFRONT_ORIGIN, never request Host. Filtered/error/unconfigured pages are noindex.
+Metadata resolves before streaming, and existence checks precede any public route loading boundary,
+so confirmed missing/deactivated resources retain HTTP 404. Pending refresh feedback stays local to
+its control. Basic read-only SSR content establishes SEO/freshness; full catalog filtering, gallery,
+selection and purchase controls remain with their owning UI tasks.
 
 Do not duplicate pricing, stock allocation, payment verification, or refund processing in Next.js Server Actions or route handlers. If a framework-specific server endpoint is needed, it remains a thin presentation adapter to Express.
 

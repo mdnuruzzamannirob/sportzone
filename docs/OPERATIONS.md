@@ -1250,6 +1250,23 @@ Network limits use the socket address; an unreviewed proxy must not be trusted t
 
 Rollback uses the prior compatible build and preserves identity/proof/notification/audit state; the new ephemeral collection can stay in place. A rollback to a build without shared enforcement requires traffic restriction or verified equivalent edge protection before reopening auth traffic. No operator migration, live sender, deployed collector/proxy or M1 acceptance is claimed by local tests.
 
+#### Storefront catalog runtime
+
+Set API_PUBLIC_ORIGIN and STOREFRONT_ORIGIN in the storefront server process or its own environment
+file. They are exact origins: HTTPS for deployed hosts, or explicit loopback HTTP for local tests.
+The server uses API_PUBLIC_ORIGIN for public catalog reads; browser identity still uses the separate
+NEXT_PUBLIC_API_ORIGIN build value. Do not copy backend session, mail, provider or database secrets
+into frontend configuration. Root .env alone does not configure the storefront.
+
+Architecture §5.1 owns the request-time freshness policy. Missing/invalid API origin renders a generic
+unavailable/noindex state; missing site origin omits canonical/structured URLs and disables indexing.
+Verify canonical URLs against the approved storefront origin, next-request product/category changes,
+confirmed 404/noindex, stock disclaimers and credential-free upstream requests after deployment.
+No cache purge secret or invalidation endpoint is required by this mode. Existing browser tabs are
+snapshots; Refresh catalog or navigation requests current content. Do not enable shared catalog caching
+without verified write-linked invalidation. Rollback uses a complete prior storefront artifact and
+its matching configuration; it never changes backend records or identity state.
+
 #### Browser identity rollout
 
 Build storefront with `NEXT_PUBLIC_API_ORIGIN` and admin with `VITE_API_ORIGIN`, each an exact canonical API origin

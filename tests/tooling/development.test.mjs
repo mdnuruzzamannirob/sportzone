@@ -506,3 +506,13 @@ test('INVENTORY-BOUNDARY-02: checkout and jobs cannot bypass inventory through t
   put('backend/src/jobs/expire.job.ts', 'import "../modules/inventory/allocation.service.js"')
   assert.deepEqual(checkBoundaries(root).errors, [])
 })
+
+test('CATALOG-SERVER-01: public browser barrels cannot import catalog server transport', (t) => {
+  const { root, put } = fixture(t)
+  put('storefront/src/features/catalog/catalog.server.ts', 'export const catalog = 1')
+  put('storefront/src/features/catalog/index.ts', 'export * from "./catalog.server"')
+  put('storefront/src/app/page.tsx', '"use client"; import "../features/catalog"')
+  assert.ok(checkBoundaries(root).errors.some((error) => error.includes('server-only')))
+  put('storefront/src/app/page.tsx', 'import "../features/catalog"')
+  assert.deepEqual(checkBoundaries(root).errors, [])
+})
