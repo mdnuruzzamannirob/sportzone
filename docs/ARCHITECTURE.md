@@ -70,32 +70,32 @@ The following table is the technology baseline. Later sections define how these 
 implementation status and acceptance are recorded in Tasks. Exact package versions are pinned in
 the consuming manifests and root lockfile.
 
-| Area | Technology / mechanism | Architectural responsibility |
-| --- | --- | --- |
-| Storefront | Next.js App Router, React, TypeScript | Public rendering and customer journeys (§5.1) |
-| Admin portal | React, Vite, TypeScript, React Router Declarative Mode | Authenticated management SPA (§5.2) |
-| UI system | HeroUI v3, Tailwind CSS | App-owned controls/themes; Design owns visual and interaction rules |
-| Interactive state | TanStack Query and local React state | API projections, invalidation and private-cache isolation (§5.6) |
-| Backend | Node.js, Express, TypeScript | One versioned REST API and authoritative domain services (§6) |
-| Runtime validation | Zod | Validated external inputs and allowlisted DTOs (§§6.2, 8) |
-| Persistence | MongoDB, Mongoose | Indexed business records, atomic writes and transactions (§7) |
-| Authentication | Server-managed opaque sessions, secure cookies, Node.js crypto | Revocation, CSRF, scrypt password hashes and scoped proof/HMAC primitives (§9) |
-| API artifacts | Generated OpenAPI and Postman collection | Executable contract registry and deterministic generation (§8.2; API §18.3) |
-| Online payments | SSLCOMMERZ hosted checkout | Merchant-enabled bKash/Nagad/Rocket and independently verified outcomes (§10.1) |
-| COD | Backend order/collection workflow | Order acceptance separate from verified cash collection (§10.2) |
-| Media | Cloudinary and ClamAV | Controlled uploads, scanning, private access and safe cleanup (§§6.1, 11) |
-| Email | Resend adapter behind the email-provider boundary | Verification, recovery and business-event delivery (§§6.3, 10.6) |
-| Background work | MongoDB-persisted intents/leases and scheduled backend workers | Durable, idempotent delivery, expiry and reconciliation (§6.3) |
-| Container packaging | Docker | Backend HTTP/worker release artifact with distinct entry commands (§13.1) |
-| Development orchestration | Node process coordinator; optional Docker Compose for auxiliary services | Application-specific development and owned process cleanup (§4.2) |
-| Repository | Git, GitHub, npm workspaces | One locked dependency graph and independent application builds (§4.2) |
-| Lint and types | Biome and TypeScript | Source consistency and compile-time checks; Testing owns execution |
-| Unit/API verification | Vitest and Supertest | Domain, HTTP and integration behavior; Testing owns assertions |
-| Isolated test database | mongodb-memory-server replica sets | Transaction tests separated from application data |
-| Browser/accessibility verification | Playwright and axe | Real browser, theme, keyboard and accessibility checks |
-| CI and supply chain | GitHub Actions, Gitleaks and dependency audit | Affected check scopes and release verification (§13.3) |
-| Deployment edge | HTTPS routing, SPA fallback and controlled public-content caching | Runtime exposure and trust boundaries (§13.1) |
-| Observability and recovery | Structured JSON logs, health probes, protected alerts, backups and restore drills | Detect failures and preserve recoverable state (§12) |
+| Area                               | Technology / mechanism                                                            | Architectural responsibility                                                    |
+| ---------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Storefront                         | Next.js App Router, React, TypeScript                                             | Public rendering and customer journeys (§5.1)                                   |
+| Admin portal                       | React, Vite, TypeScript, React Router Declarative Mode                            | Authenticated management SPA (§5.2)                                             |
+| UI system                          | HeroUI v3, Tailwind CSS                                                           | App-owned controls/themes; Design owns visual and interaction rules             |
+| Interactive state                  | TanStack Query and local React state                                              | API projections, invalidation and private-cache isolation (§5.6)                |
+| Backend                            | Node.js, Express, TypeScript                                                      | One versioned REST API and authoritative domain services (§6)                   |
+| Runtime validation                 | Zod                                                                               | Validated external inputs and allowlisted DTOs (§§6.2, 8)                       |
+| Persistence                        | MongoDB, Mongoose                                                                 | Indexed business records, atomic writes and transactions (§7)                   |
+| Authentication                     | Server-managed opaque sessions, secure cookies, Node.js crypto                    | Revocation, CSRF, scrypt password hashes and scoped proof/HMAC primitives (§9)  |
+| API artifacts                      | Generated OpenAPI and Postman collection                                          | Executable contract registry and deterministic generation (§8.2; API §18.3)     |
+| Online payments                    | SSLCOMMERZ hosted checkout                                                        | Merchant-enabled bKash/Nagad/Rocket and independently verified outcomes (§10.1) |
+| COD                                | Backend order/collection workflow                                                 | Order acceptance separate from verified cash collection (§10.2)                 |
+| Media                              | Cloudinary and ClamAV                                                             | Controlled uploads, scanning, private access and safe cleanup (§§6.1, 11)       |
+| Email                              | Resend adapter behind the email-provider boundary                                 | Verification, recovery and business-event delivery (§§6.3, 10.6)                |
+| Background work                    | MongoDB-persisted intents/leases and scheduled backend workers                    | Durable, idempotent delivery, expiry and reconciliation (§6.3)                  |
+| Container packaging                | Docker                                                                            | Backend HTTP/worker release artifact with distinct entry commands (§13.1)       |
+| Development orchestration          | Node process coordinator; optional Docker Compose for auxiliary services          | Application-specific development and owned process cleanup (§4.2)               |
+| Repository                         | Git, GitHub, npm workspaces                                                       | One locked dependency graph and independent application builds (§4.2)           |
+| Lint and types                     | Biome and TypeScript                                                              | Source consistency and compile-time checks; Testing owns execution              |
+| Unit/API verification              | Vitest and Supertest                                                              | Domain, HTTP and integration behavior; Testing owns assertions                  |
+| Isolated test database             | mongodb-memory-server replica sets                                                | Transaction tests separated from application data                               |
+| Browser/accessibility verification | Playwright and axe                                                                | Real browser, theme, keyboard and accessibility checks                          |
+| CI and supply chain                | GitHub Actions, Gitleaks and dependency audit                                     | Affected check scopes and release verification (§13.3)                          |
+| Deployment edge                    | HTTPS routing, SPA fallback and controlled public-content caching                 | Runtime exposure and trust boundaries (§13.1)                                   |
+| Observability and recovery         | Structured JSON logs, health probes, protected alerts, backups and restore drills | Detect failures and preserve recoverable state (§12)                            |
 
 Provider accounts, hosting/monitoring vendors, regions, budgets and recovery targets are provisioned
 through Operations. Provider substitution requires compatibility review at its owning boundary;
@@ -188,20 +188,20 @@ orchestrator. Root shared utilities and tests/e2e have explicit consumer, runner
 
 ### 4.1 Naming and placement
 
-| Item | Convention / example |
-| --- | --- |
-| Folders/files | kebab-case; guest-access/, payment-receipt.model.ts |
-| Responsibility suffixes | .routes, .controller, .schema, .service, .model, .types; optional .dto/.policy/.persistence |
-| Provider files | provider.client.ts for transport; provider.schema.ts for protocol validation |
-| Components/types/interfaces | PascalCase: ProductForm, Order, CreateOrderInput; no I prefix |
-| Functions/variables | camelCase, action-specific: reserveStock, verifyReceipt |
-| Zod inputs/hooks | createOrderSchema; useOrders |
-| Constants/environment | Fixed global constants and env keys UPPER_SNAKE_CASE |
-| Entities/resources | Singular entity filenames; plural collection/HTTP resource names per existing contracts |
-| Units | regularPricePoisha, timeoutMs, ttlSeconds, reservedQuantity |
-| Flags/dates/IDs | isActive/hasStock/canCancel; expiresAt; orderId/providerTransactionId |
-| Tests | .test.ts for unit/integration; .spec.ts for browser journeys |
-| Framework/compatibility exceptions | page.tsx/layout.tsx/main.tsx; NodeNext .js imports; retained specification filenames |
+| Item                               | Convention / example                                                                        |
+| ---------------------------------- | ------------------------------------------------------------------------------------------- |
+| Folders/files                      | kebab-case; guest-access/, payment-receipt.model.ts                                         |
+| Responsibility suffixes            | .routes, .controller, .schema, .service, .model, .types; optional .dto/.policy/.persistence |
+| Provider files                     | provider.client.ts for transport; provider.schema.ts for protocol validation                |
+| Components/types/interfaces        | PascalCase: ProductForm, Order, CreateOrderInput; no I prefix                               |
+| Functions/variables                | camelCase, action-specific: reserveStock, verifyReceipt                                     |
+| Zod inputs/hooks                   | createOrderSchema; useOrders                                                                |
+| Constants/environment              | Fixed global constants and env keys UPPER_SNAKE_CASE                                        |
+| Entities/resources                 | Singular entity filenames; plural collection/HTTP resource names per existing contracts     |
+| Units                              | regularPricePoisha, timeoutMs, ttlSeconds, reservedQuantity                                 |
+| Flags/dates/IDs                    | isActive/hasStock/canCancel; expiresAt; orderId/providerTransactionId                       |
+| Tests                              | .test.ts for unit/integration; .spec.ts for browser journeys                                |
+| Framework/compatibility exceptions | page.tsx/layout.tsx/main.tsx; NodeNext .js imports; retained specification filenames        |
 
 Avoid misc.ts/manager.ts/processData, redundant handwritten types, speculative shared abstractions
 and automatic index.ts barrels. API status/error/pagination/idempotency/If-Match conventions and
@@ -238,15 +238,15 @@ authoritative; this does not introduce another application, shared UI package or
 
 Use the App Router for customer pages, nested layouts, loading/error boundaries, and metadata. Prefer Server Components for public content and Client Components where interaction or browser state is required.
 
-| Concern | Approach |
-| --- | --- |
-| Public pages | Server-rendered home, category, catalog, product, and informational pages; catalog freshness follows the policy below |
-| SEO | Page-specific titles, descriptions, canonical URLs, and accurate product structured data |
-| Private pages | Authenticated client data access for profile, cart, checkout, orders, and returns |
-| API access | Typed API client; Express remains the only business authority |
-| State | Local UI state for interactions; server data fetched/refreshed from the API |
-| Forms | Client-side usability checks followed by mandatory backend validation |
-| Errors | Accessible loading, empty, retry, and failure states without exposing private internals |
+| Concern       | Approach                                                                                                              |
+| ------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Public pages  | Server-rendered home, category, catalog, product, and informational pages; catalog freshness follows the policy below |
+| SEO           | Page-specific titles, descriptions, canonical URLs, and accurate product structured data                              |
+| Private pages | Authenticated client data access for profile, cart, checkout, orders, and returns                                     |
+| API access    | Typed API client; Express remains the only business authority                                                         |
+| State         | Local UI state for interactions; server data fetched/refreshed from the API                                           |
+| Forms         | Client-side usability checks followed by mandatory backend validation                                                 |
+| Errors        | Accessible loading, empty, retry, and failure states without exposing private internals                               |
 
 **Caching policy:** Public catalog uses request-time server rendering: catalog routes are
 force-dynamic and public API fetches use no-store with credentials omitted. React request memoization
@@ -377,16 +377,16 @@ lib/api-client.ts; endpoint functions belong to the feature. App-owned UI contra
 
 ### 5.6 State, fetching and validation decisions
 
-| Concern | Target |
-| --- | --- |
-| Public storefront catalog | Next.js Server Component reads from Express under §5.1's request-time no-store policy |
-| Admin and authenticated interactive server state | TanStack Query through feature-owned API integration |
-| Filters/sort/page | Validated URL search parameters; separate unapplied form drafts where needed |
-| Disclosure/dialog/input drafts | Local React state; avoid copying query results unless editing requires a draft |
-| Guest cart | Local item persistence per PRD; authoritative backend eligibility/prices and eligible merge after login |
-| Registered cart/wishlist | Backend persistence; client cache is a projection |
-| Appearance | Browser-local preference and each app’s native HeroUI theme |
-| Validation | Existing backend Zod; feature-owned frontend Zod for complex forms/filter inputs |
+| Concern                                          | Target                                                                                                  |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| Public storefront catalog                        | Next.js Server Component reads from Express under §5.1's request-time no-store policy                   |
+| Admin and authenticated interactive server state | TanStack Query through feature-owned API integration                                                    |
+| Filters/sort/page                                | Validated URL search parameters; separate unapplied form drafts where needed                            |
+| Disclosure/dialog/input drafts                   | Local React state; avoid copying query results unless editing requires a draft                          |
+| Guest cart                                       | Local item persistence per PRD; authoritative backend eligibility/prices and eligible merge after login |
+| Registered cart/wishlist                         | Backend persistence; client cache is a projection                                                       |
+| Appearance                                       | Browser-local preference and each app’s native HeroUI theme                                             |
+| Validation                                       | Existing backend Zod; feature-owned frontend Zod for complex forms/filter inputs                        |
 
 Use TanStack Query and frontend Zod through their consuming API/form features, using compatible pinned dependencies and relevant verification. No additional form library or global state store is required. Clear private query caches on logout, identity change and expired-session resolution; do not persist them in browser storage. Configure bounded read retries excluding auth/validation failures, explicit invalidation and no automatic financial-mutation retries. HTTP no-store/private policy still applies independently of in-memory query caching. Idempotency/If-Match and uncertain-result recovery remain API-owned contracts. Server-only and client-only modules must not be accidentally combined in barrel exports. Installed versions and implementation status are recorded by manifests and task evidence.
 
@@ -512,28 +512,28 @@ Route registration and provider construction for multiple domains do not belong 
 
 Module ownership:
 
-| Module | Responsibility |
-| --- | --- |
-| auth | Customer/admin credentials, sessions, recovery, verification, scoped guest access |
-| customers | Profiles, addresses, customer administration; no credential authority |
-| catalog | Products, variants, categories, descriptions and base/sale prices |
-| inventory | Counters, reservations, commitments and movements through stock-only capabilities |
-| cart | Cart and wishlist; neither reserves stock |
-| promotions | Coupon eligibility, limits and deterministic discounts |
-| checkout | Authoritative quotes and submission coordination |
-| orders | Historical snapshots, lifecycle, cancellation and fulfillment |
-| payments | Attempts, independently verified receipts, allocation and COD collection |
-| returns | Physical-return/shortage claims and inspection |
-| refunds | Obligations/source limits, payout attempts and reconciliation |
-| reviews | Purchase qualification, moderation, rating projections |
-| delivery | Coverage, zones and charge rules |
-| media | Ownership/intents, scanning, references, private access and safe cleanup |
-| notifications | Durable intent, deduplication, templates, delivery and retries |
-| support | Complaints and support records |
-| settings | Store configuration, policies and homepage content |
-| reporting | Read aggregation; never a second source of financial/stock authority |
-| audit | Durable audit records; distinct from diagnostic logging |
-| health | Liveness and restricted readiness |
+| Module        | Responsibility                                                                    |
+| ------------- | --------------------------------------------------------------------------------- |
+| auth          | Customer/admin credentials, sessions, recovery, verification, scoped guest access |
+| customers     | Profiles, addresses, customer administration; no credential authority             |
+| catalog       | Products, variants, categories, descriptions and base/sale prices                 |
+| inventory     | Counters, reservations, commitments and movements through stock-only capabilities |
+| cart          | Cart and wishlist; neither reserves stock                                         |
+| promotions    | Coupon eligibility, limits and deterministic discounts                            |
+| checkout      | Authoritative quotes and submission coordination                                  |
+| orders        | Historical snapshots, lifecycle, cancellation and fulfillment                     |
+| payments      | Attempts, independently verified receipts, allocation and COD collection          |
+| returns       | Physical-return/shortage claims and inspection                                    |
+| refunds       | Obligations/source limits, payout attempts and reconciliation                     |
+| reviews       | Purchase qualification, moderation, rating projections                            |
+| delivery      | Coverage, zones and charge rules                                                  |
+| media         | Ownership/intents, scanning, references, private access and safe cleanup          |
+| notifications | Durable intent, deduplication, templates, delivery and retries                    |
+| support       | Complaints and support records                                                    |
+| settings      | Store configuration, policies and homepage content                                |
+| reporting     | Read aggregation; never a second source of financial/stock authority              |
+| audit         | Durable audit records; distinct from diagnostic logging                           |
+| health        | Liveness and restricted readiness                                                 |
 
 Target grouping does not add a feature, endpoint, collection or provider. users has one auth-owned
 registration. productVariants has one catalog-owned registration; inventory receives only stock
@@ -672,15 +672,15 @@ TTL cleanup may remove expired session or verification artifacts but must **not*
 
 The Express API uses `/api/v1` with resource-oriented routes. Standard requests and responses use JSON; approved uploads may use multipart requests. Enforce input normalization and schema validation before business processing.
 
-| Concern | Convention |
-| --- | --- |
-| Authentication | Cookie-backed sessions for browser requests |
-| Authorization | Backend role and resource-ownership checks |
-| Lists | Bounded pagination, validated sorting/filtering |
-| Success | Consistent JSON data envelope |
-| Errors | Stable code, safe message, appropriate HTTP status |
-| Versioning | `/api/v1`; maintain compatible contracts within the version |
-| Financial mutations | Persisted idempotency keys and unique provider references |
+| Concern             | Convention                                                  |
+| ------------------- | ----------------------------------------------------------- |
+| Authentication      | Cookie-backed sessions for browser requests                 |
+| Authorization       | Backend role and resource-ownership checks                  |
+| Lists               | Bounded pagination, validated sorting/filtering             |
+| Success             | Consistent JSON data envelope                               |
+| Errors              | Stable code, safe message, appropriate HTTP status          |
+| Versioning          | `/api/v1`; maintain compatible contracts within the version |
+| Financial mutations | Persisted idempotency keys and unique provider references   |
 
 Exact wire enums, success/error envelopes and examples belong in [API §3](./API.md#3-http-conventions--versioning). Architecture summaries do not define alternative payloads.
 
@@ -908,18 +908,18 @@ Return and refund lifecycles are **separate**. Physical returns follow FR-17. Mi
 
 ## 11. Security architecture
 
-| Control | Architecture requirement |
-| --- | --- |
-| Transport | HTTPS/TLS for browser, API, and provider traffic |
-| Sessions | Hashed opaque tokens, `HttpOnly`/`Secure` cookies, expiry, rotation, revocation |
-| CSRF and CORS | CSRF protection for browser mutations; exact trusted credentialed origins |
-| Authorization | Server-side role and resource-ownership checks on every protected operation |
-| Input safety | Central schema validation, normalization, bounded payloads, safe error messages |
-| Abuse protection | Rate limits for login, recovery, guest verification, checkout, and sensitive endpoints |
-| Payments | Server-only merchant credentials, independent verification, replay-safe callbacks |
-| Media | Restricted uploads, file type/size validation, controlled Cloudinary permissions |
-| Secrets | Environment-managed credentials; never expose in `NEXT_PUBLIC_*` or `VITE_*` bundles |
-| Audit and privacy | Sensitive action logs without passwords, session tokens, or unnecessary personal data |
+| Control           | Architecture requirement                                                               |
+| ----------------- | -------------------------------------------------------------------------------------- |
+| Transport         | HTTPS/TLS for browser, API, and provider traffic                                       |
+| Sessions          | Hashed opaque tokens, `HttpOnly`/`Secure` cookies, expiry, rotation, revocation        |
+| CSRF and CORS     | CSRF protection for browser mutations; exact trusted credentialed origins              |
+| Authorization     | Server-side role and resource-ownership checks on every protected operation            |
+| Input safety      | Central schema validation, normalization, bounded payloads, safe error messages        |
+| Abuse protection  | Rate limits for login, recovery, guest verification, checkout, and sensitive endpoints |
+| Payments          | Server-only merchant credentials, independent verification, replay-safe callbacks      |
+| Media             | Restricted uploads, file type/size validation, controlled Cloudinary permissions       |
+| Secrets           | Environment-managed credentials; never expose in `NEXT_PUBLIC_*` or `VITE_*` bundles   |
+| Audit and privacy | Sensitive action logs without passwords, session tokens, or unnecessary personal data  |
 
 Provider IPNs are authenticated through transaction verification rather than browser CSRF tokens. Never treat a frontend route guard, hidden UI control, or user-supplied ID as authorization. Public error responses must not disclose stack traces, database details, or provider secrets.
 
@@ -1005,25 +1005,25 @@ operational decisions were made; the referenced sections define their implementa
 
 ### 14.1 Engineering decision rationale
 
-| Decision | Rationale and implementation boundary |
-| --- | --- |
-| npm workspaces and root layout | One locked dependency graph with independent application builds (§4.2) |
-| Separate storefront/admin and one modular Express backend | Keep presentation independently deployable while preserving one authority for business decisions (§§1, 3, 6) |
-| MongoDB through Mongoose | Document persistence with schema/index control, atomic writes and shared transaction boundaries (§7); Operations owns managed-provider setup |
-| Separate feature ownership from reusable presentation | Keep change locality while preserving tested HeroUI, commerce and management primitives |
-| Single canonical model registration | Users and variant counters have shared storage but restricted write capabilities; duplicate schema definitions would permit drift |
-| Server rendering and explicit interactive state ownership | Public discoverability, private-cache isolation and transient drafts have distinct lifecycles (§5) |
-| Versioned REST and generated API artifacts | Clients integrate against one executable contract under `/api/v1`; API owns DTOs, errors and OpenAPI/Postman generation (§8) |
-| Revocable, separated sessions | Enforce customer/admin/guest scope and invalidate access without trusting frontend guards (§9) |
-| Integer poisha and immutable purchase snapshots | Preserve deterministic totals, allocations and refund entitlements when catalog/settings change (§7.3) |
-| Physical/reserved/committed stock accounting | Make reservation expiry, payment commitment, shipment and return effects explicit and race-safe (§§7.4, 10.3) |
-| Verified hosted payments and separately recorded COD collection | Provider signals and delivery do not establish collection; record independent receipts and reconcile uncertainty (§10) |
-| Durable domain jobs and Docker-packaged backend entry points | Reuse domain rules across HTTP and worker processes, preserve operation intent and trace deployed artifacts (§§6.3, 13) |
-| Backend media and email providers | Isolate credentials/protocols and separate external delivery from transaction-bound business decisions (§§6, 10.6) |
-| Admin-managed zones and manual fulfillment | Meet the approved delivery scope with explicit charge snapshots and audited transitions (§10.4) |
-| One check inventory for local and hosted CI | Prevent YAML and local-runner checks from diverging; cross-app browser checks require explicit build dependencies |
-| Protected main and reviewed task branches | Trace accepted changes and release artifacts; Operations §5.6 owns protection enforcement |
-| Managed hosting and database capabilities | Reduce infrastructure administration; provider/region selection must satisfy verified runtime, backup and access requirements under Operations, not assumptions about a vendor |
+| Decision                                                        | Rationale and implementation boundary                                                                                                                                          |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| npm workspaces and root layout                                  | One locked dependency graph with independent application builds (§4.2)                                                                                                         |
+| Separate storefront/admin and one modular Express backend       | Keep presentation independently deployable while preserving one authority for business decisions (§§1, 3, 6)                                                                   |
+| MongoDB through Mongoose                                        | Document persistence with schema/index control, atomic writes and shared transaction boundaries (§7); Operations owns managed-provider setup                                   |
+| Separate feature ownership from reusable presentation           | Keep change locality while preserving tested HeroUI, commerce and management primitives                                                                                        |
+| Single canonical model registration                             | Users and variant counters have shared storage but restricted write capabilities; duplicate schema definitions would permit drift                                              |
+| Server rendering and explicit interactive state ownership       | Public discoverability, private-cache isolation and transient drafts have distinct lifecycles (§5)                                                                             |
+| Versioned REST and generated API artifacts                      | Clients integrate against one executable contract under `/api/v1`; API owns DTOs, errors and OpenAPI/Postman generation (§8)                                                   |
+| Revocable, separated sessions                                   | Enforce customer/admin/guest scope and invalidate access without trusting frontend guards (§9)                                                                                 |
+| Integer poisha and immutable purchase snapshots                 | Preserve deterministic totals, allocations and refund entitlements when catalog/settings change (§7.3)                                                                         |
+| Physical/reserved/committed stock accounting                    | Make reservation expiry, payment commitment, shipment and return effects explicit and race-safe (§§7.4, 10.3)                                                                  |
+| Verified hosted payments and separately recorded COD collection | Provider signals and delivery do not establish collection; record independent receipts and reconcile uncertainty (§10)                                                         |
+| Durable domain jobs and Docker-packaged backend entry points    | Reuse domain rules across HTTP and worker processes, preserve operation intent and trace deployed artifacts (§§6.3, 13)                                                        |
+| Backend media and email providers                               | Isolate credentials/protocols and separate external delivery from transaction-bound business decisions (§§6, 10.6)                                                             |
+| Admin-managed zones and manual fulfillment                      | Meet the approved delivery scope with explicit charge snapshots and audited transitions (§10.4)                                                                                |
+| One check inventory for local and hosted CI                     | Prevent YAML and local-runner checks from diverging; cross-app browser checks require explicit build dependencies                                                              |
+| Protected main and reviewed task branches                       | Trace accepted changes and release artifacts; Operations §5.6 owns protection enforcement                                                                                      |
+| Managed hosting and database capabilities                       | Reduce infrastructure administration; provider/region selection must satisfy verified runtime, backup and access requirements under Operations, not assumptions about a vendor |
 
 GitHub Actions uses the shared check inventory; Testing §15 owns scope selection and verification,
 and Operations §5.5 owns execution/caching/supply-chain controls. Hosting accounts, budget, recovery

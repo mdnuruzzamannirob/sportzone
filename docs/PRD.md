@@ -223,14 +223,14 @@ The initial-release baseline requires verified bKash, Nagad, and Rocket through 
 
 Initial categories will include:
 
-| Category | Example Products |
-| --- | --- |
-| Cricket | Bats, Balls, Gloves, Helmets |
-| Football | Footballs, Boots, Jerseys |
-| Badminton | Rackets, Shuttlecocks, Nets |
-| Fitness | Dumbbells, Yoga Mats, Gym Accessories |
-| Sportswear | Jerseys, Shorts, Tracksuits |
-| Accessories | Sports Bags, Water Bottles |
+| Category    | Example Products                      |
+| ----------- | ------------------------------------- |
+| Cricket     | Bats, Balls, Gloves, Helmets          |
+| Football    | Footballs, Boots, Jerseys             |
+| Badminton   | Rackets, Shuttlecocks, Nets           |
+| Fitness     | Dumbbells, Yoga Mats, Gym Accessories |
+| Sportswear  | Jerseys, Shorts, Tracksuits           |
+| Accessories | Sports Bags, Water Bottles            |
 
 The table is an initial catalog taxonomy, not a fixed navigation design. Category lifecycle, product assignment, public visibility and administrator management are governed by FR-24.
 
@@ -1190,14 +1190,14 @@ Allocate coupon discounts proportionally across eligible items and distribute ro
 
 ### 6.2 Policy ownership
 
-| Policy | Authoritative requirements |
-| --- | --- |
-| Delivery coverage, charges, deadlines, exceptions | FR-16 and FR-28 |
-| Cancellation review, eligibility, fulfillment, late collection | FR-14 and FR-15 |
-| Physical returns and non-physical shortage claims | FR-17 |
-| Refund eligibility, quantities, source balances, payout and timing | FR-18 |
-| Verified-review eligibility and moderation | FR-10 |
-| Coupon eligibility, account requirements, capacity and restoration | FR-09 |
+| Policy                                                             | Authoritative requirements |
+| ------------------------------------------------------------------ | -------------------------- |
+| Delivery coverage, charges, deadlines, exceptions                  | FR-16 and FR-28            |
+| Cancellation review, eligibility, fulfillment, late collection     | FR-14 and FR-15            |
+| Physical returns and non-physical shortage claims                  | FR-17                      |
+| Refund eligibility, quantities, source balances, payout and timing | FR-18                      |
+| Verified-review eligibility and moderation                         | FR-10                      |
+| Coupon eligibility, account requirements, capacity and restoration | FR-09                      |
 
 Use the referenced requirements when implementing or changing policy. This index does not define a second copy of each rule.
 
@@ -1267,58 +1267,58 @@ This inventory identifies required user-facing surfaces. It does not require a d
 
 ### 8.1 Customer pages
 
-| Page | Description |
-| --- | --- |
-| Home | Store homepage |
-| Products | Product catalog |
-| Category | Category-specific products |
-| Product Details | Product information |
-| Login | Customer login |
-| Register | Account registration |
-| Forgot Password | Password recovery |
-| Reset Password | Password reset |
-| Cart | Shopping cart |
-| Wishlist | Saved products |
-| Checkout | Delivery and payment |
-| Payment Result | Payment outcome |
-| Order Confirmation | Order summary |
-| Order Lookup | Secure guest order access |
-| My Account | Customer dashboard |
-| Profile | Profile management |
-| Addresses | Saved addresses |
-| My Orders | Order history |
-| Order Details | Order tracking |
-| My Reviews | Review management |
-| Return Request | Return submission |
-| My Returns | Return history |
-| Refund Details | Refund tracking |
-| Contact | Store contact |
-| Shipping Policy | Delivery information |
-| Return & Refund Policy | After-sales policies |
-| Privacy Policy | Data handling information |
-| Terms & Conditions | Store terms |
+| Page                   | Description                |
+| ---------------------- | -------------------------- |
+| Home                   | Store homepage             |
+| Products               | Product catalog            |
+| Category               | Category-specific products |
+| Product Details        | Product information        |
+| Login                  | Customer login             |
+| Register               | Account registration       |
+| Forgot Password        | Password recovery          |
+| Reset Password         | Password reset             |
+| Cart                   | Shopping cart              |
+| Wishlist               | Saved products             |
+| Checkout               | Delivery and payment       |
+| Payment Result         | Payment outcome            |
+| Order Confirmation     | Order summary              |
+| Order Lookup           | Secure guest order access  |
+| My Account             | Customer dashboard         |
+| Profile                | Profile management         |
+| Addresses              | Saved addresses            |
+| My Orders              | Order history              |
+| Order Details          | Order tracking             |
+| My Reviews             | Review management          |
+| Return Request         | Return submission          |
+| My Returns             | Return history             |
+| Refund Details         | Refund tracking            |
+| Contact                | Store contact              |
+| Shipping Policy        | Delivery information       |
+| Return & Refund Policy | After-sales policies       |
+| Privacy Policy         | Data handling information  |
+| Terms & Conditions     | Store terms                |
 
 ### 8.2 Admin pages
 
-| Page | Description |
-| --- | --- |
-| Admin Login | Authentication |
-| Dashboard | Store overview |
-| Products | Product management |
-| Add/Edit Product | Product configuration |
-| Categories | Category management |
-| Inventory | Stock management |
-| Orders | Order management |
-| Order Details | Order processing |
-| Customers | Customer management |
+| Page              | Description                |
+| ----------------- | -------------------------- |
+| Admin Login       | Authentication             |
+| Dashboard         | Store overview             |
+| Products          | Product management         |
+| Add/Edit Product  | Product configuration      |
+| Categories        | Category management        |
+| Inventory         | Stock management           |
+| Orders            | Order management           |
+| Order Details     | Order processing           |
+| Customers         | Customer management        |
 | Delivery Settings | Delivery zones and charges |
-| Payments | Payment records |
-| Coupons | Coupon management |
-| Reviews | Review moderation |
-| Returns | Return management |
-| Refunds | Refund processing |
-| Reports | Basic business reports |
-| Store Settings | Store configuration |
+| Payments          | Payment records            |
+| Coupons           | Coupon management          |
+| Reviews           | Review moderation          |
+| Returns           | Return management          |
+| Refunds           | Refund processing          |
+| Reports           | Basic business reports     |
+| Store Settings    | Store configuration        |
 
 ---
 
@@ -1326,25 +1326,25 @@ This inventory identifies required user-facing surfaces. It does not require a d
 
 This matrix is a product-access summary. Server-side authorization, session and record-ownership mechanics are defined by Architecture and API.
 
-| Feature | Guest | Customer | Admin |
-| --- | --- | --- | --- |
-| Browse Products | Yes | Yes | Yes |
-| Search and Filter | Yes | Yes | Yes |
-| Shopping Cart | Yes | Yes | — |
-| Checkout | Yes | Yes | — |
-| Wishlist | No | Own | — |
-| Profile Management | No | Own | — |
-| Order History | Verified Guest Order | Own | All |
-| Product Reviews | Read | Eligible Purchases | Moderate |
-| Cancellation | Verified Eligible Order | Own Eligible Orders | Manage |
-| Returns | Verified Eligible Order | Own Eligible Orders | Manage |
-| Refund Tracking | Verified Own Order | Own | All |
-| Product Management | No | No | Yes |
-| Inventory Management | No | No | Yes |
-| Delivery Charges | No | No | Yes |
-| Coupon Management | No | No | Yes |
-| Refund Processing | No | No | Yes |
-| Store Settings | No | No | Yes |
+| Feature              | Guest                   | Customer            | Admin    |
+| -------------------- | ----------------------- | ------------------- | -------- |
+| Browse Products      | Yes                     | Yes                 | Yes      |
+| Search and Filter    | Yes                     | Yes                 | Yes      |
+| Shopping Cart        | Yes                     | Yes                 | —        |
+| Checkout             | Yes                     | Yes                 | —        |
+| Wishlist             | No                      | Own                 | —        |
+| Profile Management   | No                      | Own                 | —        |
+| Order History        | Verified Guest Order    | Own                 | All      |
+| Product Reviews      | Read                    | Eligible Purchases  | Moderate |
+| Cancellation         | Verified Eligible Order | Own Eligible Orders | Manage   |
+| Returns              | Verified Eligible Order | Own Eligible Orders | Manage   |
+| Refund Tracking      | Verified Own Order      | Own                 | All      |
+| Product Management   | No                      | No                  | Yes      |
+| Inventory Management | No                      | No                  | Yes      |
+| Delivery Charges     | No                      | No                  | Yes      |
+| Coupon Management    | No                      | No                  | Yes      |
+| Refund Processing    | No                      | No                  | Yes      |
+| Store Settings       | No                      | No                  | Yes      |
 
 **Authorization Rules:**
 
@@ -1359,35 +1359,35 @@ This matrix is a product-access summary. Server-side authorization, session and 
 
 This is a product-level information inventory. It identifies information that must exist or remain historically correct; it is not a database schema. Canonical fields, indexes, retention and migration rules are defined in `DATABASE.md`.
 
-| Entity | Important Fields |
-| --- | --- |
-| User | ID, Name, Email, Password Hash, Phone, Role, Status |
-| Session | ID, User ID, Expiration, Revocation Status |
-| Address | ID, User ID, Recipient, Phone, District, Area, Address |
-| Category | ID, Name, Slug, Parent ID, Status |
-| Product | ID, Name, Slug, Description, Images, Category, Status |
-| Product Variant | ID, Product ID, SKU, Attributes, Price, Sale Price, Physical Stock |
-| Cart | User/Guest Identifier, Items, Quantities |
-| Wishlist | User ID, Product IDs |
-| Order | ID, Order Number, User ID (optional), Customer Snapshot, Delivery Snapshot, Delivery Deadline, Totals, Payment Status, Status |
-| Order Item | ID, Order ID, Product Name, SKU, Variant Snapshot, Unit Price, Allocated Discount, Quantity |
-| Payment | ID, Order ID, Method, Provider, Paid Amount, Status |
-| Payment Attempt | ID, Payment ID, Transaction ID, Validation Reference, Amount, Currency, Status, Expiration |
-| Coupon | ID, Code, Type, Value, Validity, Limits |
-| Coupon Redemption | ID, Coupon ID, Order ID, User ID (optional), Status, Expiration |
-| Inventory Reservation | ID, Variant ID, Order ID, Quantity, Expiration, Status |
-| Inventory Movement | ID, Variant ID, Type, Quantity, Reference, Timestamp |
-| Review | ID, User ID, Product ID, Rating, Comment, Status |
-| Return Request | ID, Order ID, Customer ID (optional), Claim Type (physical return or shortage), Reason, Status |
-| Return Item | ID, Return ID, Order Item ID, Requested Qty, Approved Qty, Inspection Result |
-| Refund | ID, Order ID, Payment ID, Items/Quantities, Amount, Method, Status |
-| Refund Attempt | ID, Refund ID, Provider Reference, Status, Failure Reason |
-| Delivery Zone | ID, Name, Districts/Areas, Status |
-| Delivery Charge | ID, Zone ID, Amount, Effective Status |
-| Notification | ID, Recipient, Event, Channel, Status |
-| Complaint | ID, Order ID (optional), Contact, Issue, Status, Resolution, Created At |
-| Audit Log | ID, Actor, Action, Target, Timestamp |
-| Store Settings | Store Details, Policies, Operational Configuration |
+| Entity                | Important Fields                                                                                                              |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| User                  | ID, Name, Email, Password Hash, Phone, Role, Status                                                                           |
+| Session               | ID, User ID, Expiration, Revocation Status                                                                                    |
+| Address               | ID, User ID, Recipient, Phone, District, Area, Address                                                                        |
+| Category              | ID, Name, Slug, Parent ID, Status                                                                                             |
+| Product               | ID, Name, Slug, Description, Images, Category, Status                                                                         |
+| Product Variant       | ID, Product ID, SKU, Attributes, Price, Sale Price, Physical Stock                                                            |
+| Cart                  | User/Guest Identifier, Items, Quantities                                                                                      |
+| Wishlist              | User ID, Product IDs                                                                                                          |
+| Order                 | ID, Order Number, User ID (optional), Customer Snapshot, Delivery Snapshot, Delivery Deadline, Totals, Payment Status, Status |
+| Order Item            | ID, Order ID, Product Name, SKU, Variant Snapshot, Unit Price, Allocated Discount, Quantity                                   |
+| Payment               | ID, Order ID, Method, Provider, Paid Amount, Status                                                                           |
+| Payment Attempt       | ID, Payment ID, Transaction ID, Validation Reference, Amount, Currency, Status, Expiration                                    |
+| Coupon                | ID, Code, Type, Value, Validity, Limits                                                                                       |
+| Coupon Redemption     | ID, Coupon ID, Order ID, User ID (optional), Status, Expiration                                                               |
+| Inventory Reservation | ID, Variant ID, Order ID, Quantity, Expiration, Status                                                                        |
+| Inventory Movement    | ID, Variant ID, Type, Quantity, Reference, Timestamp                                                                          |
+| Review                | ID, User ID, Product ID, Rating, Comment, Status                                                                              |
+| Return Request        | ID, Order ID, Customer ID (optional), Claim Type (physical return or shortage), Reason, Status                                |
+| Return Item           | ID, Return ID, Order Item ID, Requested Qty, Approved Qty, Inspection Result                                                  |
+| Refund                | ID, Order ID, Payment ID, Items/Quantities, Amount, Method, Status                                                            |
+| Refund Attempt        | ID, Refund ID, Provider Reference, Status, Failure Reason                                                                     |
+| Delivery Zone         | ID, Name, Districts/Areas, Status                                                                                             |
+| Delivery Charge       | ID, Zone ID, Amount, Effective Status                                                                                         |
+| Notification          | ID, Recipient, Event, Channel, Status                                                                                         |
+| Complaint             | ID, Order ID (optional), Contact, Issue, Status, Resolution, Created At                                                       |
+| Audit Log             | ID, Actor, Action, Target, Timestamp                                                                                          |
+| Store Settings        | Store Details, Policies, Operational Configuration                                                                            |
 
 ### 10.1 Data integrity rules
 
@@ -1668,19 +1668,19 @@ Provider activation and refund support remain merchant-specific release dependen
 
 ## 16. Success metrics
 
-| Metric | Measurement |
-| --- | --- |
-| Order Completion Rate | Successful orders compared with checkout attempts |
-| Payment Success Rate | Verified successful payments compared with payment attempts |
-| Checkout Failure Rate | Failed checkout attempts |
-| Inventory Accuracy | Recorded stock compared with verified physical stock |
-| Delivery Performance | Orders delivered within their applicable promised deadline |
-| Refund Processing Time | Time from approval to completed refund |
-| Refund Failure Rate | Failed refund attempts |
-| Coupon Usage | Successful coupon redemptions |
-| Review Participation | Eligible customers submitting reviews |
-| Application Availability | Monitored uptime |
-| Order Processing Accuracy | Orders completed without operational correction |
+| Metric                    | Measurement                                                 |
+| ------------------------- | ----------------------------------------------------------- |
+| Order Completion Rate     | Successful orders compared with checkout attempts           |
+| Payment Success Rate      | Verified successful payments compared with payment attempts |
+| Checkout Failure Rate     | Failed checkout attempts                                    |
+| Inventory Accuracy        | Recorded stock compared with verified physical stock        |
+| Delivery Performance      | Orders delivered within their applicable promised deadline  |
+| Refund Processing Time    | Time from approval to completed refund                      |
+| Refund Failure Rate       | Failed refund attempts                                      |
+| Coupon Usage              | Successful coupon redemptions                               |
+| Review Participation      | Eligible customers submitting reviews                       |
+| Application Availability  | Monitored uptime                                            |
+| Order Processing Accuracy | Orders completed without operational correction             |
 
 Targets will be established after initial operational data is available.
 

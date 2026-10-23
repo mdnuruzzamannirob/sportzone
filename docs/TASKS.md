@@ -59,14 +59,14 @@ This document decomposes the approved implementation plan into independently ver
 
 **Execution queue:** Phase numbers retain requirement ownership and historical IDs. They are not the current scheduling order. Implementation Plan §3.1 owns stage gates.
 
-| Stage | Executable queue and closeout |
-| --- | --- |
-| Foundation | P01-021 → P01-022 → P01-023 → P01-024. |
-| Backend | Every unfinished task marked Backend, in dependency order; P09-011 provisions backend staging prerequisites and P03-022 closes the stage. Includes protected admin APIs formerly hidden inside UI tasks. |
-| Admin | Every task marked Admin after P03-022; P09-010 closes the complete admin stage. |
-| Storefront | Every task marked Storefront after P09-010; P02-017 closes the complete storefront stage. |
-| Integrated | Original catalog/shopping/COD/payment/after-sales gates, integrated staging and P10 release-candidate verification after P02-017. |
-| Release / Handover | P11 production/merchant/legal/launch gates, then P12 final ownership and handover. |
+| Stage              | Executable queue and closeout                                                                                                                                                                            |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Foundation         | P01-021 → P01-022 → P01-023 → P01-024.                                                                                                                                                                   |
+| Backend            | Every unfinished task marked Backend, in dependency order; P09-011 provisions backend staging prerequisites and P03-022 closes the stage. Includes protected admin APIs formerly hidden inside UI tasks. |
+| Admin              | Every task marked Admin after P03-022; P09-010 closes the complete admin stage.                                                                                                                          |
+| Storefront         | Every task marked Storefront after P09-010; P02-017 closes the complete storefront stage.                                                                                                                |
+| Integrated         | Original catalog/shopping/COD/payment/after-sales gates, integrated staging and P10 release-candidate verification after P02-017.                                                                        |
+| Release / Handover | P11 production/merchant/legal/launch gates, then P12 final ownership and handover.                                                                                                                       |
 
 **Dependency convention:** Each task lists its immediate prerequisites; their own prerequisites apply transitively.
 Original IDs retain their complete outcomes when backend or UI work is split into separate tasks. Stage metadata
@@ -74,20 +74,20 @@ identifies the owning application; original domain closeouts retain integrated a
 
 ## 2. Task management conventions
 
-| Field       | Rule                                                                                                                          |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Task ID     | `PXX-NNN` with stable phase number and monotonically allocated ID; never renumber an existing task                            |
+| Field       | Rule                                                                                                                                                    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Task ID     | `PXX-NNN` with stable phase number and monotonically allocated ID; never renumber an existing task                                                      |
 | Stage       | Required on unfinished work: Foundation, Backend, Admin, Storefront, Integrated, Release or Handover; stage gates and dependency order govern execution |
-| Checkbox    | `[ ]` while not accepted; `[x]` only when status is `Done` and all applicable acceptance checks pass                          |
-| Status      | `Not Started`, `Ready`, `In Progress`, `Blocked`, `In Review`, `Done`, or `Deferred`                                          |
-| Owner       | Assign during execution; no owner is fabricated in this planning baseline                                                     |
-| Sources     | Task-level FR/section pointers plus inherited references to its phase in Implementation Plan §6                               |
-| Depends on  | Concrete task IDs that must be accepted before this task is considered ready; some external prerequisites also apply          |
-| Deliverable | The specific product/code/process outcome expected from the task                                                              |
-| Acceptance  | Observable pass conditions, supplemented by all applicable PRD and Design requirements                                        |
-| Evidence    | Test report, committed artifact, screenshot/record, provider validation or approver sign-off; add actual link after execution |
-| Blocked     | Capture missing prerequisite, owner, impact, permitted parallel work and next verification step                               |
-| Deferred    | Requires explicit scope/launch disposition; a mandatory safety or release criterion cannot be waived by status alone          |
+| Checkbox    | `[ ]` while not accepted; `[x]` only when status is `Done` and all applicable acceptance checks pass                                                    |
+| Status      | `Not Started`, `Ready`, `In Progress`, `Blocked`, `In Review`, `Done`, or `Deferred`                                                                    |
+| Owner       | Assign during execution; no owner is fabricated in this planning baseline                                                                               |
+| Sources     | Task-level FR/section pointers plus inherited references to its phase in Implementation Plan §6                                                         |
+| Depends on  | Concrete task IDs that must be accepted before this task is considered ready; some external prerequisites also apply                                    |
+| Deliverable | The specific product/code/process outcome expected from the task                                                                                        |
+| Acceptance  | Observable pass conditions, supplemented by all applicable PRD and Design requirements                                                                  |
+| Evidence    | Test report, committed artifact, screenshot/record, provider validation or approver sign-off; add actual link after execution                           |
+| Blocked     | Capture missing prerequisite, owner, impact, permitted parallel work and next verification step                                                         |
+| Deferred    | Requires explicit scope/launch disposition; a mandatory safety or release criterion cannot be waived by status alone                                    |
 
 **Record placement:** Update each task's existing status, blocker and evidence fields in place. Keep detailed
 commands/results in its evidence record and acceptance in the review record. Specifications receive only changed
@@ -125,19 +125,19 @@ The register contains 209 tasks across twelve requirement groups. Application-st
 
 | Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |   Done | Deferred |
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
-| 01 — Requirements Finalization and Planning | 24 | 3 | 0 | 0 | 0 | 0 | 21 | 0 |
-| 02 — UI/UX Design | 17 | 1 | 0 | 0 | 0 | 0 | 16 | 0 |
-| 03 — Authentication and Core Backend | 22 | 1 | 0 | 0 | 0 | 0 | 21 | 0 |
-| 04 — Product Catalog and Inventory | 19 | 11 | 0 | 0 | 1 | 0 | 7 | 0 |
-| 05 — Cart, Wishlist, Coupons, and Reviews | 17 | 17 | 0 | 0 | 0 | 0 | 0 | 0 |
-| 06 — Checkout, Orders, and Delivery Rules | 22 | 22 | 0 | 0 | 0 | 0 | 0 | 0 |
-| 07 — Payment Integration and Verification | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 0 |
-| 08 — Returns and Refunds | 19 | 19 | 0 | 0 | 0 | 0 | 0 | 0 |
-| 09 — Admin Management and Reports | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 0 |
-| 10 — Testing, Security Review, and Bug Fixing | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
-| 11 — Deployment and Production Verification | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
-| 12 — Documentation and Handover | 9 | 9 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **209** | **143** | **0** | **0** | **1** | **0** | **65** | **0** |
+| 01 — Requirements Finalization and Planning   |      24 |           3 |     0 |           0 |       0 |         0 |     21 |        0 |
+| 02 — UI/UX Design                             |      17 |           1 |     0 |           0 |       0 |         0 |     16 |        0 |
+| 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |     21 |        0 |
+| 04 — Product Catalog and Inventory            |      19 |          11 |     0 |           0 |       1 |         0 |      7 |        0 |
+| 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |          17 |     0 |           0 |       0 |         0 |      0 |        0 |
+| 06 — Checkout, Orders, and Delivery Rules     |      22 |          22 |     0 |           0 |       0 |         0 |      0 |        0 |
+| 07 — Payment Integration and Verification     |      18 |          18 |     0 |           0 |       0 |         0 |      0 |        0 |
+| 08 — Returns and Refunds                      |      19 |          19 |     0 |           0 |       0 |         0 |      0 |        0 |
+| 09 — Admin Management and Reports             |      18 |          18 |     0 |           0 |       0 |         0 |      0 |        0 |
+| 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
+| 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
+| 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
+| **Total**                                     | **209** |     **143** | **0** |       **0** |   **1** |     **0** | **65** |    **0** |
 
 ## 4. Milestone tracker
 

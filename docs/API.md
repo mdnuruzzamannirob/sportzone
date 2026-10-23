@@ -98,14 +98,14 @@ gateway. Scheduled jobs call shared services without bypassing invariants.
 
 ### 2.2 Module ownership
 
-| Module                                                                        | Primary route namespace(s)                                                             | Ownership                                                             |
-| ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `auth` (including guest access), `customers`                                           | `/auth`, `/me`, `/guest-access`, `/admin/auth`                                         | Identity, scoped access and sessions                                  |
-| `catalog`, `inventory`                                         | `/products`, `/categories`, `/admin/products`, `/admin/categories`, `/admin/inventory` | Visibility, SKUs, stock movement                                      |
-| `cart`, `promotions`, `reviews`                                    | `/cart`, `/wishlist`, `/coupons`, `/reviews`, `/admin/coupons`                         | Cart, quotas, verification, moderation                                |
-| `checkout`, `orders`, `delivery`                                              | `/checkout`, `/orders`, `/delivery`, `/admin/orders`, `/admin/delivery`                | Snapshots, submissions, fulfillment, charge rules                     |
-| `payments`, `refunds`, `returns`                                              | `/orders/{id}/payments`, `/payments`, `/claims`, `/refunds`, `/admin/...`              | Verification, collections, claims, payouts                            |
-| `notifications`, `support`, `reporting`, `settings`, `media`, `health` | Operations defined in §§14, 16 and Appendix D                                    | Correspondence, reporting, configuration, authorized media and health |
+| Module                                                                 | Primary route namespace(s)                                                             | Ownership                                                             |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `auth` (including guest access), `customers`                           | `/auth`, `/me`, `/guest-access`, `/admin/auth`                                         | Identity, scoped access and sessions                                  |
+| `catalog`, `inventory`                                                 | `/products`, `/categories`, `/admin/products`, `/admin/categories`, `/admin/inventory` | Visibility, SKUs, stock movement                                      |
+| `cart`, `promotions`, `reviews`                                        | `/cart`, `/wishlist`, `/coupons`, `/reviews`, `/admin/coupons`                         | Cart, quotas, verification, moderation                                |
+| `checkout`, `orders`, `delivery`                                       | `/checkout`, `/orders`, `/delivery`, `/admin/orders`, `/admin/delivery`                | Snapshots, submissions, fulfillment, charge rules                     |
+| `payments`, `refunds`, `returns`                                       | `/orders/{id}/payments`, `/payments`, `/claims`, `/refunds`, `/admin/...`              | Verification, collections, claims, payouts                            |
+| `notifications`, `support`, `reporting`, `settings`, `media`, `health` | Operations defined in §§14, 16 and Appendix D                                          | Correspondence, reporting, configuration, authorized media and health |
 
 Domain services coordinate cross-module mutations within MongoDB transactions. No external HTTP call occurs while a database transaction remains open.
 
@@ -253,7 +253,7 @@ Apply the session lifecycle below together with §4.5's route-selected Origin/CS
 | Fresh login           | Always create fresh random values; optional predecessor revocation is conditional on same user/kind; an unrelated account/namespace credential is never revoked by replacement                                                                                      |
 | Logout                | Idempotently revoke only supplied route-kind credential and clear only that cookie using matching attributes; repeated/expired/missing credential does not revoke another session; public logout still requires §4.2's valid Origin/CSRF and fresh context response |
 | Principal revocation  | Atomically advance principal securityRevision and mark its route-kind sessions revoked; other principals unaffected; status/role/revision changes deny old access even before cleanup                                                                               |
-| Secret rotation       | New SESSION_SECRET immediately rejects old digests on processes using it; drain/restart all old-key processes before declaring revocation complete; no dual-key acceptance is permitted by this contract                                                                           |
+| Secret rotation       | New SESSION_SECRET immediately rejects old digests on processes using it; drain/restart all old-key processes before declaring revocation complete; no dual-key acceptance is permitted by this contract                                                            |
 
 The configuration boundary validates explicit session lifetime and SameSite settings before composition;
 no fallback policy is supplied. Configuration errors identify fields only. Operations §13.3 owns activation,
@@ -450,7 +450,7 @@ scoped operational fields; external provider evidence is redacted even to admini
 | DTO                 | Public or private contract (allowlist)                                                                                                                                                                                                          | Excluded by design                                                                                                    |
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | `ProductCard`       | `id,slug,name,thumbnail,regularPricePoisha,effectivePricePoisha,rating,availability`                                                                                                                                                            | Internal stock counters, media credentials                                                                            |
-| `ProductDetail`     | Card + `description,categories,images,variants[{id,sku,attributes,regularPricePoisha,effectivePricePoisha,availableQty}],relatedProducts[]`                                                                                                                      | Inventory movement and hidden draft data                                                                              |
+| `ProductDetail`     | Card + `description,categories,images,variants[{id,sku,attributes,regularPricePoisha,effectivePricePoisha,availableQty}],relatedProducts[]`                                                                                                     | Inventory movement and hidden draft data                                                                              |
 | `Account`           | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry)                                                                                                                                                     | `passwordHash`, challenge/session tokens, other accounts                                                              |
 | `Cart`              | `items[{variantId,quantity,product,estimatedUnitPoisha,availability}],estimatedSubtotalPoisha,revision`                                                                                                                                         | Reservation claims; cart does **not** reserve stock                                                                   |
 | `CheckoutQuote`     | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry)                                                                                                                                                     | A guaranteed confirmation-relative absolute deadline before the confirmation event, payment guarantee, or reservation |
@@ -547,16 +547,16 @@ successful refund request is **not** confirmed payout.
 
 ## 8. Pagination, search & caching
 
-| Concern           | Rule                                                                                                  |
-| ----------------- | ----------------------------------------------------------------------------------------------------- |
-| Pagination        | `page` starts at `1`; `pageSize` defaults `20`, maximum `100`; no unbounded lists                     |
-| Sorting           | Explicit endpoint allowlist, e.g. `newest`, `price_asc`, `price_desc`; stable ID tie-break            |
-| Public search     | `q` trimmed and length-bounded; only active products/categories eligible for public discovery         |
-| Catalog filtering | `category`, `minPricePoisha`, `maxPricePoisha`, `inStock`, with server type and range checks          |
-| Admin filtering   | Allowlisted status/date/customer references; no arbitrary client query operators                      |
-| Result            | `{data:[...],meta:{page,pageSize,totalItems,totalPages,requestId}}`                                   |
+| Concern           | Rule                                                                                                                                     |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Pagination        | `page` starts at `1`; `pageSize` defaults `20`, maximum `100`; no unbounded lists                                                        |
+| Sorting           | Explicit endpoint allowlist, e.g. `newest`, `price_asc`, `price_desc`; stable ID tie-break                                               |
+| Public search     | `q` trimmed and length-bounded; only active products/categories eligible for public discovery                                            |
+| Catalog filtering | `category`, `minPricePoisha`, `maxPricePoisha`, `inStock`, with server type and range checks                                             |
+| Admin filtering   | Allowlisted status/date/customer references; no arbitrary client query operators                                                         |
+| Result            | `{data:[...],meta:{page,pageSize,totalItems,totalPages,requestId}}`                                                                      |
 | Public cache      | Public catalog uses `Cache-Control: no-store` under §10; Architecture §5.1 owns rendering freshness; checkout requotes live stock/prices |
-| Private cache     | `Cache-Control: no-store`; prevent CDN/SSR shared caching for auth, account, cart, orders and money   |
+| Private cache     | `Cache-Control: no-store`; prevent CDN/SSR shared caching for auth, account, cart, orders and money                                      |
 
 For large audit/financial histories, use an opaque cursor with stable ordering **if approved by query profiling**; do not
 invent offset pagination where it risks missing/duplicating mutations. Query and index selection must agree with Database

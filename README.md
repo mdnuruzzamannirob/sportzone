@@ -138,18 +138,18 @@ current status and blockers are recorded in [Tasks](docs/TASKS.md).
 
 Select checks for the changed area using [Testing §15.5](docs/TESTING.md#155-change-based-local-verification):
 
-| Scope | Command |
-| --- | --- |
-| Documentation and repository integrity | `npm run lint` |
-| Repository tooling tests | `npm run test:unit` |
-| Source import and ownership boundaries | `npm run lint:boundaries` |
-| Workspace/tooling formatting | `npm run format:check` |
-| Application checks | `npm run lint --workspace=<name>`, `typecheck`, `test:unit`, `build` |
-| Backend database integration | `npm run test:integration --workspace=backend` |
-| Backend consolidated inventory | `npm run ci -- --scope=backend` |
-| Browser verification | `npm run test:ui` |
-| Security scans | `npm run test:security` |
-| Complete integration inventory | `npm run ci` |
+| Scope                                  | Command                                                              |
+| -------------------------------------- | -------------------------------------------------------------------- |
+| Documentation and repository integrity | `npm run lint`                                                       |
+| Repository tooling tests               | `npm run test:unit`                                                  |
+| Source import and ownership boundaries | `npm run lint:boundaries`                                            |
+| Workspace/tooling formatting           | `npm run format:check`                                               |
+| Application checks                     | `npm run lint --workspace=<name>`, `typecheck`, `test:unit`, `build` |
+| Backend database integration           | `npm run test:integration --workspace=backend`                       |
+| Backend consolidated inventory         | `npm run ci -- --scope=backend`                                      |
+| Browser verification                   | `npm run test:ui`                                                    |
+| Security scans                         | `npm run test:security`                                              |
+| Complete integration inventory         | `npm run ci`                                                         |
 
 Backend integration tests own their isolated replica sets and never use the configured `MONGODB_URI`.
 The first run downloads the pinned MongoDB binary. On Ubuntu 26, use `MONGOMS_DISTRO=ubuntu-24.04` for the
@@ -181,7 +181,7 @@ from historical task reports. Keep local, CI, staging and production resources s
 | [Design](docs/DESIGN.md)                           | Tokens, layouts, interactions and accessibility              |
 | [Database](docs/DATABASE.md)                       | Collections, schemas, indexes, transactions and migrations   |
 | [API](docs/API.md)                                 | Routes, DTOs, authorization, errors and retries              |
-| [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) | Application stages, domain dependencies and milestones      |
+| [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) | Application stages, domain dependencies and milestones       |
 | [Tasks](docs/TASKS.md)                             | Stable task IDs, execution status and evidence               |
 | [Testing](docs/TESTING.md)                         | Scenarios, fixtures, tools and verification procedures       |
 | [Operations](docs/OPERATIONS.md)                   | Configuration, deployment, recovery and operating procedures |

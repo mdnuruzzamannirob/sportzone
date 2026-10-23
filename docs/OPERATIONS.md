@@ -66,14 +66,14 @@ displayed, and omitting a required channel does **not** waive the launch gate. M
 operator-managed delivery zones/charges are in scope. Automated courier integration, GPS tracking,
 multi-vendor/multi-currency and additional administrator permission tiers are not.
 
-| Operational objective | Definition of acceptable evidence |
-| --- | --- |
-| Repeatable deployment | Identified artifact, environment, approver, automated checks, deployment and smoke-test record |
-| Business correctness | Order, price, stock, coupon, collection and refund transitions preserve Database/Architecture invariants |
-| Security/privacy | Scoped access, TLS, session/cookie/CSRF isolation, redacted logs, controlled secret/access ownership |
-| Reliable background work | Durable work state, bounded retries, lease-fencing or equivalent protection, backlog visibility |
-| Recovery | Practiced restore and reconciliation with known recovery point, unresolved gap register and approval before reopening writes |
-| Store ownership | Authorized persons control live service, merchant, domain, backup and provider accounts; access is documented without credential disclosure |
+| Operational objective    | Definition of acceptable evidence                                                                                                           |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Repeatable deployment    | Identified artifact, environment, approver, automated checks, deployment and smoke-test record                                              |
+| Business correctness     | Order, price, stock, coupon, collection and refund transitions preserve Database/Architecture invariants                                    |
+| Security/privacy         | Scoped access, TLS, session/cookie/CSRF isolation, redacted logs, controlled secret/access ownership                                        |
+| Reliable background work | Durable work state, bounded retries, lease-fencing or equivalent protection, backlog visibility                                             |
+| Recovery                 | Practiced restore and reconciliation with known recovery point, unresolved gap register and approval before reopening writes                |
+| Store ownership          | Authorized persons control live service, merchant, domain, backup and provider accounts; access is documented without credential disclosure |
 
 ### 1.2 Operational non-negotiables
 
@@ -129,16 +129,16 @@ independently bypass the authoritative domain rules.
 
 ### 2.2 Component requirements
 
-| Component | Deployment characteristic | Health/recovery expectation | Sensitive boundary |
-| --- | --- | --- | --- |
-| Storefront | Next.js-capable runtime; request-time catalog SSR under Architecture §5.1 | Pages render; next-request freshness and unavailable/404 behavior verified | No merchant/DB secrets or private shared caches |
-| Admin portal | Versioned Vite static assets; SPA fallback | Deep-link navigation and admin login function | Frontend environment variables are public |
-| Express API | Independent deployable Node.js service; approved host/origin | `/api/v1/health/live` and restricted `/api/v1/health/ready` | All authenticated commerce actions enforced server-side |
-| MongoDB | Transaction-capable deployment with index management | Connections, transaction capability, backups and restoration verified | Restricted network access, least-privilege database identity |
-| Scheduled worker | Durable leased/claimed job execution using backend services | Lag, failures, expired leases and restart safety visible | No public unauthenticated job execution endpoints |
-| SSLCOMMERZ | Approved sandbox vs live credentials and callback URLs | Server-side transaction/refund verification available | Secrets stay in backend; live channel activation evidenced |
-| Cloudinary/email | Restricted backend-controlled adapters | Retry/error observation and credential ownership | Private return evidence; no raw secret leakage |
-| Telemetry/backup | Controlled access, redaction, retention | Alerts, restore drills, integrity and owner checks | Private evidence, encrypted storage, access audit |
+| Component        | Deployment characteristic                                                 | Health/recovery expectation                                                | Sensitive boundary                                           |
+| ---------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Storefront       | Next.js-capable runtime; request-time catalog SSR under Architecture §5.1 | Pages render; next-request freshness and unavailable/404 behavior verified | No merchant/DB secrets or private shared caches              |
+| Admin portal     | Versioned Vite static assets; SPA fallback                                | Deep-link navigation and admin login function                              | Frontend environment variables are public                    |
+| Express API      | Independent deployable Node.js service; approved host/origin              | `/api/v1/health/live` and restricted `/api/v1/health/ready`                | All authenticated commerce actions enforced server-side      |
+| MongoDB          | Transaction-capable deployment with index management                      | Connections, transaction capability, backups and restoration verified      | Restricted network access, least-privilege database identity |
+| Scheduled worker | Durable leased/claimed job execution using backend services               | Lag, failures, expired leases and restart safety visible                   | No public unauthenticated job execution endpoints            |
+| SSLCOMMERZ       | Approved sandbox vs live credentials and callback URLs                    | Server-side transaction/refund verification available                      | Secrets stay in backend; live channel activation evidenced   |
+| Cloudinary/email | Restricted backend-controlled adapters                                    | Retry/error observation and credential ownership                           | Private return evidence; no raw secret leakage               |
+| Telemetry/backup | Controlled access, redaction, retention                                   | Alerts, restore drills, integrity and owner checks                         | Private evidence, encrypted storage, access audit            |
 
 ### 2.3 Network, DNS and trust boundaries
 
@@ -160,12 +160,12 @@ must be recorded on provisioning, not invented.
 
 ### 3.1 Environment isolation matrix
 
-| Environment | Data and credentials | Allowed activity | Explicitly prohibited |
-| --- | --- | --- | --- |
-| Local | Synthetic users/orders; local transaction-capable replica set; mocked/test third parties | Development, unit/integration/race tests | Live merchant keys; unrestricted real customer exports |
-| CI | Ephemeral isolated DB namespace; nonproduction short-lived secrets | Static checks, build, contract and automated tests | Shared production credentials, destructive production access |
-| Staging | Isolated DB, approved synthetic/sanitized data, SSLCOMMERZ sandbox | E2E, migration, callback, restore, security and fault-injection rehearsal | Live charges or unredacted production customer data |
-| Production | Real restricted customer/merchant data and activated channels | Approved deploy, operational read-only checks, verified low-risk smoke | Synthetic live payments/refunds without explicit approval, load/destructive testing |
+| Environment | Data and credentials                                                                     | Allowed activity                                                          | Explicitly prohibited                                                               |
+| ----------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Local       | Synthetic users/orders; local transaction-capable replica set; mocked/test third parties | Development, unit/integration/race tests                                  | Live merchant keys; unrestricted real customer exports                              |
+| CI          | Ephemeral isolated DB namespace; nonproduction short-lived secrets                       | Static checks, build, contract and automated tests                        | Shared production credentials, destructive production access                        |
+| Staging     | Isolated DB, approved synthetic/sanitized data, SSLCOMMERZ sandbox                       | E2E, migration, callback, restore, security and fault-injection rehearsal | Live charges or unredacted production customer data                                 |
+| Production  | Real restricted customer/merchant data and activated channels                            | Approved deploy, operational read-only checks, verified low-risk smoke    | Synthetic live payments/refunds without explicit approval, load/destructive testing |
 
 Do not promote staging **data or secrets** to production. Deploy a release artifact built from an identified
 commit; promote compatible configurations independently. Verify test-provider identifiers cannot be mistaken for
@@ -188,13 +188,13 @@ reference, validation, rotation and verification evidence for each deployed key.
 
 ### 3.3 Change classes
 
-| Change | Approval/review requirement | Release implication |
-| --- | --- | --- |
-| Public content or branding | Authorized store operator, preview and provenance | May use admin workflow; no arbitrary DB update |
-| Delivery zones/charges or published policies | Store-owner approval; versioned/effective change and audit | Preserve original checkout snapshots |
-| Payment channel, callback, merchant limits or refunds | Merchant/operator approval with provider evidence | Block payment method if unverified; test before enabling |
-| Backend binary, schema or index | Engineer review and deployment/migration gate | Compatible staging evidence before promotion |
-| Secrets, domains, auth or access policy | Security/owner authorization and rotation impact review | Targeted origin/session checks after change |
+| Change                                                | Approval/review requirement                                | Release implication                                      |
+| ----------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------- |
+| Public content or branding                            | Authorized store operator, preview and provenance          | May use admin workflow; no arbitrary DB update           |
+| Delivery zones/charges or published policies          | Store-owner approval; versioned/effective change and audit | Preserve original checkout snapshots                     |
+| Payment channel, callback, merchant limits or refunds | Merchant/operator approval with provider evidence          | Block payment method if unverified; test before enabling |
+| Backend binary, schema or index                       | Engineer review and deployment/migration gate              | Compatible staging evidence before promotion             |
+| Secrets, domains, auth or access policy               | Security/owner authorization and rotation impact review    | Targeted origin/session checks after change              |
 
 ## 4. Infrastructure provisioning & setup
 
@@ -226,13 +226,13 @@ financial-impact approval.
 
 ### 4.2 Provisioning verification matrix
 
-| Check | Observable acceptance |
-| --- | --- |
-| DB transaction support | Replica-set-backed session/transaction scenario succeeds in staging |
-| Service isolation | DB and worker control endpoints unreachable from unauthenticated public Internet |
-| TLS and domains | Storefront/admin/API/callback origins present valid certificates and correct host routing |
-| Session boundaries | Customer/admin/guest identities cannot cross roles or hosts; credentials not shared-cacheable |
-| Provider separation | Test and live credentials, callbacks, logs and merchant identities are distinct |
+| Check                   | Observable acceptance                                                                             |
+| ----------------------- | ------------------------------------------------------------------------------------------------- |
+| DB transaction support  | Replica-set-backed session/transaction scenario succeeds in staging                               |
+| Service isolation       | DB and worker control endpoints unreachable from unauthenticated public Internet                  |
+| TLS and domains         | Storefront/admin/API/callback origins present valid certificates and correct host routing         |
+| Session boundaries      | Customer/admin/guest identities cannot cross roles or hosts; credentials not shared-cacheable     |
+| Provider separation     | Test and live credentials, callbacks, logs and merchant identities are distinct                   |
 | Recovery infrastructure | Backup exists, restore destination is separate, restore can be tested without overwriting live DB |
 
 ### 4.3 Operational prerequisites
@@ -523,15 +523,15 @@ belong to Architecture §§4–6, not a second operational source tree.
 
 ### 6.1 Release record
 
-| Field | Required value |
-| --- | --- |
-| Release ID | Unique trace to commit/artifact and PR/approval |
-| Environment and time | Staging/production, UTC timestamp; local communication in Dhaka timezone |
-| Source changes | API/database migration/config/policy/merchant impact |
-| Evidence | CI, staging regression, origin/CSRF, job, restore, financial verification |
-| Rollout/abort criteria | Measured health conditions, rollback compatibility and decision owner |
-| Post-deploy result | Passed/Failed/Blocked; actual links and limitations |
-| Sign-off | Named authorized approver and date; do not prefill |
+| Field                  | Required value                                                            |
+| ---------------------- | ------------------------------------------------------------------------- |
+| Release ID             | Unique trace to commit/artifact and PR/approval                           |
+| Environment and time   | Staging/production, UTC timestamp; local communication in Dhaka timezone  |
+| Source changes         | API/database migration/config/policy/merchant impact                      |
+| Evidence               | CI, staging regression, origin/CSRF, job, restore, financial verification |
+| Rollout/abort criteria | Measured health conditions, rollback compatibility and decision owner     |
+| Post-deploy result     | Passed/Failed/Blocked; actual links and limitations                       |
+| Sign-off               | Named authorized approver and date; do not prefill                        |
 
 ### 6.2 Application rollback (OP-REL-02)
 
@@ -557,13 +557,13 @@ allow retries, rolling back confirmed receipts or replacing stock counters manua
 
 ### 6.3 Release types and controls
 
-| Type | Minimum control | Additional control |
-| --- | --- | --- |
-| Ordinary application | CI, staging E2E, release record, smoke | Rollback-compatible artifact |
-| Index/schema | Versioned migration, index preflight and duplicate scan | Backfill checkpoint, schema compatibility and recovery plan |
-| Financial logic | Source-funded accounting tests, provider sandbox, concurrency | On-call reconciliation and rollback/forward-fix proof |
-| Auth/secrets | Security review, cookie/CSRF regression | Rotation, active-session impact and escalation |
-| Store policy/payment availability | Authorized operator approval | Effective version and published customer communication |
+| Type                              | Minimum control                                               | Additional control                                          |
+| --------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------- |
+| Ordinary application              | CI, staging E2E, release record, smoke                        | Rollback-compatible artifact                                |
+| Index/schema                      | Versioned migration, index preflight and duplicate scan       | Backfill checkpoint, schema compatibility and recovery plan |
+| Financial logic                   | Source-funded accounting tests, provider sandbox, concurrency | On-call reconciliation and rollback/forward-fix proof       |
+| Auth/secrets                      | Security review, cookie/CSRF regression                       | Rotation, active-session impact and escalation              |
+| Store policy/payment availability | Authorized operator approval                                  | Effective version and published customer communication      |
 
 ## 7. Database operations
 
@@ -644,16 +644,16 @@ delete movements as a code rollback.
 
 ### 7.3 Health and reconciliation invariants
 
-| Query/observation | Required safe behavior |
-| --- | --- |
-| Replica-set/transaction check | Primary/replication healthy enough for stated transaction guarantees |
-| Schema/index drift | Missing or altered unique/partial indexes block affected writes |
-| Inventory counters | `available = physical − reserved − committed >= 0`; movement log and reservations reconcile |
-| Coupon holds/counters | Held + redeemed quotas bounded; expiry handled by domain job, **not TTL** |
-| Checkout identities | Unique durable idempotency keys remain protected, including tombstones |
-| Verified money | Provider intake uniqueness, receipt allocation and unmatched suspense totals reconcile |
-| Refund source balances | Pending + completed never exceed original verified allocated funds, per source/class |
-| Historical records | Order snapshots, confirmed deadlines, policy versions, audits survive upgrades |
+| Query/observation             | Required safe behavior                                                                      |
+| ----------------------------- | ------------------------------------------------------------------------------------------- |
+| Replica-set/transaction check | Primary/replication healthy enough for stated transaction guarantees                        |
+| Schema/index drift            | Missing or altered unique/partial indexes block affected writes                             |
+| Inventory counters            | `available = physical − reserved − committed >= 0`; movement log and reservations reconcile |
+| Coupon holds/counters         | Held + redeemed quotas bounded; expiry handled by domain job, **not TTL**                   |
+| Checkout identities           | Unique durable idempotency keys remain protected, including tombstones                      |
+| Verified money                | Provider intake uniqueness, receipt allocation and unmatched suspense totals reconcile      |
+| Refund source balances        | Pending + completed never exceed original verified allocated funds, per source/class        |
+| Historical records            | Order snapshots, confirmed deadlines, policy versions, audits survive upgrades              |
 
 ### 7.4 Database access and data operations
 
@@ -670,16 +670,16 @@ Jobs use backend domain services, stable job/operation identities and persisted 
 outbox/notification documents as applicable). A scheduler tick is not proof a job succeeded. Configure cadence from business expiration requirements, provider
 limits and measured backlog; record the schedule and responsible role in the operating inventory.
 
-| Work item | Durable source | Primary safety property | Alert condition |
-| --- | --- | --- | --- |
-| Online hold expiry | Active `inventoryReservations`, associated order/payment status | Release only eligible unpaid hold after this generation heldAt + 15 minutes; synchronize coupon expiry; do not race newly verified payment or extend expiry on replay | Expired eligible holds unprocessed; repeated errors |
-| Coupon hold expiry | Active `couponRedemptions`, tied to checkout and inventory | Release eligible hold exactly once, atomically with dependent state | Old held coupon allocations |
-| Uncertain payment reconciliation | `paymentAttempts`, `providerReceiptIntake`, `paymentCollections` | Verify provider independently; allocate each real receipt once | Aging unknown attempt / unmatched intake |
-| Refund status reconciliation | `refundAttempts`, `refunds`, source collection balances | Unknown payout stays reserved until verified; no duplicate disbursement | Aging unknown refund, caps mismatch |
-| Notification retry | `notifications` / unique `eventKey` | Retry message without repeating commerce event | Delivery backlog / repeated failures |
-| Scheduled delivery-charge activation | `deliveryCharges`, storeSettings.deliveryCoverageRevision and affected zone revisions | Acquire the shared global guard before interval/version checks across all zones; atomically end predecessor and activate due successor without overlapping scheduled/selectable windows (Database §7.6) | Due rule not activated, overlap or coverage gap |
-| Scheduled policy publication | `policyDocuments`, `storeSettings.activePolicyVersions` | Publish only approved due revision; CAS-swap active pointer and preserve historic content (Database §10.5) | Due approved policy not activated or wrong public revision |
-| Operational consistency sweep | Immutable movements, claims, payment/refund projections | Detect drift; propose case for authorized resolution | Inventory, financial or policy mismatch |
+| Work item                            | Durable source                                                                        | Primary safety property                                                                                                                                                                                 | Alert condition                                            |
+| ------------------------------------ | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Online hold expiry                   | Active `inventoryReservations`, associated order/payment status                       | Release only eligible unpaid hold after this generation heldAt + 15 minutes; synchronize coupon expiry; do not race newly verified payment or extend expiry on replay                                   | Expired eligible holds unprocessed; repeated errors        |
+| Coupon hold expiry                   | Active `couponRedemptions`, tied to checkout and inventory                            | Release eligible hold exactly once, atomically with dependent state                                                                                                                                     | Old held coupon allocations                                |
+| Uncertain payment reconciliation     | `paymentAttempts`, `providerReceiptIntake`, `paymentCollections`                      | Verify provider independently; allocate each real receipt once                                                                                                                                          | Aging unknown attempt / unmatched intake                   |
+| Refund status reconciliation         | `refundAttempts`, `refunds`, source collection balances                               | Unknown payout stays reserved until verified; no duplicate disbursement                                                                                                                                 | Aging unknown refund, caps mismatch                        |
+| Notification retry                   | `notifications` / unique `eventKey`                                                   | Retry message without repeating commerce event                                                                                                                                                          | Delivery backlog / repeated failures                       |
+| Scheduled delivery-charge activation | `deliveryCharges`, storeSettings.deliveryCoverageRevision and affected zone revisions | Acquire the shared global guard before interval/version checks across all zones; atomically end predecessor and activate due successor without overlapping scheduled/selectable windows (Database §7.6) | Due rule not activated, overlap or coverage gap            |
+| Scheduled policy publication         | `policyDocuments`, `storeSettings.activePolicyVersions`                               | Publish only approved due revision; CAS-swap active pointer and preserve historic content (Database §10.5)                                                                                              | Due approved policy not activated or wrong public revision |
+| Operational consistency sweep        | Immutable movements, claims, payment/refund projections                               | Detect drift; propose case for authorized resolution                                                                                                                                                    | Inventory, financial or policy mismatch                    |
 
 ### 8.2 Worker control and restart (OP-JOB-01)
 
@@ -749,14 +749,14 @@ Verify provider/recipient behavior, reconciliation exercises and operator approv
 
 ### 8.3 Schedule and ownership record
 
-| Job key | Scheduling basis (UTC) | Retry/backoff | Responsible role | Environment scope |
-| --- | --- | --- | --- | --- |
-| Reservation/coupon expiry | Process eligible holds at their recorded expiry | Bounded and idempotent | Backend owner | Local/CI, staging and production |
-| Payment intake/verification | Callback-driven intake plus provider-compatible reconciliation interval | Bounded; status-aware | Backend / merchant owner | Isolated sandbox; activated live merchant |
-| Refund status verification | Provider-supported polling and uncertainty reconciliation | Bounded; no duplicate payout | Backend / finance owner | Sandbox and authorized live service |
-| Notification dispatch | Durable outbox availability and configured retry policy | Bounded; dedupe by `eventKey` | Backend owner | Separate provider resources per environment |
-| Delivery-charge/policy activation | Recorded UTC effective instants | CAS-protected, idempotent activation | Backend / store operator | Staging and production; synthetic local/CI triggers |
-| Consistency reconciliation | Configured bounded batch interval | Resumable and observable | Backend / data owner | Staging and production |
+| Job key                           | Scheduling basis (UTC)                                                  | Retry/backoff                        | Responsible role         | Environment scope                                   |
+| --------------------------------- | ----------------------------------------------------------------------- | ------------------------------------ | ------------------------ | --------------------------------------------------- |
+| Reservation/coupon expiry         | Process eligible holds at their recorded expiry                         | Bounded and idempotent               | Backend owner            | Local/CI, staging and production                    |
+| Payment intake/verification       | Callback-driven intake plus provider-compatible reconciliation interval | Bounded; status-aware                | Backend / merchant owner | Isolated sandbox; activated live merchant           |
+| Refund status verification        | Provider-supported polling and uncertainty reconciliation               | Bounded; no duplicate payout         | Backend / finance owner  | Sandbox and authorized live service                 |
+| Notification dispatch             | Durable outbox availability and configured retry policy                 | Bounded; dedupe by `eventKey`        | Backend owner            | Separate provider resources per environment         |
+| Delivery-charge/policy activation | Recorded UTC effective instants                                         | CAS-protected, idempotent activation | Backend / store operator | Staging and production; synthetic local/CI triggers |
+| Consistency reconciliation        | Configured bounded batch interval                                       | Resumable and observable             | Backend / data owner     | Staging and production                              |
 
 Record each deployed job's exact cadence, batch size, lease duration, retry limits and named duty contact in the operating inventory.
 
@@ -776,20 +776,20 @@ The readiness monitor must send the configured `Authorization: Bearer` credentia
 
 ### 9.2 Required signal catalog
 
-| Signal | Source/labels | Operational interpretation |
-| --- | --- | --- |
-| API request volume, status, latency | Route template, deployment, correlation ID (no raw URL tokens) | Availability, regressions, abusive traffic |
-| Authentication/CSRF failures | Endpoint family, role, coarse failure type | Session breakage, origin mistakes, attack indicators |
-| MongoDB connections, replication, transactions | Cluster/role, error category | Data-path outage, failed commit / uncertainty |
-| Checkout outcomes, idempotency conflicts | Intent status, non-PII operation ID | Duplicate suppression and checkout failure rate |
-| Stock reservations and movements | Expired hold age, invariant violations | Oversell risk or job lag |
-| Coupon held/redeemed limits | Capacity/race conflict counters | Allocation drift and rejected concurrency |
-| Payment verification backlog | Pending/unknown attempt age, unmatched intake, excess allocation | Merchant collections requiring action |
-| Refund liability and payout backlog | Pending amount by source/class, unknown payout age | At-risk obligations; no unsafe double payout |
-| Worker lease/backlog, retries | Job key, elapsed age, last success | Stalled, duplicated or failing schedules |
-| Email/outbox delivery | Pending, retry, failed by event type | Messages not delivered; no commerce rollback |
-| Backup and recovery | Last successful snapshot, restore drill age, errors | Disaster recovery confidence |
-| Media and third parties | Server-side error/timeout category | Dependency degraded, asset access problem |
+| Signal                                         | Source/labels                                                    | Operational interpretation                           |
+| ---------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------- |
+| API request volume, status, latency            | Route template, deployment, correlation ID (no raw URL tokens)   | Availability, regressions, abusive traffic           |
+| Authentication/CSRF failures                   | Endpoint family, role, coarse failure type                       | Session breakage, origin mistakes, attack indicators |
+| MongoDB connections, replication, transactions | Cluster/role, error category                                     | Data-path outage, failed commit / uncertainty        |
+| Checkout outcomes, idempotency conflicts       | Intent status, non-PII operation ID                              | Duplicate suppression and checkout failure rate      |
+| Stock reservations and movements               | Expired hold age, invariant violations                           | Oversell risk or job lag                             |
+| Coupon held/redeemed limits                    | Capacity/race conflict counters                                  | Allocation drift and rejected concurrency            |
+| Payment verification backlog                   | Pending/unknown attempt age, unmatched intake, excess allocation | Merchant collections requiring action                |
+| Refund liability and payout backlog            | Pending amount by source/class, unknown payout age               | At-risk obligations; no unsafe double payout         |
+| Worker lease/backlog, retries                  | Job key, elapsed age, last success                               | Stalled, duplicated or failing schedules             |
+| Email/outbox delivery                          | Pending, retry, failed by event type                             | Messages not delivered; no commerce rollback         |
+| Backup and recovery                            | Last successful snapshot, restore drill age, errors              | Disaster recovery confidence                         |
+| Media and third parties                        | Server-side error/timeout category                               | Dependency degraded, asset access problem            |
 
 ### 9.3 Structured log and correlation contract
 
@@ -818,12 +818,12 @@ provisioning.
 
 ### 10.1 Severity and escalation
 
-| Severity | Definition | Default response posture |
-| --- | --- | --- |
-| SEV-1 | Confirmed loss/exposure of sensitive data, double payout, unbounded stock corruption, or unsafe payment writes | Contain immediately, suspend affected mutations, mobilize authorized responders |
-| SEV-2 | Checkout/payment/receipt validation impaired, refund unknown aging, DB unavailable or significant service outage | Prioritize incident, reduce unsafe functionality, assess obligations |
-| SEV-3 | Degraded email, selected catalog/admin path or delayed job with invariant checks still valid | Triage, monitor trend and restore service |
-| SEV-4 | Nonurgent maintainability, minor display or documentation defect | Standard change/backlog process |
+| Severity | Definition                                                                                                       | Default response posture                                                        |
+| -------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| SEV-1    | Confirmed loss/exposure of sensitive data, double payout, unbounded stock corruption, or unsafe payment writes   | Contain immediately, suspend affected mutations, mobilize authorized responders |
+| SEV-2    | Checkout/payment/receipt validation impaired, refund unknown aging, DB unavailable or significant service outage | Prioritize incident, reduce unsafe functionality, assess obligations            |
+| SEV-3    | Degraded email, selected catalog/admin path or delayed job with invariant checks still valid                     | Triage, monitor trend and restore service                                       |
+| SEV-4    | Nonurgent maintainability, minor display or documentation defect                                                 | Standard change/backlog process                                                 |
 
 Apply these severity rules to incident triage. The operations owner records alert thresholds, acknowledgement
 targets, notification destinations, escalation timers and duty coverage in the operating inventory. The responsible
@@ -869,13 +869,13 @@ The designated duty lead in the operating inventory.
 
 ### 10.4 Alert routing inventory
 
-| Alert category | Primary role | Backup/escalation | Routing requirement |
-| --- | --- | --- | --- |
-| Availability / API | Backend on-call | Platform owner | Reachable duty channel; availability and error-rate thresholds |
-| DB / transaction integrity | Data owner | Backend / platform owner | Immediate escalation for integrity violations |
-| Payment / refunds | Merchant / finance owner | Backend on-call and provider contact | Receipt, payout and uncertainty-age alerts |
-| Security / privacy | Security designate | Store owner | Restricted incident channel and disclosure escalation |
-| Backup / worker drift | Platform / backend owner | Data owner | Backup freshness, failed jobs and oldest-work thresholds |
+| Alert category             | Primary role             | Backup/escalation                    | Routing requirement                                            |
+| -------------------------- | ------------------------ | ------------------------------------ | -------------------------------------------------------------- |
+| Availability / API         | Backend on-call          | Platform owner                       | Reachable duty channel; availability and error-rate thresholds |
+| DB / transaction integrity | Data owner               | Backend / platform owner             | Immediate escalation for integrity violations                  |
+| Payment / refunds          | Merchant / finance owner | Backend on-call and provider contact | Receipt, payout and uncertainty-age alerts                     |
+| Security / privacy         | Security designate       | Store owner                          | Restricted incident channel and disclosure escalation          |
+| Backup / worker drift      | Platform / backend owner | Data owner                           | Backup freshness, failed jobs and oldest-work thresholds       |
 
 Record named contacts, destinations, coverage windows and exercised thresholds per environment.
 
@@ -888,14 +888,14 @@ A monitored metric without an owned and exercised alert route is not an operatio
 Backups must be protected, restorable and appropriate to a transaction-capable MongoDB deployment. The data owner
 maintains the following environment-specific recovery policy and verifies it through isolated restore exercises.
 
-| Parameter | Required definition and evidence | Accountable role |
-| --- | --- | --- |
-| RPO | Maximum tolerable loss of committed data; backup/PITR capability and measured recovery point | Store / data owner |
-| RTO | Restoration target including services, workers, verification and provider reconciliation; measured drill duration | Platform / data owner |
-| Backup frequency / PITR window | Configured schedule, recovery window, provider capability and restore results | Data owner |
-| Retention and encryption/key custody | Retention/legal-hold policy, protected storage, independent key custody and deletion controls | Privacy / security / data owner |
-| Restore drill cadence | Scheduled isolated exercises, responsible operator and retained results | Data owner |
-| Cross-region/offsite protection | Recovery location, residency constraints, threat coverage and provider capability | Platform / privacy owner |
+| Parameter                            | Required definition and evidence                                                                                  | Accountable role                |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| RPO                                  | Maximum tolerable loss of committed data; backup/PITR capability and measured recovery point                      | Store / data owner              |
+| RTO                                  | Restoration target including services, workers, verification and provider reconciliation; measured drill duration | Platform / data owner           |
+| Backup frequency / PITR window       | Configured schedule, recovery window, provider capability and restore results                                     | Data owner                      |
+| Retention and encryption/key custody | Retention/legal-hold policy, protected storage, independent key custody and deletion controls                     | Privacy / security / data owner |
+| Restore drill cadence                | Scheduled isolated exercises, responsible operator and retained results                                           | Data owner                      |
+| Cross-region/offsite protection      | Recovery location, residency constraints, threat coverage and provider capability                                 | Platform / privacy owner        |
 
 Production database selection must support encrypted managed backups and the approved recovery window; select PITR capability when required to meet that target. Verify actual service-tier capability, access separation and isolated restore before acceptance. Runtime replication is not a backup policy. Monitoring retains structured stdout/stderr with redaction and separate owned alerts for API availability, transaction integrity, financial/notification backlog and backup freshness; vendor selection belongs to environment provisioning.
 
@@ -928,15 +928,15 @@ payment, stock, refund or identity scope before its specific invariants and risk
 gaps need named business/security acceptance, customer-remediation disposition and continued quarantine where
 appropriate.
 
-| Event after backup cutoff | Evidence source | Recovery disposition |
-| --- | --- | --- |
-| Online provider collection or payout | Independent merchant/provider status, settlement and transaction references | Verify, deduplicate and reconcile through controlled domain services; never infer from browser/IPN alone |
-| Durable independent outbox/export/audit | Protected, independently retained record with provenance | Validate and replay only approved idempotent transitions |
-| COD cash collected after snapshot | Receipt, delivery proof, responsible operator, customer/order reference and independent till/settlement evidence where available | Reconcile to original order and exactly-once COD collection; uncertain amount remains blocked |
-| Manual cash/refund payout after snapshot | Approved disbursement evidence, beneficiary/order/reference and actual payout proof | Verify source capacity and completed amount; do not re-disburse when status is unknown |
-| Manual inventory change or account/policy decision | Independently retained audit and authorized operator evidence, if any | Reconstruct only when verifiable; otherwise preserve the gap and restrict affected action |
-| Externally delivered message with missing local event | Provider message ID/log, if accessible | Reconcile delivered status; avoid duplicate customer notification |
-| Provider attempt that may still be in flight | Approved provider status mechanism | Keep outcome uncertain; never automatically retry external money operations |
+| Event after backup cutoff                             | Evidence source                                                                                                                  | Recovery disposition                                                                                     |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Online provider collection or payout                  | Independent merchant/provider status, settlement and transaction references                                                      | Verify, deduplicate and reconcile through controlled domain services; never infer from browser/IPN alone |
+| Durable independent outbox/export/audit               | Protected, independently retained record with provenance                                                                         | Validate and replay only approved idempotent transitions                                                 |
+| COD cash collected after snapshot                     | Receipt, delivery proof, responsible operator, customer/order reference and independent till/settlement evidence where available | Reconcile to original order and exactly-once COD collection; uncertain amount remains blocked            |
+| Manual cash/refund payout after snapshot              | Approved disbursement evidence, beneficiary/order/reference and actual payout proof                                              | Verify source capacity and completed amount; do not re-disburse when status is unknown                   |
+| Manual inventory change or account/policy decision    | Independently retained audit and authorized operator evidence, if any                                                            | Reconstruct only when verifiable; otherwise preserve the gap and restrict affected action                |
+| Externally delivered message with missing local event | Provider message ID/log, if accessible                                                                                           | Reconcile delivered status; avoid duplicate customer notification                                        |
+| Provider attempt that may still be in flight          | Approved provider status mechanism                                                                                               | Keep outcome uncertain; never automatically retry external money operations                              |
 
 **Manual cash register:** Every post-cutoff COD or manual payout investigation records case ID, order ID,
 proof/reference, actor and approver, event time in UTC, amount in poisha, source evidence, matching outcome and
@@ -979,15 +979,15 @@ target; never overwrite a running production database.
 
 **Phase B — Single-writer, callback and traffic handoff**
 
-| Gate | Required evidence before new business writes |
-| --- | --- |
-| Writer fencing | Old API, worker, scheduler, migration and repair identities are stopped or credibly fenced from DB/provider effects; no stale generation can commit a protected write |
-| New generation | Deployment/worker generation or equivalent fencing mechanism is recorded, enforced at claim/write boundaries and shown effective in staging; unresolved design tracked by Operations §11.3 |
-| Jobs | At most one authorized job-claim owner per key; expired old leases cannot let old code resume side effects; cursor/backlog reconciled before scheduling resumes |
+| Gate                      | Required evidence before new business writes                                                                                                                                                                                 |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Writer fencing            | Old API, worker, scheduler, migration and repair identities are stopped or credibly fenced from DB/provider effects; no stale generation can commit a protected write                                                        |
+| New generation            | Deployment/worker generation or equivalent fencing mechanism is recorded, enforced at claim/write boundaries and shown effective in staging; unresolved design tracked by Operations §11.3                                   |
+| Jobs                      | At most one authorized job-claim owner per key; expired old leases cannot let old code resume side effects; cursor/backlog reconciled before scheduling resumes                                                              |
 | Provider callback ingress | Approved reachable endpoint for selected environment, old endpoint closure/draining plan, accepted-request cutoff and durable intake/reconciliation evidence; provider retries are not assumed reliable without confirmation |
-| Auth protection | Pre-restore potentially revoked or consumed credentials refused, fresh login/proof flow verified; no cache/old session bypass |
-| Business safety | All applicable receipts/refunds, stock, coupon and unknown-operation exceptions resolved or isolated; specific scopes remain blocked if unsafe |
-| Authorization | Named incident commander, security/data owner and authorized store/financial owner approve exact services/scopes and restoration timestamp |
+| Auth protection           | Pre-restore potentially revoked or consumed credentials refused, fresh login/proof flow verified; no cache/old session bypass                                                                                                |
+| Business safety           | All applicable receipts/refunds, stock, coupon and unknown-operation exceptions resolved or isolated; specific scopes remain blocked if unsafe                                                                               |
+| Authorization             | Named incident commander, security/data owner and authorized store/financial owner approve exact services/scopes and restoration timestamp                                                                                   |
 
 8. Route callbacks to the approved ingress only after its availability and deduplication are proven; reconcile
    notifications/settlements accepted between the old endpoint cutoff and new endpoint activation. If callback
@@ -1029,15 +1029,15 @@ linked receipts; `payments` provides projections. The system separately tracks *
 **unassigned/suspense** and COD confirmed collections. `refundAttempts` records provider/manual payout attempts; a
 pending request is **not** completed payout.
 
-| Financial state | Operational consequence |
-| --- | --- |
-| Redirect claims success but no independent verification | Keep uncertain; verify provider, never mark Paid |
-| Independently verified receipt but no safe order match | Retain unique unmatched `providerReceiptIntake`; quarantine and investigate |
-| Verified partial funds | Allocate only real verified amount; preserve remainder; no assumption of fully paid |
-| Verified excess or duplicate paid attempts | Preserve all receipts; only valid funding reaches order; excess is correction liability |
-| COD order accepted, money not collected | Order may have committed stock; COD collection remains unconfirmed |
-| Refund initiation/timeout/unknown | Keep source balance reserved, verify payout outcome; no new blindly generated payout ID |
-| Confirmed refund payout | Mark completed only with trusted evidence; separately report merchandise vs correction |
+| Financial state                                         | Operational consequence                                                                 |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Redirect claims success but no independent verification | Keep uncertain; verify provider, never mark Paid                                        |
+| Independently verified receipt but no safe order match  | Retain unique unmatched `providerReceiptIntake`; quarantine and investigate             |
+| Verified partial funds                                  | Allocate only real verified amount; preserve remainder; no assumption of fully paid     |
+| Verified excess or duplicate paid attempts              | Preserve all receipts; only valid funding reaches order; excess is correction liability |
+| COD order accepted, money not collected                 | Order may have committed stock; COD collection remains unconfirmed                      |
+| Refund initiation/timeout/unknown                       | Keep source balance reserved, verify payout outcome; no new blindly generated payout ID |
+| Confirmed refund payout                                 | Mark completed only with trusted evidence; separately report merchandise vs correction  |
 
 ### 12.2 Gateway receipt reconciliation (OP-FIN-01)
 
@@ -1122,17 +1122,17 @@ operator prepares the close; a separately authorized store/finance approver sign
 start/end instants expressed in `Asia/Dhaka`, converted to explicit UTC boundaries. No timing, tolerance or owner
 is assumed approved.
 
-| Step | Procedure | Expected control/evidence |
-| --- | --- | --- |
-| 1. Freeze reporting scope | Record `[start,end)` period, timezone, cutoff UTC, report/query version, orders/receipts/refunds source snapshots and source-extract timestamps | Reproducible report ID; never rewrite primary records to close books |
-| 2. Independent sources | Obtain provider-confirmed receipts, refunds/settlement exports where supported, verified COD receipts/delivery proof and local intake/collection/refund lists | Provider, COD and local evidence identified and accessible to reviewers |
-| 3. Orders and merchandise | Compute accepted non-cancelled order GMV by **order placement** period from immutable pre-discount merchandise snapshots; show price/coupon discounts, delivery and cancellations separately | GMV/sales view is **not** equated with collected cash or profit |
-| 4. Receipt intake and linking | For each independently verified provider receipt, confirm unique intake and classification as linked or unmatched; for linked receipts check merchandise + correction + unassigned allocations equal original receipt | Every verified receipt accounted for once; suspense disclosed separately |
-| 5. COD evidence | Include COD as paid only with authenticated actual collection proof. Compare delivery/receipt IDs to collection references and reject double counting | COD order acceptance or shipment alone never becomes cash |
-| 6. Refund controls | Compare per-source merchandise/correction `held` and `completed` to allocated capacity; separately total payout **confirmed within the selected completion period** | Pending/uncertain held liabilities reported, never subtracted as completed cash payout |
-| 7. Independent reconciliation | Compare source amount/count by provider/channel, merchant account, transaction ID and period against local intake, linked allocations, COD, refund status and settlement timing | Unmatched/partial/excess/late cases have case IDs; settled deposit timing distinguished from original collectedAt |
-| 8. Exception decisions | Classify missing provider/local receipt, pending merchant validation, excess, incorrect mapping, duplicate COD, payout unknown, time-boundary difference or genuine unreconstructable cash proof | No arbitrary balancing entry; named owner and review deadline on every unresolved exception |
-| 9. Close or hold | Reviewer confirms permitted variance thresholds **only if explicitly approved**, signs control totals, unresolved liabilities and restricted remediation. Material unaccepted difference blocks close | Signed, immutable report version, UTC time, source extracts and independent approval |
+| Step                          | Procedure                                                                                                                                                                                                             | Expected control/evidence                                                                                         |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| 1. Freeze reporting scope     | Record `[start,end)` period, timezone, cutoff UTC, report/query version, orders/receipts/refunds source snapshots and source-extract timestamps                                                                       | Reproducible report ID; never rewrite primary records to close books                                              |
+| 2. Independent sources        | Obtain provider-confirmed receipts, refunds/settlement exports where supported, verified COD receipts/delivery proof and local intake/collection/refund lists                                                         | Provider, COD and local evidence identified and accessible to reviewers                                           |
+| 3. Orders and merchandise     | Compute accepted non-cancelled order GMV by **order placement** period from immutable pre-discount merchandise snapshots; show price/coupon discounts, delivery and cancellations separately                          | GMV/sales view is **not** equated with collected cash or profit                                                   |
+| 4. Receipt intake and linking | For each independently verified provider receipt, confirm unique intake and classification as linked or unmatched; for linked receipts check merchandise + correction + unassigned allocations equal original receipt | Every verified receipt accounted for once; suspense disclosed separately                                          |
+| 5. COD evidence               | Include COD as paid only with authenticated actual collection proof. Compare delivery/receipt IDs to collection references and reject double counting                                                                 | COD order acceptance or shipment alone never becomes cash                                                         |
+| 6. Refund controls            | Compare per-source merchandise/correction `held` and `completed` to allocated capacity; separately total payout **confirmed within the selected completion period**                                                   | Pending/uncertain held liabilities reported, never subtracted as completed cash payout                            |
+| 7. Independent reconciliation | Compare source amount/count by provider/channel, merchant account, transaction ID and period against local intake, linked allocations, COD, refund status and settlement timing                                       | Unmatched/partial/excess/late cases have case IDs; settled deposit timing distinguished from original collectedAt |
+| 8. Exception decisions        | Classify missing provider/local receipt, pending merchant validation, excess, incorrect mapping, duplicate COD, payout unknown, time-boundary difference or genuine unreconstructable cash proof                      | No arbitrary balancing entry; named owner and review deadline on every unresolved exception                       |
+| 9. Close or hold              | Reviewer confirms permitted variance thresholds **only if explicitly approved**, signs control totals, unresolved liabilities and restricted remediation. Material unaccepted difference blocks close                 | Signed, immutable report version, UTC time, source extracts and independent approval                              |
 
 **Required control totals (integer poisha; run separately for each relevant receipt/provider and period):**
 
@@ -1166,16 +1166,16 @@ refundable excess. Log merchant escalation and avoid promising timelines without
 
 ### 13.1 Access governance
 
-| Principal / role | Minimum scope | Control and evidence |
-| --- | --- | --- |
+| Principal / role            | Minimum scope                                                     | Control and evidence                                                                     |
+| --------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | Store primary administrator | Approved storefront operations via backend, not blanket DB access | Privately provisioned; ownership verified; sessions revocable; sensitive actions audited |
-| API runtime identity | Required collections/service providers only | Narrow-scoped secret; noninteractive; rotation/runbook |
-| Migration/operator identity | Temporary schema/index privilege | Separate approval, time limit, recorded migration |
-| Backup/restore operator | Encrypted backup target and isolated restore permissions | Restore approval and export audit; least privilege |
-| Worker identity | Approved backend domain operations and durable job state | No public control endpoint; stable idempotency keys |
-| Payment merchant operator | Provider console/status/refund procedures | Named merchant ownership; dual review of high-risk actions where feasible |
-| CI/CD identity | Build/artifact deployment to intended environment | No live customer data, scoped token, change trace |
-| Support personnel | Only assigned complaint/order support scope | Role/resource checks and redacted access; do not invent new admin tier in product |
+| API runtime identity        | Required collections/service providers only                       | Narrow-scoped secret; noninteractive; rotation/runbook                                   |
+| Migration/operator identity | Temporary schema/index privilege                                  | Separate approval, time limit, recorded migration                                        |
+| Backup/restore operator     | Encrypted backup target and isolated restore permissions          | Restore approval and export audit; least privilege                                       |
+| Worker identity             | Approved backend domain operations and durable job state          | No public control endpoint; stable idempotency keys                                      |
+| Payment merchant operator   | Provider console/status/refund procedures                         | Named merchant ownership; dual review of high-risk actions where feasible                |
+| CI/CD identity              | Build/artifact deployment to intended environment                 | No live customer data, scoped token, change trace                                        |
+| Support personnel           | Only assigned complaint/order support scope                       | Role/resource checks and redacted access; do not invent new admin tier in product        |
 
 Actual team members and access groups must be assigned in a protected operator inventory. The PRD initially has
 **one primary admin role**; an infrastructure/incident responsibility matrix does **not** create additional in-app
@@ -1354,14 +1354,14 @@ numeric targets. `TESTING.md` §13 owns representative workload configuration an
 server-side rendering cost, Next.js cache behavior, image payloads, product-search latency, MongoDB query/index
 latency, API tail latency, transaction retries, connection pools, worker lag and provider verification timeouts.
 
-| Workload | Operational lever | Safety boundary |
-| --- | --- | --- |
-| Public browsing/search | Paginated indexed queries, bounded request-time SSR, optimized media | Follow Architecture §5.1 no-store policy; checkout must reprice and recheck stock |
-| Cart/account/checkout | API scaling within DB/provider capacity, no-store private caching | Shared edge caches must not contain sessions, PII or order status |
-| Transaction-heavy checkout | Idempotent retries, DB contention metrics, bounded transactional work | Never keep DB transaction open during gateway call |
-| Inventory/job bursts | Batch limits, durable leases and scaled worker capacity | Prevent double stock release, coupon redemption or payout |
-| Product media | Optimized Cloudinary delivery/allowed transformations | Sensitive claim uploads remain private |
-| Payments/refunds | Provider-aware retry and verification, operator exception backlog | Do not turn provider timeout into success/failure or duplicate transfers |
+| Workload                   | Operational lever                                                     | Safety boundary                                                                   |
+| -------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Public browsing/search     | Paginated indexed queries, bounded request-time SSR, optimized media  | Follow Architecture §5.1 no-store policy; checkout must reprice and recheck stock |
+| Cart/account/checkout      | API scaling within DB/provider capacity, no-store private caching     | Shared edge caches must not contain sessions, PII or order status                 |
+| Transaction-heavy checkout | Idempotent retries, DB contention metrics, bounded transactional work | Never keep DB transaction open during gateway call                                |
+| Inventory/job bursts       | Batch limits, durable leases and scaled worker capacity               | Prevent double stock release, coupon redemption or payout                         |
+| Product media              | Optimized Cloudinary delivery/allowed transformations                 | Sensitive claim uploads remain private                                            |
+| Payments/refunds           | Provider-aware retry and verification, operator exception backlog     | Do not turn provider timeout into success/failure or duplicate transfers          |
 
 ### 14.2 Capacity review procedure
 
@@ -1384,14 +1384,14 @@ governed by PRD and verified law/published policies, not infrastructure metrics.
 
 ### 15.1 Operational routine matrix
 
-| Timing | Routine | Evidence/stop condition |
-| --- | --- | --- |
-| On each deployment | Health/origin, migrations/indexes, worker backlog, financial anomaly sample, safe smoke | Release checklist; block on integrity failure |
-| On each approved reconciliation cycle | Payment intake, pending refunds, COD proof, inventory/coupon counters | Exceptions signed or escalated, never hidden |
-| On approved backup schedule | Backup status, encryption/access, restore point and lag | Failed protection triggers incident/owner notification |
-| On approved review cadence | Access/credential inventory, provider settings, TLS expiry, privacy retention | Unauthorized principal or expiring critical control escalated |
-| On approved maintenance cadence | Dependency/OS patches, index/query analysis, cost review, provider contract updates | Change record and regression evidence |
-| During handover | Walk through deploy, incident, restore and financial runbooks | Named recipient demonstrates capability; no credentials in docs |
+| Timing                                | Routine                                                                                 | Evidence/stop condition                                         |
+| ------------------------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| On each deployment                    | Health/origin, migrations/indexes, worker backlog, financial anomaly sample, safe smoke | Release checklist; block on integrity failure                   |
+| On each approved reconciliation cycle | Payment intake, pending refunds, COD proof, inventory/coupon counters                   | Exceptions signed or escalated, never hidden                    |
+| On approved backup schedule           | Backup status, encryption/access, restore point and lag                                 | Failed protection triggers incident/owner notification          |
+| On approved review cadence            | Access/credential inventory, provider settings, TLS expiry, privacy retention           | Unauthorized principal or expiring critical control escalated   |
+| On approved maintenance cadence       | Dependency/OS patches, index/query analysis, cost review, provider contract updates     | Change record and regression evidence                           |
+| During handover                       | Walk through deploy, incident, restore and financial runbooks                           | Named recipient demonstrates capability; no credentials in docs |
 
 An entry in this table establishes **expected work**, not its execution cadence. Agree owners, frequencies and
 alert policy in Appendix C before M7.
@@ -1432,17 +1432,17 @@ provider retry is absent.
 
 ### 15.3 Routine failure quick-reference
 
-| Symptom | Initial diagnostic | Safe first action | Escalation |
-| --- | --- | --- | --- |
-| Storefront blank or outdated | Next.js/static host, CDN, artifact/cache invalidation | Validate deployed assets/readiness; revert compatible build | OP-REL-02 |
-| Admin login fails after domain change | Cookie domain, Origin/CORS, CSRF bootstrap | Confirm expected allowlist; never disable auth globally | OP-SEC-01 |
-| Checkout accepts duplicate attempt | Checkout intent/unique index, retry headers, worker overlap | Restrict state-changing endpoint, preserve IDs | OP-INC-01 / DB review |
-| Out-of-stock mismatch | Inventory counters/movements/reservations | Suspend affected SKU purchases; reconcile facts | OP-DB-01 / FIN if paid |
-| Online success only in browser | Callback and server-side provider verification | Keep pending, reconcile provider | OP-FIN-01 |
-| Refund stuck after timeout | Payout attempt, unique merchant ID, source hold | Do not issue new payout; verify provider | OP-FIN-02 |
-| Notification backlog | `notifications` status/eventKey, provider errors | Retry bounded worker after cause checked | OP-JOB-01 |
-| Old backup appears only recovery option | Backup metadata, real event cutoff and provider settlement | Isolated restore and gap analysis | OP-DR-01 |
-| Complaint deadline uncertain | Approved current legal/published response policy | Escalate owner/legal rather than guessing | §16.2 |
+| Symptom                                 | Initial diagnostic                                          | Safe first action                                           | Escalation             |
+| --------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------- | ---------------------- |
+| Storefront blank or outdated            | Next.js/static host, CDN, artifact/cache invalidation       | Validate deployed assets/readiness; revert compatible build | OP-REL-02              |
+| Admin login fails after domain change   | Cookie domain, Origin/CORS, CSRF bootstrap                  | Confirm expected allowlist; never disable auth globally     | OP-SEC-01              |
+| Checkout accepts duplicate attempt      | Checkout intent/unique index, retry headers, worker overlap | Restrict state-changing endpoint, preserve IDs              | OP-INC-01 / DB review  |
+| Out-of-stock mismatch                   | Inventory counters/movements/reservations                   | Suspend affected SKU purchases; reconcile facts             | OP-DB-01 / FIN if paid |
+| Online success only in browser          | Callback and server-side provider verification              | Keep pending, reconcile provider                            | OP-FIN-01              |
+| Refund stuck after timeout              | Payout attempt, unique merchant ID, source hold             | Do not issue new payout; verify provider                    | OP-FIN-02              |
+| Notification backlog                    | `notifications` status/eventKey, provider errors            | Retry bounded worker after cause checked                    | OP-JOB-01              |
+| Old backup appears only recovery option | Backup metadata, real event cutoff and provider settlement  | Isolated restore and gap analysis                           | OP-DR-01               |
+| Complaint deadline uncertain            | Approved current legal/published response policy            | Escalate owner/legal rather than guessing                   | §16.2                  |
 
 ### 15.4 Decommissioning and disposal
 
@@ -1455,17 +1455,17 @@ include reconciliation evidence.
 
 ### 16.1 Store operator responsibilities
 
-| Area | Operator action | Record/verification |
-| --- | --- | --- |
-| Catalog and stock | Maintain actual SKUs, media, pricing, availability and audited adjustments | Product/variant revisions and inventory movements |
-| Delivery | Maintain zones/charges, effective versions, manual shipment status and exceptions | Snapshot unchanged on existing orders; deadline anchored to actual confirmation |
-| COD | Record real verified collection or noncollection | Audit/receipt; never infer collected from order acceptance |
-| Customer complaints | Record issue, status, required response and resolution | Access-scoped `complaints`, evidence of response within *approved* applicable period |
-| Returns and shortages | Apply correct eligibility, inspection where physically required and quantity controls | Claim units and inspection/decision evidence; shortage requires no physical receipt |
-| Refunds | Approve source-funded amounts and observe payout states | Immutable provider/manual evidence and balance checks |
-| Reviews | Verified-purchaser moderation and safe publication | Moderation history; no fabricated purchases |
-| Store settings/policies | Version, approve, publish and archive content | Effective immutable policy version and sign-off |
-| Reports | Review date basis, cash-flow vs sales, liabilities/exceptions | Reconciliation without calling linked cash flow “profit” |
+| Area                    | Operator action                                                                       | Record/verification                                                                  |
+| ----------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Catalog and stock       | Maintain actual SKUs, media, pricing, availability and audited adjustments            | Product/variant revisions and inventory movements                                    |
+| Delivery                | Maintain zones/charges, effective versions, manual shipment status and exceptions     | Snapshot unchanged on existing orders; deadline anchored to actual confirmation      |
+| COD                     | Record real verified collection or noncollection                                      | Audit/receipt; never infer collected from order acceptance                           |
+| Customer complaints     | Record issue, status, required response and resolution                                | Access-scoped `complaints`, evidence of response within *approved* applicable period |
+| Returns and shortages   | Apply correct eligibility, inspection where physically required and quantity controls | Claim units and inspection/decision evidence; shortage requires no physical receipt  |
+| Refunds                 | Approve source-funded amounts and observe payout states                               | Immutable provider/manual evidence and balance checks                                |
+| Reviews                 | Verified-purchaser moderation and safe publication                                    | Moderation history; no fabricated purchases                                          |
+| Store settings/policies | Version, approve, publish and archive content                                         | Effective immutable policy version and sign-off                                      |
+| Reports                 | Review date basis, cash-flow vs sales, liabilities/exceptions                         | Reconciliation without calling linked cash flow “profit”                             |
 
 ### 16.2 Policy and legal publishing gate
 
@@ -1479,15 +1479,15 @@ rewrite an accepted order.
 
 ### 16.3 External-service readiness matrix
 
-| Dependency | External proof required | Failure or owner response |
-| --- | --- | --- |
-| SSLCOMMERZ | Live merchant ownership, bKash/Nagad/Rocket activation, transaction validation, limits, refund capability, callback registration | Hide inactive channels; block unrevised baseline launch; reconcile uncertainty |
-| Email sender | Verified domain/sender, service account ownership, rate/delivery failure handling | Retry intent; escalate undelivered transactional messages |
-| Cloudinary | Backend key ownership, product/public asset settings, private evidence policy, quota and deletion | Private asset policy first; never expose sensitive return attachments |
-| Hosting/DNS/TLS | Ownership, routing, renewal, incident escalation, billing and export rights | Avoid unmanaged expiring keys/domains; ensure rollback feasibility |
-| MongoDB/backup | Replica set/transaction support, index privileges, protected backups, tested restore | Stop unsafe financial/inventory writes on broken invariants |
-| Delivery/fulfillment | Approved operating arrangements and ability to update manual status | No unsupported courier API/GPS claims |
-| Policies/support | Actual business identity, contact, terms and applicable legal sign-off | No placeholder store or response-time claims on live site |
+| Dependency           | External proof required                                                                                                          | Failure or owner response                                                      |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| SSLCOMMERZ           | Live merchant ownership, bKash/Nagad/Rocket activation, transaction validation, limits, refund capability, callback registration | Hide inactive channels; block unrevised baseline launch; reconcile uncertainty |
+| Email sender         | Verified domain/sender, service account ownership, rate/delivery failure handling                                                | Retry intent; escalate undelivered transactional messages                      |
+| Cloudinary           | Backend key ownership, product/public asset settings, private evidence policy, quota and deletion                                | Private asset policy first; never expose sensitive return attachments          |
+| Hosting/DNS/TLS      | Ownership, routing, renewal, incident escalation, billing and export rights                                                      | Avoid unmanaged expiring keys/domains; ensure rollback feasibility             |
+| MongoDB/backup       | Replica set/transaction support, index privileges, protected backups, tested restore                                             | Stop unsafe financial/inventory writes on broken invariants                    |
+| Delivery/fulfillment | Approved operating arrangements and ability to update manual status                                                              | No unsupported courier API/GPS claims                                          |
+| Policies/support     | Actual business identity, contact, terms and applicable legal sign-off                                                           | No placeholder store or response-time claims on live site                      |
 
 #### Controlled media operation and external gate
 
@@ -1545,18 +1545,18 @@ private claim attachment is owned by P08-012. No new endpoint or cleanup schedul
 by engineer/QA; final handover accepted by the authorized store owner. **Fixture:** Sanitized/synthetic catalog,
 users, orders, payment/return cases and test gateway mode. No live customer data or unapproved payouts.
 
-| Step / actor | Fixture and operator action | Pass criteria and evidence |
-| --- | --- | --- |
-| 1. Administrator | Create/edit product, variant and category; make valid stock adjustment | Public visibility and stock movement/revision match API/DB; unauthorized modification rejected |
-| 2. Administrator | Supersede/deactivate delivery charge; confirm existing order snapshot | New eligible checkout sees correct effective rule; historic order keeps immutable charge/deadline basis |
-| 3. Store operator | Process an approved COD example, then try duplicate marking | Status changes only on verified collection proof; duplicate is rejected or idempotent |
-| 4. Merchant/finance operator | Investigate partial/excess, unmatched or risk-held sandbox receipt | Receipt retained, class totals right, no premature fulfillment; operator can identify escalation |
-| 5. Returns operator | Inspect physical return; resolve shortage without physical inspection; attempt repeat claim | Correct eligible quantities and claim rules; no duplicate unit refund/return |
-| 6. Refund operator | Observe pending/unknown sandbox payout, resolve verified completion | Source capacity stays reserved during uncertainty; no second payout identity |
-| 7. Store administrator | Moderate verified-purchase review; manage complaint to resolution | Audit/history and scoped access correct; customer sees approved result |
-| 8. Authorized policy owner | Create, approve and publish policy version; reopen historic order | Public active version changes at effective time; old order snapshot unchanged |
-| 9. Operator + reviewer | Read dashboard and finance exception report | Cash flow, sales, unmatched funds and held refunds not confused with profit |
-| 10. Observer | Attempt out-of-role action, review incident/audit evidence and recovery drill checklist | Access denied, evidence recorded; operator identifies escalation and stop conditions |
+| Step / actor                 | Fixture and operator action                                                                 | Pass criteria and evidence                                                                              |
+| ---------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 1. Administrator             | Create/edit product, variant and category; make valid stock adjustment                      | Public visibility and stock movement/revision match API/DB; unauthorized modification rejected          |
+| 2. Administrator             | Supersede/deactivate delivery charge; confirm existing order snapshot                       | New eligible checkout sees correct effective rule; historic order keeps immutable charge/deadline basis |
+| 3. Store operator            | Process an approved COD example, then try duplicate marking                                 | Status changes only on verified collection proof; duplicate is rejected or idempotent                   |
+| 4. Merchant/finance operator | Investigate partial/excess, unmatched or risk-held sandbox receipt                          | Receipt retained, class totals right, no premature fulfillment; operator can identify escalation        |
+| 5. Returns operator          | Inspect physical return; resolve shortage without physical inspection; attempt repeat claim | Correct eligible quantities and claim rules; no duplicate unit refund/return                            |
+| 6. Refund operator           | Observe pending/unknown sandbox payout, resolve verified completion                         | Source capacity stays reserved during uncertainty; no second payout identity                            |
+| 7. Store administrator       | Moderate verified-purchase review; manage complaint to resolution                           | Audit/history and scoped access correct; customer sees approved result                                  |
+| 8. Authorized policy owner   | Create, approve and publish policy version; reopen historic order                           | Public active version changes at effective time; old order snapshot unchanged                           |
+| 9. Operator + reviewer       | Read dashboard and finance exception report                                                 | Cash flow, sales, unmatched funds and held refunds not confused with profit                             |
+| 10. Observer                 | Attempt out-of-role action, review incident/audit evidence and recovery drill checklist     | Access denied, evidence recorded; operator identifies escalation and stop conditions                    |
 
 **Completion:** Capture fixture ID, actor role, expected/actual status, sanitized screenshot/API/DB evidence, open
 blockers and owner acknowledgement for each row. Any missing/failed safety control blocks walkthrough acceptance
@@ -1567,15 +1567,15 @@ remain separate M7 decisions.
 
 ### 17.1 Acceptance gate matrix
 
-| Gate | Operational acceptance | Required evidence |
-| --- | --- | --- |
-| M1 — Foundation | Baseline documents, source precedence, external readiness register | Reviewed baseline and dependency records |
-| M3 — COD Commerce | Transactional inventory/checkout, COD record and retries, delivery rules | Transaction, replay and COD collection assertions |
-| M4 — Payment Ready | Provider sandbox checks, IPN/risk/late/partial/excess reconciliation | Independent provider verification and reconciliation cases |
-| M5 — After-Sales Ready | Source-funded partial/full refund and unknown payout recovery | Refund sandbox and uncertainty-recovery results |
-| M6 — Release Candidate | Full staging integration, security/NFR/regression, restoration rehearsal | Integrated candidate and restore-drill records |
-| **M7 — Production Ready** | Live domain/merchant/policy, monitoring, backup, recovery, safe production smoke and launch approval | Named production approval with §17.2 evidence |
-| **M8 — Handover Accepted** | Reproducible runbooks, real provider/credential ownership, accepted limitations/support | Receiving operator and owner sign-off under §17.3 |
+| Gate                       | Operational acceptance                                                                               | Required evidence                                          |
+| -------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| M1 — Foundation            | Baseline documents, source precedence, external readiness register                                   | Reviewed baseline and dependency records                   |
+| M3 — COD Commerce          | Transactional inventory/checkout, COD record and retries, delivery rules                             | Transaction, replay and COD collection assertions          |
+| M4 — Payment Ready         | Provider sandbox checks, IPN/risk/late/partial/excess reconciliation                                 | Independent provider verification and reconciliation cases |
+| M5 — After-Sales Ready     | Source-funded partial/full refund and unknown payout recovery                                        | Refund sandbox and uncertainty-recovery results            |
+| M6 — Release Candidate     | Full staging integration, security/NFR/regression, restoration rehearsal                             | Integrated candidate and restore-drill records             |
+| **M7 — Production Ready**  | Live domain/merchant/policy, monitoring, backup, recovery, safe production smoke and launch approval | Named production approval with §17.2 evidence              |
+| **M8 — Handover Accepted** | Reproducible runbooks, real provider/credential ownership, accepted limitations/support              | Receiving operator and owner sign-off under §17.3          |
 
 M2 and the other phase milestones follow Implementation Plan §11; this table emphasizes operating evidence
 and does not redefine or waive any gate. Tasks records actual acceptance status and evidence links.
@@ -1622,16 +1622,16 @@ evidence; mocks and sandbox logs do not prove live activation. Record each check
 
 ### 18.1 Responsibility matrix
 
-| Decision/activity | Accountable role | Execution/support |
-| --- | --- | --- |
-| Launch and published commerce policies | Store owner / authorized release approver | Product, legal/compliance, support |
-| Deploy and rollback | Release owner | Infrastructure, backend, QA |
-| Database, backup and restore | Infrastructure/data owner | Backend and security |
-| Payment operations and refund approval | Merchant/finance owner | Backend support, provider |
-| Access and security incidents | Security/owner designate | Infrastructure and backend |
-| Content, catalog, delivery, complaints | Store administrator | Support and fulfillment |
-| Testing sign-off | QA/test approver | Backend, frontend, provider representative |
-| Handover and ongoing support | Store owner and receiving operator | Engineering / maintenance party |
+| Decision/activity                      | Accountable role                          | Execution/support                          |
+| -------------------------------------- | ----------------------------------------- | ------------------------------------------ |
+| Launch and published commerce policies | Store owner / authorized release approver | Product, legal/compliance, support         |
+| Deploy and rollback                    | Release owner                             | Infrastructure, backend, QA                |
+| Database, backup and restore           | Infrastructure/data owner                 | Backend and security                       |
+| Payment operations and refund approval | Merchant/finance owner                    | Backend support, provider                  |
+| Access and security incidents          | Security/owner designate                  | Infrastructure and backend                 |
+| Content, catalog, delivery, complaints | Store administrator                       | Support and fulfillment                    |
+| Testing sign-off                       | QA/test approver                          | Backend, frontend, provider representative |
+| Handover and ongoing support           | Store owner and receiving operator        | Engineering / maintenance party            |
 
 ### 18.2 Change-control procedure
 
@@ -1660,38 +1660,38 @@ Review the inventory after infrastructure, merchant, security or policy changes 
 
 ### A.1 Runbook catalog
 
-| ID | Runbook | Section | Trigger | Required evidence |
-| --- | --- | --- | --- | --- |
-| OP-PROV-01 | Infrastructure provisioning | §4.1 | New/replaced environment | Resource inventory, capability checks, owner approval |
-| OP-REL-01 | Production deployment | §5.3 | Accepted candidate release | Artifact, CI/staging, migration, live smoke, approval |
-| OP-REL-02 | Binary/config rollback | §6.2 | Unsafe deployed regression | Compatibility decision, before/after checks, reconciliation |
-| OP-DB-01 | Index/migration | §7.2 | Schema/index change or drift | Preflight duplicates, applied manifests, verification |
-| OP-JOB-01 | Worker restart | §8.2 | Job stall/overlap/restart | Lease/cursor and no-duplicate evidence |
-| OP-INC-01 | Incident response | §10.3 | Outage, integrity or security impact | Incident timeline, containment, sign-off |
-| OP-DR-01 | Backup restore | §11.3 | Disaster/drill | Backup ID, isolated restore, reconciliation gaps |
-| OP-FIN-01 | Payment reconciliation | §12.2 | Gateway/callback discrepancy | Independent verification, unique receipt and case closure |
-| OP-FIN-02 | Refund uncertainty | §12.3 | Pending/unknown payout | Source balance and provider-status evidence |
-| OP-FIN-03 | Financial close/COD | §12.4 | Approved close/collection audit | Provider vs linked/unmatched/COD/refund totals |
-| OP-SEC-01 | Credential rotation/compromise | §13.2 | Leak, expiry, staff change | Rotation/revocation, dependent-service checks |
-| OP-PRIV-01 | Personal-data request and retention | §13.5 | Identity-verified access/correction/erasure or legal hold | Scope/retention basis, selective action, backup effect and review |
-| OP-MNT-01 | Customer-impacting maintenance | §15.2 | Planned work | Approval, communication, state/replay checks |
-| OP-STORE-01 | Operator walkthrough | §16.4 | Prelaunch/handover | Store workflows, policy/provider exceptions, sign-off |
+| ID          | Runbook                             | Section | Trigger                                                   | Required evidence                                                 |
+| ----------- | ----------------------------------- | ------- | --------------------------------------------------------- | ----------------------------------------------------------------- |
+| OP-PROV-01  | Infrastructure provisioning         | §4.1    | New/replaced environment                                  | Resource inventory, capability checks, owner approval             |
+| OP-REL-01   | Production deployment               | §5.3    | Accepted candidate release                                | Artifact, CI/staging, migration, live smoke, approval             |
+| OP-REL-02   | Binary/config rollback              | §6.2    | Unsafe deployed regression                                | Compatibility decision, before/after checks, reconciliation       |
+| OP-DB-01    | Index/migration                     | §7.2    | Schema/index change or drift                              | Preflight duplicates, applied manifests, verification             |
+| OP-JOB-01   | Worker restart                      | §8.2    | Job stall/overlap/restart                                 | Lease/cursor and no-duplicate evidence                            |
+| OP-INC-01   | Incident response                   | §10.3   | Outage, integrity or security impact                      | Incident timeline, containment, sign-off                          |
+| OP-DR-01    | Backup restore                      | §11.3   | Disaster/drill                                            | Backup ID, isolated restore, reconciliation gaps                  |
+| OP-FIN-01   | Payment reconciliation              | §12.2   | Gateway/callback discrepancy                              | Independent verification, unique receipt and case closure         |
+| OP-FIN-02   | Refund uncertainty                  | §12.3   | Pending/unknown payout                                    | Source balance and provider-status evidence                       |
+| OP-FIN-03   | Financial close/COD                 | §12.4   | Approved close/collection audit                           | Provider vs linked/unmatched/COD/refund totals                    |
+| OP-SEC-01   | Credential rotation/compromise      | §13.2   | Leak, expiry, staff change                                | Rotation/revocation, dependent-service checks                     |
+| OP-PRIV-01  | Personal-data request and retention | §13.5   | Identity-verified access/correction/erasure or legal hold | Scope/retention basis, selective action, backup effect and review |
+| OP-MNT-01   | Customer-impacting maintenance      | §15.2   | Planned work                                              | Approval, communication, state/replay checks                      |
+| OP-STORE-01 | Operator walkthrough                | §16.4   | Prelaunch/handover                                        | Store workflows, policy/provider exceptions, sign-off             |
 
 ### A.2 Standard execution record
 
 Each runbook execution must record:
 
-| Field | Requirement |
-| --- | --- |
-| Execution ID, environment, incident/change ID | Stable trace and date/time |
-| Operator and approver | Named, verified authorization (no invented individuals) |
-| Exact artifact/provider/version | Deployed release or queried live/sandbox endpoint |
-| Trigger and preconditions | Why operation started and relevant state |
-| Steps and observations | Actual timestamps, safe command or console action, sanitized output |
-| Business invariants | Auth, stock, coupon, receipt/refund and audit checks applicable |
-| Failure/rollback path | What happened when checks failed, containment and escalation |
-| Final disposition | Passed / Failed / Blocked / Partially Recovered + outstanding cases |
-| Evidence/retention reference | Restricted link or ticket; no plaintext credentials/PII |
+| Field                                         | Requirement                                                         |
+| --------------------------------------------- | ------------------------------------------------------------------- |
+| Execution ID, environment, incident/change ID | Stable trace and date/time                                          |
+| Operator and approver                         | Named, verified authorization (no invented individuals)             |
+| Exact artifact/provider/version               | Deployed release or queried live/sandbox endpoint                   |
+| Trigger and preconditions                     | Why operation started and relevant state                            |
+| Steps and observations                        | Actual timestamps, safe command or console action, sanitized output |
+| Business invariants                           | Auth, stock, coupon, receipt/refund and audit checks applicable     |
+| Failure/rollback path                         | What happened when checks failed, containment and escalation        |
+| Final disposition                             | Passed / Failed / Blocked / Partially Recovered + outstanding cases |
+| Evidence/retention reference                  | Restricted link or ticket; no plaintext credentials/PII             |
 
 ---
 
@@ -1708,38 +1708,38 @@ adapter/runtime keys with their owning implementation and validation, and comple
 categories below before deploying the corresponding service. This inventory includes planned capabilities;
 the template and runtime validator determine which exact keys are currently supported.
 
-| Configuration category | Identifiers / contents | Exposure / validation |
-| --- | --- | --- |
-| Runtime | `NODE_ENV`, `APP_ENV`, `PORT`, `API_BIND_HOST`, `RELEASE_ID` | Server runtime, allowlisted env and valid port |
-| Backend URL/origins | `API_PUBLIC_ORIGIN`, `STOREFRONT_ORIGIN`, `ADMIN_ORIGIN`, `CORS_ALLOWED_ORIGINS` | Server, exact HTTPS origins in prod; avoid wildcard credentials |
-| MongoDB | `MONGODB_URI`, `MONGODB_DB_NAME`, optional TLS/CA path | **Secret** URI; replica set and transaction capability checks |
-| Operational monitor | `HEALTH_MONITOR_TOKEN` | **Secret**; separate 32-byte hex Bearer credential for restricted readiness only; rotate by protected config update/restart; never send in URLs/logs/browser bundles |
-| Sessions | `SESSION_SECRET`, CUSTOMER_SESSION_TTL_SECONDS, ADMIN_SESSION_TTL_SECONDS, SESSION_COOKIE_SAME_SITE | SESSION_SECRET is **secret**; separate kind/domain HMAC digests; lifetimes/SameSite explicitly approved and validated at session composition; no fallback |
-| CSRF and guest access | CSRF signing secret/context and one-time guest-token secret if implemented | **Secret**; expiry, rotation, no log/public bundle |
-| Proof delivery (API §16.3) | AUTH_PROOF_ACTIVE_KEY_VERSION / AUTH_PROOF_KEYS_JSON injected from the protected key store | Encryption keys outside MongoDB/backups; worker-only decrypt, AEAD nonce/tamper checks, no plaintext/outbox envelope; fail closed if unavailable |
-| Quote/upload lifetimes | CHECKOUT_QUOTE_TTL_SECONDS, MEDIA_TEMP_TTL_SECONDS | Positive bounded server configuration approved by owners; enforce expiry, no runtime fallback guessed here |
-| Refund business calendar | Approved versioned calendar/holiday and policy-rule references | Compute target from actual approvedAt; shorter applicable basis wins; under_review without guessed date |
-| Gateway | `SSLCOMMERZ_MODE`, merchant/store identity, store password, validation URLs/callback URLs | Mode-specific **secrets**, enabled channels approved by merchant |
-| Refund settings | Provider-supported refund mechanism, merchant identity, limits and feature enablement | Server-only; do not hardcode unsupported refund API paths |
-| Email | Email provider API key, verified sender/domain, message retry policy | **Secret**; nonproduction/live sender separation |
-| Media | Cloudinary cloud/account, API key/secret, permitted folder/privacy config | **Secret** for upload; server-only signature material |
-| Worker | Job enabling, scheduled cadence, batch/retry/lease settings | Backend/worker; bounded, monitored; approve timing |
-| Monitoring | Telemetry endpoint/token, service tags, log retention and alerts | Collector token secret, redact sensitive records |
-| Backup | Managed backup policy IDs, encrypted key references, restore principal | **Secret**/restricted; never store raw backup URI/keys in docs |
-| UI public | Public site origin/asset configuration only | Allowed `NEXT_PUBLIC_*` / `VITE_*` values **never contain credentials** |
+| Configuration category     | Identifiers / contents                                                                              | Exposure / validation                                                                                                                                                |
+| -------------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Runtime                    | `NODE_ENV`, `APP_ENV`, `PORT`, `API_BIND_HOST`, `RELEASE_ID`                                        | Server runtime, allowlisted env and valid port                                                                                                                       |
+| Backend URL/origins        | `API_PUBLIC_ORIGIN`, `STOREFRONT_ORIGIN`, `ADMIN_ORIGIN`, `CORS_ALLOWED_ORIGINS`                    | Server, exact HTTPS origins in prod; avoid wildcard credentials                                                                                                      |
+| MongoDB                    | `MONGODB_URI`, `MONGODB_DB_NAME`, optional TLS/CA path                                              | **Secret** URI; replica set and transaction capability checks                                                                                                        |
+| Operational monitor        | `HEALTH_MONITOR_TOKEN`                                                                              | **Secret**; separate 32-byte hex Bearer credential for restricted readiness only; rotate by protected config update/restart; never send in URLs/logs/browser bundles |
+| Sessions                   | `SESSION_SECRET`, CUSTOMER_SESSION_TTL_SECONDS, ADMIN_SESSION_TTL_SECONDS, SESSION_COOKIE_SAME_SITE | SESSION_SECRET is **secret**; separate kind/domain HMAC digests; lifetimes/SameSite explicitly approved and validated at session composition; no fallback            |
+| CSRF and guest access      | CSRF signing secret/context and one-time guest-token secret if implemented                          | **Secret**; expiry, rotation, no log/public bundle                                                                                                                   |
+| Proof delivery (API §16.3) | AUTH_PROOF_ACTIVE_KEY_VERSION / AUTH_PROOF_KEYS_JSON injected from the protected key store          | Encryption keys outside MongoDB/backups; worker-only decrypt, AEAD nonce/tamper checks, no plaintext/outbox envelope; fail closed if unavailable                     |
+| Quote/upload lifetimes     | CHECKOUT_QUOTE_TTL_SECONDS, MEDIA_TEMP_TTL_SECONDS                                                  | Positive bounded server configuration approved by owners; enforce expiry, no runtime fallback guessed here                                                           |
+| Refund business calendar   | Approved versioned calendar/holiday and policy-rule references                                      | Compute target from actual approvedAt; shorter applicable basis wins; under_review without guessed date                                                              |
+| Gateway                    | `SSLCOMMERZ_MODE`, merchant/store identity, store password, validation URLs/callback URLs           | Mode-specific **secrets**, enabled channels approved by merchant                                                                                                     |
+| Refund settings            | Provider-supported refund mechanism, merchant identity, limits and feature enablement               | Server-only; do not hardcode unsupported refund API paths                                                                                                            |
+| Email                      | Email provider API key, verified sender/domain, message retry policy                                | **Secret**; nonproduction/live sender separation                                                                                                                     |
+| Media                      | Cloudinary cloud/account, API key/secret, permitted folder/privacy config                           | **Secret** for upload; server-only signature material                                                                                                                |
+| Worker                     | Job enabling, scheduled cadence, batch/retry/lease settings                                         | Backend/worker; bounded, monitored; approve timing                                                                                                                   |
+| Monitoring                 | Telemetry endpoint/token, service tags, log retention and alerts                                    | Collector token secret, redact sensitive records                                                                                                                     |
+| Backup                     | Managed backup policy IDs, encrypted key references, restore principal                              | **Secret**/restricted; never store raw backup URI/keys in docs                                                                                                       |
+| UI public                  | Public site origin/asset configuration only                                                         | Allowed `NEXT_PUBLIC_*` / `VITE_*` values **never contain credentials**                                                                                              |
 
 **Per-key environment registry:** Maintain one record per deployed key with the following fields.
 
-| Field | Required content |
-| --- | --- |
-| Exact key and environment | Runtime key, consuming service and local/CI/staging/production scope |
-| Required conditions | Startup requirement and dependent capability |
-| Exposure | Secret, restricted server configuration or public configuration |
-| Owner | Accountable role and named operating contact |
-| Source reference | Secret-store or configuration-record reference; never the secret value |
-| Validation | Type, format, allowed target/origin, dependency and environment checks |
-| Rotation/revocation | Procedure, interval or change trigger and responsible role |
-| Verification | Deployment identity, verification time, observed result and evidence link |
+| Field                     | Required content                                                          |
+| ------------------------- | ------------------------------------------------------------------------- |
+| Exact key and environment | Runtime key, consuming service and local/CI/staging/production scope      |
+| Required conditions       | Startup requirement and dependent capability                              |
+| Exposure                  | Secret, restricted server configuration or public configuration           |
+| Owner                     | Accountable role and named operating contact                              |
+| Source reference          | Secret-store or configuration-record reference; never the secret value    |
+| Validation                | Type, format, allowed target/origin, dependency and environment checks    |
+| Rotation/revocation       | Procedure, interval or change trigger and responsible role                |
+| Verification              | Deployment identity, verification time, observed result and evidence link |
 
 Reconcile this registry with runtime code and infrastructure before M7; every required key must have an owner,
 validated configuration and verification evidence.
@@ -1752,19 +1752,19 @@ production fallback to sandbox credentials or localhost.
 
 ## Appendix C — Environment commissioning checklist
 
-| Area | Required commissioning record | Accountable role |
-| --- | --- | --- |
-| Hosting and domains | Runtime/region inventory, exact origins, DNS/TLS ownership and rollback procedure | Platform owner |
-| Configuration | Per-key environment registry, secret-store references, validation and rotation | Platform / security owner |
-| Database and recovery | Transaction/index verification, backup/PITR policy, RPO/RTO, isolated restore and reconciliation | Data owner |
-| Workers | Job schedules, bounded retries, leases/fencing, backlog alerts and restart procedure | Backend owner |
-| Payments | Merchant/channel activation, supported limits, callbacks and receipt reconciliation | Merchant owner |
-| Refunds | Gateway status capability, manual verification/consent and source-capacity controls | Finance owner |
-| Store content | Catalog/stock, support contacts, coverage/charges and effective published policies | Store operator |
-| Monitoring | Dashboard/alert routes, severity thresholds, on-call roles and escalation exercise | Operations owner |
-| Privacy and media | Retention/legal holds, private asset access, scanning and deletion procedure | Privacy / security owner |
-| Disaster cutover | Old-writer fencing, callback handoff, restored-session rejection and controlled reopening | Incident commander |
-| Handover | Account ownership, support coverage, service costs and signed operating inventory | Store owner |
+| Area                  | Required commissioning record                                                                    | Accountable role          |
+| --------------------- | ------------------------------------------------------------------------------------------------ | ------------------------- |
+| Hosting and domains   | Runtime/region inventory, exact origins, DNS/TLS ownership and rollback procedure                | Platform owner            |
+| Configuration         | Per-key environment registry, secret-store references, validation and rotation                   | Platform / security owner |
+| Database and recovery | Transaction/index verification, backup/PITR policy, RPO/RTO, isolated restore and reconciliation | Data owner                |
+| Workers               | Job schedules, bounded retries, leases/fencing, backlog alerts and restart procedure             | Backend owner             |
+| Payments              | Merchant/channel activation, supported limits, callbacks and receipt reconciliation              | Merchant owner            |
+| Refunds               | Gateway status capability, manual verification/consent and source-capacity controls              | Finance owner             |
+| Store content         | Catalog/stock, support contacts, coverage/charges and effective published policies               | Store operator            |
+| Monitoring            | Dashboard/alert routes, severity thresholds, on-call roles and escalation exercise               | Operations owner          |
+| Privacy and media     | Retention/legal holds, private asset access, scanning and deletion procedure                     | Privacy / security owner  |
+| Disaster cutover      | Old-writer fencing, callback handoff, restored-session rejection and controlled reopening        | Incident commander        |
+| Handover              | Account ownership, support coverage, service costs and signed operating inventory                | Store owner               |
 
 These are environment acceptance inputs, not alternatives to the engineering architecture. Keep each record linked to its EXT-01–09 dependency, accountable named individual, verified capability, evidence, acceptance deadline and next action. Hosting/vendor/region and budget selection must establish Next.js runtime compatibility, static SPA routing, durable worker support, network/session behavior, data residency, backup/recovery capability and account ownership before provisioning. Select monitoring access/retention and recovery objectives against measured operator needs; do not populate arbitrary numbers or legal claims to close a register.
 
@@ -1774,42 +1774,42 @@ Maintain environment-specific records in the protected operating inventory. Veri
 
 ### D.1 Normative sources
 
-| Source | Operations-owned consequence |
-| --- | --- |
-| [PRD](./PRD.md) §§3, 5–6, 11–12, 14, 18–19 | Merchant channel launch gate, delivery/consumer rights, acceptance and ownership |
-| [Architecture](./ARCHITECTURE.md) §§6–13 | One backend, trust, idempotent jobs, money/stock invariants and deployment boundaries |
-| [Database](./DATABASE.md) §§7–15 | Schema/index/migration, confirmations and snapshots, transactions, receipt intake, refund source holds, retention |
-| [API](./API.md) §§3–17, Appendix D | Deployed route/auth/callback contracts, health, idempotency, provider handling |
-| [Testing](./TESTING.md) §§4, 9, 11–13, 15–18 | Staging, recovery and financial tests, test evidence and release acceptance |
-| [Implementation Plan](./IMPLEMENTATION_PLAN.md) §§4, 6, 10–12 | Incremental ops baseline, Phase 11/M7 release and Phase 12/M8 handover |
-| [Tasks](./TASKS.md) Phase 11–12 and dependencies | Real work items, owners, blockers, test/approval evidence |
-| [Design](./DESIGN.md) §§7–12 | Public/admin UI availability, accessible customer-facing error/status experience |
+| Source                                                        | Operations-owned consequence                                                                                      |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| [PRD](./PRD.md) §§3, 5–6, 11–12, 14, 18–19                    | Merchant channel launch gate, delivery/consumer rights, acceptance and ownership                                  |
+| [Architecture](./ARCHITECTURE.md) §§6–13                      | One backend, trust, idempotent jobs, money/stock invariants and deployment boundaries                             |
+| [Database](./DATABASE.md) §§7–15                              | Schema/index/migration, confirmations and snapshots, transactions, receipt intake, refund source holds, retention |
+| [API](./API.md) §§3–17, Appendix D                            | Deployed route/auth/callback contracts, health, idempotency, provider handling                                    |
+| [Testing](./TESTING.md) §§4, 9, 11–13, 15–18                  | Staging, recovery and financial tests, test evidence and release acceptance                                       |
+| [Implementation Plan](./IMPLEMENTATION_PLAN.md) §§4, 6, 10–12 | Incremental ops baseline, Phase 11/M7 release and Phase 12/M8 handover                                            |
+| [Tasks](./TASKS.md) Phase 11–12 and dependencies              | Real work items, owners, blockers, test/approval evidence                                                         |
+| [Design](./DESIGN.md) §§7–12                                  | Public/admin UI availability, accessible customer-facing error/status experience                                  |
 
 ### D.2 Functional ownership coverage
 
-| PRD requirement | Relevant operating control | Where documented |
-| --- | --- | --- |
-| FR-01, FR-02, FR-19, FR-21, FR-27 | Sessions, role/guest privacy, admin ownership, recovery, support access | §§3, 10, 13 |
-| FR-03–FR-06, FR-23–FR-24 | Public catalog/media, cache, deploy; actual store catalog data | §§2, 9, 14, 16 |
-| FR-07–FR-10, FR-30–FR-31 | Cart/wishlist, coupon expiration/concurrency, review evidence and moderation | §§7–9, 16 |
-| FR-11–FR-16, FR-25–FR-26, FR-28 | Checkout retries, inventory holds, delivery configuration, fulfillment and deadlines | §§7–8, 12, 16 |
-| FR-12, FR-29 | Merchant activation, verification, missing/late callback, partial/excess payment, COD | §§3, 9, 12, 17 |
-| FR-17–FR-18, FR-32–FR-33 | Return/shortage handling, source-funded refund, payout confirmation | §§11–12, 16 |
-| FR-20 | Durable notification intent and retries | §§8–9, 16 |
-| FR-22 | Dashboard, period definitions, reconciliation and finance exceptions | §§9, 12, 16 |
-| FR-34 | Policy drafts, publication, contact/store settings and audit | §§3, 13, 16 |
+| PRD requirement                   | Relevant operating control                                                            | Where documented |
+| --------------------------------- | ------------------------------------------------------------------------------------- | ---------------- |
+| FR-01, FR-02, FR-19, FR-21, FR-27 | Sessions, role/guest privacy, admin ownership, recovery, support access               | §§3, 10, 13      |
+| FR-03–FR-06, FR-23–FR-24          | Public catalog/media, cache, deploy; actual store catalog data                        | §§2, 9, 14, 16   |
+| FR-07–FR-10, FR-30–FR-31          | Cart/wishlist, coupon expiration/concurrency, review evidence and moderation          | §§7–9, 16        |
+| FR-11–FR-16, FR-25–FR-26, FR-28   | Checkout retries, inventory holds, delivery configuration, fulfillment and deadlines  | §§7–8, 12, 16    |
+| FR-12, FR-29                      | Merchant activation, verification, missing/late callback, partial/excess payment, COD | §§3, 9, 12, 17   |
+| FR-17–FR-18, FR-32–FR-33          | Return/shortage handling, source-funded refund, payout confirmation                   | §§11–12, 16      |
+| FR-20                             | Durable notification intent and retries                                               | §§8–9, 16        |
+| FR-22                             | Dashboard, period definitions, reconciliation and finance exceptions                  | §§9, 12, 16      |
+| FR-34                             | Policy drafts, publication, contact/store settings and audit                          | §§3, 13, 16      |
 
 ### D.3 Production/handover execution crosswalk
 
-| Task IDs | Required operational evidence | Runbook/section |
-| --- | --- | --- |
-| P11-001–P11-003 | Topology/config, DB/backup, real origin/session security | OP-PROV-01; §§2–4, 7, 13 |
-| P11-004–P11-005 | Worker/reconciliation visibility and live merchant activation | OP-JOB-01, OP-FIN-01; §§8, 12 |
-| P11-006–P11-007 | Approved store data and current published legal policies | §16 |
-| P11-008–P11-009 | Authorized live-safe smoke, channel validation, payout protections | §§12, 17 |
-| P11-010–P11-011 | Monitoring, restore/rollback and explicit M7 decision | OP-REL-02, OP-DR-01, OP-INC-01; §17 |
-| P12-001–P12-003 | Reconciled setup/API/data/tests, accurate deploy/recovery runbooks | §§5–8, 11, 18 |
-| P12-004–P12-009 | Store operator guide, ownership, limitations, support, M8 sign-off | §§16–18 |
+| Task IDs        | Required operational evidence                                      | Runbook/section                     |
+| --------------- | ------------------------------------------------------------------ | ----------------------------------- |
+| P11-001–P11-003 | Topology/config, DB/backup, real origin/session security           | OP-PROV-01; §§2–4, 7, 13            |
+| P11-004–P11-005 | Worker/reconciliation visibility and live merchant activation      | OP-JOB-01, OP-FIN-01; §§8, 12       |
+| P11-006–P11-007 | Approved store data and current published legal policies           | §16                                 |
+| P11-008–P11-009 | Authorized live-safe smoke, channel validation, payout protections | §§12, 17                            |
+| P11-010–P11-011 | Monitoring, restore/rollback and explicit M7 decision              | OP-REL-02, OP-DR-01, OP-INC-01; §17 |
+| P12-001–P12-003 | Reconciled setup/API/data/tests, accurate deploy/recovery runbooks | §§5–8, 11, 18                       |
+| P12-004–P12-009 | Store operator guide, ownership, limitations, support, M8 sign-off | §§16–18                             |
 
 ### D.4 External technical references (informative)
 
@@ -1854,20 +1854,20 @@ closedAtUtc: <ISO8601-if-closed>
 
 ### E.2 Recovery reconciliation checklist
 
-| Check | Evidence expected |
-| --- | --- |
-| Backup point and restored target | Snapshot ID/UTC point; isolated restore environment |
-| Collections, indexes and migrations | Manifest/query comparison and valid constraints |
-| Inventory and coupon allocation | Physical/reserved/committed and hold/redemption reconciliation |
-| Orders/checkout proofs and policy/deadline snapshots | Durable idempotency/history samples |
-| Provider receipts and unmatched intake | Official verified references reconciled since restore point |
-| Linked collections and source-class refund balances | Allocation, held and completed money invariants |
-| Worker and notification backlog | Lease/retry/outbox restart safety |
-| Nonreconstructable local changes | Explicit gap/impact/authorized remediation record, affected scope still restricted |
-| Post-cutoff COD/manual payouts | Verified actor, order, receipt/disbursement proof and source-control reconciliation |
-| Old writers, leases and callbacks | Writer fencing, single generation, cutoff/intake reconciliation and safe restart evidence |
-| Restored auth proofs | Old session/recovery/guest challenges rejected and fresh proof verified |
-| Safety to resume writes | Signed incident/store-owner decision |
+| Check                                                | Evidence expected                                                                         |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Backup point and restored target                     | Snapshot ID/UTC point; isolated restore environment                                       |
+| Collections, indexes and migrations                  | Manifest/query comparison and valid constraints                                           |
+| Inventory and coupon allocation                      | Physical/reserved/committed and hold/redemption reconciliation                            |
+| Orders/checkout proofs and policy/deadline snapshots | Durable idempotency/history samples                                                       |
+| Provider receipts and unmatched intake               | Official verified references reconciled since restore point                               |
+| Linked collections and source-class refund balances  | Allocation, held and completed money invariants                                           |
+| Worker and notification backlog                      | Lease/retry/outbox restart safety                                                         |
+| Nonreconstructable local changes                     | Explicit gap/impact/authorized remediation record, affected scope still restricted        |
+| Post-cutoff COD/manual payouts                       | Verified actor, order, receipt/disbursement proof and source-control reconciliation       |
+| Old writers, leases and callbacks                    | Writer fencing, single generation, cutoff/intake reconciliation and safe restart evidence |
+| Restored auth proofs                                 | Old session/recovery/guest challenges rejected and fresh proof verified                   |
+| Safety to resume writes                              | Signed incident/store-owner decision                                                      |
 
 ### E.3 Operational sign-off rule
 
