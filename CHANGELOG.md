@@ -8,6 +8,15 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 23 October 2026 — Backend development and CI isolation
+
+- Added supervised `dev:backend`, selected-workspace inventory validation, backend formatting and
+  comma-separated CI scopes. Hosted path selection avoids UI/browser setup for backend-private work
+  and preserves full verification for shared/tooling changes and manual dispatch.
+  [P01-022 verification](docs/evidence/P01-022-scoped-development-ci.md) records local results and the
+  owner-authorized task-branch publication and successful hosted verification (all 23 commands);
+  P01-022 is Done following explicit independent owner acceptance. Main was not merged.
+
 ## 23 October 2026 — Documentation consistency correction
 
 - Reopened P01-021 after owner feedback. Consolidated the technology baseline, separated MongoDB/Mongoose

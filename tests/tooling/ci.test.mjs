@@ -15,6 +15,7 @@ import { join, resolve } from 'node:path'
 import test from 'node:test'
 import { baseChecks, inspectRepository, workspacePlan } from '../../scripts/ci/check-repository.mjs'
 import { ciPlan, scopeNames } from '../../scripts/ci/plan.mjs'
+import { affectedScopes } from '../../scripts/ci/affected.mjs'
 import { auditResult, safeFindings } from '../../scripts/ci/security-policy.mjs'
 import { snapshotWorkingTree } from '../../scripts/ci/security-snapshot.mjs'
 
@@ -45,6 +46,7 @@ function fixture(t) {
         'test:unit',
         'lint:boundaries',
         'format:check',
+        'format:backend',
         'test:ui',
         'test:security',
       ].map((c) => [c, 'node --version']),
@@ -54,6 +56,7 @@ function fixture(t) {
   for (const name of ['storefront', 'admin', 'backend']) {
     put(`${name}/package.json`, { name, private: true })
     config[name] = {
+      ...(name === 'backend' ? { rootChecks: ['test:unit', 'format:backend'] } : {}),
       state: 'manifest-only',
       ownerTask: 'P02-001',
       checks: baseChecks,
@@ -323,12 +326,38 @@ test('CI-20: unknown scope fails and preserves a failure report', (t) => {
     'Failed',
   )
 })
+test('affected checks isolate backend, including accompanying documentation', () => {
+  assert.deepEqual(affectedScopes(['backend/src/server.ts', 'docs/API.md']), {
+    scope: 'backend,supply-chain',
+    browser: false,
+  })
+  for (const paths of [
+    ['shared/money.ts'],
+    ['package-lock.json'],
+    ['.github/workflows/ci.yml'],
+    ['unknown/file'],
+  ])
+    assert.deepEqual(affectedScopes(paths), { scope: 'all', browser: true })
+  assert.equal(affectedScopes(['admin/src/main.tsx']).browser, true)
+  assert.ok(affectedScopes(['admin/src/main.tsx']).scope.includes('repository'))
+  assert.equal(affectedScopes(['backend/src/server.ts'], true).scope, 'all')
+  assert.equal(affectedScopes([]).scope, 'all')
+})
+test('scoped inventory ignores unrelated invalid frontend manifests', (t) => {
+  const { root, put } = fixture(t)
+  put('admin/package.json', '{invalid')
+  assert.equal(ciPlan(root, ['backend']).length, 1)
+  assert.throws(() => ciPlan(root))
+  assert.throws(() => ciPlan(root, ['unknown']), /Unknown CI scope/)
+})
 test('CI-21: hosted checks use one install and one inventory invocation with pinned actions', () => {
   const content = readFileSync('.github/workflows/ci.yml', 'utf8')
   assert.equal((content.match(/run: npm ci /g) ?? []).length, 1)
-  assert.equal((content.match(/run: npm run ci$/gm) ?? []).length, 1)
+  assert.equal((content.match(/run: npm run ci -- --scope=/gm) ?? []).length, 1)
   assert.ok(content.includes('name: CI required result'))
   assert.ok(content.includes('fetch-depth: 0'))
+  assert.ok(content.includes("if: steps.affected.outputs.browser == 'true'"))
+  assert.ok(content.includes('CI_SCOPE: ${{ steps.affected.outputs.scope }}'))
   assert.ok(content.includes('if: ${{ always() }}'))
   for (const match of content.matchAll(/uses: (\S+)/g)) assert.match(match[1], /@[a-f0-9]{40}$/)
   for (const unsafe of [

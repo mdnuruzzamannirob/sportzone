@@ -312,7 +312,7 @@ tool in another terminal. No database provisioning, identity bootstrap, migratio
 notification worker runs automatically. SIGINT/SIGTERM and unexpected child/API exits stop owned process
 groups with a 12-second grace period before SIGKILL. Compiler errors retain the last successfully running
 API until a valid rebuild; verify actual HTTP readiness separately. Stop the separate DB tool independently.
-Native Windows uses WSL or individual workspace commands. For backend-only work, run root `node scripts/dev/backend.mjs`; it uses the same compiler/runtime lifecycle without UI processes. The workspace backend `dev` command only watches already compiled output and does not provide this initial compile/environment setup.
+Native Windows uses WSL or individual workspace commands. For backend-only work, use root `npm run dev:backend`; it supervises the compiler/API process group with the same failure and termination cleanup, without UI processes. The workspace backend `dev` command only watches already compiled output and does not provide this initial compile/environment setup.
 
 Root `lint:boundaries` validates literal source imports, package declarations, workspace isolation,
 shared-code purity and transitive browser/server imports. Root `format:check` covers repository scripts/tests/shared utilities and all three applications’ adopted source,
@@ -469,7 +469,7 @@ GitHub Actions runs one job named `CI required result`. A single locked install 
 browser and supply-chain groups in order. Each application builds once; browser checks reuse the two UI builds
 in the same job. No workflow generation, cross-job build transfer or report aggregation is required.
 
-The current workflow runs the full inventory on hosted PR, push and manual triggers. Foundation must implement the affected-scope policy in Testing §15.1, preserving the stable required result and full integrated/release runs. During development follow Testing §15.5 rather
+The workflow selects affected scopes under Testing §15.1, retaining the stable required result. Browser engines install only for browser scopes. Manual dispatch and conservative fallbacks run the full inventory; integrated/release verification remains mandatory. Tasks records actual hosted evidence and acceptance. During development follow Testing §15.5 rather
 than repeatedly running the entire pipeline. A failed command stops the runner and fails the job; an interrupted
 or cancelled job cannot satisfy the required successful check. Do not use `--if-present`, `continue-on-error`
 or passing placeholders. Preserve application/browser/replica-set coverage when simplifying tooling.

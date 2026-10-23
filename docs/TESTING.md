@@ -237,7 +237,7 @@ feature/tooling task, real assertions and CI integration rather than a passing p
 | `npm run lint:boundaries`                                                                      | TypeScript-parsed source imports: declared dependencies, workspace/shared isolation, private backend models and transitive client/server boundaries                                                                                        |
 | `npm run format:check`                                                                         | Biome format check of repository scripts/tests/shared utilities and all adopted workspace source, tests and configuration                                                                                                                  |
 | `npm run ci`                                                                                   | Complete inventory once, using the same runner as the single hosted job; workspace builds precede browser checks                                                                                                                           |
-| `npm run ci -- --scope=backend`                                                                | Backend inventory only; current planner still validates workspace metadata; no frontend build or browser execution                                                                                                                         |
+| `npm run ci -- --scope=backend`                                                                | Backend inventory plus required root tooling/scoped formatting; only selected workspace setup is validated; no frontend build/browser execution                                                                                                                         |
 | `npm run ci -- --scope=browser`                                                                | Browser audit only; requires current storefront/admin production builds and installed browser engines                                                                                                                                      |
 | `npm run test:security`                                                                        | Pinned/checksummed Gitleaks working-tree/history scan and npm advisories; sanitized reports and reviewed expiring advisory exceptions                                                                                                      |
 | `npm run test:ui`                                                                              | Type-check isolated fixture/config/tests; Playwright Chromium/Firefox/WebKit foundation reflow, axe, keyboard, theme and reduced-motion checks; requires both production builds and installed browser engines                              |
@@ -803,7 +803,13 @@ flowchart LR
 
 Operations §5.5 owns execution/caching/security and §5.6 owns promotion. Select scopes from changed paths and actual consumers, retaining a stable required aggregate result. Backend-private changes require backend and applicable repository/contract/security checks, without frontend builds, UI tests or browser engine installation. UI changes require their owning workspace and applicable browser checks; shared dependencies/configuration require affected consumers. Integrated staging/release candidates require the full inventory above.
 
-**Current implementation:** the hosted workflow still installs three browser engines and runs unscoped `npm run ci` on every trigger. The local runner supports single scopes, including `npm run ci -- --scope=backend`, but validates the full workspace inventory first. Scope-aware hosted selection, narrower inventory validation and affected formatting are foundation implementation work; this policy does not claim they already exist.
+The workflow uses `scripts/ci/affected.mjs` with validated event base/head revisions. Backend-private
+changes, including accompanying documentation, select backend and supply-chain checks without browser
+installation. Backend scope includes root tooling tests and `format:backend` through inventory rootChecks.
+UI changes select both UI builds, backend and the shared browser audit. Shared/tooling changes, unknown
+paths, empty diffs, missing revisions and manual dispatch select the full inventory. Git diff errors fail
+the job. Comma-separated scopes use the same runner; unknown/duplicate scopes and selected failures fail
+closed. Integrated/release candidates retain full verification. Tasks records actual hosted evidence.
 
 ### 15.2 Trigger and quality matrix
 

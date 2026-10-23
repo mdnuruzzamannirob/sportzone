@@ -125,7 +125,7 @@ The register contains 209 tasks across twelve requirement groups. Application-st
 
 | Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |   Done | Deferred |
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
-| 01 — Requirements Finalization and Planning   |      24 |           3 |     0 |           0 |       0 |         0 |     21 |        0 |
+| 01 — Requirements Finalization and Planning | 24 | 2 | 0 | 0 | 0 | 0 | 22 | 0 |
 | 02 — UI/UX Design                             |      17 |           1 |     0 |           0 |       0 |         0 |     16 |        0 |
 | 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |     21 |        0 |
 | 04 — Product Catalog and Inventory            |      19 |          11 |     0 |           0 |       1 |         0 |      7 |        0 |
@@ -137,7 +137,7 @@ The register contains 209 tasks across twelve requirement groups. Application-st
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total**                                     | **209** |     **143** | **0** |       **0** |   **1** |     **0** | **65** |    **0** |
+| **Total** | **209** | **142** | **0** | **0** | **1** | **0** | **66** | **0** |
 
 ## 4. Milestone tracker
 
@@ -352,14 +352,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Foundation → backend → admin → storefront order is consistent; current commands and planned tooling are distinguished; prior acceptance and product/provider gates are preserved; documentation checks pass and owner independently reviews.\
   **Evidence:** [Complete-document correction and verification](./evidence/P01-021-documentation-refactor.md#complete-document-correction). Project owner independently accepted the corrected package on 23 October 2026: “Review করেছি—accept করছি, Done করো”. Earlier acceptance remains historical; no milestone or provider gate is accepted by this decision.
 
-- [ ] **P01-022 — Isolate application development and CI scopes**\
-  **Status:** `Not Started` · **Area:** Foundation/tooling\
+- [x] **P01-022 — Isolate application development and CI scopes**\
+  **Status:** `Done` · **Area:** Foundation/tooling\
   **Stage:** `Foundation`\
   **Sources:** Architecture §4.2; Testing §15; Operations §5\
   **Depends on:** `P01-021`\
   **Deliverable:** Provide backend-only compiler/runtime command, affected hosted CI selection, conditional browser installation, scoped formatting and inventory validation, retaining one required result and integrated full verification.\
   **Acceptance:** Backend-private changes execute no frontend server/build/test/browser installation; scoped planning does not fail on unrelated frontend setup; shared changes select actual consumers; unknown scopes and selected command failures fail closed. Fixture tests verify selection and failure propagation; hosted evidence verifies real workflow behavior.\
-  **Evidence to attach:** Command inventory, positive/negative scope fixtures, hosted run and rollback procedure.
+  **Evidence:** [Implementation, checks and rollback](./evidence/P01-022-scoped-development-ci.md). Owner authorized task-branch publication; [hosted run 39989593949](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/39989593949) Passed at e968ff0: all 23 commands, 58 tooling, storefront 98/admin 80/backend 392 unit, 382 MongoDB integration and 36 three-engine browser checks, plus security. Local backend-only eight-command scope Passed without frontend commands. Project owner independently accepted: “Review করেছি—accept করছি, Done করো”. Main not merged; no milestone acceptance implied.
 
 - [ ] **P01-023 — Generate OpenAPI and Postman artifacts automatically**\
   **Status:** `Not Started` · **Area:** Foundation/API contracts\
@@ -2386,3 +2386,9 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **23 October 2026 — P01-021 complete-document correction:** Done → In Progress → In Review following owner feedback about fragmented edits, technology/provider conflation and specification quality. Corrected the existing owning sections across the twelve core documents; preserved previous acceptance history and all other accepted tasks. Verified unchanged prerequisite reachability, stage direction/closeouts, 209-task counts and API/data/FR inventories. [Correction findings and verification](./evidence/P01-021-documentation-refactor.md#complete-document-correction). Overall: 64 Done, 143 Not Started, 1 Blocked and 1 In Review; revised owner acceptance pending.
 
 **23 October 2026 — P01-021 correction acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. [Accepted correction](./evidence/P01-021-documentation-refactor.md#complete-document-correction). Overall: 209 tasks, 65 Done, 143 Not Started, 1 Blocked and zero In Review. P01-022 is next; application-stage, milestone and external-provider gates remain separate.
+
+**23 October 2026 — P01-022:** Not Started → In Progress → Blocked. Implemented application-specific dev/CI selection, scoped formatting/inventory validation and regression fixtures. Local backend and tooling checks passed; remote task-branch publication was rejected by automatic approval review, so hosted verification and independent acceptance remain pending. [Evidence and required authorization](./evidence/P01-022-scoped-development-ci.md). Overall: 65 Done, 142 Not Started and 2 Blocked.
+
+**23 October 2026 — P01-022 hosted verification:** Blocked → In Progress → In Review after explicit owner authorization for the nine-file task-branch push. Hosted run [39989593949](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/39989593949) Passed at e968ff0; artifacts and all 23 command results inspected. Local backend-only scope also Passed. Independent acceptance pending; main/staged documentation were not published or merged. Overall: 65 Done, 142 Not Started, 1 Blocked and 1 In Review. [Evidence](./evidence/P01-022-scoped-development-ci.md).
+
+**P01-022 independent acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. [Accepted implementation and evidence](./evidence/P01-022-scoped-development-ci.md#independent-acceptance). Overall: 66 Done, 142 Not Started, 1 Blocked and zero In Review. P01-023 is next; no main merge, milestone or provider acceptance implied.

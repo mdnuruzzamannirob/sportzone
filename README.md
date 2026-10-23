@@ -91,7 +91,7 @@ independently generated `SESSION_SECRET` and `HEALTH_MONITOR_TOKEN`. For the bac
 its compiler and API from the repository root:
 
 ```sh
-node scripts/dev/backend.mjs
+npm run dev:backend
 ```
 
 For integrated work across all three applications:
@@ -159,9 +159,10 @@ see [Testing §7.5](docs/TESTING.md#75-ui-test-procedure) for scope and procedur
 CI uses `ci-workspaces.json` as its check inventory. Full results are written to `test-results/ci.json`;
 scoped runs use `test-results/ci/<scope>.json`. Missing required checks fail. Local checks and synthetic
 fixtures do not establish hosted deployment, provider activation or milestone acceptance.
-Hosted CI currently runs the full inventory; affected hosted selection is P01-022. Automatic OpenAPI
-and Postman generation is P01-023. Until those tasks are accepted, use the commands above and the
-current API specification; planned artifact paths and generation commands are not setup instructions.
+Affected hosted selection uses backend checks without UI builds/browser installation for backend-private
+changes, including accompanying documentation. Shared/tooling changes, manual runs and unknown paths
+use the full inventory. Hosted evidence and acceptance are tracked in P01-022. Automatic OpenAPI/Postman
+generation remains P01-023; planned commands are not setup instructions.
 
 ## 6. Delivery and operations
 
