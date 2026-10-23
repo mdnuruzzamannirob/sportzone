@@ -267,26 +267,19 @@ flowchart TD
 
 ### 5.2 Reproducible build interface
 
-The monorepo uses `storefront/`, `admin/` and `backend/` workspaces (Architecture §4). Implement the standard
-package-script interface in [Testing §5.3](./TESTING.md#53-standard-execution-interface) during foundation setup.
-The required application build/validation interface is below. Run each command only after its implementation and
-environment prerequisites are verified against the committed manifest and lockfile:
+The monorepo uses `storefront/`, `admin/` and `backend/` workspaces (Architecture §4).
+[Testing §5.3](./TESTING.md#53-standard-execution-interface) owns the executable check inventory.
+For a backend candidate, use the existing owning-workspace interface with isolated test prerequisites:
 
 ```bash
-# Required application interface; establish with the owning foundation/slices before deployment.
-npm ci
+npm ci --ignore-scripts --no-audit --no-fund
 npm run lint
-npm run typecheck
-npm run test:unit
-npm run test:integration
-npm run test:contract
-npm run build --workspace=storefront
-npm run build --workspace=admin
-npm run build --workspace=backend
+npm run ci -- --scope=backend
 ```
 
-The current repository foundation supports `npm ci`, `npm run workspaces:check`, `npm run lint`, `npm run test:unit`
-and `npm run ci`. All three workspaces have independent lint/type/unit/build and HTTP smoke commands in [ci-workspaces.json](../ci-workspaces.json). Admin Vite preview verifies local SPA fallback,
+This consolidated scope is for candidate verification; routine implementation uses focused checks under
+Testing §15.5. Integrated candidates use `npm run ci` to verify all consumers. All three workspaces have
+independent lint/type/unit/build and HTTP smoke commands in [ci-workspaces.json](../ci-workspaces.json). Admin Vite preview verifies local SPA fallback,
 not production static hosting; configure fallback and noindex/private document headers at the deployment host. No automated production deployment, migration or restore
 command is supplied; local storefront build/start is not a production deployment procedure. See
 [Testing §5.3](./TESTING.md#53-standard-execution-interface) for current coverage and the complete required interface.
@@ -300,7 +293,7 @@ tool in another terminal. No database provisioning, identity bootstrap, migratio
 notification worker runs automatically. SIGINT/SIGTERM and unexpected child/API exits stop owned process
 groups with a 12-second grace period before SIGKILL. Compiler errors retain the last successfully running
 API until a valid rebuild; verify actual HTTP readiness separately. Stop the separate DB tool independently.
-Native Windows uses WSL or individual workspace commands.
+Native Windows uses WSL or individual workspace commands. For backend-only work, run root `node scripts/dev/backend.mjs`; it uses the same compiler/runtime lifecycle without UI processes. The workspace backend `dev` command only watches already compiled output and does not provide this initial compile/environment setup.
 
 Root `lint:boundaries` validates literal source imports, package declarations, workspace isolation,
 shared-code purity and transitive browser/server imports. Root `format:check` covers repository scripts/tests/shared utilities and all three applications’ adopted source,
@@ -341,7 +334,7 @@ Startup verifies MongoDB replica/session capability before opening HTTP. Runtime
 
 Every application response retains a fresh server UUID, no-store and nosniff; private errors remain generic. Ordinary JSON parsing is strict, uncompressed and limited to 102400 bytes by default. Unsupported media/parser/limit input maps to API 400 INVALID_REQUEST. Provider/media parsers must be added under their owning contracts. Customer/admin sessions, browser CORS/CSRF, external-provider capability gates and deployed telemetry/alerts remain their owning tasks.
 
-Successful foundation CI is evidence for its configured checks only, not application deployment or operational readiness. Browser audit setup requires `npx playwright install --with-deps chromium firefox webkit` after locked installation. The tests/e2e audit is mandatory through the root browser scope in the CI inventory and starts only loopback test servers on 3100/5273/5180 after both builds. `test-results/ui-report.json` and `test-results/ui/` are CI artifacts; the fixture is not a deployment asset. Missing engines/libraries fail the audit rather than silently skip it. Local engine-wrapper overrides are test-machine configuration only; see [P02-011 environment evidence](./evidence/P02-011-accessibility.md).
+Successful foundation CI is evidence for its configured checks only, not application deployment or operational readiness. Browser-scope verification requires `npx playwright install --with-deps chromium firefox webkit` after locked installation; backend-private checks do not require browser setup. Testing §15.1 distinguishes target hosted scope selection from the current full-run workflow. The tests/e2e audit is mandatory through the root browser scope in the CI inventory and starts only loopback test servers on 3100/5273/5180 after both builds. `test-results/ui-report.json` and `test-results/ui/` are CI artifacts; the fixture is not a deployment asset. Missing engines/libraries fail the audit rather than silently skip it. Local engine-wrapper overrides are test-machine configuration only; see [P02-011 environment evidence](./evidence/P02-011-accessibility.md).
 
 `npm run build --workspace=backend` clears only generated `backend/dist/` before compilation, so old
 module paths cannot survive a source move. The local watch coordinator also clears it before initial compilation.
@@ -414,7 +407,7 @@ GitHub Actions runs one job named `CI required result`. A single locked install 
 browser and supply-chain groups in order. Each application builds once; browser checks reuse the two UI builds
 in the same job. No workflow generation, cross-job build transfer or report aggregation is required.
 
-Run the full inventory on hosted PR, push and manual triggers. During development follow Testing §15.5 rather
+The current workflow runs the full inventory on hosted PR, push and manual triggers. Foundation must implement the affected-scope policy in Testing §15.1, preserving the stable required result and full integrated/release runs. During development follow Testing §15.5 rather
 than repeatedly running the entire pipeline. A failed command stops the runner and fails the job; an interrupted
 or cancelled job cannot satisfy the required successful check. Do not use `--if-present`, `continue-on-error`
 or passing placeholders. Preserve application/browser/replica-set coverage when simplifying tooling.
@@ -427,7 +420,7 @@ source revision and attempt; do not combine artifacts from different runs as acc
 required check name stable. Verify a successful hosted run and the protected-main rule before acceptance;
 local YAML does not configure remote settings. Record the operator and actual settings evidence.
 
-Use the recorded Node/npm versions and root `npm ci --ignore-scripts --no-audit --no-fund` installation policy. Review any required dependency lifecycle step explicitly; never enable all install scripts to fix an unexplained failure. Cache package downloads, keyed by runner/runtime/lockfile, rather than treating cached node_modules as installation. Install pinned Playwright engines/system dependencies in the CI job; browser binary caching and remote task-result caches are not initial requirements. Tests using time, databases or providers must not be accepted solely from cached results.
+Use the recorded Node/npm versions and root `npm ci --ignore-scripts --no-audit --no-fund` installation policy. Review any required dependency lifecycle step explicitly; never enable all install scripts to fix an unexplained failure. Cache package downloads, keyed by runner/runtime/lockfile, rather than treating cached node_modules as installation. Install pinned Playwright engines/system dependencies only when the selected job includes browser checks; browser binary caching and remote task-result caches are not initial requirements. Tests using time, databases or providers must not be accepted solely from cached results.
 
 Pin external actions to full commit SHAs, use read-only permissions by default and keep checkout credentials unpersisted. PR code receives no deployment/merchant secrets; do not run untrusted PR source under privileged pull_request_target/workflow_run contexts. Scope release credentials to protected deployment environments. Prefer short-lived provider identity when supported. CI cancels superseded validation runs; deployment serialization is separate and must not interrupt an in-flight migration or financial operation blindly.
 
@@ -453,7 +446,7 @@ Eligible candidates may deploy to isolated staging after CI. Production promotio
 
 ### 5.7 Refactor deployment compatibility
 
-P03-021 → P02-015 → P02-016 migrate backend, storefront and admin one at a time under Architecture §§4–6 and Implementation Plan §3.6; earlier refactors remain historical evidence. Inventory runtime/build imports, tool/worker launch commands, CI paths and runbook references with each move. Preserve env names, activation, process draining, protected readiness, logs and fenced job claims. No folder move authorizes a schema change, deployed-origin/cookie change or destructive data operation. Drain incompatible runners before replacing entry points; do not create a second uncontrolled scheduler.
+Ongoing refactors follow foundation → backend → admin → storefront under Architecture §§4–6 and Implementation Plan §3.1. P03-021/P02-015/P02-016 retain their historical migration and acceptance records. Inventory runtime/build imports, tool/worker launch commands, CI paths and runbook references with each move. Preserve env names, activation, process draining, protected readiness, logs and fenced job claims. No folder move authorizes a schema change, deployed-origin/cookie change or destructive data operation. Drain incompatible runners before replacing entry points; do not create a second uncontrolled scheduler.
 
 Restore a compatible prior build for code-only recovery while retaining durable intents/audit and reconciling uncertain external effects. Update runbook commands when actually implemented; planned script names are not executable instructions. Any persistence/config change needs its additive migration and restore assessment before deployment.
 

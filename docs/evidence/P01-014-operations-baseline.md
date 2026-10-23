@@ -8,7 +8,7 @@
 
 ## Scope and authority
 
-Reviewed [OPERATIONS.md](../OPERATIONS.md) against [PRD §18](../PRD.md#18-release-handover-and-support),
+Reviewed [OPERATIONS.md](../OPERATIONS.md) against [PRD §18](../PRD.md#18-release-and-handover-outcomes),
 [Architecture §13](../ARCHITECTURE.md#13-deployment-architecture),
 [Implementation Plan §4.3](../IMPLEMENTATION_PLAN.md#43-database-and-application-infrastructure),
 [Database](../DATABASE.md), [API](../API.md), [Testing](../TESTING.md) and [TASKS](../TASKS.md).

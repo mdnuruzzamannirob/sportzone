@@ -8,6 +8,14 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 23 October 2026 — Application-stage documentation reconciliation
+
+- Reconciled application-stage execution, module ownership, scoped verification and current setup procedures.
+  Decomposed mixed API/UI work into explicit prerequisites and corrected reverse stage dependencies;
+  foundation/backend/admin/storefront closeouts cover the revised 209-task register. OpenAPI/Postman and
+  scoped hosted CI remain implementation tasks. The owner accepted the revised P01-021 package on
+  23 October 2026; the task is Done and prior acceptance history is preserved.
+
 ## 23 October 2026 — Database startup diagnostics
 
 - Preserve safe database reason codes in startup failure logs without logging driver errors or secrets.

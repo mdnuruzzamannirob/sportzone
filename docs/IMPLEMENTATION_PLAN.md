@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 22 October 2026
+**Updated:** 23 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -38,7 +38,7 @@ This document defines the implementation sequence, dependencies, work packages, 
 
 ### 1.1 Purpose
 
-Turn the approved product, architecture, and design baselines into an executable development sequence without changing their requirements. Organize work so that each delivered feature includes the backend behavior, affected user interfaces, integration, and verification needed to make that feature usable and safe.
+Turn the approved product, architecture, and design baselines into an executable development sequence without changing their requirements. Organize implementation by application: foundation, backend, admin, storefront, then integrated release acceptance. Product features retain their complete cross-application acceptance requirements.
 
 **Implementation objectives:**
 
@@ -80,7 +80,7 @@ This version defines the development baseline. Execute the roadmap through the s
 
 1. **Backend authority.** Only Express domain services may confirm customer access, final prices, discounts, delivery charges, stock, order transitions, payment collection, or refunds.
 2. **One business backend.** The storefront and admin portal are separate presentations over the same `/api/v1` API. Next.js server rendering is not a second commerce backend.
-3. **Small, verifiable increments.** Deliver complete vertical slices with tests and relevant UI states rather than building every API before integrating any page.
+3. **Small, verifiable increments.** Complete cohesive work packages within the active application stage. Backend packages include the APIs needed by both clients; UI integration follows in the admin and storefront stages.
 4. **Dependencies before features.** Create shared foundations only where required by a dependent workflow; avoid speculative abstraction and unnecessary infrastructure.
 5. **Financial and inventory integrity.** Use integer poisha for money, immutable order snapshots, indexed identities, guarded transitions, atomic writes, and transactions when multiple records must change together.
 6. **Safe retries and uncertainty.** Duplicate checkout submissions, callbacks, refund attempts, and job runs must not repeat effects. Timeouts do not establish financial failure.
@@ -97,19 +97,32 @@ This version defines the development baseline. Execute the roadmap through the s
 
 ### 3.1 Delivery model
 
-Use dependency-driven, incremental delivery through the twelve phases owned by this plan and constrained by PRD product acceptance. A phase is an organizing milestone, not a rule that every task must run sequentially. Independent UI, API, test, and environment activities may proceed in parallel when their contracts and prerequisites are established. Do not begin a state-changing financial integration before its invariants and authoritative data structures exist.
+Execute in this order: **project foundation → backend → admin → storefront → integrated acceptance, deployment and handover**. Complete and independently review each application stage before beginning the next. Existing accepted implementation and evidence remain valid for their recorded scope/revision; sequence changes do not require repeating accepted refactors.
 
-A normal vertical slice follows:
+| Stage | Work and exit requirements |
+| --- | --- |
+| Foundation | Reconcile specifications and task dependencies; establish application-specific development/CI scopes, executable API contract ownership, automatic OpenAPI/Postman generation and readiness records. Verify actual tooling before declaring it available. |
+| Backend | Complete customer and admin APIs, persistence, domain services, providers, jobs and operational interfaces in dependency order; consolidate backend verification and independent review. |
+| Admin | Implement all management workflows against the real backend; verify admin routes, mutations, accessibility and both themes. |
+| Storefront | Complete browsing, shopping, checkout, account, guest and after-sales workflows against the backend; verify public/private rendering and customer journeys. |
+| Integrated release | Verify cross-application flows, required providers, security, recovery, performance, staging and production gates; complete handover. |
 
-`Confirm requirements → Define data/API contract → Implement domain rules → Implement required UI → Add tests → Verify acceptance → Record evidence`
+The executable closeouts are P01-024 (foundation), P03-022 (backend), P09-010 (admin) and P02-017
+(storefront). Tasks records their dependencies and acceptance. P01-022 supplies scoped development/CI;
+P01-023 supplies generated API artifacts. These are planned deliverables until their own evidence and
+acceptance are recorded. The original domain milestones M1–M8 remain aggregate product/release gates.
 
-For higher-risk work, write state-transition and concurrency tests before enabling the corresponding mutation in an integrated environment. Keep external calls outside database transactions.
+Within backend, implement identity/security → catalog/media/inventory management APIs → store settings/delivery → cart/pricing/promotions → orders/checkout/COD → payments → returns/refunds → qualified reviews/support/reporting, adding notifications, audit and jobs with their owning workflows. Provision staging/provider prerequisites when needed for backend acceptance.
+
+A work package follows `Confirm contracts → Implement owning application capability → Verify affected behavior → Record evidence → Independent review`. Backend implementation does not require frontend builds, browser installation or screen development. Shared contract changes require compatibility assessment; client integration is verified in its owning stage. Keep existing public contracts compatible unless an explicit contract change is approved.
+
+External prerequisites remain real gates. Continue safe work within the stage while blocked; do not declare the backend fully accepted or silently advance to admin when required backend acceptance remains blocked. For high-risk mutations, write state-transition/concurrency tests before integrated activation and keep external calls outside database transactions.
 
 ### 3.2 Standard phase format
 
 Each phase in §6 identifies its objective, prerequisite, implementation work, verification, deliverables, and exit gate. Backend, storefront, and administration work appear only when relevant. Cross-cutting standards in §§9–12 apply to every phase and should not be implemented a second time as separate competing features.
 
-Before closing a phase, its final unfinished task coordinates the consolidated regression and exit-gate
+Before closing an application stage or integrated product phase, its final unfinished task coordinates the appropriately scoped regression and exit-gate
 evidence defined in [Testing §15.5](./TESTING.md#155-change-based-local-verification). Earlier tasks run
 focused checks as they deliver changes; phase closeout does not defer their required safety tests or
 replace independent task/milestone acceptance.
@@ -120,7 +133,7 @@ An implementation work package is done when all applicable conditions are met:
 
 - The intended PRD behavior and out-of-scope boundaries are satisfied.
 - Relevant domain and API behavior uses the approved module ownership, validation, error conventions, and authorization.
-- Affected storefront/admin pages work with the actual API and include usable pending, error, empty, disabled, and successful states.
+- For admin/storefront packages, affected pages work with the actual API and include usable pending, error, empty, disabled, and successful states. Backend packages prove their API/domain behavior without requiring screens; the aggregate feature retains its later integrated UI acceptance.
 - Financial/inventory mutations are idempotent and concurrency-safe where required; failure and recovery paths are covered.
 - Tests run successfully at the appropriate unit, integration, contract, and end-to-end levels.
 - Responsive, keyboard, focus, contrast, and light/dark behavior meet the design specification where UI is involved.
@@ -131,7 +144,7 @@ A mock-only page, a passing happy path without required failure handling, or a b
 
 ### 3.4 Task decomposition contract
 
-Convert approved work packages into `TASKS.md` entries with a stable ID, short outcome, source requirement, phase, prerequisites, affected application/module, acceptance checks, verification evidence, and status. Optional fields are owner and blocker. Do not repeat large PRD, design, or architecture sections inside each task. Update dependencies when a design or operational decision changes; do not declare unfinished work complete to preserve an estimated schedule.
+Convert approved work packages into `TASKS.md` entries with a stable ID, short outcome, source requirement, phase, prerequisites, affected application/module, acceptance checks, verification evidence, and status. Every unfinished task records its execution stage. Optional fields are owner and blocker. Do not repeat large PRD, design, or architecture sections inside each task. Update dependencies when a design or operational decision changes; do not declare unfinished work complete to preserve an estimated schedule. Mixed tasks retain the original aggregate ID/acceptance and depend on explicit backend or admin prerequisite tasks in the register. Client UI is not a backend prerequisite. Domain phase headings classify requirements; stage metadata and dependencies determine execution order.
 
 ### 3.5 Timeline and estimation
 
@@ -142,18 +155,7 @@ Do not assign arbitrary completion dates. Estimate work after evaluating develop
 Refactor one application at a time to the approved feature-based structure. [Architecture §§4–6](./ARCHITECTURE.md#4-project-structure) define target
 trees/naming/ownership. The task register records migration progress and acceptance; prior refactor evidence does not establish parity for a subsequent source move.
 
-| Order | Task | Outcome / prerequisite |
-| --- | --- | --- |
-| 1 | P01-018 | Reconcile target organization, contracts, agent rules and documentation; independent review |
-| 2 | P03-021 | Backend refactor and executable boundary/tool/test parity; depends on P01-018 |
-| 3 | P02-015 | Storefront refactor, URL/cache/HeroUI/browser parity; depends on P03-021 |
-| 4 | P02-016 | Admin refactor, router/session/forms/browser parity; depends on P02-015 |
-| 5 | P01-019 | Monorepo tooling, browser discovery and locked setup parity for the frontend batch |
-
-Do not begin source moves as part of P01-018. Normally complete and review each application before the next.
-For an explicitly owner-requested combined batch, verify each app before moving to the next and collect separate
-task acceptances in the final review; milestone and external gates remain independent. Within an application use small verified slices, not one bulk destructive
-rename. Feature work must follow the target conventions and preserve security/financial invariants.
+P01-018, P03-021, P02-015, P02-016 and P01-019 retain their historical refactor order and acceptance in Tasks/evidence. Ongoing work follows §3.1: foundation → backend → admin → storefront. Make source moves only when a concrete ownership or maintainability issue requires them; preserve compatible imports, tooling and behavior. Do not create empty planned modules or repeat completed migrations.
 
 | Area | Required organization / continuity |
 | --- | --- |
@@ -222,6 +224,8 @@ sportzone/
 
 Use supported mutually compatible package versions and commit the lockfile. Configure workspace scripts for development, linting, type checking, testing, and independent application builds. Install code-formatting and lint rules appropriate to each application. Add a CI baseline that fails on broken types, tests, lint, or builds; expand its coverage as features arrive. Verify `AGENTS.md` during Phase 01 with source-document precedence, scope constraints, task/evidence conventions, and required verification; keep it aligned with this plan and `TASKS.md`.
 
+Foundation includes scoped development/CI tooling and the automatic API artifacts defined in API §18.3. These capabilities require implementation evidence; specification changes do not establish tool availability.
+
 Frontend applications must not import Mongoose models or backend runtime services. A shared pure contract package is optional only if verified duplication justifies it; a shared UI component library is not required.
 
 ### 4.3 Database and application infrastructure
@@ -256,7 +260,7 @@ Use the native HeroUI semantic tokens, system typography and app-owned theme/con
 
 ## 5. Implementation roadmap
 
-This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencing to this plan. Detailed delivery requirements are in §6; a dependency may be built earlier as a foundation and fully integrated in its designated feature phase.
+The twelve phase labels below classify requirement ownership and preserve existing task IDs. Execution follows the application stages in §3.1, not table row order. Read §6 as domain work packages: backend portions first, admin portions next, storefront portions next, then aggregate verification. Phase acceptance remains subject to all of its original requirements.
 
 | Phase | Scope | Principal dependency | Phase outcome |
 | --- | --- | --- | --- |
@@ -273,7 +277,7 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 | 11 — Deployment and Production Verification | Staging-to-production release, live configuration, smoke tests | Acceptance gates and operator approvals | Approved, monitored production release |
 | 12 — Documentation and Handover | Source, operations, configuration, runbooks, limitations | Verified production implementation | Accepted handover |
 
-**Execution rule:** Phase 09 does not defer the admin screens required to create products, manage stock, configure delivery charges, approve refunds, or perform other earlier workflows. Those screens are implemented with their dependent domain slices. Likewise, testing and operational preparation begin before Phases 10–11.
+**Execution rule:** Build every required management/customer backend capability during the backend stage, including capabilities grouped under later domain phases. Implement management screens during admin and customer screens during storefront. Split mixed tasks before execution; do not waive their aggregate acceptance.
 
 ---
 
@@ -583,7 +587,7 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 `Foundation → Identity/Admin Access → Catalog/Variant/Stock → Cart/Pricing/Coupon → Delivery/Checkout Intent → COD + Online Hold Foundation → Verified Payments → Returns/Refunds → Integrated Acceptance → Production`
 
-Parallel work includes admin UI for each domain, storefront presentation, notification templates, support processes, test automation, infrastructure configuration, accessibility, and operational documentation. Parallel activity must not bypass dependencies in the table.
+Independent work may proceed within the active application stage once prerequisites exist. UI implementation follows the application order in §3.1. Supporting infrastructure, contracts and provider readiness are prepared when the active stage needs them.
 
 ### 7.3 Dependency and blocker rules
 
@@ -743,7 +747,7 @@ Block release for a defect that can permit unauthorized access, duplicate/incorr
 | M7 — Production Ready | Approved policies/merchant channels, HTTPS, rollback, backup/restore, monitoring, live-safe smoke checks | Authorize production launch |
 | M8 — Handover Accepted | Repository, configuration, runbooks, operator guide, ownership, support boundaries, known limitations | Close implementation |
 
-Engineering can proceed on independent tasks before earlier milestones are accepted. Acceptance of M2 requires M1; M3 requires M2 and shopping readiness; M4 requires M3; M5 requires M4; M6 requires M1–M5 and integrated staging; M7 requires M6; M8 requires M7 and completed handover review. These are acceptance dependencies, not a blanket prohibition on parallel development.
+Within the active application stage, engineering can proceed on independent tasks before earlier product milestones are accepted. Acceptance of M2 requires M1; M3 requires M2 and shopping readiness; M4 requires M3; M5 requires M4; M6 requires M1–M5 and integrated staging; M7 requires M6; M8 requires M7 and completed handover review. These are acceptance dependencies, not a blanket prohibition on parallel development.
 
 A milestone requires affirmative acceptance evidence. An engineering build passing CI is necessary but not sufficient for a financial or production milestone. Record test run/artifact references, environments, approver, unresolved dependencies, and release decision alongside the tasks or acceptance report.
 

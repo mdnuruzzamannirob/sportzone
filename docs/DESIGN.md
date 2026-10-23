@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 22 October 2026
+**Updated:** 23 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -159,7 +159,7 @@ Main: page title/actions → filters/summary → content → pagination
 
 Provide the Light / Dark / System control in the administrator account/appearance menu. Group related destinations without creating extra permission levels. Show current section and contextual actions. Keep the administrator's session and access separate from customer sessions. Complaint handling is available from the order/customer context where relevant; a standalone complaint screen is not required by the PRD.
 
-**Current shell implementation:** [Admin shell](../admin/src/components/layout/admin-shell.tsx) uses a persistent sidebar from 1024px and a HeroUI left Drawer below that breakpoint. The five groups and 14 destinations share one navigation source. Selected items use native default/accent semantic tokens. Drawer navigation, Escape/Close and desktop transitions dismiss the overlay; the body scrolls vertically. Page title/actions and Appearance are reusable compositions. Until Phase 03 session integration, only public navigation metadata and an unavailable-access state render on `/app/*`; no management data, logged-in identity or working logout is implied. Lazy administration loading exposes a live status; route render/chunk failures show a safe alert and Reload page action without exception details.
+**Admin shell behavior:** [Admin shell](../admin/src/components/layout/admin-shell.tsx) uses a persistent sidebar from 1024px and a HeroUI left Drawer below that breakpoint. The five groups and 14 destinations share one navigation source. Selected items use native default/accent semantic tokens. Drawer navigation, Escape/Close and desktop transitions dismiss the overlay; the body scrolls vertically. Page title/actions and Appearance are reusable compositions. Render protected management content only after server-confirmed admin identity; signed-out, expired and denied states must not expose management data. Navigation availability does not establish completion of its destination workflows. Lazy administration loading exposes a live status; route render/chunk failures show a safe alert and Reload page action without exception details.
 
 ### 4.4 Shared layout states
 

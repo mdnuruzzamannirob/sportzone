@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 22 October 2026
+**Updated:** 23 October 2026
 
 Single-store sports e-commerce platform for Bangladesh, using BDT. SportZone combines a customer storefront, a separate
 administration portal and one authoritative backend API.
@@ -64,8 +64,7 @@ sportzone/
 [Architecture §§4–6](docs/ARCHITECTURE.md#4-project-structure) owns target paths, naming and module boundaries;
 [Design §6](docs/DESIGN.md#6-ui-components) owns component contracts. Current application paths remain valid until
 verified migration. The [refactor sequence](docs/IMPLEMENTATION_PLAN.md#36-engineering-foundation-and-incremental-refactor)
-is backend → storefront → admin, with verification and acceptance for each application. Explicit owner-requested batches retain per-app parity and
-independent acceptance at the combined handoff.
+is foundation → backend → admin → storefront → integrated release, with verification and independent acceptance for each application stage. Tasks retains historical refactor evidence and assigns every unfinished task to its execution stage.
 
 ## 4. Development workflow
 
@@ -84,7 +83,14 @@ npm run db:local --workspace=backend
 ```
 
 Create a private root `.env` from [.env.example](.env.example), supply the local replica URI/database and
-independently generated `SESSION_SECRET` and `HEALTH_MONITOR_TOKEN`. Then start the applications:
+independently generated `SESSION_SECRET` and `HEALTH_MONITOR_TOKEN`. For the backend stage, start only
+its compiler and API from the repository root:
+
+```sh
+node scripts/dev/backend.mjs
+```
+
+For integrated work across all three applications:
 
 ```sh
 npm run dev
@@ -101,8 +107,8 @@ the private root `.env` `MONGODB_URI` to that URI before restarting `npm run dev
 On Ubuntu 26, use `MONGOMS_DISTRO=ubuntu-24.04 npm run db:local --workspace=backend`.
 `REPLICA_SET_REQUIRED` means the configured MongoDB lacks the required replica-set/session support.
 
-For one application, use `npm run dev --workspace=storefront`, `--workspace=admin`, or the backend's
-`build:watch` with its compiled server. Inspect `npm run --workspace=<name>` for available commands.
+For one UI, use `npm run dev --workspace=storefront` or `--workspace=admin`.
+Inspect `npm run --workspace=<name>` for available commands.
 Production smoke checks require a completed build; Vite preview is for local verification.
 
 Run `npm run ui:showcase` and open [the UI preview](http://127.0.0.1:5180/showcase.html) to inspect
@@ -134,6 +140,7 @@ Select checks for the changed area using [Testing §15.5](docs/TESTING.md#155-ch
 | Workspace/tooling formatting | `npm run format:check` |
 | Application checks | `npm run lint --workspace=<name>`, `typecheck`, `test:unit`, `build` |
 | Backend database integration | `npm run test:integration --workspace=backend` |
+| Backend consolidated inventory | `npm run ci -- --scope=backend` |
 | Browser verification | `npm run test:ui` |
 | Security scans | `npm run test:security` |
 | Complete integration inventory | `npm run ci` |
@@ -146,6 +153,9 @@ see [Testing §7.5](docs/TESTING.md#75-ui-test-procedure) for scope and procedur
 CI uses `ci-workspaces.json` as its check inventory. Full results are written to `test-results/ci.json`;
 scoped runs use `test-results/ci/<scope>.json`. Missing required checks fail. Local checks and synthetic
 fixtures do not establish hosted deployment, provider activation or milestone acceptance.
+Hosted CI currently runs the full inventory; affected hosted selection is P01-022. Automatic OpenAPI
+and Postman generation is P01-023. Until those tasks are accepted, use the commands above and the
+current API specification; planned artifact paths and generation commands are not setup instructions.
 
 ## 6. Delivery and operations
 
@@ -165,7 +175,7 @@ from historical task reports. Keep local, CI, staging and production resources s
 | [Design](docs/DESIGN.md)                           | Tokens, layouts, interactions and accessibility              |
 | [Database](docs/DATABASE.md)                       | Collections, schemas, indexes, transactions and migrations   |
 | [API](docs/API.md)                                 | Routes, DTOs, authorization, errors and retries              |
-| [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) | Feature sequence, dependencies and milestones                |
+| [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) | Application stages, domain dependencies and milestones      |
 | [Tasks](docs/TASKS.md)                             | Stable task IDs, execution status and evidence               |
 | [Testing](docs/TESTING.md)                         | Scenarios, fixtures, tools and verification procedures       |
 | [Operations](docs/OPERATIONS.md)                   | Configuration, deployment, recovery and operating procedures |

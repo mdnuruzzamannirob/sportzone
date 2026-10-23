@@ -84,11 +84,11 @@ Initial release is **one Bangladesh store, BDT, one primary admin role, guest/re
 
 ### 2.1 Risk-based, incremental delivery
 
-Every implemented feature slice follows:
+Each work package in the active application stage follows:
 
-`Confirm FR & API/DB contract → Write focused tests → Implement → Run affected checks → Integrate UI → Regression → Attach evidence → Review`.
+`Confirm FR & API/DB contract → Write focused tests → Implement owning capability → Run affected checks → Attach evidence → Review`. UI integration occurs in admin/storefront stages; integrated regression follows both.
 
-The twelve phases in Implementation Plan §6 govern scheduling; Phase 10 is **integrated regression and release-candidate verification**, not the first time features are tested. Independent activity may run in parallel when prerequisites and isolation are in place.
+Implementation Plan §3.1 governs application-stage execution; §6 groups domain requirements. Phase 10 is **integrated regression and release-candidate verification**, not the first time features are tested. Independent activity stays within the active stage and its prerequisites.
 
 | Risk tier | Characteristics | Verification emphasis |
 | --- | --- | --- |
@@ -204,10 +204,10 @@ The diagram shows verification responsibilities, not a claim that test infrastru
 | Security and dependencies | SAST, dependency audit, secret scanner | CI availability and triage process agreed |
 | CI | GitHub Actions or approved CI system | Matches npm-workspaces repository and deployment controls |
 
-Node.js tooling tests, the GitHub Actions baseline, storefront layout/HTTP checks and admin DOM routing/HTTP checks exist. Other application
-tools above are introduced with their
-owning feature/tooling tasks; listing a tool is not evidence that it is installed. Use compatible supported releases,
-commit exact versions and lockfile, and record installed versions in run evidence.
+The command inventory in §5.3 describes executable verification; the table above describes tool
+responsibilities, not installation status. P01-023 owns automatic OpenAPI/Postman generation and
+parity checks. Performance tooling is selected with its approved workload. Use compatible supported
+releases, commit exact versions and lockfile, and record installed versions in run evidence.
 
 ### 5.2 Test code organization
 
@@ -237,6 +237,7 @@ feature/tooling task, real assertions and CI integration rather than a passing p
 | `npm run lint:boundaries` | TypeScript-parsed source imports: declared dependencies, workspace/shared isolation, private backend models and transitive client/server boundaries |
 | `npm run format:check` | Biome format check of repository scripts/tests/shared utilities and all adopted workspace source, tests and configuration |
 | `npm run ci` | Complete inventory once, using the same runner as the single hosted job; workspace builds precede browser checks |
+| `npm run ci -- --scope=backend` | Backend inventory only; current planner still validates workspace metadata; no frontend build or browser execution |
 | `npm run ci -- --scope=browser` | Browser audit only; requires current storefront/admin production builds and installed browser engines |
 | `npm run test:security` | Pinned/checksummed Gitleaks working-tree/history scan and npm advisories; sanitized reports and reviewed expiring advisory exceptions |
 | `npm run test:ui` | Type-check isolated fixture/config/tests; Playwright Chromium/Firefox/WebKit foundation reflow, axe, keyboard, theme and reduced-motion checks; requires both production builds and installed browser engines |
@@ -254,7 +255,7 @@ activation or commerce acceptance. UI behavior, themes, app-owned HeroUI deliver
 §§7, 14; HTTP/session/configuration and persistence assertions follow §§8–9, 12. Execution details and historical
 case counts belong to §16.1's evidence records.
 
-[ci-workspaces.json](../ci-workspaces.json) assigns storefront setup to P02-001, admin to P02-002 and backend to P03-001.
+[ci-workspaces.json](../ci-workspaces.json) records owning workspace check scopes and actual configured commands.
 Adding workspace source, scripts or dependencies requires active CI state and real lint/typecheck/unit/build scripts.
 Extend that inventory and the root aliases with applicable API/DB contract, concurrency, browser and security checks as
 the capabilities arrive. CI must fail for any missing or failing configured command; `--if-present` cannot establish a pass.
@@ -800,18 +801,16 @@ flowchart LR
     Security --> Review[Eligible for staging review]
 ```
 
-Operations §5.5 owns execution/caching/security and §5.6 owns promotion. The single hosted job runs the
-same inventory as local full verification, stopping on the first failed command. Every hosted trigger runs
-the complete inventory; local development uses §15.5. This graph concerns CI evidence, not merchant or
-production acceptance. [P01-016 evidence](./evidence/P01-016-ci-governance.md) distinguishes historical
-full-suite results from the current tooling revision and pending hosted acceptance.
+Operations §5.5 owns execution/caching/security and §5.6 owns promotion. Select scopes from changed paths and actual consumers, retaining a stable required aggregate result. Backend-private changes require backend and applicable repository/contract/security checks, without frontend builds, UI tests or browser engine installation. UI changes require their owning workspace and applicable browser checks; shared dependencies/configuration require affected consumers. Integrated staging/release candidates require the full inventory above.
+
+**Current implementation:** the hosted workflow still installs three browser engines and runs unscoped `npm run ci` on every trigger. The local runner supports single scopes, including `npm run ci -- --scope=backend`, but validates the full workspace inventory first. Scope-aware hosted selection, narrower inventory validation and affected formatting are foundation implementation work; this policy does not claim they already exist.
 
 ### 15.2 Trigger and quality matrix
 
 | Trigger | Required verification before acceptance |
 | --- | --- |
 | Any PR | Lint, typecheck, changed unit/component tests, secret/dependency check, affected build |
-| Backend/API/DB PR | Relevant DB transactions/indexes, HTTP contract and authorization negatives |
+| Backend/API/DB PR | Backend checks, relevant DB transactions/indexes, HTTP contract and authorization negatives; no unaffected frontend build/test or browser setup |
 | Checkout/inventory/coupon/payment/refund change | Financial arithmetic + concurrency + retry/recovery regression; no mock-only acceptance |
 | UI/design change | Component, accessibility and critical browser checks for affected pages/themes |
 | Merge to integrated staging | Full builds, smoke, core E2E and provider/DB availability checks |
@@ -828,7 +827,7 @@ full-suite results from the current tooling revision and pending hosted acceptan
 
 ### 15.4 Refactor regression and pipeline verification
 
-Source refactors preserve existing scenario IDs and accepted historical evidence. Record before/after discovered cases when changing test paths; update Vitest globs, test TypeScript projects, browser fixture imports and smoke entry points together. A green run that silently drops tests fails acceptance. Backend tests remain outside production src; frontend tests may be colocated with their components. Enforce feature/server/client/backend import direction as an automated guard. The current formatting scope is listed in §5.3; keep backend coverage and add frontend files with their owning refactor. Formatting is separate from behavior changes.
+Source refactors preserve existing scenario IDs and accepted historical evidence. Record before/after discovered cases when changing test paths; update Vitest globs, test TypeScript projects, browser fixture imports and smoke entry points together. A green run that silently drops tests fails acceptance. Application tests remain in their owning tests/ directories outside production src, following Architecture §§4–6. Enforce feature/server/client/backend import direction as an automated guard. The current formatting scope is listed in §5.3; keep backend coverage and add frontend files with their owning refactor. Formatting is separate from behavior changes.
 
 | Scope | Required parity evidence |
 | --- | --- |
@@ -855,16 +854,22 @@ Do not restart an unchanged full pipeline merely to produce a new all-green summ
 | Backend/API/persistence | Affected unit/contract/integration cases; include authorization, transactions, races and retries when touched |
 | Dependencies, shared configuration or broad refactor | Checks for all affected consumers; use full CI when impact genuinely spans the repository |
 
-At each phase closeout, the final unfinished task coordinates one consolidated regression run against the
-phase's final integrated revision before phase acceptance. Cover the implemented repository's applicable
+At each application-stage closeout, its final unfinished task coordinates one consolidated regression against
+that application's final revision before stage acceptance. Cover the owning application's applicable
 lint/type/build, unit/contract/integration and smoke suites, plus relevant browser/accessibility, security,
 recovery and phase-exit scenarios. Do not create placeholder suites for unimplemented features. Link the
 consolidated results from that task and the phase gate; task-level focused verification remains mandatory.
 A blocked prerequisite prevents phase closeout even if executable local checks pass.
 
+P01-024, P03-022, P09-010 and P02-017 are the foundation, backend, admin and storefront closeouts.
+Backend user journeys are exercised through HTTP/API and real persistence, including guest proof,
+admin mutations and provider callbacks; they do not require customer/admin screens. Admin and
+storefront closeouts add their own real API/browser/visual evidence. Original domain milestone
+tasks consolidate cross-application acceptance after both clients are implemented.
+
 Do not repeat this full run after every task. Repeat only checks affected by subsequent fixes, expanding
-scope when integration risk warrants it. Hosted integration and release candidates retain their configured
-full verification. Financial/security/provider acceptance requirements remain mandatory. Report checks not run explicitly;
+scope when integration risk warrants it. Integrated product-phase closeout and release candidates run the full applicable cross-application
+verification; hosted changes follow the scope policy and current capability described in §15.1. Financial/security/provider acceptance requirements remain mandatory. Report checks not run explicitly;
 do not present older application results as verification of a newer application revision. Revisit settled
 architecture or tooling research only when a concrete requirement, compatibility issue or new evidence warrants it.
 

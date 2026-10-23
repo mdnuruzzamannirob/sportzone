@@ -10,6 +10,11 @@
 
 This document defines SportZone's application boundaries, technical structure, integrity invariants, integration boundaries, and workflow orchestration. The [PRD](./PRD.md) governs product scope, business rules, and acceptance criteria; this document defines their technical implementation.
 
+Module trees and workflow diagrams define the required architecture, not a completion inventory.
+[Tasks](./TASKS.md) owns implementation status, blockers and accepted revisions; source directories
+are created only for implemented responsibilities. [Implementation Plan](./IMPLEMENTATION_PLAN.md)
+owns application-stage execution, and [Operations](./OPERATIONS.md) owns executable setup procedures.
+
 ---
 
 **Contents**
@@ -195,7 +200,7 @@ Use npm workspaces with the existing three root application directories and one 
 
 Use the existing task inventory and Node orchestration scripts. Additional build orchestrators, remote task caches, an `apps/` relocation and publishable shared packages are not part of the initial architecture. Reconsider task caching only against measured repeated-build cost, invalidation requirements and operational ownership. Pure shared utilities and styles do not grant frontend access to backend runtime code. Enforce import direction in automated repository checks during tooling implementation.
 
-Development orchestration must start the two UIs, backend compiler/watch process and API with coordinated termination and visible failures. Retain the isolated replica-set database tool. Optional local containers supplement this setup; they must not replace transaction-capable fixtures with standalone MongoDB. `npm run dev` provides this workflow on Linux/macOS/WSL; Operations §5.2 owns configuration and process-lifecycle details. The compiler retains the last successful API on compilation errors; an API runtime exit stops the coordinator. Verify actual readiness separately.
+Development orchestration supports application-specific work and an integrated mode with coordinated termination and visible failures. Backend development uses its compiler/watch process and API without requiring UI servers or browser tooling. Retain the isolated replica-set database tool. Optional local containers supplement this setup; they must not replace transaction-capable fixtures with standalone MongoDB. Currently `npm run dev` starts all three applications; backend-only compiler/runtime coordination is available through root `node scripts/dev/backend.mjs`. A dedicated scoped command remains foundation tooling work. Operations §5.2 owns platform support, configuration and process-lifecycle details. The compiler retains the last successful API on compilation errors; an API runtime exit stops the coordinator. Verify actual readiness separately.
 
 Root cross-application tests and the UI preview declare their directly imported React/Vite/browser/database fixture
 tools as root dev dependencies at the same pinned versions used by the workspaces. One root lockfile remains
@@ -422,8 +427,8 @@ backend/
 │   │   ├── notifications/
 │   │   ├── support/
 │   │   ├── settings/
-│   │   ├── reporting/           # Existing dashboard/report aggregation
-│   │   ├── audit/               # Existing durable audit responsibility
+│   │   ├── reporting/           # Dashboard/report aggregation responsibility
+│   │   ├── audit/               # Durable audit responsibility
 │   │   └── health/
 │   ├── providers/
 │   │   ├── cloudinary/
@@ -982,7 +987,7 @@ Run lint, type checks, tests, and application builds before deployment. Apply an
 | Separate feature ownership from reusable presentation | Keep change locality while preserving tested HeroUI, commerce and management primitives |
 | Single canonical model registration | Users and variant counters have shared storage but restricted write capabilities; duplicate schema definitions would permit drift |
 | One check inventory for local and hosted CI | Prevent YAML and local-runner checks from diverging; cross-app browser checks require explicit build dependencies |
-| Explicit API contracts plus executable validators/tests | API.md remains the HTTP authority; any later OpenAPI representation must be derived/reconciled rather than independently handwritten |
+| Explicit API contracts plus executable validators/tests | API.md remains the HTTP authority; executable contract ownership and generated OpenAPI/Postman artifacts follow API §18.3 |
 | Immutable release artifacts and separate worker process | Trace deployed behavior to source/configuration and recover jobs without inventing a second business API |
 | Managed hosting and database capabilities | Reduce infrastructure administration; provider/region selection must satisfy verified runtime, backup and access requirements under Operations, not assumptions about a vendor |
 

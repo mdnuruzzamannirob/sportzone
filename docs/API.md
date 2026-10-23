@@ -115,7 +115,7 @@ aggregates. Delivery and media remain distinct owners. This mapping changes no U
 DTO, response/error, cookie, CSRF, idempotency or authorization contract. Implemented-path references
 remain valid until verified migration. Controllers map HTTP inputs/results; services enforce domain
 rules through public capabilities. Notification surfaces stay restricted. This specification and
-executable validators/contract tests define the API; future OpenAPI output must be checked against them.
+executable validators/contract tests define the API; generated OpenAPI/Postman artifacts follow §18.3 and must be checked against them.
 
 ## 3. HTTP conventions & versioning
 
@@ -1655,10 +1655,24 @@ arbitrary redirect URL from request input.
 | FR-34               | §14.3 settings/policy versioning                |
 
 Use this mapping to implement contract tests with each feature slice. Apply PRD §14 acceptance criteria, follow
-Implementation Plan §6 sequencing and attach execution evidence in `TASKS.md`. Keep the delivered OpenAPI/types aligned
+Follow Implementation Plan §3.1 application sequencing and §6 domain requirements; attach execution evidence in `TASKS.md`. Keep the delivered OpenAPI/types aligned
 with this specification.
 
 ### 18.3 Change and sign-off procedure
+
+**Contract generation:** Foundation must establish one executable route/schema registry reconciled with this
+specification and runtime validators. Generate OpenAPI and the Postman collection from that registry through
+one deterministic pipeline; do not hand-maintain competing request/response definitions. Include methods,
+paths, operation IDs, input/response/error schemas, session/CSRF requirements and conditional/idempotency
+headers. Registry metadata must distinguish implemented routes from planned contracts; a production-facing
+collection must not present planned operations as available. Verify registered-route coverage and artifact
+freshness in the backend contract scope. Generation must not import a listening server or require a live DB.
+Postman environment templates contain placeholders only; never export credentials, cookies, proof tokens
+or real customer examples. Concrete commands, artifact paths and tooling dependencies are recorded when
+implemented. Automatic OpenAPI/Postman generation is currently **not implemented**.
+
+P01-023 owns implementation and verification of this pipeline. Backend changes maintain its registry
+and artifacts as part of their owning task; UI implementation is not required to validate the contract.
 
 1. Identify changed FR, Architecture invariant, Database field/index or Design interaction and note exact source section.
 2. Propose the smallest compatible API contract change; list affected endpoints, DTOs, error codes and consumers.
@@ -1687,7 +1701,7 @@ The canonical route definitions, access roles and request/response contracts app
 | Admin reporting/support | §14.4                | Dashboard, cash-flow reports, complaints, audit and notification state                      |
 | Media and health        | §§16.2–16.4          | Controlled uploads, private evidence, readiness/liveness                                    |
 
-A later OpenAPI file should be generated/maintained against **the same contracts**, not introduced as a contradictory
+OpenAPI and Postman artifacts must be generated against **the same contracts** under §18.3, not introduced as a contradictory
 independent source. Every path listed in the main tables is a v1 route; externally triggered callback methods
 and operational endpoints require deployment-specific adapter tests.
 

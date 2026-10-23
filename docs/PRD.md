@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 17 October 2026
+**Updated:** 23 October 2026
 
 **Project Type:** Full-Stack E-Commerce Web Application\
 **Target Market:** Bangladesh\
@@ -28,12 +28,12 @@ This document owns product scope, business rules, customer rights, and product a
 - [10. Data requirements](#10-data-requirements)
 - [11. State management and Edge cases](#11-state-management-and-edge-cases)
 - [12. Non-functional requirements](#12-non-functional-requirements)
-- [13. Technical constraints and ownership](#13-technical-constraints-and-ownership)
+- [13. Product constraints and dependencies](#13-product-constraints-and-dependencies)
 - [14. Acceptance criteria](#14-acceptance-criteria)
-- [15. Delivery planning](#15-delivery-planning)
+- [15. Delivery governance](#15-delivery-governance)
 - [16. Success metrics](#16-success-metrics)
 - [17. Future enhancements](#17-future-enhancements)
-- [18. Release, handover, and support](#18-release-handover-and-support)
+- [18. Release and handover outcomes](#18-release-and-handover-outcomes)
 - [19. Assumptions and operational dependencies](#19-assumptions-and-operational-dependencies)
 - [20. Final deliverables](#20-final-deliverables)
 
@@ -232,17 +232,13 @@ Initial categories will include:
 | Sportswear | Jerseys, Shorts, Tracksuits |
 | Accessories | Sports Bags, Water Bottles |
 
-**Category Rules:**
-
-- Administrators can create, edit, and deactivate categories.
-- Categories may contain subcategories.
-- Products must belong to at least one active category.
-- Categories containing products cannot be permanently deleted without reassignment.
-- Inactive categories must not appear in public navigation.
+The table is an initial catalog taxonomy, not a fixed navigation design. Category lifecycle, product assignment, public visibility and administrator management are governed by FR-24.
 
 ---
 
 ## 5. Functional requirements
+
+FR-01 through FR-34 are the authoritative statements of initial-release product behavior. The user flows, page inventory, roles, data summary, state summaries and acceptance checklist below make those requirements easier to review; they do not add competing behavior. Every listed requirement remains within the initial release unless this PRD is explicitly revised. Priority indicates implementation urgency only; it does not remove a requirement from release acceptance.
 
 ### FR-01: Customer authentication
 
@@ -1203,6 +1199,8 @@ Use the referenced requirements when implementing or changing policy. This index
 
 ## 7. User flows
 
+These flows show the intended customer and administrator journeys. Their eligibility, state, error and recovery rules remain in the referenced functional requirements.
+
 ### 7.1 Registration
 
 Home → Register → Enter Details → Create Account → Login → Customer Account
@@ -1258,6 +1256,8 @@ Payment Callback Missing/Uncertain → Query SSLCOMMERZ Transaction Status → V
 ---
 
 ## 8. Application pages
+
+This inventory identifies required user-facing surfaces. It does not require a distinct route when a usable flow is appropriately composed within another listed page.
 
 ### 8.1 Customer pages
 
@@ -1318,6 +1318,8 @@ Payment Callback Missing/Uncertain → Query SSLCOMMERZ Transaction Status → V
 
 ## 9. Roles and permissions
 
+This matrix is a product-access summary. Server-side authorization, session and record-ownership mechanics are defined by Architecture and API.
+
 | Feature | Guest | Customer | Admin |
 | --- | --- | --- | --- |
 | Browse Products | Yes | Yes | Yes |
@@ -1348,6 +1350,8 @@ Payment Callback Missing/Uncertain → Query SSLCOMMERZ Transaction Status → V
 ---
 
 ## 10. Data requirements
+
+This is a product-level information inventory. It identifies information that must exist or remain historically correct; it is not a database schema. Canonical fields, indexes, retention and migration rules are defined in `DATABASE.md`.
 
 | Entity | Important Fields |
 | --- | --- |
@@ -1405,6 +1409,8 @@ Payment Callback Missing/Uncertain → Query SSLCOMMERZ Transaction Status → V
 ---
 
 ## 11. State management and Edge cases
+
+These are product state summaries. API and database contracts define the complete transition, retry and persistence rules.
 
 ### 11.1 Order lifecycle
 
@@ -1557,9 +1563,9 @@ The platform should support current stable versions of:
 
 ---
 
-## 13. Technical constraints and ownership
+## 13. Product constraints and dependencies
 
-The product requires a responsive customer storefront, separate administrative interface, secure backend, BDT accounting, enabled SSLCOMMERZ-hosted channels, and store-managed COD. Chosen frameworks, persistence, session design, media, email, and deployment topology are defined in Architecture §§2–14. This PRD does not maintain a competing technology table.
+The product requires a responsive customer storefront, separate administrative interface, secure backend, BDT accounting, enabled SSLCOMMERZ-hosted channels, and store-managed COD. Chosen frameworks, persistence, session design, media, email and deployment topology are defined in Architecture. This PRD does not maintain a competing technology table.
 
 Provider activation and refund support remain merchant-specific release dependencies; a selected vendor does not establish operational readiness.
 
@@ -1647,17 +1653,9 @@ Provider activation and refund support remain merchant-specific release dependen
 
 ---
 
-## 15. Delivery planning
+## 15. Delivery governance
 
-`IMPLEMENTATION_PLAN.md` §§5–7 owns the twelve-phase roadmap, dependencies, work packages, and milestone gates. `TASKS.md` owns task execution status and evidence. Product scope and acceptance remain governed by this PRD.
-
-### 15.1 Development approach
-
-Deliver and verify features incrementally. Confirm provider feasibility early, use isolated test environments, and review required milestone evidence before release. Scope changes update the product source before dependent plans.
-
-### 15.2 Timeline
-
-Dates depend on capacity, approved content, provider access, and agreed milestones. No delivery dates or completed implementation are claimed here.
+`IMPLEMENTATION_PLAN.md` owns execution stages, dependencies and milestone gates. `TASKS.md` owns task status and evidence. Delivery dates depend on capacity, approved content, provider access and agreed milestones; no date or implementation status is inferred from this PRD. A product scope change must update this document before dependent plans and tasks.
 
 ---
 
@@ -1699,9 +1697,9 @@ Potential future features:
 
 ---
 
-## 18. Release, handover, and support
+## 18. Release and handover outcomes
 
-### 18.1 Release requirements
+### 18.1 Product release requirements
 
 Before production launch:
 
@@ -1715,7 +1713,7 @@ Before production launch:
 - Backup and recovery procedures must be checked.
 - Production checkout must be verified.
 
-### 18.2 Project handover
+### 18.2 Handover outcomes
 
 The final handover should include:
 
@@ -1728,7 +1726,7 @@ The final handover should include:
 - Basic administration guide.
 - Known limitations and operational dependencies.
 
-### 18.3 Support and maintenance
+### 18.3 Support and maintenance boundaries
 
 - Development defects identified during the agreed warranty period will be corrected under the project agreement.
 - New features and scope changes require separate approval.
@@ -1758,7 +1756,7 @@ The final handover should include:
 
 ### 19.2 Default business policies
 
-Use the following business policies for implementation. Published policy content must reflect current applicable law and operator-approved terms. Version subsequent changes through the owning functional requirement:
+The following are initial operational policies for implementation. Published policy content requires current legal review and operator approval; a policy change updates its owning functional requirement and the published copy:
 
 - Standard return request window: 7 calendar days after delivery.
 - Cancellation: Before shipment, subject to processing status.
@@ -1806,28 +1804,12 @@ These are launch configuration requirements rather than missing product features
 
 ## 20. Final deliverables
 
-1. Responsive sports e-commerce storefront.
-2. Customer registration and authentication.
-3. Customer profile and address management.
-4. Product catalog and search.
-5. Product variants and inventory management.
-6. Shopping cart.
-7. Wishlist.
-8. Discounts and coupons.
-9. Product reviews and ratings.
-10. Guest and registered checkout.
-11. SSLCOMMERZ payment integration for bKash, Nagad, and Rocket (subject to merchant channel activation).
-12. Cash on Delivery.
-13. Order management and tracking.
-14. Admin-controlled delivery charges.
-15. Order cancellation system.
-16. Product return system.
-17. Full and partial refund system.
-18. Customer notifications.
-19. Secure admin management interface.
-20. Payment and refund administration.
-21. Basic business reports.
-22. Backend APIs and database.
-23. Security and functional testing.
-24. Production deployment.
-25. Technical documentation and project handover.
+The initial release delivers the capabilities in FR-01 through FR-34, grouped as follows:
+
+- Customer storefront, identity, account, catalog, cart, wishlist, checkout, orders, reviews and after-sales journeys.
+- Administrator management of catalog, stock, delivery, orders, payments, promotions, reviews, returns, refunds, settings and basic reports.
+- Authoritative backend APIs, persistence, notifications and security controls that support those journeys.
+- COD and the required SSLCOMMERZ-hosted bKash, Nagad and Rocket channels after verified merchant activation.
+- Production deployment, operational documentation and account handover after the release requirements above are met.
+
+This section is a delivery summary. FR-01 through FR-34 and §14 remain the authoritative product and acceptance requirements.

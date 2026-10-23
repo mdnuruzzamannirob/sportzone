@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 22 October 2026
+**Updated:** 23 October 2026
 
 **Project:** Single-store sports e-commerce platform for Bangladesh (BDT)\
 **Scope:** Repository-root instructions for coding agents working in `sportzone/`\
@@ -112,8 +112,7 @@ from business decisions. No frontend backend-runtime/provider/secret imports. Up
 boundary checks and negative fixtures with the owning refactor; a documentation statement alone does
 not prove enforcement. Use narrow capabilities for shared collections and preserve canonical models.
 
-**One application at a time:** P01-018 documentation review → P03-021 backend → P02-015 storefront →
-P02-016 admin. By default, accept each application before starting the next. When the owner explicitly
+**One application at a time:** Follow Implementation Plan §3.1: foundation → backend → admin → storefront → integrated release. Historical refactor IDs retain their recorded acceptance. By default, accept each application before starting the next. When the owner explicitly
 requests a combined application/monorepo batch, implement and verify each application in sequence, then collect
 independent acceptance for every task in the final review; a batch request never self-approves a task or milestone.
 Move imports, tools, test discovery, aliases and actual CI inventory together; retain compatibility
@@ -127,20 +126,20 @@ Apply this sequence to each assigned change:
 
 1. **Understand:** Identify the user request, `PXX-NNN` task where applicable, linked PRD FR/NFR, acceptance criteria and dependencies. Do not infer that a task or milestone is accepted from its description.
 2. **Inspect:** Read affected code, tests, existing conventions, relevant Database/API contracts, and `git diff`/working-tree state. Do not overwrite concurrent edits.
-3. **Plan:** Define the smallest safe vertical slice, changed files, data/API impacts, tests, rollout/recovery concerns and unresolved decisions.
+3. **Plan:** Define the smallest safe work package within the active application stage, changed files, data/API impacts, tests, rollout/recovery concerns and unresolved decisions.
 4. **Implement:** Modify only required files; preserve module ownership, compatibility and financial/security invariants. For each feature, update data/API contracts before implementation where needed.
 5. **Verify:** Execute available relevant checks with real output. Include negative, concurrency and retry paths when applicable. Use a transaction-capable MongoDB deployment for transaction tests.
 6. **Review:** Inspect the actual diff for unrelated changes, contract drift, unsafe logging, missing cleanup, and regressions.
 7. **Report:** Give results, tests **run and not run**, limitations, evidence and correct task status; do not invent completion.
 
-Follow the dependency-driven feature-slice sequence in [Implementation Plan §§3, 6](docs/IMPLEMENTATION_PLAN.md). A phase label does not automatically require unrelated work to be sequential; safety prerequisites still apply.
+Follow the application-stage sequence and domain dependencies in [Implementation Plan §§3, 6](docs/IMPLEMENTATION_PLAN.md). A phase label does not automatically require unrelated work to be sequential; safety prerequisites still apply.
 
 For higher-risk mutations, write state-transition and concurrency tests before enabling the mutation in an integrated environment, as required by Implementation Plan §3.1.
 
 ## 5. Implementation principles
 
 - **One authoritative backend:** Express services own prices, discounts, delivery charges, stock, permissions, order transitions and financial effects. Next.js route handlers or Server Actions may only be thin presentation adapters.
-- **Incremental delivery:** Prefer end-to-end usable slices over disconnected mock pages or speculative abstractions.
+- **Incremental delivery:** Deliver usable, verified work packages within the active application stage; backend packages prove real APIs and domain behavior, with client journeys integrated in their later stages.
 - **Controlled complexity:** Stay within the modular monolith and planned durable scheduled jobs; add infrastructure only after an approved, demonstrated need.
 - **Historical correctness:** Preserve immutable order-time product/price/discount/address/delivery snapshots, financial events and audit history.
 - **Uncertain outcomes:** Network timeout, browser redirect or provider request acceptance does not prove payment collection or refund completion.
@@ -227,7 +226,7 @@ Verification depends on the change type. Consult [Testing](docs/TESTING.md) for 
 | Configuration/operations | Environment safety, deploy/rollback compatibility, monitoring and affected recovery runbooks |
 | Documentation | Correct references, Markdown structure/links, consistency with related contracts |
 
-Use change-based local verification in [Testing §15.5](docs/TESTING.md#155-change-based-local-verification). Select affected checks before running them; reuse valid results for unchanged inputs. After a localized fix, rerun the failed suite and affected consumers rather than restarting the whole pipeline. Documentation-only work needs repository documentation checks, not application builds/tests. At phase closeout, use the final unfinished task to coordinate one consolidated regression against the integrated revision under Testing §15.5; do not repeat full-project suites after every task. Required task-level safety checks and independent acceptance remain mandatory. Full CI also belongs to hosted integration/release or justified cross-project changes. Do not repeat settled architecture research without a concrete unresolved question.
+Use change-based local verification in [Testing §15.5](docs/TESTING.md#155-change-based-local-verification). Select affected checks before running them; reuse valid results for unchanged inputs. After a localized fix, rerun the failed suite and affected consumers rather than restarting the whole pipeline. Documentation-only work needs repository documentation checks, not application builds/tests. At application-stage closeout, use its final unfinished task for consolidated owning-application regression; integrated product/release closeout adds cross-application checks under Testing §15.5; do not repeat full-project suites after every task. Required task-level safety checks and independent acceptance remain mandatory. Backend-private work uses backend verification without frontend builds, UI tests or browser setup. Hosted scope selection and full integrated/release verification follow Testing §15; inspect actual workflow support before claiming isolation. Do not repeat settled architecture research without a concrete unresolved question.
 
 Execute repository scripts **only after confirming their actual names** in `package.json` and CI. Do not imply planned scripts/tests already exist. Record command, environment, observed result and artifact link. Use these results honestly: **Passed**, **Failed**, **Not Run** (including unavailable infrastructure), or **Blocked**. A mock-only check or static review is not real provider, concurrency, deployment or production acceptance.
 
@@ -238,6 +237,7 @@ When scaffolding a workspace or adding its scripts/dependencies, update [ci-work
 - Update the **owning** document when a contract legitimately changes; then inspect references and dependent specifications. `AGENTS.md` and `README.md` must never silently overrule them.
 - Edit the existing owning section instead of appending dated updates, task summaries or parallel rules to specifications. Keep requirements and current procedures in specifications; execution status/reviewer decisions in Tasks; commands/results and implementation snapshots in task evidence; concise change history in Changelog.
 - Update documentation only when its contract, setup or procedure changes. A completed task does not require edits to every document. Link to the owning source rather than duplicating its details.
+- Treat an accepted documentation baseline as settled. Reopen its owning section only for a concrete defect, an approved requirement/decision change or a changed executable procedure. Do not append implementation progress to specifications or repeat editorial refactors after routine task completion.
 - Reuse existing documents and evidence records. Create a new document only for a distinct subject with a clear owner and navigation entry; do not create separate structure/component guides already owned by Architecture and Design.
 - Before handoff, remove superseded instructions and duplicate paragraphs, reconcile current versus target paths, and check headings, contents and inbound links. Preserve historical acceptance and verification records; label their revision/environment instead of presenting old results as current guarantees.
 - Before a feature slice, reconcile affected [Database](docs/DATABASE.md), [API](docs/API.md) and [Testing](docs/TESTING.md) contracts. Update [Operations](docs/OPERATIONS.md) when configuration, migration, recovery, monitoring or deployment changes.
