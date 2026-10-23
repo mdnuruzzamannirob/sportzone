@@ -1668,9 +1668,22 @@ headers. Registry metadata must distinguish implemented routes from planned cont
 collection must not present planned operations as available. Verify registered-route coverage and artifact
 freshness in the backend contract scope. Generation must not import a listening server or require a live DB.
 Postman environment templates contain placeholders only; never export credentials, cookies, proof tokens
-or real customer examples. Concrete commands, artifact paths and tooling dependencies are recorded when
-implemented, with delivery status and evidence in Tasks. Backend changes maintain the registry
-and artifacts as part of their owning task; UI implementation is not required to validate the contract.
+or real customer examples. The executable registry is `backend/contracts/registry.ts`; it imports owning
+runtime request/DTO schemas. `npm run api:generate --workspace=backend` produces `backend/api/openapi.json`,
+`postman.collection.json`, `postman.environment.json` and `planned-operations.json`. The OpenAPI 3.1 and
+Postman 2.1 collection contain implemented capabilities with explicit activation conditions; planned
+operations remain a separate non-executable specification inventory. Explicit HEAD/OPTIONS transport
+behavior is distinguished from the business operation inventory.
+
+`npm run api:check --workspace=backend` verifies artifact freshness without rewriting files.
+`npm run test:contract --workspace=backend` additionally verifies actual router registration, response/status
+parity, wire schemas, safe templates and negative drift fixtures. These are mandatory backend CI checks.
+Generation compiles only the tooling dependency graph into ignored `backend/.cache/contracts`; it requires
+no listening server, MongoDB, credentials or frontend. Ajv and ajv-formats validate the offline specification
+fixtures and generated schemas in tests. JSON Schema expresses wire shape and representable constraints;
+runtime Unicode/phone/password, cross-field, authorization and transactional rules remain mandatory.
+Backend changes maintain their schemas, registry metadata and regenerated artifacts in the same task;
+delivery/acceptance history belongs in Tasks and evidence, not generated files.
 
 1. Identify changed FR, Architecture invariant, Database field/index or Design interaction and note exact source section.
 2. Propose the smallest compatible API contract change; list affected endpoints, DTOs, error codes and consumers.

@@ -1,4 +1,4 @@
-const definitions = {
+export const errorDefinitions = {
   UNSUPPORTED_DELIVERY_AREA: {
     status: 400,
     message: 'Delivery area is not supported.',
@@ -31,7 +31,7 @@ const definitions = {
   NOT_FOUND: { status: 404, message: 'Resource not found.' },
   INTERNAL_ERROR: { status: 500, message: 'An unexpected error occurred.' },
 } as const
-export type ErrorCode = keyof typeof definitions
+export type ErrorCode = keyof typeof errorDefinitions
 export type FieldIssue = { field: string; code: string }
 
 // Only approved, static public messages cross the HTTP boundary.
@@ -41,7 +41,7 @@ export class ApiError extends Error {
     readonly code: ErrorCode,
     readonly details?: readonly FieldIssue[],
   ) {
-    super(definitions[code].message)
-    this.status = definitions[code].status
+    super(errorDefinitions[code].message)
+    this.status = errorDefinitions[code].status
   }
 }

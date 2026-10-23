@@ -1,33 +1,25 @@
-import { setTimeout as delay } from 'node:timers/promises'
-import { Types, type ClientSession, type Connection } from 'mongoose'
 import { randomBytes } from 'node:crypto'
-import { z } from 'zod'
+import { setTimeout as delay } from 'node:timers/promises'
+import { type ClientSession, type Connection, Types } from 'mongoose'
 import type { RecoveryOptions } from '../../../config/security.js'
+import { changeInput, confirmation, issuance } from './password-recovery.schema.js'
+
 export {
   loadRecoveryOptions,
   type RecoveryOptions,
 } from '../../../config/security.js'
-import { inTransaction } from '../../../shared/database/transaction.js'
-import { parseInput } from '../../../shared/middleware/validate.js'
-import { ApiError } from '../../../shared/errors/app-error.js'
-import type { RegistrationNotifications } from '../../notifications/notification.service.js'
-import type { BrowserSecurity } from '../sessions/browser-security.service.js'
-import { loginInput } from '../credentials/credentials.service.js'
-import type { IdentityModels } from '../auth.model.js'
-import { hashPassword, newPasswordPolicy, verifyPassword } from '../credentials/password.service.js'
-import { ChallengeUnavailableError, consumeUserChallenge } from '../sessions/session.persistence.js'
-import { proofHash, proofPattern } from '../verification/proof.crypto.js'
-import type { SessionService, SessionKind } from '../sessions/session.service.js'
 
-const issuance = loginInput.pick({ email: true })
-const confirmation = z.strictObject({
-  token: z.string().regex(proofPattern),
-  newPassword: newPasswordPolicy,
-})
-const changeInput = z.strictObject({
-  currentPassword: loginInput.shape.password,
-  newPassword: newPasswordPolicy,
-})
+import { inTransaction } from '../../../shared/database/transaction.js'
+import { ApiError } from '../../../shared/errors/app-error.js'
+import { parseInput } from '../../../shared/middleware/validate.js'
+import type { RegistrationNotifications } from '../../notifications/notification.service.js'
+import type { IdentityModels } from '../auth.model.js'
+import { hashPassword, verifyPassword } from '../credentials/password.service.js'
+import type { BrowserSecurity } from '../sessions/browser-security.service.js'
+import { ChallengeUnavailableError, consumeUserChallenge } from '../sessions/session.persistence.js'
+import type { SessionKind, SessionService } from '../sessions/session.service.js'
+import { proofHash } from '../verification/proof.crypto.js'
+
 export function createRecoveryService(
   connection: Connection,
   models: IdentityModels,

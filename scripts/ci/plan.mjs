@@ -17,7 +17,7 @@ const required = {
   },
   storefront: { checks: ['test:smoke'] },
   admin: { checks: ['test:smoke'] },
-  backend: { checks: ['test:smoke', 'test:integration'] },
+  backend: { checks: ['test:smoke', 'test:integration', 'test:contract'] },
   browser: { checks: ['test:ui'] },
   'supply-chain': { checks: ['test:security'] },
 }

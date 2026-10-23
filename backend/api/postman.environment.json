@@ -1,0 +1,228 @@
+{
+  "name": "SportZone blank local environment",
+  "values": [
+    {
+      "key": "addressId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "adminCsrfToken",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "adminOrigin",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "assetId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "baseUrl",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "category",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "csrfToken",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "delete_me_addresses_addressIdBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "inStock",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "maxPricePoisha",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "minPricePoisha",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "monitorToken",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "page",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "pageSize",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "parent",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "patch_meBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "patch_me_addresses_addressIdBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_auth_loginBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_auth_logoutBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_auth_password_resetsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_auth_password_resets_confirmBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_auth_loginBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_auth_logoutBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_auth_password_resetsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_auth_password_resets_confirmBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_auth_registerBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_me_addressesBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_me_addresses_addressId_defaultBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_me_deletion_requestsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_me_email_changesBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_me_email_changes_confirmBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_me_password_changeBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "q",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "sessionKind",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "slug",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "sort",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "storefrontOrigin",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}

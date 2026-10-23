@@ -13,9 +13,9 @@ import {
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import test from 'node:test'
+import { affectedScopes } from '../../scripts/ci/affected.mjs'
 import { baseChecks, inspectRepository, workspacePlan } from '../../scripts/ci/check-repository.mjs'
 import { ciPlan, scopeNames } from '../../scripts/ci/plan.mjs'
-import { affectedScopes } from '../../scripts/ci/affected.mjs'
 import { auditResult, safeFindings } from '../../scripts/ci/security-policy.mjs'
 import { snapshotWorkingTree } from '../../scripts/ci/security-snapshot.mjs'
 
@@ -269,7 +269,7 @@ function activeFixture(t) {
     const checks = [
       ...baseChecks,
       'test:smoke',
-      ...(name === 'backend' ? ['test:integration'] : []),
+      ...(name === 'backend' ? ['test:integration', 'test:contract'] : []),
     ]
     f.config[name].checks = checks
     f.put(`${name}/package.json`, {
@@ -288,7 +288,7 @@ test('CI-13: one ordered inventory runs every configured check', (t) => {
     plan.map((s) => s.name),
     scopeNames,
   )
-  assert.equal(plan.flatMap((s) => s.checks).length, 23)
+  assert.equal(plan.flatMap((s) => s.checks).length, 24)
 })
 test('CI-14: mandatory browser checks cannot disappear', (t) => {
   const { root, put, config } = activeFixture(t)
@@ -481,13 +481,14 @@ test('CI-27: required boundary and formatting checks cannot be removed from the 
   }
 })
 
-test('CI-28: smoke and backend integration checks cannot disappear from active inventory', (t) => {
+test('CI-28: smoke, backend integration and contract checks cannot disappear from active inventory', (t) => {
   const { root, put, config } = activeFixture(t)
   for (const [name, check] of [
     ['storefront', 'test:smoke'],
     ['admin', 'test:smoke'],
     ['backend', 'test:smoke'],
     ['backend', 'test:integration'],
+    ['backend', 'test:contract'],
   ]) {
     const previous = config[name].checks
     config[name].checks = previous.filter((entry) => entry !== check)

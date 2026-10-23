@@ -690,6 +690,11 @@ API schemas and route metadata form one executable contract registry. Generate O
 Postman collection from that registry and verify route/schema parity under API §18.3. Generation
 operates independently of HTTP startup and database access; client integration uses these contracts.
 
+`backend/contracts/` owns generation tooling and registry assembly, reusing domain-owned schemas;
+`backend/api/` contains deterministic generated artifacts. Neither directory is a second business API.
+Keep production services independent of the tooling registry. API §18.3 owns commands, artifact formats
+and implemented/planned separation; Testing §8 owns parity and validation requirements.
+
 - The storefront may fetch public catalog data from Express during Next.js rendering.
 - Authenticated browser calls use credentialed requests to the configured API origin.
 - The admin uses the same API with admin-only endpoints and server-side authorization.

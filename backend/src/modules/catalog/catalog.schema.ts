@@ -7,6 +7,7 @@ export const text = (max: number) =>
     .trim()
     .min(1)
     .refine((value) => [...value].length <= max)
+    .meta({ maxLength: max })
 export const money = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER)
 const slug = z
   .string()

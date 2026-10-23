@@ -250,6 +250,14 @@ fixtures; it never reads or drops an externally configured database. Binary down
 suite. Results are written to `test-results/database.json`. Single-member tests do not establish deployment
 failover or production recovery.
 
+Backend `api:generate` regenerates the four artifacts under `backend/api/`; `api:check` fails on stale
+or missing files without modifying them. Mandatory `test:contract` runs freshness verification plus
+`tests/contracts/**/*.test.ts` through `vitest.contract.config.ts`. It compares actual Express router
+registration with the executable registry, reconciles canonical API status/path inventory, validates
+OpenAPI/Postman against offline official schemas, validates payload wire schemas and exercises negative
+route/schema/artifact drift. Templates must remain credential-free and planned routes non-executable.
+HTTP fixtures bind isolated loopback ports without a database; they do not prove provider activation.
+
 Workspace lint/build/DOM checks do not establish native browser accessibility, hosted configuration, provider
 activation or commerce acceptance. UI behavior, themes, app-owned HeroUI delivery and draft preservation follow
 §§7, 14; HTTP/session/configuration and persistence assertions follow §§8–9, 12. Execution details and historical

@@ -194,7 +194,7 @@ it('enables media only with explicit dependencies and verified persistence, reta
     .set('Cookie', `sz_admin_sid=${session.token}`)
     .set('X-CSRF-Token', session.csrfToken)
     .attach('file', png, 'synthetic.png')
-    .expect(201)
+    .expect(200)
   await request(app)
     .post('/api/v1/not-a-media-route')
     .attach('file', png, 'synthetic.png')

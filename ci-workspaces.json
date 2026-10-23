@@ -40,6 +40,7 @@
       "checks": [
         "lint",
         "typecheck",
+        "test:contract",
         "test:unit",
         "build",
         "test:smoke",

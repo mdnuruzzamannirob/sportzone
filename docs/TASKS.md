@@ -125,7 +125,7 @@ The register contains 209 tasks across twelve requirement groups. Application-st
 
 | Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |   Done | Deferred |
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
-| 01 — Requirements Finalization and Planning | 24 | 2 | 0 | 0 | 0 | 0 | 22 | 0 |
+| 01 — Requirements Finalization and Planning | 24 | 1 | 0 | 0 | 0 | 0 | 23 | 0 |
 | 02 — UI/UX Design                             |      17 |           1 |     0 |           0 |       0 |         0 |     16 |        0 |
 | 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |     21 |        0 |
 | 04 — Product Catalog and Inventory            |      19 |          11 |     0 |           0 |       1 |         0 |      7 |        0 |
@@ -137,7 +137,7 @@ The register contains 209 tasks across twelve requirement groups. Application-st
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **209** | **142** | **0** | **0** | **1** | **0** | **66** | **0** |
+| **Total** | **209** | **141** | **0** | **0** | **1** | **0** | **67** | **0** |
 
 ## 4. Milestone tracker
 
@@ -361,14 +361,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Backend-private changes execute no frontend server/build/test/browser installation; scoped planning does not fail on unrelated frontend setup; shared changes select actual consumers; unknown scopes and selected command failures fail closed. Fixture tests verify selection and failure propagation; hosted evidence verifies real workflow behavior.\
   **Evidence:** [Implementation, checks and rollback](./evidence/P01-022-scoped-development-ci.md). Owner authorized task-branch publication; [hosted run 39989593949](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/39989593949) Passed at e968ff0: all 23 commands, 58 tooling, storefront 98/admin 80/backend 392 unit, 382 MongoDB integration and 36 three-engine browser checks, plus security. Local backend-only eight-command scope Passed without frontend commands. Project owner independently accepted: “Review করেছি—accept করছি, Done করো”. Main not merged; no milestone acceptance implied.
 
-- [ ] **P01-023 — Generate OpenAPI and Postman artifacts automatically**\
-  **Status:** `Not Started` · **Area:** Foundation/API contracts\
+- [x] **P01-023 — Generate OpenAPI and Postman artifacts automatically**\
+  **Status:** `Done` · **Area:** Foundation/API contracts · **Owner:** Codex\
   **Stage:** `Foundation`\
   **Sources:** API §18.3; Testing §§8,15\
   **Depends on:** `P01-022`\
   **Deliverable:** Executable route/schema registry, deterministic OpenAPI and Postman collection generation, sanitized environment template, route parity and freshness checks in backend verification.\
   **Acceptance:** Implemented routes and DTO/security/header contracts match generated artifacts; planned operations are clearly distinguished; generation requires no listening server, database or credentials; repeat generation has no diff and stale artifacts fail verification. Existing contracts remain compatible.\
-  **Evidence to attach:** Generation commands/artifacts, deterministic output and negative drift/route-parity checks.
+  **Evidence:** [Generated artifacts, validation and focused regression](./evidence/P01-023-api-artifacts.md). Implemented/planned separation, deterministic output and freshness/parity guards verified; approved media status/address header drift corrected. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-023-api-artifacts.md#independent-acceptance).
 
 - [ ] **P01-024 — Verify foundation stage readiness**\
   **Status:** `Not Started` · **Area:** Foundation\
@@ -2392,3 +2392,7 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **23 October 2026 — P01-022 hosted verification:** Blocked → In Progress → In Review after explicit owner authorization for the nine-file task-branch push. Hosted run [39989593949](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/39989593949) Passed at e968ff0; artifacts and all 23 command results inspected. Local backend-only scope also Passed. Independent acceptance pending; main/staged documentation were not published or merged. Overall: 65 Done, 142 Not Started, 1 Blocked and 1 In Review. [Evidence](./evidence/P01-022-scoped-development-ci.md).
 
 **P01-022 independent acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. [Accepted implementation and evidence](./evidence/P01-022-scoped-development-ci.md#independent-acceptance). Overall: 66 Done, 142 Not Started, 1 Blocked and zero In Review. P01-023 is next; no main merge, milestone or provider acceptance implied.
+
+**23 October 2026 — P01-023:** Not Started → In Progress → In Review. Added domain-schema-backed API generation, implemented/planned separation and mandatory freshness/router/schema checks. Corrected media status and address Location to the approved API. Verification includes focused follow-ups after legacy status assertions; failed initial reports are preserved rather than relabelled. [Implementation and verification](./evidence/P01-023-api-artifacts.md). Independent acceptance pending. Overall: 66 Done, 141 Not Started, 1 Blocked and 1 In Review; P01-024 remains Not Started.
+
+**24 October 2026 — P01-023 acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-023-api-artifacts.md#independent-acceptance). Overall: 67 Done, 141 Not Started, 1 Blocked and zero In Review. P01-024 is next; foundation readiness, product milestones and external-provider gates remain unaccepted.

@@ -1,5 +1,5 @@
-import { z } from 'zod'
 import { parsePhoneNumberWithError } from 'libphonenumber-js/max'
+import { z } from 'zod'
 
 const text = (max: number) =>
   z
@@ -7,6 +7,7 @@ const text = (max: number) =>
     .trim()
     .min(1)
     .refine((value) => [...value].length <= max)
+    .meta({ maxLength: max })
 export const bangladeshPhone = z
   .string()
   .max(64)

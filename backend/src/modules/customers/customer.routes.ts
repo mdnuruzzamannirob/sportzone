@@ -1,12 +1,12 @@
-import { Router, type RequestHandler } from 'express'
+import { type RequestHandler, Router } from 'express'
 import { z } from 'zod'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { respond } from '../../shared/responses.js'
 import type { BrowserSecurity } from '../auth/sessions/browser-security.service.js'
-import type { ProfileService } from './customer.service.js'
-import { addressId } from './customer.schema.js'
 import { createSessionHttp, readSessionCookie } from '../auth/sessions/session.http.js'
 import type { SessionService } from '../auth/sessions/session.service.js'
+import { addressId } from './customer.schema.js'
+import type { ProfileService } from './customer.service.js'
 
 export function profileRoutes(
   service: ProfileService,
@@ -52,7 +52,9 @@ export function profileRoutes(
     respond(res, await service.list(token(req)))
   })
   router.post('/me/addresses', async (req, res) => {
-    respond(res, await service.add(token(req), req.body), 201)
+    const created = await service.add(token(req), req.body)
+    res.setHeader('Location', `/api/v1/me/addresses/${created.id}`)
+    respond(res, created, 201)
   })
   router.patch('/me/addresses/:addressId', async (req, res) => {
     respond(res, await service.edit(token(req), id(req), req.body))

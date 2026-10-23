@@ -162,7 +162,18 @@ fixtures do not establish hosted deployment, provider activation or milestone ac
 Affected hosted selection uses backend checks without UI builds/browser installation for backend-private
 changes, including accompanying documentation. Shared/tooling changes, manual runs and unknown paths
 use the full inventory. Hosted evidence and acceptance are tracked in P01-022. Automatic OpenAPI/Postman
-generation remains P01-023; planned commands are not setup instructions.
+artifacts are generated through the backend commands below:
+
+```sh
+npm run api:generate --workspace=backend
+npm run test:contract --workspace=backend
+```
+
+Import `backend/api/openapi.json` or `postman.collection.json`; use the blank
+`postman.environment.json` privately. Set `baseUrl` to your API origin plus `/api/v1`, and set the
+approved frontend origins/CSRF values for the intended namespace. Request bodies and optional query
+parameters are editable placeholders. `planned-operations.json` records future specification surfaces;
+it is not a runnable collection. [API §18.3](docs/API.md#183-change-and-sign-off-procedure) owns maintenance.
 
 ## 6. Delivery and operations
 

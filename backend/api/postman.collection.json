@@ -1,0 +1,965 @@
+{
+  "info": {
+    "name": "SportZone implemented API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Generated; implemented capabilities only. Configure the blank environment privately. Requests are manual; no auto-login, retries, proof export or financial scripts."
+  },
+  "item": [
+    {
+      "name": "get_admin_auth_csrf",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest adapter not wired. Replay: read. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/auth/csrf",
+          "query": [
+            {
+              "key": "sessionKind",
+              "value": "{{sessionKind}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          }
+        ],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest adapter not wired. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_auth_csrf. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_auth_login",
+      "description": "Activation: ADMIN_AUTH_ENABLED with validated admin recovery configuration. Replay: ordinary. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/auth/login",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED with validated admin recovery configuration. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_auth_login. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_auth_loginBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_auth_logout",
+      "description": "Activation: ADMIN_AUTH_ENABLED with validated admin recovery configuration. Replay: idempotent_logout. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/auth/logout",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED with validated admin recovery configuration. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_auth_logout. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_auth_logoutBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_auth_password_resets",
+      "description": "Activation: ADMIN_AUTH_ENABLED with validated admin recovery configuration. Replay: ordinary. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/auth/password-resets",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED with validated admin recovery configuration. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_auth_password_resets. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_auth_password_resetsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_auth_password_resets_confirm",
+      "description": "Activation: ADMIN_AUTH_ENABLED with validated admin recovery configuration. Replay: single_use. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/auth/password-resets/confirm",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED with validated admin recovery configuration. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_auth_password_resets_confirm. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_auth_password_resets_confirmBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_auth_session",
+      "description": "Activation: ADMIN_AUTH_ENABLED with validated admin recovery configuration. Replay: read. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/auth/session",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED with validated admin recovery configuration. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_auth_session. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_media_uploads",
+      "description": "Activation: Explicit media composition, ADMIN_AUTH_ENABLED and EXT-04 approval; not enabled by standard startup. Replay: No automatic retry after uncertain provider outcome. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/media/uploads",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit media composition, ADMIN_AUTH_ENABLED and EXT-04 approval; not enabled by standard startup. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_media_uploads. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": []
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "delete_admin_media_assetId",
+      "description": "Activation: Explicit media composition, ADMIN_AUTH_ENABLED and EXT-04 approval; not enabled by standard startup. Replay: No automatic retry after uncertain provider outcome. No automatic mutation retry.",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "{{baseUrl}}/admin/media/{{assetId}}",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit media composition, ADMIN_AUTH_ENABLED and EXT-04 approval; not enabled by standard startup. Query parameters and exact request/response schemas are in the companion OpenAPI operation delete_admin_media_assetId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_auth_csrf",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest adapter not wired. Replay: read. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/auth/csrf",
+          "query": [
+            {
+              "key": "sessionKind",
+              "value": "{{sessionKind}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          }
+        ],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest adapter not wired. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_auth_csrf. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_auth_login",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED. Replay: ordinary. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_auth_login. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_auth_loginBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_auth_logout",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED. Replay: idempotent_logout. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/auth/logout",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_auth_logout. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_auth_logoutBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_auth_password_resets",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED and PASSWORD_RECOVERY_ENABLED. Replay: ordinary. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/auth/password-resets",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED and PASSWORD_RECOVERY_ENABLED. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_auth_password_resets. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_auth_password_resetsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_auth_password_resets_confirm",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED and PASSWORD_RECOVERY_ENABLED. Replay: single_use. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/auth/password-resets/confirm",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED and PASSWORD_RECOVERY_ENABLED. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_auth_password_resets_confirm. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_auth_password_resets_confirmBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_auth_register",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED. Replay: ordinary. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/auth/register",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_auth_register. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_auth_registerBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_auth_session",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED. Replay: read. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/auth/session",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_auth_session. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_categories",
+      "description": "Activation: Always registered; required indexes/visibility/media checks must pass. Replay: read. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/categories",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "parent",
+              "value": "{{parent}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Always registered; required indexes/visibility/media checks must pass. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_categories. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_categories_slug",
+      "description": "Activation: Always registered; required indexes/visibility/media checks must pass. Replay: read. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/categories/{{slug}}",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: Always registered; required indexes/visibility/media checks must pass. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_categories_slug. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_health_live",
+      "description": "Activation: Always registered; operational ingress restrictions apply. Replay: read. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/health/live",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: Always registered; operational ingress restrictions apply. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_health_live. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_health_ready",
+      "description": "Activation: Always registered; operational ingress restrictions apply. Replay: read. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/health/ready",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{monitorToken}}"
+          }
+        ],
+        "description": "Implemented conditionally: Always registered; operational ingress restrictions apply. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_health_ready. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_me",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED. Replay: read. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/me",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_me. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "patch_me",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED. Replay: ordinary. No automatic mutation retry.",
+      "request": {
+        "method": "PATCH",
+        "url": {
+          "raw": "{{baseUrl}}/me",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED. Query parameters and exact request/response schemas are in the companion OpenAPI operation patch_me. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{patch_meBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_me_addresses",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED. Replay: read. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/me/addresses",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_me_addresses. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_me_addresses",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED. Replay: ordinary. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/me/addresses",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_me_addresses. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_me_addressesBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "delete_me_addresses_addressId",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED. Replay: ordinary. No automatic mutation retry.",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "{{baseUrl}}/me/addresses/{{addressId}}",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED. Query parameters and exact request/response schemas are in the companion OpenAPI operation delete_me_addresses_addressId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{delete_me_addresses_addressIdBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "patch_me_addresses_addressId",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED. Replay: ordinary. No automatic mutation retry.",
+      "request": {
+        "method": "PATCH",
+        "url": {
+          "raw": "{{baseUrl}}/me/addresses/{{addressId}}",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED. Query parameters and exact request/response schemas are in the companion OpenAPI operation patch_me_addresses_addressId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{patch_me_addresses_addressIdBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_me_addresses_addressId_default",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED. Replay: ordinary. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/me/addresses/{{addressId}}/default",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_me_addresses_addressId_default. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_me_addresses_addressId_defaultBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_me_deletion_requests",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED. Replay: ordinary. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/me/deletion-requests",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_me_deletion_requests. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_me_deletion_requestsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_me_email_changes",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED and EMAIL_CHANGE_ENABLED. Replay: ordinary. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/me/email-changes",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED and EMAIL_CHANGE_ENABLED. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_me_email_changes. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_me_email_changesBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_me_email_changes_confirm",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED and EMAIL_CHANGE_ENABLED. Replay: single_use. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/me/email-changes/confirm",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED and EMAIL_CHANGE_ENABLED. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_me_email_changes_confirm. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_me_email_changes_confirmBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_me_password_change",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED and PASSWORD_RECOVERY_ENABLED. Replay: ordinary. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/me/password-change",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED and PASSWORD_RECOVERY_ENABLED. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_me_password_change. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_me_password_changeBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_products",
+      "description": "Activation: Always registered; required indexes/visibility/media checks must pass. Replay: read. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/products",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "q",
+              "value": "{{q}}",
+              "disabled": true
+            },
+            {
+              "key": "category",
+              "value": "{{category}}",
+              "disabled": true
+            },
+            {
+              "key": "minPricePoisha",
+              "value": "{{minPricePoisha}}",
+              "disabled": true
+            },
+            {
+              "key": "maxPricePoisha",
+              "value": "{{maxPricePoisha}}",
+              "disabled": true
+            },
+            {
+              "key": "inStock",
+              "value": "{{inStock}}",
+              "disabled": true
+            },
+            {
+              "key": "sort",
+              "value": "{{sort}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Always registered; required indexes/visibility/media checks must pass. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_products. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_products_slug",
+      "description": "Activation: Always registered; required indexes/visibility/media checks must pass. Replay: read. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/products/{{slug}}",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: Always registered; required indexes/visibility/media checks must pass. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_products_slug. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    }
+  ]
+}

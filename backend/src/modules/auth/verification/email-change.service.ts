@@ -1,22 +1,19 @@
-import { authorizeAccount } from '../sessions/authorization.service.js'
-import { Types, type ClientSession, type Connection } from 'mongoose'
 import { randomBytes } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
-import { z } from 'zod'
+import { type ClientSession, type Connection, Types } from 'mongoose'
 import type { RecoveryOptions } from '../../../config/security.js'
 import { inTransaction } from '../../../shared/database/transaction.js'
-import { parseInput } from '../../../shared/middleware/validate.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
+import { parseInput } from '../../../shared/middleware/validate.js'
 import type { RegistrationNotifications } from '../../notifications/notification.service.js'
-import { accountDto } from '../credentials/account.dto.js'
-import { loginInput } from '../credentials/credentials.service.js'
 import type { IdentityModels } from '../auth.model.js'
+import { accountDto } from '../credentials/account.dto.js'
+import { authorizeAccount } from '../sessions/authorization.service.js'
 import { ChallengeUnavailableError, consumeUserChallenge } from '../sessions/session.persistence.js'
-import { proofHash, proofPattern } from './proof.crypto.js'
 import type { SessionService } from '../sessions/session.service.js'
+import { confirmInput, requestInput } from './email-change.schema.js'
+import { proofHash } from './proof.crypto.js'
 
-const requestInput = z.strictObject({ newEmail: loginInput.shape.email })
-const confirmInput = z.strictObject({ token: z.string().regex(proofPattern) })
 type User = InstanceType<IdentityModels['users']>
 export function createEmailChangeService(
   connection: Connection,

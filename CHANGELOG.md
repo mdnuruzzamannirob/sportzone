@@ -8,6 +8,13 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 23 October 2026 — Generated API contracts
+
+- Added domain-schema-backed OpenAPI/Postman generation, sanitized templates and separate planned-route
+  inventory. Backend CI now requires artifact freshness, actual router parity and schema/negative checks.
+  Corrected media upload status and address creation Location to the approved API contract.
+  [P01-023 verification](docs/evidence/P01-023-api-artifacts.md) records results and independent review status.
+
 ## 23 October 2026 — Backend development and CI isolation
 
 - Added supervised `dev:backend`, selected-workspace inventory validation, backend formatting and

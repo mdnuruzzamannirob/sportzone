@@ -1,30 +1,16 @@
-import { z } from 'zod'
-import { accountDto } from './account.dto.js'
-import { parseInput } from '../../../shared/middleware/validate.js'
+import { loginInput, registrationInput } from './credentials.schema.js'
+
+export { loginInput, registrationInput } from './credentials.schema.js'
+
 import { ApiError } from '../../../shared/errors/app-error.js'
+import { parseInput } from '../../../shared/middleware/validate.js'
 import type { RegistrationNotifications } from '../../notifications/notification.service.js'
 import type { IdentityModels } from '../auth.model.js'
-import type { SessionService, SessionKind } from '../sessions/session.service.js'
 import type { BrowserSecurity } from '../sessions/browser-security.service.js'
-import { hashPassword, newPasswordPolicy, verifyPassword } from './password.service.js'
+import type { SessionKind, SessionService } from '../sessions/session.service.js'
+import { accountDto } from './account.dto.js'
+import { hashPassword, verifyPassword } from './password.service.js'
 
-const email = z.string().trim().toLowerCase().pipe(z.email().max(254))
-export const registrationInput = z.strictObject({
-  name: z
-    .string()
-    .trim()
-    .min(1)
-    .refine((s) => [...s].length <= 120),
-  email,
-  password: newPasswordPolicy,
-})
-export const loginInput = z.strictObject({
-  email,
-  password: z
-    .string()
-    .min(1)
-    .refine((s) => Buffer.byteLength(s) <= 4096 && !/[\uD800-\uDFFF]/u.test(s)),
-})
 export function createCustomerService(
   models: IdentityModels,
   sessions: SessionService,

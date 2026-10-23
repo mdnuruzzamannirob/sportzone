@@ -284,6 +284,13 @@ development prerequisite.
 
 #### Build and verification commands
 
+API artifacts are maintained through API §18.3. Run `npm run api:generate --workspace=backend` after
+an owning contract change and commit the deterministic `backend/api/` outputs with it. Candidate checks
+use `npm run test:contract --workspace=backend`; stale/missing artifacts or route parity failures block
+acceptance. Import only the blank Postman environment template, configure private values locally and
+keep filled/exported environments out of Git and CI artifacts. `baseUrl` includes `/api/v1`.
+Generated capability/activation metadata does not establish deployed route or provider readiness.
+
 The monorepo uses `storefront/`, `admin/` and `backend/` workspaces (Architecture §4).
 [Testing §5.3](./TESTING.md#53-standard-execution-interface) owns the executable check inventory.
 For a backend candidate, use the existing owning-workspace interface with isolated test prerequisites:
