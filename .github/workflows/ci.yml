@@ -31,10 +31,20 @@ jobs:
         run: npm install --global npm@11.19.0 --ignore-scripts --no-audit --no-fund
       - name: Locked install
         run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Select affected checks
+        id: affected
+        env:
+          CI_EVENT: ${{ github.event_name }}
+          CI_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node scripts/ci/affected.mjs
       - name: Install browser audit engines
+        if: steps.affected.outputs.browser == 'true'
         run: npx --no-install playwright install --with-deps chromium firefox webkit
       - name: Run required checks
-        run: npm run ci
+        env:
+          CI_SCOPE: ${{ steps.affected.outputs.scope }}
+        run: npm run ci -- --scope="$CI_SCOPE"
       - name: Preserve reports and diagnostics
         if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

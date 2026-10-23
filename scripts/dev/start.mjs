@@ -91,5 +91,14 @@ export function runDev({
   })
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href)
-  process.exitCode = await runDev()
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  const args = process.argv.slice(2)
+  if (args.length && (args.length !== 1 || args[0] !== '--scope=backend')) {
+    console.error('Invalid development scope')
+    process.exitCode = 1
+  } else {
+    process.exitCode = await runDev(
+      args.length ? { commands: [['node', 'scripts/dev/backend.mjs']] } : {},
+    )
+  }
+}
