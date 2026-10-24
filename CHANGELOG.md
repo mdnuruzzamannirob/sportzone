@@ -8,6 +8,14 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 24 October 2026 — Foundation readiness verification
+
+- Verified clean locked installation, backend-only development/check selection, isolated replica-set
+  persistence and generated API contracts. Updated the compatible body-parser resolution to 2.4.0
+  for GHSA-27r3-jxmh-p828; compiled smoke verifies malformed compressed-body rejection and continued
+  liveness. External inputs remain pending with accountable roles and explicit affected gates.
+  [P01-024 verification](docs/evidence/P01-024-foundation-readiness.md).
+
 ## 23 October 2026 — Generated API contracts
 
 - Added domain-schema-backed OpenAPI/Postman generation, sanitized templates and separate planned-route

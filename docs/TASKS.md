@@ -125,7 +125,7 @@ The register contains 209 tasks across twelve requirement groups. Application-st
 
 | Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |   Done | Deferred |
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
-| 01 — Requirements Finalization and Planning | 24 | 1 | 0 | 0 | 0 | 0 | 23 | 0 |
+| 01 — Requirements Finalization and Planning | 24 | 0 | 0 | 0 | 0 | 0 | 24 | 0 |
 | 02 — UI/UX Design                             |      17 |           1 |     0 |           0 |       0 |         0 |     16 |        0 |
 | 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |     21 |        0 |
 | 04 — Product Catalog and Inventory            |      19 |          11 |     0 |           0 |       1 |         0 |      7 |        0 |
@@ -137,7 +137,7 @@ The register contains 209 tasks across twelve requirement groups. Application-st
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **209** | **141** | **0** | **0** | **1** | **0** | **67** | **0** |
+| **Total** | **209** | **140** | **0** | **0** | **1** | **0** | **68** | **0** |
 
 ## 4. Milestone tracker
 
@@ -370,14 +370,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Implemented routes and DTO/security/header contracts match generated artifacts; planned operations are clearly distinguished; generation requires no listening server, database or credentials; repeat generation has no diff and stale artifacts fail verification. Existing contracts remain compatible.\
   **Evidence:** [Generated artifacts, validation and focused regression](./evidence/P01-023-api-artifacts.md). Implemented/planned separation, deterministic output and freshness/parity guards verified; approved media status/address header drift corrected. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-023-api-artifacts.md#independent-acceptance).
 
-- [ ] **P01-024 — Verify foundation stage readiness**\
-  **Status:** `Not Started` · **Area:** Foundation\
+- [x] **P01-024 — Verify foundation stage readiness**\
+  **Status:** `Done` · **Area:** Foundation\
   **Stage:** `Foundation`\
   **Sources:** Plan §3.1; Testing §15; Operations §5\
   **Depends on:** `P01-023`\
   **Deliverable:** Verify reproducible backend-only setup, isolated transaction-capable DB, actual scoped checks and generated contracts; inventory external credentials/policies and their affected backend acceptance gates.\
   **Acceptance:** No UI build/browser requirement for backend iteration; no placeholder CI checks; unresolved external inputs have owners and gate impacts. Foundation acceptance does not approve product milestones or merchant readiness.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Foundation readiness verification](./evidence/P01-024-foundation-readiness.md). Clean locked installation, actual backend-only development, contract/tooling/backend regression and disposable replica-set checks verified. Compatible body-parser security patch applied; external appointments/provider/policy approvals remain Pending with affected gates. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-024-foundation-readiness.md#recovery-and-independent-review).
 
 ### Phase 02 — UI/UX design
 
@@ -518,7 +518,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P04-012`, `P05-011`, `P06-018`, `P06-019`, `P07-014`, `P08-012`, `P08-013`, `P08-017`, `P09-008`\
   **Deliverable:** Consolidate customer/guest browsing, cart, checkout, payment, account, tracking, reviews and after-sales journeys against real APIs; verify SEO/privacy/freshness, keyboard/reflow/both themes and target browser behavior.\
   **Acceptance:** All storefront dependencies and owning regression pass on one revision with independent review. No mock checkout/payment success establishes acceptance; integrated product milestones and live launch remain separate.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Foundation readiness verification](./evidence/P01-024-foundation-readiness.md). Clean locked installation, actual backend-only development, contract/tooling/backend regression and disposable replica-set checks verified. Compatible body-parser security patch applied; external appointments/provider/policy approvals remain Pending with affected gates. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-024-foundation-readiness.md#recovery-and-independent-review).
 
 ### Phase 03 — Authentication and core backend
 
@@ -699,7 +699,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P09-011`, `P05-004`, `P06-016`, `P07-016`, `P08-004`, `P04-017`, `P04-019`, `P05-014`, `P05-015`, `P05-016`, `P09-014`, `P09-016`, `P09-017`, `P09-018`\
   **Deliverable:** Consolidate all customer/admin API, validator/index, transaction/race/replay, job/recovery, secret/privacy and required real provider evidence against one backend revision. Reconcile generated OpenAPI/Postman and operator procedures.\
   **Acceptance:** All backend-stage dependencies and applicable provider gates pass; no frontend server/build/test or browser engine is required. API scenario tests prove guest/customer/admin workflows. Independent owner acceptance permits admin stage; M1–M8 product gates remain separate.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Foundation readiness verification](./evidence/P01-024-foundation-readiness.md). Clean locked installation, actual backend-only development, contract/tooling/backend regression and disposable replica-set checks verified. Compatible body-parser security patch applied; external appointments/provider/policy approvals remain Pending with affected gates. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-024-foundation-readiness.md#recovery-and-independent-review).
 
 ### Phase 04 — Product catalog and inventory
 
@@ -841,7 +841,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P04-001`, `P03-013`, `P04-003`\
   **Deliverable:** Register category list/create/edit/deactivate APIs over existing category services; enforce hierarchy, active assignment, safe deletion and null-versus-omitted parent/image semantics.\
   **Acceptance:** Admin/session/CSRF and conditional-update checks apply; category cycles, dependent deletion and invalid media references fail. HTTP integration proves writes and public visibility without UI.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Foundation readiness verification](./evidence/P01-024-foundation-readiness.md). Clean locked installation, actual backend-only development, contract/tooling/backend regression and disposable replica-set checks verified. Compatible body-parser security patch applied; external appointments/provider/policy approvals remain Pending with affected gates. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-024-foundation-readiness.md#recovery-and-independent-review).
 
 - [ ] **P04-017 — Expose protected product and variant management APIs**\
   **Status:** `Not Started` · **Area:** Backend\
@@ -850,7 +850,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P04-002`, `P04-016`\
   **Deliverable:** Register product/variant CRUD, pricing, featured flags, SKU identity and approved image references over canonical services.\
   **Acceptance:** Unique slug/SKU, stale edits, invalid combinations and foreign media references fail; explicit null unsets permitted fields while omitted fields remain unchanged. Public projections follow saved state.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Foundation readiness verification](./evidence/P01-024-foundation-readiness.md). Clean locked installation, actual backend-only development, contract/tooling/backend regression and disposable replica-set checks verified. Compatible body-parser security patch applied; external appointments/provider/policy approvals remain Pending with affected gates. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-024-foundation-readiness.md#recovery-and-independent-review).
 
 - [ ] **P04-018 — Expose stock adjustment and inventory history APIs**\
   **Status:** `Not Started` · **Area:** Backend\
@@ -859,7 +859,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P04-008`, `P03-013`, `P01-024`\
   **Deliverable:** Expose authorized counters, low-stock queries, threshold edits, adjustments and bounded movement history; require actor/reason/replay identity.\
   **Acceptance:** HTTP replay/race tests preserve nonnegative availability and exactly-once movement; reserved and committed stock remain separate and private model access is not exposed.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Foundation readiness verification](./evidence/P01-024-foundation-readiness.md). Clean locked installation, actual backend-only development, contract/tooling/backend regression and disposable replica-set checks verified. Compatible body-parser security patch applied; external appointments/provider/policy approvals remain Pending with affected gates. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-024-foundation-readiness.md#recovery-and-independent-review).
 
 - [ ] **P04-019 — Expose homepage content and catalog section APIs**\
   **Status:** `Not Started` · **Area:** Backend\
@@ -868,7 +868,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P09-013`, `P04-009`\
   **Deliverable:** Implement homepageBanner input/media references and safe public home projection, categories and featured/new/discounted sections with store contact/policy links; logo and banner remain separate.\
   **Acceptance:** Unconfigured content is represented honestly; inactive/quarantined/private assets never publish; persisted admin updates appear on a subsequent public read.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Foundation readiness verification](./evidence/P01-024-foundation-readiness.md). Clean locked installation, actual backend-only development, contract/tooling/backend regression and disposable replica-set checks verified. Compatible body-parser security patch applied; external appointments/provider/policy approvals remain Pending with affected gates. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-024-foundation-readiness.md#recovery-and-independent-review).
 
 ### Phase 05 — Cart, wishlist, coupons, and reviews
 
@@ -998,7 +998,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P05-002`, `P04-010`\
   **Deliverable:** Validate the documented guest selection payload and merge into the authenticated cart, deduplicating variants and refreshing current prices/availability. Browser storage is not a prerequisite.\
   **Acceptance:** Repeated merge and quantity conflicts follow API rules; foreign/inactive variants are rejected or flagged without stock reservation; ownership and maximum inputs are enforced.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Foundation readiness verification](./evidence/P01-024-foundation-readiness.md). Clean locked installation, actual backend-only development, contract/tooling/backend regression and disposable replica-set checks verified. Compatible body-parser security patch applied; external appointments/provider/policy approvals remain Pending with affected gates. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-024-foundation-readiness.md#recovery-and-independent-review).
 
 - [ ] **P05-015 — Expose coupon administration and usage history APIs**\
   **Status:** `Not Started` · **Area:** Backend\
@@ -1007,7 +1007,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P05-007`, `P03-013`\
   **Deliverable:** Implement protected coupon configuration, edit/deactivation and bounded held/committed usage history using promotion services.\
   **Acceptance:** Invalid policy and stale edits fail; live holds retain approved quoted terms; history and quotas remain replay/concurrency safe.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Foundation readiness verification](./evidence/P01-024-foundation-readiness.md). Clean locked installation, actual backend-only development, contract/tooling/backend regression and disposable replica-set checks verified. Compatible body-parser security patch applied; external appointments/provider/policy approvals remain Pending with affected gates. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-024-foundation-readiness.md#recovery-and-independent-review).
 
 - [ ] **P05-016 — Expose review reading and moderation APIs**\
   **Status:** `Not Started` · **Area:** Backend\
@@ -1016,7 +1016,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P08-016`\
   **Deliverable:** Expose approved public ratings/reviews, customer-owned history and eligible submit/edit, and protected moderation queues/actions with reasons and audit history.\
   **Acceptance:** Eligibility, one active review, moderation-after-edit and public allowlists are verified through HTTP; administrators cannot attribute altered rating values to customers.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Foundation readiness verification](./evidence/P01-024-foundation-readiness.md). Clean locked installation, actual backend-only development, contract/tooling/backend regression and disposable replica-set checks verified. Compatible body-parser security patch applied; external appointments/provider/policy approvals remain Pending with affected gates. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-024-foundation-readiness.md#recovery-and-independent-review).
 
 - [ ] **P05-017 — Implement admin review moderation controls**\
   **Status:** `Not Started` · **Area:** Admin\
@@ -1025,7 +1025,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P03-022`\
   **Deliverable:** Implement review queue, reasons, approve/reject/hide controls and mutation feedback against real review APIs; supports the admin part originally grouped in P05-010.\
   **Acceptance:** Only permitted state changes occur; author rating stays immutable to admin; failures preserve entered reasons and both themes/keyboard use work.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Foundation readiness verification](./evidence/P01-024-foundation-readiness.md). Clean locked installation, actual backend-only development, contract/tooling/backend regression and disposable replica-set checks verified. Compatible body-parser security patch applied; external appointments/provider/policy approvals remain Pending with affected gates. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-024-foundation-readiness.md#recovery-and-independent-review).
 
 ### Phase 06 — Checkout, orders, and delivery rules
 
@@ -1218,7 +1218,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P03-022`\
   **Deliverable:** Implement zone/charge creation, scheduling, activation and stale-edit feedback; fulfills the admin component originally grouped in P06-002.\
   **Acceptance:** Only server-confirmed changes appear saved; invalid overlapping coverage and authorization failures are clear; old order charges remain unchanged.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Foundation readiness verification](./evidence/P01-024-foundation-readiness.md). Clean locked installation, actual backend-only development, contract/tooling/backend regression and disposable replica-set checks verified. Compatible body-parser security patch applied; external appointments/provider/policy approvals remain Pending with affected gates. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-024-foundation-readiness.md#recovery-and-independent-review).
 
 - [ ] **P06-022 — Implement admin fulfillment and COD operations interface**\
   **Status:** `Not Started` · **Area:** Admin\
@@ -1227,7 +1227,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P03-022`\
   **Deliverable:** Build order list/detail, cancellation review, shipping/delivery, failed-delivery custody and COD collection controls; fulfills the admin component of P06-019.\
   **Acceptance:** Confirmations use current backend eligibility; cancelled fulfillment never reopens after late payment; failed writes never imply financial or shipping success.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Foundation readiness verification](./evidence/P01-024-foundation-readiness.md). Clean locked installation, actual backend-only development, contract/tooling/backend regression and disposable replica-set checks verified. Compatible body-parser security patch applied; external appointments/provider/policy approvals remain Pending with affected gates. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-024-foundation-readiness.md#recovery-and-independent-review).
 
 ### Phase 07 — Payment integration and verification
 
@@ -1393,7 +1393,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P07-010`, `P07-011`, `P07-013`\
   **Deliverable:** Expose authorized attempt/collection searches, risk decisions, unmatched/excess investigation and reconciliation status through allowlisted DTOs.\
   **Acceptance:** Sensitive mutations enforce authorization, CSRF, audit and replay guards; resolved risk alone never bypasses stock/funding gates; raw provider credentials/payloads stay private.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Foundation readiness verification](./evidence/P01-024-foundation-readiness.md). Clean locked installation, actual backend-only development, contract/tooling/backend regression and disposable replica-set checks verified. Compatible body-parser security patch applied; external appointments/provider/policy approvals remain Pending with affected gates. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-024-foundation-readiness.md#recovery-and-independent-review).
 
 ### Phase 08 — Returns and refunds
 
@@ -1568,7 +1568,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P08-011`\
   **Deliverable:** Complete customer/guest and admin claim/refund list/detail/decision surfaces, evidence access and safe timelines using return/refund services; include timing snapshots and investigation status.\
   **Acceptance:** Nested ownership, guest proof scope, private image retrieval, quantity/source caps and verified payout status are proven by API tests; missing policy timing never produces a guessed deadline.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Foundation readiness verification](./evidence/P01-024-foundation-readiness.md). Clean locked installation, actual backend-only development, contract/tooling/backend regression and disposable replica-set checks verified. Compatible body-parser security patch applied; external appointments/provider/policy approvals remain Pending with affected gates. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-024-foundation-readiness.md#recovery-and-independent-review).
 
 ### Phase 09 — Admin management and reports
 
@@ -1689,7 +1689,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P03-013`, `P04-003`, `P01-007`\
   **Deliverable:** Implement canonical settings singleton bootstrap, branding/contact/address, low-stock threshold and approved versioned policies with protected input and safe public projections.\
   **Acceptance:** Unapproved policy placeholders never publish; stale writes fail; contact/policy projections exclude private configuration and media references are validated. Delivery settings reuse the same canonical singleton.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Foundation readiness verification](./evidence/P01-024-foundation-readiness.md). Clean locked installation, actual backend-only development, contract/tooling/backend regression and disposable replica-set checks verified. Compatible body-parser security patch applied; external appointments/provider/policy approvals remain Pending with affected gates. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-024-foundation-readiness.md#recovery-and-independent-review).
 
 - [ ] **P09-014 — Expose dashboard metrics APIs**\
   **Status:** `Not Started` · **Area:** Backend\
@@ -1698,7 +1698,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P09-002`, `P04-018`\
   **Deliverable:** Expose canonical DashboardMetrics/DashboardCounts, financial summaries, bounded recentOrders/lowStockItems and Asia/Dhaka cutoff/date basis.\
   **Acceptance:** Metrics reconcile to authoritative collections, discounts, COD and refunds; admin-only access and bounded query profiles pass. No dashboard screen is required.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Foundation readiness verification](./evidence/P01-024-foundation-readiness.md). Clean locked installation, actual backend-only development, contract/tooling/backend regression and disposable replica-set checks verified. Compatible body-parser security patch applied; external appointments/provider/policy approvals remain Pending with affected gates. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-024-foundation-readiness.md#recovery-and-independent-review).
 
 - [ ] **P09-015 — Expose customer administration and privacy review APIs**\
   **Status:** `Not Started` · **Area:** Backend\
@@ -1707,7 +1707,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P03-008`, `P06-014`, `P08-019`\
   **Deliverable:** Implement customer search, authorized history, suspension/reactivation and verified deletion-request review with retention/legal-hold-safe decisions.\
   **Acceptance:** Suspension revokes relevant sessions; foreign access and unsafe deletion fail; required order/financial/audit history remains and sensitive data is minimized.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Foundation readiness verification](./evidence/P01-024-foundation-readiness.md). Clean locked installation, actual backend-only development, contract/tooling/backend regression and disposable replica-set checks verified. Compatible body-parser security patch applied; external appointments/provider/policy approvals remain Pending with affected gates. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-024-foundation-readiness.md#recovery-and-independent-review).
 
 - [ ] **P09-016 — Expose support and complaint operations APIs**\
   **Status:** `Not Started` · **Area:** Backend\
@@ -1716,7 +1716,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P06-017`\
   **Deliverable:** Expose public/scoped complaint intake and admin search/contact/status/resolution with order context, deadline policy and durable customer-response events.\
   **Acceptance:** Anonymous inputs require contactName/contactEmail; authenticated defaults use verified own data only; replay/throttle/access tests preserve history and notification truth.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Foundation readiness verification](./evidence/P01-024-foundation-readiness.md). Clean locked installation, actual backend-only development, contract/tooling/backend regression and disposable replica-set checks verified. Compatible body-parser security patch applied; external appointments/provider/policy approvals remain Pending with affected gates. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-024-foundation-readiness.md#recovery-and-independent-review).
 
 - [ ] **P09-017 — Expose audit and operational exception APIs**\
   **Status:** `Not Started` · **Area:** Backend\
@@ -1725,7 +1725,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P07-018`, `P08-019`, `P04-018`, `P09-002`\
   **Deliverable:** Expose bounded sanitized audit/history and stock, payment, refund and reconciliation exception queues; domain services retain mutation authority.\
   **Acceptance:** Restricted queries enforce admin access and safe pagination; immutable actor/action/time history remains; no operational screen is needed to prove the backend contract.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Foundation readiness verification](./evidence/P01-024-foundation-readiness.md). Clean locked installation, actual backend-only development, contract/tooling/backend regression and disposable replica-set checks verified. Compatible body-parser security patch applied; external appointments/provider/policy approvals remain Pending with affected gates. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-024-foundation-readiness.md#recovery-and-independent-review).
 
 - [ ] **P09-018 — Expose bounded business report queries**\
   **Status:** `Not Started` · **Area:** Backend\
@@ -1734,7 +1734,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P09-002`, `P09-015`\
   **Deliverable:** Expose documented period/filter/pagination reports with explicit timezone/cutoff and collected-versus-outstanding monetary labels.\
   **Acceptance:** Bounded query/index profiles and synthetic ledger reconciliations pass; no advanced BI scope, duplicate collection inflation or private leakage.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Foundation readiness verification](./evidence/P01-024-foundation-readiness.md). Clean locked installation, actual backend-only development, contract/tooling/backend regression and disposable replica-set checks verified. Compatible body-parser security patch applied; external appointments/provider/policy approvals remain Pending with affected gates. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-024-foundation-readiness.md#recovery-and-independent-review).
 
 ### Phase 10 — Testing, security review, and bug fixing
 
@@ -2396,3 +2396,7 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **23 October 2026 — P01-023:** Not Started → In Progress → In Review. Added domain-schema-backed API generation, implemented/planned separation and mandatory freshness/router/schema checks. Corrected media status and address Location to the approved API. Verification includes focused follow-ups after legacy status assertions; failed initial reports are preserved rather than relabelled. [Implementation and verification](./evidence/P01-023-api-artifacts.md). Independent acceptance pending. Overall: 66 Done, 141 Not Started, 1 Blocked and 1 In Review; P01-024 remains Not Started.
 
 **24 October 2026 — P01-023 acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P01-023-api-artifacts.md#independent-acceptance). Overall: 67 Done, 141 Not Started, 1 Blocked and zero In Review. P01-024 is next; foundation readiness, product milestones and external-provider gates remain unaccepted.
+
+**24 October 2026 — P01-024:** Not Started → In Progress → In Review. Verified isolated backend setup and generated contracts; corrected the vulnerable body-parser resolution and added compiled malformed-body smoke coverage. [Results, historical failures and external-gate inventory](./evidence/P01-024-foundation-readiness.md). Overall: 67 Done, 140 Not Started, 1 Blocked and 1 In Review. Foundation acceptance remains pending; no backend-stage, milestone or provider approval inferred.
+
+**24 October 2026 — P01-024 acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. [Foundation acceptance record](./evidence/P01-024-foundation-readiness.md#recovery-and-independent-review). Phase 01: 24 Done; overall: 68 Done, 140 Not Started, 1 Blocked and zero In Review. Backend-stage work may proceed in dependency order. Product milestones and external-provider/policy gates remain unaccepted.
