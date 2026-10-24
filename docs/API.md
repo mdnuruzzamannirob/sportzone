@@ -764,7 +764,7 @@ The homepage `banner` maps to `storeSettings.homepageBanner` with a validated pu
 | `PUT`    | `/cart/items/{variantId}`        | C      | `{quantity} → Cart`              | 07  |
 | `DELETE` | `/cart/items/{variantId}`        | C      | `— → Cart`                       | 07  |
 | `POST`   | `/cart/merge`                    | C      | `{items:CartLineInput[]} → Cart` | 07  |
-| `GET`    | `/wishlist`                      | C      | `— → {products:ProductCard[]}`   | 08  |
+| `GET`    | `/wishlist`                      | C      | `— → {products:WishlistProduct[]}`   | 08  |
 | `PUT`    | `/wishlist/products/{productId}` | C      | `— → {saved:true}`               | 08  |
 | `DELETE` | `/wishlist/products/{productId}` | C      | `— → {saved:false}`              | 08  |
 
@@ -786,6 +786,18 @@ rounding. No price or stock snapshot is persisted in the cart. Revision incremen
 concurrent writes serialize through the owning account and transactional cart update. `/cart/merge`
 remains the separate P05-014 work package.
 
+
+Wishlist GET returns an empty products list without creating a record when none exists. PUT adds
+one eligible product; repeated PUT for an already saved ID returns `{saved:true}` without duplicating
+or revalidating it as a new addition. DELETE returns `{saved:false}` even when absent. At most 200
+unique product IDs may be saved; adding an unknown/hidden/inactive product or exceeding the limit
+returns `422 BUSINESS_RULE_VIOLATION`. An eligible product with zero available stock may be saved.
+GET preserves saved order and current public ProductCard values. A saved product that becomes hidden,
+inactive or deleted is represented only as `WishlistProduct:{id,availability:unavailable}`, so it stays
+identifiable/removable without disclosing hidden catalog fields. Other WishlistProduct entries are
+ProductCard. These markers are not purchasable projections; adding a wishlist item to cart must use
+the cart API's current variant validation. Only customer sessions may read or change their own list;
+mutations require Origin and session CSRF. Stock and cart state are never changed by wishlist calls.
 
 ### 10.3 Coupon and review contracts
 

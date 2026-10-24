@@ -1033,6 +1033,66 @@
         "description": "Implemented conditionally: Always registered; required indexes/visibility/media checks must pass. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_products_slug. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
       },
       "response": []
+    },
+    {
+      "name": "get_wishlist",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED; reviewed wishlist persistence bootstrap required. Replay: read. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/wishlist",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED; reviewed wishlist persistence bootstrap required. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_wishlist. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "delete_wishlist_products_productId",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED; reviewed wishlist persistence bootstrap required. Replay: Set membership; repeated add/remove is idempotent and does not allocate stock. No automatic mutation retry.",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "{{baseUrl}}/wishlist/products/{{productId}}",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED; reviewed wishlist persistence bootstrap required. Query parameters and exact request/response schemas are in the companion OpenAPI operation delete_wishlist_products_productId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "put_wishlist_products_productId",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED; reviewed wishlist persistence bootstrap required. Replay: Set membership; repeated add/remove is idempotent and does not allocate stock. No automatic mutation retry.",
+      "request": {
+        "method": "PUT",
+        "url": {
+          "raw": "{{baseUrl}}/wishlist/products/{{productId}}",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED; reviewed wishlist persistence bootstrap required. Query parameters and exact request/response schemas are in the companion OpenAPI operation put_wishlist_products_productId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
     }
   ]
 }

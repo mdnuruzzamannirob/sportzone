@@ -1,3 +1,8 @@
+import {
+  wishlistParams,
+  wishlistResponse,
+  wishlistSaved,
+} from '../src/modules/cart/wishlist.schema.js'
 import { cartQuantity, cartResponse, variantParams } from '../src/modules/cart/cart.schema.js'
 import { z } from 'zod'
 import { createIdentityContracts } from '../src/modules/auth/auth.schema.js'
@@ -98,6 +103,24 @@ const identities: Operation[] = identity.operations
 
 export const operations: readonly Operation[] = [
   ...identities,
+  ...(['GET', 'PUT', 'DELETE'] as const).map(
+    (method): Operation => ({
+      method,
+      path: method === 'GET' ? '/wishlist' : '/wishlist/products/{productId}',
+      access: 'customer',
+      activation: 'CUSTOMER_AUTH_ENABLED; reviewed wishlist persistence bootstrap required',
+      response: method === 'GET' ? wishlistResponse : wishlistSaved,
+      query: empty,
+      params: method === 'GET' ? empty : wishlistParams,
+      status: 200,
+      csrf: method !== 'GET',
+      namespace: 'storefront',
+      replay:
+        method === 'GET'
+          ? 'read'
+          : 'Set membership; repeated add/remove is idempotent and does not allocate stock',
+    }),
+  ),
   ...(['GET', 'PUT', 'DELETE'] as const).map(
     (method): Operation => ({
       method,

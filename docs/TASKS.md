@@ -129,7 +129,7 @@ The register contains 209 tasks across twelve requirement groups. Application-st
 | 02 — UI/UX Design                             |      17 |           1 |     0 |           0 |       0 |         0 |     16 |        0 |
 | 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |     21 |        0 |
 | 04 — Product Catalog and Inventory            |      19 |          11 |     0 |           0 |       1 |         0 |      7 |        0 |
-| 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |          16 |     0 |           0 |       0 |         0 |      1 |        0 |
+| 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |          15 |     0 |           0 |       0 |         0 |      2 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |          22 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 07 — Payment Integration and Verification     |      18 |          18 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 08 — Returns and Refunds                      |      19 |          19 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -137,7 +137,7 @@ The register contains 209 tasks across twelve requirement groups. Application-st
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **209** | **139** | **0** | **0** | **1** | **0** | **69** | **0** |
+| **Total** | **209** | **138** | **0** | **0** | **1** | **0** | **70** | **0** |
 
 ## 4. Milestone tracker
 
@@ -901,14 +901,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Login merge does not oversell/reserve stock; changed products are flagged.\
   **Evidence to attach:** Cart merge integration tests.
 
-- [ ] **P05-004 — Implement persistent authenticated wishlist**\
-  **Status:** `Not Started` · **Area:** Backend/shopping\
+- [x] **P05-004 — Implement persistent authenticated wishlist**\
+  **Status:** `Done` · **Area:** Backend/shopping\
   **Stage:** `Backend`\
   **Sources:** FR-08\
   **Depends on:** `P03-013`, `P04-002`, `P01-024`\
   **Deliverable:** Add unique per-customer wishlist entries and inactive product handling.\
   **Acceptance:** Guests cannot mutate wishlist and repeated adds do not duplicate entries.\
-  **Evidence to attach:** Wishlist API tests.
+  **Evidence:** [Persistent wishlist implementation and verification](./evidence/P05-004-persistent-wishlist.md). Customer-owned read/add/remove, strict indexed membership, 200-item capacity and safe unavailable markers; 29 wishlist plus 57 cart/catalog/composition integration cases, 48 contract and 61 focused unit cases passed. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P05-004-persistent-wishlist.md#rollout-recovery-and-independent-review).
 
 - [ ] **P05-005 — Integrate catalog pricing with coupon discount allocation**\
   **Status:** `Not Started` · **Area:** Backend/catalog + promotions\
@@ -2404,3 +2404,7 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **24 October 2026 — P05-002:** Not Started → In Progress → In Review. Implemented authenticated persistent cart APIs without stock reservation; [verification and rollback](./evidence/P05-002-persistent-cart.md). Restored twenty unrelated unfinished-task evidence placeholders incorrectly populated by the earlier foundation update; accepted history/statuses preserved. Overall: 68 Done, 139 Not Started, 1 Blocked and 1 In Review. Independent owner acceptance pending; external gates and client stages unchanged.
 
 **24 October 2026 — P05-002 acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P05-002-persistent-cart.md#recovery-and-review). Overall: 69 Done, 139 Not Started, 1 Blocked and zero In Review. Cart merge, checkout, client stages and external-provider/policy gates remain separate.
+
+**24 October 2026 — P05-004:** Not Started → In Progress → In Review. Implemented persistent customer wishlist without stock/cart effects; [verification and recovery](./evidence/P05-004-persistent-wishlist.md). Overall: 69 Done, 138 Not Started, 1 Blocked and 1 In Review. Independent acceptance pending; external gates, client stages and product milestones unchanged.
+
+**24 October 2026 — P05-004 acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P05-004-persistent-wishlist.md#rollout-recovery-and-independent-review). Overall: 70 Done, 138 Not Started, 1 Blocked and zero In Review. External-provider/policy gates, client stages and product milestones remain separate.

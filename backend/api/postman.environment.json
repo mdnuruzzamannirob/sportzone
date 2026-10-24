@@ -194,6 +194,12 @@
       "type": "secret"
     },
     {
+      "key": "productId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "put_cart_items_variantIdBody",
       "value": "",
       "enabled": true,

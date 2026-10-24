@@ -8,6 +8,14 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 24 October 2026 — Authenticated persistent wishlist
+
+- Added customer-owned wishlist read/add/remove APIs with unique membership, a 200-product bound,
+  strict indexed persistence and safe unavailable-product markers. The explicit local/test shopping
+  bootstrap now initializes carts and wishlists additively. OpenAPI/Postman include the three routes;
+  wishlist operations do not reserve stock or change carts.
+  [Implementation and verification](docs/evidence/P05-004-persistent-wishlist.md).
+
 ## 24 October 2026 — Authenticated persistent cart
 
 - Added customer-owned cart read/set/remove APIs, strict indexed persistence and local/test bootstrap.

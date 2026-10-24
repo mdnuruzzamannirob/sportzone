@@ -10040,6 +10040,768 @@
           }
         }
       }
+    },
+    "/wishlist": {
+      "get": {
+        "operationId": "get_wishlist",
+        "tags": [
+          "wishlist"
+        ],
+        "summary": "GET /wishlist",
+        "description": "Runtime Zod validation, Unicode/phone/password policies, ownership, coverage and cross-field refinements remain mandatory. JSON Schema describes the wire shape and representable constraints; it does not replace domain validation.",
+        "x-implementation-status": "implemented",
+        "x-activation": "CUSTOMER_AUTH_ENABLED; reviewed wishlist persistence bootstrap required",
+        "x-replay-policy": "read",
+        "x-runtime-validation": true,
+        "x-unknown-query-fields": "rejected except health probes",
+        "x-transport": "Exact approved-origin CORS; OPTIONS preflight, implicit HEAD on GET",
+        "parameters": [],
+        "security": [
+          {
+            "CustomerSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Server-generated request UUID",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "const": "nosniff"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "products": {
+                          "maxItems": 200,
+                          "type": "array",
+                          "items": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "slug": {
+                                    "type": "string"
+                                  },
+                                  "regularPricePoisha": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "effectivePricePoisha": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "availability": {
+                                    "type": "string",
+                                    "enum": [
+                                      "available",
+                                      "unavailable"
+                                    ]
+                                  },
+                                  "thumbnail": {
+                                    "type": "object",
+                                    "properties": {
+                                      "url": {
+                                        "type": "string",
+                                        "format": "uri"
+                                      },
+                                      "alt": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": [
+                                      "url",
+                                      "alt"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "rating": {
+                                    "type": "object",
+                                    "properties": {
+                                      "average": {
+                                        "type": "number",
+                                        "minimum": 1,
+                                        "maximum": 5
+                                      },
+                                      "count": {
+                                        "type": "integer",
+                                        "exclusiveMinimum": 0,
+                                        "maximum": 9007199254740991
+                                      }
+                                    },
+                                    "required": [
+                                      "average",
+                                      "count"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "slug",
+                                  "regularPricePoisha",
+                                  "effectivePricePoisha",
+                                  "availability"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[a-f0-9]{24}$"
+                                  },
+                                  "availability": {
+                                    "type": "string",
+                                    "const": "unavailable"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "availability"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "products"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      "required": [
+                        "requestId"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error family 400; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error400"
+                }
+              }
+            },
+            "x-error-codes": [
+              "UNSUPPORTED_DELIVERY_AREA",
+              "INVALID_REQUEST",
+              "VALIDATION_FAILED"
+            ]
+          },
+          "401": {
+            "description": "Error family 401; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error401"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INVALID_CREDENTIALS",
+              "GUEST_PROOF_REQUIRED",
+              "AUTH_REQUIRED"
+            ]
+          },
+          "403": {
+            "description": "Error family 403; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error403"
+                }
+              }
+            },
+            "x-error-codes": [
+              "FORBIDDEN",
+              "CSRF_INVALID"
+            ]
+          },
+          "404": {
+            "description": "Error family 404; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error404"
+                }
+              }
+            },
+            "x-error-codes": [
+              "NOT_FOUND"
+            ]
+          },
+          "409": {
+            "description": "Error family 409; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error409"
+                }
+              }
+            },
+            "x-error-codes": [
+              "STATE_CONFLICT"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
+          "429": {
+            "description": "Error family 429; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error429"
+                }
+              }
+            },
+            "x-error-codes": [
+              "RATE_LIMITED"
+            ]
+          },
+          "500": {
+            "description": "Error family 500; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error500"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INTERNAL_ERROR"
+            ]
+          },
+          "503": {
+            "description": "Error family 503; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error503"
+                }
+              }
+            },
+            "x-error-codes": [
+              "SERVICE_UNAVAILABLE"
+            ]
+          }
+        }
+      }
+    },
+    "/wishlist/products/{productId}": {
+      "delete": {
+        "operationId": "delete_wishlist_products_productId",
+        "tags": [
+          "wishlist"
+        ],
+        "summary": "DELETE /wishlist/products/{productId}",
+        "description": "Runtime Zod validation, Unicode/phone/password policies, ownership, coverage and cross-field refinements remain mandatory. JSON Schema describes the wire shape and representable constraints; it does not replace domain validation.",
+        "x-implementation-status": "implemented",
+        "x-activation": "CUSTOMER_AUTH_ENABLED; reviewed wishlist persistence bootstrap required",
+        "x-replay-policy": "Set membership; repeated add/remove is idempotent and does not allocate stock",
+        "x-runtime-validation": true,
+        "x-unknown-query-fields": "rejected except health probes",
+        "x-transport": "Exact approved-origin CORS; OPTIONS preflight, implicit HEAD on GET",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{24}$"
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri",
+              "description": "Exact approved frontend origin for this namespace"
+            }
+          }
+        ],
+        "security": [
+          {
+            "CustomerSession": [],
+            "CsrfHeader": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Server-generated request UUID",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "const": "nosniff"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "saved": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "saved"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      "required": [
+                        "requestId"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error family 400; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error400"
+                }
+              }
+            },
+            "x-error-codes": [
+              "UNSUPPORTED_DELIVERY_AREA",
+              "INVALID_REQUEST",
+              "VALIDATION_FAILED"
+            ]
+          },
+          "401": {
+            "description": "Error family 401; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error401"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INVALID_CREDENTIALS",
+              "GUEST_PROOF_REQUIRED",
+              "AUTH_REQUIRED"
+            ]
+          },
+          "403": {
+            "description": "Error family 403; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error403"
+                }
+              }
+            },
+            "x-error-codes": [
+              "FORBIDDEN",
+              "CSRF_INVALID"
+            ]
+          },
+          "404": {
+            "description": "Error family 404; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error404"
+                }
+              }
+            },
+            "x-error-codes": [
+              "NOT_FOUND"
+            ]
+          },
+          "409": {
+            "description": "Error family 409; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error409"
+                }
+              }
+            },
+            "x-error-codes": [
+              "STATE_CONFLICT"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
+          "429": {
+            "description": "Error family 429; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error429"
+                }
+              }
+            },
+            "x-error-codes": [
+              "RATE_LIMITED"
+            ]
+          },
+          "500": {
+            "description": "Error family 500; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error500"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INTERNAL_ERROR"
+            ]
+          },
+          "503": {
+            "description": "Error family 503; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error503"
+                }
+              }
+            },
+            "x-error-codes": [
+              "SERVICE_UNAVAILABLE"
+            ]
+          }
+        }
+      },
+      "put": {
+        "operationId": "put_wishlist_products_productId",
+        "tags": [
+          "wishlist"
+        ],
+        "summary": "PUT /wishlist/products/{productId}",
+        "description": "Runtime Zod validation, Unicode/phone/password policies, ownership, coverage and cross-field refinements remain mandatory. JSON Schema describes the wire shape and representable constraints; it does not replace domain validation.",
+        "x-implementation-status": "implemented",
+        "x-activation": "CUSTOMER_AUTH_ENABLED; reviewed wishlist persistence bootstrap required",
+        "x-replay-policy": "Set membership; repeated add/remove is idempotent and does not allocate stock",
+        "x-runtime-validation": true,
+        "x-unknown-query-fields": "rejected except health probes",
+        "x-transport": "Exact approved-origin CORS; OPTIONS preflight, implicit HEAD on GET",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{24}$"
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri",
+              "description": "Exact approved frontend origin for this namespace"
+            }
+          }
+        ],
+        "security": [
+          {
+            "CustomerSession": [],
+            "CsrfHeader": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Server-generated request UUID",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "const": "nosniff"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "saved": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "saved"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      "required": [
+                        "requestId"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error family 400; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error400"
+                }
+              }
+            },
+            "x-error-codes": [
+              "UNSUPPORTED_DELIVERY_AREA",
+              "INVALID_REQUEST",
+              "VALIDATION_FAILED"
+            ]
+          },
+          "401": {
+            "description": "Error family 401; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error401"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INVALID_CREDENTIALS",
+              "GUEST_PROOF_REQUIRED",
+              "AUTH_REQUIRED"
+            ]
+          },
+          "403": {
+            "description": "Error family 403; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error403"
+                }
+              }
+            },
+            "x-error-codes": [
+              "FORBIDDEN",
+              "CSRF_INVALID"
+            ]
+          },
+          "404": {
+            "description": "Error family 404; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error404"
+                }
+              }
+            },
+            "x-error-codes": [
+              "NOT_FOUND"
+            ]
+          },
+          "409": {
+            "description": "Error family 409; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error409"
+                }
+              }
+            },
+            "x-error-codes": [
+              "STATE_CONFLICT"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
+          "429": {
+            "description": "Error family 429; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error429"
+                }
+              }
+            },
+            "x-error-codes": [
+              "RATE_LIMITED"
+            ]
+          },
+          "500": {
+            "description": "Error family 500; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error500"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INTERNAL_ERROR"
+            ]
+          },
+          "503": {
+            "description": "Error family 503; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error503"
+                }
+              }
+            },
+            "x-error-codes": [
+              "SERVICE_UNAVAILABLE"
+            ]
+          }
+        }
+      }
     }
   },
   "components": {

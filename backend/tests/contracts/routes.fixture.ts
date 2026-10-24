@@ -1,3 +1,4 @@
+import { wishlistRoutes } from '../../src/modules/cart/wishlist.routes.js'
 import { cartRoutes } from '../../src/modules/cart/cart.routes.js'
 import type { RequestHandler, Router } from 'express'
 import { z } from 'zod'
@@ -71,11 +72,13 @@ export function registeredRouter() {
     emailChangeRoutes(recovery, security, sessions),
     profileRoutes(profile, security, sessions),
     cartRoutes({ read: unused, put: unused, remove: unused }, security, sessions),
+    wishlistRoutes({ read: unused, set: unused }, security, sessions),
     catalogRoutes(
       {
         products: unused,
         product: unused,
         cartSelections: unused,
+        wishlistProducts: unused,
         categories: unused,
         category: unused,
       },

@@ -1,3 +1,5 @@
+import { wishlistService } from './modules/cart/wishlist.service.js'
+import { wishlistRoutes } from './modules/cart/wishlist.routes.js'
 import { cartRoutes } from './modules/cart/cart.routes.js'
 import { cartService } from './modules/cart/cart.service.js'
 import { catalogService } from './modules/catalog/catalog.service.js'
@@ -47,6 +49,18 @@ export async function composeIdentityRoutes(
     auth.router.use(
       cartRoutes(
         cartService(
+          connection,
+          auth.customerAccounts,
+          catalogService(connection, publicMediaService(connection, media?.provider)),
+        ),
+        auth.security,
+        auth.sessions,
+      ),
+    )
+  if (config.CUSTOMER_AUTH_ENABLED)
+    auth.router.use(
+      wishlistRoutes(
+        wishlistService(
           connection,
           auth.customerAccounts,
           catalogService(connection, publicMediaService(connection, media?.provider)),

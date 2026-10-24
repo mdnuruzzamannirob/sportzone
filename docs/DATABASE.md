@@ -686,7 +686,7 @@ category/SKU eligibility is enforced by owning services, not by foreign model ac
 | Field | Type | Constraints / notes |
 | --- | --- | --- |
 | `userId`! | ObjectId | One wishlist per registered customer |
-| `productIds[]` | ObjectId[] | Deduplicated, bounded list |
+| `productIds[]` | ObjectId[] | Unique entries; at most 200; preserve saved order |
 
 **Indexes:** unique `{userId:1}`.
 

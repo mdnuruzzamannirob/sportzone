@@ -253,6 +253,30 @@ export function catalogService(
     }
   }
   return {
+    async wishlistProducts(ids: readonly string[], session?: ClientSession) {
+      if (ids.length > 200 || ids.some((id) => !/^[a-f0-9]{24}$/.test(id)))
+        throw new ApiError('VALIDATION_FAILED')
+      if (!ids.length) return new Map<string, import('zod').infer<typeof productCard>>()
+      await verify('product')
+      const rows = await models.products
+        .aggregate<Row>([
+          { $match: { _id: { $in: ids.map((id) => new Types.ObjectId(id)) }, status: 'active' } },
+          ...visibleProducts(),
+          cardProjection,
+        ])
+        .session(session ?? null)
+        .option({ maxTimeMS: 3000, allowDiskUse: false })
+        .catch(() => {
+          throw new ApiError('SERVICE_UNAVAILABLE')
+        })
+      const cards = await projectMedia(rows, 'product')
+      return new Map(
+        cards.map((card) => {
+          const safe = productCard.parse(card)
+          return [safe.id, safe]
+        }),
+      )
+    },
     async cartSelections(ids: readonly string[], session?: ClientSession) {
       if (ids.length > 100 || ids.some((id) => !/^[a-f0-9]{24}$/.test(id)))
         throw new ApiError('VALIDATION_FAILED')
