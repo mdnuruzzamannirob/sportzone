@@ -8,6 +8,14 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 24 October 2026 — Durable coupon allocation primitives
+
+- Added strict coupon/redemption/customer-counter persistence and transaction-scoped reserve, COD
+  redeem, hold commit and exactly-once release. Generation and order-bound coupon identity prevent
+  replay/reacquisition drift; bounded conditional writes protect global/customer capacity. Added an
+  explicit local/test bootstrap and verified shared inventory/coupon rollback and expiry coordination.
+  [Implementation and verification](docs/evidence/P05-007-coupon-allocation.md).
+
 ## 24 October 2026 — Coupon eligibility policy
 
 - Added coupon activation/window/minimum and global/customer usage checks with safe errors,

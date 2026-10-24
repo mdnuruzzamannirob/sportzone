@@ -1007,7 +1007,7 @@ changes. A saved address is not a quote or permission to reuse a historic charge
 | `status`! | enum(`active`,`inactive`) | New hold eligibility; historical orders unaffected |
 | `overallLimit`? / `perCustomerLimit`? | int | Positive limits, if configured |
 | `heldCount`! / `redeemedCount`! | int | `>= 0`, `held + redeemed <= overallLimit` when set |
-| `eligibleProductIds[]` / `eligibleCategoryIds[]` | ObjectId[] | Bounded optional filters; empty means approved global merchandise scope |
+| `eligibleProductIds[]` / `eligibleCategoryIds[]` | ObjectId[] | At most 200 distinct IDs per list; empty means approved global merchandise scope |
 | `termsVersion`! / `revision`! | int | Each meaningful edit increments terms version |
 
 **Indexes:** unique `{codeNormalized:1}`; `{status:1,startsAt:1,expiresAt:1}`.

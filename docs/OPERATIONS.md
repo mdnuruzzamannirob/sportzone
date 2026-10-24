@@ -349,6 +349,17 @@ is absent or incompatible. Staging/production rollout must use the reviewed owni
 approved configuration and migration review; the local/test entry script refuses those environments.
 Cart/wishlist records contain selections only, so account/financial retention rules remain authoritative.
 
+Coupon persistence has a separate explicit local/test bootstrap after build:
+`node --env-file=.env backend/scripts/bootstrap-promotions.mjs` from the repository root. It creates
+only missing `coupons`, `couponRedemptions` and `couponCustomerCounters` collections with strict
+validators and declared unique/query indexes; compatible reruns preserve records and extra indexes.
+Incompatible existing validators require a reviewed migration and are never overwritten. The script
+refuses staging/production; those environments require reviewed rollout of the same owning initializer.
+HTTP startup and quota primitives do not auto-create or repair financial collections. Quota mutations
+fail closed if persistence is absent. Preserve accepted redemptions/counters during rollback or restore;
+never drop financial records or use a TTL deletion to release coupon capacity. The internal allocation
+service requires the owning order capability and an outer transaction; it is not wired as a public API.
+
 Index changes are explicit/additive through `createDeclaredIndexes` and checked by `verifyDeclaredIndexes`; extra indexes are reported and preserved. No `syncIndexes`, global drop or automatic destructive migration is added. Domain models/index plans remain owned by their feature tasks. Transactions use primary/snapshot/majority with a ten-second driver retry deadline and five-second commit limit. Work may rerun: only sequential database effects belong in the callback, every write must carry its session, and external effects must stay outside. Nested independent transactions are rejected. Retain deployment-grade failover/restore/replication evidence for staging/operations gates.
 
 The compiled backend starts with `npm run start --workspace=backend` after build, using injected process variables. Local files are loaded only by an explicit Node flag, e.g. root command `node --env-file=.env backend/dist/server.js`. The environment validator requires NODE_ENV, APP_ENV, RELEASE_ID, MongoDB URI/name, API/storefront/admin origins and exact allowed-origin pair, plus separate SESSION_SECRET and HEALTH_MONITOR_TOKEN. Secrets use 64 lowercase hex characters representing 32 cryptographically random bytes; provision them privately with a cryptographic generator, never committed examples. The customer/admin session service uses the session secret for domain-separated HMAC digests; identity HTTP routes require their explicit activation flags. Unknown environment keys are ignored so inactive provider adapters do not become fake startup dependencies.

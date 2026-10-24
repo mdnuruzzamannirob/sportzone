@@ -129,7 +129,7 @@ The register contains 209 tasks across twelve requirement groups. Application-st
 | 02 — UI/UX Design                             |      17 |           1 |     0 |           0 |       0 |         0 |     16 |        0 |
 | 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |     21 |        0 |
 | 04 — Product Catalog and Inventory            |      19 |          11 |     0 |           0 |       1 |         0 |      7 |        0 |
-| 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |          13 |     0 |           0 |       0 |         0 |      4 |        0 |
+| 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |          12 |     0 |           0 |       0 |         0 |      5 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |          22 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 07 — Payment Integration and Verification     |      18 |          18 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 08 — Returns and Refunds                      |      19 |          19 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -137,7 +137,7 @@ The register contains 209 tasks across twelve requirement groups. Application-st
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **209** | **136** | **0** | **0** | **1** | **0** | **72** | **0** |
+| **Total** | **209** | **135** | **0** | **0** | **1** | **0** | **73** | **0** |
 
 ## 4. Milestone tracker
 
@@ -928,14 +928,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Delivery excluded; discounts nonnegative; errors are stable and safe.\
   **Evidence:** [Coupon policy verification](./evidence/P05-006-coupon-eligibility.md). Date/minimum/usage/customer rules, live-hold preservation and compatible expiry revalidation; 100 policy/pricing plus 40 operations unit cases, 16 real catalog/pricing integration and 48 contract cases have successful applicable evidence. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P05-006-coupon-eligibility.md#recovery-and-independent-review). Durable quota writes remain P05-007.
 
-- [ ] **P05-007 — Implement durable coupon hold/redemption primitives**\
-  **Status:** `Not Started` · **Area:** Backend/promotions\
+- [x] **P05-007 — Implement durable coupon hold/redemption primitives**\
+  **Status:** `Done` · **Area:** Backend/promotions\
   **Stage:** `Backend`\
   **Sources:** FR-09\
   **Depends on:** `P05-006`\
   **Deliverable:** Support atomic capacity reservation, confirm and exactly-once release for checkout coordination.\
   **Acceptance:** Simultaneous final redemption cannot exceed limit; cart actions never hold capacity.\
-  **Evidence to attach:** Coupon race and release tests.
+  **Evidence:** [Durable coupon allocation verification](./evidence/P05-007-coupon-allocation.md). Conditional global/customer capacity, immutable order-coupon binding, generation/state replay guards and coordinated inventory rollback/expiry verified; 60 distinct integration, 114 unit and 48 contract cases passed. Mandatory owning-order capability remains unwired to production pending checkout/order tasks; project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P05-007-coupon-allocation.md#recovery-and-independent-review).
 
 - [ ] **P05-008 — Implement admin coupon configuration and history**\
   **Status:** `Not Started` · **Area:** Admin/promotions\
@@ -2416,3 +2416,7 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **24 October 2026 — P05-006:** Not Started → In Progress → In Review. Added read-only coupon eligibility/usage policy and accepted-hold protection; [results and limits](./evidence/P05-006-coupon-eligibility.md). Overall: 71 Done, 136 Not Started, 1 Blocked and 1 In Review. Independent acceptance pending. Durable quota primitives/API wiring and application/provider gates remain separate.
 
 **24 October 2026 — P05-006 acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P05-006-coupon-eligibility.md#recovery-and-independent-review). Overall: 72 Done, 136 Not Started, 1 Blocked and zero In Review. Durable quota primitives P05-007, coupon APIs, checkout and external/client/product gates remain separate.
+
+**24 October 2026 — P05-007:** Not Started → In Progress → In Review. Added durable coupon quota/redemption primitives with mandatory order capability and real inventory coordination; [verification and limitations](./evidence/P05-007-coupon-allocation.md). Overall: 72 Done, 135 Not Started, 1 Blocked and 1 In Review. Independent acceptance pending; production checkout/order wiring, client/provider and milestone gates remain separate.
+
+**24 October 2026 — P05-007 acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P05-007-coupon-allocation.md#recovery-and-independent-review). Overall: 73 Done, 135 Not Started, 1 Blocked and zero In Review. Production checkout/order wiring, coupon APIs, expiry scheduling and external/client/product gates remain separate.
