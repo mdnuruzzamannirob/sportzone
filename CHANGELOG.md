@@ -8,6 +8,13 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 24 October 2026 — Coupon eligibility policy
+
+- Added coupon activation/window/minimum and global/customer usage checks with safe errors,
+  live-hold term preservation and compatible-only post-expiry revalidation. Policy evaluation is
+  read-only; durable quota reservation/release and exposed coupon APIs remain their owning tasks.
+  [Implementation and verification](docs/evidence/P05-006-coupon-eligibility.md).
+
 ## 24 October 2026 — Catalog pricing and coupon allocation
 
 - Added promotions-owned integer pricing over catalog-owned current base/sale prices, exact percentage

@@ -191,6 +191,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -515,6 +516,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -776,6 +778,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -1014,6 +1017,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -1259,6 +1263,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -1591,6 +1596,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -1829,6 +1835,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -2038,6 +2045,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -2280,6 +2288,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -2604,6 +2613,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -2865,6 +2875,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -3103,6 +3114,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -3348,6 +3360,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -3696,6 +3709,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -4033,6 +4047,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -4379,6 +4394,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -4746,6 +4762,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -5111,6 +5128,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -5420,6 +5438,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -5663,6 +5682,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -5867,6 +5887,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -6075,6 +6096,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -6365,6 +6387,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -6665,6 +6688,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -6937,6 +6961,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -7199,6 +7224,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -7436,6 +7462,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -7713,6 +7740,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -8025,6 +8053,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -8268,6 +8297,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -8506,6 +8536,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -8833,6 +8864,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -9086,6 +9118,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -9491,6 +9524,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -9983,6 +10017,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -10291,6 +10326,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -10519,6 +10555,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -10745,6 +10782,7 @@
               }
             },
             "x-error-codes": [
+              "COUPON_UNAVAILABLE",
               "STATE_CONFLICT"
             ]
           },
@@ -10815,6 +10853,7 @@
               "code": {
                 "type": "string",
                 "enum": [
+                  "COUPON_UNAVAILABLE",
                   "BUSINESS_RULE_VIOLATION",
                   "UNSUPPORTED_DELIVERY_AREA",
                   "STATE_CONFLICT",
@@ -11143,6 +11182,7 @@
               "code": {
                 "type": "string",
                 "enum": [
+                  "COUPON_UNAVAILABLE",
                   "STATE_CONFLICT"
                 ]
               },

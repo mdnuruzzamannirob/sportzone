@@ -1,4 +1,5 @@
 export const errorDefinitions = {
+  COUPON_UNAVAILABLE: { status: 409, message: 'Coupon is not available.' },
   BUSINESS_RULE_VIOLATION: { status: 422, message: 'The requested operation is not available.' },
   UNSUPPORTED_DELIVERY_AREA: {
     status: 400,
