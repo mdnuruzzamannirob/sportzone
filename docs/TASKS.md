@@ -129,7 +129,7 @@ The register contains 209 tasks across twelve requirement groups. Application-st
 | 02 — UI/UX Design                             |      17 |           1 |     0 |           0 |       0 |         0 |     16 |        0 |
 | 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |     21 |        0 |
 | 04 — Product Catalog and Inventory            |      19 |          11 |     0 |           0 |       1 |         0 |      7 |        0 |
-| 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |          12 |     0 |           0 |       0 |         0 |      5 |        0 |
+| 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |          11 |     0 |           0 |       0 |         0 |      6 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |          22 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 07 — Payment Integration and Verification     |      18 |          18 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 08 — Returns and Refunds                      |      19 |          19 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -137,7 +137,7 @@ The register contains 209 tasks across twelve requirement groups. Application-st
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **209** | **135** | **0** | **0** | **1** | **0** | **73** | **0** |
+| **Total** | **209** | **134** | **0** | **0** | **1** | **0** | **74** | **0** |
 
 ## 4. Milestone tracker
 
@@ -946,14 +946,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Invalid policy is rejected; history distinguishes held and committed usage.\
   **Evidence to attach:** Admin coupon CRUD/E2E.
 
-- [ ] **P05-009 — Implement reviews, uniqueness and eligibility guard**\
-  **Status:** `Not Started` · **Area:** Backend/reviews\
+- [x] **P05-009 — Implement reviews, uniqueness and eligibility guard**\
+  **Status:** `Done` · **Area:** Backend/reviews\
   **Stage:** `Backend`\
   **Sources:** FR-10; FR-31\
   **Depends on:** `P03-013`, `P04-002`, `P01-024`\
   **Deliverable:** Create owned reviews, one active review per customer/product, moderation and a closed-by-default delivered-purchase check.\
   **Acceptance:** No new verified review can be submitted before proven order eligibility exists.\
-  **Evidence to attach:** Review model and denial tests.
+  **Evidence:** [Review ownership/eligibility verification](./evidence/P05-009-review-guard.md). Default-deny proof, owned authoring, active uniqueness, audited/replay-safe moderation and canonical approved-rating summaries verified. 65 distinct integration, 43 unit and 48 contract cases passed. Production eligibility/audit adapters and HTTP wiring remain owning later tasks; project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P05-009-review-guard.md#recovery-and-independent-review).
 
 - [ ] **P05-010 — Implement approved review display and moderation shell**\
   **Status:** `Not Started` · **Area:** Storefront/reviews\
@@ -2420,3 +2420,7 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **24 October 2026 — P05-007:** Not Started → In Progress → In Review. Added durable coupon quota/redemption primitives with mandatory order capability and real inventory coordination; [verification and limitations](./evidence/P05-007-coupon-allocation.md). Overall: 72 Done, 135 Not Started, 1 Blocked and 1 In Review. Independent acceptance pending; production checkout/order wiring, client/provider and milestone gates remain separate.
 
 **24 October 2026 — P05-007 acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P05-007-coupon-allocation.md#recovery-and-independent-review). Overall: 73 Done, 135 Not Started, 1 Blocked and zero In Review. Production checkout/order wiring, coupon APIs, expiry scheduling and external/client/product gates remain separate.
+
+**24 October 2026 — P05-009:** Not Started → In Progress → In Review. Added review ownership/eligibility foundation, audited moderation and transactional rating summaries; [verification and boundaries](./evidence/P05-009-review-guard.md). Overall: 73 Done, 134 Not Started, 1 Blocked and 1 In Review. Independent acceptance pending. Production proof/audit adapters, review HTTP/UI integration and product/provider milestones remain separate.
+
+**24 October 2026 — P05-009 acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P05-009-review-guard.md#recovery-and-independent-review). Overall: 74 Done, 134 Not Started, 1 Blocked and zero In Review. Production purchase/audit adapters, review HTTP/UI integration and product/provider milestones retain their separate acceptance gates.

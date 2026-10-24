@@ -8,6 +8,14 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 24 October 2026 — Review eligibility and moderation foundation
+
+- Added owned review creation/editing with a default-deny purchase guard, one-active-review index and
+  strict persistence. Audited moderation preserves authored ratings, resets actual edits to pending,
+  reconciles approved catalog ratings transactionally and protects later edits from old approval replay.
+  Added explicit local/test bootstrap; production purchase/audit adapters and HTTP integration remain
+  with their owning tasks. [Implementation and verification](docs/evidence/P05-009-review-guard.md).
+
 ## 24 October 2026 — Durable coupon allocation primitives
 
 - Added strict coupon/redemption/customer-counter persistence and transaction-scoped reserve, COD

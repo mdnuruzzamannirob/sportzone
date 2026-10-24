@@ -360,6 +360,17 @@ fail closed if persistence is absent. Preserve accepted redemptions/counters dur
 never drop financial records or use a TTL deletion to release coupon capacity. The internal allocation
 service requires the owning order capability and an outer transaction; it is not wired as a public API.
 
+Review persistence uses `node --env-file=.env backend/scripts/bootstrap-reviews.mjs` after backend
+build, from the repository root. The local/test-only command creates only the missing `reviews`
+collection and declared indexes with its strict validator; compatible reruns preserve records and
+incompatible options require reviewed migration. It refuses staging/production. Provisioning a
+collection does not activate verified review creation: the service defaults purchase eligibility to
+deny. Production integration must supply transaction-scoped delivered-purchase eligibility, real
+administrator authorization and append-only audit write/receipt capabilities through their owners.
+Moderation receipts must bind actor, review, operation key, decision and reason; replay must never
+approve later customer edits. No review HTTP route is registered by this bootstrap. Preserve authored
+reviews and audit history on rollback; do not clear them when purchase/refund status changes.
+
 Index changes are explicit/additive through `createDeclaredIndexes` and checked by `verifyDeclaredIndexes`; extra indexes are reported and preserved. No `syncIndexes`, global drop or automatic destructive migration is added. Domain models/index plans remain owned by their feature tasks. Transactions use primary/snapshot/majority with a ten-second driver retry deadline and five-second commit limit. Work may rerun: only sequential database effects belong in the callback, every write must carry its session, and external effects must stay outside. Nested independent transactions are rejected. Retain deployment-grade failover/restore/replication evidence for staging/operations gates.
 
 The compiled backend starts with `npm run start --workspace=backend` after build, using injected process variables. Local files are loaded only by an explicit Node flag, e.g. root command `node --env-file=.env backend/dist/server.js`. The environment validator requires NODE_ENV, APP_ENV, RELEASE_ID, MongoDB URI/name, API/storefront/admin origins and exact allowed-origin pair, plus separate SESSION_SECRET and HEALTH_MONITOR_TOKEN. Secrets use 64 lowercase hex characters representing 32 cryptographically random bytes; provision them privately with a cryptographic generator, never committed examples. The customer/admin session service uses the session secret for domain-separated HMAC digests; identity HTTP routes require their explicit activation flags. Unknown environment keys are ignored so inactive provider adapters do not become fake startup dependencies.

@@ -702,11 +702,11 @@ category/SKU eligibility is enforced by owning services, not by foreign model ac
 | `comment`! | string | Length-limited, moderated and escaped on display |
 | `status`! | enum(`pending`,`approved`,`rejected`,`hidden`) | Only approved contributes to public rating |
 | `isActive`! | bool | One active review per user/product |
-| `moderatedAt`? / `moderationReason`? | Date / string | Auditable moderation decision |
+| `moderatedAt`? / `moderationReason`? | Date / string | Required for approved/rejected/hidden state; decisions retained in append-only audit history |
 
 **Indexes:** partial unique `{userId:1,productId:1}` where `isActive:true`; `{productId:1,status:1,createdAt:-1}`.
 
-**Rules:** validate delivered qualifying purchase and exclusions (PRD FR-10); edit re-enters moderation when required. Do not silently alter customer ratings. Rating aggregates are recalculable projections.
+**Rules:** validate delivered qualifying purchase and exclusions (PRD FR-10); default to denied without authoritative eligibility evidence. Actual authored changes return the review to pending; unchanged content does not reset approval. Audit customer/moderator changes and preserve prior decisions when current moderation metadata is cleared. Administrators cannot rewrite authored ratings. Only active approved rows contribute to the canonical product rating summary; serialize review changes through the catalog-owned product fence and update the summary in the same transaction. Rating aggregates remain recalculable projections.
 
 ### 6.7 `mediaAssets` — `media`
 
