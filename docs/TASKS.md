@@ -129,7 +129,7 @@ The register contains 209 tasks across twelve requirement groups. Application-st
 | 02 — UI/UX Design                             |      17 |           1 |     0 |           0 |       0 |         0 |     16 |        0 |
 | 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |     21 |        0 |
 | 04 — Product Catalog and Inventory            |      19 |          11 |     0 |           0 |       1 |         0 |      7 |        0 |
-| 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |          15 |     0 |           0 |       0 |         0 |      2 |        0 |
+| 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |          14 |     0 |           0 |       0 |         0 |      3 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |          22 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 07 — Payment Integration and Verification     |      18 |          18 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 08 — Returns and Refunds                      |      19 |          19 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -137,7 +137,7 @@ The register contains 209 tasks across twelve requirement groups. Application-st
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **209** | **138** | **0** | **0** | **1** | **0** | **70** | **0** |
+| **Total** | **209** | **137** | **0** | **0** | **1** | **0** | **71** | **0** |
 
 ## 4. Milestone tracker
 
@@ -910,14 +910,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Guests cannot mutate wishlist and repeated adds do not duplicate entries.\
   **Evidence:** [Persistent wishlist implementation and verification](./evidence/P05-004-persistent-wishlist.md). Customer-owned read/add/remove, strict indexed membership, 200-item capacity and safe unavailable markers; 29 wishlist plus 57 cart/catalog/composition integration cases, 48 contract and 61 focused unit cases passed. Project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P05-004-persistent-wishlist.md#rollout-recovery-and-independent-review).
 
-- [ ] **P05-005 — Integrate catalog pricing with coupon discount allocation**\
-  **Status:** `Not Started` · **Area:** Backend/catalog + promotions\
+- [x] **P05-005 — Integrate catalog pricing with coupon discount allocation**\
+  **Status:** `Done` · **Area:** Backend/catalog + promotions\
   **Stage:** `Backend`\
   **Sources:** FR-09; Architecture §7\
   **Depends on:** `P04-002`, `P01-024`\
   **Deliverable:** Consume catalog-owned base/sale prices through catalog service interfaces; promotions owns coupon calculation and deterministic item-level discount allocation/rounding.\
   **Acceptance:** No floats determine payable values; line discount sum matches order-level totals.\
-  **Evidence to attach:** Pricing/rounding unit tests.
+  **Evidence:** [Pricing and allocation verification](./evidence/P05-005-pricing-allocation.md). Exact BigInt arithmetic over catalog-owned prices; stable line-ID remainder allocation and overflow guards. 40 unit (including 200 deterministic workloads), 10 real catalog/MongoDB integration and 48 unchanged HTTP contract cases passed; project owner independently accepted on 24 October 2026: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P05-005-pricing-allocation.md#recovery-and-review).
 
 - [ ] **P05-006 — Implement coupon eligibility and limit rules**\
   **Status:** `Not Started` · **Area:** Backend/promotions\
@@ -2408,3 +2408,7 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **24 October 2026 — P05-004:** Not Started → In Progress → In Review. Implemented persistent customer wishlist without stock/cart effects; [verification and recovery](./evidence/P05-004-persistent-wishlist.md). Overall: 69 Done, 138 Not Started, 1 Blocked and 1 In Review. Independent acceptance pending; external gates, client stages and product milestones unchanged.
 
 **24 October 2026 — P05-004 acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P05-004-persistent-wishlist.md#rollout-recovery-and-independent-review). Overall: 70 Done, 138 Not Started, 1 Blocked and zero In Review. External-provider/policy gates, client stages and product milestones remain separate.
+
+**24 October 2026 — P05-005:** Not Started → In Progress → In Review. Added catalog-integrated exact coupon pricing/allocation; [verification and boundaries](./evidence/P05-005-pricing-allocation.md). Overall: 70 Done, 137 Not Started, 1 Blocked and 1 In Review. Independent acceptance pending; coupon eligibility/holds, checkout, client stages and external gates remain separate.
+
+**24 October 2026 — P05-005 acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P05-005-pricing-allocation.md#recovery-and-review). Overall: 71 Done, 137 Not Started, 1 Blocked and zero In Review. Coupon eligibility/limits P05-006, holds P05-007, checkout and external/client/product gates remain separate.

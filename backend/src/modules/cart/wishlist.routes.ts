@@ -3,10 +3,7 @@ import { z } from 'zod'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { respond } from '../../shared/responses.js'
 import type { BrowserSecurity } from '../auth/sessions/browser-security.service.js'
-import {
-  createSessionHttp,
-  readSessionCookie,
-} from '../auth/sessions/session.http.js'
+import { createSessionHttp, readSessionCookie } from '../auth/sessions/session.http.js'
 import type { SessionService } from '../auth/sessions/session.service.js'
 import { wishlistParams } from './wishlist.schema.js'
 import type { wishlistService } from './wishlist.service.js'
@@ -29,8 +26,7 @@ export function wishlistRoutes(
     parseInput(z.strictObject({}), req.query)
     next()
   })
-  const token = (req: import('express').Request) =>
-    readSessionCookie(req.get('Cookie'), 'customer')
+  const token = (req: import('express').Request) => readSessionCookie(req.get('Cookie'), 'customer')
   router.get('/wishlist', async (req, res) => {
     parseInput(z.undefined(), req.body)
     respond(res, await service.read(token(req)))

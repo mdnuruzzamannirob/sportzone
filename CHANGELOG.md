@@ -8,6 +8,13 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 24 October 2026 — Catalog pricing and coupon allocation
+
+- Added promotions-owned integer pricing over catalog-owned current base/sale prices, exact percentage
+  rounding and stable item-level largest-remainder coupon allocation. No HTTP route, reservation or
+  financial persistence was added; eligibility and quota handling remain their owning tasks.
+  [Implementation and verification](docs/evidence/P05-005-pricing-allocation.md).
+
 ## 24 October 2026 — Authenticated persistent wishlist
 
 - Added customer-owned wishlist read/add/remove APIs with unique membership, a 200-product bound,

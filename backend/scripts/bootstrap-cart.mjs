@@ -12,7 +12,9 @@ try {
   await initializeWishlistPersistence(connection)
   console.log('Cart and wishlist persistence ready.')
 } catch {
-  console.error('Shopping bootstrap failed; verify protected configuration and reviewed persistence.')
+  console.error(
+    'Shopping bootstrap failed; verify protected configuration and reviewed persistence.',
+  )
   process.exitCode = 1
 } finally {
   await connection?.close()
