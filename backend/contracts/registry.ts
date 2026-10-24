@@ -1,3 +1,4 @@
+import { cartQuantity, cartResponse, variantParams } from '../src/modules/cart/cart.schema.js'
 import { z } from 'zod'
 import { createIdentityContracts } from '../src/modules/auth/auth.schema.js'
 import {
@@ -97,6 +98,25 @@ const identities: Operation[] = identity.operations
 
 export const operations: readonly Operation[] = [
   ...identities,
+  ...(['GET', 'PUT', 'DELETE'] as const).map(
+    (method): Operation => ({
+      method,
+      path: method === 'GET' ? '/cart' : '/cart/items/{variantId}',
+      access: 'customer',
+      activation: 'CUSTOMER_AUTH_ENABLED; reviewed cart persistence bootstrap required',
+      ...(method === 'PUT' ? { request: cartQuantity } : {}),
+      response: cartResponse,
+      query: empty,
+      params: method === 'GET' ? empty : variantParams,
+      status: 200,
+      csrf: method !== 'GET',
+      namespace: 'storefront',
+      replay:
+        method === 'GET'
+          ? 'read'
+          : 'Absolute quantity/delete; no reservation or additive retry effect',
+    }),
+  ),
   ...(
     [
       ['/products', productQuery, z.array(productCard), true],

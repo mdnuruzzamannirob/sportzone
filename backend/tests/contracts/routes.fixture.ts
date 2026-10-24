@@ -1,3 +1,4 @@
+import { cartRoutes } from '../../src/modules/cart/cart.routes.js'
 import type { RequestHandler, Router } from 'express'
 import { z } from 'zod'
 import { adminRoutes } from '../../src/modules/auth/credentials/admin-auth.routes.js'
@@ -69,7 +70,17 @@ export function registeredRouter() {
     recoveryRoutes(recovery, security, sessions),
     emailChangeRoutes(recovery, security, sessions),
     profileRoutes(profile, security, sessions),
-    catalogRoutes({ products: unused, product: unused, categories: unused, category: unused }, []),
+    cartRoutes({ read: unused, put: unused, remove: unused }, security, sessions),
+    catalogRoutes(
+      {
+        products: unused,
+        product: unused,
+        cartSelections: unused,
+        categories: unused,
+        category: unused,
+      },
+      [],
+    ),
     mediaRoutes(media, security, sessions, 1024, guard),
   ])
 }

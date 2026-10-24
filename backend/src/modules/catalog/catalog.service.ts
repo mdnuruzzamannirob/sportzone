@@ -1,4 +1,4 @@
-import { Types, type Connection, type PipelineStage } from 'mongoose'
+import { Types, type ClientSession, type Connection, type PipelineStage } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { pageMeta } from '../../shared/pagination.js'
@@ -118,7 +118,7 @@ const offers: LookupPipeline = [
     },
   },
 ]
-const visibleProducts = (category?: string): PipelineStage[] => [
+const visibleProducts = (category?: string): LookupPipeline => [
   {
     $lookup: {
       from: 'categories',
@@ -253,6 +253,61 @@ export function catalogService(
     }
   }
   return {
+    async cartSelections(ids: readonly string[], session?: ClientSession) {
+      if (ids.length > 100 || ids.some((id) => !/^[a-f0-9]{24}$/.test(id)))
+        throw new ApiError('VALIDATION_FAILED')
+      type Selection = {
+        variantId: string
+        availableQty: number
+        estimatedUnitPoisha: number
+        product: import('zod').infer<typeof productCard>
+      }
+      if (!ids.length) return new Map<string, Omit<Selection, 'variantId'>>()
+      await verify('product')
+      const rows = await models.variants
+        .aggregate<Selection>([
+          { $match: { _id: { $in: ids.map((id) => new Types.ObjectId(id)) } } },
+          ...validVariants,
+          {
+            $lookup: {
+              from: 'products',
+              localField: 'productId',
+              foreignField: '_id',
+              pipeline: [{ $match: { status: 'active' } }, ...visibleProducts()],
+              as: '_product',
+            },
+          },
+          { $unwind: '$_product' },
+          {
+            $project: {
+              _id: 0,
+              variantId: { $toString: '$_id' },
+              availableQty: '$_available',
+              estimatedUnitPoisha: '$_effective',
+              product: {
+                id: { $toString: '$_product._id' },
+                name: '$_product.name',
+                slug: '$_product.slug',
+                regularPricePoisha: '$regularPricePoisha',
+                effectivePricePoisha: '$_effective',
+                availability: { $cond: [{ $gt: ['$_available', 0] }, 'available', 'unavailable'] },
+              },
+            },
+          },
+        ])
+        .session(session ?? null)
+        .option({ maxTimeMS: 3000, allowDiskUse: false })
+      return new Map(
+        rows.map((row) => [
+          row.variantId,
+          {
+            availableQty: row.availableQty,
+            estimatedUnitPoisha: row.estimatedUnitPoisha,
+            product: productCard.parse(row.product),
+          },
+        ]),
+      )
+    },
     async products(query: unknown) {
       const input = parseInput(productQuery, query)
       await verify('product')

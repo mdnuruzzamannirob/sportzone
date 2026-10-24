@@ -194,6 +194,12 @@
       "type": "secret"
     },
     {
+      "key": "put_cart_items_variantIdBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
       "key": "q",
       "value": "",
       "enabled": true,
@@ -219,6 +225,12 @@
     },
     {
       "key": "storefrontOrigin",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "variantId",
       "value": "",
       "enabled": true,
       "type": "default"

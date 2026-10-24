@@ -194,6 +194,19 @@
               "STATE_CONFLICT"
             ]
           },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
           "429": {
             "description": "Error family 429; applicable guards and service policies determine reachable codes",
             "content": {
@@ -505,6 +518,19 @@
               "STATE_CONFLICT"
             ]
           },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
           "429": {
             "description": "Error family 429; applicable guards and service policies determine reachable codes",
             "content": {
@@ -753,6 +779,19 @@
               "STATE_CONFLICT"
             ]
           },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
           "429": {
             "description": "Error family 429; applicable guards and service policies determine reachable codes",
             "content": {
@@ -976,6 +1015,19 @@
             },
             "x-error-codes": [
               "STATE_CONFLICT"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
             ]
           },
           "429": {
@@ -1208,6 +1260,19 @@
             },
             "x-error-codes": [
               "STATE_CONFLICT"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
             ]
           },
           "429": {
@@ -1529,6 +1594,19 @@
               "STATE_CONFLICT"
             ]
           },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
           "429": {
             "description": "Error family 429; applicable guards and service policies determine reachable codes",
             "content": {
@@ -1754,6 +1832,19 @@
               "STATE_CONFLICT"
             ]
           },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
           "429": {
             "description": "Error family 429; applicable guards and service policies determine reachable codes",
             "content": {
@@ -1948,6 +2039,19 @@
             },
             "x-error-codes": [
               "STATE_CONFLICT"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
             ]
           },
           "429": {
@@ -2177,6 +2281,19 @@
             },
             "x-error-codes": [
               "STATE_CONFLICT"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
             ]
           },
           "429": {
@@ -2490,6 +2607,19 @@
               "STATE_CONFLICT"
             ]
           },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
           "429": {
             "description": "Error family 429; applicable guards and service policies determine reachable codes",
             "content": {
@@ -2738,6 +2868,19 @@
               "STATE_CONFLICT"
             ]
           },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
           "429": {
             "description": "Error family 429; applicable guards and service policies determine reachable codes",
             "content": {
@@ -2961,6 +3104,19 @@
             },
             "x-error-codes": [
               "STATE_CONFLICT"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
             ]
           },
           "429": {
@@ -3193,6 +3349,19 @@
             },
             "x-error-codes": [
               "STATE_CONFLICT"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
             ]
           },
           "429": {
@@ -3530,6 +3699,19 @@
               "STATE_CONFLICT"
             ]
           },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
           "429": {
             "description": "Error family 429; applicable guards and service policies determine reachable codes",
             "content": {
@@ -3854,6 +4036,19 @@
               "STATE_CONFLICT"
             ]
           },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
           "429": {
             "description": "Error family 429; applicable guards and service policies determine reachable codes",
             "content": {
@@ -3892,6 +4087,1105 @@
             "x-error-codes": [
               "SERVICE_UNAVAILABLE"
             ]
+          }
+        }
+      }
+    },
+    "/cart": {
+      "get": {
+        "operationId": "get_cart",
+        "tags": [
+          "cart"
+        ],
+        "summary": "GET /cart",
+        "description": "Runtime Zod validation, Unicode/phone/password policies, ownership, coverage and cross-field refinements remain mandatory. JSON Schema describes the wire shape and representable constraints; it does not replace domain validation.",
+        "x-implementation-status": "implemented",
+        "x-activation": "CUSTOMER_AUTH_ENABLED; reviewed cart persistence bootstrap required",
+        "x-replay-policy": "read",
+        "x-runtime-validation": true,
+        "x-unknown-query-fields": "rejected except health probes",
+        "x-transport": "Exact approved-origin CORS; OPTIONS preflight, implicit HEAD on GET",
+        "parameters": [],
+        "security": [
+          {
+            "CustomerSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Server-generated request UUID",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "const": "nosniff"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "variantId": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{24}$"
+                              },
+                              "quantity": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 50
+                              },
+                              "product": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "slug": {
+                                        "type": "string"
+                                      },
+                                      "regularPricePoisha": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "effectivePricePoisha": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "availability": {
+                                        "type": "string",
+                                        "enum": [
+                                          "available",
+                                          "unavailable"
+                                        ]
+                                      },
+                                      "thumbnail": {
+                                        "type": "object",
+                                        "properties": {
+                                          "url": {
+                                            "type": "string",
+                                            "format": "uri"
+                                          },
+                                          "alt": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          }
+                                        },
+                                        "required": [
+                                          "url",
+                                          "alt"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "rating": {
+                                        "type": "object",
+                                        "properties": {
+                                          "average": {
+                                            "type": "number",
+                                            "minimum": 1,
+                                            "maximum": 5
+                                          },
+                                          "count": {
+                                            "type": "integer",
+                                            "exclusiveMinimum": 0,
+                                            "maximum": 9007199254740991
+                                          }
+                                        },
+                                        "required": [
+                                          "average",
+                                          "count"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "name",
+                                      "slug",
+                                      "regularPricePoisha",
+                                      "effectivePricePoisha",
+                                      "availability"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "estimatedUnitPoisha": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "availability": {
+                                "type": "string",
+                                "enum": [
+                                  "available",
+                                  "unavailable"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "variantId",
+                              "quantity",
+                              "product",
+                              "estimatedUnitPoisha",
+                              "availability"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "estimatedSubtotalPoisha": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "items",
+                        "estimatedSubtotalPoisha",
+                        "revision"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      "required": [
+                        "requestId"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error family 400; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error400"
+                }
+              }
+            },
+            "x-error-codes": [
+              "UNSUPPORTED_DELIVERY_AREA",
+              "INVALID_REQUEST",
+              "VALIDATION_FAILED"
+            ]
+          },
+          "401": {
+            "description": "Error family 401; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error401"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INVALID_CREDENTIALS",
+              "GUEST_PROOF_REQUIRED",
+              "AUTH_REQUIRED"
+            ]
+          },
+          "403": {
+            "description": "Error family 403; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error403"
+                }
+              }
+            },
+            "x-error-codes": [
+              "FORBIDDEN",
+              "CSRF_INVALID"
+            ]
+          },
+          "404": {
+            "description": "Error family 404; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error404"
+                }
+              }
+            },
+            "x-error-codes": [
+              "NOT_FOUND"
+            ]
+          },
+          "409": {
+            "description": "Error family 409; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error409"
+                }
+              }
+            },
+            "x-error-codes": [
+              "STATE_CONFLICT"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
+          "429": {
+            "description": "Error family 429; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error429"
+                }
+              }
+            },
+            "x-error-codes": [
+              "RATE_LIMITED"
+            ]
+          },
+          "500": {
+            "description": "Error family 500; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error500"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INTERNAL_ERROR"
+            ]
+          },
+          "503": {
+            "description": "Error family 503; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error503"
+                }
+              }
+            },
+            "x-error-codes": [
+              "SERVICE_UNAVAILABLE"
+            ]
+          }
+        }
+      }
+    },
+    "/cart/items/{variantId}": {
+      "delete": {
+        "operationId": "delete_cart_items_variantId",
+        "tags": [
+          "cart"
+        ],
+        "summary": "DELETE /cart/items/{variantId}",
+        "description": "Runtime Zod validation, Unicode/phone/password policies, ownership, coverage and cross-field refinements remain mandatory. JSON Schema describes the wire shape and representable constraints; it does not replace domain validation.",
+        "x-implementation-status": "implemented",
+        "x-activation": "CUSTOMER_AUTH_ENABLED; reviewed cart persistence bootstrap required",
+        "x-replay-policy": "Absolute quantity/delete; no reservation or additive retry effect",
+        "x-runtime-validation": true,
+        "x-unknown-query-fields": "rejected except health probes",
+        "x-transport": "Exact approved-origin CORS; OPTIONS preflight, implicit HEAD on GET",
+        "parameters": [
+          {
+            "name": "variantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{24}$"
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri",
+              "description": "Exact approved frontend origin for this namespace"
+            }
+          }
+        ],
+        "security": [
+          {
+            "CustomerSession": [],
+            "CsrfHeader": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Server-generated request UUID",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "const": "nosniff"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "variantId": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{24}$"
+                              },
+                              "quantity": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 50
+                              },
+                              "product": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "slug": {
+                                        "type": "string"
+                                      },
+                                      "regularPricePoisha": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "effectivePricePoisha": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "availability": {
+                                        "type": "string",
+                                        "enum": [
+                                          "available",
+                                          "unavailable"
+                                        ]
+                                      },
+                                      "thumbnail": {
+                                        "type": "object",
+                                        "properties": {
+                                          "url": {
+                                            "type": "string",
+                                            "format": "uri"
+                                          },
+                                          "alt": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          }
+                                        },
+                                        "required": [
+                                          "url",
+                                          "alt"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "rating": {
+                                        "type": "object",
+                                        "properties": {
+                                          "average": {
+                                            "type": "number",
+                                            "minimum": 1,
+                                            "maximum": 5
+                                          },
+                                          "count": {
+                                            "type": "integer",
+                                            "exclusiveMinimum": 0,
+                                            "maximum": 9007199254740991
+                                          }
+                                        },
+                                        "required": [
+                                          "average",
+                                          "count"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "name",
+                                      "slug",
+                                      "regularPricePoisha",
+                                      "effectivePricePoisha",
+                                      "availability"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "estimatedUnitPoisha": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "availability": {
+                                "type": "string",
+                                "enum": [
+                                  "available",
+                                  "unavailable"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "variantId",
+                              "quantity",
+                              "product",
+                              "estimatedUnitPoisha",
+                              "availability"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "estimatedSubtotalPoisha": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "items",
+                        "estimatedSubtotalPoisha",
+                        "revision"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      "required": [
+                        "requestId"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error family 400; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error400"
+                }
+              }
+            },
+            "x-error-codes": [
+              "UNSUPPORTED_DELIVERY_AREA",
+              "INVALID_REQUEST",
+              "VALIDATION_FAILED"
+            ]
+          },
+          "401": {
+            "description": "Error family 401; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error401"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INVALID_CREDENTIALS",
+              "GUEST_PROOF_REQUIRED",
+              "AUTH_REQUIRED"
+            ]
+          },
+          "403": {
+            "description": "Error family 403; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error403"
+                }
+              }
+            },
+            "x-error-codes": [
+              "FORBIDDEN",
+              "CSRF_INVALID"
+            ]
+          },
+          "404": {
+            "description": "Error family 404; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error404"
+                }
+              }
+            },
+            "x-error-codes": [
+              "NOT_FOUND"
+            ]
+          },
+          "409": {
+            "description": "Error family 409; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error409"
+                }
+              }
+            },
+            "x-error-codes": [
+              "STATE_CONFLICT"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
+          "429": {
+            "description": "Error family 429; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error429"
+                }
+              }
+            },
+            "x-error-codes": [
+              "RATE_LIMITED"
+            ]
+          },
+          "500": {
+            "description": "Error family 500; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error500"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INTERNAL_ERROR"
+            ]
+          },
+          "503": {
+            "description": "Error family 503; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error503"
+                }
+              }
+            },
+            "x-error-codes": [
+              "SERVICE_UNAVAILABLE"
+            ]
+          }
+        }
+      },
+      "put": {
+        "operationId": "put_cart_items_variantId",
+        "tags": [
+          "cart"
+        ],
+        "summary": "PUT /cart/items/{variantId}",
+        "description": "Runtime Zod validation, Unicode/phone/password policies, ownership, coverage and cross-field refinements remain mandatory. JSON Schema describes the wire shape and representable constraints; it does not replace domain validation.",
+        "x-implementation-status": "implemented",
+        "x-activation": "CUSTOMER_AUTH_ENABLED; reviewed cart persistence bootstrap required",
+        "x-replay-policy": "Absolute quantity/delete; no reservation or additive retry effect",
+        "x-runtime-validation": true,
+        "x-unknown-query-fields": "rejected except health probes",
+        "x-transport": "Exact approved-origin CORS; OPTIONS preflight, implicit HEAD on GET",
+        "parameters": [
+          {
+            "name": "variantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{24}$"
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri",
+              "description": "Exact approved frontend origin for this namespace"
+            }
+          }
+        ],
+        "security": [
+          {
+            "CustomerSession": [],
+            "CsrfHeader": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Server-generated request UUID",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "const": "nosniff"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "variantId": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{24}$"
+                              },
+                              "quantity": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 50
+                              },
+                              "product": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "slug": {
+                                        "type": "string"
+                                      },
+                                      "regularPricePoisha": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "effectivePricePoisha": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "availability": {
+                                        "type": "string",
+                                        "enum": [
+                                          "available",
+                                          "unavailable"
+                                        ]
+                                      },
+                                      "thumbnail": {
+                                        "type": "object",
+                                        "properties": {
+                                          "url": {
+                                            "type": "string",
+                                            "format": "uri"
+                                          },
+                                          "alt": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          }
+                                        },
+                                        "required": [
+                                          "url",
+                                          "alt"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "rating": {
+                                        "type": "object",
+                                        "properties": {
+                                          "average": {
+                                            "type": "number",
+                                            "minimum": 1,
+                                            "maximum": 5
+                                          },
+                                          "count": {
+                                            "type": "integer",
+                                            "exclusiveMinimum": 0,
+                                            "maximum": 9007199254740991
+                                          }
+                                        },
+                                        "required": [
+                                          "average",
+                                          "count"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "name",
+                                      "slug",
+                                      "regularPricePoisha",
+                                      "effectivePricePoisha",
+                                      "availability"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "estimatedUnitPoisha": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "availability": {
+                                "type": "string",
+                                "enum": [
+                                  "available",
+                                  "unavailable"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "variantId",
+                              "quantity",
+                              "product",
+                              "estimatedUnitPoisha",
+                              "availability"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "estimatedSubtotalPoisha": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "items",
+                        "estimatedSubtotalPoisha",
+                        "revision"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      "required": [
+                        "requestId"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error family 400; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error400"
+                }
+              }
+            },
+            "x-error-codes": [
+              "UNSUPPORTED_DELIVERY_AREA",
+              "INVALID_REQUEST",
+              "VALIDATION_FAILED"
+            ]
+          },
+          "401": {
+            "description": "Error family 401; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error401"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INVALID_CREDENTIALS",
+              "GUEST_PROOF_REQUIRED",
+              "AUTH_REQUIRED"
+            ]
+          },
+          "403": {
+            "description": "Error family 403; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error403"
+                }
+              }
+            },
+            "x-error-codes": [
+              "FORBIDDEN",
+              "CSRF_INVALID"
+            ]
+          },
+          "404": {
+            "description": "Error family 404; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error404"
+                }
+              }
+            },
+            "x-error-codes": [
+              "NOT_FOUND"
+            ]
+          },
+          "409": {
+            "description": "Error family 409; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error409"
+                }
+              }
+            },
+            "x-error-codes": [
+              "STATE_CONFLICT"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
+          "429": {
+            "description": "Error family 429; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error429"
+                }
+              }
+            },
+            "x-error-codes": [
+              "RATE_LIMITED"
+            ]
+          },
+          "500": {
+            "description": "Error family 500; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error500"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INTERNAL_ERROR"
+            ]
+          },
+          "503": {
+            "description": "Error family 503; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error503"
+                }
+              }
+            },
+            "x-error-codes": [
+              "SERVICE_UNAVAILABLE"
+            ]
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "quantity": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 50
+                  }
+                },
+                "required": [
+                  "quantity"
+                ],
+                "additionalProperties": false
+              }
+            }
           }
         }
       }
@@ -4129,6 +5423,19 @@
               "STATE_CONFLICT"
             ]
           },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
           "429": {
             "description": "Error family 429; applicable guards and service policies determine reachable codes",
             "content": {
@@ -4359,6 +5666,19 @@
               "STATE_CONFLICT"
             ]
           },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
           "429": {
             "description": "Error family 429; applicable guards and service policies determine reachable codes",
             "content": {
@@ -4548,6 +5868,19 @@
             },
             "x-error-codes": [
               "STATE_CONFLICT"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
             ]
           },
           "429": {
@@ -4743,6 +6076,19 @@
             },
             "x-error-codes": [
               "STATE_CONFLICT"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
             ]
           },
           "429": {
@@ -5020,6 +6366,19 @@
             },
             "x-error-codes": [
               "STATE_CONFLICT"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
             ]
           },
           "429": {
@@ -5309,6 +6668,19 @@
               "STATE_CONFLICT"
             ]
           },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
           "429": {
             "description": "Error family 429; applicable guards and service policies determine reachable codes",
             "content": {
@@ -5568,6 +6940,19 @@
               "STATE_CONFLICT"
             ]
           },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
           "429": {
             "description": "Error family 429; applicable guards and service policies determine reachable codes",
             "content": {
@@ -5817,6 +7202,19 @@
               "STATE_CONFLICT"
             ]
           },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
           "429": {
             "description": "Error family 429; applicable guards and service policies determine reachable codes",
             "content": {
@@ -6039,6 +7437,19 @@
             },
             "x-error-codes": [
               "STATE_CONFLICT"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
             ]
           },
           "429": {
@@ -6303,6 +7714,19 @@
             },
             "x-error-codes": [
               "STATE_CONFLICT"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
             ]
           },
           "429": {
@@ -6604,6 +8028,19 @@
               "STATE_CONFLICT"
             ]
           },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
           "429": {
             "description": "Error family 429; applicable guards and service policies determine reachable codes",
             "content": {
@@ -6834,6 +8271,19 @@
               "STATE_CONFLICT"
             ]
           },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
           "429": {
             "description": "Error family 429; applicable guards and service policies determine reachable codes",
             "content": {
@@ -7057,6 +8507,19 @@
             },
             "x-error-codes": [
               "STATE_CONFLICT"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
             ]
           },
           "429": {
@@ -7373,6 +8836,19 @@
               "STATE_CONFLICT"
             ]
           },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
           "429": {
             "description": "Error family 429; applicable guards and service policies determine reachable codes",
             "content": {
@@ -7611,6 +9087,19 @@
             },
             "x-error-codes": [
               "STATE_CONFLICT"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
             ]
           },
           "429": {
@@ -8003,6 +9492,19 @@
             },
             "x-error-codes": [
               "STATE_CONFLICT"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
             ]
           },
           "429": {
@@ -8484,6 +9986,19 @@
               "STATE_CONFLICT"
             ]
           },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
           "429": {
             "description": "Error family 429; applicable guards and service policies determine reachable codes",
             "content": {
@@ -8538,6 +10053,7 @@
               "code": {
                 "type": "string",
                 "enum": [
+                  "BUSINESS_RULE_VIOLATION",
                   "UNSUPPORTED_DELIVERY_AREA",
                   "STATE_CONFLICT",
                   "INVALID_CREDENTIALS",
@@ -8866,6 +10382,68 @@
                 "type": "string",
                 "enum": [
                   "STATE_CONFLICT"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "field",
+                    "code"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "requestId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              }
+            },
+            "required": [
+              "requestId"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "error",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "Error422": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "BUSINESS_RULE_VIOLATION"
                 ]
               },
               "message": {

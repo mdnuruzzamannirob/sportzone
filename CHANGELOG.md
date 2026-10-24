@@ -8,6 +8,14 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 24 October 2026 — Authenticated persistent cart
+
+- Added customer-owned cart read/set/remove APIs, strict indexed persistence and local/test bootstrap.
+  Reads refresh catalog estimates and flag unavailable selections; mutations serialize transactionally
+  without reserving stock. Generated OpenAPI/Postman contracts include these three routes; merge remains
+  separate. Corrected unrelated task evidence placeholders accidentally populated by the foundation update.
+  [Implementation and verification](docs/evidence/P05-002-persistent-cart.md).
+
 ## 24 October 2026 — Foundation readiness verification
 
 - Verified clean locked installation, backend-only development/check selection, isolated replica-set

@@ -340,6 +340,15 @@ failures, keep the separate replica-set tool running and copy its current URI in
 
 `npm run db:local --workspace=backend` starts a single-member, loopback-only, ephemeral MongoDB 8.0.16 replica set and prints its credential-free local URI. Its data disappears on shutdown; never use it for real/customer data or durability/backup acceptance. Integration tests generate their own random database on their own replica and never read external `MONGODB_URI`. `MONGOMS_DISTRO=ubuntu-24.04` selects the compatible official binary on this Ubuntu 26 host; supported Ubuntu 24 CI resolves it normally. First use downloads the pinned binary and requires network access; there is no mock/standalone fallback. Close the local tool with SIGINT/SIGTERM to clean its owned processes/data.
 
+Authenticated cart persistence uses an explicit local/test bootstrap after the backend build:
+`node --env-file=.env backend/scripts/bootstrap-cart.mjs` from the repository root. This creates only
+the missing `carts` collection with its strict validator and unique user index; matching reruns are
+additive. Existing incompatible validators require a reviewed migration and are never overwritten.
+HTTP startup does not create collections; cart requests fail closed with 503 when required persistence
+is absent or incompatible. Staging/production rollout must use the reviewed owning initializer with
+approved configuration and migration review; the local/test entry script refuses those environments.
+Cart records contain selections only, so account/financial retention rules remain authoritative.
+
 Index changes are explicit/additive through `createDeclaredIndexes` and checked by `verifyDeclaredIndexes`; extra indexes are reported and preserved. No `syncIndexes`, global drop or automatic destructive migration is added. Domain models/index plans remain owned by their feature tasks. Transactions use primary/snapshot/majority with a ten-second driver retry deadline and five-second commit limit. Work may rerun: only sequential database effects belong in the callback, every write must carry its session, and external effects must stay outside. Nested independent transactions are rejected. Retain deployment-grade failover/restore/replication evidence for staging/operations gates.
 
 The compiled backend starts with `npm run start --workspace=backend` after build, using injected process variables. Local files are loaded only by an explicit Node flag, e.g. root command `node --env-file=.env backend/dist/server.js`. The environment validator requires NODE_ENV, APP_ENV, RELEASE_ID, MongoDB URI/name, API/storefront/admin origins and exact allowed-origin pair, plus separate SESSION_SECRET and HEALTH_MONITOR_TOKEN. Secrets use 64 lowercase hex characters representing 32 cryptographically random bytes; provision them privately with a cryptographic generator, never committed examples. The customer/admin session service uses the session secret for domain-separated HMAC digests; identity HTTP routes require their explicit activation flags. Unknown environment keys are ignored so inactive provider adapters do not become fake startup dependencies.

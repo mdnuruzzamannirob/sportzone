@@ -1,3 +1,5 @@
+import { cartRoutes } from './modules/cart/cart.routes.js'
+import { cartService } from './modules/cart/cart.service.js'
 import { catalogService } from './modules/catalog/catalog.service.js'
 import { catalogRoutes } from './modules/catalog/catalog.routes.js'
 import { publicMediaService } from './modules/media/public-media.service.js'
@@ -37,6 +39,18 @@ export async function composeIdentityRoutes(
     auth.router.use(
       profileRoutes(
         createProfileService(auth.customerAccounts, createAddressCoverage(connection)),
+        auth.security,
+        auth.sessions,
+      ),
+    )
+  if (config.CUSTOMER_AUTH_ENABLED)
+    auth.router.use(
+      cartRoutes(
+        cartService(
+          connection,
+          auth.customerAccounts,
+          catalogService(connection, publicMediaService(connection, media?.provider)),
+        ),
         auth.security,
         auth.sessions,
       ),

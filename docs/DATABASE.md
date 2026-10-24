@@ -674,7 +674,7 @@ category/SKU eligibility is enforced by owning services, not by foreign model ac
 | Field | Type | Constraints / notes |
 | --- | --- | --- |
 | `userId`! | ObjectId | One server-side cart per registered customer |
-| `items[]` | embedded[] | `{variantId,quantity,addedAt}`; unique variant ID within cart; positive bounded qty |
+| `items[]` | embedded[] | `{variantId,quantity,addedAt}`; unique variant ID within cart; integer qty 1–50; at most 100 lines |
 | `revision`! | int | Compare-and-set cart merge/update when needed |
 
 **Indexes:** unique `{userId:1}`.

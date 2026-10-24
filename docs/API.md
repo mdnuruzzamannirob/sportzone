@@ -773,6 +773,20 @@ Guest cart is **browser-local** and is not created server-side by an anonymous `
 variants with per-item error details. No cart/wishlist endpoint creates reservations or changes stock. Cart price and
 availability remain estimates until `POST /checkout/quotes`.
 
+Authenticated cart reads return an empty revision-zero cart without creating a record when none exists.
+PUT sets an absolute quantity (integer 1–50); DELETE removes that variant and succeeds when already absent.
+A cart contains at most 100 distinct variants. Unknown/inactive/hidden selections cannot be added
+(`422 BUSINESS_RULE_VIOLATION`); an eligible out-of-stock selection may be retained and is marked
+`unavailable` whenever its requested quantity exceeds current availability. Existing lines remain removable
+when catalog eligibility changes. Reads refresh current variant prices and visibility: hidden/deleted
+selections return `product:null,estimatedUnitPoisha:null,availability:unavailable`; other lines use a safe
+ProductCard for the selected SKU. Estimated subtotal sums currently eligible lines only, including
+out-of-stock lines, and is never a checkout total. Integer overflow rejects the operation rather than
+rounding. No price or stock snapshot is persisted in the cart. Revision increments on accepted writes;
+concurrent writes serialize through the owning account and transactional cart update. `/cart/merge`
+remains the separate P05-014 work package.
+
+
 ### 10.3 Coupon and review contracts
 
 | Method  | Path                            | Access           | Request → response                                                                   | FR     |

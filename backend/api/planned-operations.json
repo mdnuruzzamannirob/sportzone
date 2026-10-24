@@ -272,21 +272,21 @@
       "path": "/cart",
       "success": "200",
       "operationId": "get_cart",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "PUT",
       "path": "/cart/items/{variantId}",
       "success": "200",
       "operationId": "put_cart_items_variantId",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "DELETE",
       "path": "/cart/items/{variantId}",
       "success": "200",
       "operationId": "delete_cart_items_variantId",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
