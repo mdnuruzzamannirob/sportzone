@@ -365,6 +365,15 @@ without dropping data; incompatible existing audit collections require a reviewe
 are append-only through the owning capability and commit with configuration changes. Preserve both coupon
 and audit history during application rollback; roll back router/registry/artifacts together, retaining indexes.
 
+Category administration activates with ADMIN_AUTH_ENABLED. After build, the explicit local/test command
+`node --env-file=.env backend/scripts/bootstrap-categories.mjs` creates only missing category indexes and
+canonical audit persistence, preserving records/extra indexes; it never activates media or creates seed data.
+The script refuses staging/production; reviewed rollout there uses the same owning initializers and existing
+migration controls. Requests fail closed when required indexes/audit persistence are unavailable. Category
+metadata works without a media provider; image writes additionally require explicit verified media composition.
+Preserve category/media references and audit on rollback; deploy matching router/registry/generated artifacts
+together. Do not delete referenced data or use image replacement as an external provider delete operation.
+
 Inventory administration activates with ADMIN_AUTH_ENABLED and requires reviewed product/inventory persistence;
 mutations additionally require canonical audit persistence. Reuse the product/inventory owning initializers and
 promotion/audit bootstrap under their existing environment restrictions; HTTP startup never creates or repairs

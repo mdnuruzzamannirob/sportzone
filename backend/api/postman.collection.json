@@ -189,6 +189,152 @@
       "response": []
     },
     {
+      "name": "get_admin_categories",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category indexes and audit persistence. Image writes additionally require explicit verified media composition; no provider activation implied.. Replay: Revision CAS for edits/deactivation; guarded ancestry and transactional image references/audit. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/categories",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "status",
+              "value": "{{status}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed category indexes and audit persistence. Image writes additionally require explicit verified media composition; no provider activation implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_categories. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_categories",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category indexes and audit persistence. Image writes additionally require explicit verified media composition; no provider activation implied.. Replay: Revision CAS for edits/deactivation; guarded ancestry and transactional image references/audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/categories",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed category indexes and audit persistence. Image writes additionally require explicit verified media composition; no provider activation implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_categories. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_categoriesBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "patch_admin_categories_categoryId",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category indexes and audit persistence. Image writes additionally require explicit verified media composition; no provider activation implied.. Replay: Revision CAS for edits/deactivation; guarded ancestry and transactional image references/audit. No automatic mutation retry.",
+      "request": {
+        "method": "PATCH",
+        "url": {
+          "raw": "{{baseUrl}}/admin/categories/{{categoryId}}",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{ifMatch}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed category indexes and audit persistence. Image writes additionally require explicit verified media composition; no provider activation implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation patch_admin_categories_categoryId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{patch_admin_categories_categoryIdBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_categories_categoryId_deactivate",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category indexes and audit persistence. Image writes additionally require explicit verified media composition; no provider activation implied.. Replay: Revision CAS for edits/deactivation; guarded ancestry and transactional image references/audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/categories/{{categoryId}}/deactivate",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{ifMatch}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed category indexes and audit persistence. Image writes additionally require explicit verified media composition; no provider activation implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_categories_categoryId_deactivate. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_categories_categoryId_deactivateBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
       "name": "get_admin_coupons",
       "description": "Activation: ADMIN_AUTH_ENABLED; reviewed promotion and audit persistence bootstrap required. Replay: Revision CAS for edits; live hold snapshots and authoritative counters preserved. No automatic mutation retry.",
       "request": {

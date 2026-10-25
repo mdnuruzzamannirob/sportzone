@@ -38,6 +38,12 @@
       "type": "default"
     },
     {
+      "key": "categoryId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "couponId",
       "value": "",
       "enabled": true,
@@ -122,6 +128,12 @@
       "type": "default"
     },
     {
+      "key": "patch_admin_categories_categoryIdBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
       "key": "patch_admin_coupons_couponIdBody",
       "value": "",
       "enabled": true,
@@ -165,6 +177,18 @@
     },
     {
       "key": "post_admin_auth_password_resets_confirmBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_categoriesBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_categories_categoryId_deactivateBody",
       "value": "",
       "enabled": true,
       "type": "secret"

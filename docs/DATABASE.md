@@ -598,7 +598,11 @@ Deletion checks children and a required products-owned reference reader in the s
 there is no permissive default reader. Image-bearing deletion remains rejected until the media-owned
 reference detachment operation is integrated. Reassignment uses guarded parent updates; no cascade
 or destructive HTTP endpoint is introduced. Index creation is explicit and additive through the
-existing database index helper, never automatic startup synchronization.
+existing database index helper, never automatic startup synchronization. HTTP administration reuses this
+hierarchy protocol inside its auth/audit transaction. Category image replacement/removal uses the media-owned
+reference capability in that same transaction; persist only the resolved public identity/URL and bounded alt.
+Omission preserves the image; explicit null detaches only its image-slot reference before unsetting it.
+Deactivation is non-destructive and does not rewrite referenced products or historical orders.
 
 ### 6.2 `products` — `catalog`
 

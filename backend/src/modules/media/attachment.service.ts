@@ -1,3 +1,4 @@
+import { verifyMediaPersistence } from './media.persistence.js'
 import { Types, type ClientSession } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { key, requireTransaction, type MediaContext } from './media.context.js'
@@ -8,7 +9,7 @@ import type { MediaReference } from './media.types.js'
 export function createMediaAttachments(context: MediaContext) {
   const { model, policy, clock } = context
   const authorized = createMediaAuthorization(context)
-  return {
+  const attachments = {
     // The target's own service supplies its guarded mutation in this SAME transaction.
     async attach(
       credential: string | undefined,
@@ -109,6 +110,71 @@ export function createMediaAttachments(context: MediaContext) {
       else asset.legalHold = true
       asset.revision++
       await asset.save({ session })
+    },
+  }
+  return {
+    ...attachments,
+    async changePublicReference(
+      credential: string | undefined,
+      previousPublicId: string | undefined,
+      image: { publicId: string; url: string; alt: string } | null,
+      reference: MediaReference,
+      session: ClientSession,
+      mutateTarget: (image: { publicId: string; url: string; alt: string } | null) => Promise<void>,
+    ) {
+      requireTransaction(session)
+      try {
+        await verifyMediaPersistence(context.connection)
+      } catch {
+        throw new ApiError('SERVICE_UNAVAILABLE')
+      }
+      const resolve = async (publicId: string) => {
+        const asset = await model.findOne({ publicId }).session(session)
+        if (!asset) throw new ApiError('NOT_FOUND')
+        if (asset.assetKind !== 'public_media' || asset.access !== 'public')
+          throw new ApiError('FORBIDDEN')
+        return asset
+      }
+      const next = image ? await resolve(image.publicId) : undefined
+      let canonical: { publicId: string; url: string; alt: string } | null = null
+      if (image && next) {
+        const url = context.provider.publicUrl(next.publicId, next.format)
+        if (url !== image.url || !URL.canParse(url)) throw new ApiError('VALIDATION_FAILED')
+        const parsed = new URL(url)
+        if (
+          parsed.protocol !== 'https:' ||
+          parsed.username ||
+          parsed.password ||
+          parsed.search ||
+          parsed.hash ||
+          [...image.alt].length > 120
+        )
+          throw new ApiError('VALIDATION_FAILED')
+        canonical = { publicId: next.publicId, url, alt: image.alt }
+      }
+      if (previousPublicId) {
+        const previous = await resolve(previousPublicId)
+        await attachments.detach(
+          credential,
+          previous._id.toHexString(),
+          reference,
+          session,
+          async () => {
+            if (!next) await mutateTarget(null)
+          },
+        )
+      }
+      if (next)
+        await attachments.attach(
+          credential,
+          next._id.toHexString(),
+          reference,
+          session,
+          async () => {
+            await mutateTarget(canonical)
+          },
+        )
+      else if (!previousPublicId) await mutateTarget(null)
     },
   }
 }

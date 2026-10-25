@@ -8,6 +8,13 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 25 October 2026 — Category administration APIs
+
+- Added protected category list/create/edit/deactivate with hierarchy/CAS guards and transactional
+  media reference replacement/removal plus audit. Metadata remains usable with media disabled;
+  image writes require verified capabilities. Added explicit local/test persistence bootstrap and
+  regenerated API artifacts. [Implementation and verification](docs/evidence/P04-016-category-administration.md).
+
 ## 25 October 2026 — Separate local media verification from provider acceptance
 
 - Added P04-020 as the independently reviewed technical prerequisite for category/settings work.

@@ -1,3 +1,5 @@
+import { categoryAdminService } from './modules/catalog/categories/category-admin.service.js'
+import { categoryAdminRoutes } from './modules/catalog/categories/category-admin.routes.js'
 import { inventoryAdminService } from './modules/inventory/inventory-admin.service.js'
 import { inventoryAdminRoutes } from './modules/inventory/inventory-admin.routes.js'
 import { inventoryService } from './modules/inventory/inventory.service.js'
@@ -103,22 +105,24 @@ export async function composeIdentityRoutes(
         auth.sessions,
       ),
     )
+  let mediaService: ReturnType<typeof createMediaService> | undefined
   if (media) {
     if (!config.ADMIN_AUTH_ENABLED) throw new Error('Admin authentication required for media.')
     await verifyMediaPersistence(connection)
+    mediaService = createMediaService(connection, {
+      ...media,
+      access: {
+        admin: auth.mediaAdmin,
+        evidence:
+          media.evidence ??
+          (async () => {
+            throw new ApiError('FORBIDDEN')
+          }),
+      },
+    })
     auth.router.use(
       mediaRoutes(
-        createMediaService(connection, {
-          ...media,
-          access: {
-            admin: auth.mediaAdmin,
-            evidence:
-              media.evidence ??
-              (async () => {
-                throw new ApiError('FORBIDDEN')
-              }),
-          },
-        }),
+        mediaService,
         auth.security,
         auth.sessions,
         media.policy.maxBytes,
@@ -126,6 +130,19 @@ export async function composeIdentityRoutes(
       ),
     )
   }
+  if (config.ADMIN_AUTH_ENABLED)
+    auth.router.use(
+      categoryAdminRoutes(
+        categoryAdminService(
+          connection,
+          auth.adminAccounts,
+          createAuditWriter(connection),
+          mediaService,
+        ),
+        auth.security,
+        auth.sessions,
+      ),
+    )
   return auth.router
 }
 

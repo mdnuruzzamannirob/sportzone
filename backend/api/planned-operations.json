@@ -706,28 +706,28 @@
       "path": "/admin/categories",
       "success": "200",
       "operationId": "get_admin_categories",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/categories",
       "success": "201",
       "operationId": "post_admin_categories",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "PATCH",
       "path": "/admin/categories/{categoryId}",
       "success": "200",
       "operationId": "patch_admin_categories_categoryId",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/categories/{categoryId}/deactivate",
       "success": "200",
       "operationId": "post_admin_categories_categoryId_deactivate",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",

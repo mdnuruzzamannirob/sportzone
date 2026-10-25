@@ -1288,7 +1288,7 @@ No public endpoint can mutate base/sale prices, SKU identity or stock.
 | `GET`   | `/admin/products/{productId}`               | `— → AdminProduct`                                                        | 23  |
 | `PATCH` | `/admin/products/{productId}`               | `ProductPatch + If-Match → AdminProduct`                                  | 23  |
 | `POST`  | `/admin/products/{productId}/deactivate`    | `{reason} + If-Match → AdminProduct`                                      | 23  |
-| `GET`   | `/admin/categories`                         | `status?,page? → AdminCategory[]`                                         | 24  |
+| `GET`   | `/admin/categories`                         | `status?,page?,pageSize? → AdminCategory[]`                                         | 24  |
 | `POST`  | `/admin/categories`                         | `CategoryCreateInput → AdminCategory`                                     | 24  |
 | `PATCH` | `/admin/categories/{categoryId}`            | `CategoryPatch + If-Match → AdminCategory`                                | 24  |
 | `POST`  | `/admin/categories/{categoryId}/deactivate` | `{reason} + If-Match → AdminCategory`                                     | 24  |
@@ -1305,6 +1305,29 @@ No public endpoint can mutate base/sale prices, SKU identity or stock.
 `VariantPatch.salePricePoisha/lowStockThreshold` and `CategoryPatch.parentId/image` (and the declared nullable settings
 banner). Persist absence via controlled unset; response optional fields remain omitted. Reject null elsewhere, invalid
 prices and protected fields. Empty bounded arrays replace a list only where the corresponding patch allows it.
+
+Category administration uses strict create/patch/deactivation bodies and standard pagination (default 20,
+maximum 100), sorted by sortOrder then ID ascending. Names trim to 1–200 characters, slugs trim/lowercase
+and use at most 160 ASCII slug characters; nonnegative sortOrder is a safe integer. Create returns 201
+with ETag; PATCH and reasoned deactivation return 200 with ETag. Lists expose each row's revision.
+If-Match must be a strong canonical quoted numeric revision; absent returns 428, malformed/stale returns
+412, unknown category returns 404 and normalized slug conflicts return 409 STATE_CONFLICT. Hierarchy
+writes may advance ancestor revisions, so refresh list state after a stale-edit response.
+
+CategoryCreateInput does not accept null parent/image; root creation omits parentId. CategoryPatch requires
+at least one declared field. Omitted parent/image remain unchanged; explicit null clears the corresponding
+reference. Image writes require an eligible public media ledger record, canonical provider URL and guarded
+attachment/detachment in the same transaction as category metadata and audit. Unknown/private/quarantined,
+expired or deleting media cannot be attached; a caller's URL never establishes eligibility. Omitted/blank alt
+uses the category name bounded to 120 Unicode characters. Replacement/removal releases only that category's
+image reference and never calls provider deletion inside the transaction.
+
+Default-disabled media composition permits metadata-only operations; image-bearing writes fail closed with
+503 until explicit verified media capabilities are supplied. This does not approve the account or activate
+live uploads. Deactivation retains dependent categories/products and removes their inactive ancestry from
+public projections; active product associations still require active ancestry. There is no category DELETE
+HTTP route. Internal deletion remains guarded by children/product references and attached-image state.
+Category writes, media references, authorization fences and audit facts roll back together on failure.
 
 **Master record schemas:**
 

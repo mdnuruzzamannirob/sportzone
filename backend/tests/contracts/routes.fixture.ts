@@ -1,3 +1,4 @@
+import { categoryAdminRoutes } from '../../src/modules/catalog/categories/category-admin.routes.js'
 import { inventoryAdminRoutes } from '../../src/modules/inventory/inventory-admin.routes.js'
 import { couponAdminRoutes } from '../../src/modules/promotions/coupon-admin.routes.js'
 import { wishlistRoutes } from '../../src/modules/cart/wishlist.routes.js'
@@ -62,6 +63,7 @@ const media = {
   attach: unused,
   detach: unused,
   protect: unused,
+  changePublicReference: unused,
   cleanup: unused,
   maintenanceBatch: unused,
 }
@@ -73,6 +75,11 @@ export function registeredRouter() {
     recoveryRoutes(recovery, security, sessions),
     emailChangeRoutes(recovery, security, sessions),
     profileRoutes(profile, security, sessions),
+    categoryAdminRoutes(
+      { list: unused, create: unused, patch: unused, deactivate: unused },
+      security,
+      sessions,
+    ),
     inventoryAdminRoutes(
       { list: unused, history: unused, adjust: unused, threshold: unused },
       security,

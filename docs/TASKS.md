@@ -128,7 +128,7 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 01 — Requirements Finalization and Planning | 24 | 0 | 0 | 0 | 0 | 0 | 24 | 0 |
 | 02 — UI/UX Design                             |      17 |           1 |     0 |           0 |       0 |         0 |     16 |        0 |
 | 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |     21 |        0 |
-| 04 — Product Catalog and Inventory            |      20 |           9 |     1 |           0 |       1 |         0 |      9 |        0 |
+| 04 — Product Catalog and Inventory            |      20 |           9 |     0 |           0 |       1 |         0 |     10 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |          22 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 07 — Payment Integration and Verification     |      18 |          18 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -137,7 +137,7 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **128** | **2** | **0** | **2** | **0** | **78** | **0** |
+| **Total** | **210** | **128** | **1** | **0** | **2** | **0** | **79** | **0** |
 
 ## 4. Milestone tracker
 
@@ -834,14 +834,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** No static mock implies purchase readiness; M2 evidence demonstrates real API-backed catalog.\
   **Evidence to attach:** M2 catalog acceptance suite.
 
-- [ ] **P04-016 — Expose protected category management APIs**\
-  **Status:** `Ready` · **Area:** Backend\
+- [x] **P04-016 — Expose protected category management APIs**\
+  **Status:** `Done` · **Area:** Backend · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-24; API §14.1\
   **Depends on:** `P04-001`, `P03-013`, `P04-020`\
   **Deliverable:** Register category list/create/edit/deactivate APIs over existing category services; enforce hierarchy, active assignment, safe deletion and null-versus-omitted parent/image semantics.\
   **Acceptance:** Admin/session/CSRF and conditional-update checks apply; category cycles, dependent deletion and invalid media references fail. HTTP integration proves writes and public visibility without UI.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Implementation, observed checks and media boundaries](./evidence/P04-016-category-administration.md). Accepted by project owner, 25 October 2026 — “Review করেছি—accept করছি, Done করো”; P04-003 real-provider gate remains separate.
 
 - [ ] **P04-017 — Expose protected product and variant management APIs**\
   **Status:** `Not Started` · **Area:** Backend\
@@ -2453,3 +2453,7 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **25 October 2026 — Approved media work-package split / P04-020:** Owner instructed “Local backend কাজ আলাদা করে queue ঠিক করো”. Added P04-020 for independently reviewed local capability; only category/settings technical dependencies now use it. P04-003 retains real provider/policy acceptance and is explicit in P03-022/P04-015; P09-011 remains mandatory for backend closeout. Local verification → In Review; no external/stage gate accepted. [Scope, checks and dependency audit](./evidence/P04-020-local-media-capability.md). Overall: 210 tasks, 77 Done, 130 Not Started, 2 Blocked and 1 In Review. Next after P04-020 acceptance: P04-016 and P09-013 become eligible; prioritize P04-016 → P04-017, then settings/delivery.
 
 **25 October 2026 — P04-020 acceptance:** In Review → Done after explicit owner popup review: “Local verification ও queue গ্রহণ করছি—Done করো”. [Acceptance record](./evidence/P04-020-local-media-capability.md#recovery-and-independent-review). All prerequisites now accepted for P04-016 and P09-013: Not Started → Ready. Overall: 210 tasks, 78 Done, 128 Not Started, 2 Ready, 2 Blocked and zero In Review. Next: P04-016 category API. P04-003/P09-011 and backend/product gates remain unaccepted.
+
+**25 October 2026 — P04-016:** Ready → In Progress → In Review. Added protected category APIs, hierarchy/CAS and transactional media references/audit; [observed verification and recovery](./evidence/P04-016-category-administration.md). A build/test overlap caused two compiled-entry failures; focused reruns after build completion passed, with original reports retained. Overall: 210 tasks, 78 Done, 128 Not Started, 1 Ready, 2 Blocked and 1 In Review. Independent acceptance pending; provider/staging and client/product gates remain separate.
+
+**25 October 2026 — P04-016 acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P04-016-category-administration.md#recovery-and-independent-review). Overall: 210 tasks, 79 Done, 128 Not Started, 1 Ready, 2 Blocked and zero In Review. P04-017 prerequisites are now accepted; P09-013 remains Ready. Real media/staging, clients and product gates remain separate.

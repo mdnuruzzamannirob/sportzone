@@ -1,3 +1,11 @@
+import {
+  categoryCreate,
+  categoryPatch,
+  categoryDeactivate,
+  categoryParams,
+  categoryListQuery,
+  adminCategory,
+} from '../src/modules/catalog/categories/category-admin.schema.js'
 import { adminVariant } from '../src/modules/catalog/variants/variant.schema.js'
 import {
   inventoryQuery,
@@ -133,6 +141,63 @@ const identities: Operation[] = identity.operations
 
 export const operations: readonly Operation[] = [
   ...identities,
+  ...(
+    [
+      {
+        method: 'GET',
+        path: '/admin/categories',
+        query: categoryListQuery,
+        params: empty,
+        response: z.array(adminCategory),
+        paginated: true,
+        status: 200,
+      },
+      {
+        method: 'POST',
+        path: '/admin/categories',
+        query: empty,
+        params: empty,
+        request: categoryCreate,
+        response: adminCategory,
+        status: 201,
+        etag: true,
+      },
+      {
+        method: 'PATCH',
+        path: '/admin/categories/{categoryId}',
+        query: empty,
+        params: categoryParams,
+        request: categoryPatch,
+        response: adminCategory,
+        status: 200,
+        etag: true,
+        ifMatch: true,
+      },
+      {
+        method: 'POST',
+        path: '/admin/categories/{categoryId}/deactivate',
+        query: empty,
+        params: categoryParams,
+        request: categoryDeactivate,
+        response: adminCategory,
+        status: 200,
+        etag: true,
+        ifMatch: true,
+      },
+    ] as const
+  ).map(
+    (op): Operation => ({
+      ...op,
+      access: 'admin',
+      namespace: 'admin',
+      csrf: op.method !== 'GET',
+      activation:
+        'ADMIN_AUTH_ENABLED; reviewed category indexes and audit persistence. Image writes additionally require explicit verified media composition; no provider activation implied.',
+      replay:
+        'Revision CAS for edits/deactivation; guarded ancestry and transactional image references/audit',
+    }),
+  ),
+
   ...(
     [
       {
