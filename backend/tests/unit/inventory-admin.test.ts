@@ -1,3 +1,4 @@
+import { variantPatch as thresholdPatch } from '../../src/modules/catalog/variants/variant.schema.js'
 import { expect, it } from 'vitest'
 import {
   adjustmentBody,
@@ -5,7 +6,6 @@ import {
   movementQuery,
   operationKey,
   stockView,
-  thresholdPatch,
 } from '../../src/modules/inventory/inventory-admin.schema.js'
 it('preserves physically meaningful separated stock and rejects inconsistent availability', () => {
   expect(

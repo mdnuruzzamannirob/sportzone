@@ -507,7 +507,7 @@
     },
     {
       "name": "get_admin_inventory",
-      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings. Variant PATCH currently supports threshold only; other master edits remain planned.. Replay: Exactly-once adjustment per variant/key; actor/payload mismatch conflicts; threshold uses revision CAS. No automatic mutation retry.",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings.. Replay: Exactly-once adjustment per variant/key; actor/payload mismatch conflicts; threshold uses revision CAS. No automatic mutation retry.",
       "request": {
         "method": "GET",
         "url": {
@@ -536,13 +536,13 @@
           ]
         },
         "header": [],
-        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings. Variant PATCH currently supports threshold only; other master edits remain planned.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_inventory. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_inventory. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
       },
       "response": []
     },
     {
       "name": "post_admin_inventory_variantId_adjustments",
-      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings. Variant PATCH currently supports threshold only; other master edits remain planned.. Replay: Exactly-once adjustment per variant/key; actor/payload mismatch conflicts; threshold uses revision CAS. No automatic mutation retry.",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings.. Replay: Exactly-once adjustment per variant/key; actor/payload mismatch conflicts; threshold uses revision CAS. No automatic mutation retry.",
       "request": {
         "method": "POST",
         "url": {
@@ -567,7 +567,7 @@
             "value": "application/json"
           }
         ],
-        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings. Variant PATCH currently supports threshold only; other master edits remain planned.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_inventory_variantId_adjustments. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_inventory_variantId_adjustments. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
         "body": {
           "mode": "raw",
           "raw": "{{post_admin_inventory_variantId_adjustmentsBody}}",
@@ -582,7 +582,7 @@
     },
     {
       "name": "get_admin_inventory_variantId_movements",
-      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings. Variant PATCH currently supports threshold only; other master edits remain planned.. Replay: Exactly-once adjustment per variant/key; actor/payload mismatch conflicts; threshold uses revision CAS. No automatic mutation retry.",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings.. Replay: Exactly-once adjustment per variant/key; actor/payload mismatch conflicts; threshold uses revision CAS. No automatic mutation retry.",
       "request": {
         "method": "GET",
         "url": {
@@ -611,7 +611,7 @@
           ]
         },
         "header": [],
-        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings. Variant PATCH currently supports threshold only; other master edits remain planned.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_inventory_variantId_movements. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_inventory_variantId_movements. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
       },
       "response": []
     },
@@ -672,8 +672,209 @@
       "response": []
     },
     {
+      "name": "get_admin_products",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Replay: Strong revision CAS for edits; parent aggregate fence prevents invalid concurrent variants; immutable SKU/attribute identities and transactional media/audit. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/products",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "q",
+              "value": "{{q}}",
+              "disabled": true
+            },
+            {
+              "key": "status",
+              "value": "{{status}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_products. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_products",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Replay: Strong revision CAS for edits; parent aggregate fence prevents invalid concurrent variants; immutable SKU/attribute identities and transactional media/audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/products",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_products. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_productsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_products_productId",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Replay: Strong revision CAS for edits; parent aggregate fence prevents invalid concurrent variants; immutable SKU/attribute identities and transactional media/audit. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/products/{{productId}}",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_products_productId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "patch_admin_products_productId",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Replay: Strong revision CAS for edits; parent aggregate fence prevents invalid concurrent variants; immutable SKU/attribute identities and transactional media/audit. No automatic mutation retry.",
+      "request": {
+        "method": "PATCH",
+        "url": {
+          "raw": "{{baseUrl}}/admin/products/{{productId}}",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{ifMatch}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Query parameters and exact request/response schemas are in the companion OpenAPI operation patch_admin_products_productId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{patch_admin_products_productIdBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_products_productId_deactivate",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Replay: Strong revision CAS for edits; parent aggregate fence prevents invalid concurrent variants; immutable SKU/attribute identities and transactional media/audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/products/{{productId}}/deactivate",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{ifMatch}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_products_productId_deactivate. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_products_productId_deactivateBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_products_productId_variants",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Replay: Strong revision CAS for edits; parent aggregate fence prevents invalid concurrent variants; immutable SKU/attribute identities and transactional media/audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/products/{{productId}}/variants",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_products_productId_variants. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_products_productId_variantsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
       "name": "patch_admin_variants_variantId",
-      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings. Variant PATCH currently supports threshold only; other master edits remain planned.. Replay: Exactly-once adjustment per variant/key; actor/payload mismatch conflicts; threshold uses revision CAS. No automatic mutation retry.",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Replay: Strong revision CAS for edits; parent aggregate fence prevents invalid concurrent variants; immutable SKU/attribute identities and transactional media/audit. No automatic mutation retry.",
       "request": {
         "method": "PATCH",
         "url": {
@@ -698,10 +899,50 @@
             "value": "application/json"
           }
         ],
-        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings. Variant PATCH currently supports threshold only; other master edits remain planned.. Query parameters and exact request/response schemas are in the companion OpenAPI operation patch_admin_variants_variantId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Query parameters and exact request/response schemas are in the companion OpenAPI operation patch_admin_variants_variantId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
         "body": {
           "mode": "raw",
           "raw": "{{patch_admin_variants_variantIdBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_variants_variantId_deactivate",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Replay: Strong revision CAS for edits; parent aggregate fence prevents invalid concurrent variants; immutable SKU/attribute identities and transactional media/audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/variants/{{variantId}}/deactivate",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{ifMatch}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_variants_variantId_deactivate. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_variants_variantId_deactivateBody}}",
           "options": {
             "raw": {
               "language": "json"

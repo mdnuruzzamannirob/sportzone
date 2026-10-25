@@ -655,17 +655,22 @@ contain up to 30 keys (64 characters) with values up to 120 characters, NFKC/low
 normalized. Ambiguous normalized keys and MongoDB/prototype-reserved map keys are rejected.
 `attributeSignature` is JSON of sorted key/value tuples (bounded 40,000 characters), or `default`.
 Each option variant in one aggregate uses the same keys; a default SKU cannot coexist with option
-variants or another default. These are internal creation batch/validation bounds, not new HTTP DTOs.
+variants or another default. HTTP create/detail use the approved API contracts with a bounded 100-SKU
+aggregate; subsequent variant creation validates the entire aggregate under the same product fence.
 
 Creation commits product and variants in one transaction using categories' ancestry guard; active
 products require active ancestry and at least one active SKU. Draft/inactive products still require
 existing categories and at least one configured SKU. Duplicate slug/SKU/combination aborts the entire
 aggregate. The products-owned category-reference reader protects all statuses from category deletion.
-Media reference attachment remains closed until the media ledger integration; images are modeled
-(up to 12 ordered HTTPS references) but the current creation capability accepts an empty list only.
-Initial counters are all zero; an active SKU is configured for sale but cannot be purchased without
-available inventory. Stock changes and inventory capabilities remain P04-006/P04-008; generic product
-inputs cannot set counters, revision, rating projections or low-stock overrides.
+Media reference changes use the media-owned ledger capability in the same target/auth/audit transaction;
+images are at most 12 ordered public references, with position/slot derived from array order. No provider
+call occurs inside it. Default-disabled media composition does not fabricate account or policy approval.
+Parent product revisions fence concurrent variant master changes and canonical stock writes; these
+conservative bumps invalidate stale product detail/edit tokens. Active products cannot lose their final
+active SKU, including across concurrent variant edits. SKU/attribute identity is immutable after creation.
+Initial counters are zero; an active SKU is configured for sale but cannot be purchased without available
+inventory. Product inputs cannot set counters, revisions, rating projections or low-stock overrides;
+only the declared VariantPatch owns its optional low-stock threshold override.
 
 `initializeProductPersistence` explicitly creates new collections with strict/error validators and
 additive declared indexes; it is not called by HTTP startup. Existing validator drift requires a

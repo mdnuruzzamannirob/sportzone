@@ -140,6 +140,12 @@
       "type": "secret"
     },
     {
+      "key": "patch_admin_products_productIdBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
       "key": "patch_admin_variants_variantIdBody",
       "value": "",
       "enabled": true,
@@ -207,6 +213,30 @@
     },
     {
       "key": "post_admin_inventory_variantId_adjustmentsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_productsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_products_productId_deactivateBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_products_productId_variantsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_variants_variantId_deactivateBody",
       "value": "",
       "enabled": true,
       "type": "secret"

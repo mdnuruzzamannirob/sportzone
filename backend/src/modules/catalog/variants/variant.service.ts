@@ -11,7 +11,7 @@ export type StockCounters = {
 const fields = ['physical', 'reserved', 'committed'] as const
 // Catalog owns the model; inventory receives only counter operations within a caller transaction.
 export function variantStockAccess(connection: Connection) {
-  const model = productModels(connection).variants
+  const { variants: model, products } = productModels(connection)
   return {
     async read(id: Types.ObjectId, session?: ClientSession): Promise<StockCounters | null> {
       const row = await model
@@ -75,8 +75,16 @@ export function variantStockAccess(connection: Connection) {
           ],
           { session, returnDocument: 'after', updatePipeline: true },
         )
-        .select('stock')
+        .select('stock productId')
         .lean()
+      if (row) {
+        const fenced = await products.updateOne(
+          { _id: row.productId, revision: { $gte: 0, $lt: Number.MAX_SAFE_INTEGER } },
+          { $inc: { revision: 1 } },
+          { session },
+        )
+        if (fenced.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
+      }
       return row
         ? {
             physical: row.stock.physical,
@@ -88,7 +96,7 @@ export function variantStockAccess(connection: Connection) {
   }
 }
 
-// Admin inventory receives detached projections and a threshold-only CAS capability.
+// Inventory receives detached list projections; catalog owns variant master mutations.
 export function variantInventoryAccess(connection: Connection) {
   const { variants } = productModels(connection)
   return {
@@ -191,50 +199,6 @@ export function variantInventoryAccess(connection: Connection) {
           },
         ])
         .session(session)
-    },
-    async threshold(
-      session: ClientSession,
-      id: Types.ObjectId,
-      expected: number,
-      value: number | null,
-    ) {
-      if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
-      const current = await variants.findById(id).session(session)
-      if (!current) throw new ApiError('NOT_FOUND')
-      if (current.revision !== expected) throw new ApiError('PRECONDITION_FAILED')
-      if (current.revision >= Number.MAX_SAFE_INTEGER) throw new ApiError('STATE_CONFLICT')
-      const before = current.lowStockThreshold
-      const row = await variants.findOneAndUpdate(
-        { _id: id, revision: expected },
-        {
-          ...(value === null
-            ? { $unset: { lowStockThreshold: '' } }
-            : { $set: { lowStockThreshold: value } }),
-          $inc: { revision: 1 },
-        },
-        { session, returnDocument: 'after', runValidators: true },
-      )
-      if (!row) throw new ApiError('PRECONDITION_FAILED')
-      return {
-        before,
-        variant: {
-          id: row._id.toHexString(),
-          productId: row.productId.toHexString(),
-          sku: row.skuNormalized,
-          attributes: Object.fromEntries(row.attributes ?? []),
-          regularPricePoisha: row.regularPricePoisha,
-          ...(row.salePricePoisha != null ? { salePricePoisha: row.salePricePoisha } : {}),
-          status: row.status,
-          revision: row.revision,
-          stock: {
-            physical: row.stock.physical,
-            reserved: row.stock.reserved,
-            committed: row.stock.committed,
-            available: row.stock.physical - row.stock.reserved - row.stock.committed,
-          },
-          ...(row.lowStockThreshold != null ? { lowStockThreshold: row.lowStockThreshold } : {}),
-        },
-      }
     },
   }
 }

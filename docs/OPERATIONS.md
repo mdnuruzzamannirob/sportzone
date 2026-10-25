@@ -374,6 +374,16 @@ metadata works without a media provider; image writes additionally require expli
 Preserve category/media references and audit on rollback; deploy matching router/registry/generated artifacts
 together. Do not delete referenced data or use image replacement as an external provider delete operation.
 
+Product/variant administration uses `node --env-file=.env backend/scripts/bootstrap-catalog.mjs` after
+build for explicit local/test category indexes, strict product/variant persistence and canonical audit setup.
+It is additive, retains records/extra indexes, seeds no products/stock/media and refuses staging/production;
+those environments use reviewed owning initializers/migration controls. Category-only bootstrap remains
+supported. Missing validators/indexes/audit cause requests to fail closed; startup never repairs them.
+Full variant PATCH now owns threshold edits at the existing URL; inventory list/adjustment/history stay in
+inventory, with one registered PATCH handler. Deploy routers/contracts together and preserve SKU/stock,
+media references, audit and historical commerce data during rollback. Real provider activation remains
+separate, and metadata-only APIs do not require frontend builds or media credentials.
+
 Inventory administration activates with ADMIN_AUTH_ENABLED and requires reviewed product/inventory persistence;
 mutations additionally require canonical audit persistence. Reuse the product/inventory owning initializers and
 promotion/audit bootstrap under their existing environment restrictions; HTTP startup never creates or repairs

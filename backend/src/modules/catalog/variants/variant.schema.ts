@@ -56,6 +56,7 @@ export const attributes = z
     }
     return Object.fromEntries(entries.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
   })
+  .meta({ type: 'object', additionalProperties: { type: 'string' }, maxProperties: 30 })
 export function attributeSignature(options: Record<string, string>) {
   const entries = Object.entries(options).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
   return entries.length ? JSON.stringify(entries) : 'default'
@@ -111,3 +112,14 @@ export const adminVariant = z.strictObject({
   revision: money,
   lowStockThreshold: money.optional(),
 })
+
+export const variantParams = z.strictObject({ variantId: z.string().regex(/^[a-f0-9]{24}$/) })
+export const variantPatch = z
+  .strictObject({
+    regularPricePoisha: money.optional(),
+    salePricePoisha: money.nullable().optional(),
+    lowStockThreshold: money.nullable().optional(),
+    status: z.enum(['active', 'inactive']).optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0)
+export const variantDeactivate = z.strictObject({ reason: z.string().trim().min(1).max(2000) })

@@ -1,3 +1,5 @@
+import { productAdminService } from './modules/catalog/products/product-admin.service.js'
+import { productAdminRoutes } from './modules/catalog/products/product-admin.routes.js'
 import { categoryAdminService } from './modules/catalog/categories/category-admin.service.js'
 import { categoryAdminRoutes } from './modules/catalog/categories/category-admin.routes.js'
 import { inventoryAdminService } from './modules/inventory/inventory-admin.service.js'
@@ -134,6 +136,19 @@ export async function composeIdentityRoutes(
     auth.router.use(
       categoryAdminRoutes(
         categoryAdminService(
+          connection,
+          auth.adminAccounts,
+          createAuditWriter(connection),
+          mediaService,
+        ),
+        auth.security,
+        auth.sessions,
+      ),
+    )
+  if (config.ADMIN_AUTH_ENABLED)
+    auth.router.use(
+      productAdminRoutes(
+        productAdminService(
           connection,
           auth.adminAccounts,
           createAuditWriter(connection),

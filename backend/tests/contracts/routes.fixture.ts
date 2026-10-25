@@ -1,3 +1,4 @@
+import { productAdminRoutes } from '../../src/modules/catalog/products/product-admin.routes.js'
 import { categoryAdminRoutes } from '../../src/modules/catalog/categories/category-admin.routes.js'
 import { inventoryAdminRoutes } from '../../src/modules/inventory/inventory-admin.routes.js'
 import { couponAdminRoutes } from '../../src/modules/promotions/coupon-admin.routes.js'
@@ -80,11 +81,21 @@ export function registeredRouter() {
       security,
       sessions,
     ),
-    inventoryAdminRoutes(
-      { list: unused, history: unused, adjust: unused, threshold: unused },
+    productAdminRoutes(
+      {
+        list: unused,
+        detail: unused,
+        create: unused,
+        patch: unused,
+        deactivate: unused,
+        createVariant: unused,
+        patchVariant: unused,
+        deactivateVariant: unused,
+      },
       security,
       sessions,
     ),
+    inventoryAdminRoutes({ list: unused, history: unused, adjust: unused }, security, sessions),
     couponAdminRoutes(
       { create: unused, update: unused, deactivate: unused, list: unused, history: unused },
       security,

@@ -1,10 +1,8 @@
-import { adminVariant } from '../catalog/variants/variant.schema.js'
-import { createHash, randomUUID } from 'node:crypto'
+import { createHash } from 'node:crypto'
 import { type Connection, type ClientSession, Types } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { pageMeta } from '../../shared/pagination.js'
-import { parseRevision } from '../../shared/preconditions.js'
 import type { AdminAccountAccess } from '../auth/admin-account.service.js'
 import type { variantInventoryAccess } from '../catalog/variants/variant.service.js'
 import type { inventoryService } from './inventory.service.js'
@@ -17,7 +15,6 @@ import {
   inventoryQuery,
   movementQuery,
   movementView,
-  thresholdPatch,
   adjustmentBody,
   adjustmentResult,
   operationKey,
@@ -167,40 +164,6 @@ export function inventoryAdminService(
             reason: body.reason,
           })
         return parseInput(adjustmentResult, { ...result, stock: after })
-      })
-    },
-    async threshold(
-      token: string | undefined,
-      variantId: string,
-      raw: unknown,
-      match: string | undefined,
-    ) {
-      parseInput(inventoryParams, { variantId })
-      const input = parseInput(thresholdPatch, raw),
-        revision = parseRevision(match),
-        cause = randomUUID()
-      if (revision === undefined) throw new ApiError('PRECONDITION_REQUIRED')
-      if (!Number.isSafeInteger(revision)) throw new ApiError('PRECONDITION_FAILED')
-      return access.owned(token, async (actorId, session) => {
-        await verify()
-        const result = await variants.threshold(
-          session,
-          new Types.ObjectId(variantId),
-          revision,
-          input.lowStockThreshold,
-        )
-        await audit(session, {
-          actorType: 'admin',
-          actorId,
-          action: 'inventory.threshold',
-          targetType: 'variant',
-          targetId: variantId,
-          operationKey: cause,
-          occurredAt: new Date(),
-          beforeDigest: digest({ lowStockThreshold: result.before }),
-          afterDigest: digest({ lowStockThreshold: input.lowStockThreshold }),
-        })
-        return parseInput(adminVariant, result.variant)
       })
     },
   }

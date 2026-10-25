@@ -70,7 +70,7 @@ describe('executable API contract registry', () => {
         .filter((op) => op.method === 'OPTIONS')
         .every((op) => operations.some((item) => item.path === op.path)),
     ).toBe(true)
-    expect(operations).toHaveLength(52)
+    expect(operations).toHaveLength(59)
     const prefixed = Router().use('/untracked', registeredRouter())
     expect(() => registeredOperations(prefixed)).toThrow(/mount prefix/)
   })
@@ -112,6 +112,7 @@ describe('executable API contract registry', () => {
         'auth/verification/email-change.routes.ts',
         'catalog/catalog.routes.ts',
         'catalog/categories/category-admin.routes.ts',
+        'catalog/products/product-admin.routes.ts',
         'cart/cart.routes.ts',
         'cart/wishlist.routes.ts',
         'customers/customer.routes.ts',
@@ -165,9 +166,9 @@ describe('executable API contract registry', () => {
   it('keeps planned contracts non-executable and environment values blank', () => {
     const rows = artifacts['planned-operations.json'].operations
     expect(rows).toHaveLength(164)
-    expect(rows.filter((op) => op.implementation === 'planned')).toHaveLength(112)
+    expect(rows.filter((op) => op.implementation === 'planned')).toHaveLength(105)
     expect(openapi.paths['/checkout/orders']).toBeUndefined()
-    expect(artifacts['postman.collection.json'].item).toHaveLength(52)
+    expect(artifacts['postman.collection.json'].item).toHaveLength(59)
     expect(artifacts['postman.environment.json'].values.every((entry) => entry.value === '')).toBe(
       true,
     )
@@ -247,6 +248,36 @@ describe('executable API contract registry', () => {
     expect(artifacts['postman.environment.json'].values).toContainEqual(
       expect.objectContaining({ key: 'idempotencyKey', value: '' }),
     )
+  })
+  it('documents atomic product variants and complete admin variant detail without broadening public DTOs', () => {
+    expect(openapi.paths['/admin/products']?.post).toMatchObject({
+      requestBody: {
+        content: {
+          'application/json': {
+            schema: {
+              required: expect.arrayContaining(['variants']),
+              properties: { variants: { minItems: 1, maxItems: 100 } },
+            },
+          },
+        },
+      },
+    })
+    expect(envelope('/admin/products/{productId}')).toMatchObject({
+      properties: { data: { properties: { variants: { minItems: 1, maxItems: 100 } } } },
+    })
+    expect(openapi.paths['/admin/products/{productId}/variants']?.post).toMatchObject({
+      requestBody: {
+        content: {
+          'application/json': {
+            schema: {
+              properties: {
+                attributes: { type: 'object', additionalProperties: { type: 'string' } },
+              },
+            },
+          },
+        },
+      },
+    })
   })
   it('validates real HTTP health and unauthorized responses without a database', async () => {
     const app = createApp({ apiRouter: registeredRouter() })

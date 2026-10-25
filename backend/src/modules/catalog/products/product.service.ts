@@ -12,18 +12,29 @@ export function productService(
   const models = productModels(connection)
   return {
     // Internal aggregate creation, not an alternate HTTP DTO. HTTP adapters remain P04-005.
-    async create(product: unknown, variants: unknown) {
+    async create(
+      product: unknown,
+      variants: unknown,
+      transaction?: ClientSession,
+      productId?: Types.ObjectId,
+      images?: { publicId: string; url: string; alt: string; position: number }[],
+    ) {
       const parsed = productInput.safeParse(product)
       const batch = variantBatch.safeParse(variants)
       if (!parsed.success || !batch.success) throw new ApiError('VALIDATION_FAILED')
       const data = parsed.data
       if (data.status === 'active' && !batch.data.some((variant) => variant.status === 'active'))
         throw new ApiError('STATE_CONFLICT')
-      return inTransaction(connection, async (session) => {
+      const apply = async (session: ClientSession) => {
+        if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
         for (const categoryId of data.categoryIds) {
           await categories.guardAncestry(categoryId, session, undefined, data.status === 'active')
         }
-        const saved = await new models.products(data).save({ session })
+        const saved = await new models.products({
+          ...data,
+          ...(productId ? { _id: productId } : {}),
+          ...(images ? { images } : {}),
+        }).save({ session })
         const savedVariants = []
         for (const variant of batch.data) {
           const { sku, ...details } = variant
@@ -37,7 +48,8 @@ export function productService(
           )
         }
         return { product: saved, variants: savedVariants }
-      })
+      }
+      return transaction ? apply(transaction) : inTransaction(connection, apply)
     },
     async hasCategoryReferences(categoryId: Types.ObjectId, session: ClientSession) {
       return Boolean(await models.products.exists({ categoryIds: categoryId }).session(session))

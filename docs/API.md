@@ -121,19 +121,19 @@ executable validators/contract tests define the API; generated OpenAPI/Postman a
 
 ### 3.1 Transport and representation
 
-| Item                | Contract                                                                                                                                                                                                                           |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Root                | `https://<configured-api-host>/api/v1` (deployment host configurable)                                                                                                                                                              |
-| Format              | UTF-8 JSON (`Content-Type: application/json`), except documented multipart uploads and gateway form POSTs                                                                                                                          |
-| Resource names      | Lowercase plural, hyphenated paths; JSON names `camelCase`; IDs serialized strings                                                                                                                                                 |
-| Time                | ISO 8601 UTC instants ending `Z`; Bangladesh display derived from `Asia/Dhaka`                                                                                                                                                     |
-| Currency            | Always `BDT`; **integer poisha** on every business API and internally; no floating-point money                                                                                                                                     |
-| Status values       | Persisted `snake_case` enum values from Database v1.0; UI labels are presentation only                                                                                                                                             |
-| Creation            | `201 Created` + `Location` where appropriate; replay may return `200 OK` with same logical result                                                                                                                                  |
-| Deletion            | Use `204 No Content` only where deletion/deactivation is an approved operation; no body                                                                                                                                            |
+| Item                | Contract                                                                                                                                                                                                                                   |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Root                | `https://<configured-api-host>/api/v1` (deployment host configurable)                                                                                                                                                                      |
+| Format              | UTF-8 JSON (`Content-Type: application/json`), except documented multipart uploads and gateway form POSTs                                                                                                                                  |
+| Resource names      | Lowercase plural, hyphenated paths; JSON names `camelCase`; IDs serialized strings                                                                                                                                                         |
+| Time                | ISO 8601 UTC instants ending `Z`; Bangladesh display derived from `Asia/Dhaka`                                                                                                                                                             |
+| Currency            | Always `BDT`; **integer poisha** on every business API and internally; no floating-point money                                                                                                                                             |
+| Status values       | Persisted `snake_case` enum values from Database v1.0; UI labels are presentation only                                                                                                                                                     |
+| Creation            | `201 Created` + `Location` where appropriate; replay may return `200 OK` with same logical result                                                                                                                                          |
+| Deletion            | Use `204 No Content` only where deletion/deactivation is an approved operation; no body                                                                                                                                                    |
 | Concurrency         | `If-Match`/strong ETag for approved editable master records; backed by the `revision` CAS fields on category, product, variant, coupon, delivery-zone and charge-rule documents (Database v1.0); domain CAS for financial/stock operations |
-| Request correlation | Server-issued `X-Request-Id` returned on every response; incoming value never trusted as evidence                                                                                                                                  |
-| API evolution       | Additive compatible fields within `/api/v1`; incompatible changes require version review and consumer migration                                                                                                                    |
+| Request correlation | Server-issued `X-Request-Id` returned on every response; incoming value never trusted as evidence                                                                                                                                          |
+| API evolution       | Additive compatible fields within `/api/v1`; incompatible changes require version review and consumer migration                                                                                                                            |
 
 `GET` never mutates commerce state, and provider browser returns are not payment approvals. `POST` denotes
 submissions/actions, `PATCH` limited updates, `PUT` idempotent item replacements where stated, `DELETE` removal of an
@@ -758,15 +758,15 @@ The homepage `banner` maps to `storeSettings.homepageBanner` with a validated pu
 
 ### 10.2 Cart and wishlist
 
-| Method   | Path                             | Access | Request → response               | FR  |
-| -------- | -------------------------------- | ------ | -------------------------------- | --- |
-| `GET`    | `/cart`                          | C      | `— → Cart`                       | 07  |
-| `PUT`    | `/cart/items/{variantId}`        | C      | `{quantity} → Cart`              | 07  |
-| `DELETE` | `/cart/items/{variantId}`        | C      | `— → Cart`                       | 07  |
+| Method   | Path                             | Access | Request → response                          | FR  |
+| -------- | -------------------------------- | ------ | ------------------------------------------- | --- |
+| `GET`    | `/cart`                          | C      | `— → Cart`                                  | 07  |
+| `PUT`    | `/cart/items/{variantId}`        | C      | `{quantity} → Cart`                         | 07  |
+| `DELETE` | `/cart/items/{variantId}`        | C      | `— → Cart`                                  | 07  |
 | `POST`   | `/cart/merge`                    | C      | `{items:CartLineInput[]} → CartMergeResult` | 07  |
-| `GET`    | `/wishlist`                      | C      | `— → {products:WishlistProduct[]}`   | 08  |
-| `PUT`    | `/wishlist/products/{productId}` | C      | `— → {saved:true}`               | 08  |
-| `DELETE` | `/wishlist/products/{productId}` | C      | `— → {saved:false}`              | 08  |
+| `GET`    | `/wishlist`                      | C      | `— → {products:WishlistProduct[]}`          | 08  |
+| `PUT`    | `/wishlist/products/{productId}` | C      | `— → {saved:true}`                          | 08  |
+| `DELETE` | `/wishlist/products/{productId}` | C      | `— → {saved:false}`                         | 08  |
 
 Guest cart is **browser-local** and is not created server-side by an anonymous `/cart` route. A merge deduplicates on
 `variantId` using the maximum of saved and submitted quantities, including duplicate input lines; retries do not
@@ -1283,12 +1283,12 @@ No public endpoint can mutate base/sale prices, SKU identity or stock.
 
 | Method  | Path                                        | Request → response                                                        | FR  |
 | ------- | ------------------------------------------- | ------------------------------------------------------------------------- | --- |
-| `GET`   | `/admin/products`                           | `q?,status?,page? → AdminProduct[]`                                       | 23  |
+| `GET`   | `/admin/products`                           | `q?,status?,page?,pageSize? → AdminProduct[]`                                       | 23  |
 | `POST`  | `/admin/products`                           | `ProductCreateInput → AdminProduct`                                       | 23  |
-| `GET`   | `/admin/products/{productId}`               | `— → AdminProduct`                                                        | 23  |
+| `GET`   | `/admin/products/{productId}`               | `— → AdminProductDetail`                                                  | 23  |
 | `PATCH` | `/admin/products/{productId}`               | `ProductPatch + If-Match → AdminProduct`                                  | 23  |
 | `POST`  | `/admin/products/{productId}/deactivate`    | `{reason} + If-Match → AdminProduct`                                      | 23  |
-| `GET`   | `/admin/categories`                         | `status?,page?,pageSize? → AdminCategory[]`                                         | 24  |
+| `GET`   | `/admin/categories`                         | `status?,page?,pageSize? → AdminCategory[]`                               | 24  |
 | `POST`  | `/admin/categories`                         | `CategoryCreateInput → AdminCategory`                                     | 24  |
 | `PATCH` | `/admin/categories/{categoryId}`            | `CategoryPatch + If-Match → AdminCategory`                                | 24  |
 | `POST`  | `/admin/categories/{categoryId}/deactivate` | `{reason} + If-Match → AdminCategory`                                     | 24  |
@@ -1329,16 +1329,46 @@ public projections; active product associations still require active ancestry. T
 HTTP route. Internal deletion remains guarded by children/product references and attached-image state.
 Category writes, media references, authorization fences and audit facts roll back together on failure.
 
+Product creation includes required `variants:VariantCreateInput[]` (1–100), and commits product, initial
+SKUs, category fences, media references and audit atomically. A no-options product has exactly one default
+SKU (`attributes:{}`); option variants share the same normalized attribute keys and distinct combinations.
+Draft/inactive products also retain at least one configured SKU. Active products require active ancestry
+and at least one active SKU. `GET /admin/products/{productId}` returns `AdminProductDetail`, the AdminProduct
+fields plus bounded `variants:AdminVariant[]` including inactive SKUs; other product responses remain AdminProduct.
+The configured aggregate is bounded to 100 SKUs; subsequent variant creation validates against that aggregate.
+SKU and attributes are creation-time identity; VariantPatch permits only its declared price/status/threshold fields.
+Product list search is a bounded literal name/slug substring, newest/ID descending, with standard pagination.
+Default product status is draft; SKU status defaults active and counters start at zero. Stock changes only
+through inventory services. Nullable sale price/threshold clears persist absence; omitted fields remain.
+Merged variant prices must satisfy sale ≤ regular price. Product, category, rating and stock fields are not
+accepted by VariantPatch; initial variants and all protected counters/revisions cannot be edited in ProductPatch.
+Deactivation is non-destructive. An active product cannot lose its last active SKU; concurrent variant writes
+serialize on a parent-product revision fence, and newly active SKUs require valid active ancestry.
+
+Product gallery order defines positions and media reference slots; at most 12 distinct public images are
+allowed. Omitted images are preserved and `[]` removes the gallery through transactional detachment. Reordering
+first detaches old slots then attaches new slots inside one transaction, so the 40-reference public reuse
+limit is never temporarily exceeded. Target metadata, media ledger and audit commit or roll back together;
+there are no provider calls or destructive asset deletes in this transaction. Metadata-only work does not
+activate media; image mutations need explicit verified media capabilities.
+
+Create returns Location for the product resource and strong ETag. Variant edits and canonical stock events
+also advance the parent product revision in their transaction, keeping the detail's revision/ETag coherent
+with its variant representation. Refresh after stale edits, including when inventory activity invalidates
+a product/variant token. Required If-Match failure codes remain 428/412; duplicate normalized identities
+return 409 STATE_CONFLICT and a last-active-SKU violation returns 422 BUSINESS_RULE_VIOLATION.
+
+
 **Master record schemas:**
 
-| Input                 | Validated field allowlist / guard                                                                                                     |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `ProductCreateInput`  | `name,slug,description,categoryIds[],images[],keywords?,featured?,status?`; activate only with valid category and purchasable variant |
-| `ProductPatch`        | Same editable fields; cannot edit immutable order snapshots or internal rating counters                                               |
-| `VariantCreateInput`  | `sku,attributes,regularPricePoisha,salePricePoisha?,status?`; default SKU required for no-options product                             |
-| `VariantPatch`        | `regularPricePoisha?,salePricePoisha:nullable<money>?,status?,lowStockThreshold:nullable<int>?`; **no stock fields**                  |
-| `CategoryCreateInput` | `name,slug,parentId?,status?,image?,sortOrder?`; reject cycles and invalid parents                                                    |
-| `CategoryPatch`       | Editable metadata/status; reassignment required before prohibited destructive changes                                                 |
+| Input                 | Validated field allowlist / guard                                                                                                                                   |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ProductCreateInput`  | `name,slug,description,categoryIds[],variants[],images?,keywords?,featured?,status?`; atomic product/SKU creation; activate only with valid category and active SKU |
+| `ProductPatch`        | Same editable fields; cannot edit immutable order snapshots or internal rating counters                                                                             |
+| `VariantCreateInput`  | `sku,attributes,regularPricePoisha,salePricePoisha?,status?`; default SKU required for no-options product                                                           |
+| `VariantPatch`        | `regularPricePoisha?,salePricePoisha:nullable<money>?,status?,lowStockThreshold:nullable<int>?`; **no stock fields**                                                |
+| `CategoryCreateInput` | `name,slug,parentId?,status?,image?,sortOrder?`; reject cycles and invalid parents                                                                                  |
+| `CategoryPatch`       | Editable metadata/status; reassignment required before prohibited destructive changes                                                                               |
 
 SKU and slug normalization and uniqueness are Database §§6.1–6.3. An `adjustments` call changes only verified physical
 stock through an inventory service and appends `inventoryMovements` in one transaction; reject any adjustment leaving
@@ -1415,11 +1445,11 @@ rating or unfairly suppress valid negative feedback. Always audit decisions/reas
 | `POST`  | `/admin/delivery/charges/{chargeId}/activate`   | `{reason,effectiveAt?} + If-Match + Idempotency-Key → DeliveryChargeRule`                                                                          | 28  |
 | `POST`  | `/admin/delivery/charges/{chargeId}/supersede`  | `{replacement:DeliveryChargeInput,effectiveAt,reason} + If-Match + Idempotency-Key → {previous:DeliveryChargeRule,replacement:DeliveryChargeRule}` | 28  |
 | `POST`  | `/admin/delivery/charges/{chargeId}/deactivate` | `{effectiveAt,reason} + If-Match + Idempotency-Key → DeliveryChargeRule`                                                                           | 28  |
-| `GET`   | `/admin/coupons`                                | `status?,page?,pageSize? → CouponAdmin[]`                                                                                                                    | 30  |
+| `GET`   | `/admin/coupons`                                | `status?,page?,pageSize? → CouponAdmin[]`                                                                                                          | 30  |
 | `POST`  | `/admin/coupons`                                | `CouponInput → CouponAdmin`                                                                                                                        | 30  |
 | `PATCH` | `/admin/coupons/{couponId}`                     | `CouponPatch + If-Match → CouponAdmin`                                                                                                             | 30  |
 | `POST`  | `/admin/coupons/{couponId}/deactivate`          | `{reason} + If-Match → CouponAdmin`                                                                                                                | 30  |
-| `GET`   | `/admin/coupons/{couponId}/redemptions`         | `page?,pageSize? → CouponRedemptionSummary[]`                                                                                                                | 30  |
+| `GET`   | `/admin/coupons/{couponId}/redemptions`         | `page?,pageSize? → CouponRedemptionSummary[]`                                                                                                      | 30  |
 | `GET`   | `/admin/settings`                               | `— → StoreSettings (allowlisted)`                                                                                                                  | 34  |
 | `PATCH` | `/admin/settings`                               | `SettingsPatch + If-Match → StoreSettings`                                                                                                         | 34  |
 | `GET`   | `/admin/settings/policies`                      | `type?,status?,page?,pageSize? → paginated PolicyDocumentSummary[]`                                                                                | 34  |
@@ -1915,12 +1945,13 @@ The following field allowlists define client inputs and server responses. `*Inpu
 | `CategoryCreateInput`      | `name:string!,slug:string!,parentId:id?,status:enum(active,inactive)?,image:MediaRef?,sortOrder:int?`                                                                                                                                                                                                                                                                                                                                                                                                                           | Parent acyclic; active ancestry required for public use                                                                                                          |
 | `CategoryPatch`            | `name?,slug?,parentId:nullable<id>?,status?,image:nullable<MediaRef>?,sortOrder?`                                                                                                                                                                                                                                                                                                                                                                                                                                               | Null parent makes root after hierarchy checks; null image removes reference safely; CAS required                                                                 |
 | `AdminCategory`            | `id!,name!,slug!,parentId?,status!,revision:int!,sortOrder:int!,image?`                                                                                                                                                                                                                                                                                                                                                                                                                                                         | `ETag` on read/edit; hidden categories admin-only                                                                                                                |
-| `ProductCreateInput`       | `name:string!,slug:string!,description:string!,categoryIds:id[]!,images:MediaRef[]?,keywords:string[]?,featured:bool?,status:enum(draft,active,inactive)?`                                                                                                                                                                                                                                                                                                                                                                      | No direct stock or variant price object                                                                                                                          |
+| `ProductCreateInput`       | `name:string!,slug:string!,description:string!,categoryIds:id[]!,variants:VariantCreateInput[]!,images:MediaRef[]?,keywords:string[]?,featured:bool?,status:enum(draft,active,inactive)?`                                                                                                                                                                                                                                                                                                                                       | No direct stock; initial variant prices belong only to the required variants entries                                                                             |
 | `ProductPatch`             | `name?,slug?,description?,categoryIds?,images?,keywords?,featured?,status?`                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Approved fields only; CAS and audit                                                                                                                              |
 | `AdminProduct`             | `id!,name!,slug!,description!,categoryIds:id[]!,status!,featured!,images:MediaRef[]!,createdAt:date!,updatedAt:date!,revision:int!`                                                                                                                                                                                                                                                                                                                                                                                             | Variants separate; no raw Mongoose shape                                                                                                                         |
+| `AdminProductDetail`       | AdminProduct fields plus `variants:AdminVariant[]!`                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Includes every configured active/inactive SKU, maximum 100; admin-only                                                                                           |
 | `VariantCreateInput`       | `sku:string!,attributes:map<string,string>!,regularPricePoisha:money!,salePricePoisha:money?,status:enum(active,inactive)?`                                                                                                                                                                                                                                                                                                                                                                                                     | Owning `productId` comes from the authorized path, never a conflicting body field; stock assigned by inventory service                                           |
 | `VariantPatch`             | `regularPricePoisha:money?,salePricePoisha:nullable<money>?,status:enum(active,inactive)?,lowStockThreshold:nullable<int>?`                                                                                                                                                                                                                                                                                                                                                                                                     | Null clears sale/threshold override; omission unchanged; same allowlist as §14.1; no stock, SKU or attribute writes; every change increments the record revision |
-| `AdminVariant`             | `id!,productId!,sku!,attributes!,regularPricePoisha!,salePricePoisha?,status!,stock:{physical,reserved,committed,available},revision:int!,lowStockThreshold:int?`                                                                                                                                                                                                                                                                                                                                                                                      | Available stock derived, never client-writable                                                                                                                   |
+| `AdminVariant`             | `id!,productId!,sku!,attributes!,regularPricePoisha!,salePricePoisha?,status!,stock:{physical,reserved,committed,available},revision:int!,lowStockThreshold:int?`                                                                                                                                                                                                                                                                                                                                                               | Available stock derived, never client-writable                                                                                                                   |
 | `CartLineInput`            | `variantId:id!,quantity:int!`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Positive quantity; duplicate variant rejected/merged once                                                                                                        |
 | `CheckoutQuoteInput`       | `items:CartLineInput[]!,recipient:AddressInput! XOR savedAddressId:id!,email:string? (required guest),contactPhone:string?,couponCode:string?,method:enum(cod,bkash,nagad,rocket)!`                                                                                                                                                                                                                                                                                                                                             | Contact phone defaults to `recipient.phone`; guest recipient phone required; no client money totals                                                              |
 | `CheckoutSubmitInput`      | All quote fields plus `quoteId:id!,acceptedTermsVersion:string!,acceptedPolicyVersionIds:string[]!,notes:string?`                                                                                                                                                                                                                                                                                                                                                                                                               | Same normalization as quote; request `Idempotency-Key` mandatory                                                                                                 |

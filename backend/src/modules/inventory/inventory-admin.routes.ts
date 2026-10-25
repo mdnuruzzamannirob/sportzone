@@ -17,10 +17,9 @@ export function inventoryAdminRoutes(
     '/admin/inventory',
     '/admin/inventory/:variantId/movements',
     '/admin/inventory/:variantId/adjustments',
-    '/admin/variants/:variantId',
   ])
     router.options(path, security.cors('admin'))
-  for (const path of ['/admin/inventory', '/admin/variants'])
+  for (const path of ['/admin/inventory'])
     router.use(
       path,
       security.cors('admin'),
@@ -42,13 +41,6 @@ export function inventoryAdminRoutes(
   router.post('/admin/inventory/:variantId/adjustments', async (req, res) => {
     parseInput(z.strictObject({}), req.query)
     respond(res, await service.adjust(token(req), id(req), req.body, req.get('Idempotency-Key')))
-  })
-  router.patch('/admin/variants/:variantId', async (req, res) => {
-    parseInput(z.strictObject({}), req.query)
-    const result = await service.threshold(token(req), id(req), req.body, req.get('If-Match'))
-    res.set('ETag', `"${result.revision}"`)
-    res.set('Access-Control-Expose-Headers', 'X-Request-Id, ETag')
-    respond(res, result)
   })
   return router
 }

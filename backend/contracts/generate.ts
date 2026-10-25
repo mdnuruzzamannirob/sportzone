@@ -114,8 +114,8 @@ function openOperation(op: Operation) {
         ...(op.etag ? { ETag: header('Strong quoted numeric revision') } : {}),
         'Cache-Control': { schema: { const: 'no-store' } },
         'X-Content-Type-Options': { schema: { const: 'nosniff' } },
-        ...(op.status === 201 && op.path === '/me/addresses'
-          ? { Location: header('Created address resource URI') }
+        ...(op.status === 201 && ['/me/addresses', '/admin/products'].includes(op.path)
+          ? { Location: header('Created resource URI') }
           : {}),
         ...(op.path.includes('/auth/') ||
         op.path.includes('password-change') ||

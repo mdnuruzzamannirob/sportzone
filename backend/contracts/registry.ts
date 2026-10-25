@@ -1,4 +1,19 @@
 import {
+  productCreate,
+  productPatch,
+  productDeactivate,
+  productParams,
+  productListQuery,
+  adminProduct,
+  adminProductDetail,
+} from '../src/modules/catalog/products/product-admin.schema.js'
+import {
+  variantInput,
+  variantPatch,
+  variantParams as adminVariantParams,
+  variantDeactivate,
+} from '../src/modules/catalog/variants/variant.schema.js'
+import {
   categoryCreate,
   categoryPatch,
   categoryDeactivate,
@@ -15,7 +30,6 @@ import {
   movementView,
   adjustmentBody,
   adjustmentResult,
-  thresholdPatch,
 } from '../src/modules/inventory/inventory-admin.schema.js'
 import {
   couponInput,
@@ -145,6 +159,104 @@ export const operations: readonly Operation[] = [
     [
       {
         method: 'GET',
+        path: '/admin/products',
+        query: productListQuery,
+        params: empty,
+        response: z.array(adminProduct),
+        paginated: true,
+        status: 200,
+      },
+      {
+        method: 'POST',
+        path: '/admin/products',
+        query: empty,
+        params: empty,
+        request: productCreate,
+        response: adminProduct,
+        etag: true,
+        status: 201,
+      },
+      {
+        method: 'GET',
+        path: '/admin/products/{productId}',
+        query: empty,
+        params: productParams,
+        response: adminProductDetail,
+        etag: true,
+        status: 200,
+      },
+      {
+        method: 'PATCH',
+        path: '/admin/products/{productId}',
+        query: empty,
+        params: productParams,
+        request: productPatch,
+        response: adminProduct,
+        etag: true,
+        ifMatch: true,
+        status: 200,
+      },
+      {
+        method: 'POST',
+        path: '/admin/products/{productId}/deactivate',
+        query: empty,
+        params: productParams,
+        request: productDeactivate,
+        response: adminProduct,
+        etag: true,
+        ifMatch: true,
+        status: 200,
+      },
+      {
+        method: 'POST',
+        path: '/admin/products/{productId}/variants',
+        query: empty,
+        params: productParams,
+        request: variantInput,
+        response: adminVariant,
+        etag: true,
+        status: 201,
+      },
+      {
+        method: 'PATCH',
+        path: '/admin/variants/{variantId}',
+        query: empty,
+        params: adminVariantParams,
+        request: variantPatch,
+        response: adminVariant,
+        etag: true,
+        ifMatch: true,
+        status: 200,
+      },
+      {
+        method: 'POST',
+        path: '/admin/variants/{variantId}/deactivate',
+        query: empty,
+        params: adminVariantParams,
+        request: variantDeactivate,
+        response: adminVariant,
+        etag: true,
+        ifMatch: true,
+        status: 200,
+      },
+    ] as const
+  ).map(
+    (op): Operation => ({
+      ...op,
+      access: 'admin',
+      namespace: 'admin',
+      csrf: op.method !== 'GET',
+      activation:
+        'ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.',
+      replay:
+        'Strong revision CAS for edits; parent aggregate fence prevents invalid concurrent variants; immutable SKU/attribute identities and transactional media/audit',
+    }),
+  ),
+
+  ...(
+    [
+      {
+        method: 'GET',
         path: '/admin/categories',
         query: categoryListQuery,
         params: empty,
@@ -228,17 +340,6 @@ export const operations: readonly Operation[] = [
         idempotency: true,
         status: 200,
       },
-      {
-        method: 'PATCH',
-        path: '/admin/variants/{variantId}',
-        query: empty,
-        params: inventoryParams,
-        request: thresholdPatch,
-        response: adminVariant,
-        ifMatch: true,
-        etag: true,
-        status: 200,
-      },
     ] as const
   ).map(
     (op): Operation => ({
@@ -247,7 +348,7 @@ export const operations: readonly Operation[] = [
       namespace: 'admin',
       csrf: op.method !== 'GET',
       activation:
-        'ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings. Variant PATCH currently supports threshold only; other master edits remain planned.',
+        'ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings.',
       replay:
         'Exactly-once adjustment per variant/key; actor/payload mismatch conflicts; threshold uses revision CAS',
     }),

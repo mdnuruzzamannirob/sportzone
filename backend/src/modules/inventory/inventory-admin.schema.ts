@@ -35,7 +35,6 @@ export const operationKey = z
   .refine(
     (v) => v === v.trim() && [...v].every((c) => c.charCodeAt(0) > 31 && c.charCodeAt(0) !== 127),
   )
-export const thresholdPatch = z.strictObject({ lowStockThreshold: integer.nullable() })
 const inventoryRow = z.strictObject({
   variantId: id,
   productId: id,

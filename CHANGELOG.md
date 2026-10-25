@@ -8,6 +8,13 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 25 October 2026 — Product and variant administration APIs
+
+- Added protected product/variant management, owner-approved atomic initial variants and full variant
+  detail, pricing/threshold CAS, transactional galleries and audit. Parent revision fences preserve
+  last-active-SKU rules and stock/detail ETags; one catalog handler owns variant PATCH. Added local/test
+  catalog bootstrap and generated contracts. [Implementation and verification](docs/evidence/P04-017-product-variant-administration.md).
+
 ## 25 October 2026 — Category administration APIs
 
 - Added protected category list/create/edit/deactivate with hierarchy/CAS guards and transactional

@@ -1,3 +1,6 @@
+import { Router } from 'express'
+import { productAdminService } from '../../src/modules/catalog/products/product-admin.service.js'
+import { productAdminRoutes } from '../../src/modules/catalog/products/product-admin.routes.js'
 import { ApiError } from '../../src/shared/errors/app-error.js'
 import { identityEnvironment } from '../helpers/environment.js'
 import { loadEnvironment } from '../../src/config/env.js'
@@ -141,7 +144,20 @@ beforeAll(async () => {
     stockSettingsReader(db.connection),
     createAuditWriter(db.connection),
   )
-  app = createApp({ apiRouter: inventoryAdminRoutes(service, security, sessions) })
+  app = createApp({
+    apiRouter: Router().use(
+      inventoryAdminRoutes(service, security, sessions),
+      productAdminRoutes(
+        productAdminService(
+          db.connection,
+          createAdminAccountAccess(db.connection, models, sessions),
+          createAuditWriter(db.connection),
+        ),
+        security,
+        sessions,
+      ),
+    ),
+  })
 })
 beforeEach(async () => {
   const m = productModels(db.connection)
@@ -324,9 +340,15 @@ it('rolls back stock, movement, threshold and account fence if auditing fails', 
   await expect(
     failing.adjust(own.token, id, { deltaPhysical: 1, reason: 'Synthetic' }, 'rollback'),
   ).rejects.toThrow('Synthetic')
-  await expect(failing.threshold(own.token, id, { lowStockThreshold: 1 }, '"0"')).rejects.toThrow(
-    'Synthetic',
-  )
+  await expect(
+    productAdminService(
+      db.connection,
+      createAdminAccountAccess(db.connection, models, sessions),
+      async () => {
+        throw new Error('Synthetic audit failure')
+      },
+    ).patchVariant(own.token, id, { lowStockThreshold: 1 }, '"0"'),
+  ).rejects.toThrow('Synthetic')
   expect((await productModels(db.connection).variants.findById(id))?.revision).toBe(0)
   expect(await inventoryMovementModel(db.connection).countDocuments()).toBe(0)
   expect((await models.users.findById(own.user._id).lean())?.updatedAt).toEqual(before?.updatedAt)
