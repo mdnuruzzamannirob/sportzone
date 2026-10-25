@@ -22,7 +22,7 @@ function anchors(s) {
     }),
   )
 }
-export function workspacePlan(root) {
+export function workspacePlan(root, selected = names) {
   const manifest = json(root, 'package.json')
   const inventory = json(root, 'ci-workspaces.json')
   const config = inventory.scopes
@@ -37,56 +37,58 @@ export function workspacePlan(root) {
   ) {
     throw new Error('CI inventory must declare version 2 and exactly six required scopes')
   }
-  return names.map((name) => {
-    const pkg = json(root, `${name}/package.json`)
-    const entry = config[name]
-    if (pkg.name !== name || !pkg.private)
-      throw new Error(`${name}: invalid package identity/privacy`)
-    if (
-      !['manifest-only', 'active'].includes(entry.state) ||
-      !/^P\d{2}-\d{3}$/.test(entry.ownerTask)
-    ) {
-      throw new Error(`${name}: invalid CI state or ownerTask`)
-    }
-    const extraFiles = readdirSync(resolve(root, name)).filter(
-      (f) => !['package.json', 'node_modules'].includes(f),
-    )
-    const hasImplementation =
-      extraFiles.length ||
-      Object.keys(pkg.scripts ?? {}).length ||
-      ['dependencies', 'devDependencies', 'optionalDependencies'].some(
-        (k) => Object.keys(pkg[k] ?? {}).length,
+  return names
+    .filter((name) => selected.includes(name))
+    .map((name) => {
+      const pkg = json(root, `${name}/package.json`)
+      const entry = config[name]
+      if (pkg.name !== name || !pkg.private)
+        throw new Error(`${name}: invalid package identity/privacy`)
+      if (
+        !['manifest-only', 'active'].includes(entry.state) ||
+        !/^P\d{2}-\d{3}$/.test(entry.ownerTask)
+      ) {
+        throw new Error(`${name}: invalid CI state or ownerTask`)
+      }
+      const extraFiles = readdirSync(resolve(root, name)).filter(
+        (f) => !['package.json', 'node_modules'].includes(f),
       )
-    if (entry.state === 'manifest-only') {
-      if (hasImplementation) throw new Error(`${name}: implementation requires active CI checks`)
+      const hasImplementation =
+        extraFiles.length ||
+        Object.keys(pkg.scripts ?? {}).length ||
+        ['dependencies', 'devDependencies', 'optionalDependencies'].some(
+          (k) => Object.keys(pkg[k] ?? {}).length,
+        )
+      if (entry.state === 'manifest-only') {
+        if (hasImplementation) throw new Error(`${name}: implementation requires active CI checks`)
+        return {
+          name,
+          state: 'Not Configured',
+          ownerTask: entry.ownerTask,
+          checks: [],
+        }
+      }
+      if (
+        !Array.isArray(entry.checks) ||
+        !baseChecks.every((c) => entry.checks.includes(c)) ||
+        new Set(entry.checks).size !== entry.checks.length
+      )
+        throw new Error(`${name}: missing required CI checks`)
+      for (const check of entry.checks) {
+        if (
+          !/^[a-z][a-z0-9:-]*$/.test(check) ||
+          !pkg.scripts?.[check]?.trim() ||
+          pkg.scripts[check].includes('--if-present')
+        )
+          throw new Error(`${name}: missing/unsafe script ${check}`)
+      }
       return {
         name,
-        state: 'Not Configured',
+        state: 'Configured',
         ownerTask: entry.ownerTask,
-        checks: [],
+        checks: entry.checks,
       }
-    }
-    if (
-      !Array.isArray(entry.checks) ||
-      !baseChecks.every((c) => entry.checks.includes(c)) ||
-      new Set(entry.checks).size !== entry.checks.length
-    )
-      throw new Error(`${name}: missing required CI checks`)
-    for (const check of entry.checks) {
-      if (
-        !/^[a-z][a-z0-9:-]*$/.test(check) ||
-        !pkg.scripts?.[check]?.trim() ||
-        pkg.scripts[check].includes('--if-present')
-      )
-        throw new Error(`${name}: missing/unsafe script ${check}`)
-    }
-    return {
-      name,
-      state: 'Configured',
-      ownerTask: entry.ownerTask,
-      checks: entry.checks,
-    }
-  })
+    })
 }
 export function inspectRepository(root) {
   const errors = []

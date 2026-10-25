@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 22 October 2026
+**Updated:** 23 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -79,7 +79,7 @@ product and policy rules; `ARCHITECTURE.md` governs system boundaries and integr
 
 | Area | Contract |
 | --- | --- |
-| Database | MongoDB; one logically isolated SportZone database per environment |
+| Database | MongoDB; one logically isolated SportZone database per environment; provider provisioning belongs in Operations |
 | ODM | Mongoose, explicit schemas and controlled model/index deployment |
 | Transaction capability | Replica-set-capable MongoDB in local integration, staging, and production; stand-alone MongoDB is insufficient for required multi-document tests |
 | Connections | Pooled, bounded server connections; credentials available only to backend/job processes |
@@ -90,6 +90,10 @@ product and policy rules; `ARCHITECTURE.md` governs system boundaries and integr
 Database access requires bounded replica-set connections, explicit collection validators/indexes and a
 session-aware transaction boundary. Each domain owns its fields, protected update allowlists and DTO mappings;
 schema validation does not authorize arbitrary update operators. Operations §§5, 7 own runtime and bootstrap commands.
+
+Backend Mongoose connections consume the private MongoDB URI from `MONGODB_URI` and the explicit
+`MONGODB_DB_NAME`. Frontends receive no database URI or credentials. The configured provider must
+support replica-set sessions, explicit validator/index rollout and required transactions; Operations owns its setup.
 
 ### 2.2 Field standards
 
@@ -164,14 +168,14 @@ events). Never embed an unbounded payment history, product review list, or movem
 
 ### 3.1 Collection inventory
 
-The data model contains **37 physical collections**. `authChallenges`, `browserContexts`,
+The data model contains **38 physical collections**. `authRateLimits`, `authChallenges`, `browserContexts`,
 `checkoutQuotes`, `checkoutIntents`, `mediaAssets`, `providerReceiptIntake`, `paymentCollections`, `couponCustomerCounters`, `orderItemBalances`,
 `cancellationRequests`, `deliveryExceptions`, and `jobLeases` are supporting collections required by the defined
 persistence design.
 
 | Domain | Collections | Key embeddings |
 | --- | --- | --- |
-| Identity | `users`, `sessions`, `authChallenges`, `browserContexts` | User `addresses[]` |
+| Identity | `users`, `sessions`, `authChallenges`, `browserContexts`, `authRateLimits` | User `addresses[]` |
 | Catalog and shopping | `categories`, `products`, `productVariants`, `carts`, `wishlists`, `reviews`, `mediaAssets` | Product `images[]`; cart `items[]` |
 | Orders and delivery | `checkoutQuotes`, `checkoutIntents`, `orders`, `orderItemBalances`, `cancellationRequests`, `deliveryExceptions`, `deliveryZones`, `deliveryCharges` | Order `items[]`, customer/delivery/terms snapshots, transition history |
 | Inventory | `inventoryReservations`, `inventoryMovements` | Variant stock counters in `productVariants` |
@@ -378,8 +382,8 @@ under SESSION_SECRET; API §4.4 defines the exact session/CSRF encoding. Fresh i
 transactionally. Active lookup checks current role/status/security revision independently of TTL; principal revocation
 increments securityRevision and marks matching sessions in one transaction. Raw tokens are returned only inside the
 backend issuance result for cookie/private CSRF response composition, never in a session DTO or log. Browser-context,
-challenge and guest digest issuance remain with their owning later services; their placeholder schema strings do not
-constitute a cryptographic implementation. No session is minted by HTTP startup or by simply knowing an ObjectId.
+challenge and guest digest issuance use their owning scoped services; schema-valid strings alone do not
+constitute cryptographic verification. No session is minted by HTTP startup or by simply knowing an ObjectId.
 
 ### 5.3 `authChallenges` — verification and recovery
 
@@ -581,7 +585,7 @@ Explicit identity bootstrap adds this collection/index without modifying existin
 | `sortOrder`! | int | Nonnegative display sequence |
 | `revision`! | int | Nonnegative CAS revision; increment on every editable metadata, parent, status or sort change |
 
-**Indexes:** unique `{slug:1}`; `{parentId:1,status:1,sortOrder:1}`.
+**Indexes:** unique `{slug:1}`; `{parentId:1,status:1,sortOrder:1}`; public listing `{status:1,sortOrder:1,_id:1}`.
 
 **Rules:** reject cycles; verify category has active ancestry for public visibility; restrict deletion while products/subcategories depend on it unless reassigned in an approved operation.
 
@@ -610,7 +614,7 @@ existing database index helper, never automatic startup synchronization.
 | `ratingSummary` | embedded | `{approvedCount,average}` derived projection; not authority for review eligibility |
 | `revision`! | int | Nonnegative CAS revision; increment on every editable product/status/category/media change |
 
-**Indexes:** unique `{slug:1}`; `{status:1,categoryIds:1,createdAt:-1}`; `{status:1,featured:1,createdAt:-1}`; search index selected by representative query profile.
+**Indexes:** unique `{slug:1}`; `{status:1,categoryIds:1,createdAt:-1}`; `{status:1,featured:1,createdAt:-1}`; public newest `{status:1,createdAt:-1,_id:-1}`; compound native text `{status:1,name:"text",keywords:"text"}` with language `none`, weights name 5 / keywords 2. The status prefix is always constrained to active on public search.
 
 **Rules:** every purchasable product has at least one active `productVariants` document; deactivation does not erase historical order lines.
 
@@ -638,8 +642,9 @@ strict BSON collection validators. Slugs are trimmed lowercase ASCII kebab-case 
 SKUs are trimmed uppercase ASCII letters/digits with single `.`, `_` or `-` separators (64 characters).
 Names use the §2.2 120-character limit; descriptions are plain text, at most 2,000 Unicode characters,
 with HTML tags/control characters rejected. Future views must render them as text. Keywords are
-trimmed lowercase distinct terms, up to 30 terms of 120 characters. No search engine/index is chosen
-without the P04-009 representative query profile; the declared compound indexes remain authoritative.
+trimmed lowercase distinct terms, up to 30 terms of 120 characters. Native MongoDB text search uses the
+declared compound text index; verify its query profile under Testing §13.1. No external search service is required.
+Index creation remains explicit and additive, with existing validators and extra indexes preserved.
 
 Internal aggregate creation accepts 1–100 variants and 1–30 distinct category references. Option maps
 contain up to 30 keys (64 characters) with values up to 120 characters, NFKC/lowercase/whitespace
@@ -669,7 +674,7 @@ category/SKU eligibility is enforced by owning services, not by foreign model ac
 | Field | Type | Constraints / notes |
 | --- | --- | --- |
 | `userId`! | ObjectId | One server-side cart per registered customer |
-| `items[]` | embedded[] | `{variantId,quantity,addedAt}`; unique variant ID within cart; positive bounded qty |
+| `items[]` | embedded[] | `{variantId,quantity,addedAt}`; unique variant ID within cart; integer qty 1–50; at most 100 lines |
 | `revision`! | int | Compare-and-set cart merge/update when needed |
 
 **Indexes:** unique `{userId:1}`.
@@ -681,7 +686,7 @@ category/SKU eligibility is enforced by owning services, not by foreign model ac
 | Field | Type | Constraints / notes |
 | --- | --- | --- |
 | `userId`! | ObjectId | One wishlist per registered customer |
-| `productIds[]` | ObjectId[] | Deduplicated, bounded list |
+| `productIds[]` | ObjectId[] | Unique entries; at most 200; preserve saved order |
 
 **Indexes:** unique `{userId:1}`.
 
@@ -697,11 +702,11 @@ category/SKU eligibility is enforced by owning services, not by foreign model ac
 | `comment`! | string | Length-limited, moderated and escaped on display |
 | `status`! | enum(`pending`,`approved`,`rejected`,`hidden`) | Only approved contributes to public rating |
 | `isActive`! | bool | One active review per user/product |
-| `moderatedAt`? / `moderationReason`? | Date / string | Auditable moderation decision |
+| `moderatedAt`? / `moderationReason`? | Date / string | Required for approved/rejected/hidden state; decisions retained in append-only audit history |
 
 **Indexes:** partial unique `{userId:1,productId:1}` where `isActive:true`; `{productId:1,status:1,createdAt:-1}`.
 
-**Rules:** validate delivered qualifying purchase and exclusions (PRD FR-10); edit re-enters moderation when required. Do not silently alter customer ratings. Rating aggregates are recalculable projections.
+**Rules:** validate delivered qualifying purchase and exclusions (PRD FR-10); default to denied without authoritative eligibility evidence. Actual authored changes return the review to pending; unchanged content does not reset approval. Audit customer/moderator changes and preserve prior decisions when current moderation metadata is cleared. Administrators cannot rewrite authored ratings. Only active approved rows contribute to the canonical product rating summary; serialize review changes through the catalog-owned product fence and update the summary in the same transaction. Rating aggregates remain recalculable projections.
 
 ### 6.7 `mediaAssets` — `media`
 
@@ -1002,12 +1007,12 @@ changes. A saved address is not a quote or permission to reuse a historic charge
 | `status`! | enum(`active`,`inactive`) | New hold eligibility; historical orders unaffected |
 | `overallLimit`? / `perCustomerLimit`? | int | Positive limits, if configured |
 | `heldCount`! / `redeemedCount`! | int | `>= 0`, `held + redeemed <= overallLimit` when set |
-| `eligibleProductIds[]` / `eligibleCategoryIds[]` | ObjectId[] | Bounded optional filters; empty means approved global merchandise scope |
+| `eligibleProductIds[]` / `eligibleCategoryIds[]` | ObjectId[] | At most 200 distinct IDs per list; empty means approved global merchandise scope |
 | `termsVersion`! / `revision`! | int | Each meaningful edit increments terms version |
 
-**Indexes:** unique `{codeNormalized:1}`; `{status:1,startsAt:1,expiresAt:1}`.
+**Indexes:** unique `{codeNormalized:1}`; `{status:1,startsAt:1,expiresAt:1}`; `{createdAt:-1,_id:-1}`; `{status:1,createdAt:-1,_id:-1}`.
 
-**Rules:** existing live holds keep their snapshotted terms until expiry; a new/reacquired hold checks *current* coupon state. Guest checkout cannot use any coupon with a per-customer limit (PRD FR-09). Coupon quotas are authoritative in conditional writes, not `countDocuments` alone.
+**Rules:** configuration edits use the canonical revision CAS and serialize with allocation writes; reject limit reductions below global or any affected customer held-plus-redeemed counts. Append an admin audit digest in the same transaction; never reset counters or rewrite redemptions. Normalized no-op edits preserve terms version and revision. Existing live holds keep their snapshotted terms until expiry; a new/reacquired hold checks *current* coupon state. Guest checkout cannot use any coupon with a per-customer limit (PRD FR-09). Coupon quotas are authoritative in conditional writes, not `countDocuments` alone.
 
 ### 8.2 `couponRedemptions` — `promotions`
 
@@ -1022,7 +1027,7 @@ changes. A saved address is not a quote or permission to reuse a historic charge
 | `heldAt`? / `expiresAt`? | Date | Same generation start/expiry as stock: `expiresAt = heldAt + 15 minutes`; absent expiry after redemption |
 | `redeemedAt`? / `releasedAt`? / `lastOperationKey`? | Date / Date / string | Traceable transition |
 
-**Indexes:** unique `{couponId:1,orderId:1,generation:1}`; partial unique `{orderId:1,activeKey:1}` where `activeKey` is a string; `{status:1,expiresAt:1}`.
+**Indexes:** unique `{couponId:1,orderId:1,generation:1}`; partial unique `{orderId:1,activeKey:1}` where `activeKey` is a string; `{status:1,expiresAt:1}`; `{couponId:1,createdAt:-1,_id:-1}` for bounded coupon history.
 
 **Rules:** on every redemption creation/reacquisition, transactionally compare `couponId` with immutable
 `orders.couponSnapshot.couponId` (the sole coupon identity bound at order creation); reject any different coupon even after
@@ -1481,7 +1486,9 @@ MongoDB unique partial indexes constrain only matching documents; missing option
 | Query | Access path | Required behavior |
 | --- | --- | --- |
 | Public products by category/status | `products(status,categoryIds,createdAt)` + variant eligibility | Bounded pagination; filter invisible products |
-| Public featured/newest | `products(status,featured,createdAt)` | Stable sort with `_id` tie-break |
+| Public featured/newest | `products(status,featured,createdAt)` / `products(status,createdAt,_id)` | Stable sort with `_id` tie-break |
+| Public name/keyword search | Native compound text index with equality on status | Literal bounded Unicode terms; active category ancestry and valid active variants checked before projection |
+| Public category listing | `categories(status,sortOrder,_id)` + ancestor `_id` lookups | Stable pages; cycles/orphans and ancestry beyond 64 ancestors fail closed |
 | Product details | Unique product slug + variants by product ID | No query by unsafe client price |
 | Customer orders | `orders(userId,placedAt)` | Authenticated ownership, bounded pages |
 | Guest verification | `orders(orderNumber)` then challenge against stored checkout email | No unauthenticated order data disclosure |
@@ -1499,7 +1506,7 @@ MongoDB unique partial indexes constrain only matching documents; missing option
 
 - TTL indexes may garbage-collect expired *authentication artifacts* (`sessions`, `authChallenges`, `browserContexts`). Authorization and single-use verification **must check expiration in queries** before TTL physically deletes documents.
 - Do **not** TTL-delete checkout intents/tombstones, orders, reservations, redemption records, `providerReceiptIntake`, collection receipts, payment/refund attempts, inventory movements, returns, or audit history. A hold becomes expired through an atomic business transition, **not** by TTL.
-- Use query plans and representative catalog data to select any text/Atlas Search strategy; do not claim a specific search service or latency target is approved. Enforce public visibility filters in the search path and revalidate checkout against primary business records.
+- Verify the native text index in §6.3 with query plans and representative catalog data. A different search strategy requires an architecture/index review. Enforce public visibility filters in the search path and revalidate checkout against primary business records.
 - Avoid unbounded skip/limit pagination for large histories; prefer indexed cursor seek on `(timestamp,_id)` where suitable. Record actual query plans and thresholds in `TESTING.md`.
 
 ## 12. Data integrity and transaction contracts
@@ -1845,7 +1852,7 @@ must remain aligned with `ARCHITECTURE.md` §4 rather than silently inventing an
 
 ### 16.3 Schema implementation requirements
 
-- Implement the 37 physical collections incrementally in their owning feature tasks, with field validation and indexes; the contract inventory is not evidence that these models exist.
+- Implement the 38 physical collections incrementally in their owning feature tasks, with field validation and indexes; the contract inventory is not evidence that these models exist.
 - Verify each money, stock, coupon, claim and refund transition with atomicity and recovery tests.
 - Match API DTOs to allowlisted persistence fields and immutable snapshots.
 - Validate diagrams, migration compatibility, index predicates and historical records.

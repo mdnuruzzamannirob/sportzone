@@ -461,3 +461,58 @@ test('STRUCTURE-06: job/composition factories must add assembly or orchestration
   )
   assert.deepEqual(checkBoundaries(root).errors, [])
 })
+
+test('INVENTORY-BOUNDARY-01: inventory consumes stock capabilities instead of catalog private models', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/modules/catalog/variants/variant.model.ts', 'export const model = 1')
+  put(
+    'backend/src/modules/inventory/inventory.service.ts',
+    'import "../catalog/variants/variant.model.js"',
+  )
+  assert.ok(checkBoundaries(root).errors.some((error) => error.includes('private persistence')))
+  put(
+    'backend/src/modules/catalog/variants/variant.service.ts',
+    'import "./variant.model.js"; export const stock = 1',
+  )
+  put(
+    'backend/src/modules/inventory/inventory.service.ts',
+    'import "../catalog/variants/variant.service.js"',
+  )
+  assert.deepEqual(checkBoundaries(root).errors, [])
+})
+
+test('INVENTORY-BOUNDARY-02: checkout and jobs cannot bypass inventory through the catalog stock capability', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/modules/catalog/variants/variant.service.ts', 'export const stock = 1')
+  put(
+    'backend/src/modules/inventory/allocation.service.ts',
+    'import "../catalog/variants/variant.service.js"; export const allocate = 1',
+  )
+  put(
+    'backend/src/modules/checkout/helper.ts',
+    'export * from "../catalog/variants/variant.service.js"',
+  )
+  put('backend/src/modules/checkout/checkout.service.ts', 'import "./helper.js"')
+  put('backend/src/jobs/expire.job.ts', 'import "../modules/catalog/variants/variant.service.js"')
+  assert.equal(
+    checkBoundaries(root).errors.filter((error) => error.includes('stock counter capability'))
+      .length,
+    3,
+  )
+  put(
+    'backend/src/modules/checkout/helper.ts',
+    'export * from "../inventory/allocation.service.js"',
+  )
+  put('backend/src/jobs/expire.job.ts', 'import "../modules/inventory/allocation.service.js"')
+  assert.deepEqual(checkBoundaries(root).errors, [])
+})
+
+test('CATALOG-SERVER-01: public browser barrels cannot import catalog server transport', (t) => {
+  const { root, put } = fixture(t)
+  put('storefront/src/features/catalog/catalog.server.ts', 'export const catalog = 1')
+  put('storefront/src/features/catalog/index.ts', 'export * from "./catalog.server"')
+  put('storefront/src/app/page.tsx', '"use client"; import "../features/catalog"')
+  assert.ok(checkBoundaries(root).errors.some((error) => error.includes('server-only')))
+  put('storefront/src/app/page.tsx', 'import "../features/catalog"')
+  assert.deepEqual(checkBoundaries(root).errors, [])
+})

@@ -7,7 +7,7 @@
 
 This register completes the nonfunctional handoff from the accepted
 [P01-003 register](./P01-003-traceability.md#nonfunctional-handoff-to-p01-004). It maps every bullet in
-[PRD §12](../PRD.md#12-non-functional-requirements) and [§18](../PRD.md#18-release-handover-and-support), all
+[PRD §12](../PRD.md#12-non-functional-requirements) and [§18](../PRD.md#18-release-and-handover-outcomes), all
 [§14 acceptance checks](../PRD.md#14-acceptance-criteria), and the QA/operations release checklists to tasks and evidence.
 
 Coverage: 55 NFR bullets, 22 release/handover/support bullets, 69 existing AC checks, 28 QA/operations checklist items

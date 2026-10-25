@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 22 October 2026
+**Updated:** 23 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -38,14 +38,14 @@ This document defines the implementation sequence, dependencies, work packages, 
 
 ### 1.1 Purpose
 
-Turn the approved product, architecture, and design baselines into an executable development sequence without changing their requirements. Organize work so that each delivered feature includes the backend behavior, affected user interfaces, integration, and verification needed to make that feature usable and safe.
+Turn the approved product, architecture, and design baselines into an executable development sequence without changing their requirements. Organize implementation by application: foundation, backend, admin, storefront, then integrated release acceptance. Product features retain their complete cross-application acceptance requirements.
 
 **Implementation objectives:**
 
 1. Deliver the PRD's initial-release functionality for guests, customers, and the single authorized administrator role.
 2. Preserve correct order, payment, stock, coupon, return, and refund behavior under retries and concurrent requests.
 3. Build the Next.js storefront, React + Vite administration portal, and modular Express API within the approved npm-workspaces monorepo.
-4. Apply the approved design system, including accessible mobile-first layouts and matching light/dark brand tokens.
+4. Apply the approved native HeroUI design system, accessible mobile-first layouts and light/dark semantic tokens.
 5. Establish repeatable tests, safe deployment procedures, monitoring, backup/recovery, and operational handover.
 6. Keep every functional requirement and important non-functional requirement traceable to a phase and test evidence.
 
@@ -80,7 +80,7 @@ This version defines the development baseline. Execute the roadmap through the s
 
 1. **Backend authority.** Only Express domain services may confirm customer access, final prices, discounts, delivery charges, stock, order transitions, payment collection, or refunds.
 2. **One business backend.** The storefront and admin portal are separate presentations over the same `/api/v1` API. Next.js server rendering is not a second commerce backend.
-3. **Small, verifiable increments.** Deliver complete vertical slices with tests and relevant UI states rather than building every API before integrating any page.
+3. **Small, verifiable increments.** Complete cohesive work packages within the active application stage. Backend packages include the APIs needed by both clients; UI integration follows in the admin and storefront stages.
 4. **Dependencies before features.** Create shared foundations only where required by a dependent workflow; avoid speculative abstraction and unnecessary infrastructure.
 5. **Financial and inventory integrity.** Use integer poisha for money, immutable order snapshots, indexed identities, guarded transitions, atomic writes, and transactions when multiple records must change together.
 6. **Safe retries and uncertainty.** Duplicate checkout submissions, callbacks, refund attempts, and job runs must not repeat effects. Timeouts do not establish financial failure.
@@ -97,17 +97,35 @@ This version defines the development baseline. Execute the roadmap through the s
 
 ### 3.1 Delivery model
 
-Use dependency-driven, incremental delivery through the twelve phases owned by this plan and constrained by PRD product acceptance. A phase is an organizing milestone, not a rule that every task must run sequentially. Independent UI, API, test, and environment activities may proceed in parallel when their contracts and prerequisites are established. Do not begin a state-changing financial integration before its invariants and authoritative data structures exist.
+Execute in this order: **project foundation → backend → admin → storefront → integrated acceptance, deployment and handover**. Complete and independently review each application stage before beginning the next. Existing accepted implementation and evidence remain valid for their recorded scope/revision; sequence changes do not require repeating accepted refactors.
 
-A normal vertical slice follows:
+| Stage              | Work and exit requirements                                                                                                                                                                                                                                |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Foundation         | Reconcile specifications and task dependencies; establish application-specific development/CI scopes, executable API contract ownership, automatic OpenAPI/Postman generation and readiness records. Verify actual tooling before declaring it available. |
+| Backend            | Complete customer and admin APIs, persistence, domain services, providers, jobs and operational interfaces in dependency order; consolidate backend verification and independent review.                                                                  |
+| Admin              | Implement all management workflows against the real backend; verify admin routes, mutations, accessibility and both themes.                                                                                                                               |
+| Storefront         | Complete browsing, shopping, checkout, account, guest and after-sales workflows against the backend; verify public/private rendering and customer journeys.                                                                                               |
+| Integrated release | Verify cross-application flows, required providers, security, recovery, performance, staging and production gates; complete handover.                                                                                                                     |
 
-`Confirm requirements → Define data/API contract → Implement domain rules → Implement required UI → Add tests → Verify acceptance → Record evidence`
+The executable closeouts are P01-024 (foundation), P03-022 (backend), P09-010 (admin) and P02-017
+(storefront). Tasks records their dependencies and acceptance. P01-022 supplies scoped development/CI;
+P01-023 supplies generated API artifacts. These are planned deliverables until their own evidence and
+acceptance are recorded. The original domain milestones M1–M8 remain aggregate product/release gates.
 
-For higher-risk work, write state-transition and concurrency tests before enabling the corresponding mutation in an integrated environment. Keep external calls outside database transactions.
+Within backend, implement identity/security → catalog/media/inventory management APIs → store settings/delivery → cart/pricing/promotions → orders/checkout/COD → payments → returns/refunds → qualified reviews/support/reporting, adding notifications, audit and jobs with their owning workflows. Provision staging/provider prerequisites when needed for backend acceptance.
+
+A work package follows `Confirm contracts → Implement owning application capability → Verify affected behavior → Record evidence → Independent review`. Backend implementation does not require frontend builds, browser installation or screen development. Shared contract changes require compatibility assessment; client integration is verified in its owning stage. Keep existing public contracts compatible unless an explicit contract change is approved.
+
+External prerequisites remain real gates. Continue safe work within the stage while blocked; do not declare the backend fully accepted or silently advance to admin when required backend acceptance remains blocked. For high-risk mutations, write state-transition/concurrency tests before integrated activation and keep external calls outside database transactions.
 
 ### 3.2 Standard phase format
 
 Each phase in §6 identifies its objective, prerequisite, implementation work, verification, deliverables, and exit gate. Backend, storefront, and administration work appear only when relevant. Cross-cutting standards in §§9–12 apply to every phase and should not be implemented a second time as separate competing features.
+
+Before closing an application stage or integrated product phase, its final unfinished task coordinates the appropriately scoped regression and exit-gate
+evidence defined in [Testing §15.5](./TESTING.md#155-change-based-local-verification). Earlier tasks run
+focused checks as they deliver changes; phase closeout does not defer their required safety tests or
+replace independent task/milestone acceptance.
 
 ### 3.3 Feature-level definition of done
 
@@ -115,7 +133,7 @@ An implementation work package is done when all applicable conditions are met:
 
 - The intended PRD behavior and out-of-scope boundaries are satisfied.
 - Relevant domain and API behavior uses the approved module ownership, validation, error conventions, and authorization.
-- Affected storefront/admin pages work with the actual API and include usable pending, error, empty, disabled, and successful states.
+- For admin/storefront packages, affected pages work with the actual API and include usable pending, error, empty, disabled, and successful states. Backend packages prove their API/domain behavior without requiring screens; the aggregate feature retains its later integrated UI acceptance.
 - Financial/inventory mutations are idempotent and concurrency-safe where required; failure and recovery paths are covered.
 - Tests run successfully at the appropriate unit, integration, contract, and end-to-end levels.
 - Responsive, keyboard, focus, contrast, and light/dark behavior meet the design specification where UI is involved.
@@ -126,7 +144,7 @@ A mock-only page, a passing happy path without required failure handling, or a b
 
 ### 3.4 Task decomposition contract
 
-Convert approved work packages into `TASKS.md` entries with a stable ID, short outcome, source requirement, phase, prerequisites, affected application/module, acceptance checks, verification evidence, and status. Optional fields are owner and blocker. Do not repeat large PRD, design, or architecture sections inside each task. Update dependencies when a design or operational decision changes; do not declare unfinished work complete to preserve an estimated schedule.
+Convert approved work packages into `TASKS.md` entries with a stable ID, short outcome, source requirement, phase, prerequisites, affected application/module, acceptance checks, verification evidence, and status. Every unfinished task records its execution stage. Optional fields are owner and blocker. Do not repeat large PRD, design, or architecture sections inside each task. Update dependencies when a design or operational decision changes; do not declare unfinished work complete to preserve an estimated schedule. Mixed tasks retain the original aggregate ID/acceptance and depend on explicit backend or admin prerequisite tasks in the register. Client UI is not a backend prerequisite. Domain phase headings classify requirements; stage metadata and dependencies determine execution order.
 
 ### 3.5 Timeline and estimation
 
@@ -137,27 +155,16 @@ Do not assign arbitrary completion dates. Estimate work after evaluating develop
 Refactor one application at a time to the approved feature-based structure. [Architecture §§4–6](./ARCHITECTURE.md#4-project-structure) define target
 trees/naming/ownership. The task register records migration progress and acceptance; prior refactor evidence does not establish parity for a subsequent source move.
 
-| Order | Task | Outcome / prerequisite |
-| --- | --- | --- |
-| 1 | P01-018 | Reconcile target organization, contracts, agent rules and documentation; independent review |
-| 2 | P03-021 | Backend refactor and executable boundary/tool/test parity; depends on P01-018 |
-| 3 | P02-015 | Storefront refactor, URL/cache/HeroUI/browser parity; depends on P03-021 |
-| 4 | P02-016 | Admin refactor, router/session/forms/browser parity; depends on P02-015 |
-| 5 | P01-019 | Monorepo tooling, browser discovery and locked setup parity for the frontend batch |
+P01-018, P03-021, P02-015, P02-016 and P01-019 retain their historical refactor order and acceptance in Tasks/evidence. Ongoing work follows §3.1: foundation → backend → admin → storefront. Make source moves only when a concrete ownership or maintainability issue requires them; preserve compatible imports, tooling and behavior. Do not create empty planned modules or repeat completed migrations.
 
-Do not begin source moves as part of P01-018. Normally complete and review each application before the next.
-For an explicitly owner-requested combined batch, verify each app before moving to the next and collect separate
-task acceptances in the final review; milestone and external gates remain independent. Within an application use small verified slices, not one bulk destructive
-rename. Feature work must follow the target conventions and preserve security/financial invariants.
-
-| Area | Required organization / continuity |
-| --- | --- |
-| Backend runtime | setup.ts/routes.ts with cross-domain wiring at root; config/env.ts and config/database.ts |
-| Backend technical code | One shared/ boundary for errors, logging, middleware and database mechanics |
-| Backend providers/operator tools | providers/ client/schema pairs; scripts/ Node entry points with existing input/environment restrictions |
-| Backend domains | Auth subfeatures, catalog products/variants/categories, cohesive media services; one model registration per collection |
-| Storefront | Target route/feature/transport tree; account group adds no URL segment; migrate browser discovery together |
-| Admin | Target router/guard/feature tree; backend auth remains mandatory |
+| Area                             | Required organization / continuity                                                                                     |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Backend runtime                  | setup.ts/routes.ts with cross-domain wiring at root; config/env.ts and config/database.ts                              |
+| Backend technical code           | One shared/ boundary for errors, logging, middleware and database mechanics                                            |
+| Backend providers/operator tools | providers/ client/schema pairs; scripts/ Node entry points with existing input/environment restrictions                |
+| Backend domains                  | Auth subfeatures, catalog products/variants/categories, cohesive media services; one model registration per collection |
+| Storefront                       | Target route/feature/transport tree; account group adds no URL segment; migrate browser discovery together             |
+| Admin                            | Target router/guard/feature tree; backend auth remains mandatory                                                       |
 
 Current implementation and acceptance are recorded by the corresponding task; this table defines ownership,
 not a second progress register. Unimplemented domains do not need empty folders or templates.
@@ -190,7 +197,7 @@ Before feature work, confirm that the current PRD, architecture, and design revi
 
 ### 4.2 Repository and application setup
 
-Create the repository layout defined in Architecture §4. Establish the minimal npm-workspaces shell in Phase 01, initialize the two frontend application shells in Phase 02, and complete the backend application/tooling foundation in Phase 03; these activities are not deferred until Phase 04:
+Architecture §4 owns the repository layout. The workspace and application foundations established under Phases 01–03 are retained; the foundation stage reconciles their actual commands, boundaries and readiness through P01-024. Inspect existing implementation before adding setup or scaffolding:
 
 ```text
 sportzone/
@@ -215,7 +222,9 @@ sportzone/
 └── package.json         # npm workspaces
 ```
 
-Use supported mutually compatible package versions and commit the lockfile. Configure workspace scripts for development, linting, type checking, testing, and independent application builds. Install code-formatting and lint rules appropriate to each application. Add a CI baseline that fails on broken types, tests, lint, or builds; expand its coverage as features arrive. Verify `AGENTS.md` during Phase 01 with source-document precedence, scope constraints, task/evidence conventions, and required verification; keep it aligned with this plan and `TASKS.md`.
+Retain supported mutually compatible package versions and the committed lockfile. Workspace development, lint, type-check, test and build commands must work independently. Reconcile existing tooling through P01-022 so backend-private work runs without starting frontends or installing browsers. Keep applicable failures blocking and retain full integrated/release verification under Testing §15. Confirm executable support before documenting a command as available.
+
+Foundation includes scoped development/CI tooling and the automatic API artifacts defined in API §18.3. These capabilities require implementation evidence; specification changes do not establish tool availability.
 
 Frontend applications must not import Mongoose models or backend runtime services. A shared pure contract package is optional only if verified duplication justifies it; a shared UI component library is not required.
 
@@ -230,16 +239,16 @@ Frontend applications must not import Mongoose models or backend runtime service
 
 ### 4.4 Integration and operator readiness register
 
-| Dependency | Earliest required action | Acceptance dependency |
-| --- | --- | --- |
-| SSLCOMMERZ | Confirm merchant onboarding, sandbox access, activated channels, limits, validation and refund capabilities | Sandbox payment/refund evidence in Phases 07–08; live activation in Phase 11 |
-| MongoDB | Select transaction-capable deployment and backup/restore method | Inventory/checkout concurrency tests and production release |
-| Cloudinary | Confirm account, allowed uploads, credentials, and image policy | Product media implementation in Phase 04 |
-| Transactional email | Approve sender/service and test delivery | Recovery, guest access, order events; production sender readiness |
-| Catalog assets | Obtain approved products, variants, prices, images, categories, stock | Realistic catalog and production launch |
-| Store configuration | Confirm delivery zones/charges, contact, fulfillment process, policy content | Checkout, support, operational acceptance |
-| Hosting and DNS | Confirm origin/domain plan supporting API sessions and Next.js runtime | Staging integration and Phase 11 launch |
-| Consumer/legal policy review | Verify applicable delivery, complaint, cancellation, return, refund, and privacy requirements against current authority | Public policy publication and production acceptance |
+| Dependency                   | Earliest required action                                                                                                | Acceptance dependency                                                        |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| SSLCOMMERZ                   | Confirm merchant onboarding, sandbox access, activated channels, limits, validation and refund capabilities             | Sandbox payment/refund evidence in Phases 07–08; live activation in Phase 11 |
+| MongoDB                      | Select transaction-capable deployment and backup/restore method                                                         | Inventory/checkout concurrency tests and production release                  |
+| Cloudinary                   | Confirm account, allowed uploads, credentials, and image policy                                                         | Product media implementation in Phase 04                                     |
+| Transactional email          | Approve sender/service and test delivery                                                                                | Recovery, guest access, order events; production sender readiness            |
+| Catalog assets               | Obtain approved products, variants, prices, images, categories, stock                                                   | Realistic catalog and production launch                                      |
+| Store configuration          | Confirm delivery zones/charges, contact, fulfillment process, policy content                                            | Checkout, support, operational acceptance                                    |
+| Hosting and DNS              | Confirm origin/domain plan supporting API sessions and Next.js runtime                                                  | Staging integration and Phase 11 launch                                      |
+| Consumer/legal policy review | Verify applicable delivery, complaint, cancellation, return, refund, and privacy requirements against current authority | Public policy publication and production acceptance                          |
 
 **External dependency status must not be inferred from a vendor name in the PRD.** For example, bKash, Nagad, and Rocket must not be presented as enabled checkout options until they are actually activated for the merchant. Specific legal deadlines and provider support must be validated before launch; the implementation plan does not independently certify their current validity.
 
@@ -251,24 +260,24 @@ Use the native HeroUI semantic tokens, system typography and app-owned theme/con
 
 ## 5. Implementation roadmap
 
-This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencing to this plan. Detailed delivery requirements are in §6; a dependency may be built earlier as a foundation and fully integrated in its designated feature phase.
+The twelve phase labels below classify requirement ownership and preserve existing task IDs. Execution follows the application stages in §3.1, not table row order. Read §6 as domain work packages: backend portions first, admin portions next, storefront portions next, then aggregate verification. Phase acceptance remains subject to all of its original requirements.
 
-| Phase | Scope | Principal dependency | Phase outcome |
-| --- | --- | --- | --- |
-| 01 — Requirements Finalization and Planning | Baseline review, decisions, readiness register | Approved source documents | Controlled implementation baseline |
-| 02 — UI/UX Design | Convert existing design specification into reusable UI foundations | Design baseline, repository | Tested interface foundation |
-| 03 — Authentication and Core Backend | Backend API, persistence, security, customer/admin identity | Transaction-capable DB and local setup | Working, protected applications/API |
-| 04 — Product Catalog and Inventory | Categories, variants, media, catalog discovery, stock accounting | Backend, admin session, UI foundation | Admin-managed, browsable catalog |
-| 05 — Cart, Wishlist, Coupons, and Reviews | Shopping state, discount rules, coupon allocation foundation, review foundations | Catalog, customer identity | Usable pre-checkout shopping features |
-| 06 — Checkout, Orders, and Delivery Rules | Server totals, delivery config, COD, order lifecycle, guest lookup, hold foundation | Catalog, inventory, promotions, identity | Verified COD journey and payment-ready checkout |
-| 07 — Payment Integration and Verification | Hosted payments, independent verification, retries, reconciliation | Checkout intents, reservation/coupon holds | Verified online collection and allocation |
-| 08 — Returns and Refunds | Cancellation financial resolution, returns, inspection, gateway/manual refund handling | Orders, collections, snapshots | Safe post-purchase workflows |
-| 09 — Admin Management and Reports | Remaining management workflows, reporting, operational oversight | Feature-level admin screens and financial history | Complete administration capability |
-| 10 — Testing, Security Review, and Bug Fixing | Full regression, concurrency, accessibility, performance, recovery | Integrated feature coverage | Evidence-backed release candidate |
-| 11 — Deployment and Production Verification | Staging-to-production release, live configuration, smoke tests | Acceptance gates and operator approvals | Approved, monitored production release |
-| 12 — Documentation and Handover | Source, operations, configuration, runbooks, limitations | Verified production implementation | Accepted handover |
+| Phase                                         | Scope                                                                                  | Principal dependency                                                 | Phase outcome                                   |
+| --------------------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------- |
+| 01 — Requirements Finalization and Planning   | Baseline review, decisions, readiness register                                         | Approved source documents                                            | Controlled implementation baseline              |
+| 02 — UI/UX Design                             | Convert existing design specification into reusable UI foundations                     | Design baseline, repository                                          | Tested interface foundation                     |
+| 03 — Authentication and Core Backend          | Backend API, persistence, security, customer/admin identity                            | Transaction-capable DB and local setup                               | Working, protected applications/API             |
+| 04 — Product Catalog and Inventory            | Categories, variants, media, catalog discovery, stock accounting                       | Backend, admin session, UI foundation                                | Admin-managed, browsable catalog                |
+| 05 — Cart, Wishlist, Coupons, and Reviews     | Shopping state, discount rules, coupon allocation foundation, review foundations       | Catalog, customer identity                                           | Usable pre-checkout shopping features           |
+| 06 — Checkout, Orders, and Delivery Rules     | Server totals, delivery config, COD, order lifecycle, guest lookup, hold foundation    | Catalog, inventory, promotions, identity                             | Verified COD journey and payment-ready checkout |
+| 07 — Payment Integration and Verification     | Hosted payments, independent verification, retries, reconciliation                     | Checkout intents, reservation/coupon holds                           | Verified online collection and allocation       |
+| 08 — Returns and Refunds                      | Cancellation financial resolution, returns, inspection, gateway/manual refund handling | Orders, collections, snapshots                                       | Safe post-purchase workflows                    |
+| 09 — Admin Management and Reports             | Management APIs, screens, reporting and operational oversight                          | Domain APIs and financial history; backend acceptance before screens | Complete administration capability              |
+| 10 — Testing, Security Review, and Bug Fixing | Full regression, concurrency, accessibility, performance, recovery                     | Integrated feature coverage                                          | Evidence-backed release candidate               |
+| 11 — Deployment and Production Verification   | Staging-to-production release, live configuration, smoke tests                         | Acceptance gates and operator approvals                              | Approved, monitored production release          |
+| 12 — Documentation and Handover               | Source, operations, configuration, runbooks, limitations                               | Verified production implementation                                   | Accepted handover                               |
 
-**Execution rule:** Phase 09 does not defer the admin screens required to create products, manage stock, configure delivery charges, approve refunds, or perform other earlier workflows. Those screens are implemented with their dependent domain slices. Likewise, testing and operational preparation begin before Phases 10–11.
+**Execution rule:** Build every required management/customer backend capability during the backend stage, including capabilities grouped under later domain phases. Implement management screens during admin and customer screens during storefront. Split mixed tasks before execution; do not waive their aggregate acceptance.
 
 ---
 
@@ -321,7 +330,7 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 **Objective:** Establish the modular Express API and secure identity foundation used by customer, admin, and later guest workflows.
 
-**Prerequisites:** Phase 01 readiness, transaction-capable development/test database, Phase 02 UI foundations where required.
+**Prerequisites:** Foundation-stage acceptance and a transaction-capable development/test database. Backend API work has no frontend UI prerequisite; client identity integration belongs to its owning application stage.
 
 **Backend work packages:**
 
@@ -344,7 +353,7 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 **Objective:** Make approved products discoverable and purchasable by SKU while establishing authoritative stock accounting.
 
-**Prerequisites:** Protected admin API, data and UI foundations; Cloudinary account, upload policy, and credential readiness confirmed or tracked as a media-acceptance blocker. Product-media integration itself is implemented in this phase.
+**Prerequisites:** Protected admin API and data foundation; client work additionally requires its owning stage and UI foundation. Cloudinary account, upload policy and credentials must be confirmed or tracked as media-acceptance blockers.
 
 **Backend work packages:**
 
@@ -466,9 +475,9 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 ### Phase 09 — Admin management and reports
 
-**Objective:** Complete cross-feature administration and reporting over already-implemented domain data; do not defer earlier workflow-critical admin screens to this phase.
+**Objective:** Complete cross-feature management APIs during backend, then implement all administration screens during admin using the domain work packages in Phases 04–08 and this phase.
 
-**Prerequisites:** Catalog, checkout, payment, returns/refunds, and administrative access working through real APIs.
+**Prerequisites:** Backend management/reporting packages require their domain data and administrative authorization. Screen implementation requires accepted backend closeout P03-022; admin closeout is P09-010. Integrated staging deployment follows storefront closeout P02-017.
 
 **Work packages:**
 
@@ -486,7 +495,7 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 **Deliverable:** Integrated store-management portal and basic reporting capability.
 
-**Exit gate:** All required administration tasks in the PRD can be completed using authorized screens and verified backend outcomes; the integrated staging deployment is available for Phase 10 acceptance.
+**Exit gate:** P09-010 confirms all required administration tasks can be completed using authorized screens and verified backend outcomes. P09-011/P09-012 separately provide integrated staging for Phase 10 after storefront acceptance; earlier isolated infrastructure/provider provisioning may support backend verification.
 
 ### Phase 10 — Testing, security review, and bug fixing
 
@@ -561,24 +570,24 @@ This roadmap owns the twelve phase labels; PRD §15 delegates delivery sequencin
 
 ### 7.1 Primary implementation dependencies
 
-| Capability | Must exist first | Dependent work / prohibition |
-| --- | --- | --- |
-| Authenticated customer/admin actions | Sessions, CSRF, roles, ownership rules | Account/cart/admin mutations; a route guard alone is insufficient |
-| Product purchasing | Catalog, active SKU, prices, authoritative available stock | Cart and order lines must reference valid purchasable variants |
-| Coupon redemption | Coupon rules, eligible subtotal, atomic usage-capacity controls | Final discounts cannot depend on client totals |
-| COD checkout | Server quote, stock commitment, coupon redemption, delivery settings, idempotency | No accepted order without an atomic allocation and immutable snapshot |
-| Online checkout | Order intent, stock/coupon holds, payment-attempt identities | No provider redirect without persisted operation identity |
-| Payment fulfillment | Independently verified collection plus eligible stock/coupon allocation and risk decision | Paid does not always mean ready to fulfill |
-| Verified review | Qualifying delivered purchase, account ownership, moderation | Form must not issue verified-purchase claims earlier |
-| Customer return | Delivered eligible order/item quantities, approved policy and time window | No duplicate claims or inspection bypass |
-| Refund payout | Verified collected amount, original order snapshot, eligible approved obligation | No payout amount based on current product price or uncollected COD |
-| Production release | Acceptance tests, live activation, policies, monitoring, backup/restore, operator readiness | No unverified gateway channel or unsupported policy promise |
+| Capability                           | Must exist first                                                                            | Dependent work / prohibition                                          |
+| ------------------------------------ | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Authenticated customer/admin actions | Sessions, CSRF, roles, ownership rules                                                      | Account/cart/admin mutations; a route guard alone is insufficient     |
+| Product purchasing                   | Catalog, active SKU, prices, authoritative available stock                                  | Cart and order lines must reference valid purchasable variants        |
+| Coupon redemption                    | Coupon rules, eligible subtotal, atomic usage-capacity controls                             | Final discounts cannot depend on client totals                        |
+| COD checkout                         | Server quote, stock commitment, coupon redemption, delivery settings, idempotency           | No accepted order without an atomic allocation and immutable snapshot |
+| Online checkout                      | Order intent, stock/coupon holds, payment-attempt identities                                | No provider redirect without persisted operation identity             |
+| Payment fulfillment                  | Independently verified collection plus eligible stock/coupon allocation and risk decision   | Paid does not always mean ready to fulfill                            |
+| Verified review                      | Qualifying delivered purchase, account ownership, moderation                                | Form must not issue verified-purchase claims earlier                  |
+| Customer return                      | Delivered eligible order/item quantities, approved policy and time window                   | No duplicate claims or inspection bypass                              |
+| Refund payout                        | Verified collected amount, original order snapshot, eligible approved obligation            | No payout amount based on current product price or uncollected COD    |
+| Production release                   | Acceptance tests, live activation, policies, monitoring, backup/restore, operator readiness | No unverified gateway channel or unsupported policy promise           |
 
 ### 7.2 Critical commerce path
 
 `Foundation → Identity/Admin Access → Catalog/Variant/Stock → Cart/Pricing/Coupon → Delivery/Checkout Intent → COD + Online Hold Foundation → Verified Payments → Returns/Refunds → Integrated Acceptance → Production`
 
-Parallel work includes admin UI for each domain, storefront presentation, notification templates, support processes, test automation, infrastructure configuration, accessibility, and operational documentation. Parallel activity must not bypass dependencies in the table.
+Independent work may proceed within the active application stage once prerequisites exist. UI implementation follows the application order in §3.1. Supporting infrastructure, contracts and provider readiness are prepared when the active stage needs them.
 
 ### 7.3 Dependency and blocker rules
 
@@ -595,61 +604,61 @@ Parallel work includes admin UI for each domain, storefront presentation, notifi
 
 **Primary phase** identifies the main implementation location; **completion dependency** identifies later integration or verification when required. Phase references do not imply the requirement is complete merely because the named phase begins.
 
-| PRD requirement | Primary phase | Completion/verification dependency |
-| --- | --- | --- |
-| FR-01 Customer Authentication | 03 | Recovery, sessions, suspension, rate limits, integration tests |
-| FR-02 Customer Profile Management | 03 | Profile, addresses, verified email change, ownership, order snapshots |
-| FR-03 Homepage | 04 | Approved banner, featured/new/discounted products, categories, search, account/cart/wishlist indicators, support/complaints contact, footer policy links, responsive/empty states |
-| FR-04 Product Catalog | 04 | Search/filter/sort/pagination, active visibility, SEO |
-| FR-05 Product Details | 04 | Images, variant state, availability, review visibility |
-| FR-06 Product Variants | 04 | SKU uniqueness, price/stock, order-line snapshot in 06 |
-| FR-07 Shopping Cart | 05 | Guest persistence, merge, revalidation at checkout in 06 |
-| FR-08 Wishlist | 05 | Authentication, unique items, persistent state |
-| FR-09 Discounts and Coupons | 05 | Capacity holds/commit/release with checkout in 06–07 |
-| FR-10 Reviews and Ratings | 05 | Delivered-purchase and refund qualification in 08, admin moderation in 09 |
-| FR-11 Checkout | 06 | COD E2E in 06, hosted gateway completion in 07 |
-| FR-12 Payment System | 07 | SSLCOMMERZ sandbox/live activation, IPN/status verification, retries |
-| FR-13 Inventory Reservation and Stock | 04 | Online holds/commit/release 06–07, shipment 06, inspected return 08 |
-| FR-14 Customer Order Management | 06 | Lifecycle, separate payment state, refund links in 08 |
-| FR-15 Order Cancellation | 06 | Stock/coupon release in 06, paid cancellation refund in 08 |
-| FR-16 Delivery Management | 06 | Zone/charge, manual fulfillment, exceptions and legal check before 11 |
-| FR-17 Return Management | 08 | Delivered eligibility, receipt/inspection, admin resolution |
-| FR-18 Refund Management | 08 | Full/partial calculation, verified payouts, retries and audit |
-| FR-19 Guest Order Access | 06 | Single-use email proof, scoped actions, cancellation/return/refund links through 08 |
-| FR-20 Notifications | 03, 06–08 | Registration/recovery, order/cancellation/shipment/delivery, payment success/failure, return/refund events; delivery retry and deduplication verified in 10 |
-| FR-21 Admin Authentication | 03 | Secure provisioning, separate sessions, protected mutations |
-| FR-22 Admin Dashboard | 09 | Correct COD/paid/refund metrics and cross-domain queries |
-| FR-23 Product Management — Admin | 04 | Media, variants, visibility, catalog changes |
-| FR-24 Category Management — Admin | 04 | Hierarchy, activity, guarded deletion/reassignment |
-| FR-25 Inventory Management — Admin | 04 | Adjustments, movements, reserved/committed view, restock in 08 |
-| FR-26 Order Management — Admin | 06 | Fulfillment, COD, delivery exceptions, complaint/refund links |
-| FR-27 Customer Management — Admin | 09 | Search/history, suspension, limited sensitive data |
-| FR-28 Delivery Charge Management — Admin | 06 | Zones, charges, inactive coverage, future-only edits |
-| FR-29 Payment Management — Admin | 07 | Attempt history, collection, reconciliation, COD record in 06 |
-| FR-30 Coupon Management — Admin | 05 | Rules, limits, activation, redemption history |
-| FR-31 Review Management — Admin | 05, 09 | Moderation and verified-purchase eligibility after order integration |
-| FR-32 Return Management — Admin | 08 | Eligibility, receipt, inspection, restock/refund authorization |
-| FR-33 Refund Management — Admin | 08 | Balances, full/partial payouts, attempt verification, failure resolution |
-| FR-34 Store Settings — Admin | 09 | Approved policies, branding, contact, threshold, operational configuration |
+| PRD requirement                          | Primary phase | Completion/verification dependency                                                                                                                                                |
+| ---------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-01 Customer Authentication            | 03            | Recovery, sessions, suspension, rate limits, integration tests                                                                                                                    |
+| FR-02 Customer Profile Management        | 03            | Profile, addresses, verified email change, ownership, order snapshots                                                                                                             |
+| FR-03 Homepage                           | 04            | Approved banner, featured/new/discounted products, categories, search, account/cart/wishlist indicators, support/complaints contact, footer policy links, responsive/empty states |
+| FR-04 Product Catalog                    | 04            | Search/filter/sort/pagination, active visibility, SEO                                                                                                                             |
+| FR-05 Product Details                    | 04            | Images, variant state, availability, review visibility                                                                                                                            |
+| FR-06 Product Variants                   | 04            | SKU uniqueness, price/stock, order-line snapshot in 06                                                                                                                            |
+| FR-07 Shopping Cart                      | 05            | Guest persistence, merge, revalidation at checkout in 06                                                                                                                          |
+| FR-08 Wishlist                           | 05            | Authentication, unique items, persistent state                                                                                                                                    |
+| FR-09 Discounts and Coupons              | 05            | Capacity holds/commit/release with checkout in 06–07                                                                                                                              |
+| FR-10 Reviews and Ratings                | 05            | Delivered-purchase and refund qualification in 08, admin moderation in 09                                                                                                         |
+| FR-11 Checkout                           | 06            | COD E2E in 06, hosted gateway completion in 07                                                                                                                                    |
+| FR-12 Payment System                     | 07            | SSLCOMMERZ sandbox/live activation, IPN/status verification, retries                                                                                                              |
+| FR-13 Inventory Reservation and Stock    | 04            | Online holds/commit/release 06–07, shipment 06, inspected return 08                                                                                                               |
+| FR-14 Customer Order Management          | 06            | Lifecycle, separate payment state, refund links in 08                                                                                                                             |
+| FR-15 Order Cancellation                 | 06            | Stock/coupon release in 06, paid cancellation refund in 08                                                                                                                        |
+| FR-16 Delivery Management                | 06            | Zone/charge, manual fulfillment, exceptions and legal check before 11                                                                                                             |
+| FR-17 Return Management                  | 08            | Delivered eligibility, receipt/inspection, admin resolution                                                                                                                       |
+| FR-18 Refund Management                  | 08            | Full/partial calculation, verified payouts, retries and audit                                                                                                                     |
+| FR-19 Guest Order Access                 | 06            | Single-use email proof, scoped actions, cancellation/return/refund links through 08                                                                                               |
+| FR-20 Notifications                      | 03, 06–08     | Registration/recovery, order/cancellation/shipment/delivery, payment success/failure, return/refund events; delivery retry and deduplication verified in 10                       |
+| FR-21 Admin Authentication               | 03            | Secure provisioning, separate sessions, protected mutations                                                                                                                       |
+| FR-22 Admin Dashboard                    | 09            | Correct COD/paid/refund metrics and cross-domain queries                                                                                                                          |
+| FR-23 Product Management — Admin         | 04            | Media, variants, visibility, catalog changes                                                                                                                                      |
+| FR-24 Category Management — Admin        | 04            | Hierarchy, activity, guarded deletion/reassignment                                                                                                                                |
+| FR-25 Inventory Management — Admin       | 04            | Adjustments, movements, reserved/committed view, restock in 08                                                                                                                    |
+| FR-26 Order Management — Admin           | 06            | Fulfillment, COD, delivery exceptions, complaint/refund links                                                                                                                     |
+| FR-27 Customer Management — Admin        | 09            | Search/history, suspension, limited sensitive data                                                                                                                                |
+| FR-28 Delivery Charge Management — Admin | 06            | Zones, charges, inactive coverage, future-only edits                                                                                                                              |
+| FR-29 Payment Management — Admin         | 07            | Attempt history, collection, reconciliation, COD record in 06                                                                                                                     |
+| FR-30 Coupon Management — Admin          | 05            | Rules, limits, activation, redemption history                                                                                                                                     |
+| FR-31 Review Management — Admin          | 05, 09        | Moderation and verified-purchase eligibility after order integration                                                                                                              |
+| FR-32 Return Management — Admin          | 08            | Eligibility, receipt, inspection, restock/refund authorization                                                                                                                    |
+| FR-33 Refund Management — Admin          | 08            | Balances, full/partial payouts, attempt verification, failure resolution                                                                                                          |
+| FR-34 Store Settings — Admin             | 09            | Approved policies, branding, contact, threshold, operational configuration                                                                                                        |
 
 ### 8.2 Interface and workflow coverage
 
-- **Storefront:** Home, Products, Category, Product Details, Cart, Wishlist, account/authentication, Profile, Addresses, My Orders/Order Details, Reviews, Checkout, Payment Result, Order Confirmation, Guest Order Lookup, Returns, Refund Details, Contact, and policy/help pages are implemented in the phases supporting their corresponding behavior.
+- **Storefront:** Home, Products, Category, Product Details, Cart, Wishlist, account/authentication, Profile, Addresses, My Orders/Order Details, Reviews, Checkout, Payment Result, Order Confirmation, Guest Order Lookup, Returns, Refund Details, Contact, and policy/help pages are implemented during the storefront stage using the corresponding domain contracts.
 - **Admin:** Login, Dashboard, Products/Add/Edit, Categories, Inventory, Orders/Details, Customers, Delivery Settings, Payments, Coupons, Reviews, Returns, Refunds, Reports, and Store Settings must exist where required by the design. Complaints may be managed within customer/order context rather than a separate page.
 - **Critical flows:** Registration/recovery, browse-to-cart, COD, hosted online payment, missing/duplicate IPN, guest access, fulfillment, failed delivery, cancellation, return, refund, review moderation, and administrative exception handling require linked E2E or integration evidence.
 
 ### 8.3 Non-functional and release coverage
 
-| Requirement area | Ongoing implementation | Release evidence |
-| --- | --- | --- |
-| Security/privacy | Session/CSRF/CORS/ownership, rate limits, upload safety, secrets, protected logs | Security regression and unauthorized-access tests |
-| Data integrity/reliability | Indexes, transaction/conditional writes, idempotency, durable jobs | Concurrency, recovery, duplicate-operation tests |
-| Performance | Indexed and paginated queries, image optimization, controlled public caching | Representative catalog/checkout performance checks |
-| Responsive/accessibility | Mobile-first components, keyboard flows, theme parity | WCAG 2.2 AA-targeted manual and automated checks in both themes |
-| Browser compatibility | Framework-compatible controls and responsive layouts | Current stable Chrome, Firefox, Edge, Brave, Safari testing |
-| Availability/operations | Logs, monitoring, backup, alerts, job visibility | Staging/production health and restoration evidence |
-| Payments/refunds | Provider verification, financial snapshotting, attempt history | Sandbox tests and approved live-channel verification |
-| Consumer operations | Delivery/deadline tracking, complaints, approved return/refund policies | Store-owner/legal readiness approval before publishing |
+| Requirement area           | Ongoing implementation                                                           | Release evidence                                                |
+| -------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Security/privacy           | Session/CSRF/CORS/ownership, rate limits, upload safety, secrets, protected logs | Security regression and unauthorized-access tests               |
+| Data integrity/reliability | Indexes, transaction/conditional writes, idempotency, durable jobs               | Concurrency, recovery, duplicate-operation tests                |
+| Performance                | Indexed and paginated queries, image optimization, controlled public caching     | Representative catalog/checkout performance checks              |
+| Responsive/accessibility   | Mobile-first components, keyboard flows, theme parity                            | WCAG 2.2 AA-targeted manual and automated checks in both themes |
+| Browser compatibility      | Framework-compatible controls and responsive layouts                             | Current stable Chrome, Firefox, Edge, Brave, Safari testing     |
+| Availability/operations    | Logs, monitoring, backup, alerts, job visibility                                 | Staging/production health and restoration evidence              |
+| Payments/refunds           | Provider verification, financial snapshotting, attempt history                   | Sandbox tests and approved live-channel verification            |
+| Consumer operations        | Delivery/deadline tracking, complaints, approved return/refund policies          | Store-owner/legal readiness approval before publishing          |
 
 Acceptance criteria remain the full set in PRD §14. This matrix is an index, not a replacement for those checklists. PRD success metrics in §16 are tracked after sufficient operational data exists; this plan does not invent numeric targets.
 
@@ -675,12 +684,12 @@ For proof-email delivery, follow API §16.3: a challenge-local authenticated enc
 
 For important state-change notifications, persist delivery intent durably with the originating business transition where needed; dispatch email separately and retry without replaying that business transition. Delivery failures remain visible and do not reverse successfully committed orders or refunds.
 
-| PRD FR-20 notification event | Implementation phase | Required verification |
-| --- | --- | --- |
-| Registration and password reset | 03 | Approved sender, safe recovery links, delivery/failure handling |
-| Order confirmation, cancellation, shipment, delivery completion | 06 | Accurate order references/statuses; retry without repeating the business transition |
-| Payment success or failure | 07 | Provider-verified status; no duplicate messages for repeated callbacks |
-| Return request update; refund approval, rejection, completion | 08 | Separate return/refund statuses and confirmed payout before completion notice |
+| PRD FR-20 notification event                                    | Implementation phase | Required verification                                                               |
+| --------------------------------------------------------------- | -------------------- | ----------------------------------------------------------------------------------- |
+| Registration and password reset                                 | 03                   | Approved sender, safe recovery links, delivery/failure handling                     |
+| Order confirmation, cancellation, shipment, delivery completion | 06                   | Accurate order references/statuses; retry without repeating the business transition |
+| Payment success or failure                                      | 07                   | Provider-verified status; no duplicate messages for repeated callbacks              |
+| Return request update; refund approval, rejection, completion   | 08                   | Separate return/refund statuses and confirmed payout before completion notice       |
 
 Phase 10 verifies event coverage, failed delivery/retries, deduplication, and customer-facing content across these phases.
 
@@ -698,16 +707,16 @@ A product created in Admin appears in public catalog only when active; changed s
 
 ### 10.1 Quality checks by layer
 
-| Layer | Required verification |
-| --- | --- |
-| Domain unit tests | Pricing/rounding, discount allocation, capacity rules, state machines, refund limits |
-| Persistence/integration | MongoDB transactions/indexes, conditional stock writes, reservations, idempotency, sessions |
-| API/contract | Validation, status codes, stable errors, ownership, pagination, provider adapter behavior |
-| Storefront/admin integration | Real API-backed forms, accessible states, routing, theme consistency |
-| End-to-end | Guest/COD, online hosted gateway in test mode, fulfillment, return/refund, admin recovery |
-| Security | Session isolation, CSRF, Origin/CORS, recovery-token abuse, guest proof, upload, privilege boundaries |
-| Reliability | Duplicate/missing callbacks, delayed jobs, restart/reconcile, backup and restore |
-| Performance/accessibility | Catalog/query performance; checkout; keyboard, screen reader, contrast, responsive reflow |
+| Layer                        | Required verification                                                                                 |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Domain unit tests            | Pricing/rounding, discount allocation, capacity rules, state machines, refund limits                  |
+| Persistence/integration      | MongoDB transactions/indexes, conditional stock writes, reservations, idempotency, sessions           |
+| API/contract                 | Validation, status codes, stable errors, ownership, pagination, provider adapter behavior             |
+| Storefront/admin integration | Real API-backed forms, accessible states, routing, theme consistency                                  |
+| End-to-end                   | Guest/COD, online hosted gateway in test mode, fulfillment, return/refund, admin recovery             |
+| Security                     | Session isolation, CSRF, Origin/CORS, recovery-token abuse, guest proof, upload, privilege boundaries |
+| Reliability                  | Duplicate/missing callbacks, delayed jobs, restart/reconcile, backup and restore                      |
+| Performance/accessibility    | Catalog/query performance; checkout; keyboard, screen reader, contrast, responsive reflow             |
 
 ### 10.2 Financial and inventory risk tests
 
@@ -727,18 +736,18 @@ Block release for a defect that can permit unauthorized access, duplicate/incorr
 
 ## 11. Milestones & acceptance gates
 
-| Milestone | Evidence required | Decision |
-| --- | --- | --- |
-| M1 — Foundation Ready | Builds/type checks, API/DB health, session separation, baseline CI and token tests | Approve feature slices |
-| M2 — Catalog Ready | Admin CRUD, unique SKU/slug, stock invariants, public search/variant flows | Approve shopping work |
-| M3 — COD Commerce Ready | Guest/customer checkout, accurate quote, duplicate safety, stock/coupon commitment, order/guest access | Approve provider integration |
-| M4 — Payment Ready | Gateway sandbox verification, IPN/retry/reconcile, late pay, risk hold, duplicate-collection evidence | Approve financial after-sales integration |
-| M5 — After-Sales Ready | Valid return/inspection, refund caps and allocation, verified gateway/manual payout, audit history | Approve final admin/report review |
-| M6 — Feature Complete / Release Candidate | FR-01–FR-34 coverage, completed required admin UI, NFR/security/accessibility/concurrency regression on staging | Approve production-candidate promotion |
-| M7 — Production Ready | Approved policies/merchant channels, HTTPS, rollback, backup/restore, monitoring, live-safe smoke checks | Authorize production launch |
-| M8 — Handover Accepted | Repository, configuration, runbooks, operator guide, ownership, support boundaries, known limitations | Close implementation |
+| Milestone                                 | Evidence required                                                                                               | Decision                                |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| M1 — Foundation Ready                     | Builds/type checks, API/DB health, session separation, baseline CI and token tests                              | Accept product foundation evidence      |
+| M2 — Catalog Ready                        | Admin CRUD, unique SKU/slug, stock invariants, public search/variant flows                                      | Accept integrated catalog evidence      |
+| M3 — COD Commerce Ready                   | Guest/customer checkout, accurate quote, duplicate safety, stock/coupon commitment, order/guest access          | Accept integrated COD commerce evidence |
+| M4 — Payment Ready                        | Gateway sandbox verification, IPN/retry/reconcile, late pay, risk hold, duplicate-collection evidence           | Accept integrated payment evidence      |
+| M5 — After-Sales Ready                    | Valid return/inspection, refund caps and allocation, verified gateway/manual payout, audit history              | Accept integrated after-sales evidence  |
+| M6 — Feature Complete / Release Candidate | FR-01–FR-34 coverage, completed required admin UI, NFR/security/accessibility/concurrency regression on staging | Approve production-candidate promotion  |
+| M7 — Production Ready                     | Approved policies/merchant channels, HTTPS, rollback, backup/restore, monitoring, live-safe smoke checks        | Authorize production launch             |
+| M8 — Handover Accepted                    | Repository, configuration, runbooks, operator guide, ownership, support boundaries, known limitations           | Close implementation                    |
 
-Engineering can proceed on independent tasks before earlier milestones are accepted. Acceptance of M2 requires M1; M3 requires M2 and shopping readiness; M4 requires M3; M5 requires M4; M6 requires M1–M5 and integrated staging; M7 requires M6; M8 requires M7 and completed handover review. These are acceptance dependencies, not a blanket prohibition on parallel development.
+Within the active application stage, engineering can proceed on independent tasks before earlier product milestones are accepted. Acceptance of M2 requires M1; M3 requires M2 and shopping readiness; M4 requires M3; M5 requires M4; M6 requires M1–M5 and integrated staging; M7 requires M6; M8 requires M7 and completed handover review. These are acceptance dependencies, not a blanket prohibition on parallel development.
 
 A milestone requires affirmative acceptance evidence. An engineering build passing CI is necessary but not sufficient for a financial or production milestone. Record test run/artifact references, environments, approver, unresolved dependencies, and release decision alongside the tasks or acceptance report.
 
@@ -752,7 +761,7 @@ Architecture §13 owns topology and environment isolation. [Operations](./OPERAT
 
 ### 12.2 Continuous integration and deployment
 
-- CI runs lint, type checking, applicable tests, and separate storefront/admin/backend builds before promotion.
+- CI selects affected application and repository checks under Testing §15. Backend-private changes require no frontend build, UI tests or browser installation. Shared changes select their affected consumers; integrated promotion verifies all applications.
 - Deployment verifies schema/index compatibility and any safe data/configuration migration before serving dependent code.
 - Provision and deploy integrated staging before Phase 10; validate deployed origins for credentialed cookies, CORS/CSRF, payment IPNs, hosted returns, guest links, and administrator sessions.
 - Production release proceeds only after explicit acceptance; record artifact/version, environment changes, secrets-rotation needs, and rollback trigger.
@@ -772,20 +781,20 @@ Confirm production administrator ownership, live merchant channel activation and
 
 ### 13.1 Risk register
 
-| Risk | Impact | Mitigation / decision gate |
-| --- | --- | --- |
-| Merchant channel or refund feature unavailable | Online method/refund cannot be accepted | Validate early; implement only activated channels; document supported manual resolution |
-| Standalone/nontransactional MongoDB setup | Race conditions cannot be safely tested or enforced | Require replica-set transactions for coupled changes; prove with integration tests |
-| Duplicate/late/out-of-order gateway events | Duplicate collection effects or incorrect fulfillment | Persist attempts, verify provider status, guard transitions, reconcile asynchronously |
-| Reservation/coupon races | Overselling or breached coupon limits | Atomic capacity checks, transaction coordination, final-unit concurrency tests |
-| Incomplete purchase-time snapshots | Incorrect returns/refunds and audit history | Immutable order/item/discount/delivery snapshots before financial acceptance |
-| Admin authorization/CSRF mistakes | Unauthorized operational or financial action | Separate sessions, per-resource checks, CSRF/Origin tests, audit logging |
-| Guest verification weakness | Customer data exposure | Expiring single-use email proof and scoped access, non-enumeration, rate limits |
-| Unapproved policy or delivery promise | Misleading user content or operational/legal risk | Store-owner approval and current law verification before publishing |
-| Missing product, support, and delivery configuration | Incomplete commerce experience | Track owner-supplied configuration as a launch prerequisite |
-| Unreliable notifications or jobs | Missed communication, unresolved attempts | Durable intents/leases, bounded retry, monitoring and operational recovery |
-| Refund uncertainty and overcommitment | Financial loss or incorrect Completed status | Reserve balance, retain attempts, verify transfer/payout before completion |
-| Production failure without recovery plan | Service or data loss | Tested backups/restoration, rollback, alerts, incident playbook |
+| Risk                                                 | Impact                                                | Mitigation / decision gate                                                              |
+| ---------------------------------------------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Merchant channel or refund feature unavailable       | Online method/refund cannot be accepted               | Validate early; implement only activated channels; document supported manual resolution |
+| Standalone/nontransactional MongoDB setup            | Race conditions cannot be safely tested or enforced   | Require replica-set transactions for coupled changes; prove with integration tests      |
+| Duplicate/late/out-of-order gateway events           | Duplicate collection effects or incorrect fulfillment | Persist attempts, verify provider status, guard transitions, reconcile asynchronously   |
+| Reservation/coupon races                             | Overselling or breached coupon limits                 | Atomic capacity checks, transaction coordination, final-unit concurrency tests          |
+| Incomplete purchase-time snapshots                   | Incorrect returns/refunds and audit history           | Immutable order/item/discount/delivery snapshots before financial acceptance            |
+| Admin authorization/CSRF mistakes                    | Unauthorized operational or financial action          | Separate sessions, per-resource checks, CSRF/Origin tests, audit logging                |
+| Guest verification weakness                          | Customer data exposure                                | Expiring single-use email proof and scoped access, non-enumeration, rate limits         |
+| Unapproved policy or delivery promise                | Misleading user content or operational/legal risk     | Store-owner approval and current law verification before publishing                     |
+| Missing product, support, and delivery configuration | Incomplete commerce experience                        | Track owner-supplied configuration as a launch prerequisite                             |
+| Unreliable notifications or jobs                     | Missed communication, unresolved attempts             | Durable intents/leases, bounded retry, monitoring and operational recovery              |
+| Refund uncertainty and overcommitment                | Financial loss or incorrect Completed status          | Reserve balance, retain attempts, verify transfer/payout before completion              |
+| Production failure without recovery plan             | Service or data loss                                  | Tested backups/restoration, rollback, alerts, incident playbook                         |
 
 ### 13.2 Change control
 

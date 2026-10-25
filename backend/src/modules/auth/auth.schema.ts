@@ -7,6 +7,7 @@ const text = (max: number) =>
     .trim()
     .min(1)
     .refine((value) => [...value].length <= max)
+    .meta({ maxLength: max })
 const email = z.string().trim().toLowerCase().pipe(z.email().max(254))
 const id = z.string().regex(/^[a-f0-9]{24}$/)
 const instant = z.iso.datetime({ offset: false })

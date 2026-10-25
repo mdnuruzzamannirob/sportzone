@@ -1,3 +1,13 @@
+import { couponAdminService } from './modules/promotions/coupon-admin.service.js'
+import { couponAdminRoutes } from './modules/promotions/coupon-admin.routes.js'
+import { createAuditWriter } from './modules/audit/audit.service.js'
+import { wishlistService } from './modules/cart/wishlist.service.js'
+import { wishlistRoutes } from './modules/cart/wishlist.routes.js'
+import { cartRoutes } from './modules/cart/cart.routes.js'
+import { cartService } from './modules/cart/cart.service.js'
+import { catalogService } from './modules/catalog/catalog.service.js'
+import { catalogRoutes } from './modules/catalog/catalog.routes.js'
+import { publicMediaService } from './modules/media/public-media.service.js'
 import { createResendAdapter } from './providers/email/resend.client.js'
 import type { EmailAdapter } from './modules/notifications/notification.types.js'
 import type { RetryPolicy } from './modules/notifications/notification.schema.js'
@@ -34,6 +44,38 @@ export async function composeIdentityRoutes(
     auth.router.use(
       profileRoutes(
         createProfileService(auth.customerAccounts, createAddressCoverage(connection)),
+        auth.security,
+        auth.sessions,
+      ),
+    )
+  if (config.CUSTOMER_AUTH_ENABLED)
+    auth.router.use(
+      cartRoutes(
+        cartService(
+          connection,
+          auth.customerAccounts,
+          catalogService(connection, publicMediaService(connection, media?.provider)),
+        ),
+        auth.security,
+        auth.sessions,
+      ),
+    )
+  if (config.CUSTOMER_AUTH_ENABLED)
+    auth.router.use(
+      wishlistRoutes(
+        wishlistService(
+          connection,
+          auth.customerAccounts,
+          catalogService(connection, publicMediaService(connection, media?.provider)),
+        ),
+        auth.security,
+        auth.sessions,
+      ),
+    )
+  if (config.ADMIN_AUTH_ENABLED)
+    auth.router.use(
+      couponAdminRoutes(
+        couponAdminService(connection, auth.adminAccounts, createAuditWriter(connection)),
         auth.security,
         auth.sessions,
       ),
@@ -75,7 +117,11 @@ export async function composeApplication(
     config.CUSTOMER_AUTH_ENABLED || config.ADMIN_AUTH_ENABLED
       ? await composeIdentityRoutes(connection, config, media)
       : undefined
-  const apiRouter = createApiRouter(health, identity ? [identity] : [])
+  const catalog = catalogRoutes(
+    catalogService(connection, publicMediaService(connection, media?.provider)),
+    config.CORS_ALLOWED_ORIGINS,
+  )
+  const apiRouter = createApiRouter(health, [catalog, ...(identity ? [identity] : [])])
   if (media && !config.ADMIN_AUTH_ENABLED)
     throw new Error('Admin authentication required for media.')
   return createApp({ logger, apiRouter, mediaUploadsEnabled: Boolean(media) })

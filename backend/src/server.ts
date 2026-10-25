@@ -100,8 +100,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
       }
       process.once('SIGTERM', shutdown)
       process.once('SIGINT', shutdown)
-    } catch {
-      logger.lifecycle('startup_failed')
+    } catch (error) {
+      logger.lifecycle('startup_failed', error)
       process.exitCode = 1
     }
   } catch (error) {

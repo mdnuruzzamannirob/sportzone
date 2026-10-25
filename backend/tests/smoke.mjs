@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { spawn, spawnSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
+import { gzipSync } from 'node:zlib'
 import { MongoMemoryReplSet } from 'mongodb-memory-server-core'
 import { once } from 'node:events'
 import { createServer } from 'node:net'
@@ -80,6 +81,15 @@ try {
     ).status,
     200,
   )
+  const compressed = Buffer.concat([gzipSync('{}'), Buffer.from('invalid-trailing-bytes')])
+  const rejectedBody = await fetch(`http://127.0.0.1:${port}/api/v1/unimplemented`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Content-Encoding': 'gzip' },
+    body: compressed,
+  })
+  assert.equal(rejectedBody.status, 400)
+  assert.equal((await rejectedBody.json()).error.code, 'INVALID_REQUEST')
+  assert.equal((await fetch(`http://127.0.0.1:${port}/api/v1/health/live`)).status, 200)
   child.kill('SIGTERM')
   const termination = await Promise.race([exited, delay(8000, null, { ref: false })])
   assert.ok(termination, 'Compiled backend did not shut down')

@@ -1,6 +1,9 @@
-import { UnavailablePage } from '../../../components/layout/unavailable-page'
-export { unavailableMetadata as metadata } from '../../../components/layout/unavailable-page'
-
-export default function Page() {
-  return <UnavailablePage title="Products" />
+import { ProductsPage, productsMetadata } from '../../../features/catalog/catalog-page'
+export const dynamic = 'force-dynamic'
+type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> }
+export async function generateMetadata({ searchParams }: Props) {
+  return productsMetadata(await searchParams)
+}
+export default async function Page({ searchParams }: Props) {
+  return <ProductsPage query={await searchParams} />
 }

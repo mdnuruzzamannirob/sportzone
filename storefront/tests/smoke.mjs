@@ -1,3 +1,4 @@
+import { verifyCatalogRendering } from './catalog-smoke.mjs'
 import { verifyHeroUIStyles } from '../../tests/helpers/heroui-smoke.mjs'
 import { verifyThemeBootstrap } from '../../tests/helpers/theme-smoke.mjs'
 import assert from 'node:assert/strict'
@@ -92,7 +93,6 @@ try {
     'SMOKE-02 Passed: private route no-store/noindex and no cookie echo across two contexts',
   )
   for (const path of [
-    '/products',
     '/search',
     '/wishlist',
     '/cart',
@@ -112,10 +112,17 @@ try {
     assert.equal((body.match(/<main\b/g) ?? []).length, 1)
     assert.match(body, /Support and policies/)
   }
+  for (const path of ['/products', '/products/not-a-product', '/categories/cricket']) {
+    const response = await fetch(origin + path)
+    assert.equal(response.status, 200)
+    const body = await response.text()
+    assert.match(body, /Catalog temporarily unavailable/)
+    assert.match(body, /name="robots" content="noindex, nofollow"/)
+  }
   assert.match(html, /aria-label="Mobile navigation"/)
   assert.match(html, /aria-expanded="false"/)
   console.log(
-    'SMOKE-04 Passed: 11 honest noindex destinations, consistent shell and closed mobile navigation',
+    'SMOKE-04 Passed: honest noindex destinations and unavailable catalog, consistent shell and closed mobile navigation',
   )
   for (const path of [
     '/not-a-route',
@@ -128,7 +135,6 @@ try {
     '/policies/not-a-policy',
     '/%28account%29',
     '/account/not-a-route',
-    '/products/not-a-product',
   ]) {
     const response = await fetch(origin + path)
     assert.equal(response.status, 404)
@@ -144,3 +150,5 @@ try {
   if (server.exitCode === null) server.kill('SIGTERM')
   await exit
 }
+
+await verifyCatalogRendering(require.resolve('next/dist/bin/next'))

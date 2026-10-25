@@ -8,6 +8,156 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 25 October 2026 — Coupon administration APIs
+
+- Added protected coupon configuration, revision-based edits/deactivation and bounded usage history.
+  Configuration and canonical audit facts commit together; live hold terms and authoritative counters
+  remain intact. OpenAPI/Postman now include coupon CAS headers and ETags.
+  [Implementation and verification](docs/evidence/P05-015-coupon-administration.md).
+
+## 25 October 2026 — Authenticated cart merge
+
+- Added guest-selection merge with maximum-quantity deduplication, safe per-item exclusions,
+  current catalog revalidation and transactional capacity/overflow rollback. Generated OpenAPI
+  and Postman artifacts include the protected endpoint.
+  [Implementation and verification](docs/evidence/P05-014-cart-merge.md).
+
+## 24 October 2026 — Review eligibility and moderation foundation
+
+- Added owned review creation/editing with a default-deny purchase guard, one-active-review index and
+  strict persistence. Audited moderation preserves authored ratings, resets actual edits to pending,
+  reconciles approved catalog ratings transactionally and protects later edits from old approval replay.
+  Added explicit local/test bootstrap; production purchase/audit adapters and HTTP integration remain
+  with their owning tasks. [Implementation and verification](docs/evidence/P05-009-review-guard.md).
+
+## 24 October 2026 — Durable coupon allocation primitives
+
+- Added strict coupon/redemption/customer-counter persistence and transaction-scoped reserve, COD
+  redeem, hold commit and exactly-once release. Generation and order-bound coupon identity prevent
+  replay/reacquisition drift; bounded conditional writes protect global/customer capacity. Added an
+  explicit local/test bootstrap and verified shared inventory/coupon rollback and expiry coordination.
+  [Implementation and verification](docs/evidence/P05-007-coupon-allocation.md).
+
+## 24 October 2026 — Coupon eligibility policy
+
+- Added coupon activation/window/minimum and global/customer usage checks with safe errors,
+  live-hold term preservation and compatible-only post-expiry revalidation. Policy evaluation is
+  read-only; durable quota reservation/release and exposed coupon APIs remain their owning tasks.
+  [Implementation and verification](docs/evidence/P05-006-coupon-eligibility.md).
+
+## 24 October 2026 — Catalog pricing and coupon allocation
+
+- Added promotions-owned integer pricing over catalog-owned current base/sale prices, exact percentage
+  rounding and stable item-level largest-remainder coupon allocation. No HTTP route, reservation or
+  financial persistence was added; eligibility and quota handling remain their owning tasks.
+  [Implementation and verification](docs/evidence/P05-005-pricing-allocation.md).
+
+## 24 October 2026 — Authenticated persistent wishlist
+
+- Added customer-owned wishlist read/add/remove APIs with unique membership, a 200-product bound,
+  strict indexed persistence and safe unavailable-product markers. The explicit local/test shopping
+  bootstrap now initializes carts and wishlists additively. OpenAPI/Postman include the three routes;
+  wishlist operations do not reserve stock or change carts.
+  [Implementation and verification](docs/evidence/P05-004-persistent-wishlist.md).
+
+## 24 October 2026 — Authenticated persistent cart
+
+- Added customer-owned cart read/set/remove APIs, strict indexed persistence and local/test bootstrap.
+  Reads refresh catalog estimates and flag unavailable selections; mutations serialize transactionally
+  without reserving stock. Generated OpenAPI/Postman contracts include these three routes; merge remains
+  separate. Corrected unrelated task evidence placeholders accidentally populated by the foundation update.
+  [Implementation and verification](docs/evidence/P05-002-persistent-cart.md).
+
+## 24 October 2026 — Foundation readiness verification
+
+- Verified clean locked installation, backend-only development/check selection, isolated replica-set
+  persistence and generated API contracts. Updated the compatible body-parser resolution to 2.4.0
+  for GHSA-27r3-jxmh-p828; compiled smoke verifies malformed compressed-body rejection and continued
+  liveness. External inputs remain pending with accountable roles and explicit affected gates.
+  [P01-024 verification](docs/evidence/P01-024-foundation-readiness.md).
+
+## 23 October 2026 — Generated API contracts
+
+- Added domain-schema-backed OpenAPI/Postman generation, sanitized templates and separate planned-route
+  inventory. Backend CI now requires artifact freshness, actual router parity and schema/negative checks.
+  Corrected media upload status and address creation Location to the approved API contract.
+  [P01-023 verification](docs/evidence/P01-023-api-artifacts.md) records results and independent review status.
+
+## 23 October 2026 — Backend development and CI isolation
+
+- Added supervised `dev:backend`, selected-workspace inventory validation, backend formatting and
+  comma-separated CI scopes. Hosted path selection avoids UI/browser setup for backend-private work
+  and preserves full verification for shared/tooling changes and manual dispatch.
+  [P01-022 verification](docs/evidence/P01-022-scoped-development-ci.md) records local results and the
+  owner-authorized task-branch publication and successful hosted verification (all 23 commands);
+  P01-022 is Done following explicit independent owner acceptance. Main was not merged.
+
+## 23 October 2026 — Documentation consistency correction
+
+- Reopened P01-021 after owner feedback. Consolidated the technology baseline, separated MongoDB/Mongoose
+  from hosting choices, corrected collection inventory and catalog freshness rules, and reconciled
+  application-stage prerequisites with milestone acceptance. Removed task diaries/status duplication from
+  specifications, organized deployment procedures and corrected uncertain email-delivery verification.
+  Task dependencies are shorter with identical prerequisite reachability; accepted history is retained.
+  [Correction review and checks](docs/evidence/P01-021-documentation-refactor.md#complete-document-correction).
+  Runtime, credentials and CI behavior were not changed. The owner independently accepted the corrected
+  package on 23 October 2026; P01-021 is Done.
+
+## 23 October 2026 — Application-stage documentation reconciliation
+
+- Reconciled application-stage execution, module ownership, scoped verification and current setup procedures.
+  Decomposed mixed API/UI work into explicit prerequisites and corrected reverse stage dependencies;
+  foundation/backend/admin/storefront closeouts cover the revised 209-task register. OpenAPI/Postman and
+  scoped hosted CI remain implementation tasks. The owner accepted the revised P01-021 package on
+  23 October 2026; the task is Done and prior acceptance history is preserved.
+
+## 23 October 2026 — Database startup diagnostics
+
+- Preserve safe database reason codes in startup failure logs without logging driver errors or secrets.
+  Clarified local replica-set lifecycle and URI refresh steps for development connection failures.
+
+## 23 October 2026 — Catalog freshness and SEO foundation
+
+- Added request-time, credential-free public SSR, configured canonical metadata/structured data, readable
+  slug/category URLs and stock disclaimers. Global early loading fallback was removed so confirmed missing
+  resources return 404 before streaming; refresh keeps local pending feedback. Verified actual Next
+  freshness/privacy and responsive themes. P04-011 was independently accepted by the owner on 23 October 2026 and marked Done.
+  [Evidence](docs/evidence/P04-011-catalog-seo.md).
+
+## 23 October 2026 — Product detail API
+
+- Added public slug detail with approved multi-image galleries, active variant combinations and derived
+  quantities, visible categories, and up to six eligible related cards. Reused catalog visibility and
+  media publication boundaries; no new collection, index or purchase mutation. The owner accepted
+  P04-010 on 23 October 2026. [Evidence](docs/evidence/P04-010-product-details.md).
+
+## 23 October 2026 — Public catalog discovery
+
+- Added public product search/filter/sort/pagination and visible category reads, safe public projections,
+  media-owned publication checks and additive query-profiled indexes. Reused the canonical category
+  model and root API composition. The owner accepted P04-009 on 23 October 2026; storefront/detail/cache and
+  external media gates remain separate. [Evidence](docs/evidence/P04-009-public-catalog.md).
+
+## 23 October 2026 — Inventory allocation primitives
+
+- Added transaction-scoped reserve, direct COD commit, held-stock commit, expected-state release and
+  shipment operations with durable reservation generations and atomic movement history. Added private
+  stock-capability guards and focused race/rollback tests. The owner accepted P04-008 on 23 October 2026;
+  checkout/payment/order orchestration and admin inventory UI remain separate.
+  [Evidence](docs/evidence/P04-008-inventory-allocation.md).
+
+## 23 October 2026 — Verification cadence
+
+- Clarified focused verification per task and one consolidated regression at phase closeout, coordinated
+  by the final unfinished task. Required safety tests, external gates and independent acceptance remain intact.
+
+## 23 October 2026 — Inventory counter foundation
+
+- Added narrow catalog stock access, atomic safe-integer counter guards and transactional append-only
+  inventory movements with replay protection. Verified concurrency, rollback and persistence protection
+  on isolated MongoDB; HTTP/UI adjustments remain a separate task. The owner accepted P04-006 on 23 October 2026.
+  [Evidence](docs/evidence/P04-006-inventory-counters.md).
+
 ## 22 October 2026 — Source structure audit
 
 - Simplification follow-up removes the forwarding notification job and redundant media composition/type files;

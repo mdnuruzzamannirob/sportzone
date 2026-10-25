@@ -1,0 +1,64 @@
+import { Router } from 'express'
+import { z } from 'zod'
+import { parseInput } from '../../shared/middleware/validate.js'
+import { respond } from '../../shared/responses.js'
+import type { BrowserSecurity } from '../auth/sessions/browser-security.service.js'
+import type { SessionService } from '../auth/sessions/session.service.js'
+import { createSessionHttp, readSessionCookie } from '../auth/sessions/session.http.js'
+import { couponParams } from './coupon-admin.schema.js'
+import type { couponAdminService } from './coupon-admin.service.js'
+export function couponAdminRoutes(
+  service: ReturnType<typeof couponAdminService>,
+  security: BrowserSecurity,
+  sessions: SessionService,
+) {
+  const router = Router()
+  for (const path of [
+    '/admin/coupons',
+    '/admin/coupons/:couponId',
+    '/admin/coupons/:couponId/deactivate',
+    '/admin/coupons/:couponId/redemptions',
+  ])
+    router.options(path, security.cors('admin'))
+  router.use(
+    '/admin/coupons',
+    security.cors('admin'),
+    security.require('admin', 'admin'),
+    createSessionHttp(sessions).require('admin'),
+  )
+  router.use('/admin/coupons', (_req, res, next) => {
+    res.set('Access-Control-Expose-Headers', 'X-Request-Id, ETag')
+    next()
+  })
+  const token = (req: import('express').Request) => readSessionCookie(req.get('Cookie'), 'admin')
+  const id = (req: import('express').Request) => parseInput(couponParams, req.params).couponId
+  router.get('/admin/coupons', async (req, res) => {
+    parseInput(z.undefined(), req.body)
+    const result = await service.list(token(req), req.query)
+    respond(res, result.data, 200, result.page)
+  })
+  router.get('/admin/coupons/:couponId/redemptions', async (req, res) => {
+    parseInput(z.undefined(), req.body)
+    const result = await service.history(token(req), id(req), req.query)
+    respond(res, result.data, 200, result.page)
+  })
+  router.post('/admin/coupons', async (req, res) => {
+    parseInput(z.strictObject({}), req.query)
+    const result = await service.create(token(req), req.body)
+    res.set('ETag', `"${result.revision}"`)
+    respond(res, result, 201)
+  })
+  router.patch('/admin/coupons/:couponId', async (req, res) => {
+    parseInput(z.strictObject({}), req.query)
+    const result = await service.update(token(req), id(req), req.body, req.get('If-Match'))
+    res.set('ETag', `"${result.revision}"`)
+    respond(res, result)
+  })
+  router.post('/admin/coupons/:couponId/deactivate', async (req, res) => {
+    parseInput(z.strictObject({}), req.query)
+    const result = await service.deactivate(token(req), id(req), req.body, req.get('If-Match'))
+    res.set('ETag', `"${result.revision}"`)
+    respond(res, result)
+  })
+  return router
+}

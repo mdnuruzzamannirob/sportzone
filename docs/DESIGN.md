@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 22 October 2026
+**Updated:** 23 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical reference:** [Architecture](./ARCHITECTURE.md)\
@@ -41,7 +41,7 @@ This document owns the visual system, page composition, navigation, interactions
 - Keep guest checkout usable without requiring account creation.
 - Make administrative decisions explicit, auditable, and difficult to trigger accidentally.
 - Provide consistent feedback for slow networks, expired sessions, payment uncertainty, and invalid operations.
-- Target **WCAG 2.2 AA** and current stable Chrome, Firefox, Edge, Brave, and Safari, as required by PRD §12.7.
+- Target **WCAG 2.2 AA** and current stable Chrome, Firefox, Edge, Brave, and Safari, as required by PRD §§12.6–12.7.
 
 ### 1.2 Design principles
 
@@ -91,7 +91,9 @@ All native primitives and app navigation adapters are exposed through each app�
 
 A single local `showcase.html` renders the actual app UI boundary, with Admin/Storefront and Light/Dark controls, all currently used component families and supported visual variant axes. Switching apps reloads its selected CSS entry so future per-app customization cannot leak across previews. Keep this development preview outside production routes and builds.
 
-**Accessibility remains a release requirement:** PRD §12.7 and this document §12 continue to target WCAG 2.2 AA. Stock HeroUI palette contrast findings already observed in the reference are tracked findings, not automatic acceptance or a waived gate. Preserve real accessibility checks and report actual results. The owner’s default-theme choice authorizes reversible visual implementation; it does not prove release accessibility or accept a milestone.
+**Accessibility:** PRD §12.6 and this document §12 require WCAG 2.2 AA verification. Check contrast in
+the actual component/theme combinations and track findings in test evidence. Native defaults and
+approved visual refinements require the same accessibility acceptance as other UI changes.
 
 ---
 
@@ -101,13 +103,13 @@ A single local `showcase.html` renders the actual app UI boundary, with Admin/St
 
 Use mobile-first styles; these widths are layout guidance, not device detection.
 
-| Viewport | Layout behavior |
-| --- | --- |
-| Under 640px | Single-column content, compact navigation, stacked forms, full-width primary actions |
-| 640–767px | Wider cards and selective two-column content where readable |
-| 768–1023px | Tablet grids, expanded filters where space permits, compact admin navigation |
-| 1024–1279px | Desktop navigation, multi-column catalog and admin layouts |
-| 1280px and above | Centered max-width storefront; full admin workspace with readable line lengths |
+| Viewport         | Layout behavior                                                                      |
+| ---------------- | ------------------------------------------------------------------------------------ |
+| Under 640px      | Single-column content, compact navigation, stacked forms, full-width primary actions |
+| 640–767px        | Wider cards and selective two-column content where readable                          |
+| 768–1023px       | Tablet grids, expanded filters where space permits, compact admin navigation         |
+| 1024–1279px      | Desktop navigation, multi-column catalog and admin layouts                           |
+| 1280px and above | Centered max-width storefront; full admin workspace with readable line lengths       |
 
 ### 3.2 Storefront responsive patterns
 
@@ -159,7 +161,7 @@ Main: page title/actions → filters/summary → content → pagination
 
 Provide the Light / Dark / System control in the administrator account/appearance menu. Group related destinations without creating extra permission levels. Show current section and contextual actions. Keep the administrator's session and access separate from customer sessions. Complaint handling is available from the order/customer context where relevant; a standalone complaint screen is not required by the PRD.
 
-**Current shell implementation:** [Admin shell](../admin/src/components/layout/admin-shell.tsx) uses a persistent sidebar from 1024px and a HeroUI left Drawer below that breakpoint. The five groups and 14 destinations share one navigation source. Selected items use native default/accent semantic tokens. Drawer navigation, Escape/Close and desktop transitions dismiss the overlay; the body scrolls vertically. Page title/actions and Appearance are reusable compositions. Until Phase 03 session integration, only public navigation metadata and an unavailable-access state render on `/app/*`; no management data, logged-in identity or working logout is implied. Lazy administration loading exposes a live status; route render/chunk failures show a safe alert and Reload page action without exception details.
+**Admin shell behavior:** Use a persistent sidebar from 1024px and a HeroUI left Drawer below that breakpoint. Navigation groups and destinations follow §5.2 through one navigation source. Selected items use native default/accent semantic tokens. Drawer navigation, Escape/Close and desktop transitions dismiss the overlay; the body scrolls vertically. Page title/actions and Appearance are reusable compositions. Render protected management content only after server-confirmed admin identity; signed-out, expired and denied states must not expose management data. Lazy administration loading exposes a live status; route render/chunk failures show a safe alert and Reload page action without exception details.
 
 ### 4.4 Shared layout states
 
@@ -197,13 +199,13 @@ This is a navigation map, not an assertion that every page is accessible without
 
 The authenticated admin shell exposes these navigation groups. Group labels organize the interface; they do not create additional roles or permissions.
 
-| Navigation group | Destinations |
-| --- | --- |
-| Overview | Dashboard, Reports |
-| Catalog and shopping | Products/Add/Edit, Categories, Inventory, Coupons, Reviews |
-| Orders and payments | Orders/Details, Payments |
-| Customers and after-sales | Customers, Returns, Refunds; complaints in order/customer context |
-| Configuration | Delivery Settings, Store Settings; account logout, appearance and recovery entry points |
+| Navigation group          | Destinations                                                                            |
+| ------------------------- | --------------------------------------------------------------------------------------- |
+| Overview                  | Dashboard, Reports                                                                      |
+| Catalog and shopping      | Products/Add/Edit, Categories, Inventory, Coupons, Reviews                              |
+| Orders and payments       | Orders/Details, Payments                                                                |
+| Customers and after-sales | Customers, Returns, Refunds; complaints in order/customer context                       |
+| Configuration             | Delivery Settings, Store Settings; account logout, appearance and recovery entry points |
 
 ### 5.3 Navigation conventions
 
@@ -219,30 +221,30 @@ The authenticated admin shell exposes these navigation groups. Group labels orga
 
 ### 6.1 Shared component inventory
 
-| Component | Variants / essential behavior |
-| --- | --- |
-| Button | Primary, secondary, text, destructive; loading, disabled, focus states |
-| Link | External/internal, visible focus and descriptive destination |
-| Text input / textarea | Label, hint, required, invalid, disabled; preserve input on error |
-| Select / combobox | Keyboard-operable; supports long district/area lists |
-| Checkbox / radio | Clear selection, label click targets, grouped payment options |
-| Quantity selector | Minus/plus and direct value; respects min/max and stock feedback |
-| Product card | Image, title, BDT price, optional sale price/rating, availability, action |
-| Price display | Regular/sale hierarchy, discount indication when applicable |
-| Variant selector | Selected, unavailable, invalid, and loading states |
-| Badge | Order/payment/return/refund status with explicit text |
-| Alert / inline message | Success, warning, error, information; actionable next step |
-| Toast | Brief noncritical feedback; must not be the only confirmation of an important action |
-| Modal / confirmation | Focus trap, descriptive title, cancel/confirm, focus restoration |
-| Drawer | Mobile navigation and catalog filters; dismissible with Escape |
-| Tabs / accordion | Semantic state, keyboard support, visible labels |
-| Breadcrumbs | Nested navigation, last item current page |
-| Pagination | Current page, previous/next, bounded accessible controls |
-| Skeleton / spinner | Announce loading where appropriate; avoid layout shifts |
-| Empty state | Explanation and relevant recovery action |
-| File upload | File constraints, preview, removal, upload/error progress |
-| Data table | Header associations, sort/filter states, row actions, pagination |
-| Status timeline | Ordered milestones with current state and timestamps when available |
+| Component              | Variants / essential behavior                                                        |
+| ---------------------- | ------------------------------------------------------------------------------------ |
+| Button                 | Primary, secondary, text, destructive; loading, disabled, focus states               |
+| Link                   | External/internal, visible focus and descriptive destination                         |
+| Text input / textarea  | Label, hint, required, invalid, disabled; preserve input on error                    |
+| Select / combobox      | Keyboard-operable; supports long district/area lists                                 |
+| Checkbox / radio       | Clear selection, label click targets, grouped payment options                        |
+| Quantity selector      | Minus/plus and direct value; respects min/max and stock feedback                     |
+| Product card           | Image, title, BDT price, optional sale price/rating, availability, action            |
+| Price display          | Regular/sale hierarchy, discount indication when applicable                          |
+| Variant selector       | Selected, unavailable, invalid, and loading states                                   |
+| Badge                  | Order/payment/return/refund status with explicit text                                |
+| Alert / inline message | Success, warning, error, information; actionable next step                           |
+| Toast                  | Brief noncritical feedback; must not be the only confirmation of an important action |
+| Modal / confirmation   | Focus trap, descriptive title, cancel/confirm, focus restoration                     |
+| Drawer                 | Mobile navigation and catalog filters; dismissible with Escape                       |
+| Tabs / accordion       | Semantic state, keyboard support, visible labels                                     |
+| Breadcrumbs            | Nested navigation, last item current page                                            |
+| Pagination             | Current page, previous/next, bounded accessible controls                             |
+| Skeleton / spinner     | Announce loading where appropriate; avoid layout shifts                              |
+| Empty state            | Explanation and relevant recovery action                                             |
+| File upload            | File constraints, preview, removal, upload/error progress                            |
+| Data table             | Header associations, sort/filter states, row actions, pagination                     |
+| Status timeline        | Ordered milestones with current state and timestamps when available                  |
 
 ### 6.2 Product and commerce components
 
@@ -252,7 +254,7 @@ The authenticated admin shell exposes these navigation groups. Group labels orga
 - **Order summary:** Subtotal, product discounts, coupon discount, delivery charge, total payable, and payment method. Display confirmed server-calculated values before final submission.
 - **Payment method choice:** Show COD and only gateway channels currently enabled. Use the provider's recognizable channel labels without implying unavailable activation.
 
-**Implementation:** Storefront [commerce components](../storefront/src/components/commerce/product-card.tsx) follow the state contracts below. Price/line/summary amounts are supplied by the consuming feature/API; quantity controls and variant options express requests/eligibility without reserving stock. Status text remains explicit; payment, funding and fulfillment are never inferred from a monetary total. These components do not populate unavailable catalog/cart pages with synthetic products.
+**Commerce component contracts:** Price/line/summary amounts are supplied by the consuming feature/API; quantity controls and variant options express requests/eligibility without reserving stock. Status text remains explicit; payment, funding and fulfillment are never inferred from a monetary total. Production pages must not substitute synthetic products for unavailable API data.
 
 | Module                  | Contract                                                                                                                                                               |
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -270,7 +272,7 @@ The authenticated admin shell exposes these navigation groups. Group labels orga
 - Product-card actions may include a feature-owned wishlist/cart action, but they must enforce its pending/eligibility state and server checks. No purchase action is built in by default. Do not nest buttons in the product link.
 - Cart `maxQuantity` is a backend/feature-supplied integer limit (zero disables edits); quantity changes are requests, never reservations. Keep the server-supplied estimated line amount visible until a replacement arrives; do not multiply quantity and unit amount to establish checkout truth. A reduced stock limit preserves the requested quantity and displays recovery guidance.
 - Adapt `SummaryAmounts` from CheckoutQuote or the immutable order pricing snapshot. `kind="quote"` does not prove quote freshness, reserve stock or complete payment. The consuming checkout feature owns expiry/consent validation and authoritative submission. Display payment/fulfillment/refund statuses separately; never infer Paid from a total or receipt amount.
-- Example catalog data belongs only in tests/previews. Existing public unavailable pages stay unchanged until their feature tasks integrate real data.
+- Example catalog data belongs only in tests/previews; production views use authoritative API data and honest unavailable states.
 
 ### 6.3 Administrative components
 
@@ -280,7 +282,7 @@ The authenticated admin shell exposes these navigation groups. Group labels orga
 - **Financial actions:** Show source transaction, eligible amount, pending commitments, intended payout method, and confirmation before submission. Never mark payout complete from an optimistic UI update.
 - **Audit context:** Display available actor, timestamp, and action details for sensitive changes without exposing secrets.
 
-Implementation foundation: admin table/filter/pagination, file upload and guarded confirmation compositions are defined in the administrative contracts below. Feature integrations supply authoritative rows, upload policy and eligible actions; these primitives do not grant administrator access or execute business operations.
+**Administrative component contracts:** Feature integrations supply authoritative rows, upload policy and eligible actions; these primitives do not grant administrator access or execute business operations.
 
 | Module               | Contract                                                                                                                                                                                                        |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -299,7 +301,7 @@ Implementation foundation: admin table/filter/pagination, file upload and guarde
 
 Every interactive component must define: default, hover (where applicable), focus-visible, active/selected, disabled, pending/loading, validation error, and successful completion states **in both themes**. Disabled actions that matter to users should include an explanation nearby.
 
-**Implementation:** Both apps provide HeroUI field/form/feedback/overlay compositions in `src/components/ui/`; usage and state ownership follow this section. Appearance selects, connectivity notices and storefront loading feedback consume these primitives. Parent editors retain controlled drafts across overlay dismissal; pending panels block Escape/backdrop/Cancel until the caller settles. Field errors and linked summaries use explicit accessible associations; summary focus is requested only after a failed submission.
+Both apps use HeroUI field/form/feedback/overlay compositions in `src/components/ui/`; usage and state ownership follow this section. Appearance selects, connectivity notices and storefront loading feedback consume these primitives. Parent editors retain controlled drafts across overlay dismissal; pending panels block Escape/backdrop/Cancel until the caller settles. Field errors and linked summaries use explicit accessible associations; summary focus is requested only after a failed submission.
 
 ### 6.5 App-owned UI boundary and component APIs
 
@@ -307,12 +309,12 @@ Architecture §§4–5 own placement. Both apps consume native HeroUI through th
 no app imports the other app's runtime components. Preserve compound/generic APIs, default themes
 and system fonts, router-aware Link adapters and keyboard/focus/input-retention behavior. Theme CSS
 owns styling entry points; global styles forward to it. Do not add duplicate component implementations,
-custom palettes/font skins or empty providers. Component filenames/exports below describe existing
-facades until the owning refactor updates consumers and tests; they do not create public HTTP DTOs.
+custom palettes/font skins or empty providers. Component filenames/exports below define the app-owned
+facades; they do not create public HTTP DTOs.
 
 | Module         | Exports                                                     | Responsibility                                                                                                             |
 | -------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `button.tsx`   | `Button`                                                    | All native variants/sizes; disabled/pending handling and optional visible pending text                            |
+| `button.tsx`   | `Button`                                                    | All native variants/sizes; disabled/pending handling and optional visible pending text                                     |
 | `fields.tsx`   | `TextInput`, `SelectField`, `CheckboxField`, `RadioChoices` | HeroUI labels, helper/error associations and controlled/uncontrolled input support; `TextInput multiline` renders TextArea |
 | `form.tsx`     | `Form`, `FormErrorSummary`                                  | Prevent navigation/repeated pending submissions; link safe field errors and focus the summary after a failed submit        |
 | `feedback.tsx` | `Notice`, `LoadingState`, `EmptyState`                      | Persistent textual feedback, announcement roles, decorative progress/skeletons and caller-supplied recovery actions        |
@@ -359,15 +361,15 @@ acceptance remain distinct; component examples and synthetic previews do not pro
 
 ### 7.1 Discovery and shopping
 
-| Page | Layout and required content | Key interactions / states |
-| --- | --- | --- |
-| **Home** | Hero/banner, category links, featured, new, and discounted products; search; contact/support access | Responsive sections; configured promotions only; loading/empty sections |
-| **Products** | Heading, search context, result count, filters, sort, paginated product grid | Search by name/keywords; price/availability filters; newest/price sorts; reset; empty results |
-| **Category** | Category title, optional image, subcategory navigation, same catalog controls | Inactive category excluded; preserve category context |
-| **Product Details** | Breadcrumbs; image gallery; name, rating, description, regular/sale price, variant/stock, quantity, cart/wishlist actions, return eligibility, related products, reviews | Change variant updates stock/price; invalid selection, out-of-stock, add-to-cart feedback; gallery keyboard controls |
-| **Cart** | Cart lines, quantity/remove, estimated subtotal, checkout action | Guest persistence; account merge after login; stock/price change warnings; empty state; no stock reservation |
-| **Wishlist** | Saved product grid/list, availability, remove and add-to-cart | Requires login; unavailable product remains clearly marked; empty state |
-| **Reviews (on product)** | Average/count, approved review list, verified-purchase labels; eligible review form | 1–5 stars, written review, moderation status; edit own review when permitted; sign-in/eligibility messages |
+| Page                     | Layout and required content                                                                                                                                              | Key interactions / states                                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| **Home**                 | Hero/banner, category links, featured, new, and discounted products; search; contact/support access                                                                      | Responsive sections; configured promotions only; loading/empty sections                                              |
+| **Products**             | Heading, search context, result count, filters, sort, paginated product grid                                                                                             | Search by name/keywords; price/availability filters; newest/price sorts; reset; empty results                        |
+| **Category**             | Category title, optional image, subcategory navigation, same catalog controls                                                                                            | Inactive category excluded; preserve category context                                                                |
+| **Product Details**      | Breadcrumbs; image gallery; name, rating, description, regular/sale price, variant/stock, quantity, cart/wishlist actions, return eligibility, related products, reviews | Change variant updates stock/price; invalid selection, out-of-stock, add-to-cart feedback; gallery keyboard controls |
+| **Cart**                 | Cart lines, quantity/remove, estimated subtotal, checkout action                                                                                                         | Guest persistence; account merge after login; stock/price change warnings; empty state; no stock reservation         |
+| **Wishlist**             | Saved product grid/list, availability, remove and add-to-cart                                                                                                            | Requires login; unavailable product remains clearly marked; empty state                                              |
+| **Reviews (on product)** | Average/count, approved review list, verified-purchase labels; eligible review form                                                                                      | 1–5 stars, written review, moderation status; edit own review when permitted; sign-in/eligibility messages           |
 
 **Catalog layout:** On desktop, place filters beside the grid; on mobile, use a filter drawer with Apply and Clear controls. Search, sort, and filters must be operable without a mouse. Pagination retains query state. Product card links must not contain nested interactive buttons.
 
@@ -375,18 +377,18 @@ acceptance remain distinct; component examples and synthetic previews do not pro
 
 ### 7.2 Authentication and account
 
-| Page | Layout and required content | Key interactions / states |
-| --- | --- | --- |
-| **Login** | Email, password, submit, forgot-password link, registration link | Invalid credentials, rate-limit feedback, session creation |
-| **Register** | Name, email, password, confirmation where needed, submit, login link | Duplicate email, field errors, successful account creation |
-| **Forgot Password** | Email entry, submission confirmation | Neutral response that does not reveal account existence |
-| **Reset Password** | New password, confirmation, token validity feedback | Expired/used token and recovery link |
-| **My Account** | Overview and links to profile, addresses, orders, wishlist, reviews, returns/refunds | Authentication required; loading/empty states |
-| **Profile** | Name, phone, email, password-change actions | Email change verification; inline success/error feedback |
-| **Addresses** | Address cards/list, default address, add/edit/delete form | District/area validation; deletion confirmation; historical orders unaffected |
-| **My Orders** | Paginated order cards/list with number, date, total, fulfillment and payment statuses | Open details, empty history, filter if supported by API |
-| **Order Details** | Immutable purchased items, price breakdown, delivery snapshot, payment status, fulfillment timeline, delivery estimate/deadline | Eligible cancellation/return links; delay/failed-delivery notice, revised estimate when confirmed, contact/support action, and refund links |
-| **My Reviews** | Submitted reviews, product context, moderation state, edit action | Ineligible edit or missing review state |
+| Page                | Layout and required content                                                                                                     | Key interactions / states                                                                                                                   |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Login**           | Email, password, submit, forgot-password link, registration link                                                                | Invalid credentials, rate-limit feedback, session creation                                                                                  |
+| **Register**        | Name, email, password, confirmation where needed, submit, login link                                                            | Duplicate email, field errors, successful account creation                                                                                  |
+| **Forgot Password** | Email entry, submission confirmation                                                                                            | Neutral response that does not reveal account existence                                                                                     |
+| **Reset Password**  | New password, confirmation, token validity feedback                                                                             | Expired/used token and recovery link                                                                                                        |
+| **My Account**      | Overview and links to profile, addresses, orders, wishlist, reviews, returns/refunds                                            | Authentication required; loading/empty states                                                                                               |
+| **Profile**         | Name, phone, email, password-change actions                                                                                     | Email change verification; inline success/error feedback                                                                                    |
+| **Addresses**       | Address cards/list, default address, add/edit/delete form                                                                       | District/area validation; deletion confirmation; historical orders unaffected                                                               |
+| **My Orders**       | Paginated order cards/list with number, date, total, fulfillment and payment statuses                                           | Open details, empty history, filter if supported by API                                                                                     |
+| **Order Details**   | Immutable purchased items, price breakdown, delivery snapshot, payment status, fulfillment timeline, delivery estimate/deadline | Eligible cancellation/return links; delay/failed-delivery notice, revised estimate when confirmed, contact/support action, and refund links |
+| **My Reviews**      | Submitted reviews, product context, moderation state, edit action                                                               | Ineligible edit or missing review state                                                                                                     |
 
 Account pages must not expose another customer's records. If a session expires, show a clear reauthentication path without leaking private data.
 
@@ -398,12 +400,12 @@ Private/auth storefront routes are noindex/no-store; no account data or proof en
 
 ### 7.3 Checkout, payment, and guest access
 
-| Page | Layout and required content | Key interactions / states |
-| --- | --- | --- |
-| **Checkout** | Contact details, delivery address/district/area, optional notes, delivery charge and deadline, coupon field, payment method, order summary, terms acceptance, final action | Guest or signed-in; saved address selection; revalidate stock, prices, coupon, and delivery; duplicate-submit prevention |
-| **Payment Result** | Verification-in-progress, confirmed paid, failed, cancelled, or pending/unresolved result | Never trust browser redirect alone; show refresh/check-status path; do not encourage duplicate payment while status is uncertain |
-| **Order Confirmation** | Order number, summary, payment/fulfillment status, next steps, receipt of submitted order | COD shown as unpaid until collection; pending online payment not mislabeled as paid |
-| **Order Lookup** | Order number + checkout email; request verification link/code; verified order view | Rate-limited, time-limited proof; scoped cancellation, return, and refund tracking only when eligible |
+| Page                   | Layout and required content                                                                                                                                                | Key interactions / states                                                                                                        |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **Checkout**           | Contact details, delivery address/district/area, optional notes, delivery charge and deadline, coupon field, payment method, order summary, terms acceptance, final action | Guest or signed-in; saved address selection; revalidate stock, prices, coupon, and delivery; duplicate-submit prevention         |
+| **Payment Result**     | Verification-in-progress, confirmed paid, failed, cancelled, or pending/unresolved result                                                                                  | Never trust browser redirect alone; show refresh/check-status path; do not encourage duplicate payment while status is uncertain |
+| **Order Confirmation** | Order number, summary, payment/fulfillment status, next steps, receipt of submitted order                                                                                  | COD shown as unpaid until collection; pending online payment not mislabeled as paid                                              |
+| **Order Lookup**       | Order number + checkout email; request single-use verification link; verified order view                                                                                   | Rate-limited, time-limited proof; scoped cancellation, return, and refund tracking only when eligible                            |
 
 **Checkout composition:** Keep contact/address first, then delivery area and charge, coupon, payment choice, and final summary. On desktop, a persistent summary column may be used; on mobile, show a compact summary during entry and the full total before the final action. A rejected checkout retains entered details and identifies the exact item or field requiring attention. Final confirmation submits the server-issued quote reference internally, as specified in API §11.1. Changed or expired quotes display current terms for explicit confirmation using plain-language feedback. Never automatically approve or resubmit a refreshed quote. Keep the same idempotency key during uncertain replay of an already submitted operation.
 
@@ -411,17 +413,17 @@ Private/auth storefront routes are noindex/no-store; no account data or proof en
 
 ### 7.4 After-sales and informational pages
 
-| Page | Layout and required content | Key interactions / states |
-| --- | --- | --- |
-| **Return Request** | Eligible order items/quantities, reason, optional evidence upload, policy summary, submit | Show applicable request deadline (standard baseline: 7 calendar days after delivery), eligibility exceptions, and inspection for physical returns only; shortage claims skip shipment/receipt/inspection; block duplicate active claims and invalid quantities |
-| **My Returns** | Return list, item context, current status, dates and decisions | Distinguish approved return from approved refund; show deadline and next required action where applicable |
-| **Refund Details** | Refund amount, method, status, associated items/transaction, timestamps | Show approval date and target (normally 7 business days after approval), provider delay/overdue message when applicable; completion only after confirmed payout |
-| **Contact** | Store-provided contact details and basic complaint submission/channel; anonymous contact name/email required | Submission feedback and reference when available; no invented live chat |
-| **Shipping Policy** | Store-approved delivery coverage, charges approach, deadlines, exceptions | Accessible readable content; operator-supplied policy |
-| **Return & Refund Policy** | Eligibility, return window, refund methods/timing, consumer-rights statement | Store-approved content; link from checkout and after-sales screens |
-| **Privacy Policy** | Approved privacy and data-use content | Accessible headings and links |
-| **Terms & Conditions** | Approved terms, checkout-related policies | Explicit acceptance at checkout |
-| **Not Found / Error** | Clear explanation, home/catalog navigation, retry where useful | Do not expose stack traces or private data |
+| Page                       | Layout and required content                                                                                  | Key interactions / states                                                                                                                                                                                                                                      |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Return Request**         | Eligible order items/quantities, reason, optional evidence upload, policy summary, submit                    | Show applicable request deadline (standard baseline: 7 calendar days after delivery), eligibility exceptions, and inspection for physical returns only; shortage claims skip shipment/receipt/inspection; block duplicate active claims and invalid quantities |
+| **My Returns**             | Return list, item context, current status, dates and decisions                                               | Distinguish approved return from approved refund; show deadline and next required action where applicable                                                                                                                                                      |
+| **Refund Details**         | Refund amount, method, status, associated items/transaction, timestamps                                      | Show approval date and target (normally 7 business days after approval), provider delay/overdue message when applicable; completion only after confirmed payout                                                                                                |
+| **Contact**                | Store-provided contact details and basic complaint submission/channel; anonymous contact name/email required | Submission feedback and reference when available; no invented live chat                                                                                                                                                                                        |
+| **Shipping Policy**        | Store-approved delivery coverage, charges approach, deadlines, exceptions                                    | Accessible readable content; operator-supplied policy                                                                                                                                                                                                          |
+| **Return & Refund Policy** | Eligibility, return window, refund methods/timing, consumer-rights statement                                 | Store-approved content; link from checkout and after-sales screens                                                                                                                                                                                             |
+| **Privacy Policy**         | Approved privacy and data-use content                                                                        | Accessible headings and links                                                                                                                                                                                                                                  |
+| **Terms & Conditions**     | Approved terms, checkout-related policies                                                                    | Explicit acceptance at checkout                                                                                                                                                                                                                                |
+| **Not Found / Error**      | Clear explanation, home/catalog navigation, retry where useful                                               | Do not expose stack traces or private data                                                                                                                                                                                                                     |
 
 **Deadline presentation:** Show a return-request deadline only when delivery date and applicable policy make it reliable; explain legally protected exceptions without implying that the standard window eliminates statutory rights. Refund targets begin at **refund approval**, not request submission. Read approvedAt and the authoritative timing projection from the API; under_review/awaiting_approval has no invented date. Display the approved business-calendar/policy basis and safe item/status timeline; do not calculate targets from a browser holiday guess. If the target is missed, display the latest verified status and support path; never imply payout has completed.
 
@@ -435,14 +437,14 @@ Private/auth storefront routes are noindex/no-store; no account data or proof en
 
 **Administrator recovery screens:** The admin login links to a dedicated recovery request and reset screen using the admin session context. Show neutral request confirmation, new-password fields, expired/used-link guidance, rate-limit feedback, and return to admin login. Customer recovery must never create administrator access.
 
-| Page | Layout and required content | Primary actions / safeguards |
-| --- | --- | --- |
-| **Admin Login** | Email, password, recovery, login feedback | No public admin registration; rate-limit and session-expiry messaging |
-| **Dashboard** | KPI cards, recent orders, low-stock and pending-return summaries | Distinguish paid collections, outstanding COD, refunds, and net collected revenue; no misleading revenue aggregation |
-| **Products** | Searchable/filterable table with name, SKU/variants, price, category, visibility, stock | Add, edit, deactivate; show active/inactive state |
-| **Add/Edit Product** | General details, categories, images, pricing, variants/SKUs, featured and visibility settings | Field validation, duplicate slug/SKU feedback, image preview, unsaved-change warning |
-| **Categories** | Category/subcategory hierarchy, status, image, edit controls | Prevent deletion with dependent products without reassignment |
-| **Inventory** | Variant/SKU table with physical, reserved, committed, available, threshold and movements | Record reasoned adjustments; protect against negative available stock; inspect returned items before restocking |
+| Page                 | Layout and required content                                                                   | Primary actions / safeguards                                                                                         |
+| -------------------- | --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| **Admin Login**      | Email, password, recovery, login feedback                                                     | No public admin registration; rate-limit and session-expiry messaging                                                |
+| **Dashboard**        | KPI cards, recent orders, low-stock and pending-return summaries                              | Distinguish paid collections, outstanding COD, refunds, and net collected revenue; no misleading revenue aggregation |
+| **Products**         | Searchable/filterable table with name, SKU/variants, price, category, visibility, stock       | Add, edit, deactivate; show active/inactive state                                                                    |
+| **Add/Edit Product** | General details, categories, images, pricing, variants/SKUs, featured and visibility settings | Field validation, duplicate slug/SKU feedback, image preview, unsaved-change warning                                 |
+| **Categories**       | Category/subcategory hierarchy, status, image, edit controls                                  | Prevent deletion with dependent products without reassignment                                                        |
+| **Inventory**        | Variant/SKU table with physical, reserved, committed, available, threshold and movements      | Record reasoned adjustments; protect against negative available stock; inspect returned items before restocking      |
 
 **Metric labels:** Use PRD FR-22 definitions. Display the selected period, date basis, Asia/Dhaka timezone, balance cutoff, and separate overpayment/payment-correction amounts. Do not label net collections as profit.
 
@@ -450,24 +452,24 @@ The dashboard must not treat uncollected COD as paid revenue. Charts are optiona
 
 ### 8.2 Orders, customers, and payments
 
-| Page | Layout and required content | Primary actions / safeguards |
-| --- | --- | --- |
-| **Orders** | Search by order number, status filters, date, customer, totals, payment/fulfillment badges | Open order; paginate; no unsupported state jumps |
+| Page              | Layout and required content                                                                                                        | Primary actions / safeguards                                                                                                                                                                                |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Orders**        | Search by order number, status filters, date, customer, totals, payment/fulfillment badges                                         | Open order; paginate; no unsupported state jumps                                                                                                                                                            |
 | **Order Details** | Order snapshot, items, totals, delivery deadline, payment attempts/status, fulfillment history, cancellation and complaint context | Confirm COD, update allowed fulfillment states, record shipment/collection; for delayed or failed delivery show reason, customer-contact record, revised estimate and retry/resolution action when eligible |
-| **Customers** | Searchable customer list, status, account/order overview | View history, suspend/reactivate with confirmation; minimize sensitive details |
-| **Payments** | Transaction references, method, amount, status, attempts, reconciliation flags, linked order/refunds | Review uncertain/risky transactions; record verified COD collection; do not manually mark unverified gateway payment as paid |
-| **Reports** | Basic date-filtered order/collection/refund summaries and activity history | Separate GMV, discounts, collections, refunds, and net collections; show date range and metric definitions |
+| **Customers**     | Searchable customer list, status, account/order overview                                                                           | View history, suspend/reactivate with confirmation; minimize sensitive details                                                                                                                              |
+| **Payments**      | Transaction references, method, amount, status, attempts, reconciliation flags, linked order/refunds                               | Review uncertain/risky transactions; record verified COD collection; do not manually mark unverified gateway payment as paid                                                                                |
+| **Reports**       | Basic date-filtered order/collection/refund summaries and activity history                                                         | Separate GMV, discounts, collections, refunds, and net collections; show date range and metric definitions                                                                                                  |
 
 ### 8.3 Promotions, moderation, and after-sales
 
-| Page | Layout and required content | Primary actions / safeguards |
-| --- | --- | --- |
-| **Coupons** | Code, type/value, validity, minimum eligible amount, limits, status, redemption history | Create/edit/deactivate; validate overlapping/invalid settings and usage limits |
-| **Reviews** | Review text/rating, product, verified-purchase flag, moderation status | Approve/reject/hide with reason; never rewrite customer rating as their own |
-| **Returns** | Request list and detail with items, quantities, reason, evidence, history | Review physical-return or shortage claim; physical returns use receipt/inspection/restocking, while shortage claims skip those steps; distinguish decisions from payout |
-| **Refunds** | Refund list and detail with original collection, eligible balance, amounts, attempts, payout method/status | Approve/reject, initiate supported payout, verify manual transfer, investigate failure; require confirmation |
-| **Delivery Settings** | Zones, district/area coverage, active status, charges | Add/edit/deactivate; warn that changes affect future orders only |
-| **Store Settings** | Branding/contact, store address, low-stock threshold, policies, support/complaint contact | Validate changes; show saved/unsaved state; published policy content must be approved |
+| Page                  | Layout and required content                                                                                | Primary actions / safeguards                                                                                                                                            |
+| --------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Coupons**           | Code, type/value, validity, minimum eligible amount, limits, status, redemption history                    | Create/edit/deactivate; validate overlapping/invalid settings and usage limits                                                                                          |
+| **Reviews**           | Review text/rating, product, verified-purchase flag, moderation status                                     | Approve/reject/hide with reason; never rewrite customer rating as their own                                                                                             |
+| **Returns**           | Request list and detail with items, quantities, reason, evidence, history                                  | Review physical-return or shortage claim; physical returns use receipt/inspection/restocking, while shortage claims skip those steps; distinguish decisions from payout |
+| **Refunds**           | Refund list and detail with original collection, eligible balance, amounts, attempts, payout method/status | Approve/reject, initiate supported payout, verify manual transfer, investigate failure; require confirmation                                                            |
+| **Delivery Settings** | Zones, district/area coverage, active status, charges                                                      | Add/edit/deactivate; warn that changes affect future orders only                                                                                                        |
+| **Store Settings**    | Branding/contact, store address, low-stock threshold, policies, support/complaint contact                  | Validate changes; show saved/unsaved state; published policy content must be approved                                                                                   |
 
 **Operational complaints:** Show basic complaint records, status, and resolution in the relevant order/customer support context. Do not introduce a complex ticketing product.
 
@@ -507,18 +509,18 @@ Checkout always shows the final backend-calculated payable amount before confirm
 
 ### 10.1 Global UI states
 
-| State | Required UI behavior |
-| --- | --- |
-| Initial loading | Skeleton or progress indicator without misleading empty results |
-| Empty | State-specific explanation and next valid action |
-| Validation error | Field-level message and retained input |
-| API/network error | Safe explanation, retry when idempotent, no false success |
-| Unauthorized | Reauthentication path; remove private data from view |
-| Forbidden | Explain lack of access without exposing protected information |
-| Conflict / stale data | Refresh authoritative values; preserve user intent when safe |
-| Success | Confirm saved outcome with persistent page state for important operations |
-| Pending external operation | Clearly distinguish waiting from completed; provide status-check path |
-| Disabled/ineligible | Explain why action cannot proceed and when it may become available |
+| State                      | Required UI behavior                                                      |
+| -------------------------- | ------------------------------------------------------------------------- |
+| Initial loading            | Skeleton or progress indicator without misleading empty results           |
+| Empty                      | State-specific explanation and next valid action                          |
+| Validation error           | Field-level message and retained input                                    |
+| API/network error          | Safe explanation, retry when idempotent, no false success                 |
+| Unauthorized               | Reauthentication path; remove private data from view                      |
+| Forbidden                  | Explain lack of access without exposing protected information             |
+| Conflict / stale data      | Refresh authoritative values; preserve user intent when safe              |
+| Success                    | Confirm saved outcome with persistent page state for important operations |
+| Pending external operation | Clearly distinguish waiting from completed; provide status-check path     |
+| Disabled/ineligible        | Explain why action cannot proceed and when it may become available        |
 
 ### 10.2 Commerce-specific states
 
@@ -615,7 +617,7 @@ flowchart TD
     GuestCart --> GuestOrder[Guest order confirmation]
     Path -->|Look up guest order| Lookup[Order number and checkout email]
     GuestOrder -.->|Later, if needed| Lookup
-    Lookup --> Proof[Email verification link or code]
+    Lookup --> Proof[Single-use email verification link]
     Proof --> Valid{Verification valid?}
     Valid -->|No| Retry[Safe retry or expiry guidance]
     Valid -->|Yes| Scoped[Verified order details]
@@ -705,27 +707,27 @@ Use store-approved product photographs and brand assets. Maintain consistent thu
 
 Use one responsive, accessible email layout: store identity, concise subject, clear event heading, order/reference number, verified status, relevant amount/date, support contact, and a safe link to the appropriate verified page. Use plain-text fallbacks and avoid relying on color, images, or email-client dark-mode rendering for meaning.
 
-| Event | Email content focus |
-| --- | --- |
-| Registration or account recovery | Account confirmation or recovery action; no password disclosure |
-| Order placed | Order reference, items/amount, COD due or online payment pending as applicable |
-| Payment update | Verified paid, failed, or pending status; safe order link |
-| Shipment or delivery exception | Latest fulfillment status, confirmed estimate or support instructions |
-| Return update | Request status, receipt/inspection step or decision |
-| Refund update | Approved, rejected, processing, failed, or confirmed completed status |
+| Event                            | Email content focus                                                            |
+| -------------------------------- | ------------------------------------------------------------------------------ |
+| Registration or account recovery | Account confirmation or recovery action; no password disclosure                |
+| Order placed                     | Order reference, items/amount, COD due or online payment pending as applicable |
+| Payment update                   | Verified paid, failed, or pending status; safe order link                      |
+| Shipment or delivery exception   | Latest fulfillment status, confirmed estimate or support instructions          |
+| Return update                    | Request status, receipt/inspection step or decision                            |
+| Refund update                    | Approved, rejected, processing, failed, or confirmed completed status          |
 
 Email links must not expose sensitive data or imply that clicking a link verifies payment. Use backend-confirmed status and the store's approved sender identity.
 
 ### 13.5 Content ownership
 
-| Content | Source |
-| --- | --- |
-| Product names, descriptions, images, prices | Catalog administration |
-| Categories, featured products, banners | Catalog/store configuration |
-| Delivery zones, charges, estimates | Backend and store configuration |
-| Payment channels and financial status | Backend/provider-verified state |
-| Shipping, returns, privacy, terms | Store-approved published policy content |
-| Contact and complaint details | Store settings |
+| Content                                     | Source                                  |
+| ------------------------------------------- | --------------------------------------- |
+| Product names, descriptions, images, prices | Catalog administration                  |
+| Categories, featured products, banners      | Catalog/store configuration             |
+| Delivery zones, charges, estimates          | Backend and store configuration         |
+| Payment channels and financial status       | Backend/provider-verified state         |
+| Shipping, returns, privacy, terms           | Store-approved published policy content |
+| Contact and complaint details               | Store settings                          |
 
 ---
 
@@ -746,19 +748,19 @@ A page specification is ready for implementation when it defines the following. 
 
 ### 14.2 Consistency and acceptance checks
 
-| Check | Expected outcome |
-| --- | --- |
-| Mobile navigation | All PRD-required destinations remain reachable |
-| Catalog and variants | Filter, sort, selection, unavailable states, and back navigation work |
-| Checkout | Final server totals and delivery details are visible before submission |
-| Payment | Redirect alone never appears as verified success |
-| Guest access | Verification required; only authorized order actions visible |
-| Order management | Fulfillment, payment, return, and refund statuses remain distinct |
-| Admin actions | Invalid transitions blocked; financial actions confirmed and auditable |
-| Responsive layout | No clipped controls or page-level horizontal scrolling |
-| Accessibility | Keyboard, focus, labels, contrast, errors, and reflow checked in both themes |
-| Theme switching | System default, explicit preference, persisted choice, native HeroUI variants, and no lost form state |
-| Content | No placeholder legal claims, unsupported delivery promises, or inactive payment channels |
+| Check                | Expected outcome                                                                                      |
+| -------------------- | ----------------------------------------------------------------------------------------------------- |
+| Mobile navigation    | All PRD-required destinations remain reachable                                                        |
+| Catalog and variants | Filter, sort, selection, unavailable states, and back navigation work                                 |
+| Checkout             | Final server totals and delivery details are visible before submission                                |
+| Payment              | Redirect alone never appears as verified success                                                      |
+| Guest access         | Verification required; only authorized order actions visible                                          |
+| Order management     | Fulfillment, payment, return, and refund statuses remain distinct                                     |
+| Admin actions        | Invalid transitions blocked; financial actions confirmed and auditable                                |
+| Responsive layout    | No clipped controls or page-level horizontal scrolling                                                |
+| Accessibility        | Keyboard, focus, labels, contrast, errors, and reflow checked in both themes                          |
+| Theme switching      | System default, explicit preference, persisted choice, native HeroUI variants, and no lost form state |
+| Content              | No placeholder legal claims, unsupported delivery promises, or inactive payment channels              |
 
 ### 14.3 Relationship to implementation
 

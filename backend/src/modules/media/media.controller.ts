@@ -53,7 +53,7 @@ export function createMediaController(service: MediaService, maxBytes: number) {
       respond(
         res,
         await service.uploadPublic(readSessionCookie(req.get('Cookie'), 'admin'), file),
-        201,
+        200,
       )
     },
     async remove(req: Request, res: Response) {

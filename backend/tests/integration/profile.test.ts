@@ -1,4 +1,3 @@
-import { createCustomerAccountAccess } from '../../src/modules/auth/customer-account.service.js'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { Router } from 'express'
 import { Types } from 'mongoose'
@@ -6,13 +5,15 @@ import request from 'supertest'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createApp } from '../../src/app.js'
 import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
+import { createCustomerAccountAccess } from '../../src/modules/auth/customer-account.service.js'
 import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
-import { createSessionService } from '../../src/modules/auth/sessions/session.service.js'
 import { createBrowserSecurity } from '../../src/modules/auth/sessions/browser-security.service.js'
-import { createProfileService } from '../../src/modules/customers/customer.service.js'
+import { createSessionService } from '../../src/modules/auth/sessions/session.service.js'
 import { profileRoutes } from '../../src/modules/customers/customer.routes.js'
+import { createProfileService } from '../../src/modules/customers/customer.service.js'
 import { createAddressCoverage } from '../../src/modules/delivery/delivery-coverage.service.js'
 import { isolatedDatabase } from '../helpers/database.js'
+
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
 let models: ReturnType<typeof createIdentityModels>
 let sessions: ReturnType<typeof createSessionService>
@@ -67,6 +68,7 @@ async function add(principal: Principal, patch = {}) {
     ...patch,
   })
   expect(result.status).toBe(201)
+  expect(result.headers.location).toBe(`/api/v1/me/addresses/${result.body.data.id}`)
   return result.body.data as { id: string; isDefault: boolean }
 }
 beforeAll(async () => {

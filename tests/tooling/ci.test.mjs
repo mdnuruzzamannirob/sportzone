@@ -13,6 +13,7 @@ import {
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import test from 'node:test'
+import { affectedScopes } from '../../scripts/ci/affected.mjs'
 import { baseChecks, inspectRepository, workspacePlan } from '../../scripts/ci/check-repository.mjs'
 import { ciPlan, scopeNames } from '../../scripts/ci/plan.mjs'
 import { auditResult, safeFindings } from '../../scripts/ci/security-policy.mjs'
@@ -45,6 +46,7 @@ function fixture(t) {
         'test:unit',
         'lint:boundaries',
         'format:check',
+        'format:backend',
         'test:ui',
         'test:security',
       ].map((c) => [c, 'node --version']),
@@ -54,6 +56,7 @@ function fixture(t) {
   for (const name of ['storefront', 'admin', 'backend']) {
     put(`${name}/package.json`, { name, private: true })
     config[name] = {
+      ...(name === 'backend' ? { rootChecks: ['test:unit', 'format:backend'] } : {}),
       state: 'manifest-only',
       ownerTask: 'P02-001',
       checks: baseChecks,
@@ -266,7 +269,7 @@ function activeFixture(t) {
     const checks = [
       ...baseChecks,
       'test:smoke',
-      ...(name === 'backend' ? ['test:integration'] : []),
+      ...(name === 'backend' ? ['test:integration', 'test:contract'] : []),
     ]
     f.config[name].checks = checks
     f.put(`${name}/package.json`, {
@@ -285,7 +288,7 @@ test('CI-13: one ordered inventory runs every configured check', (t) => {
     plan.map((s) => s.name),
     scopeNames,
   )
-  assert.equal(plan.flatMap((s) => s.checks).length, 23)
+  assert.equal(plan.flatMap((s) => s.checks).length, 24)
 })
 test('CI-14: mandatory browser checks cannot disappear', (t) => {
   const { root, put, config } = activeFixture(t)
@@ -323,12 +326,38 @@ test('CI-20: unknown scope fails and preserves a failure report', (t) => {
     'Failed',
   )
 })
+test('affected checks isolate backend, including accompanying documentation', () => {
+  assert.deepEqual(affectedScopes(['backend/src/server.ts', 'docs/API.md']), {
+    scope: 'backend,supply-chain',
+    browser: false,
+  })
+  for (const paths of [
+    ['shared/money.ts'],
+    ['package-lock.json'],
+    ['.github/workflows/ci.yml'],
+    ['unknown/file'],
+  ])
+    assert.deepEqual(affectedScopes(paths), { scope: 'all', browser: true })
+  assert.equal(affectedScopes(['admin/src/main.tsx']).browser, true)
+  assert.ok(affectedScopes(['admin/src/main.tsx']).scope.includes('repository'))
+  assert.equal(affectedScopes(['backend/src/server.ts'], true).scope, 'all')
+  assert.equal(affectedScopes([]).scope, 'all')
+})
+test('scoped inventory ignores unrelated invalid frontend manifests', (t) => {
+  const { root, put } = fixture(t)
+  put('admin/package.json', '{invalid')
+  assert.equal(ciPlan(root, ['backend']).length, 1)
+  assert.throws(() => ciPlan(root))
+  assert.throws(() => ciPlan(root, ['unknown']), /Unknown CI scope/)
+})
 test('CI-21: hosted checks use one install and one inventory invocation with pinned actions', () => {
   const content = readFileSync('.github/workflows/ci.yml', 'utf8')
   assert.equal((content.match(/run: npm ci /g) ?? []).length, 1)
-  assert.equal((content.match(/run: npm run ci$/gm) ?? []).length, 1)
+  assert.equal((content.match(/run: npm run ci -- --scope=/gm) ?? []).length, 1)
   assert.ok(content.includes('name: CI required result'))
   assert.ok(content.includes('fetch-depth: 0'))
+  assert.ok(content.includes("if: steps.affected.outputs.browser == 'true'"))
+  assert.ok(content.includes('CI_SCOPE: ${{ steps.affected.outputs.scope }}'))
   assert.ok(content.includes('if: ${{ always() }}'))
   for (const match of content.matchAll(/uses: (\S+)/g)) assert.match(match[1], /@[a-f0-9]{40}$/)
   for (const unsafe of [
@@ -452,13 +481,14 @@ test('CI-27: required boundary and formatting checks cannot be removed from the 
   }
 })
 
-test('CI-28: smoke and backend integration checks cannot disappear from active inventory', (t) => {
+test('CI-28: smoke, backend integration and contract checks cannot disappear from active inventory', (t) => {
   const { root, put, config } = activeFixture(t)
   for (const [name, check] of [
     ['storefront', 'test:smoke'],
     ['admin', 'test:smoke'],
     ['backend', 'test:smoke'],
     ['backend', 'test:integration'],
+    ['backend', 'test:contract'],
   ]) {
     const previous = config[name].checks
     config[name].checks = previous.filter((entry) => entry !== check)

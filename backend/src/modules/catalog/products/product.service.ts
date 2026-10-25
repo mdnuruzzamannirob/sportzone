@@ -44,3 +44,42 @@ export function productService(
     },
   }
 }
+
+// Narrow rating-only capability. Reviews never import or write catalog persistence directly.
+export function productReviewAccess(connection: Connection) {
+  const products = productModels(connection).products
+  return {
+    async lock(session: ClientSession, id: string) {
+      if (!session.inTransaction() || !/^[a-f0-9]{24}$/.test(id))
+        throw new ApiError('STATE_CONFLICT')
+      const row = await products.findOneAndUpdate(
+        { _id: id, revision: { $gte: 0, $lt: Number.MAX_SAFE_INTEGER } },
+        { $inc: { revision: 1 } },
+        { session, returnDocument: 'after' },
+      )
+      if (!row) throw new ApiError('NOT_FOUND')
+    },
+    async saveSummary(
+      session: ClientSession,
+      id: string,
+      value: { count: number; average: number },
+    ) {
+      if (
+        !session.inTransaction() ||
+        !Number.isSafeInteger(value.count) ||
+        value.count < 0 ||
+        !Number.isFinite(value.average) ||
+        value.average < 0 ||
+        value.average > 5 ||
+        (value.count === 0 ? value.average !== 0 : value.average < 1)
+      )
+        throw new ApiError('STATE_CONFLICT')
+      const result = await products.updateOne(
+        { _id: id },
+        { $set: { ratingSummary: { approvedCount: value.count, average: value.average } } },
+        { session, runValidators: true },
+      )
+      if (result.matchedCount !== 1) throw new ApiError('NOT_FOUND')
+    },
+  }
+}

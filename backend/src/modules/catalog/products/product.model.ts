@@ -91,6 +91,12 @@ productSchema.index(
   { name: 'product_status_featured_created' },
 )
 
+productSchema.index({ status: 1, createdAt: -1, _id: -1 }, { name: 'product_public_newest' })
+productSchema.index(
+  { status: 1, name: 'text', keywords: 'text' },
+  { name: 'product_public_search', default_language: 'none', weights: { name: 5, keywords: 2 } },
+)
+
 export type Product = InferSchemaType<typeof productSchema>
 export type ProductVariant = InferSchemaType<typeof variantSchema>
 export function productModels(connection: Connection) {

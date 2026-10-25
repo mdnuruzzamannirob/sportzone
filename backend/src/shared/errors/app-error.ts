@@ -1,4 +1,8 @@
-const definitions = {
+export const errorDefinitions = {
+  PRECONDITION_REQUIRED: { status: 428, message: 'A current resource version is required.' },
+  PRECONDITION_FAILED: { status: 412, message: 'The resource version is no longer current.' },
+  COUPON_UNAVAILABLE: { status: 409, message: 'Coupon is not available.' },
+  BUSINESS_RULE_VIOLATION: { status: 422, message: 'The requested operation is not available.' },
   UNSUPPORTED_DELIVERY_AREA: {
     status: 400,
     message: 'Delivery area is not supported.',
@@ -31,7 +35,7 @@ const definitions = {
   NOT_FOUND: { status: 404, message: 'Resource not found.' },
   INTERNAL_ERROR: { status: 500, message: 'An unexpected error occurred.' },
 } as const
-export type ErrorCode = keyof typeof definitions
+export type ErrorCode = keyof typeof errorDefinitions
 export type FieldIssue = { field: string; code: string }
 
 // Only approved, static public messages cross the HTTP boundary.
@@ -41,7 +45,7 @@ export class ApiError extends Error {
     readonly code: ErrorCode,
     readonly details?: readonly FieldIssue[],
   ) {
-    super(definitions[code].message)
-    this.status = definitions[code].status
+    super(errorDefinitions[code].message)
+    this.status = errorDefinitions[code].status
   }
 }

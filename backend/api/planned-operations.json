@@ -1,0 +1,1153 @@
+{
+  "description": "Specification inventory only; not a runnable collection or proof of availability. DTO/access/header definitions remain in docs/API.md until implemented in the registry.",
+  "operations": [
+    {
+      "method": "GET",
+      "path": "/auth/csrf",
+      "success": "200",
+      "operationId": "get_auth_csrf",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/register",
+      "success": "201",
+      "operationId": "post_auth_register",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/login",
+      "success": "200",
+      "operationId": "post_auth_login",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/session",
+      "success": "200",
+      "operationId": "get_auth_session",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/logout",
+      "success": "200",
+      "operationId": "post_auth_logout",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/email-verifications",
+      "success": "200",
+      "operationId": "post_auth_email_verifications",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/email-verifications/confirm",
+      "success": "200",
+      "operationId": "post_auth_email_verifications_confirm",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/password-resets",
+      "success": "200",
+      "operationId": "post_auth_password_resets",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/password-resets/confirm",
+      "success": "200",
+      "operationId": "post_auth_password_resets_confirm",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "success": "200",
+      "operationId": "get_me",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "PATCH",
+      "path": "/me",
+      "success": "200",
+      "operationId": "patch_me",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "POST",
+      "path": "/me/email-changes",
+      "success": "200",
+      "operationId": "post_me_email_changes",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "POST",
+      "path": "/me/email-changes/confirm",
+      "success": "200",
+      "operationId": "post_me_email_changes_confirm",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "POST",
+      "path": "/me/password-change",
+      "success": "200",
+      "operationId": "post_me_password_change",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "GET",
+      "path": "/me/addresses",
+      "success": "200",
+      "operationId": "get_me_addresses",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "POST",
+      "path": "/me/addresses",
+      "success": "201",
+      "operationId": "post_me_addresses",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "PATCH",
+      "path": "/me/addresses/{addressId}",
+      "success": "200",
+      "operationId": "patch_me_addresses_addressId",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "DELETE",
+      "path": "/me/addresses/{addressId}",
+      "success": "204",
+      "operationId": "delete_me_addresses_addressId",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "POST",
+      "path": "/me/addresses/{addressId}/default",
+      "success": "200",
+      "operationId": "post_me_addresses_addressId_default",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "POST",
+      "path": "/me/deletion-requests",
+      "success": "200",
+      "operationId": "post_me_deletion_requests",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/auth/csrf",
+      "success": "200",
+      "operationId": "get_admin_auth_csrf",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/auth/login",
+      "success": "200",
+      "operationId": "post_admin_auth_login",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/auth/session",
+      "success": "200",
+      "operationId": "get_admin_auth_session",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/auth/logout",
+      "success": "200",
+      "operationId": "post_admin_auth_logout",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/auth/password-resets",
+      "success": "200",
+      "operationId": "post_admin_auth_password_resets",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/auth/password-resets/confirm",
+      "success": "200",
+      "operationId": "post_admin_auth_password_resets_confirm",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "POST",
+      "path": "/guest-access/challenges",
+      "success": "200",
+      "operationId": "post_guest_access_challenges",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/guest-access/sessions",
+      "success": "200",
+      "operationId": "post_guest_access_sessions",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/guest-access/session",
+      "success": "200",
+      "operationId": "get_guest_access_session",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/guest-access/logout",
+      "success": "200",
+      "operationId": "post_guest_access_logout",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/storefront/home",
+      "success": "200",
+      "operationId": "get_storefront_home",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/categories",
+      "success": "200",
+      "operationId": "get_categories",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "GET",
+      "path": "/categories/{slug}",
+      "success": "200",
+      "operationId": "get_categories_slug",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "GET",
+      "path": "/products",
+      "success": "200",
+      "operationId": "get_products",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "GET",
+      "path": "/products/{slug}",
+      "success": "200",
+      "operationId": "get_products_slug",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "GET",
+      "path": "/products/{productId}/reviews",
+      "success": "200",
+      "operationId": "get_products_productId_reviews",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/storefront/policies/{type}",
+      "success": "200",
+      "operationId": "get_storefront_policies_type",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/storefront/contact",
+      "success": "200",
+      "operationId": "get_storefront_contact",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/cart",
+      "success": "200",
+      "operationId": "get_cart",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "PUT",
+      "path": "/cart/items/{variantId}",
+      "success": "200",
+      "operationId": "put_cart_items_variantId",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "DELETE",
+      "path": "/cart/items/{variantId}",
+      "success": "200",
+      "operationId": "delete_cart_items_variantId",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "POST",
+      "path": "/cart/merge",
+      "success": "200",
+      "operationId": "post_cart_merge",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "GET",
+      "path": "/wishlist",
+      "success": "200",
+      "operationId": "get_wishlist",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "PUT",
+      "path": "/wishlist/products/{productId}",
+      "success": "200",
+      "operationId": "put_wishlist_products_productId",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "DELETE",
+      "path": "/wishlist/products/{productId}",
+      "success": "200",
+      "operationId": "delete_wishlist_products_productId",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "POST",
+      "path": "/coupons/preview",
+      "success": "200",
+      "operationId": "post_coupons_preview",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/products/{productId}/reviews",
+      "success": "201",
+      "operationId": "post_products_productId_reviews",
+      "implementation": "planned"
+    },
+    {
+      "method": "PATCH",
+      "path": "/reviews/{reviewId}",
+      "success": "200",
+      "operationId": "patch_reviews_reviewId",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/me/reviews",
+      "success": "200",
+      "operationId": "get_me_reviews",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/delivery/areas",
+      "success": "200",
+      "operationId": "get_delivery_areas",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/checkout/quotes",
+      "success": "200",
+      "operationId": "post_checkout_quotes",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/checkout/orders",
+      "success": "201 (replay 200)",
+      "operationId": "post_checkout_orders",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/orders",
+      "success": "200",
+      "operationId": "get_orders",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/orders/{orderId}",
+      "success": "200",
+      "operationId": "get_orders_orderId",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/orders/{orderId}/status",
+      "success": "200",
+      "operationId": "get_orders_orderId_status",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/orders/{orderId}/cancellation-requests",
+      "success": "201",
+      "operationId": "post_orders_orderId_cancellation_requests",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/orders/{orderId}/cancellation-requests",
+      "success": "200",
+      "operationId": "get_orders_orderId_cancellation_requests",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/orders/{orderId}/delivery-events",
+      "success": "200",
+      "operationId": "get_orders_orderId_delivery_events",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/checkout/payment-methods",
+      "success": "200",
+      "operationId": "get_checkout_payment_methods",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/orders/{orderId}/payments",
+      "success": "200",
+      "operationId": "get_orders_orderId_payments",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/orders/{orderId}/payment-attempts",
+      "success": "200 / 202",
+      "operationId": "post_orders_orderId_payment_attempts",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/orders/{orderId}/payment-attempts/{attemptId}",
+      "success": "200",
+      "operationId": "get_orders_orderId_payment_attempts_attemptId",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/webhooks/sslcommerz/ipn",
+      "success": "200 / 4xx / 5xx",
+      "operationId": "post_webhooks_sslcommerz_ipn",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/payment-returns/sslcommerz/{result}",
+      "success": "303",
+      "operationId": "get_payment_returns_sslcommerz_result",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/payment-returns/sslcommerz/{result}",
+      "success": "303",
+      "operationId": "post_payment_returns_sslcommerz_result",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/payments",
+      "success": "200",
+      "operationId": "get_admin_payments",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/payments/{paymentId}",
+      "success": "200",
+      "operationId": "get_admin_payments_paymentId",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/payments/{paymentId}/reconcile",
+      "success": "200 / 202",
+      "operationId": "post_admin_payments_paymentId_reconcile",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/payments/{paymentId}/risk-decisions",
+      "success": "200",
+      "operationId": "post_admin_payments_paymentId_risk_decisions",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/payments/{paymentId}/cod-collections",
+      "success": "200",
+      "operationId": "post_admin_payments_paymentId_cod_collections",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/provider-receipts",
+      "success": "200",
+      "operationId": "get_admin_provider_receipts",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/provider-receipts/{intakeId}/link",
+      "success": "200",
+      "operationId": "post_admin_provider_receipts_intakeId_link",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/payment-collections/{collectionId}/allocate",
+      "success": "200",
+      "operationId": "post_admin_payment_collections_collectionId_allocate",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/me/claims",
+      "success": "200",
+      "operationId": "get_me_claims",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/me/refunds",
+      "success": "200",
+      "operationId": "get_me_refunds",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/orders/{orderId}/claim-eligibility",
+      "success": "200",
+      "operationId": "get_orders_orderId_claim_eligibility",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/orders/{orderId}/claims",
+      "success": "201",
+      "operationId": "post_orders_orderId_claims",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/orders/{orderId}/claims",
+      "success": "200",
+      "operationId": "get_orders_orderId_claims",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/claims/{claimId}",
+      "success": "200",
+      "operationId": "get_claims_claimId",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/orders/{orderId}/refunds",
+      "success": "200",
+      "operationId": "get_orders_orderId_refunds",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/orders/{orderId}/refund-requests",
+      "success": "200",
+      "operationId": "post_orders_orderId_refund_requests",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/refunds/{refundId}",
+      "success": "200",
+      "operationId": "get_refunds_refundId",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/claims",
+      "success": "200",
+      "operationId": "get_admin_claims",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/claims/{claimId}",
+      "success": "200",
+      "operationId": "get_admin_claims_claimId",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/claims/{claimId}/review",
+      "success": "200",
+      "operationId": "post_admin_claims_claimId_review",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/claims/{claimId}/receipt",
+      "success": "200",
+      "operationId": "post_admin_claims_claimId_receipt",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/claims/{claimId}/inspection",
+      "success": "200",
+      "operationId": "post_admin_claims_claimId_inspection",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/claims/{claimId}/complete",
+      "success": "200",
+      "operationId": "post_admin_claims_claimId_complete",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/refunds",
+      "success": "200",
+      "operationId": "get_admin_refunds",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/refunds/{refundId}",
+      "success": "200",
+      "operationId": "get_admin_refunds_refundId",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/refund-groups",
+      "success": "201",
+      "operationId": "post_admin_refund_groups",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/refunds/{refundId}/review",
+      "success": "200",
+      "operationId": "post_admin_refunds_refundId_review",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/refunds/{refundId}/payout-attempts",
+      "success": "200 / 202",
+      "operationId": "post_admin_refunds_refundId_payout_attempts",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/refunds/{refundId}/reconcile",
+      "success": "200 / 202",
+      "operationId": "post_admin_refunds_refundId_reconcile",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/refunds/{refundId}/manual-confirmations",
+      "success": "200",
+      "operationId": "post_admin_refunds_refundId_manual_confirmations",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/products",
+      "success": "200",
+      "operationId": "get_admin_products",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/products",
+      "success": "201",
+      "operationId": "post_admin_products",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/products/{productId}",
+      "success": "200",
+      "operationId": "get_admin_products_productId",
+      "implementation": "planned"
+    },
+    {
+      "method": "PATCH",
+      "path": "/admin/products/{productId}",
+      "success": "200",
+      "operationId": "patch_admin_products_productId",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/products/{productId}/deactivate",
+      "success": "200",
+      "operationId": "post_admin_products_productId_deactivate",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/categories",
+      "success": "200",
+      "operationId": "get_admin_categories",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/categories",
+      "success": "201",
+      "operationId": "post_admin_categories",
+      "implementation": "planned"
+    },
+    {
+      "method": "PATCH",
+      "path": "/admin/categories/{categoryId}",
+      "success": "200",
+      "operationId": "patch_admin_categories_categoryId",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/categories/{categoryId}/deactivate",
+      "success": "200",
+      "operationId": "post_admin_categories_categoryId_deactivate",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/products/{productId}/variants",
+      "success": "201",
+      "operationId": "post_admin_products_productId_variants",
+      "implementation": "planned"
+    },
+    {
+      "method": "PATCH",
+      "path": "/admin/variants/{variantId}",
+      "success": "200",
+      "operationId": "patch_admin_variants_variantId",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/variants/{variantId}/deactivate",
+      "success": "200",
+      "operationId": "post_admin_variants_variantId_deactivate",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/inventory",
+      "success": "200",
+      "operationId": "get_admin_inventory",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/inventory/{variantId}/movements",
+      "success": "200",
+      "operationId": "get_admin_inventory_variantId_movements",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/inventory/{variantId}/adjustments",
+      "success": "200",
+      "operationId": "post_admin_inventory_variantId_adjustments",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/orders",
+      "success": "200",
+      "operationId": "get_admin_orders",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/orders/{orderId}",
+      "success": "200",
+      "operationId": "get_admin_orders_orderId",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/orders/{orderId}/fulfillment-transitions",
+      "success": "200",
+      "operationId": "post_admin_orders_orderId_fulfillment_transitions",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/cancellation-requests",
+      "success": "200",
+      "operationId": "get_admin_cancellation_requests",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/cancellation-requests/{requestId}/decision",
+      "success": "200",
+      "operationId": "post_admin_cancellation_requests_requestId_decision",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/orders/{orderId}/delivery-exceptions",
+      "success": "200",
+      "operationId": "get_admin_orders_orderId_delivery_exceptions",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/orders/{orderId}/delivery-exceptions",
+      "success": "201",
+      "operationId": "post_admin_orders_orderId_delivery_exceptions",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/delivery-exceptions/{exceptionId}/resolve",
+      "success": "200",
+      "operationId": "post_admin_delivery_exceptions_exceptionId_resolve",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/customers",
+      "success": "200",
+      "operationId": "get_admin_customers",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/customers/{customerId}",
+      "success": "200",
+      "operationId": "get_admin_customers_customerId",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/customers/{customerId}/orders",
+      "success": "200",
+      "operationId": "get_admin_customers_customerId_orders",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/customers/{customerId}/claims",
+      "success": "200",
+      "operationId": "get_admin_customers_customerId_claims",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/customers/{customerId}/refunds",
+      "success": "200",
+      "operationId": "get_admin_customers_customerId_refunds",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/customers/{customerId}/status-decisions",
+      "success": "200",
+      "operationId": "post_admin_customers_customerId_status_decisions",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/reviews",
+      "success": "200",
+      "operationId": "get_admin_reviews",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/reviews/{reviewId}/moderation",
+      "success": "200",
+      "operationId": "post_admin_reviews_reviewId_moderation",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/delivery/zones",
+      "success": "200",
+      "operationId": "get_admin_delivery_zones",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/delivery/zones",
+      "success": "201",
+      "operationId": "post_admin_delivery_zones",
+      "implementation": "planned"
+    },
+    {
+      "method": "PATCH",
+      "path": "/admin/delivery/zones/{zoneId}",
+      "success": "200",
+      "operationId": "patch_admin_delivery_zones_zoneId",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/delivery/charges",
+      "success": "200",
+      "operationId": "get_admin_delivery_charges",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/delivery/charges",
+      "success": "201",
+      "operationId": "post_admin_delivery_charges",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/delivery/charges/{chargeId}/activate",
+      "success": "200",
+      "operationId": "post_admin_delivery_charges_chargeId_activate",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/delivery/charges/{chargeId}/supersede",
+      "success": "200",
+      "operationId": "post_admin_delivery_charges_chargeId_supersede",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/delivery/charges/{chargeId}/deactivate",
+      "success": "200",
+      "operationId": "post_admin_delivery_charges_chargeId_deactivate",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/coupons",
+      "success": "200",
+      "operationId": "get_admin_coupons",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/coupons",
+      "success": "201",
+      "operationId": "post_admin_coupons",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "PATCH",
+      "path": "/admin/coupons/{couponId}",
+      "success": "200",
+      "operationId": "patch_admin_coupons_couponId",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/coupons/{couponId}/deactivate",
+      "success": "200",
+      "operationId": "post_admin_coupons_couponId_deactivate",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/coupons/{couponId}/redemptions",
+      "success": "200",
+      "operationId": "get_admin_coupons_couponId_redemptions",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/settings",
+      "success": "200",
+      "operationId": "get_admin_settings",
+      "implementation": "planned"
+    },
+    {
+      "method": "PATCH",
+      "path": "/admin/settings",
+      "success": "200",
+      "operationId": "patch_admin_settings",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/settings/policies",
+      "success": "200",
+      "operationId": "get_admin_settings_policies",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/settings/policies",
+      "success": "201",
+      "operationId": "post_admin_settings_policies",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/settings/policies/{policyId}",
+      "success": "200",
+      "operationId": "get_admin_settings_policies_policyId",
+      "implementation": "planned"
+    },
+    {
+      "method": "PATCH",
+      "path": "/admin/settings/policies/{policyId}",
+      "success": "200",
+      "operationId": "patch_admin_settings_policies_policyId",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/settings/policies/{policyId}/approve",
+      "success": "200",
+      "operationId": "post_admin_settings_policies_policyId_approve",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/settings/policies/{policyId}/publish",
+      "success": "200",
+      "operationId": "post_admin_settings_policies_policyId_publish",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/dashboard",
+      "success": "200",
+      "operationId": "get_admin_dashboard",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/reports/sales",
+      "success": "200",
+      "operationId": "get_admin_reports_sales",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/reports/collections",
+      "success": "200",
+      "operationId": "get_admin_reports_collections",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/reports/refunds",
+      "success": "200",
+      "operationId": "get_admin_reports_refunds",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/complaints",
+      "success": "201",
+      "operationId": "post_complaints",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/me/complaints",
+      "success": "200",
+      "operationId": "get_me_complaints",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/orders/{orderId}/complaints",
+      "success": "200",
+      "operationId": "get_orders_orderId_complaints",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/complaints",
+      "success": "200",
+      "operationId": "get_admin_complaints",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/complaints/{complaintId}/resolve",
+      "success": "200",
+      "operationId": "post_admin_complaints_complaintId_resolve",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/audit-logs",
+      "success": "200",
+      "operationId": "get_admin_audit_logs",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/notifications",
+      "success": "200",
+      "operationId": "get_admin_notifications",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/notifications/{notificationId}/retry",
+      "success": "200",
+      "operationId": "post_admin_notifications_notificationId_retry",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/media/uploads",
+      "success": "200",
+      "operationId": "post_admin_media_uploads",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "POST",
+      "path": "/orders/{orderId}/claims/evidence-uploads",
+      "success": "200",
+      "operationId": "post_orders_orderId_claims_evidence_uploads",
+      "implementation": "planned"
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/media/{assetId}",
+      "success": "204",
+      "operationId": "delete_admin_media_assetId",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "GET",
+      "path": "/health/live",
+      "success": "200",
+      "operationId": "get_health_live",
+      "implementation": "implemented-conditional"
+    },
+    {
+      "method": "GET",
+      "path": "/health/ready",
+      "success": "200 / 503",
+      "operationId": "get_health_ready",
+      "implementation": "implemented-conditional"
+    }
+  ]
+}

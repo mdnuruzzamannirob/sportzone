@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'
-import { ciPlan } from './plan.mjs'
+import { ciPlan, scopeNames } from './plan.mjs'
 
 const argv = process.argv.slice(2)
 const selection = argv[0]?.slice(8) ?? 'all'
@@ -14,13 +14,13 @@ const report = {
 let filename = 'test-results/ci.json'
 mkdirSync('test-results/ci', { recursive: true })
 try {
-  if (argv.length > 1 || (argv.length && !/^--scope=[a-z-]+$/.test(argv[0])))
+  if (argv.length > 1 || (argv.length && !/^--scope=[a-z,-]+$/.test(argv[0])))
     throw new Error('Invalid CI arguments')
-  const plan = ciPlan(process.cwd())
-  if (selection !== 'all' && !plan.some((s) => s.name === selection))
-    throw new Error('Unknown CI scope')
+  const selected = selection === 'all' ? scopeNames : selection.split(',')
+  if (new Set(selected).size !== selected.length) throw new Error('Duplicate CI scope')
+  const plan = ciPlan(process.cwd(), selected)
   if (selection !== 'all') filename = `test-results/ci/${selection}.json`
-  for (const scope of plan.filter((s) => selection === 'all' || s.name === selection)) {
+  for (const scope of plan) {
     if (scope.state !== 'Configured') throw new Error(`CI scope is not configured: ${scope.name}`)
     for (const args of scope.checks) {
       const command = `npm ${args.join(' ')}`

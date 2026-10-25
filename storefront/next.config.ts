@@ -2,6 +2,8 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Resolve metadata before streaming so confirmed missing catalog resources retain HTTP 404.
+  htmlLimitedBots: /.*/,
   async headers() {
     return ['/account/:path*', '/login', '/register', '/forgot-password', '/reset-password'].map(
       (source) => ({

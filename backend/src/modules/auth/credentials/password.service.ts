@@ -3,15 +3,23 @@ import { z } from 'zod'
 import { ApiError } from '../../../shared/errors/app-error.js'
 
 // Owner accepted 19 October 2026. Do not normalize or trim credentials.
+const minScalars = 12,
+  maxScalars = 128,
+  maxBytes = 512
 export const newPasswordPolicy = z
   .string()
   .refine(
     (value) =>
       !/[\uD800-\uDFFF]/u.test(value) &&
-      [...value].length >= 12 &&
-      [...value].length <= 128 &&
-      Buffer.byteLength(value, 'utf8') <= 512,
+      [...value].length >= minScalars &&
+      [...value].length <= maxScalars &&
+      Buffer.byteLength(value, 'utf8') <= maxBytes,
   )
+  .meta({
+    minLength: minScalars,
+    maxLength: maxScalars,
+    description: `No normalization; at most ${maxBytes} UTF-8 bytes, no unpaired surrogates. Runtime policy remains authoritative.`,
+  })
 const parameters = { N: 131072, r: 8, p: 1, maxmem: 256 * 1024 * 1024 } as const
 let running = 0
 function derive(password: string, salt: Buffer): Promise<Buffer> {

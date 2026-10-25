@@ -194,7 +194,7 @@ it('enables media only with explicit dependencies and verified persistence, reta
     .set('Cookie', `sz_admin_sid=${session.token}`)
     .set('X-CSRF-Token', session.csrfToken)
     .attach('file', png, 'synthetic.png')
-    .expect(201)
+    .expect(200)
   await request(app)
     .post('/api/v1/not-a-media-route')
     .attach('file', png, 'synthetic.png')
@@ -219,4 +219,68 @@ it('enables media only with explicit dependencies and verified persistence, reta
   expect(lines.some((line) => line.includes('admin.media.upload'))).toBe(true)
   expect(lines.join('\n')).not.toContain(session.token)
   expect(lines.join('\n')).not.toContain(user.emailNormalized)
+})
+
+it('wires cart and wishlist behind customer activation and explicit persistence bootstrap', async () => {
+  const { initializeCartPersistence } = await import('../../src/modules/cart/cart.persistence.js')
+  const { initializeWishlistPersistence } = await import(
+    '../../src/modules/cart/wishlist.persistence.js'
+  )
+  const { createSessionService } = await import(
+    '../../src/modules/auth/sessions/session.service.js'
+  )
+  const config = loadEnvironment(identityEnvironment())
+  if (!config.identity) throw new Error('Missing fixture identity options')
+  const models = createIdentityModels(fixture.connection)
+  const user = await models.users.create({
+    name: 'Synthetic cart',
+    emailNormalized: 'cart-composition@example.test',
+    passwordHash: 'synthetic_hash',
+    role: 'customer',
+  })
+  const session = await createSessionService(
+    fixture.connection,
+    models,
+    config.identity.sessions,
+  ).issue('customer', user._id)
+  const app = await composeApplication(
+    fixture.connection,
+    config,
+    { isReady: async () => true },
+    createLogger(config, () => {}),
+  )
+  const cookie = `sz_customer_sid=${session.token}`
+  await request(app).get('/api/v1/cart').set('Cookie', cookie).expect(503)
+  await request(app).get('/api/v1/wishlist').set('Cookie', cookie).expect(503)
+  await initializeCartPersistence(fixture.connection)
+  await initializeWishlistPersistence(fixture.connection)
+  const result = await request(app).get('/api/v1/cart').set('Cookie', cookie).expect(200)
+  expect(result.body.data).toEqual({ items: [], estimatedSubtotalPoisha: 0, revision: 0 })
+  expect(
+    (await request(app).get('/api/v1/wishlist').set('Cookie', cookie).expect(200)).body.data,
+  ).toEqual({ products: [] })
+  const inactive = await composeApplication(
+    fixture.connection,
+    { ...config, CUSTOMER_AUTH_ENABLED: false, ADMIN_AUTH_ENABLED: false },
+    { isReady: async () => true },
+    createLogger(config, () => {}),
+  )
+  await request(inactive).get('/api/v1/cart').set('Cookie', cookie).expect(404)
+  await request(inactive).get('/api/v1/wishlist').set('Cookie', cookie).expect(404)
+})
+
+it('runs the explicit compiled local/test shopping bootstrap additively', () => {
+  const result = spawnSync(process.execPath, ['scripts/bootstrap-cart.mjs'], {
+    env: {
+      ...process.env,
+      ...identityEnvironment(),
+      MONGODB_URI: fixture.replica.getUri(),
+      MONGODB_DB_NAME: fixture.connection.name,
+    },
+    encoding: 'utf8',
+    timeout: 15000,
+  })
+  expect(result.status).toBe(0)
+  expect(result.stdout).toContain('Cart and wishlist persistence ready.')
+  expect(result.stderr).toBe('')
 })

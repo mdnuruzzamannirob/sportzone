@@ -1,3 +1,4 @@
+import { createAdminAccountAccess } from './admin-account.service.js'
 import { Router } from 'express'
 import type { Connection } from 'mongoose'
 import type { IdentityConfig, RuntimeConfig } from '../../config/env.js'
@@ -112,6 +113,7 @@ export async function createAuthRuntime(
     sessions,
     security,
     throttle,
+    adminAccounts: createAdminAccountAccess(connection, models, sessions),
     customerAccounts: createCustomerAccountAccess(connection, models, sessions),
     mediaAdmin: createMediaAdminAccess(models, sessions),
   }

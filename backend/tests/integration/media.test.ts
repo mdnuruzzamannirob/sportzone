@@ -369,7 +369,7 @@ it('requires multipart auth, Origin and CSRF before parsing; rejects foreign fie
   await req().attach('file', png, 'wrong.jpg').expect(400)
   await req().attach('file', Buffer.alloc(2000), 'large.png').expect(400)
   await req().attach('file', Buffer.alloc(20000), 'huge.png').expect(400)
-  const response = await req().attach('file', png, 'synthetic.png').expect(201)
+  const response = await req().attach('file', png, 'synthetic.png').expect(200)
   await request(app)
     .delete(`/api/v1/admin/media/${response.body.data.assetId}`)
     .set('Origin', origin)

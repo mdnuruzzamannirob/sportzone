@@ -6,8 +6,23 @@ import { ConfigurationError, loadEnvironment } from '../../src/config/env.js'
 import { createLogger, logConfigurationFailure } from '../../src/shared/logger.js'
 import { respond } from '../../src/shared/responses.js'
 import { testEnvironment } from '../helpers/environment.js'
+import { DatabaseError } from '../../src/shared/errors/database-error.js'
 
 describe('startup configuration', () => {
+  it('reports safe database startup reasons without serializing driver diagnostics', () => {
+    const lines: string[] = []
+    const logger = createLogger(loadEnvironment(testEnvironment()), (line) => lines.push(line))
+    const failure = new DatabaseError('CONNECTION_FAILED')
+    failure.cause = new Error('private-driver-diagnostic')
+    logger.lifecycle('startup_failed', failure)
+    logger.lifecycle('startup_failed', failure.cause)
+    expect(JSON.parse(lines[0] ?? '{}')).toMatchObject({
+      errorCode: 'SERVICE_UNAVAILABLE',
+      reasonCode: 'CONNECTION_FAILED',
+    })
+    expect(JSON.parse(lines[1] ?? '{}')).not.toHaveProperty('reasonCode')
+    expect(lines.join('')).not.toMatch(/private-driver-diagnostic/)
+  })
   it('validates current runtime inputs without mutating the environment', () => {
     const input = testEnvironment()
     const config = loadEnvironment(input)

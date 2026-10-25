@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 22 October 2026
+**Updated:** 23 October 2026
 
 **Project:** Single-store sports e-commerce platform for Bangladesh (BDT)\
 **Scope:** Repository-root instructions for coding agents working in `sportzone/`\
@@ -14,20 +14,21 @@ This file tells coding agents **how to work safely and verify their work**. It d
 
 **Contents**
 
-- [1. Purpose & scope](#1-purpose--scope)
-- [2. Source of truth & instruction priority](#2-source-of-truth--instruction-priority)
-- [3. Repository structure & ownership](#3-repository-structure--ownership)
-- [4. Agent workflow & task execution](#4-agent-workflow--task-execution)
-- [5. Implementation principles](#5-implementation-principles)
-- [6. Coding standards & conventions](#6-coding-standards--conventions)
-- [7. Frontend development rules](#7-frontend-development-rules)
-- [8. Backend & API development rules](#8-backend--api-development-rules)
-- [9. Database & data integrity rules](#9-database--data-integrity-rules)
-- [10. Security & financial safety rules](#10-security--financial-safety-rules)
-- [11. Testing & quality requirements](#11-testing--quality-requirements)
-- [12. Documentation & change management](#12-documentation--change-management)
-- [13. Task completion & reporting](#13-task-completion--reporting)
-- [14. Restrictions & failure handling](#14-restrictions--failure-handling)
+- [SportZone — AI coding agent instructions](#sportzone--ai-coding-agent-instructions)
+  - [1. Purpose \& scope](#1-purpose--scope)
+  - [2. Source of truth \& instruction priority](#2-source-of-truth--instruction-priority)
+  - [3. Repository structure \& ownership](#3-repository-structure--ownership)
+  - [4. Agent workflow \& task execution](#4-agent-workflow--task-execution)
+  - [5. Implementation principles](#5-implementation-principles)
+  - [6. Coding standards \& conventions](#6-coding-standards--conventions)
+  - [7. Frontend development rules](#7-frontend-development-rules)
+  - [8. Backend \& API development rules](#8-backend--api-development-rules)
+  - [9. Database \& data integrity rules](#9-database--data-integrity-rules)
+  - [10. Security \& financial safety rules](#10-security--financial-safety-rules)
+  - [11. Testing \& quality requirements](#11-testing--quality-requirements)
+  - [12. Documentation \& change management](#12-documentation--change-management)
+  - [13. Task completion \& reporting](#13-task-completion--reporting)
+  - [14. Restrictions \& failure handling](#14-restrictions--failure-handling)
 
 ---
 
@@ -48,19 +49,19 @@ These rules apply to agents editing repository code, tests, configuration, and d
 
 Use the authority of each document **for its own subject matter**. `AGENTS.md` provides execution instructions only; it cannot silently override the sources below.
 
-| Source | Governs |
-| --- | --- |
-| [PRD](docs/PRD.md) | Product scope, business rules, acceptance criteria, launch boundaries |
-| [Architecture](docs/ARCHITECTURE.md) | Technology decisions, project structure/naming, module ownership, trust boundaries and cross-module invariants |
-| [Design](docs/DESIGN.md) | UI tokens, layouts, states, accessibility and interactions |
-| [Database](docs/DATABASE.md) | Persistence schemas, constraints, indexes, migrations and data lifecycle |
-| [API](docs/API.md) | HTTP routes, DTOs, authentication/CSRF, errors and idempotency contracts |
-| [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) | Work sequence, dependencies, Definition of Done and milestone gates |
-| [Tasks](docs/TASKS.md) | Stable task IDs, execution status, dependencies, blockers and evidence |
-| [Testing](docs/TESTING.md) | Test matrices, procedures, fixtures, expected assertions and verification evidence |
-| [Operations](docs/OPERATIONS.md) | Environments, deployment, backup/restore, monitoring, incidents and operator runbooks |
-| [README](README.md) | Repository orientation and setup entry points, subject to actual repository verification |
-| `AGENTS.md` | Safe agent workflow, edit controls and reporting rules |
+| Source                                             | Governs                                                                                                        |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| [PRD](docs/PRD.md)                                 | Product scope, business rules, acceptance criteria, launch boundaries                                          |
+| [Architecture](docs/ARCHITECTURE.md)               | Technology decisions, project structure/naming, module ownership, trust boundaries and cross-module invariants |
+| [Design](docs/DESIGN.md)                           | UI tokens, layouts, states, accessibility and interactions                                                     |
+| [Database](docs/DATABASE.md)                       | Persistence schemas, constraints, indexes, migrations and data lifecycle                                       |
+| [API](docs/API.md)                                 | HTTP routes, DTOs, authentication/CSRF, errors and idempotency contracts                                       |
+| [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) | Work sequence, dependencies, Definition of Done and milestone gates                                            |
+| [Tasks](docs/TASKS.md)                             | Stable task IDs, execution status, dependencies, blockers and evidence                                         |
+| [Testing](docs/TESTING.md)                         | Test matrices, procedures, fixtures, expected assertions and verification evidence                             |
+| [Operations](docs/OPERATIONS.md)                   | Environments, deployment, backup/restore, monitoring, incidents and operator runbooks                          |
+| [README](README.md)                                | Repository orientation and setup entry points, subject to actual repository verification                       |
+| `AGENTS.md`                                        | Safe agent workflow, edit controls and reporting rules                                                         |
 
 **Resolve conflicts by subject authority, not by selecting whichever text is newer.** Detailed Database/API contracts must still satisfy the PRD and Architecture invariants. If two sources conflict or a needed decision is missing, record **both exact references, the impacted task, risk and decision owner**; stop the affected irreversible or unsafe operation and request approval. Continue only unrelated, safe work. Do not change an approved requirement as an undocumented “fix.”
 
@@ -85,12 +86,12 @@ sportzone/
 
 Inspect the live repository before using paths or commands from this target layout. Within `backend/src/`, keep feature modules behind domain-service boundaries; route/controller code should not bypass them to manipulate another module’s private models. Background jobs reuse backend domain services and durable state; they are not a second business API.
 
-| Area | Owner / boundary |
-| --- | --- |
-| `storefront/` | Customer presentation, public rendering and API consumption; no business authority |
-| `admin/` | Authenticated store-management UI; UI route guards are not server authorization |
-| `backend/` | Authentication, pricing, inventory, order state, payment verification, refunds and persistence |
-| `docs/` | Contracts and decisions; keep them synchronized with approved behavioral changes |
+| Area          | Owner / boundary                                                                               |
+| ------------- | ---------------------------------------------------------------------------------------------- |
+| `storefront/` | Customer presentation, public rendering and API consumption; no business authority             |
+| `admin/`      | Authenticated store-management UI; UI route guards are not server authorization                |
+| `backend/`    | Authentication, pricing, inventory, order state, payment verification, refunds and persistence |
+| `docs/`       | Contracts and decisions; keep them synchronized with approved behavioral changes               |
 
 **MUST NOT** import Mongoose models or backend runtime services into either frontend. Shared pure types/contracts are optional only when justified by real duplication; do not introduce a shared UI library or new service without a demonstrated need.
 
@@ -112,8 +113,7 @@ from business decisions. No frontend backend-runtime/provider/secret imports. Up
 boundary checks and negative fixtures with the owning refactor; a documentation statement alone does
 not prove enforcement. Use narrow capabilities for shared collections and preserve canonical models.
 
-**One application at a time:** P01-018 documentation review → P03-021 backend → P02-015 storefront →
-P02-016 admin. By default, accept each application before starting the next. When the owner explicitly
+**One application at a time:** Follow Implementation Plan §3.1: foundation → backend → admin → storefront → integrated release. The stage closeouts are P01-024, P03-022, P09-010 and P02-017 respectively; consult Tasks for their dependencies and evidence. Historical refactor IDs retain their recorded acceptance. Accept each application before starting the next. When the owner explicitly
 requests a combined application/monorepo batch, implement and verify each application in sequence, then collect
 independent acceptance for every task in the final review; a batch request never self-approves a task or milestone.
 Move imports, tools, test discovery, aliases and actual CI inventory together; retain compatibility
@@ -127,20 +127,20 @@ Apply this sequence to each assigned change:
 
 1. **Understand:** Identify the user request, `PXX-NNN` task where applicable, linked PRD FR/NFR, acceptance criteria and dependencies. Do not infer that a task or milestone is accepted from its description.
 2. **Inspect:** Read affected code, tests, existing conventions, relevant Database/API contracts, and `git diff`/working-tree state. Do not overwrite concurrent edits.
-3. **Plan:** Define the smallest safe vertical slice, changed files, data/API impacts, tests, rollout/recovery concerns and unresolved decisions.
+3. **Plan:** Define the smallest safe work package within the active application stage, changed files, data/API impacts, tests, rollout/recovery concerns and unresolved decisions.
 4. **Implement:** Modify only required files; preserve module ownership, compatibility and financial/security invariants. For each feature, update data/API contracts before implementation where needed.
 5. **Verify:** Execute available relevant checks with real output. Include negative, concurrency and retry paths when applicable. Use a transaction-capable MongoDB deployment for transaction tests.
 6. **Review:** Inspect the actual diff for unrelated changes, contract drift, unsafe logging, missing cleanup, and regressions.
 7. **Report:** Give results, tests **run and not run**, limitations, evidence and correct task status; do not invent completion.
 
-Follow the dependency-driven feature-slice sequence in [Implementation Plan §§3, 6](docs/IMPLEMENTATION_PLAN.md). A phase label does not automatically require unrelated work to be sequential; safety prerequisites still apply.
+Follow the application-stage sequence and domain dependencies in [Implementation Plan §§3, 6](docs/IMPLEMENTATION_PLAN.md). A phase label does not automatically require unrelated work to be sequential; safety prerequisites still apply.
 
 For higher-risk mutations, write state-transition and concurrency tests before enabling the mutation in an integrated environment, as required by Implementation Plan §3.1.
 
 ## 5. Implementation principles
 
 - **One authoritative backend:** Express services own prices, discounts, delivery charges, stock, permissions, order transitions and financial effects. Next.js route handlers or Server Actions may only be thin presentation adapters.
-- **Incremental delivery:** Prefer end-to-end usable slices over disconnected mock pages or speculative abstractions.
+- **Incremental delivery:** Deliver usable, verified work packages within the active application stage; backend packages prove real APIs and domain behavior, with client journeys integrated in their later stages.
 - **Controlled complexity:** Stay within the modular monolith and planned durable scheduled jobs; add infrastructure only after an approved, demonstrated need.
 - **Historical correctness:** Preserve immutable order-time product/price/discount/address/delivery snapshots, financial events and audit history.
 - **Uncertain outcomes:** Network timeout, browser redirect or provider request acceptance does not prove payment collection or refund completion.
@@ -203,14 +203,14 @@ Use `components/layout/` for shells, `components/ui/` for HeroUI defaults, and o
 
 Before changing any authorization, inventory, checkout, collection, cancellation, claim or refund path, inspect [Architecture](docs/ARCHITECTURE.md), [Database](docs/DATABASE.md), [API](docs/API.md) and the applicable [Testing](docs/TESTING.md) cases.
 
-| Invariant | Required behavior |
-| --- | --- |
-| Access | Enforce sessions, CSRF, role and record ownership server-side; public registration creates customer accounts only |
-| Stock | Atomic checks prevent negative availability, overselling and duplicate movement effects |
-| Orders | Validate funding, risk clearance, stock/coupon allocation and state before fulfillment; preserve audit/snapshots |
-| Payments | Verify provider status independently; retain attempted, linked, late, excess and unmatched receipts safely |
-| Refunds | Reserve obligations without exceeding any source collection/order balance; verify actual payout before marking complete |
-| Recovery | Do not erase collections, payouts, orders or audit evidence through application rollback; reconcile external effects after restores |
+| Invariant | Required behavior                                                                                                                   |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Access    | Enforce sessions, CSRF, role and record ownership server-side; public registration creates customer accounts only                   |
+| Stock     | Atomic checks prevent negative availability, overselling and duplicate movement effects                                             |
+| Orders    | Validate funding, risk clearance, stock/coupon allocation and state before fulfillment; preserve audit/snapshots                    |
+| Payments  | Verify provider status independently; retain attempted, linked, late, excess and unmatched receipts safely                          |
+| Refunds   | Reserve obligations without exceeding any source collection/order balance; verify actual payout before marking complete             |
+| Recovery  | Do not erase collections, payouts, orders or audit evidence through application rollback; reconcile external effects after restores |
 
 **MUST NOT** expose plaintext passwords, tokens, full payment credentials or sensitive personal data. Use approved secrets/configuration mechanisms, sanitized `.env.example`, least privilege, protected logging and rotation procedures. Actual retention/deletion/legal-hold rules remain in the responsible [Database](docs/DATABASE.md) and [Operations](docs/OPERATIONS.md) contracts.
 
@@ -218,16 +218,16 @@ Before changing any authorization, inventory, checkout, collection, cancellation
 
 Verification depends on the change type. Consult [Testing](docs/TESTING.md) for case IDs, expected outcomes, fixture rules and release evidence.
 
-| Change | Minimum applicable verification |
-| --- | --- |
-| UI/component | Type check, lint, focused component tests, responsive/keyboard/accessibility and both themes |
-| Backend/API | Unit/integration and contract tests; auth, invalid input and error paths |
-| Database | Schema/index validation, transaction and concurrent-write tests on isolated replica-set-capable MongoDB |
-| Checkout/financial | Replays, duplicate callbacks/jobs, timeouts, partial/excess/mismatched payments, refund caps and recovery |
-| Configuration/operations | Environment safety, deploy/rollback compatibility, monitoring and affected recovery runbooks |
-| Documentation | Correct references, Markdown structure/links, consistency with related contracts |
+| Change                   | Minimum applicable verification                                                                           |
+| ------------------------ | --------------------------------------------------------------------------------------------------------- |
+| UI/component             | Type check, lint, focused component tests, responsive/keyboard/accessibility and both themes              |
+| Backend/API              | Unit/integration and contract tests; auth, invalid input and error paths                                  |
+| Database                 | Schema/index validation, transaction and concurrent-write tests on isolated replica-set-capable MongoDB   |
+| Checkout/financial       | Replays, duplicate callbacks/jobs, timeouts, partial/excess/mismatched payments, refund caps and recovery |
+| Configuration/operations | Environment safety, deploy/rollback compatibility, monitoring and affected recovery runbooks              |
+| Documentation            | Correct references, Markdown structure/links, consistency with related contracts                          |
 
-Use change-based local verification in [Testing §15.5](docs/TESTING.md#155-change-based-local-verification). Select affected checks before running them; reuse valid results for unchanged inputs. After a localized fix, rerun the failed suite and affected consumers rather than restarting the whole pipeline. Documentation-only work needs repository documentation checks, not application builds/tests. Full CI belongs to hosted integration/release or justified cross-project changes. Do not repeat settled architecture research without a concrete unresolved question.
+Use change-based local verification in [Testing §15.5](docs/TESTING.md#155-change-based-local-verification). Select affected checks before running them; reuse valid results for unchanged inputs. After a localized fix, rerun the failed suite and affected consumers rather than restarting the whole pipeline. Documentation-only work needs repository documentation checks, not application builds/tests. At application-stage closeout, use its final unfinished task for consolidated owning-application regression; integrated product/release closeout adds cross-application checks under Testing §15.5; do not repeat full-project suites after every task. Required task-level safety checks and independent acceptance remain mandatory. Backend-private work uses backend verification without frontend builds, UI tests or browser setup. Hosted scope selection and full integrated/release verification follow Testing §15; inspect actual workflow support before claiming isolation. Do not repeat settled architecture research without a concrete unresolved question.
 
 Execute repository scripts **only after confirming their actual names** in `package.json` and CI. Do not imply planned scripts/tests already exist. Record command, environment, observed result and artifact link. Use these results honestly: **Passed**, **Failed**, **Not Run** (including unavailable infrastructure), or **Blocked**. A mock-only check or static review is not real provider, concurrency, deployment or production acceptance.
 
@@ -238,9 +238,10 @@ When scaffolding a workspace or adding its scripts/dependencies, update [ci-work
 - Update the **owning** document when a contract legitimately changes; then inspect references and dependent specifications. `AGENTS.md` and `README.md` must never silently overrule them.
 - Edit the existing owning section instead of appending dated updates, task summaries or parallel rules to specifications. Keep requirements and current procedures in specifications; execution status/reviewer decisions in Tasks; commands/results and implementation snapshots in task evidence; concise change history in Changelog.
 - Update documentation only when its contract, setup or procedure changes. A completed task does not require edits to every document. Link to the owning source rather than duplicating its details.
+- Treat an accepted documentation baseline as settled. Reopen its owning section only for a concrete defect, an approved requirement/decision change or a changed executable procedure. Do not append implementation progress to specifications or repeat editorial refactors after routine task completion.
 - Reuse existing documents and evidence records. Create a new document only for a distinct subject with a clear owner and navigation entry; do not create separate structure/component guides already owned by Architecture and Design.
 - Before handoff, remove superseded instructions and duplicate paragraphs, reconcile current versus target paths, and check headings, contents and inbound links. Preserve historical acceptance and verification records; label their revision/environment instead of presenting old results as current guarantees.
-- Before a feature slice, reconcile affected [Database](docs/DATABASE.md), [API](docs/API.md) and [Testing](docs/TESTING.md) contracts. Update [Operations](docs/OPERATIONS.md) when configuration, migration, recovery, monitoring or deployment changes.
+- Before an implementation work package, reconcile affected [Database](docs/DATABASE.md), [API](docs/API.md) and [Testing](docs/TESTING.md) contracts. Update [Operations](docs/OPERATIONS.md) when configuration, migration, recovery, monitoring or deployment changes.
 - Keep PRD FR/NFR references, stable task IDs and approved acceptance rules traceable. Preserve existing IDs; do not renumber to make a report appear tidy.
 - Submit scope, architecture, UI-policy, merchant, legal or irreversible financial changes for appropriate approval. Record decision, owner, evidence, impact and linked source changes before execution.
 - Record meaningful changes in [CHANGELOG.md](CHANGELOG.md), distinguishing documentation revisions from released software; do not fabricate release tags, migrations or production dates.
@@ -252,14 +253,14 @@ Follow [Tasks §2](docs/TASKS.md): `Not Started`, `Ready`, `In Progress`, `Block
 
 Use a concise final handoff containing:
 
-| Item | Report |
-| --- | --- |
-| Task / scope | Stable ID, requested outcome, relevant FR/section |
-| Changes | Files edited and behavior delivered; note deviations explicitly |
-| Verification | Exact commands/checks, Passed/Failed/Not Run/Blocked, environment and evidence links |
-| Risk & blockers | Open defects, missing approvals, provider/infrastructure dependencies, rollback concerns |
-| Documentation | Contracts updated and any unresolved cross-document conflict |
-| Status | `In Review` pending acceptance, or another justified TASKS status; `Done` only with recorded acceptance |
+| Item            | Report                                                                                                  |
+| --------------- | ------------------------------------------------------------------------------------------------------- |
+| Task / scope    | Stable ID, requested outcome, relevant FR/section                                                       |
+| Changes         | Files edited and behavior delivered; note deviations explicitly                                         |
+| Verification    | Exact commands/checks, Passed/Failed/Not Run/Blocked, environment and evidence links                    |
+| Risk & blockers | Open defects, missing approvals, provider/infrastructure dependencies, rollback concerns                |
+| Documentation   | Contracts updated and any unresolved cross-document conflict                                            |
+| Status          | `In Review` pending acceptance, or another justified TASKS status; `Done` only with recorded acceptance |
 
 Do not claim a task is complete because files were generated, tests were suggested, a CI configuration exists, a diagram parsed, or a provider mock responded. A feature passes the [Implementation Plan §3.3 Definition of Done](docs/IMPLEMENTATION_PLAN.md) only when **all applicable behavior and evidence** exist.
 

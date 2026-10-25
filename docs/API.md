@@ -2,7 +2,7 @@
 
 **Version:** 1.0\
 **Status:** Final development baseline\
-**Updated:** 22 October 2026
+**Updated:** 23 October 2026
 
 **Product reference:** [PRD](./PRD.md)\
 **Technical references:** [Architecture](./ARCHITECTURE.md) · [Database](./DATABASE.md)\
@@ -98,14 +98,14 @@ gateway. Scheduled jobs call shared services without bypassing invariants.
 
 ### 2.2 Module ownership
 
-| Module                                                                        | Primary route namespace(s)                                                             | Ownership                                                             |
-| ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `auth` (including guest access), `customers`                                           | `/auth`, `/me`, `/guest-access`, `/admin/auth`                                         | Identity, scoped access and sessions                                  |
-| `catalog`, `inventory`                                         | `/products`, `/categories`, `/admin/products`, `/admin/categories`, `/admin/inventory` | Visibility, SKUs, stock movement                                      |
-| `cart`, `promotions`, `reviews`                                    | `/cart`, `/wishlist`, `/coupons`, `/reviews`, `/admin/coupons`                         | Cart, quotas, verification, moderation                                |
-| `checkout`, `orders`, `delivery`                                              | `/checkout`, `/orders`, `/delivery`, `/admin/orders`, `/admin/delivery`                | Snapshots, submissions, fulfillment, charge rules                     |
-| `payments`, `refunds`, `returns`                                              | `/orders/{id}/payments`, `/payments`, `/claims`, `/refunds`, `/admin/...`              | Verification, collections, claims, payouts                            |
-| `notifications`, `support`, `reporting`, `settings`, `media`, `health` | Existing operations in §§14, 16 and Appendix D only                                    | Correspondence, reporting, configuration, authorized media and health |
+| Module                                                                 | Primary route namespace(s)                                                             | Ownership                                                             |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `auth` (including guest access), `customers`                           | `/auth`, `/me`, `/guest-access`, `/admin/auth`                                         | Identity, scoped access and sessions                                  |
+| `catalog`, `inventory`                                                 | `/products`, `/categories`, `/admin/products`, `/admin/categories`, `/admin/inventory` | Visibility, SKUs, stock movement                                      |
+| `cart`, `promotions`, `reviews`                                        | `/cart`, `/wishlist`, `/coupons`, `/reviews`, `/admin/coupons`                         | Cart, quotas, verification, moderation                                |
+| `checkout`, `orders`, `delivery`                                       | `/checkout`, `/orders`, `/delivery`, `/admin/orders`, `/admin/delivery`                | Snapshots, submissions, fulfillment, charge rules                     |
+| `payments`, `refunds`, `returns`                                       | `/orders/{id}/payments`, `/payments`, `/claims`, `/refunds`, `/admin/...`              | Verification, collections, claims, payouts                            |
+| `notifications`, `support`, `reporting`, `settings`, `media`, `health` | Operations defined in §§14, 16 and Appendix D                                          | Correspondence, reporting, configuration, authorized media and health |
 
 Domain services coordinate cross-module mutations within MongoDB transactions. No external HTTP call occurs while a database transaction remains open.
 
@@ -115,7 +115,7 @@ aggregates. Delivery and media remain distinct owners. This mapping changes no U
 DTO, response/error, cookie, CSRF, idempotency or authorization contract. Implemented-path references
 remain valid until verified migration. Controllers map HTTP inputs/results; services enforce domain
 rules through public capabilities. Notification surfaces stay restricted. This specification and
-executable validators/contract tests define the API; future OpenAPI output must be checked against them.
+executable validators/contract tests define the API; generated OpenAPI/Postman artifacts follow §18.3 and must be checked against them.
 
 ## 3. HTTP conventions & versioning
 
@@ -131,7 +131,7 @@ executable validators/contract tests define the API; future OpenAPI output must 
 | Status values       | Persisted `snake_case` enum values from Database v1.0; UI labels are presentation only                                                                                                                                             |
 | Creation            | `201 Created` + `Location` where appropriate; replay may return `200 OK` with same logical result                                                                                                                                  |
 | Deletion            | Use `204 No Content` only where deletion/deactivation is an approved operation; no body                                                                                                                                            |
-| Concurrency         | `If-Match`/strong ETag for approved editable master records; backed by the `revision` CAS fields on category, product, variant, delivery-zone and charge-rule documents (Database v1.0); domain CAS for financial/stock operations |
+| Concurrency         | `If-Match`/strong ETag for approved editable master records; backed by the `revision` CAS fields on category, product, variant, coupon, delivery-zone and charge-rule documents (Database v1.0); domain CAS for financial/stock operations |
 | Request correlation | Server-issued `X-Request-Id` returned on every response; incoming value never trusted as evidence                                                                                                                                  |
 | API evolution       | Additive compatible fields within `/api/v1`; incompatible changes require version review and consumer migration                                                                                                                    |
 
@@ -253,7 +253,7 @@ Apply the session lifecycle below together with §4.5's route-selected Origin/CS
 | Fresh login           | Always create fresh random values; optional predecessor revocation is conditional on same user/kind; an unrelated account/namespace credential is never revoked by replacement                                                                                      |
 | Logout                | Idempotently revoke only supplied route-kind credential and clear only that cookie using matching attributes; repeated/expired/missing credential does not revoke another session; public logout still requires §4.2's valid Origin/CSRF and fresh context response |
 | Principal revocation  | Atomically advance principal securityRevision and mark its route-kind sessions revoked; other principals unaffected; status/role/revision changes deny old access even before cleanup                                                                               |
-| Secret rotation       | New SESSION_SECRET immediately rejects old digests on processes using it; drain/restart all old-key processes before declaring revocation complete; no dual-key acceptance is permitted by this contract                                                                           |
+| Secret rotation       | New SESSION_SECRET immediately rejects old digests on processes using it; drain/restart all old-key processes before declaring revocation complete; no dual-key acceptance is permitted by this contract                                                            |
 
 The configuration boundary validates explicit session lifetime and SameSite settings before composition;
 no fallback policy is supplied. Configuration errors identify fields only. Operations §13.3 owns activation,
@@ -450,7 +450,7 @@ scoped operational fields; external provider evidence is redacted even to admini
 | DTO                 | Public or private contract (allowlist)                                                                                                                                                                                                          | Excluded by design                                                                                                    |
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | `ProductCard`       | `id,slug,name,thumbnail,regularPricePoisha,effectivePricePoisha,rating,availability`                                                                                                                                                            | Internal stock counters, media credentials                                                                            |
-| `ProductDetail`     | Card + `description,categories,images,variants[{id,sku,attributes,regularPricePoisha,effectivePricePoisha,availableQty?}]`                                                                                                                      | Inventory movement and hidden draft data                                                                              |
+| `ProductDetail`     | Card + `description,categories,images,variants[{id,sku,attributes,regularPricePoisha,effectivePricePoisha,availableQty}],relatedProducts[]`                                                                                                     | Inventory movement and hidden draft data                                                                              |
 | `Account`           | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry)                                                                                                                                                     | `passwordHash`, challenge/session tokens, other accounts                                                              |
 | `Cart`              | `items[{variantId,quantity,product,estimatedUnitPoisha,availability}],estimatedSubtotalPoisha,revision`                                                                                                                                         | Reservation claims; cart does **not** reserve stock                                                                   |
 | `CheckoutQuote`     | Canonical field allowlist in [Appendix D.2](#d2-typed-request-and-response-schema-registry)                                                                                                                                                     | A guaranteed confirmation-relative absolute deadline before the confirmation event, payment guarantee, or reservation |
@@ -547,16 +547,16 @@ successful refund request is **not** confirmed payout.
 
 ## 8. Pagination, search & caching
 
-| Concern           | Rule                                                                                                  |
-| ----------------- | ----------------------------------------------------------------------------------------------------- |
-| Pagination        | `page` starts at `1`; `pageSize` defaults `20`, maximum `100`; no unbounded lists                     |
-| Sorting           | Explicit endpoint allowlist, e.g. `newest`, `price_asc`, `price_desc`; stable ID tie-break            |
-| Public search     | `q` trimmed and length-bounded; only active products/categories eligible for public discovery         |
-| Catalog filtering | `category`, `minPricePoisha`, `maxPricePoisha`, `inStock`, with server type and range checks          |
-| Admin filtering   | Allowlisted status/date/customer references; no arbitrary client query operators                      |
-| Result            | `{data:[...],meta:{page,pageSize,totalItems,totalPages,requestId}}`                                   |
-| Public cache      | Optional controlled ETag/revalidation; stale display is possible; checkout requotes live stock/prices |
-| Private cache     | `Cache-Control: no-store`; prevent CDN/SSR shared caching for auth, account, cart, orders and money   |
+| Concern           | Rule                                                                                                                                     |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Pagination        | `page` starts at `1`; `pageSize` defaults `20`, maximum `100`; no unbounded lists                                                        |
+| Sorting           | Explicit endpoint allowlist, e.g. `newest`, `price_asc`, `price_desc`; stable ID tie-break                                               |
+| Public search     | `q` trimmed and length-bounded; only active products/categories eligible for public discovery                                            |
+| Catalog filtering | `category`, `minPricePoisha`, `maxPricePoisha`, `inStock`, with server type and range checks                                             |
+| Admin filtering   | Allowlisted status/date/customer references; no arbitrary client query operators                                                         |
+| Result            | `{data:[...],meta:{page,pageSize,totalItems,totalPages,requestId}}`                                                                      |
+| Public cache      | Public catalog uses `Cache-Control: no-store` under §10; Architecture §5.1 owns rendering freshness; checkout requotes live stock/prices |
+| Private cache     | `Cache-Control: no-store`; prevent CDN/SSR shared caching for auth, account, cart, orders and money                                      |
 
 For large audit/financial histories, use an opaque cursor with stable ordering **if approved by query profiling**; do not
 invent offset pagination where it risks missing/duplicating mutations. Query and index selection must agree with Database
@@ -649,7 +649,7 @@ Admin reset uses the existing password_reset challenge purpose bound to the admi
 | `GET`  | `/guest-access/session`    | G                           | `— → {orderId,expiresAt}`                                                              |
 | `POST` | `/guest-access/logout`     | Public+CSRF (guest context) | `— → {revoked:true,csrfToken}`                                                         |
 
-Guest proof is email-delivered as one-time code or secure link, issued against **both** order number and checkout email, rate-limited and never exposed in an API response or logs.
+Guest proof is email-delivered as a high-entropy single-use secure link, issued against **both** order number and checkout email, rate-limited and never exposed in an API response or logs. Short numeric codes require a separately reviewed guessing/attempt-limit design under Database §5.3.
 Proof exchange atomically consumes `authChallenges` and grants only the verified `orders._id` through a `guest_order` session (Database §§5.2–5.3).
 An attacker cannot enumerate orders by timing, HTTP status or message differences.
 Subsequent guest order actions use the same `/orders/{orderId}` routes as a customer, but with *exact* bound order ID checks.
@@ -724,6 +724,35 @@ are exposed; the presence of a schema or operation-table row never registers an 
 Inactive products/categories (including inactive ancestors) are excluded; out-of-stock products may remain visible but cannot be purchased.
 `variants` include one default SKU when a product has no selectable options.
 Search/index details in Database §11; do not assume an external search service.
+For catalog reads, `category` and category-list `parent` are normalized category slugs; an absent
+`parent` lists all visible categories, while a supplied parent selects immediate children. Product category filters include visible descendants. Hidden or
+unknown category filters return empty pages. Search `q` is trimmed, 1–120 Unicode characters and at
+most ten whitespace-separated terms; all extracted words must match, without user search operators.
+Product sorts are `newest` (default), `price_asc`, `price_desc`; ties use durable product ID.
+A product card uses the cheapest valid active SKU's effective price and that same SKU's regular price;
+price bounds apply to this card price. `inStock=true/false` filters whether any valid active SKU has
+positive available stock. Products without a valid active SKU are excluded. Availability is
+`available` or `unavailable`, never a reservation guarantee. All associated categories must have active
+ancestry. Missing, cyclic or excessively deep ancestry fails visibility closed.
+Public categories expose only `id,name,slug,parentId?` and an eligible `image?`; category detail has the
+same projection. Card `thumbnail?` and category `image?` expose `{url,alt}` only through media-owned
+public reference checks; omit unavailable/unapproved images. `rating?` is `{average,count}` from the
+approved summary and omitted when no valid approved ratings exist. Internal counters, revisions, SKU
+metadata and media ownership/delivery secrets are excluded. Public catalog reads use `no-store`;
+Architecture §5.1 owns storefront rendering and freshness policy.
+
+Product detail uses the same active ancestry/SKU eligibility as listing; hidden, missing or inactive-only
+products return 404. It returns all valid active SKU rows (at most 100), including out-of-stock rows
+with `availableQty:0`; no inactive SKU or fabricated Cartesian option combination is returned. Attributes
+are canonical maps; the no-options SKU uses `{}`. `availableQty` is derived physical minus reserved minus
+committed, a display snapshot rather than purchase permission. Consumers disable zero-quantity rows and
+revalidate selection/stock through cart and checkout. Description is plain text. `images` contains only
+approved public `{url,alt}` values in configured position order, at most twelve; omitted media capability
+means an empty image list. `categories` uses the visible category projection. `relatedProducts` contains
+at most six other eligible cards sharing an assigned category, newest first with descending ID tie-break;
+there is no unrelated fallback. Review content, return-policy publication and cart/checkout actions have
+separate owning endpoints/tasks; this detail read does not fabricate them.
+
 Product listings and homepage merchandising only include operator-approved media/content; no fabricated promotional claims.
 The homepage `banner` maps to `storeSettings.homepageBanner` with a validated public media asset and operator-approved content (API §10.1). Return `HomepageBanner:{assetId,title,alt,href?,image:MediaRef}` only when configured and eligible; otherwise omit it honestly. Banner capability is required by FR-03; publish only operator-approved content. Store the banner in settings rather than a separate collection.
 
@@ -734,15 +763,48 @@ The homepage `banner` maps to `storeSettings.homepageBanner` with a validated pu
 | `GET`    | `/cart`                          | C      | `— → Cart`                       | 07  |
 | `PUT`    | `/cart/items/{variantId}`        | C      | `{quantity} → Cart`              | 07  |
 | `DELETE` | `/cart/items/{variantId}`        | C      | `— → Cart`                       | 07  |
-| `POST`   | `/cart/merge`                    | C      | `{items:CartLineInput[]} → Cart` | 07  |
-| `GET`    | `/wishlist`                      | C      | `— → {products:ProductCard[]}`   | 08  |
+| `POST`   | `/cart/merge`                    | C      | `{items:CartLineInput[]} → CartMergeResult` | 07  |
+| `GET`    | `/wishlist`                      | C      | `— → {products:WishlistProduct[]}`   | 08  |
 | `PUT`    | `/wishlist/products/{productId}` | C      | `— → {saved:true}`               | 08  |
 | `DELETE` | `/wishlist/products/{productId}` | C      | `— → {saved:false}`              | 08  |
 
 Guest cart is **browser-local** and is not created server-side by an anonymous `/cart` route. A merge deduplicates on
-`variantId`, applies an approved bounded quantity rule (do not double-count on replay), and excludes invalid/inactive
-variants with per-item error details. No cart/wishlist endpoint creates reservations or changes stock. Cart price and
+`variantId` using the maximum of saved and submitted quantities, including duplicate input lines; retries do not
+add quantities. Merge accepts at most 100 input lines, each with only a lowercase 24-hex `variantId` and integer
+`quantity` 1–50. Malformed input rejects the whole request (`400 VALIDATION_FAILED`). Well-formed unknown/inactive
+selections are excluded from the incoming merge and reported once per variant in an `errors` array
+of `{variantId,code:"BUSINESS_RULE_VIOLATION"}`; existing saved lines are retained and projected under the visibility rules below.
+`CartMergeResult` contains the Cart fields plus `errors` (empty when every input is eligible). The combined cart's 100-distinct-line
+limit or subtotal overflow rejects the entire write (`422 BUSINESS_RULE_VIOLATION`); no partial additions survive.
+Empty input is allowed and revalidates the saved cart. Accepted merge writes increment revision, including replays;
+quantity replay safety applies to the current saved state, so an explicit later edit/removal can be changed by a new merge.
+No cart/wishlist endpoint creates reservations or changes stock. Cart price and
 availability remain estimates until `POST /checkout/quotes`.
+
+Authenticated cart reads return an empty revision-zero cart without creating a record when none exists.
+PUT sets an absolute quantity (integer 1–50); DELETE removes that variant and succeeds when already absent.
+A cart contains at most 100 distinct variants. Unknown/inactive/hidden selections cannot be added
+(`422 BUSINESS_RULE_VIOLATION`); an eligible out-of-stock selection may be retained and is marked
+`unavailable` whenever its requested quantity exceeds current availability. Existing lines remain removable
+when catalog eligibility changes. Reads refresh current variant prices and visibility: hidden/deleted
+selections return `product:null,estimatedUnitPoisha:null,availability:unavailable`; other lines use a safe
+ProductCard for the selected SKU. Estimated subtotal sums currently eligible lines only, including
+out-of-stock lines, and is never a checkout total. Integer overflow rejects the operation rather than
+rounding. No price or stock snapshot is persisted in the cart. Revision increments on accepted writes;
+concurrent writes, including merge, serialize through the owning account and transactional cart update.
+
+
+Wishlist GET returns an empty products list without creating a record when none exists. PUT adds
+one eligible product; repeated PUT for an already saved ID returns `{saved:true}` without duplicating
+or revalidating it as a new addition. DELETE returns `{saved:false}` even when absent. At most 200
+unique product IDs may be saved; adding an unknown/hidden/inactive product or exceeding the limit
+returns `422 BUSINESS_RULE_VIOLATION`. An eligible product with zero available stock may be saved.
+GET preserves saved order and current public ProductCard values. A saved product that becomes hidden,
+inactive or deleted is represented only as `WishlistProduct:{id,availability:unavailable}`, so it stays
+identifiable/removable without disclosing hidden catalog fields. Other WishlistProduct entries are
+ProductCard. These markers are not purchasable projections; adding a wishlist item to cart must use
+the cart API's current variant validation. Only customer sessions may read or change their own list;
+mutations require Origin and session CSRF. Stock and cart state are never changed by wishlist calls.
 
 ### 10.3 Coupon and review contracts
 
@@ -1305,11 +1367,11 @@ rating or unfairly suppress valid negative feedback. Always audit decisions/reas
 | `POST`  | `/admin/delivery/charges/{chargeId}/activate`   | `{reason,effectiveAt?} + If-Match + Idempotency-Key → DeliveryChargeRule`                                                                          | 28  |
 | `POST`  | `/admin/delivery/charges/{chargeId}/supersede`  | `{replacement:DeliveryChargeInput,effectiveAt,reason} + If-Match + Idempotency-Key → {previous:DeliveryChargeRule,replacement:DeliveryChargeRule}` | 28  |
 | `POST`  | `/admin/delivery/charges/{chargeId}/deactivate` | `{effectiveAt,reason} + If-Match + Idempotency-Key → DeliveryChargeRule`                                                                           | 28  |
-| `GET`   | `/admin/coupons`                                | `status?,page? → CouponAdmin[]`                                                                                                                    | 30  |
+| `GET`   | `/admin/coupons`                                | `status?,page?,pageSize? → CouponAdmin[]`                                                                                                                    | 30  |
 | `POST`  | `/admin/coupons`                                | `CouponInput → CouponAdmin`                                                                                                                        | 30  |
 | `PATCH` | `/admin/coupons/{couponId}`                     | `CouponPatch + If-Match → CouponAdmin`                                                                                                             | 30  |
 | `POST`  | `/admin/coupons/{couponId}/deactivate`          | `{reason} + If-Match → CouponAdmin`                                                                                                                | 30  |
-| `GET`   | `/admin/coupons/{couponId}/redemptions`         | `page? → CouponRedemptionSummary[]`                                                                                                                | 30  |
+| `GET`   | `/admin/coupons/{couponId}/redemptions`         | `page?,pageSize? → CouponRedemptionSummary[]`                                                                                                                | 30  |
 | `GET`   | `/admin/settings`                               | `— → StoreSettings (allowlisted)`                                                                                                                  | 34  |
 | `PATCH` | `/admin/settings`                               | `SettingsPatch + If-Match → StoreSettings`                                                                                                         | 34  |
 | `GET`   | `/admin/settings/policies`                      | `type?,status?,page?,pageSize? → paginated PolicyDocumentSummary[]`                                                                                | 34  |
@@ -1331,6 +1393,29 @@ rating or unfairly suppress valid negative feedback. Always audit decisions/reas
 `type=percentage` uses basis points `1..10000`, fixed uses poisha. No client edit to `heldCount`, `redeemedCount`,
 individual redemptions, or past orders. Active holds keep their snapshotted terms; new/reacquired holds validate current
 terms. Reacquisition must still honor immutable accepted line allocations/total; if current eligibility cannot honor them, block new payment initiation with STATE_CONFLICT and require cancellation/new explicitly confirmed checkout, never reprice an existing order. A late verified receipt instead remains recorded with fulfillment held for reviewed resolution/refund. Per-customer counts require user IDs; guests cannot use limited-per-customer coupons.
+
+`CouponPatch` permits only optional CouponInput fields, with at least one field. Null clears only
+`overallLimit`, `perCustomerLimit`, `eligibleProductIds` or `eligibleCategoryIds`; omission preserves them.
+Revalidate the complete merged configuration (including date ordering, percentage bounds and distinct scope IDs).
+At most 200 IDs per scope list; absent/empty scopes mean global merchandise scope. Reject global or per-customer
+limit reductions below current held plus redeemed usage (`422 BUSINESS_RULE_VIOLATION`). Configuration changes
+serialize with quota writes on the canonical coupon document. Code uniqueness is case-insensitive; conflicts
+return `409 STATE_CONFLICT`. No edit rewrites redemption terms or resets counters.
+
+`CouponAdmin` contains CouponInput configuration, normalized `code`, `id`, `heldCount`, `redeemedCount`,
+`termsVersion` and `revision`. Create returns 201 and strong ETag `"<revision>"`; PATCH/deactivate return 200
+and the new ETag. The list exposes each row's revision; no undocumented single-coupon GET is needed.
+PATCH/deactivate require a canonical strong numeric If-Match; absent returns 428 PRECONDITION_REQUIRED,
+malformed/stale returns 412 PRECONDITION_FAILED. Meaningful edits increment revision and termsVersion;
+normalized no-op PATCH preserves both. Explicit deactivation requires a nonempty reason and records the action.
+Privileged writes and append-only audit digests commit together or roll back together.
+
+Coupon lists and redemption history use standard pagination (default 20, maximum 100), ordered by createdAt
+then ID descending. `CouponRedemptionSummary` exposes only `id,couponId,orderId,userId?,generation,status`,
+immutable `termsSnapshot` and applicable `heldAt,expiresAt,redeemedAt,releasedAt` UTC dates. Statuses are
+`held`, `redeemed` (committed usage) and `released`; private operation keys and active-index markers are omitted.
+An unknown coupon's history returns 404. Both endpoints are admin-only and no-store; mutations require admin
+Origin/CSRF, and ETag is exposed through the admin CORS boundary.
 
 **Policy drafts and publication:** `PolicyDraftInput:{type,content,proposedEffectiveAt?}` (types: `shipping`, `cancellation`, `returns`, `refunds`, `privacy`, `terms`, `complaints`); server assigns unique immutable
 `version`, ID, status `draft` and CAS revision in `policyDocuments` (Database §10.5).
@@ -1574,7 +1659,7 @@ Health endpoints may be served outside `/api/v1` by infrastructure **only if con
 | Request bounds             | Limit body size, field lengths, page size, search complexity and timeouts; protect provider callbacks separately    |
 | Provider security          | Server-only credential validation, independent verification, constant operation identity and reconciliation         |
 | Observability              | Request ID, event/attempt IDs and safe redacted logs; audit admin financial and stock decisions                     |
-| Cache                      | Private endpoints and auth/bootstrap `no-store`; public catalog cache invalidated on approved changes               |
+| Cache                      | Private endpoints, auth/bootstrap and public catalog use `no-store`; storefront freshness follows Architecture §5.1 |
 | Performance                | Indexed bounded queries, stable sorting, no N+1 sensitive fanout, measured budgets from PRD NFRs                    |
 | API change                 | OpenAPI/typed contract parity, backwards-compatible additive evolution in `/api/v1`, planned deprecation only       |
 
@@ -1625,11 +1710,36 @@ arbitrary redirect URL from request input.
 | FR-32–FR-33         | §13 admin claims/refunds                        |
 | FR-34               | §14.3 settings/policy versioning                |
 
-Use this mapping to implement contract tests with each feature slice. Apply PRD §14 acceptance criteria, follow
-Implementation Plan §6 sequencing and attach execution evidence in `TASKS.md`. Keep the delivered OpenAPI/types aligned
+Use this mapping to implement contract tests with each feature slice. Apply PRD §14 acceptance criteria,
+follow Implementation Plan §3.1 application sequencing and §6 domain requirements; attach execution evidence in `TASKS.md`. Keep the delivered OpenAPI/types aligned
 with this specification.
 
 ### 18.3 Change and sign-off procedure
+
+**Contract generation:** Foundation must establish one executable route/schema registry reconciled with this
+specification and runtime validators. Generate OpenAPI and the Postman collection from that registry through
+one deterministic pipeline; do not hand-maintain competing request/response definitions. Include methods,
+paths, operation IDs, input/response/error schemas, session/CSRF requirements and conditional/idempotency
+headers. Registry metadata must distinguish implemented routes from planned contracts; a production-facing
+collection must not present planned operations as available. Verify registered-route coverage and artifact
+freshness in the backend contract scope. Generation must not import a listening server or require a live DB.
+Postman environment templates contain placeholders only; never export credentials, cookies, proof tokens
+or real customer examples. The executable registry is `backend/contracts/registry.ts`; it imports owning
+runtime request/DTO schemas. `npm run api:generate --workspace=backend` produces `backend/api/openapi.json`,
+`postman.collection.json`, `postman.environment.json` and `planned-operations.json`. The OpenAPI 3.1 and
+Postman 2.1 collection contain implemented capabilities with explicit activation conditions; planned
+operations remain a separate non-executable specification inventory. Explicit HEAD/OPTIONS transport
+behavior is distinguished from the business operation inventory.
+
+`npm run api:check --workspace=backend` verifies artifact freshness without rewriting files.
+`npm run test:contract --workspace=backend` additionally verifies actual router registration, response/status
+parity, wire schemas, safe templates and negative drift fixtures. These are mandatory backend CI checks.
+Generation compiles only the tooling dependency graph into ignored `backend/.cache/contracts`; it requires
+no listening server, MongoDB, credentials or frontend. Ajv and ajv-formats validate the offline specification
+fixtures and generated schemas in tests. JSON Schema expresses wire shape and representable constraints;
+runtime Unicode/phone/password, cross-field, authorization and transactional rules remain mandatory.
+Backend changes maintain their schemas, registry metadata and regenerated artifacts in the same task;
+delivery/acceptance history belongs in Tasks and evidence, not generated files.
 
 1. Identify changed FR, Architecture invariant, Database field/index or Design interaction and note exact source section.
 2. Propose the smallest compatible API contract change; list affected endpoints, DTOs, error codes and consumers.
@@ -1658,7 +1768,7 @@ The canonical route definitions, access roles and request/response contracts app
 | Admin reporting/support | §14.4                | Dashboard, cash-flow reports, complaints, audit and notification state                      |
 | Media and health        | §§16.2–16.4          | Controlled uploads, private evidence, readiness/liveness                                    |
 
-A later OpenAPI file should be generated/maintained against **the same contracts**, not introduced as a contradictory
+OpenAPI and Postman artifacts must be generated against **the same contracts** under §18.3, not introduced as a contradictory
 independent source. Every path listed in the main tables is a v1 route; externally triggered callback methods
 and operational endpoints require deployment-specific adapter tests.
 
