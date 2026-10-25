@@ -293,7 +293,7 @@
       "path": "/cart/merge",
       "success": "200",
       "operationId": "post_cart_merge",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",

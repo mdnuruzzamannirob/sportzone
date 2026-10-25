@@ -71,7 +71,7 @@ export function registeredRouter() {
     recoveryRoutes(recovery, security, sessions),
     emailChangeRoutes(recovery, security, sessions),
     profileRoutes(profile, security, sessions),
-    cartRoutes({ read: unused, put: unused, remove: unused }, security, sessions),
+    cartRoutes({ read: unused, put: unused, remove: unused, merge: unused }, security, sessions),
     wishlistRoutes({ read: unused, set: unused }, security, sessions),
     catalogRoutes(
       {

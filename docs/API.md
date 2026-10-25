@@ -763,14 +763,22 @@ The homepage `banner` maps to `storeSettings.homepageBanner` with a validated pu
 | `GET`    | `/cart`                          | C      | `— → Cart`                       | 07  |
 | `PUT`    | `/cart/items/{variantId}`        | C      | `{quantity} → Cart`              | 07  |
 | `DELETE` | `/cart/items/{variantId}`        | C      | `— → Cart`                       | 07  |
-| `POST`   | `/cart/merge`                    | C      | `{items:CartLineInput[]} → Cart` | 07  |
+| `POST`   | `/cart/merge`                    | C      | `{items:CartLineInput[]} → CartMergeResult` | 07  |
 | `GET`    | `/wishlist`                      | C      | `— → {products:WishlistProduct[]}`   | 08  |
 | `PUT`    | `/wishlist/products/{productId}` | C      | `— → {saved:true}`               | 08  |
 | `DELETE` | `/wishlist/products/{productId}` | C      | `— → {saved:false}`              | 08  |
 
 Guest cart is **browser-local** and is not created server-side by an anonymous `/cart` route. A merge deduplicates on
-`variantId`, applies an approved bounded quantity rule (do not double-count on replay), and excludes invalid/inactive
-variants with per-item error details. No cart/wishlist endpoint creates reservations or changes stock. Cart price and
+`variantId` using the maximum of saved and submitted quantities, including duplicate input lines; retries do not
+add quantities. Merge accepts at most 100 input lines, each with only a lowercase 24-hex `variantId` and integer
+`quantity` 1–50. Malformed input rejects the whole request (`400 VALIDATION_FAILED`). Well-formed unknown/inactive
+selections are excluded from the incoming merge and reported once per variant in an `errors` array
+of `{variantId,code:"BUSINESS_RULE_VIOLATION"}`; existing saved lines are retained and projected under the visibility rules below.
+`CartMergeResult` contains the Cart fields plus `errors` (empty when every input is eligible). The combined cart's 100-distinct-line
+limit or subtotal overflow rejects the entire write (`422 BUSINESS_RULE_VIOLATION`); no partial additions survive.
+Empty input is allowed and revalidates the saved cart. Accepted merge writes increment revision, including replays;
+quantity replay safety applies to the current saved state, so an explicit later edit/removal can be changed by a new merge.
+No cart/wishlist endpoint creates reservations or changes stock. Cart price and
 availability remain estimates until `POST /checkout/quotes`.
 
 Authenticated cart reads return an empty revision-zero cart without creating a record when none exists.
@@ -783,8 +791,7 @@ selections return `product:null,estimatedUnitPoisha:null,availability:unavailabl
 ProductCard for the selected SKU. Estimated subtotal sums currently eligible lines only, including
 out-of-stock lines, and is never a checkout total. Integer overflow rejects the operation rather than
 rounding. No price or stock snapshot is persisted in the cart. Revision increments on accepted writes;
-concurrent writes serialize through the owning account and transactional cart update. `/cart/merge`
-remains the separate P05-014 work package.
+concurrent writes, including merge, serialize through the owning account and transactional cart update.
 
 
 Wishlist GET returns an empty products list without creating a record when none exists. PUT adds

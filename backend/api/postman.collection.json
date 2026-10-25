@@ -537,6 +537,42 @@
       "response": []
     },
     {
+      "name": "post_cart_merge",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED; reviewed cart persistence bootstrap required. Replay: Maximum saved/input quantity per variant; no additive replay effect or stock allocation. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/cart/merge",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED; reviewed cart persistence bootstrap required. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_cart_merge. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_cart_mergeBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
       "name": "get_categories",
       "description": "Activation: Always registered; required indexes/visibility/media checks must pass. Replay: read. No automatic mutation retry.",
       "request": {

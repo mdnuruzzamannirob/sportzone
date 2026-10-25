@@ -14,7 +14,7 @@ export function cartRoutes(
   sessions: SessionService,
 ) {
   const router = Router()
-  for (const path of ['/cart', '/cart/items/:variantId'])
+  for (const path of ['/cart', '/cart/items/:variantId', '/cart/merge'])
     router.options(path, security.cors('storefront'))
   router.use(
     '/cart',
@@ -30,6 +30,9 @@ export function cartRoutes(
   router.get('/cart', async (req, res) => {
     parseInput(z.undefined(), req.body)
     respond(res, await service.read(token(req)))
+  })
+  router.post('/cart/merge', async (req, res) => {
+    respond(res, await service.merge(token(req), req.body))
   })
   router.put('/cart/items/:variantId', async (req, res) => {
     const { variantId } = parseInput(variantParams, req.params)

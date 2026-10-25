@@ -18,3 +18,24 @@ export const cartResponse = z.strictObject({
   estimatedSubtotalPoisha: z.int().nonnegative().max(Number.MAX_SAFE_INTEGER),
   revision: z.int().nonnegative().max(Number.MAX_SAFE_INTEGER),
 })
+
+export const cartMerge = z.strictObject({
+  items: z
+    .array(
+      z.strictObject({
+        variantId: variantParams.shape.variantId,
+        quantity: cartQuantity.shape.quantity,
+      }),
+    )
+    .max(100),
+})
+export const cartMergeResponse = cartResponse.extend({
+  errors: z
+    .array(
+      z.strictObject({
+        variantId: variantParams.shape.variantId,
+        code: z.literal('BUSINESS_RULE_VIOLATION'),
+      }),
+    )
+    .max(100),
+})

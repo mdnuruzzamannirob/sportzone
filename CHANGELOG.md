@@ -8,6 +8,13 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 25 October 2026 — Authenticated cart merge
+
+- Added guest-selection merge with maximum-quantity deduplication, safe per-item exclusions,
+  current catalog revalidation and transactional capacity/overflow rollback. Generated OpenAPI
+  and Postman artifacts include the protected endpoint.
+  [Implementation and verification](docs/evidence/P05-014-cart-merge.md).
+
 ## 24 October 2026 — Review eligibility and moderation foundation
 
 - Added owned review creation/editing with a default-deny purchase guard, one-active-review index and

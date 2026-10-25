@@ -3,7 +3,13 @@ import {
   wishlistResponse,
   wishlistSaved,
 } from '../src/modules/cart/wishlist.schema.js'
-import { cartQuantity, cartResponse, variantParams } from '../src/modules/cart/cart.schema.js'
+import {
+  cartMerge,
+  cartMergeResponse,
+  cartQuantity,
+  cartResponse,
+  variantParams,
+} from '../src/modules/cart/cart.schema.js'
 import { z } from 'zod'
 import { createIdentityContracts } from '../src/modules/auth/auth.schema.js'
 import {
@@ -103,6 +109,21 @@ const identities: Operation[] = identity.operations
 
 export const operations: readonly Operation[] = [
   ...identities,
+  {
+    method: 'POST',
+    path: '/cart/merge',
+    access: 'customer',
+    activation: 'CUSTOMER_AUTH_ENABLED; reviewed cart persistence bootstrap required',
+    request: cartMerge,
+    response: cartMergeResponse,
+    query: empty,
+    params: empty,
+    status: 200,
+    csrf: true,
+    namespace: 'storefront',
+    replay:
+      'Maximum saved/input quantity per variant; no additive replay effect or stock allocation',
+  },
   ...(['GET', 'PUT', 'DELETE'] as const).map(
     (method): Operation => ({
       method,

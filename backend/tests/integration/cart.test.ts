@@ -423,3 +423,179 @@ it('handles allowed preflight without granting anonymous access or state changes
   await request(app).put(path(item.id)).set('Origin', origin).send({ quantity: 1 }).expect(403)
   expect(await cartModel(db.connection).countDocuments()).toBe(count)
 })
+
+function merge(who: Principal, items: unknown) {
+  return request(app)
+    .post('/api/v1/cart/merge')
+    .set('Cookie', who.cookie)
+    .set('Origin', origin)
+    .set('X-CSRF-Token', who.issued.csrfToken)
+    .send({ items })
+}
+it('merges by maximum quantity, deduplicates and replays without addition', async () => {
+  const own = await account(),
+    item = await variant(),
+    other = await account()
+  await put(own, item.id, 3).expect(200)
+  const lines = [
+    { variantId: item.id, quantity: 2 },
+    { variantId: item.id, quantity: 5 },
+  ]
+  for (let i = 0; i < 2; i++) {
+    const res = await merge(own, lines).expect(200)
+    expect(res.body.data.items).toHaveLength(1)
+    expect(res.body.data.items[0].quantity).toBe(5)
+    expect(res.body.data.estimatedSubtotalPoisha).toBe(505)
+    expect(res.body.data.errors).toEqual([])
+  }
+  expect((await get(other)).body.data.items).toEqual([])
+})
+it('excludes ineligible selections with bounded safe per-item errors and keeps stock unchanged', async () => {
+  const own = await account(),
+    live = await variant(111, 0),
+    hidden = await variant()
+  await productModels(db.connection).products.updateOne(
+    { _id: hidden.product._id },
+    { $set: { status: 'inactive' } },
+  )
+  const missing = new Types.ObjectId().toHexString()
+  const res = await merge(
+    own,
+    [live.id, hidden.id, missing].map((variantId) => ({ variantId, quantity: 2 })),
+  ).expect(200)
+  expect(res.body.data.errors).toEqual(
+    [hidden.id, missing].map((variantId) => ({ variantId, code: 'BUSINESS_RULE_VIOLATION' })),
+  )
+  expect(res.body.data.items).toHaveLength(1)
+  expect(res.body.data.items[0]).toMatchObject({ variantId: live.id, availability: 'unavailable' })
+  expect(
+    (await productModels(db.connection).variants.findById(live.value._id))?.stock,
+  ).toMatchObject({ physical: 0, reserved: 0, committed: 0 })
+})
+it.each([
+  null,
+  [{ variantId: 'invalid', quantity: 1 }],
+  [{ variantId: 'a'.repeat(24), quantity: 51 }],
+  Array.from({ length: 101 }, () => ({ variantId: 'a'.repeat(24), quantity: 1 })),
+])('rejects malformed or oversized merge inputs', async (items) => {
+  const own = await account()
+  await merge(own, items).expect(400)
+  expect(await cartModel(db.connection).countDocuments({ userId: own.user._id })).toBe(0)
+})
+it('serializes concurrent merges and explicit quantity writes', async () => {
+  const own = await account(),
+    a = await variant(),
+    b = await variant()
+  const results = await Promise.all([
+    merge(own, [{ variantId: a.id, quantity: 3 }]),
+    merge(own, [
+      { variantId: a.id, quantity: 5 },
+      { variantId: b.id, quantity: 2 },
+    ]),
+    put(own, b.id, 4),
+  ])
+  expect(results.map((r) => r.status)).toEqual([200, 200, 200])
+  const lines = (await get(own)).body.data.items
+  expect(lines).toHaveLength(2)
+  expect(lines.find((line: { variantId: string }) => line.variantId === a.id).quantity).toBe(5)
+  expect(lines.find((line: { variantId: string }) => line.variantId === b.id).quantity).toBe(4)
+})
+it('rolls back every merged item when cart capacity or subtotal fails', async () => {
+  const own = await account(),
+    item = await variant(),
+    extra = await variant()
+  await cartModel(db.connection).create({
+    userId: own.user._id,
+    items: Array.from({ length: 99 }, () => ({
+      variantId: new Types.ObjectId(),
+      quantity: 1,
+      addedAt: new Date(),
+    })),
+  })
+  await merge(
+    own,
+    [item.id, extra.id].map((variantId) => ({ variantId, quantity: 1 })),
+  ).expect(422)
+  expect((await get(own)).body.data.items).toHaveLength(99)
+  const other = await account(),
+    huge = await variant(Number.MAX_SAFE_INTEGER)
+  await merge(other, [
+    { variantId: item.id, quantity: 1 },
+    { variantId: huge.id, quantity: 2 },
+  ]).expect(422)
+  expect(await cartModel(db.connection).countDocuments({ userId: other.user._id })).toBe(0)
+})
+it('requires customer identity, origin and CSRF for merge including empty input', async () => {
+  const own = await account(),
+    admin = await account('admin')
+  await request(app).post('/api/v1/cart/merge').send({ items: [] }).expect(403)
+  await request(app)
+    .post('/api/v1/cart/merge')
+    .set('Cookie', own.cookie)
+    .set('Origin', origin)
+    .send({ items: [] })
+    .expect(403)
+  await merge(admin, []).expect(403)
+  await merge(own, []).expect(200)
+  await models.users.updateOne({ _id: own.user._id }, { $set: { status: 'suspended' } })
+  await expect(service.merge(own.token, { items: [] })).rejects.toMatchObject({
+    code: 'AUTH_REQUIRED',
+  })
+})
+it('refreshes saved prices and hidden projections during empty revalidation', async () => {
+  const own = await account(),
+    live = await variant(),
+    hidden = await variant()
+  await put(own, live.id, 2).expect(200)
+  await put(own, hidden.id, 3).expect(200)
+  await productModels(db.connection).variants.updateOne(
+    { _id: live.value._id },
+    { $set: { salePricePoisha: 90 } },
+  )
+  await productModels(db.connection).products.updateOne(
+    { _id: hidden.product._id },
+    { $set: { status: 'inactive' } },
+  )
+  const res = await merge(own, []).expect(200)
+  expect(res.body.data.estimatedSubtotalPoisha).toBe(180)
+  expect(res.body.data.items[1]).toMatchObject({
+    variantId: hidden.id,
+    quantity: 3,
+    product: null,
+    estimatedUnitPoisha: null,
+    availability: 'unavailable',
+  })
+})
+it('rolls back merge and account fence when projection fails after saving', async () => {
+  const own = await account(),
+    item = await variant()
+  const before = await models.users.findById(own.user._id).lean()
+  const original = catalog.cartSelections.bind(catalog)
+  let calls = 0
+  vi.spyOn(catalog, 'cartSelections').mockImplementation(async (...args) => {
+    if (++calls === 2) throw new Error('Synthetic projection failure')
+    return original(...args)
+  })
+  await merge(own, [{ variantId: item.id, quantity: 2 }]).expect(500)
+  expect(await cartModel(db.connection).countDocuments({ userId: own.user._id })).toBe(0)
+  expect((await models.users.findById(own.user._id).lean())?.updatedAt).toEqual(before?.updatedAt)
+})
+it('rejects protected merge fields and unknown query without writing', async () => {
+  const own = await account(),
+    item = await variant()
+  await merge(own, [{ variantId: item.id, quantity: 1, pricePoisha: 1 }]).expect(400)
+  await request(app)
+    .post('/api/v1/cart/merge?userId=foreign')
+    .set('Cookie', own.cookie)
+    .set('Origin', origin)
+    .set('X-CSRF-Token', own.issued.csrfToken)
+    .send({ items: [] })
+    .expect(400)
+  await request(app)
+    .options('/api/v1/cart/merge')
+    .set('Origin', origin)
+    .set('Access-Control-Request-Method', 'POST')
+    .set('Access-Control-Request-Headers', 'content-type,x-csrf-token')
+    .expect(204)
+  expect(await cartModel(db.connection).countDocuments({ userId: own.user._id })).toBe(0)
+})

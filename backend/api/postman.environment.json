@@ -158,6 +158,12 @@
       "type": "secret"
     },
     {
+      "key": "post_cart_mergeBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
       "key": "post_me_addressesBody",
       "value": "",
       "enabled": true,
