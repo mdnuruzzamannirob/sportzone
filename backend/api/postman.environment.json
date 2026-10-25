@@ -38,6 +38,12 @@
       "type": "default"
     },
     {
+      "key": "couponId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "csrfToken",
       "value": "",
       "enabled": true,
@@ -48,6 +54,12 @@
       "value": "",
       "enabled": true,
       "type": "secret"
+    },
+    {
+      "key": "ifMatch",
+      "value": "",
+      "enabled": true,
+      "type": "default"
     },
     {
       "key": "inStock",
@@ -92,6 +104,12 @@
       "type": "default"
     },
     {
+      "key": "patch_admin_coupons_couponIdBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
       "key": "patch_meBody",
       "value": "",
       "enabled": true,
@@ -123,6 +141,18 @@
     },
     {
       "key": "post_admin_auth_password_resets_confirmBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_couponsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_coupons_couponId_deactivateBody",
       "value": "",
       "enabled": true,
       "type": "secret"
@@ -231,6 +261,12 @@
     },
     {
       "key": "sort",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "status",
       "value": "",
       "enabled": true,
       "type": "default"

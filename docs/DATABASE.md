@@ -1010,9 +1010,9 @@ changes. A saved address is not a quote or permission to reuse a historic charge
 | `eligibleProductIds[]` / `eligibleCategoryIds[]` | ObjectId[] | At most 200 distinct IDs per list; empty means approved global merchandise scope |
 | `termsVersion`! / `revision`! | int | Each meaningful edit increments terms version |
 
-**Indexes:** unique `{codeNormalized:1}`; `{status:1,startsAt:1,expiresAt:1}`.
+**Indexes:** unique `{codeNormalized:1}`; `{status:1,startsAt:1,expiresAt:1}`; `{createdAt:-1,_id:-1}`; `{status:1,createdAt:-1,_id:-1}`.
 
-**Rules:** existing live holds keep their snapshotted terms until expiry; a new/reacquired hold checks *current* coupon state. Guest checkout cannot use any coupon with a per-customer limit (PRD FR-09). Coupon quotas are authoritative in conditional writes, not `countDocuments` alone.
+**Rules:** configuration edits use the canonical revision CAS and serialize with allocation writes; reject limit reductions below global or any affected customer held-plus-redeemed counts. Append an admin audit digest in the same transaction; never reset counters or rewrite redemptions. Normalized no-op edits preserve terms version and revision. Existing live holds keep their snapshotted terms until expiry; a new/reacquired hold checks *current* coupon state. Guest checkout cannot use any coupon with a per-customer limit (PRD FR-09). Coupon quotas are authoritative in conditional writes, not `countDocuments` alone.
 
 ### 8.2 `couponRedemptions` — `promotions`
 
@@ -1027,7 +1027,7 @@ changes. A saved address is not a quote or permission to reuse a historic charge
 | `heldAt`? / `expiresAt`? | Date | Same generation start/expiry as stock: `expiresAt = heldAt + 15 minutes`; absent expiry after redemption |
 | `redeemedAt`? / `releasedAt`? / `lastOperationKey`? | Date / Date / string | Traceable transition |
 
-**Indexes:** unique `{couponId:1,orderId:1,generation:1}`; partial unique `{orderId:1,activeKey:1}` where `activeKey` is a string; `{status:1,expiresAt:1}`.
+**Indexes:** unique `{couponId:1,orderId:1,generation:1}`; partial unique `{orderId:1,activeKey:1}` where `activeKey` is a string; `{status:1,expiresAt:1}`; `{couponId:1,createdAt:-1,_id:-1}` for bounded coupon history.
 
 **Rules:** on every redemption creation/reacquisition, transactionally compare `couponId` with immutable
 `orders.couponSnapshot.couponId` (the sole coupon identity bound at order creation); reject any different coupon even after

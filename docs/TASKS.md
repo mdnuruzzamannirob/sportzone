@@ -129,7 +129,7 @@ The register contains 209 tasks across twelve requirement groups. Application-st
 | 02 — UI/UX Design                             |      17 |           1 |     0 |           0 |       0 |         0 |     16 |        0 |
 | 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |     21 |        0 |
 | 04 — Product Catalog and Inventory            |      19 |          11 |     0 |           0 |       1 |         0 |      7 |        0 |
-| 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |          10 |     0 |           0 |       0 |         0 |      7 |        0 |
+| 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |          22 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 07 — Payment Integration and Verification     |      18 |          18 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 08 — Returns and Refunds                      |      19 |          19 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -137,7 +137,7 @@ The register contains 209 tasks across twelve requirement groups. Application-st
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **209** | **133** | **0** | **0** | **1** | **0** | **75** | **0** |
+| **Total** | **209** | **132** | **0** | **0** | **1** | **0** | **76** | **0** |
 
 ## 4. Milestone tracker
 
@@ -1000,14 +1000,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Repeated merge and quantity conflicts follow API rules; foreign/inactive variants are rejected or flagged without stock reservation; ownership and maximum inputs are enforced.\
   **Evidence:** [Implementation, observed verification and recovery](./evidence/P05-014-cart-merge.md). Accepted by project owner, 25 October 2026 — “Review করেছি—accept করছি, Done করো”.
 
-- [ ] **P05-015 — Expose coupon administration and usage history APIs**\
-  **Status:** `Not Started` · **Area:** Backend\
+- [x] **P05-015 — Expose coupon administration and usage history APIs**\
+  **Status:** `Done` · **Area:** Backend · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-09; FR-30; API §§10.3,14.3\
   **Depends on:** `P05-007`, `P03-013`\
   **Deliverable:** Implement protected coupon configuration, edit/deactivation and bounded held/committed usage history using promotion services.\
   **Acceptance:** Invalid policy and stale edits fail; live holds retain approved quoted terms; history and quotas remain replay/concurrency safe.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Implementation, observed verification and recovery](./evidence/P05-015-coupon-administration.md). Accepted by project owner, 25 October 2026 — “Review করেছি—accept করছি, Done করো”.
 
 - [ ] **P05-016 — Expose review reading and moderation APIs**\
   **Status:** `Not Started` · **Area:** Backend\
@@ -2429,3 +2429,7 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **25 October 2026 — P05-014:** Not Started → In Progress → In Review. Implemented transactional authenticated cart merge and current catalog revalidation; [observed verification and recovery](./evidence/P05-014-cart-merge.md). Overall: 74 Done, 133 Not Started, 1 Blocked and 1 In Review. Independent acceptance pending; client implementation and checkout remain separate.
 
 **25 October 2026 — P05-014 acceptance:** In Review → Done after explicit project-owner popup review: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P05-014-cart-merge.md#recovery-and-independent-review). Overall: 75 Done, 133 Not Started, 1 Blocked and zero In Review. Client implementation, checkout and product/external gates remain separate.
+
+**25 October 2026 — P05-015:** Not Started → In Progress → In Review. Implemented protected coupon configuration/CAS and bounded usage history with transactional audit; [verification and rollout](./evidence/P05-015-coupon-administration.md). Overall: 75 Done, 132 Not Started, 1 Blocked and 1 In Review. Independent acceptance pending; checkout, clients and external/product gates remain separate.
+
+**25 October 2026 — P05-015 acceptance:** In Review → Done after explicit project-owner popup review: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P05-015-coupon-administration.md#recovery-and-independent-review). Overall: 76 Done, 132 Not Started, 1 Blocked and zero In Review. Reviewed persistence rollout, checkout, clients and external/product gates remain separate.

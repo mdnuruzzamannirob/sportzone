@@ -1,4 +1,14 @@
 import {
+  couponInput,
+  couponPatch,
+  couponDeactivate,
+  couponAdmin,
+  couponHistory,
+  couponParams,
+  couponListQuery,
+  couponHistoryQuery,
+} from '../src/modules/promotions/coupon-admin.schema.js'
+import {
   wishlistParams,
   wishlistResponse,
   wishlistSaved,
@@ -61,6 +71,8 @@ export type Operation = {
   csrf: boolean
   namespace: 'storefront' | 'admin'
   paginated?: boolean
+  ifMatch?: boolean
+  etag?: boolean
   multipart?: boolean
   replay: string
 }
@@ -109,6 +121,70 @@ const identities: Operation[] = identity.operations
 
 export const operations: readonly Operation[] = [
   ...identities,
+  ...(
+    [
+      {
+        method: 'GET',
+        path: '/admin/coupons',
+        query: couponListQuery,
+        params: empty,
+        response: z.array(couponAdmin),
+        paginated: true,
+        status: 200,
+      },
+      {
+        method: 'POST',
+        path: '/admin/coupons',
+        request: couponInput,
+        query: empty,
+        params: empty,
+        response: couponAdmin,
+        status: 201,
+        etag: true,
+      },
+      {
+        method: 'PATCH',
+        path: '/admin/coupons/{couponId}',
+        request: couponPatch,
+        query: empty,
+        params: couponParams,
+        response: couponAdmin,
+        status: 200,
+        ifMatch: true,
+        etag: true,
+      },
+      {
+        method: 'POST',
+        path: '/admin/coupons/{couponId}/deactivate',
+        request: couponDeactivate,
+        query: empty,
+        params: couponParams,
+        response: couponAdmin,
+        status: 200,
+        ifMatch: true,
+        etag: true,
+      },
+      {
+        method: 'GET',
+        path: '/admin/coupons/{couponId}/redemptions',
+        query: couponHistoryQuery,
+        params: couponParams,
+        response: z.array(couponHistory),
+        paginated: true,
+        status: 200,
+      },
+    ] as const
+  ).map(
+    (op): Operation => ({
+      ...op,
+      access: 'admin',
+      namespace: 'admin',
+      csrf: op.method !== 'GET',
+      activation: 'ADMIN_AUTH_ENABLED; reviewed promotion and audit persistence bootstrap required',
+      replay: 'Revision CAS for edits; live hold snapshots and authoritative counters preserved',
+    }),
+  ),
+
   {
     method: 'POST',
     path: '/cart/merge',

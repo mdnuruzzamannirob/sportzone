@@ -1,4 +1,6 @@
 export const errorDefinitions = {
+  PRECONDITION_REQUIRED: { status: 428, message: 'A current resource version is required.' },
+  PRECONDITION_FAILED: { status: 412, message: 'The resource version is no longer current.' },
   COUPON_UNAVAILABLE: { status: 409, message: 'Coupon is not available.' },
   BUSINESS_RULE_VIOLATION: { status: 422, message: 'The requested operation is not available.' },
   UNSUPPORTED_DELIVERY_AREA: {

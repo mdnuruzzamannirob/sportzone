@@ -1,3 +1,6 @@
+import { couponAdminService } from './modules/promotions/coupon-admin.service.js'
+import { couponAdminRoutes } from './modules/promotions/coupon-admin.routes.js'
+import { createAuditWriter } from './modules/audit/audit.service.js'
 import { wishlistService } from './modules/cart/wishlist.service.js'
 import { wishlistRoutes } from './modules/cart/wishlist.routes.js'
 import { cartRoutes } from './modules/cart/cart.routes.js'
@@ -65,6 +68,14 @@ export async function composeIdentityRoutes(
           auth.customerAccounts,
           catalogService(connection, publicMediaService(connection, media?.provider)),
         ),
+        auth.security,
+        auth.sessions,
+      ),
+    )
+  if (config.ADMIN_AUTH_ENABLED)
+    auth.router.use(
+      couponAdminRoutes(
+        couponAdminService(connection, auth.adminAccounts, createAuditWriter(connection)),
         auth.security,
         auth.sessions,
       ),

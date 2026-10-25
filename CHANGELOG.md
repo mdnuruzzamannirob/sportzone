@@ -8,6 +8,13 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 25 October 2026 — Coupon administration APIs
+
+- Added protected coupon configuration, revision-based edits/deactivation and bounded usage history.
+  Configuration and canonical audit facts commit together; live hold terms and authoritative counters
+  remain intact. OpenAPI/Postman now include coupon CAS headers and ETags.
+  [Implementation and verification](docs/evidence/P05-015-coupon-administration.md).
+
 ## 25 October 2026 — Authenticated cart merge
 
 - Added guest-selection merge with maximum-quantity deduplication, safe per-item exclusions,

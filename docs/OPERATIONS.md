@@ -351,7 +351,7 @@ Cart/wishlist records contain selections only, so account/financial retention ru
 
 Coupon persistence has a separate explicit local/test bootstrap after build:
 `node --env-file=.env backend/scripts/bootstrap-promotions.mjs` from the repository root. It creates
-only missing `coupons`, `couponRedemptions` and `couponCustomerCounters` collections with strict
+only missing `coupons`, `couponRedemptions`, `couponCustomerCounters` and canonical `auditLogs` collections with strict
 validators and declared unique/query indexes; compatible reruns preserve records and extra indexes.
 Incompatible existing validators require a reviewed migration and are never overwritten. The script
 refuses staging/production; those environments require reviewed rollout of the same owning initializer.
@@ -359,6 +359,11 @@ HTTP startup and quota primitives do not auto-create or repair financial collect
 fail closed if persistence is absent. Preserve accepted redemptions/counters during rollback or restore;
 never drop financial records or use a TTL deletion to release coupon capacity. The internal allocation
 service requires the owning order capability and an outer transaction; it is not wired as a public API.
+Coupon administration routes activate with ADMIN_AUTH_ENABLED; reads require compatible promotion
+persistence and writes additionally require compatible audit persistence. Missing prerequisites fail closed. Reviewed rollout adds coupon list/history indexes and audit indexes
+without dropping data; incompatible existing audit collections require a reviewed migration. Audit writes
+are append-only through the owning capability and commit with configuration changes. Preserve both coupon
+and audit history during application rollback; roll back router/registry/artifacts together, retaining indexes.
 
 Review persistence uses `node --env-file=.env backend/scripts/bootstrap-reviews.mjs` after backend
 build, from the repository root. The local/test-only command creates only the missing `reviews`

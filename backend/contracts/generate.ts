@@ -81,6 +81,13 @@ function security(op: Operation) {
 const header = (description: string) => ({ description, schema: { type: 'string' } })
 function openOperation(op: Operation) {
   const params = [...parameters(op.params, 'path'), ...parameters(op.query, 'query')]
+  if (op.ifMatch)
+    params.push({
+      name: 'If-Match',
+      in: 'header',
+      required: true,
+      schema: { type: 'string', pattern: '^"(0|[1-9][0-9]*)"$' },
+    })
   if (op.csrf || op.path.endsWith('/auth/csrf'))
     params.push({
       name: 'Origin',
@@ -97,6 +104,7 @@ function openOperation(op: Operation) {
       description: op.status === 204 ? 'Successful operation; no body' : 'Successful operation',
       headers: {
         'X-Request-Id': header('Server-generated request UUID'),
+        ...(op.etag ? { ETag: header('Strong quoted numeric revision') } : {}),
         'Cache-Control': { schema: { const: 'no-store' } },
         'X-Content-Type-Options': { schema: { const: 'nosniff' } },
         ...(op.status === 201 && op.path === '/me/addresses'
@@ -278,6 +286,7 @@ export function generateArtifacts(apiMarkdown: string) {
               },
             ]
           : []),
+        ...(op.ifMatch ? [{ key: 'If-Match', value: '{{ifMatch}}' }] : []),
         ...(op.access === 'monitor'
           ? [{ key: 'Authorization', value: 'Bearer {{monitorToken}}' }]
           : []),
@@ -310,6 +319,7 @@ export function generateArtifacts(apiMarkdown: string) {
   ])
   for (const op of sorted) {
     for (const match of op.path.matchAll(/\{([^}]+)\}/g)) variables.add(z.string().parse(match[1]))
+    if (op.ifMatch) variables.add('ifMatch')
     for (const param of parameters(op.query, 'query')) variables.add(param.name)
     if (hasBody(op) && !op.multipart) variables.add(`${operationId(op)}Body`)
   }

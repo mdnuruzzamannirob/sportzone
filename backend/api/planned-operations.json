@@ -944,35 +944,35 @@
       "path": "/admin/coupons",
       "success": "200",
       "operationId": "get_admin_coupons",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/coupons",
       "success": "201",
       "operationId": "post_admin_coupons",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "PATCH",
       "path": "/admin/coupons/{couponId}",
       "success": "200",
       "operationId": "patch_admin_coupons_couponId",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/coupons/{couponId}/deactivate",
       "success": "200",
       "operationId": "post_admin_coupons_couponId_deactivate",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/coupons/{couponId}/redemptions",
       "success": "200",
       "operationId": "get_admin_coupons_couponId_redemptions",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",

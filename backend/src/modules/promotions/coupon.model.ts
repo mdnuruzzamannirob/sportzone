@@ -50,6 +50,8 @@ couponSchema.pre('validate', function () {
 })
 couponSchema.index({ codeNormalized: 1 }, { unique: true, name: 'coupon_code_unique' })
 couponSchema.index({ status: 1, startsAt: 1, expiresAt: 1 }, { name: 'coupon_status_window' })
+couponSchema.index({ createdAt: -1, _id: -1 }, { name: 'coupon_admin_created' })
+couponSchema.index({ status: 1, createdAt: -1, _id: -1 }, { name: 'coupon_admin_status_created' })
 const termsSchema = new Schema(
   {
     code: { type: String, required: true, maxlength: 64 },
@@ -97,6 +99,10 @@ redemptionSchema.index(
   },
 )
 redemptionSchema.index({ status: 1, expiresAt: 1 }, { name: 'coupon_redemption_expiry' })
+redemptionSchema.index(
+  { couponId: 1, createdAt: -1, _id: -1 },
+  { name: 'coupon_redemption_history' },
+)
 const customerSchema = new Schema(
   {
     couponId: { type: Schema.Types.ObjectId, required: true },

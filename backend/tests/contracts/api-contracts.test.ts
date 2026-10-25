@@ -70,7 +70,7 @@ describe('executable API contract registry', () => {
         .filter((op) => op.method === 'OPTIONS')
         .every((op) => operations.some((item) => item.path === op.path)),
     ).toBe(true)
-    expect(operations).toHaveLength(39)
+    expect(operations).toHaveLength(44)
     const prefixed = Router().use('/untracked', registeredRouter())
     expect(() => registeredOperations(prefixed)).toThrow(/mount prefix/)
   })
@@ -116,6 +116,7 @@ describe('executable API contract registry', () => {
         'customers/customer.routes.ts',
         'health/health.routes.ts',
         'media/media.routes.ts',
+        'promotions/coupon-admin.routes.ts',
       ].sort(),
     )
   })
@@ -162,9 +163,9 @@ describe('executable API contract registry', () => {
   it('keeps planned contracts non-executable and environment values blank', () => {
     const rows = artifacts['planned-operations.json'].operations
     expect(rows).toHaveLength(164)
-    expect(rows.filter((op) => op.implementation === 'planned')).toHaveLength(125)
+    expect(rows.filter((op) => op.implementation === 'planned')).toHaveLength(120)
     expect(openapi.paths['/checkout/orders']).toBeUndefined()
-    expect(artifacts['postman.collection.json'].item).toHaveLength(39)
+    expect(artifacts['postman.collection.json'].item).toHaveLength(44)
     expect(artifacts['postman.environment.json'].values.every((entry) => entry.value === '')).toBe(
       true,
     )
@@ -214,6 +215,19 @@ describe('executable API contract registry', () => {
     expect(
       error({ error: { code: 'RAW_DRIVER_ERROR', message: 'private' }, meta: body.meta }),
     ).toBe(false)
+  })
+  it('generates coupon CAS headers, ETags and manual Postman variables from the registry', () => {
+    const op = openapi.paths['/admin/coupons/{couponId}']?.patch
+    expect(op).toMatchObject({
+      parameters: expect.arrayContaining([
+        expect.objectContaining({ name: 'If-Match', in: 'header', required: true }),
+      ]),
+      responses: { '200': { headers: { ETag: expect.any(Object) } } },
+    })
+    const postman = artifacts['postman.collection.json'].item.find(
+      (item) => item.name === 'patch_admin_coupons_couponId',
+    )
+    expect(postman?.request.header).toContainEqual({ key: 'If-Match', value: '{{ifMatch}}' })
   })
   it('validates real HTTP health and unauthorized responses without a database', async () => {
     const app = createApp({ apiRouter: registeredRouter() })

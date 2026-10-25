@@ -131,7 +131,7 @@ executable validators/contract tests define the API; generated OpenAPI/Postman a
 | Status values       | Persisted `snake_case` enum values from Database v1.0; UI labels are presentation only                                                                                                                                             |
 | Creation            | `201 Created` + `Location` where appropriate; replay may return `200 OK` with same logical result                                                                                                                                  |
 | Deletion            | Use `204 No Content` only where deletion/deactivation is an approved operation; no body                                                                                                                                            |
-| Concurrency         | `If-Match`/strong ETag for approved editable master records; backed by the `revision` CAS fields on category, product, variant, delivery-zone and charge-rule documents (Database v1.0); domain CAS for financial/stock operations |
+| Concurrency         | `If-Match`/strong ETag for approved editable master records; backed by the `revision` CAS fields on category, product, variant, coupon, delivery-zone and charge-rule documents (Database v1.0); domain CAS for financial/stock operations |
 | Request correlation | Server-issued `X-Request-Id` returned on every response; incoming value never trusted as evidence                                                                                                                                  |
 | API evolution       | Additive compatible fields within `/api/v1`; incompatible changes require version review and consumer migration                                                                                                                    |
 
@@ -1367,11 +1367,11 @@ rating or unfairly suppress valid negative feedback. Always audit decisions/reas
 | `POST`  | `/admin/delivery/charges/{chargeId}/activate`   | `{reason,effectiveAt?} + If-Match + Idempotency-Key → DeliveryChargeRule`                                                                          | 28  |
 | `POST`  | `/admin/delivery/charges/{chargeId}/supersede`  | `{replacement:DeliveryChargeInput,effectiveAt,reason} + If-Match + Idempotency-Key → {previous:DeliveryChargeRule,replacement:DeliveryChargeRule}` | 28  |
 | `POST`  | `/admin/delivery/charges/{chargeId}/deactivate` | `{effectiveAt,reason} + If-Match + Idempotency-Key → DeliveryChargeRule`                                                                           | 28  |
-| `GET`   | `/admin/coupons`                                | `status?,page? → CouponAdmin[]`                                                                                                                    | 30  |
+| `GET`   | `/admin/coupons`                                | `status?,page?,pageSize? → CouponAdmin[]`                                                                                                                    | 30  |
 | `POST`  | `/admin/coupons`                                | `CouponInput → CouponAdmin`                                                                                                                        | 30  |
 | `PATCH` | `/admin/coupons/{couponId}`                     | `CouponPatch + If-Match → CouponAdmin`                                                                                                             | 30  |
 | `POST`  | `/admin/coupons/{couponId}/deactivate`          | `{reason} + If-Match → CouponAdmin`                                                                                                                | 30  |
-| `GET`   | `/admin/coupons/{couponId}/redemptions`         | `page? → CouponRedemptionSummary[]`                                                                                                                | 30  |
+| `GET`   | `/admin/coupons/{couponId}/redemptions`         | `page?,pageSize? → CouponRedemptionSummary[]`                                                                                                                | 30  |
 | `GET`   | `/admin/settings`                               | `— → StoreSettings (allowlisted)`                                                                                                                  | 34  |
 | `PATCH` | `/admin/settings`                               | `SettingsPatch + If-Match → StoreSettings`                                                                                                         | 34  |
 | `GET`   | `/admin/settings/policies`                      | `type?,status?,page?,pageSize? → paginated PolicyDocumentSummary[]`                                                                                | 34  |
@@ -1393,6 +1393,29 @@ rating or unfairly suppress valid negative feedback. Always audit decisions/reas
 `type=percentage` uses basis points `1..10000`, fixed uses poisha. No client edit to `heldCount`, `redeemedCount`,
 individual redemptions, or past orders. Active holds keep their snapshotted terms; new/reacquired holds validate current
 terms. Reacquisition must still honor immutable accepted line allocations/total; if current eligibility cannot honor them, block new payment initiation with STATE_CONFLICT and require cancellation/new explicitly confirmed checkout, never reprice an existing order. A late verified receipt instead remains recorded with fulfillment held for reviewed resolution/refund. Per-customer counts require user IDs; guests cannot use limited-per-customer coupons.
+
+`CouponPatch` permits only optional CouponInput fields, with at least one field. Null clears only
+`overallLimit`, `perCustomerLimit`, `eligibleProductIds` or `eligibleCategoryIds`; omission preserves them.
+Revalidate the complete merged configuration (including date ordering, percentage bounds and distinct scope IDs).
+At most 200 IDs per scope list; absent/empty scopes mean global merchandise scope. Reject global or per-customer
+limit reductions below current held plus redeemed usage (`422 BUSINESS_RULE_VIOLATION`). Configuration changes
+serialize with quota writes on the canonical coupon document. Code uniqueness is case-insensitive; conflicts
+return `409 STATE_CONFLICT`. No edit rewrites redemption terms or resets counters.
+
+`CouponAdmin` contains CouponInput configuration, normalized `code`, `id`, `heldCount`, `redeemedCount`,
+`termsVersion` and `revision`. Create returns 201 and strong ETag `"<revision>"`; PATCH/deactivate return 200
+and the new ETag. The list exposes each row's revision; no undocumented single-coupon GET is needed.
+PATCH/deactivate require a canonical strong numeric If-Match; absent returns 428 PRECONDITION_REQUIRED,
+malformed/stale returns 412 PRECONDITION_FAILED. Meaningful edits increment revision and termsVersion;
+normalized no-op PATCH preserves both. Explicit deactivation requires a nonempty reason and records the action.
+Privileged writes and append-only audit digests commit together or roll back together.
+
+Coupon lists and redemption history use standard pagination (default 20, maximum 100), ordered by createdAt
+then ID descending. `CouponRedemptionSummary` exposes only `id,couponId,orderId,userId?,generation,status`,
+immutable `termsSnapshot` and applicable `heldAt,expiresAt,redeemedAt,releasedAt` UTC dates. Statuses are
+`held`, `redeemed` (committed usage) and `released`; private operation keys and active-index markers are omitted.
+An unknown coupon's history returns 404. Both endpoints are admin-only and no-store; mutations require admin
+Origin/CSRF, and ETag is exposed through the admin CORS boundary.
 
 **Policy drafts and publication:** `PolicyDraftInput:{type,content,proposedEffectiveAt?}` (types: `shipping`, `cancellation`, `returns`, `refunds`, `privacy`, `terms`, `complaints`); server assigns unique immutable
 `version`, ID, status `draft` and CAS revision in `policyDocuments` (Database §10.5).
