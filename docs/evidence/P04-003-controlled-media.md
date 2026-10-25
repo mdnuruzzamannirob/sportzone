@@ -106,7 +106,11 @@ approved file/scan/TTL/private delivery/retention/hold policy and scanner deploy
 Then execute the staged acceptance procedure in Operations, capture sanitized actual upload/private
 access/expiry/deletion/reconciliation evidence, review operator composition/activation and submit
 independent acceptance. Ordinary startup remains media-disabled. M2 remains Not Accepted.
-Safe parallel work may proceed on independent category/admin/inventory tasks with accepted prerequisites.
+The owner-approved 25 October 2026 split assigns current local capability verification to
+[P04-020](./P04-020-local-media-capability.md). Category/settings technical prerequisites use that task
+only after independent acceptance; this record retains historical results and the actual EXT-04 acceptance
+obligation. Backend closeout and the catalog milestone explicitly require P04-003, so the split does not
+clear this blocker, approve policies or activate ordinary media startup.
 
 ## Recovery and protocol references
 

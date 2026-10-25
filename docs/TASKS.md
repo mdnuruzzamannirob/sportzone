@@ -62,7 +62,7 @@ This document decomposes the approved implementation plan into independently ver
 | Stage              | Executable queue and closeout                                                                                                                                                                            |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Foundation         | P01-021 → P01-022 → P01-023 → P01-024.                                                                                                                                                                   |
-| Backend            | Every unfinished task marked Backend, in dependency order; P09-011 provisions backend staging prerequisites and P03-022 closes the stage. Includes protected admin APIs formerly hidden inside UI tasks. |
+| Backend            | Every unfinished task marked Backend, in dependency order; P04-020 is the local media prerequisite for category/settings; P04-003 retains real media acceptance. P09-011 provisions staging; both remain mandatory for P03-022. Includes protected admin APIs formerly hidden inside UI tasks. |
 | Admin              | Every task marked Admin after P03-022; P09-010 closes the complete admin stage.                                                                                                                          |
 | Storefront         | Every task marked Storefront after P09-010; P02-017 closes the complete storefront stage.                                                                                                                |
 | Integrated         | Original catalog/shopping/COD/payment/after-sales gates, integrated staging and P10 release-candidate verification after P02-017.                                                                        |
@@ -121,23 +121,23 @@ retain their own approver, environment, artifacts, blockers and explicit decisio
 
 ## 3. Project progress dashboard
 
-The register contains 209 tasks across twelve requirement groups. Application-stage execution is defined in §1; accepted IDs and evidence remain historical. Update totals when tasks are added or statuses change.
+The register contains 210 tasks across twelve requirement groups. Application-stage execution is defined in §1; accepted IDs and evidence remain historical. Update totals when tasks are added or statuses change.
 
 | Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |   Done | Deferred |
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
 | 01 — Requirements Finalization and Planning | 24 | 0 | 0 | 0 | 0 | 0 | 24 | 0 |
 | 02 — UI/UX Design                             |      17 |           1 |     0 |           0 |       0 |         0 |     16 |        0 |
 | 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |     21 |        0 |
-| 04 — Product Catalog and Inventory            |      19 |          10 |     0 |           0 |       1 |         0 |      8 |        0 |
+| 04 — Product Catalog and Inventory            |      20 |           9 |     1 |           0 |       1 |         0 |      9 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |          22 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 07 — Payment Integration and Verification     |      18 |          18 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 08 — Returns and Refunds                      |      19 |          19 |     0 |           0 |       0 |         0 |      0 |        0 |
-| 09 — Admin Management and Reports             |      18 |          17 |     0 |           0 |       1 |         0 |      0 |        0 |
+| 09 — Admin Management and Reports             |      18 |          16 |     1 |           0 |       1 |         0 |      0 |        0 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **209** | **130** | **0** | **0** | **2** | **0** | **77** | **0** |
+| **Total** | **210** | **128** | **2** | **0** | **2** | **0** | **78** | **0** |
 
 ## 4. Milestone tracker
 
@@ -696,14 +696,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-01–FR-34 backend surfaces; Plan §3.1; Testing §15\
-  **Depends on:** `P09-011`, `P05-004`, `P06-016`, `P07-016`, `P08-004`, `P04-017`, `P04-019`, `P05-014`, `P05-015`, `P05-016`, `P09-014`, `P09-016`, `P09-017`, `P09-018`\
+  **Depends on:** `P04-003`, `P09-011`, `P05-004`, `P06-016`, `P07-016`, `P08-004`, `P04-017`, `P04-019`, `P05-014`, `P05-015`, `P05-016`, `P09-014`, `P09-016`, `P09-017`, `P09-018`\
   **Deliverable:** Consolidate all customer/admin API, validator/index, transaction/race/replay, job/recovery, secret/privacy and required real provider evidence against one backend revision. Reconcile generated OpenAPI/Postman and operator procedures.\
   **Acceptance:** All backend-stage dependencies and applicable provider gates pass; no frontend server/build/test or browser engine is required. API scenario tests prove guest/customer/admin workflows. Independent owner acceptance permits admin stage; M1–M8 product gates remain separate.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
 
 ### Phase 04 — Product catalog and inventory
 
-**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 04. **Associated gate:** M2. **Tasks:** 19.
+**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 04. **Associated gate:** M2. **Tasks:** 20.
 
 - [x] **P04-001 — Model categories and hierarchy with activity rules**\
   **Status:** `Done` · **Area:** Backend/catalog · **Owner:** Codex\
@@ -725,11 +725,11 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Blocked` · **Area:** Backend/media · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-05; FR-23; Architecture §11\
-  **Depends on:** `P01-024`\
-  **Deliverable:** Implement the mediaAssets ownership/upload-intent ledger, validation/quarantine, transactionally attached references, private evidence authorization and CAS-protected orphan cleanup; upload/delete provider calls stay outside DB transactions (Database §6.7).\
+  **Depends on:** `P04-020`\
+  **Deliverable:** Retain the complete media outcome, with independently verified local capability in P04-020 and real provider/scanner/policy acceptance here. Implement the mediaAssets ownership/upload-intent ledger, validation/quarantine, transactionally attached references, private evidence authorization and CAS-protected orphan cleanup; upload/delete provider calls stay outside DB transactions (Database §6.7).\
   **Acceptance:** Only authorized admin uploads; credentials never reach browser bundles.\
   **Evidence:** [Local adapter/ledger/auth verification and EXT-04 blocker](./evidence/P04-003-controlled-media.md).\
-  **Blocked:** EXT-04 — store administrator/project owner must supply approved staging account/configuration, media/scanner/retention policy and actual provider security evidence. Local implementation and focused checks passed; default runtime activation stays off. Next: protected input references, real staging upload/private-delivery/deletion validation and independent review.
+  **Blocked:** EXT-04 — store administrator/project owner must supply approved staging account/configuration, media/scanner/retention policy and actual provider security evidence. Historical local implementation/checks remain in the evidence; P04-020 owns current local technical verification. Default runtime activation stays off. Next: protected input references, real staging upload/private-delivery/deletion validation and independent review.
 
 - [ ] **P04-004 — Implement admin category management**\
   **Status:** `Not Started` · **Area:** Admin/catalog\
@@ -829,16 +829,16 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Quality/catalog\
   **Stage:** `Integrated`\
   **Sources:** FR-03; FR-04; FR-05; FR-06; FR-13; FR-23; FR-24; FR-25\
-  **Depends on:** `P03-016`, `P02-017`\
+  **Depends on:** `P04-003`, `P03-016`, `P02-017`\
   **Deliverable:** Execute admin-to-storefront publishing, unique identities, concurrent stock and public visibility tests.\
   **Acceptance:** No static mock implies purchase readiness; M2 evidence demonstrates real API-backed catalog.\
   **Evidence to attach:** M2 catalog acceptance suite.
 
 - [ ] **P04-016 — Expose protected category management APIs**\
-  **Status:** `Not Started` · **Area:** Backend\
+  **Status:** `Ready` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-24; API §14.1\
-  **Depends on:** `P04-001`, `P03-013`, `P04-003`\
+  **Depends on:** `P04-001`, `P03-013`, `P04-020`\
   **Deliverable:** Register category list/create/edit/deactivate APIs over existing category services; enforce hierarchy, active assignment, safe deletion and null-versus-omitted parent/image semantics.\
   **Acceptance:** Admin/session/CSRF and conditional-update checks apply; category cycles, dependent deletion and invalid media references fail. HTTP integration proves writes and public visibility without UI.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
@@ -869,6 +869,15 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Deliverable:** Implement homepageBanner input/media references and safe public home projection, categories and featured/new/discounted sections with store contact/policy links; logo and banner remain separate.\
   **Acceptance:** Unconfigured content is represented honestly; inactive/quarantined/private assets never publish; persisted admin updates appear on a subsequent public read.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+
+- [x] **P04-020 — Verify local media capability for backend consumers**\
+  **Status:** `Done` · **Area:** Backend/media · **Owner:** Codex\
+  **Stage:** `Backend`\
+  **Sources:** FR-05; FR-23; Plan §3.1; API §16.2; Database §6.7\
+  **Depends on:** `P01-024`, `P03-013`\
+  **Deliverable:** Independently verify the existing local media ledger, strict validators/indexes, authorization/reference capabilities, scanner/provider protocol boundaries, cleanup/reconciliation and explicit root composition for category/settings consumers.\
+  **Acceptance:** Real isolated MongoDB/HTTP verifies ownership, attach/delete races, rollback, quarantine/unknown outcomes, private access and fail-closed/default-disabled runtime. Protocol fixtures are explicit test doubles; no live provider, policy approval, staging or release acceptance is inferred.\
+  **Evidence:** [Local verification, approved queue split and preserved external gates](./evidence/P04-020-local-media-capability.md). Accepted by project owner, 25 October 2026 — “Local verification ও queue গ্রহণ করছি—Done করো”. P04-003 and P09-011 remain Blocked and mandatory for backend closeout.
 
 ### Phase 05 — Cart, wishlist, coupons, and reviews
 
@@ -1684,10 +1693,10 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence to attach:** Staging deploy manifest and smoke tests.
 
 - [ ] **P09-013 — Expose store settings and public content APIs**\
-  **Status:** `Not Started` · **Area:** Backend\
+  **Status:** `Ready` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-03; FR-34; API §§10.1,14.3\
-  **Depends on:** `P03-013`, `P04-003`, `P01-007`\
+  **Depends on:** `P03-013`, `P04-020`, `P01-007`\
   **Deliverable:** Implement canonical settings singleton bootstrap, branding/contact/address, low-stock threshold and approved versioned policies with protected input and safe public projections.\
   **Acceptance:** Unapproved policy placeholders never publish; stale writes fail; contact/policy projections exclude private configuration and media references are validated. Delivery settings reuse the same canonical singleton.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
@@ -2100,7 +2109,7 @@ owners and includes additional cross-domain owners identified by that mapping.
 | FR-02           | `P03-004`, `P03-008`, `P03-010`, `P03-011`, `P03-013`, `P03-015`, `P03-016`, `P06-014`, `P05-004`, `P05-012`, `P08-012`, `P06-005`, `P08-013`                                                                                                                                     |
 | FR-03           | `P04-012`, `P04-015`, `P09-008`, `P11-006`, `P02-006`, `P09-005`                                                                                                                                                                                                                  |
 | FR-04           | `P04-001`, `P04-009`, `P04-011`, `P04-013`, `P04-015`, `P10-009`, `P04-002`                                                                                                                                                                                                       |
-| FR-05           | `P04-002`, `P04-003`, `P04-010`, `P04-011`, `P04-014`, `P04-015`, `P10-009`, `P05-001`, `P05-004`, `P05-010`, `P06-004`                                                                                                                                                           |
+| FR-05           | `P04-002`, `P04-003`, `P04-020`, `P04-010`, `P04-011`, `P04-014`, `P04-015`, `P10-009`, `P05-001`, `P05-004`, `P05-010`, `P06-004`                                                                                                                                                           |
 | FR-06           | `P04-002`, `P04-005`, `P04-010`, `P04-014`, `P04-015`, `P04-006`, `P06-005`                                                                                                                                                                                                       |
 | FR-07           | `P05-001`, `P05-002`, `P05-003`, `P05-011`, `P05-013`, `P06-004`                                                                                                                                                                                                                  |
 | FR-08           | `P05-004`, `P05-012`, `P05-013`                                                                                                                                                                                                                                                   |
@@ -2118,7 +2127,7 @@ owners and includes additional cross-domain owners identified by that mapping.
 | FR-20           | `P03-009`, `P03-010`, `P06-016`, `P06-020`, `P07-016`, `P08-011`, `P10-010`, `P11-004`                                                                                                                                                                                            |
 | FR-21           | `P03-004`, `P03-005`, `P03-012`, `P03-013`, `P03-014`, `P03-015`, `P03-016`, `P09-010`, `P10-005`, `P11-003`, `P11-008`                                                                                                                                                           |
 | FR-22           | `P09-001`, `P09-002`, `P09-009`, `P09-010`                                                                                                                                                                                                                                        |
-| FR-23           | `P04-002`, `P04-003`, `P04-005`, `P04-015`, `P09-010`, `P11-006`                                                                                                                                                                                                                  |
+| FR-23           | `P04-002`, `P04-003`, `P04-020`, `P04-005`, `P04-015`, `P09-010`, `P11-006`                                                                                                                                                                                                                  |
 | FR-24           | `P04-001`, `P04-004`, `P04-015`, `P09-010`, `P04-003`                                                                                                                                                                                                                             |
 | FR-25           | `P04-006`, `P04-007`, `P04-015`, `P09-007`, `P09-010`, `P08-004`                                                                                                                                                                                                                  |
 | FR-26           | `P06-003`, `P06-011`, `P06-012`, `P06-013`, `P06-017`, `P06-019`, `P06-020`, `P09-004`, `P09-007`, `P09-010`, `P11-008`, `P12-004`, `P07-015`, `P08-015`                                                                                                                          |
@@ -2440,3 +2449,7 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **25 October 2026 — P04-018 acceptance:** In Review → Done after explicit project-owner popup review: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P04-018-inventory-administration.md#recovery-and-independent-review). Overall: 77 Done, 131 Not Started, 1 Blocked and zero In Review. Approved default-settings provisioning remains P09-013; full variant management, clients and external/product gates remain separate.
 
 **25 October 2026 — P09-011:** Not Started → In Progress → Blocked. Prepared backend-only container recipe/probe and verified isolated host build/dependencies; actual image build is denied by Docker socket access, and approved staging resource/configuration references remain unsupplied after owner acknowledgment. [Evidence and resume checks](./evidence/P09-011-staging-runtime.md). Overall: 77 Done, 130 Not Started, 2 Blocked and zero In Review. Platform/resource owners must supply prerequisites; no image/deployment acceptance inferred.
+
+**25 October 2026 — Approved media work-package split / P04-020:** Owner instructed “Local backend কাজ আলাদা করে queue ঠিক করো”. Added P04-020 for independently reviewed local capability; only category/settings technical dependencies now use it. P04-003 retains real provider/policy acceptance and is explicit in P03-022/P04-015; P09-011 remains mandatory for backend closeout. Local verification → In Review; no external/stage gate accepted. [Scope, checks and dependency audit](./evidence/P04-020-local-media-capability.md). Overall: 210 tasks, 77 Done, 130 Not Started, 2 Blocked and 1 In Review. Next after P04-020 acceptance: P04-016 and P09-013 become eligible; prioritize P04-016 → P04-017, then settings/delivery.
+
+**25 October 2026 — P04-020 acceptance:** In Review → Done after explicit owner popup review: “Local verification ও queue গ্রহণ করছি—Done করো”. [Acceptance record](./evidence/P04-020-local-media-capability.md#recovery-and-independent-review). All prerequisites now accepted for P04-016 and P09-013: Not Started → Ready. Overall: 210 tasks, 78 Done, 128 Not Started, 2 Ready, 2 Blocked and zero In Review. Next: P04-016 category API. P04-003/P09-011 and backend/product gates remain unaccepted.
