@@ -128,7 +128,7 @@ The register contains 209 tasks across twelve requirement groups. Application-st
 | 01 — Requirements Finalization and Planning | 24 | 0 | 0 | 0 | 0 | 0 | 24 | 0 |
 | 02 — UI/UX Design                             |      17 |           1 |     0 |           0 |       0 |         0 |     16 |        0 |
 | 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |     21 |        0 |
-| 04 — Product Catalog and Inventory            |      19 |          11 |     0 |           0 |       1 |         0 |      7 |        0 |
+| 04 — Product Catalog and Inventory            |      19 |          10 |     0 |           0 |       1 |         0 |      8 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |          22 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 07 — Payment Integration and Verification     |      18 |          18 |     0 |           0 |       0 |         0 |      0 |        0 |
@@ -137,7 +137,7 @@ The register contains 209 tasks across twelve requirement groups. Application-st
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **209** | **132** | **0** | **0** | **1** | **0** | **76** | **0** |
+| **Total** | **209** | **131** | **0** | **0** | **1** | **0** | **77** | **0** |
 
 ## 4. Milestone tracker
 
@@ -852,14 +852,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Unique slug/SKU, stale edits, invalid combinations and foreign media references fail; explicit null unsets permitted fields while omitted fields remain unchanged. Public projections follow saved state.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
 
-- [ ] **P04-018 — Expose stock adjustment and inventory history APIs**\
-  **Status:** `Not Started` · **Area:** Backend\
+- [x] **P04-018 — Expose stock adjustment and inventory history APIs**\
+  **Status:** `Done` · **Area:** Backend · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-13; FR-25; API §14.1\
   **Depends on:** `P04-008`, `P03-013`, `P01-024`\
   **Deliverable:** Expose authorized counters, low-stock queries, threshold edits, adjustments and bounded movement history; require actor/reason/replay identity.\
   **Acceptance:** HTTP replay/race tests preserve nonnegative availability and exactly-once movement; reserved and committed stock remain separate and private model access is not exposed.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Implementation, observed verification and readiness limits](./evidence/P04-018-inventory-administration.md). Production list requires approved primary settings from P09-013; threshold-only variant PATCH scope is explicit. Accepted by project owner, 25 October 2026 — “Review করেছি—accept করছি, Done করো”.
 
 - [ ] **P04-019 — Expose homepage content and catalog section APIs**\
   **Status:** `Not Started` · **Area:** Backend\
@@ -2433,3 +2433,7 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **25 October 2026 — P05-015:** Not Started → In Progress → In Review. Implemented protected coupon configuration/CAS and bounded usage history with transactional audit; [verification and rollout](./evidence/P05-015-coupon-administration.md). Overall: 75 Done, 132 Not Started, 1 Blocked and 1 In Review. Independent acceptance pending; checkout, clients and external/product gates remain separate.
 
 **25 October 2026 — P05-015 acceptance:** In Review → Done after explicit project-owner popup review: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P05-015-coupon-administration.md#recovery-and-independent-review). Overall: 76 Done, 132 Not Started, 1 Blocked and zero In Review. Reviewed persistence rollout, checkout, clients and external/product gates remain separate.
+
+**25 October 2026 — P04-018:** Not Started → In Progress → In Review. Implemented protected inventory list/threshold/adjustment/history with transactional replay and audit; [verification and readiness limits](./evidence/P04-018-inventory-administration.md). Overall: 76 Done, 131 Not Started, 1 Blocked and 1 In Review. Approved default-settings provisioning remains P09-013; full variant management remains P04-017. Independent acceptance pending.
+
+**25 October 2026 — P04-018 acceptance:** In Review → Done after explicit project-owner popup review: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P04-018-inventory-administration.md#recovery-and-independent-review). Overall: 77 Done, 131 Not Started, 1 Blocked and zero In Review. Approved default-settings provisioning remains P09-013; full variant management, clients and external/product gates remain separate.

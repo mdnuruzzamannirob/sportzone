@@ -741,7 +741,7 @@
       "path": "/admin/variants/{variantId}",
       "success": "200",
       "operationId": "patch_admin_variants_variantId",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
@@ -755,21 +755,21 @@
       "path": "/admin/inventory",
       "success": "200",
       "operationId": "get_admin_inventory",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/inventory/{variantId}/movements",
       "success": "200",
       "operationId": "get_admin_inventory_variantId_movements",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/inventory/{variantId}/adjustments",
       "success": "200",
       "operationId": "post_admin_inventory_variantId_adjustments",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",

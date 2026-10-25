@@ -56,6 +56,18 @@
       "type": "secret"
     },
     {
+      "key": "from",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "idempotencyKey",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "ifMatch",
       "value": "",
       "enabled": true,
@@ -63,6 +75,12 @@
     },
     {
       "key": "inStock",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "lowStock",
       "value": "",
       "enabled": true,
       "type": "default"
@@ -105,6 +123,12 @@
     },
     {
       "key": "patch_admin_coupons_couponIdBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "patch_admin_variants_variantIdBody",
       "value": "",
       "enabled": true,
       "type": "secret"
@@ -153,6 +177,12 @@
     },
     {
       "key": "post_admin_coupons_couponId_deactivateBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_inventory_variantId_adjustmentsBody",
       "value": "",
       "enabled": true,
       "type": "secret"
@@ -273,6 +303,12 @@
     },
     {
       "key": "storefrontOrigin",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "to",
       "value": "",
       "enabled": true,
       "type": "default"

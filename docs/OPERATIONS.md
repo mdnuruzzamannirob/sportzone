@@ -365,6 +365,15 @@ without dropping data; incompatible existing audit collections require a reviewe
 are append-only through the owning capability and commit with configuration changes. Preserve both coupon
 and audit history during application rollback; roll back router/registry/artifacts together, retaining indexes.
 
+Inventory administration activates with ADMIN_AUTH_ENABLED and requires reviewed product/inventory persistence;
+mutations additionally require canonical audit persistence. Reuse the product/inventory owning initializers and
+promotion/audit bootstrap under their existing environment restrictions; HTTP startup never creates or repairs
+collections. Inventory lists additionally require an operator-approved primary storeSettings.lowStockThreshold
+and an unconditional unique key index. The read-only stock-settings capability does not seed that singleton;
+settings provisioning remains its owning task. Missing defaults return 503, with no environment fallback or
+fabricated approval. Adjustment/history remain usable independently. Preserve movements, audit records and
+canonical stock during rollback; roll back router/registry/artifacts together without deleting movement history.
+
 Review persistence uses `node --env-file=.env backend/scripts/bootstrap-reviews.mjs` after backend
 build, from the repository root. The local/test-only command creates only the missing `reviews`
 collection and declared indexes with its strict validator; compatible reruns preserve records and

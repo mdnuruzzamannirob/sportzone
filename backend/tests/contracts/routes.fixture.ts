@@ -1,3 +1,4 @@
+import { inventoryAdminRoutes } from '../../src/modules/inventory/inventory-admin.routes.js'
 import { couponAdminRoutes } from '../../src/modules/promotions/coupon-admin.routes.js'
 import { wishlistRoutes } from '../../src/modules/cart/wishlist.routes.js'
 import { cartRoutes } from '../../src/modules/cart/cart.routes.js'
@@ -72,6 +73,11 @@ export function registeredRouter() {
     recoveryRoutes(recovery, security, sessions),
     emailChangeRoutes(recovery, security, sessions),
     profileRoutes(profile, security, sessions),
+    inventoryAdminRoutes(
+      { list: unused, history: unused, adjust: unused, threshold: unused },
+      security,
+      sessions,
+    ),
     couponAdminRoutes(
       { create: unused, update: unused, deactivate: unused, list: unused, history: unused },
       security,

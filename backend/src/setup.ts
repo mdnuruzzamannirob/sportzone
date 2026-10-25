@@ -1,3 +1,11 @@
+import { inventoryAdminService } from './modules/inventory/inventory-admin.service.js'
+import { inventoryAdminRoutes } from './modules/inventory/inventory-admin.routes.js'
+import { inventoryService } from './modules/inventory/inventory.service.js'
+import {
+  variantStockAccess,
+  variantInventoryAccess,
+} from './modules/catalog/variants/variant.service.js'
+import { stockSettingsReader } from './modules/settings/stock-settings.service.js'
 import { couponAdminService } from './modules/promotions/coupon-admin.service.js'
 import { couponAdminRoutes } from './modules/promotions/coupon-admin.routes.js'
 import { createAuditWriter } from './modules/audit/audit.service.js'
@@ -67,6 +75,21 @@ export async function composeIdentityRoutes(
           connection,
           auth.customerAccounts,
           catalogService(connection, publicMediaService(connection, media?.provider)),
+        ),
+        auth.security,
+        auth.sessions,
+      ),
+    )
+  if (config.ADMIN_AUTH_ENABLED)
+    auth.router.use(
+      inventoryAdminRoutes(
+        inventoryAdminService(
+          connection,
+          auth.adminAccounts,
+          inventoryService(connection, variantStockAccess(connection)),
+          variantInventoryAccess(connection),
+          stockSettingsReader(connection),
+          createAuditWriter(connection),
         ),
         auth.security,
         auth.sessions,

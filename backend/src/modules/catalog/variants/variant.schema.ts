@@ -91,3 +91,23 @@ export const variantBatch = z
       })
     }
   })
+
+export const variantStockView = z
+  .strictObject({ physical: money, reserved: money, committed: money, available: money })
+  .refine(
+    (v) =>
+      v.reserved <= v.physical - v.committed &&
+      v.available === v.physical - v.reserved - v.committed,
+  )
+export const adminVariant = z.strictObject({
+  id: z.string().regex(/^[a-f0-9]{24}$/),
+  productId: z.string().regex(/^[a-f0-9]{24}$/),
+  sku: z.string(),
+  attributes: z.record(z.string(), z.string()),
+  regularPricePoisha: money,
+  salePricePoisha: money.optional(),
+  status: z.enum(['active', 'inactive']),
+  stock: variantStockView,
+  revision: money,
+  lowStockThreshold: money.optional(),
+})

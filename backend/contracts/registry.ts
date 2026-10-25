@@ -1,3 +1,14 @@
+import { adminVariant } from '../src/modules/catalog/variants/variant.schema.js'
+import {
+  inventoryQuery,
+  movementQuery,
+  inventoryParams,
+  inventoryList,
+  movementView,
+  adjustmentBody,
+  adjustmentResult,
+  thresholdPatch,
+} from '../src/modules/inventory/inventory-admin.schema.js'
 import {
   couponInput,
   couponPatch,
@@ -71,6 +82,7 @@ export type Operation = {
   csrf: boolean
   namespace: 'storefront' | 'admin'
   paginated?: boolean
+  idempotency?: boolean
   ifMatch?: boolean
   etag?: boolean
   multipart?: boolean
@@ -121,6 +133,61 @@ const identities: Operation[] = identity.operations
 
 export const operations: readonly Operation[] = [
   ...identities,
+  ...(
+    [
+      {
+        method: 'GET',
+        path: '/admin/inventory',
+        query: inventoryQuery,
+        params: empty,
+        response: inventoryList,
+        paginated: true,
+        status: 200,
+      },
+      {
+        method: 'GET',
+        path: '/admin/inventory/{variantId}/movements',
+        query: movementQuery,
+        params: inventoryParams,
+        response: z.array(movementView),
+        paginated: true,
+        status: 200,
+      },
+      {
+        method: 'POST',
+        path: '/admin/inventory/{variantId}/adjustments',
+        query: empty,
+        params: inventoryParams,
+        request: adjustmentBody,
+        response: adjustmentResult,
+        idempotency: true,
+        status: 200,
+      },
+      {
+        method: 'PATCH',
+        path: '/admin/variants/{variantId}',
+        query: empty,
+        params: inventoryParams,
+        request: thresholdPatch,
+        response: adminVariant,
+        ifMatch: true,
+        etag: true,
+        status: 200,
+      },
+    ] as const
+  ).map(
+    (op): Operation => ({
+      ...op,
+      access: 'admin',
+      namespace: 'admin',
+      csrf: op.method !== 'GET',
+      activation:
+        'ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings. Variant PATCH currently supports threshold only; other master edits remain planned.',
+      replay:
+        'Exactly-once adjustment per variant/key; actor/payload mismatch conflicts; threshold uses revision CAS',
+    }),
+  ),
+
   ...(
     [
       {
