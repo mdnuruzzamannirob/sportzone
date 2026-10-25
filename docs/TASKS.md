@@ -133,11 +133,11 @@ The register contains 209 tasks across twelve requirement groups. Application-st
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |          22 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 07 — Payment Integration and Verification     |      18 |          18 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 08 — Returns and Refunds                      |      19 |          19 |     0 |           0 |       0 |         0 |      0 |        0 |
-| 09 — Admin Management and Reports             |      18 |          18 |     0 |           0 |       0 |         0 |      0 |        0 |
+| 09 — Admin Management and Reports             |      18 |          17 |     0 |           0 |       1 |         0 |      0 |        0 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **209** | **131** | **0** | **0** | **1** | **0** | **77** | **0** |
+| **Total** | **209** | **130** | **0** | **0** | **2** | **0** | **77** | **0** |
 
 ## 4. Milestone tracker
 
@@ -1665,13 +1665,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence to attach:** Admin sitemap/accessibility review.
 
 - [ ] **P09-011 — Provision isolated staging runtime and transaction-capable DB**\
-  **Status:** `Not Started` · **Area:** Backend/staging\
+  **Status:** `Blocked` · **Area:** Backend/staging · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** Architecture §13; Implementation Plan §§4.1,12\
   **Depends on:** `P01-024`\
   **Deliverable:** Configure isolated API, MongoDB, workers, secret management, sandbox providers and test email for backend acceptance. Build a reviewed Docker image from locked backend dependencies with separate HTTP/worker entry commands and runtime-injected secrets; prepare storefront/admin hosting and origins without requiring their builds or deployment. P09-012 deploys the complete integrated applications.\
   **Acceptance:** Staging uses no production credentials; database connectivity and transaction capability, image health/draining, worker restart and absence of embedded secrets are verified; HTTPS/origin/session plans are testable.\
-  **Evidence to attach:** Staging configuration review.
+  **Evidence:** [Local preparation, observed checks and missing staging prerequisites](./evidence/P09-011-staging-runtime.md).
+  **Blocked:** Project owner/platform operator must supply approved hosting/registry/origins and isolated DB/provider/test-email secret references (EXT-03/04/05/09); an authorized Docker builder is also required because local daemon socket access is denied. Resume with actual image and staging verification; no independent acceptance or deployment is claimed.
 
 - [ ] **P09-012 — Deploy integrated feature-complete build to staging**\
   **Status:** `Not Started` · **Area:** DevOps/staging\
@@ -2437,3 +2438,5 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **25 October 2026 — P04-018:** Not Started → In Progress → In Review. Implemented protected inventory list/threshold/adjustment/history with transactional replay and audit; [verification and readiness limits](./evidence/P04-018-inventory-administration.md). Overall: 76 Done, 131 Not Started, 1 Blocked and 1 In Review. Approved default-settings provisioning remains P09-013; full variant management remains P04-017. Independent acceptance pending.
 
 **25 October 2026 — P04-018 acceptance:** In Review → Done after explicit project-owner popup review: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P04-018-inventory-administration.md#recovery-and-independent-review). Overall: 77 Done, 131 Not Started, 1 Blocked and zero In Review. Approved default-settings provisioning remains P09-013; full variant management, clients and external/product gates remain separate.
+
+**25 October 2026 — P09-011:** Not Started → In Progress → Blocked. Prepared backend-only container recipe/probe and verified isolated host build/dependencies; actual image build is denied by Docker socket access, and approved staging resource/configuration references remain unsupplied after owner acknowledgment. [Evidence and resume checks](./evidence/P09-011-staging-runtime.md). Overall: 77 Done, 130 Not Started, 2 Blocked and zero In Review. Platform/resource owners must supply prerequisites; no image/deployment acceptance inferred.

@@ -554,7 +554,33 @@ exceptions, and missing/invalid/expired records fail the check. The scan does no
 
 Use protected `main`, short task branches and reviewed squash merges; a persistent develop branch is not required. PRs identify task IDs, behavioral scope, test evidence and compatibility/recovery impact. Require the successful CI job and independent review; changes to security/financial paths include their owning negative/concurrency tests. Repository protection/environment settings must be inspected and verified during implementation; local YAML is not proof they are enabled or available on the selected account plan. Retain the equivalent release approval record if a platform protection feature is unavailable.
 
-Applications are private workspaces with a coordinated release record; no public package publication or Changesets workflow is required. Release IDs trace immutable commit and artifact digests. Build backend images once per candidate using locked dependencies, excluding source secrets and running without privileged identity; API and worker use the same compatible image with distinct entry commands. Image/container setup remains a deployment implementation task, not an existing command. Admin is a static artifact; storefront is a supported Next.js runtime artifact. Frontend public env values may be compiled into bundles: record environment/build-config identity and rebuild/reverify for a different environment when necessary. Never promote a staging-baked API origin as a production artifact by assumption.
+Applications are private workspaces with a coordinated release record; no public package publication or Changesets workflow is required. Release IDs trace immutable commit and artifact digests. Build backend images once per candidate using locked dependencies, excluding source secrets and running without privileged identity; API and worker use the same compatible image with distinct entry commands.
+
+The backend recipe is `backend/Dockerfile`, built from repository root with its Dockerfile-specific
+allowlist (`backend/Dockerfile.dockerignore`). It pins the official Node image digest, installs the pinned
+npm toolchain, compiles only backend source and places only production backend dependencies, compiled output
+and HTTP/notification commands in the runtime stage. No frontend install/build is part of this recipe.
+Secrets are runtime inputs, never Docker build arguments or copied environment files. Actual builder,
+image inspection and staging execution evidence remain required before deployment acceptance.
+
+On an authorized Docker builder, use `docker build --pull -f backend/Dockerfile -t sportzone-backend:<revision> .`.
+Record the resulting immutable image digest and verify effective non-root user, dependency/file inventory,
+secret absence, health, SIGTERM draining and restart behavior before publishing/promoting. The default command
+is `node dist/server.js`; the same image runs a scheduled notification batch with
+`docker run --rm --no-healthcheck --env-file /protected/staging.env sportzone-backend:<revision> scripts/notification-worker.mjs`.
+The worker is a one-shot batch, not a second HTTP server; monitor exit status, durable backlog and lease recovery.
+Do not apply an always-restart loop to a normally completed batch.
+
+Supply protected staging environment values privately, including APP_ENV=staging, the approved origins,
+isolated DB credentials and test-mode provider/sender restrictions. Container HTTP binds to 0.0.0.0:4000 by
+default; publish behind the approved TLS edge, not as an unreviewed public plaintext port. Run with read-only
+root filesystem, no added capabilities/no-new-privileges and an appropriate bounded temporary mount after
+verifying provider/runtime compatibility. The image's credential-free health probe checks only loopback
+`/api/v1/health/live`; authenticated readiness remains a separate protected monitoring responsibility.
+Neither Docker's liveness result nor a host-side build substitutes for deployed database transactions,
+secure origins/sessions, worker restart or real sandbox/email evidence.
+
+Admin is a static artifact; storefront is a supported Next.js runtime artifact. Frontend public env values may be compiled into bundles: record environment/build-config identity and rebuild/reverify for a different environment when necessary. Never promote a staging-baked API origin as a production artifact by assumption.
 
 Eligible candidates may deploy to isolated staging after CI. Production promotion requires the existing milestone/provider/policy gates and a recorded release approval. Run additive schema/index operations as explicit controlled jobs, not from every API replica startup. Preserve API/worker compatibility during rollout and follow §6 for rollback. Managed runtime/static hosting and transaction-capable managed MongoDB are the deployment class; exact vendor, region, resources and billable plan are selected against the environment inventory before provisioning.
 

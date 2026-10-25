@@ -8,6 +8,13 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 25 October 2026 — Backend container preparation
+
+- Prepared a backend-only Docker recipe/context and credential-free liveness probe; isolated host
+  build/dependency checks and probe tests pass. Image build and staging deployment remain blocked
+  by Docker access and missing approved staging resources/configuration.
+  [Observed evidence and resume prerequisites](docs/evidence/P09-011-staging-runtime.md).
+
 ## 25 October 2026 — Inventory administration APIs
 
 - Added protected stock lists/threshold edits, replay-safe physical adjustments and bounded movement
