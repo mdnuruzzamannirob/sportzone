@@ -295,7 +295,7 @@ principal from the storefront. Unknown/duplicate query parameters are invalid. G
 | Bootstrap refresh    | New anonymous context atomically invalidates the supplied same-audience predecessor. Authenticated refresh replaces only that session's CSRF verifier by conditional update, preserving session expiry and rejecting concurrent stale refresh. Previous CSRF fails.                                                                                                                              |
 | Mutation guard       | Route selects context-only, customer-only, admin-only or customer-or-context; all unsafe methods require exact Origin and custom token header. Invalid customer cookie never falls back to anonymous checkout. These guards grant no account/order authorization; apply session/role/ownership guards as well.                                                                                   |
 | Successful exchange  | The credential/proof service must use consumeContext with its durable effect in the same MongoDB transaction. One concurrent exchange wins; failed effect rolls back consumption. Do not perform provider/email calls in that callback or start a nested independent transaction.                                                                                                                |
-| Guest handoff        | P06-015 supplies an order-bound refresh/verify adapter; only an exact, single opaque guest cookie reaches it. Customer/admin/browser contexts cannot substitute. Its real proof/session persistence remains in that task.                                                                                                                                                                        |
+| Guest handoff        | GUEST_ACCESS_ENABLED wires the order-bound refresh/verify adapter to real proof/session persistence; only one exact opaque guest cookie reaches it. Customer/admin/browser credentials cannot substitute.                                                                                                                                                                        |
 | Provider segregation | Register provider notifications/returns outside browser guards and bootstrap. Their own verification and acknowledgment contracts remain mandatory; omission of browser CSRF never proves payment success.                                                                                                                                                                                       |
 
 ### 4.6 Customer credentials and registration delivery intent
@@ -390,7 +390,7 @@ activation and real mailbox acceptance remain operational gates.
 
 ### 4.9 Auth/recovery throttles and audit safety
 
-Activated identity composition uses a MongoDB-backed, atomic fixed-window throttle shared by API instances; no process-memory fallback on database failure. Every audience has a shared network budget of 60 requests/minute. Credential, recovery, email-change and checkout-quote mutations additionally share 10 network attempts/minute per group; normalized supplied email targets share 10 attempts/minute per audience/group across source addresses. CSRF bootstrap/refresh uses the audience network budget. Customer/admin budgets and groups are independent; successful and failed attempts consume equally and no account lookup determines a limit. This is a request throttle, not an account suspension or lockout mutation.
+Activated identity composition uses a MongoDB-backed, atomic fixed-window throttle shared by API instances; no process-memory fallback on database failure. Every audience has a shared network budget of 60 requests/minute. Credential, recovery, email-change, checkout and guest-access groups additionally share 10 network attempts/minute per group; normalized supplied email targets share 10 attempts/minute per audience/group across source addresses. CSRF bootstrap/refresh uses the audience network budget. Customer/admin budgets and groups are independent; successful and failed attempts consume equally and no account lookup determines a limit. This is a request throttle, not an account suspension or lockout mutation.
 
 Use only the socket address while trust proxy remains false; forwarded/client identity headers are ignored. Keys are domain-separated HMAC digests derived from SESSION_SECRET and bind audience/group/window; plaintext address/email/proof is never persisted or logged. Fixed minute boundaries govern reset even before TTL cleanup. A rejected quota returns generic 429 RATE_LIMITED plus integer Retry-After; no matching-account detail or counter key is exposed. Counter-store failure returns generic 503 SERVICE_UNAVAILABLE and never proceeds to credentials/recovery. Rotate the shared session secret consistently across API instances; rotation resets counter key namespaces and invalidates old sessions as already documented.
 
@@ -654,6 +654,28 @@ Proof exchange atomically consumes `authChallenges` and grants only the verified
 An attacker cannot enumerate orders by timing, HTTP status or message differences.
 Subsequent guest order actions use the same `/orders/{orderId}` routes as a customer, but with *exact* bound order ID checks.
 Do not include a public `GET /orders?email=...` endpoint.
+
+The guest runtime is opt-in with `GUEST_ACCESS_ENABLED=true` and customer-auth infrastructure. Configure
+explicit guest proof lifetime/cooldown/response floor and session lifetime, the protected `AUTH_PROOF_*`
+key ring and an exact HTTPS storefront origin. Lookup trims the case-sensitive order reference and
+normalizes email; only a guest-owned order matching both can issue a challenge. Valid-shaped unknown,
+wrong-email, registered-owned and cooldown-suppressed requests return the same accepted response with
+the configured minimum response duration. No proof or order identifier appears in that response.
+
+Issuance consumes the storefront pre-auth context transactionally; re-bootstrap before another request.
+Email contains a fixed `/guest-access#token=...` fragment link. Exchange consumes its fresh pre-auth
+context and proof atomically with guest-session issuance; failures roll everything back. A new exchange
+revokes the prior guest cookie presented by that browser. Sessions grant exact order scope only and
+expire server-side independently of TTL. `GET /auth/csrf?sessionKind=guest` refreshes the guest CSRF
+verifier without extending session expiry. Logout accepts approved pre-auth-context or guest-session
+CSRF, durably revokes the selected guest cookie, clears it and returns fresh browser-context CSRF.
+Customer/admin credentials cannot be revoked or used as guest authority through these endpoints.
+
+Guest proof notifications contain only challenge references; delivery verifies expiry, revision,
+recipient, order ownership and authenticated envelope binding. Reissue invalidates the prior proof;
+uncertain delivery is not blindly retried. These APIs establish scoped access, while individual order/
+claim/cancellation routes still enforce their owning eligibility contracts. The four §9.2 DTOs are owned
+by `backend/src/modules/auth/guest-access/guest-access.schema.ts`.
 
 ### 9.3 Identity validation and replay contract
 

@@ -48,7 +48,8 @@ export function createNotificationPersistence(connection: Connection, model: Not
           !isDeepStrictEqual(existing.options?.validator, foundationNotificationValidator) &&
           !isDeepStrictEqual(existing.options?.validator, passwordResetNotificationValidator) &&
           !isDeepStrictEqual(existing.options?.validator, emailChangeNotificationValidator) &&
-          !isDeepStrictEqual(existing.options?.validator, adminResetNotificationValidator)
+          !isDeepStrictEqual(existing.options?.validator, adminResetNotificationValidator) &&
+          !isDeepStrictEqual(existing.options?.validator, orderReceivedNotificationValidator)
         )
           throw new Error('Notification collection requires reviewed migration.')
         await connection.db.command({
@@ -275,7 +276,7 @@ export const adminResetNotificationValidator = {
 }
 
 // Additive checkout receipt event; retain every exact known predecessor for explicit migration.
-export const registrationNotificationValidator = {
+export const orderReceivedNotificationValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -317,6 +318,51 @@ export const registrationNotificationValidator = {
             { userId: { $type: 'objectId' }, orderId: { $exists: false } },
             adminResetNotificationValidator.$and[1],
           ],
+        },
+      ],
+    },
+  ] as const,
+}
+
+// Guest proofs retain challenge-only payloads, with order scope instead of account scope.
+export const registrationNotificationValidator = {
+  $and: [
+    {
+      $jsonSchema: {
+        ...orderReceivedNotificationValidator.$and[0].$jsonSchema,
+        properties: {
+          ...orderReceivedNotificationValidator.$and[0].$jsonSchema?.properties,
+          eventType: {
+            enum: [
+              'registration',
+              'password_reset',
+              'email_change',
+              'order_received',
+              'guest_order_access',
+            ],
+          },
+          templateVersion: {
+            enum: [
+              'registration-v1',
+              'password-reset-v1',
+              'email-change-v1',
+              'admin-password-reset-v1',
+              'order-received-v1',
+              'guest-order-access-v1',
+            ],
+          },
+        },
+      },
+    },
+    {
+      $or: [
+        orderReceivedNotificationValidator.$and[1],
+        {
+          eventType: 'guest_order_access',
+          templateVersion: 'guest-order-access-v1',
+          orderId: { $type: 'objectId' },
+          userId: { $exists: false },
+          'payload.challengeId': { $type: 'objectId' },
         },
       ],
     },

@@ -1,3 +1,4 @@
+import type { GuestProofDelivery } from '../auth/guest-access/guest-proof-delivery.service.js'
 import { createHash } from 'node:crypto'
 import { assertOutsideTransaction } from '../../shared/database/transaction.js'
 import { validateRetryPolicy, type RetryPolicy } from './notification.schema.js'
@@ -13,6 +14,7 @@ export function createNotificationDeliveryService(
   resetDelivery?: ResetDelivery,
   emailChangeDelivery?: ResetDelivery,
   adminResetDelivery?: ResetDelivery,
+  guestDelivery?: GuestProofDelivery,
 ) {
   const settings = validateRetryPolicy(input)
   return {
@@ -23,6 +25,7 @@ export function createNotificationDeliveryService(
       await (resetDelivery ?? emailChangeDelivery ?? adminResetDelivery)?.cleanup(
         settings.batchSize,
       )
+      await guestDelivery?.cleanup(settings.batchSize)
       await store.recover(now, settings.batchSize, settings.maxAttempts)
       let processed = 0
       for (; processed < settings.batchSize; processed++) {
@@ -33,6 +36,7 @@ export function createNotificationDeliveryService(
           Boolean(resetDelivery),
           Boolean(emailChangeDelivery),
           Boolean(adminResetDelivery),
+          Boolean(guestDelivery),
         )
         if (!claim) break
         if (!(await store.currentClaim(claim.id, claim.claimId, clock()))) {
@@ -42,18 +46,23 @@ export function createNotificationDeliveryService(
         const idempotencyKey = `sz-notification-${createHash('sha256').update(claim.eventKey).digest('hex')}`
         let message: Omit<EmailMessage, 'idempotencyKey'> | undefined
         try {
+          const userClaim = claim.userId ? { ...claim, userId: claim.userId } : undefined
           message =
-            claim.templateVersion === 'admin-password-reset-v1'
-              ? await adminResetDelivery?.message(claim)
-              : claim.eventType === 'email_change'
-                ? await emailChangeDelivery?.message(claim)
-                : claim.eventType === 'password_reset'
-                  ? await resetDelivery?.message(claim)
-                  : {
-                      to: claim.recipient,
-                      subject: 'Welcome to SportZone',
-                      text: 'Your SportZone account has been created. Email verification is a separate step.',
-                    }
+            claim.eventType === 'guest_order_access'
+              ? await guestDelivery?.message(claim)
+              : !userClaim
+                ? undefined
+                : claim.templateVersion === 'admin-password-reset-v1'
+                  ? await adminResetDelivery?.message(userClaim)
+                  : claim.eventType === 'email_change'
+                    ? await emailChangeDelivery?.message(userClaim)
+                    : claim.eventType === 'password_reset'
+                      ? await resetDelivery?.message(userClaim)
+                      : {
+                          to: claim.recipient,
+                          subject: 'Welcome to SportZone',
+                          text: 'Your SportZone account has been created. Email verification is a separate step.',
+                        }
         } catch {
           /* Missing/tampered/expired proof fails closed without a provider call. */
         }

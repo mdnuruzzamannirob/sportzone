@@ -37,6 +37,25 @@ export function checkoutPaymentAccess(connection: Connection) {
         { session },
       )
     },
+    async authorizeHoldExpiry(session: ClientSession, orderId: string) {
+      if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+      await verifyPaymentPersistence(connection)
+      // Releasing capacity never cancels a payment attempt or declares collection failure.
+      // All verified receipt applications must serialize on this same aggregate revision.
+      const row = await model.findOneAndUpdate(
+        {
+          orderId,
+          method: 'online',
+          paymentStatus: 'pending',
+          riskStatus: 'clear',
+          ...Object.fromEntries(paymentAmounts.map((name) => [name, 0])),
+          revision: { $lt: Number.MAX_SAFE_INTEGER },
+        },
+        { $inc: { revision: 1 } },
+        { session, returnDocument: 'after' },
+      )
+      return Boolean(row)
+    },
     async read(session: ClientSession, orderId: string) {
       if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
       const row = await model.findOne({ orderId }).session(session)

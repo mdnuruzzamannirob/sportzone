@@ -418,6 +418,14 @@ failure fail closed. Resend/reissue must increment `users.challengeRevisions[pur
 create a fresh proof/intent; do not extend an existing proof's expiry. Delivery retry reuses that challenge and event key;
 see API §16.3 for uncertain-send handling. No new session is granted by delivery. The chosen proof transport is a high-entropy secure link; supporting short numeric codes later requires a separately reviewed guessing/attempt-limit design. Security tests cover key access, nonce management, concurrency, redaction and restore invalidation.
 
+Guest access uses purpose-separated `guest_order_access` proof hashes and AEAD binding to challenge ID,
+order ID, normalized destination, expiry, guestAccessChallengeRevision and key version. Issuance and
+single-use exchange serialize on the order guest challenge revision; supersession invalidates old
+challenges and removes their envelopes. Exchange verifies the hash without requiring decryption keys.
+The guest session stores HMAC domain `guest_order` verifiers, orderId only, no user/securityRevision
+principal fields, fixed expiry and its own CSRF verifier. New exchanges revoke the browser's previous
+guest token; lookup alone never mints a session. Order snapshots remain immutable.
+
 #### Password-reset implementation
 
 Existing identity fields/indexes remain authoritative. Issuance conditionally increments `users.challengeRevisions.password_reset` in a transaction, invalidates previous reset challenges and removes their envelopes, then inserts a fresh challenge and reference-only `password_reset` notification (`password-reset-v1`). Notification `payload` contains only `challengeId:ObjectId`. `deliveryNotificationId` binds the outbox row to the challenge. AES-256-GCM uses fresh 12-byte nonces and 16-byte tags; AAD binds challenge ID, purpose, customer ID, destination, expiry, scope revision and key version. The externally held key ring is never persisted. Reset consumption and authenticated password change update the user security revision and revoke sessions atomically; password change also invalidates pending reset proofs. Cleanup removes expired/inactive envelopes even if TTL deletion is delayed. A reviewed additive notification validator migration accepts registration-v1 and password-reset-v1 records; old notification validators are known predecessors, and older exact-validator binaries require a compatible rollback build.
@@ -1024,6 +1032,14 @@ changes. A saved address is not a quote or permission to reuse a historic charge
 
 **Rules:** expiry job performs a status-guarded release transaction; TTL time passing does nothing by itself. A payment retry after expired holds acquires a new generation; never overwrite/extend the expired one. The same transaction captures one `heldAt` and expiry for all stock lines and the coupon generation. Idempotent replay returns that generation without resetting its clock. Reacquisition directly after verified full funding may commit immediately without creating a fresh unpaid hold; it cannot reopen a cancelled order.
 
+The expiry coordinator fences the Pending online order and zero-funds, clear-risk Pending payment
+aggregate in the release transaction. Verified receipt application must serialize on the same payment
+aggregate revision. Every canonical item and optional coupon must be present with consistent generation,
+quantity and hold clocks; malformed or protected state fails closed without partial release. Expiry
+releases capacity only: order/payment history and possible late provider outcomes remain for reconciliation,
+never silently becoming cancelled/failed. Initial generation heldAt equals actual order placedAt; later
+generations capture a fresh successful reacquisition event, never a replay-relative extension.
+
 ### 7.8 `inventoryMovements` — `inventory` (append-only)
 
 | Field | Type | Constraints / notes |
@@ -1385,6 +1401,11 @@ Existing account/proof events still require userId, forbid orderId and retain th
 constraints. The previous admin-reset validator is an immutable known migration predecessor. Order
 receipt delivery remains queued until its owning commerce template/worker integration; it is never
 mistaken for registration or confirmation.
+The additive guest validator permits `guest_order_access`/`guest-order-access-v1` with required orderId,
+no userId and required payload.challengeId. Its preceding order-received validator remains an exact
+known migration source. Existing account/proof and order-received branches retain their constraints.
+Guest delivery decrypts only in memory after challenge/order/destination/revision checks; ordinary
+order receipt events are never claimed as guest proofs.
 Other notification event types require an explicit backward-compatible validator/model expansion before activation.
 Existing validators are checked, never silently replaced by startup or local bootstrap.
 
@@ -1397,7 +1418,7 @@ acceptance with providerMessageId, not recipient inbox delivery. Account/busines
 by the worker.
 
 The validator expansion is additive for existing registration records. Startup still verifies the exact expected
-validator/indexes. A separate reviewed migration upgrades only the known P03-007/009/010/011 validators; it does not drop data/indexes,
+validator/indexes. A separate reviewed migration upgrades only the known identity-proof and order-received validators; it does not drop data/indexes,
 reset delivery state or silently accept another schema. Local/test bootstrap can invoke this explicit migration; production
 rollout remains operator-controlled. Old binaries with exact prior-validator readiness checks require a compatible rollback
 build; never remove new lease/receipt data to make a prior validator pass. Other event payloads and secret-bearing proof
@@ -1494,6 +1515,14 @@ approved retention policy.
 **Indexes:** unique `{jobKey:1}`; `{leaseUntil:1}`.
 
 **Rules:** process reservation expiry, payment uncertainty, refund verification and notification retries through idempotent domain services. A lease alone does not make a job's financial side effects idempotent.
+
+The reservation-expiry partition uses jobKey `reservation-expiry`, a random owner per acquisition and
+a bounded reservation-ID cursor. A live lease cannot be stolen; every business transaction checks the
+same owner/expiry before and after domain writes. Stale owners cannot commit effects or checkpoint
+success. Checkpoints advance past protected candidates so they cannot starve later orders; the scan
+wraps after its end. Failure records retain a static error code/count. This registry has no TTL; missing
+indexes, unexpected validators or TTL indexes fail readiness rather than rewriting durable progress.
+lastSucceededAt means the bounded scan completed, not that every protected hold was releasable.
 
 ## 11. Indexes and query contracts
 

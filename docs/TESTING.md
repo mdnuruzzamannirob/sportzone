@@ -598,6 +598,20 @@ and order/stock/coupon atomic acceptance remain the later submission coordinator
 
 ### 10.3 Required order/delivery assertions
 
+Expiry tests assert exact due boundaries, whole-generation stock/coupon release, no payment/order
+cancellation, verified-funding/risk protection and concurrent funding serialization. Exercise audit
+failure rollback, duplicate runners, durable cursor fairness, expired owner denial, lease loss after
+writes, restart/replay, strict registry/no-TTL readiness and the compiled bounded entry point. Verify
+initial hold clocks equal actual placement even when service clock calls advance.
+
+Guest access tests cover ambiguous lookup/response floor, current guest-only order/email binding,
+reference-only encrypted outbox, actual worker rendering, single-use exchange and exact order sessions.
+Include Origin/context-CSRF, duplicate/wrong-kind cookies, cross-order denial, concurrent exchange and
+reissue/consume, cooldown/supersession, expiry independent of TTL, session rotation/revocation, guest
+CSRF refresh/logout, AEAD/key-loss denial, transaction rollback and uncertainty without blind resend.
+Known-schema notification migration must retain existing order events without dispatching them as proofs.
+Synthetic email adapters do not prove live sender/domain or inbox delivery acceptance.
+
 Combined checkout assertions exercise the real quote/identity/current-commerce boundaries with
 transaction-capable MongoDB. COD requires 201 creation/200 replay, Pending fulfillment/payment, exact
 stock/coupon commitment, one order_received intent and no unverified receipt/provider attempt. Cover

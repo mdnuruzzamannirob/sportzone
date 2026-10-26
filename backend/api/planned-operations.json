@@ -188,28 +188,28 @@
       "path": "/guest-access/challenges",
       "success": "200",
       "operationId": "post_guest_access_challenges",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/guest-access/sessions",
       "success": "200",
       "operationId": "post_guest_access_sessions",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/guest-access/session",
       "success": "200",
       "operationId": "get_guest_access_session",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/guest-access/logout",
       "success": "200",
       "operationId": "post_guest_access_logout",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",

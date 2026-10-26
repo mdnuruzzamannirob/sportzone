@@ -13,7 +13,13 @@ const schema = new Schema(
     recipient: { type: recipient, required: true, select: false },
     eventType: {
       type: String,
-      enum: ['registration', 'password_reset', 'email_change', 'order_received'],
+      enum: [
+        'registration',
+        'password_reset',
+        'email_change',
+        'order_received',
+        'guest_order_access',
+      ],
       required: true,
     },
     templateVersion: { type: String, required: true },

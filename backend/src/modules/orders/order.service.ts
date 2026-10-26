@@ -162,38 +162,141 @@ export function initialOrderAllocationAccess(connection: Connection) {
         { session, returnDocument: 'after' },
       )
       if (!row) throw new ApiError('STATE_CONFLICT')
-      const items = row.items.map((item) => ({
-        id: item.id.toHexString(),
-        variantId: item.variantId.toHexString(),
-        quantity: item.quantity,
-        couponEligible: item.couponEligible,
-        regularUnitPoisha: item.regularUnitPoisha,
-        effectiveUnitPoisha: item.effectiveUnitPoisha,
-      }))
-      return {
-        orderId,
-        generation,
-        ...(row.userId ? { userId: row.userId.toHexString() } : {}),
-        pricing: {
-          items,
-          deliveryChargePoisha: row.pricingSnapshot.deliveryChargePoisha,
+      return orderAllocationBinding(row, generation)
+    },
+  }
+}
+
+function orderAllocationBinding(
+  row: import('mongoose').HydratedDocument<import('./order.model.js').Order>,
+  generation: number,
+) {
+  const items = row.items.map((item) => ({
+    id: item.id.toHexString(),
+    variantId: item.variantId.toHexString(),
+    quantity: item.quantity,
+    couponEligible: item.couponEligible,
+    regularUnitPoisha: item.regularUnitPoisha,
+    effectiveUnitPoisha: item.effectiveUnitPoisha,
+  }))
+  return {
+    orderId: row._id.toHexString(),
+    placedAt: row.placedAt,
+    generation,
+    ...(row.userId ? { userId: row.userId.toHexString() } : {}),
+    pricing: {
+      items,
+      deliveryChargePoisha: row.pricingSnapshot.deliveryChargePoisha,
+    },
+    ...(row.couponSnapshot
+      ? {
+          coupon: {
+            couponId: row.couponSnapshot.couponId.toHexString(),
+            code: row.couponSnapshot.code,
+            type: row.couponSnapshot.type,
+            value: row.couponSnapshot.value,
+            version: row.couponSnapshot.termsVersion,
+            discountPoisha: row.couponSnapshot.discountPoisha,
+            eligibleLineIds: row.items
+              .filter((item) => item.couponEligible)
+              .map((item) => item.id.toHexString()),
+          },
+        }
+      : {}),
+  }
+}
+
+export function expiredOrderAllocationAccess(
+  connection: Connection,
+  payment: (session: ClientSession, orderId: string) => Promise<boolean>,
+) {
+  const { orders } = orderModels(connection)
+  return {
+    async authorize(session: ClientSession, orderId: string, generation: number, action: string) {
+      if (!session.inTransaction() || action !== 'release_held')
+        throw new ApiError('STATE_CONFLICT')
+      if (!(await payment(session, orderId))) throw new ApiError('STATE_CONFLICT')
+      const row = await orders.findOneAndUpdate(
+        {
+          _id: orderId,
+          paymentMethod: 'online',
+          fulfillmentStatus: 'pending',
+          fulfillmentHold: 'payment_pending',
+          confirmedAt: { $exists: false },
+          shippedAt: { $exists: false },
+          cancelledAt: { $exists: false },
+          revision: { $lt: Number.MAX_SAFE_INTEGER },
         },
-        ...(row.couponSnapshot
-          ? {
-              coupon: {
-                couponId: row.couponSnapshot.couponId.toHexString(),
-                code: row.couponSnapshot.code,
-                type: row.couponSnapshot.type,
-                value: row.couponSnapshot.value,
-                version: row.couponSnapshot.termsVersion,
-                discountPoisha: row.couponSnapshot.discountPoisha,
-                eligibleLineIds: row.items
-                  .filter((item) => item.couponEligible)
-                  .map((item) => item.id.toHexString()),
-              },
-            }
-          : {}),
-      }
+        { $inc: { revision: 1 } },
+        { session, returnDocument: 'after' },
+      )
+      if (!row) throw new ApiError('STATE_CONFLICT')
+      return orderAllocationBinding(row, generation)
+    },
+  }
+}
+
+export function guestOrderAccess(connection: Connection) {
+  const { orders } = orderModels(connection)
+  return {
+    verifyPersistence: () => verifyOrderPersistence(connection),
+    async lookup(session: ClientSession, orderNumber: string, email: string) {
+      if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+      const row = await orders
+        .findOne({ orderNumber, userId: null, 'customerSnapshot.emailNormalized': email })
+        .session(session)
+      return row
+        ? {
+            id: row._id.toHexString(),
+            email: row.customerSnapshot.emailNormalized,
+            revision: row.guestAccessChallengeRevision,
+          }
+        : null
+    },
+    async issue(session: ClientSession, orderId: string, expectedRevision: number) {
+      if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+      const row = await orders.findOneAndUpdate(
+        {
+          _id: orderId,
+          userId: null,
+          guestAccessChallengeRevision: expectedRevision,
+          $expr: { $lt: ['$guestAccessChallengeRevision', Number.MAX_SAFE_INTEGER] },
+        },
+        { $inc: { guestAccessChallengeRevision: 1 } },
+        { session, returnDocument: 'after' },
+      )
+      if (!row) throw new ApiError('STATE_CONFLICT')
+      return row.guestAccessChallengeRevision
+    },
+    async verify(
+      session: ClientSession | undefined,
+      orderId: string,
+      revision?: number,
+      email?: string,
+    ) {
+      const query = orders.exists({
+        _id: orderId,
+        userId: null,
+        ...(revision !== undefined ? { guestAccessChallengeRevision: revision } : {}),
+        ...(email ? { 'customerSnapshot.emailNormalized': email } : {}),
+      })
+      if (session) query.session(session)
+      return Boolean(await query)
+    },
+    async consume(session: ClientSession, orderId: string, revision: number, email: string) {
+      if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+      const result = await orders.updateOne(
+        {
+          _id: orderId,
+          userId: null,
+          'customerSnapshot.emailNormalized': email,
+          guestAccessChallengeRevision: revision,
+          $expr: { $lt: ['$guestAccessChallengeRevision', Number.MAX_SAFE_INTEGER] },
+        },
+        { $inc: { guestAccessChallengeRevision: 1 } },
+        { session },
+      )
+      return result.modifiedCount === 1
     },
   }
 }

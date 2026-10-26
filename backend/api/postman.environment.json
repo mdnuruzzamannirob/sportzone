@@ -374,6 +374,24 @@
       "type": "secret"
     },
     {
+      "key": "post_guest_access_challengesBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_guest_access_logoutBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_guest_access_sessionsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
       "key": "post_me_addressesBody",
       "value": "",
       "enabled": true,

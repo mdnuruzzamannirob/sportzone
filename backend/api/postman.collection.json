@@ -7,7 +7,7 @@
   "item": [
     {
       "name": "get_admin_auth_csrf",
-      "description": "Activation: CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest adapter not wired. Replay: read. No automatic mutation retry.",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest selection additionally requires GUEST_ACCESS_ENABLED and a verified guest session. Replay: read. No automatic mutation retry.",
       "request": {
         "method": "GET",
         "url": {
@@ -26,7 +26,7 @@
             "value": "{{adminOrigin}}"
           }
         ],
-        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest adapter not wired. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_auth_csrf. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest selection additionally requires GUEST_ACCESS_ENABLED and a verified guest session. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_auth_csrf. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
       },
       "response": []
     },
@@ -1525,7 +1525,7 @@
     },
     {
       "name": "get_auth_csrf",
-      "description": "Activation: CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest adapter not wired. Replay: read. No automatic mutation retry.",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest selection additionally requires GUEST_ACCESS_ENABLED and a verified guest session. Replay: read. No automatic mutation retry.",
       "request": {
         "method": "GET",
         "url": {
@@ -1544,7 +1544,7 @@
             "value": "{{storefrontOrigin}}"
           }
         ],
-        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest adapter not wired. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_auth_csrf. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest selection additionally requires GUEST_ACCESS_ENABLED and a verified guest session. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_auth_csrf. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
       },
       "response": []
     },
@@ -1988,6 +1988,128 @@
         },
         "header": [],
         "description": "Implemented conditionally: Reviewed delivery indexes and operator-configured currently active coverage; no quote/fulfillment guarantee.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_delivery_areas. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_guest_access_challenges",
+      "description": "Activation: GUEST_ACCESS_ENABLED with CUSTOMER_AUTH_ENABLED, explicit guest proof/session lifetimes, protected proof key ring/HTTPS storefront and reviewed identity/order/notification/throttle persistence.. Replay: Non-enumerating rate-limited lookup; single-use email proof exchange grants exact order scope only. Tokens stay in cookies/email, never lookup responses or logs. Revoked/expired/wrong-scope credentials fail closed.. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/guest-access/challenges",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: GUEST_ACCESS_ENABLED with CUSTOMER_AUTH_ENABLED, explicit guest proof/session lifetimes, protected proof key ring/HTTPS storefront and reviewed identity/order/notification/throttle persistence.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_guest_access_challenges. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_guest_access_challengesBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_guest_access_logout",
+      "description": "Activation: GUEST_ACCESS_ENABLED with CUSTOMER_AUTH_ENABLED, explicit guest proof/session lifetimes, protected proof key ring/HTTPS storefront and reviewed identity/order/notification/throttle persistence.. Replay: Non-enumerating rate-limited lookup; single-use email proof exchange grants exact order scope only. Tokens stay in cookies/email, never lookup responses or logs. Revoked/expired/wrong-scope credentials fail closed.. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/guest-access/logout",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: GUEST_ACCESS_ENABLED with CUSTOMER_AUTH_ENABLED, explicit guest proof/session lifetimes, protected proof key ring/HTTPS storefront and reviewed identity/order/notification/throttle persistence.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_guest_access_logout. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_guest_access_logoutBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_guest_access_session",
+      "description": "Activation: GUEST_ACCESS_ENABLED with CUSTOMER_AUTH_ENABLED, explicit guest proof/session lifetimes, protected proof key ring/HTTPS storefront and reviewed identity/order/notification/throttle persistence.. Replay: Non-enumerating rate-limited lookup; single-use email proof exchange grants exact order scope only. Tokens stay in cookies/email, never lookup responses or logs. Revoked/expired/wrong-scope credentials fail closed.. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/guest-access/session",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: GUEST_ACCESS_ENABLED with CUSTOMER_AUTH_ENABLED, explicit guest proof/session lifetimes, protected proof key ring/HTTPS storefront and reviewed identity/order/notification/throttle persistence.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_guest_access_session. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_guest_access_sessions",
+      "description": "Activation: GUEST_ACCESS_ENABLED with CUSTOMER_AUTH_ENABLED, explicit guest proof/session lifetimes, protected proof key ring/HTTPS storefront and reviewed identity/order/notification/throttle persistence.. Replay: Non-enumerating rate-limited lookup; single-use email proof exchange grants exact order scope only. Tokens stay in cookies/email, never lookup responses or logs. Revoked/expired/wrong-scope credentials fail closed.. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/guest-access/sessions",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: GUEST_ACCESS_ENABLED with CUSTOMER_AUTH_ENABLED, explicit guest proof/session lifetimes, protected proof key ring/HTTPS storefront and reviewed identity/order/notification/throttle persistence.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_guest_access_sessions. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_guest_access_sessionsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
       },
       "response": []
     },

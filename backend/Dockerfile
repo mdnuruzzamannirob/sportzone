@@ -25,7 +25,7 @@ COPY --from=production-dependencies /app/node_modules /app/node_modules
 COPY --from=production-dependencies /app/backend/package.json ./package.json
 COPY --from=production-dependencies /app/backend/node_modules ./node_modules
 COPY --from=build /app/backend/dist ./dist
-COPY backend/scripts/notification-worker.mjs backend/scripts/container-health.mjs ./scripts/
+COPY backend/scripts/notification-worker.mjs backend/scripts/expire-reservations.mjs backend/scripts/container-health.mjs ./scripts/
 USER node
 EXPOSE 4000
 STOPSIGNAL SIGTERM

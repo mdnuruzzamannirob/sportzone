@@ -130,14 +130,14 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |     21 |        0 |
 | 04 — Product Catalog and Inventory            |      20 |           8 |     0 |           0 |       1 |         0 |     11 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
-| 06 — Checkout, Orders, and Delivery Rules     |      22 |          14 |     0 |           0 |       1 |         4 |      3 |        0 |
+| 06 — Checkout, Orders, and Delivery Rules     |      22 |          12 |     0 |           0 |       1 |         6 |      3 |        0 |
 | 07 — Payment Integration and Verification     |      18 |          18 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 08 — Returns and Refunds                      |      19 |          19 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       1 |         0 |      1 |        0 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **119** | **0** | **0** | **3** | **4** | **84** | **0** |
+| **Total** | **210** | **117** | **0** | **0** | **3** | **6** | **84** | **0** |
 
 ## 4. Milestone tracker
 
@@ -1123,13 +1123,13 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence:** [Combined implementation, independent per-task checks and limits](./evidence/P06-007-009-checkout-batch.md). Verified locally; independent acceptance pending. Provider/expiry/compliance/commerce-delivery gates remain separate.
 
 - [ ] **P06-010 — Implement reservation expiry, durable lease and release**\
-  **Status:** `Not Started` · **Area:** Backend/jobs\
+  **Status:** `In Review` · **Area:** Backend/jobs · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-13; FR-09\
   **Depends on:** `P06-009`\
   **Deliverable:** Expire only eligible unpaid holds using idempotent scheduled service and durable claims when needed.\
   **Acceptance:** TTL document deletion does not release business capacity; attempts preserve audit history.\
-  **Evidence to attach:** Expiry/restart/retry tests.
+  **Evidence:** [Expiry/guest implementation, per-task checks and operational limits](./evidence/P06-010-015-expiry-guest-access.md). Verified locally; independent acceptance pending. Live provider/email/staging, frontend and qualified compliance gates remain separate.
 
 - [ ] **P06-011 — Implement order transitions, shipping and movement logic**\
   **Status:** `Not Started` · **Area:** Backend/orders\
@@ -1168,13 +1168,13 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence to attach:** Order ownership tests.
 
 - [ ] **P06-015 — Implement secure guest order lookup and scoped proof**\
-  **Status:** `Not Started` · **Area:** Backend/guest-access\
+  **Status:** `In Review` · **Area:** Backend/guest-access · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-19\
   **Depends on:** `P06-005`\
   **Deliverable:** Require order number+email followed by expiring single-use email verification proof.\
   **Acceptance:** Non-enumerating rate-limited lookup and order-scoped eligible actions; no access by lookup text alone.\
-  **Evidence to attach:** Guest proof replay/ownership tests.
+  **Evidence:** [Expiry/guest implementation, per-task checks and operational limits](./evidence/P06-010-015-expiry-guest-access.md). Verified locally; independent acceptance pending. Live provider/email/staging, frontend and qualified compliance gates remain separate.
 
 - [ ] **P06-016 — Implement order, cancellation, shipment and delivery email intents**\
   **Status:** `Not Started` · **Area:** Backend/notifications\
@@ -2487,3 +2487,5 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **27 October 2026 — P06-006:** Not Started → In Progress → In Review. Durable hashed intent registry, canonical command fingerprints, atomic consent/completion and current authorized replay implemented. [Observed verification and recovery limits](./evidence/P06-006-checkout-intents.md). Overall: 210 tasks, 84 Done, 122 Not Started, 3 Blocked and 1 In Review. Executor: Codex; independent acceptance pending. P06-007–P06-009 production coordination, P06-003 qualified sign-off and all milestone/provider/staging gates remain separate.
 
 **27 October 2026 — P06-007/008/009 combined batch:** Each Not Started → In Progress → In Review under owner-requested combined execution. Stock/coupon coordinator, opt-in COD submission with atomic Pending payment/order_received and private online 15-minute hold foundation implemented. [Independent per-task assertions, observed verification and rollout limits](./evidence/P06-007-009-checkout-batch.md). Overall: 210 tasks, 84 Done, 119 Not Started, 3 Blocked and 4 In Review (including P06-006). Executor: Codex; each task still needs independent acceptance. No milestone or external compliance/provider gate accepted.
+
+**27 October 2026 — P06-010/015 combined batch:** Each Not Started → In Progress → In Review. Added durable leased reservation expiry and secure email-proof guest sessions/delivery/CSRF; corrected initial hold clock binding to actual placement. [Independent per-task assertions, observed verification and rollout limits](./evidence/P06-010-015-expiry-guest-access.md). Overall: 210 tasks, 84 Done, 117 Not Started, 3 Blocked and 6 In Review. Executor: Codex; each task and prior P06-006–009 remain pending independent acceptance. No milestone, legal/provider or deployed-image gate accepted.

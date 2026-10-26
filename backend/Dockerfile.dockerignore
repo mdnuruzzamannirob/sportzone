@@ -10,6 +10,7 @@
 !backend/scripts/
 !backend/scripts/build.mjs
 !backend/scripts/notification-worker.mjs
+!backend/scripts/expire-reservations.mjs
 !backend/scripts/container-health.mjs
 !backend/Dockerfile
 !backend/Dockerfile.dockerignore

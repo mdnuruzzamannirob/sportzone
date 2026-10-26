@@ -1,3 +1,4 @@
+import { guestAccessRoutes } from '../../src/modules/auth/guest-access/guest-access.routes.js'
 import { deliveryAreaRoutes } from '../../src/modules/delivery/delivery.routes.js'
 import { checkoutRoutes } from '../../src/modules/checkout/checkout.routes.js'
 import { deliveryRoutes } from '../../src/modules/delivery/delivery.routes.js'
@@ -80,6 +81,19 @@ const media = {
 export function registeredRouter() {
   return createApiRouter({ isReady: async () => true }, [
     browserSecurityRoutes(security, sessions),
+    guestAccessRoutes(
+      { request: unused, exchange: unused },
+      {
+        issueAfterProof: unused,
+        owned: unused,
+        refresh: unused,
+        verify: unused,
+        logout: unused,
+        cookiePolicy: sessions.cookiePolicy,
+      },
+      security,
+      guard,
+    ),
     customerRoutes(credentials, security, sessions),
     adminRoutes(credentials, recovery, security, sessions),
     recoveryRoutes(recovery, security, sessions),

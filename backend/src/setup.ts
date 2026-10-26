@@ -301,5 +301,6 @@ export async function composeNotificationWorker(
     delivery.reset,
     delivery.emailChange,
     delivery.adminReset,
+    delivery.guest,
   )
 }

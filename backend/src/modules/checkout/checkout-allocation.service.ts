@@ -14,6 +14,7 @@ const command = z.strictObject({
 })
 const binding = z.strictObject({
   orderId: id,
+  placedAt: z.date().optional(),
   generation: z.int().min(1),
   userId: id.optional(),
   pricing: pricingInput.safeExtend({ coupon: z.undefined().optional() }),
@@ -55,7 +56,10 @@ export function checkoutAllocationService(
         )
       if (data.orderId !== input.orderId || data.generation !== input.generation)
         throw new ApiError('STATE_CONFLICT')
-      const heldAt = clock(),
+      const heldAt =
+          input.action === 'hold' && input.generation === 1 && data.placedAt
+            ? data.placedAt
+            : clock(),
         key = `allocation:${input.orderId}:${input.generation}:${input.action}`
       if (!Number.isFinite(heldAt.getTime())) throw new ApiError('STATE_CONFLICT')
       const inventory = []

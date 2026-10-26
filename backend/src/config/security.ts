@@ -14,7 +14,7 @@ export type RecoveryOptions = {
 }
 function loadProofOptions(
   environment: NodeJS.ProcessEnv,
-  prefix: 'PASSWORD_RESET' | 'EMAIL_CHANGE' | 'ADMIN_PASSWORD_RESET',
+  prefix: 'PASSWORD_RESET' | 'EMAIL_CHANGE' | 'ADMIN_PASSWORD_RESET' | 'GUEST_ORDER_ACCESS',
 ): RecoveryOptions {
   try {
     const integer = (key: string, min: number, max: number) => {
@@ -55,7 +55,9 @@ function loadProofOptions(
         ? 'password_recovery_configuration'
         : prefix === 'EMAIL_CHANGE'
           ? 'email_change_configuration'
-          : 'admin_recovery_configuration',
+          : prefix === 'ADMIN_PASSWORD_RESET'
+            ? 'admin_recovery_configuration'
+            : 'guest_access_configuration',
     ])
   }
 }
@@ -67,3 +69,18 @@ export const loadEmailChangeOptions = (environment: NodeJS.ProcessEnv) =>
 
 export const loadAdminRecoveryOptions = (environment: NodeJS.ProcessEnv) =>
   loadProofOptions(environment, 'ADMIN_PASSWORD_RESET')
+
+export type GuestAccessOptions = RecoveryOptions & { sessionTtlSeconds: number }
+export function loadGuestAccessOptions(environment: NodeJS.ProcessEnv): GuestAccessOptions {
+  const proof = loadProofOptions(environment, 'GUEST_ORDER_ACCESS')
+  const raw = environment.GUEST_ORDER_SESSION_TTL_SECONDS ?? '',
+    sessionTtlSeconds = Number(raw)
+  if (
+    !/^[1-9]\d*$/.test(raw) ||
+    !Number.isSafeInteger(sessionTtlSeconds) ||
+    sessionTtlSeconds < 60 ||
+    sessionTtlSeconds > 604800
+  )
+    throw new ConfigurationError(['guest_session_configuration'])
+  return { ...proof, sessionTtlSeconds }
+}

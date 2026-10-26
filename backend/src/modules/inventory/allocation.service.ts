@@ -195,6 +195,39 @@ export function allocationService(
     return projection(row)
   }
   return {
+    async due(now: Date, limit: number, cursor?: string) {
+      if (
+        !Number.isSafeInteger(limit) ||
+        limit < 1 ||
+        limit > 100 ||
+        (cursor !== undefined && !/^[a-f0-9]{24}$/.test(cursor))
+      )
+        throw new ApiError('VALIDATION_FAILED')
+      await verifyAllocationPersistence(connection)
+      return reservations
+        .find({
+          status: 'held',
+          expiresAt: { $lte: now },
+          ...(cursor ? { _id: { $gt: cursor } } : {}),
+        })
+        .sort({ _id: 1 })
+        .limit(limit)
+        .lean()
+        .then((rows) =>
+          rows.map((row) => ({
+            cursor: row._id.toHexString(),
+            orderId: row.orderId.toHexString(),
+            generation: row.generation,
+          })),
+        )
+    },
+    async generation(session: ClientSession, orderId: string, generation: number) {
+      if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+      return reservations
+        .find({ orderId, generation })
+        .session(session)
+        .then((rows) => rows.map(projection))
+    },
     // Capture one trusted heldAt in the outer transaction and reuse it for every line and coupon.
     reserve: (session: ClientSession, input: unknown, heldAt: Date) =>
       apply(session, input, 'reserve', heldAt),

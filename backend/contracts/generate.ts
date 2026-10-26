@@ -67,7 +67,12 @@ const errorEnvelope = (codes = Object.keys(errorDefinitions)) =>
 function security(op: Operation) {
   if (op.access === 'monitor') return [{ MonitorBearer: [] }]
   if (op.access === 'public') return []
-  const session = op.namespace === 'admin' ? 'AdminSession' : 'CustomerSession'
+  const session =
+    op.path.startsWith('/guest-access/') || op.access === 'guest'
+      ? 'GuestOrderSession'
+      : op.namespace === 'admin'
+        ? 'AdminSession'
+        : 'CustomerSession'
   const context = op.namespace === 'admin' ? 'AdminBrowserContext' : 'BrowserContext'
   if (op.access === 'public_csrf')
     return op.path.endsWith('/logout')
@@ -118,6 +123,7 @@ function openOperation(op: Operation) {
           ? { Location: header('Created resource URI') }
           : {}),
         ...(op.path.includes('/auth/') ||
+        ['/guest-access/sessions', '/guest-access/logout'].includes(op.path) ||
         op.path.includes('password-change') ||
         op.path.includes('email-changes/confirm')
           ? {
@@ -252,6 +258,7 @@ export function generateArtifacts(apiMarkdown: string) {
       securitySchemes: {
         CustomerSession: cookie('sz_customer_sid'),
         AdminSession: cookie('sz_admin_sid'),
+        GuestOrderSession: cookie('sz_guest_order_sid'),
         BrowserContext: cookie('sz_browser_ctx'),
         AdminBrowserContext: cookie('sz_admin_browser_ctx'),
         CsrfHeader: { type: 'apiKey', in: 'header', name: 'X-CSRF-Token' },

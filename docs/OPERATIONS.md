@@ -719,7 +719,7 @@ Applications are private workspaces with a coordinated release record; no public
 The backend recipe is `backend/Dockerfile`, built from repository root with its Dockerfile-specific
 allowlist (`backend/Dockerfile.dockerignore`). It pins the official Node image digest, installs the pinned
 npm toolchain, compiles only backend source and places only production backend dependencies, compiled output
-and HTTP/notification commands in the runtime stage. No frontend install/build is part of this recipe.
+and HTTP/notification/reservation-expiry commands in the runtime stage. No frontend install/build is part of this recipe.
 Secrets are runtime inputs, never Docker build arguments or copied environment files. Actual builder,
 image inspection and staging execution evidence remain required before deployment acceptance.
 
@@ -728,7 +728,8 @@ Record the resulting immutable image digest and verify effective non-root user, 
 secret absence, health, SIGTERM draining and restart behavior before publishing/promoting. The default command
 is `node dist/server.js`; the same image runs a scheduled notification batch with
 `docker run --rm --no-healthcheck --env-file /protected/staging.env sportzone-backend:<revision> scripts/notification-worker.mjs`.
-The worker is a one-shot batch, not a second HTTP server; monitor exit status, durable backlog and lease recovery.
+The same image also runs expiry with `scripts/expire-reservations.mjs` and the same `--no-healthcheck`
+container pattern. Both workers are one-shot batches, not second HTTP servers; monitor exit status, durable backlog and lease recovery.
 Do not apply an always-restart loop to a normally completed batch.
 
 Supply protected staging environment values privately, including APP_ENV=staging, the approved origins,
@@ -947,6 +948,55 @@ Remove expired/consumed/invalidated challenge delivery envelopes without waiting
 verification/audit facts for the approved period. Quote cleanup must preserve consumed consent evidence and intent/order
 uniqueness. Record schedules, key custodians, temporary upload/quote lifetimes and retention in the environment configuration inventory.
 
+#### Reservation expiry worker
+
+After backend build and reviewed checkout bootstrap, schedule
+`node --env-file=.env backend/scripts/expire-reservations.mjs` with explicit
+RESERVATION_EXPIRY_BATCH_SIZE (1–100) and RESERVATION_EXPIRY_LEASE_MS (1000–3600000).
+No operating defaults or HTTP background loop are supplied. `bootstrap-checkout-submit.mjs` adds the
+canonical strict jobLeases collection/indexes in local/test only; staging/production provisioning needs
+normal operator review. Runtime only verifies readiness and refuses TTL or unknown validator drift.
+
+Each invocation scans one bounded batch under a durable lease and cursor. It releases only consistent,
+due unpaid online stock/coupon generations in a transaction with order/payment fences and audit. COD,
+verified-funded/risk-held, cancelled, missing or inconsistent state is retained for its owning resolution.
+Expiry does not cancel orders/attempts, mark payment failure or discard possible late verified funds.
+Cursor wrap and status-guarded movements make restart/checkpoint replay safe. A stale owner cannot
+commit or checkpoint. Do not delete held records, movements, coupons or lease history as recovery.
+
+Monitor scheduler exit status, scanned/released/skipped counts, durable failure metadata and overdue
+held backlog. Repeated skips need protected order/payment/generation investigation; a successful scan
+is not proof every hold was eligible. The CLI logs counts/static failure only. Schedule cadence/lease
+capacity requires operator approval; no provider call or financial retry belongs in this worker.
+
+#### Guest proof activation and recovery
+
+`GUEST_ACCESS_ENABLED=true` requires CUSTOMER_AUTH_ENABLED, explicit GUEST_ORDER_ACCESS_TTL_SECONDS
+(60–1800), GUEST_ORDER_ACCESS_COOLDOWN_SECONDS (60–3600),
+GUEST_ORDER_ACCESS_RESPONSE_FLOOR_MS (100–5000), GUEST_ORDER_SESSION_TTL_SECONDS (60–604800),
+protected AUTH_PROOF_ACTIVE_KEY_VERSION/AUTH_PROOF_KEYS_JSON and the exact HTTPS storefront origin.
+Bounds are technical limits, not approved operating defaults. Keys must be distinct from session/monitor
+secrets and held outside database/backups. The sanitized template leaves durations blank and activation off.
+
+Before identity startup, explicitly migrate exact known notification predecessors with the existing
+local/test `migrate-notifications.mjs` procedure or combined checkout bootstrap. Migration preserves
+account/proof/order receipt events and expands only the guest proof branch; unknown drift is refused.
+Review equivalent staging rollout separately. Root composition verifies order/identity/notification/
+throttle persistence before serving activated guest routes. Normal startup never repairs it.
+
+The existing separately scheduled notification worker dispatches guest proofs only when this feature
+and its protected proof renderer are enabled. Nonproduction email still requires approved test-recipient
+redirection. No raw proof, URL, envelope or key belongs in logs/outbox payloads. Delivery uncertainty
+stays uncertain; reconcile or explicitly reissue an invalidating proof after cooldown, never reset a send
+counter and blindly resend. Remove expired/invalidated/consumed envelopes independently of TTL lag.
+Missing keys/tamper deny delivery; hash verification of an already delivered valid proof needs no key.
+
+Guest exchange returns an order-scoped cookie and CSRF, never durable access from order/email text.
+Refresh guest CSRF with explicit sessionKind=guest; logout revokes only the guest credential and returns
+a fresh browser context. Preserve challenges, notification evidence, session revocations and order scope
+revisions across compatible rollouts. Retain the expanded validator while new rows exist; do not erase
+proof or financial evidence to force an older binary's exact-validator check to pass.
+
 #### Registration notification worker and recovery
 
 Registration commits its intent without invoking email. Build the backend; use the common protected environment plus
@@ -960,7 +1010,7 @@ Production requires EMAIL_MODE=live. Local/test/staging require EMAIL_MODE=test 
 EMAIL_TEST_RECIPIENT; every outgoing recipient is redirected to that inbox. Sender/API keys remain separate per environment
 in protected config. Templates and original recipient addresses are not logged; CLI output contains counts or a generic
 failure. The outbox contains no plaintext proof/session/password or arbitrary email HTML. Enabled identity proof renderers supply authenticated
-envelope/challenge checks for explicitly activated customer-reset/email-change/admin-reset templates; other proof templates remain disabled.
+envelope/challenge checks for explicitly activated customer-reset/email-change/admin-reset/guest-access templates; other proof templates remain disabled.
 
 Policy bounds: 1–10 attempts; 1–100 claims per batch; base delay 100–3600000 ms; maximum delay at least the base and at most
 86400000 ms; lease 1000–3600000 ms; HTTP timeout 1–60000 ms. Require lease strictly greater than timeout plus 1000 ms.
@@ -970,7 +1020,7 @@ ambiguous/network/timeout/5xx outcomes stop in delivery_uncertain. Resend accept
 
 For an existing owned local/test P03-007/008 database, explicitly run
 `node --env-file=.env backend/scripts/migrate-notifications.mjs` before identity startup/worker readiness. It upgrades
-only the known strict P03-007/009/010/011 predecessor validators and ensures the claim-expiry index, preserving all records and statuses; repeat
+only exact known identity-proof/order-received predecessor validators and ensures the claim-expiry index, preserving all records and statuses; repeat
 migration is safe. Fresh local/test bootstrap creates the current schema. Neither HTTP startup nor the worker migrates.
 Production migration needs normal operator change control; the convenience migration command refuses deployed environments.
 
@@ -1953,7 +2003,7 @@ the template and runtime validator determine which exact keys are currently supp
 | MongoDB                    | `MONGODB_URI`, `MONGODB_DB_NAME`, optional TLS/CA path                                              | **Secret** URI; replica set and transaction capability checks                                                                                                        |
 | Operational monitor        | `HEALTH_MONITOR_TOKEN`                                                                              | **Secret**; separate 32-byte hex Bearer credential for restricted readiness only; rotate by protected config update/restart; never send in URLs/logs/browser bundles |
 | Sessions                   | `SESSION_SECRET`, CUSTOMER_SESSION_TTL_SECONDS, ADMIN_SESSION_TTL_SECONDS, SESSION_COOKIE_SAME_SITE | SESSION_SECRET is **secret**; separate kind/domain HMAC digests; lifetimes/SameSite explicitly approved and validated at session composition; no fallback            |
-| CSRF and guest access      | CSRF signing secret/context and one-time guest-token secret if implemented                          | **Secret**; expiry, rotation, no log/public bundle                                                                                                                   |
+| CSRF and guest access      | SESSION_SECRET for session/CSRF verifiers; AUTH_PROOF_* external AEAD key ring for proof delivery                          | **Secret**; expiry, rotation, no log/public bundle                                                                                                                   |
 | Proof delivery (API §16.3) | AUTH_PROOF_ACTIVE_KEY_VERSION / AUTH_PROOF_KEYS_JSON injected from the protected key store          | Encryption keys outside MongoDB/backups; worker-only decrypt, AEAD nonce/tamper checks, no plaintext/outbox envelope; fail closed if unavailable                     |
 | Quote/upload lifetimes     | CHECKOUT_QUOTE_TTL_SECONDS, MEDIA_TEMP_TTL_SECONDS                                                  | Positive bounded server configuration approved by owners; enforce expiry, no runtime fallback guessed here                                                           |
 | Refund business calendar   | Approved versioned calendar/holiday and policy-rule references                                      | Compute target from actual approvedAt; shorter applicable basis wins; under_review without guessed date                                                              |

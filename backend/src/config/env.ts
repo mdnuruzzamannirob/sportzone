@@ -4,6 +4,7 @@ import {
   loadRecoveryOptions,
   loadEmailChangeOptions,
   loadAdminRecoveryOptions,
+  loadGuestAccessOptions,
 } from './security.js'
 import { ConfigurationError } from '../shared/errors/configuration-error.js'
 export { ConfigurationError } from '../shared/errors/configuration-error.js'
@@ -62,6 +63,10 @@ const schema = z
     ADMIN_PASSWORD_RESET_TTL_SECONDS: z.string().optional(),
     ADMIN_PASSWORD_RESET_COOLDOWN_SECONDS: z.string().optional(),
     ADMIN_PASSWORD_RESET_RESPONSE_FLOOR_MS: z.string().optional(),
+    GUEST_ACCESS_ENABLED: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((value) => value === 'true'),
     PASSWORD_RECOVERY_ENABLED: z
       .enum(['true', 'false'])
       .default('false')
@@ -93,6 +98,12 @@ const schema = z
       .pipe(z.array(origin).length(2)),
   })
   .superRefine((value, ctx) => {
+    if (value.GUEST_ACCESS_ENABLED && !value.CUSTOMER_AUTH_ENABLED)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['GUEST_ACCESS_ENABLED'],
+        message: 'Customer auth infrastructure required',
+      })
     if (value.PASSWORD_RECOVERY_ENABLED) {
       if (!value.CUSTOMER_AUTH_ENABLED)
         ctx.addIssue({
@@ -183,6 +194,7 @@ export type IdentityConfig = Readonly<{
   recovery?: ReturnType<typeof loadRecoveryOptions>
   emailChange?: ReturnType<typeof loadEmailChangeOptions>
   adminRecovery?: ReturnType<typeof loadAdminRecoveryOptions>
+  guest?: ReturnType<typeof loadGuestAccessOptions>
 }>
 export type RuntimeConfig = Readonly<z.output<typeof schema> & { identity?: IdentityConfig }>
 export function loadEnvironment(environment: NodeJS.ProcessEnv): RuntimeConfig {
@@ -229,6 +241,7 @@ export function loadEnvironment(environment: NodeJS.ProcessEnv): RuntimeConfig {
   const identity: IdentityConfig = Object.freeze({
     sessions,
     browser,
+    ...(config.GUEST_ACCESS_ENABLED ? { guest: Object.freeze(loadGuestAccessOptions(input)) } : {}),
     ...(config.PASSWORD_RECOVERY_ENABLED
       ? { recovery: Object.freeze(loadRecoveryOptions(input)) }
       : {}),

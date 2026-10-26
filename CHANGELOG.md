@@ -8,6 +8,15 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 27 October 2026 — Reservation expiry and verified guest access
+
+- Added a leased, bounded expiry worker with whole-generation stock/coupon release, payment/order
+  fences, audit, restart-safe cursor and preserved financial history. Initial holds use actual placement.
+- Added opt-in single-use email proof exchange, order-scoped guest sessions, guest CSRF/logout and
+  authenticated encrypted delivery through the existing notification worker. Added explicit compatible
+  notification migration, guest API contracts and expiry entry packaging.
+  [Per-task verification and limits](docs/evidence/P06-010-015-expiry-guest-access.md).
+
 ## 27 October 2026 — Combined checkout allocation and COD feature
 
 - Added coordinated stock/coupon allocation, opt-in COD submission with atomic Pending order/payment

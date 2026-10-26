@@ -1,3 +1,11 @@
+import {
+  guestChallengeInput,
+  guestExchangeInput,
+  guestAccepted,
+  guestExchangeView,
+  guestSessionView,
+  guestLogoutView,
+} from '../src/modules/auth/guest-access/guest-access.schema.js'
 import { checkoutSubmitResult } from '../src/modules/checkout/checkout-intent.schema.js'
 import { deliveryAreasQuery, deliveryAreas } from '../src/modules/delivery/delivery.schema.js'
 import {
@@ -135,7 +143,7 @@ const identity = createIdentityContracts({
 export type Operation = {
   method: string
   path: string
-  access: 'public' | 'public_csrf' | 'customer' | 'admin' | 'monitor'
+  access: 'public' | 'public_csrf' | 'customer' | 'admin' | 'monitor' | 'guest'
   activation: string
   request?: z.ZodType
   response?: z.ZodType
@@ -171,7 +179,7 @@ const runtimeInputs: Record<string, z.ZodType> = {
 }
 const identityActivation = (path: string) => {
   if (path.endsWith('/auth/csrf'))
-    return 'CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest adapter not wired'
+    return 'CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest selection additionally requires GUEST_ACCESS_ENABLED and a verified guest session'
   if (path.startsWith('/admin/'))
     return 'ADMIN_AUTH_ENABLED with validated admin recovery configuration'
   if (path.includes('password-resets') || path.endsWith('password-change'))
@@ -212,6 +220,49 @@ export const operations: readonly Operation[] = [
     replay:
       'Read-only bounded coverage projection; actual destination is revalidated at quote and submission.',
   },
+  ...[
+    {
+      method: 'POST',
+      path: '/guest-access/challenges',
+      access: 'public_csrf' as const,
+      request: guestChallengeInput,
+      response: guestAccepted,
+      csrf: true,
+    },
+    {
+      method: 'POST',
+      path: '/guest-access/sessions',
+      access: 'public_csrf' as const,
+      request: guestExchangeInput,
+      response: guestExchangeView,
+      csrf: true,
+    },
+    {
+      method: 'GET',
+      path: '/guest-access/session',
+      access: 'guest' as const,
+      response: guestSessionView,
+      csrf: false,
+    },
+    {
+      method: 'POST',
+      path: '/guest-access/logout',
+      access: 'public_csrf' as const,
+      request: z.union([z.undefined(), empty]),
+      response: guestLogoutView,
+      csrf: true,
+    },
+  ].map((operation) => ({
+    ...operation,
+    namespace: 'storefront' as const,
+    query: empty,
+    params: empty,
+    status: 200,
+    activation:
+      'GUEST_ACCESS_ENABLED with CUSTOMER_AUTH_ENABLED, explicit guest proof/session lifetimes, protected proof key ring/HTTPS storefront and reviewed identity/order/notification/throttle persistence.',
+    replay:
+      'Non-enumerating rate-limited lookup; single-use email proof exchange grants exact order scope only. Tokens stay in cookies/email, never lookup responses or logs. Revoked/expired/wrong-scope credentials fail closed.',
+  })),
   {
     method: 'POST',
     path: '/checkout/quotes',

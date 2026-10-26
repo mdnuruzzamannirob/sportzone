@@ -1,3 +1,8 @@
+import { guestOrderAccess } from '../orders/order.service.js'
+import { guestSessionService } from './guest-access/guest-session.service.js'
+import { guestAccessService } from './guest-access/guest-access.service.js'
+import { guestAccessRoutes } from './guest-access/guest-access.routes.js'
+import { guestProofDelivery } from './guest-access/guest-proof-delivery.service.js'
 import { createAdminAccountAccess } from './admin-account.service.js'
 import { Router } from 'express'
 import type { Connection } from 'mongoose'
@@ -40,10 +45,21 @@ export async function createAuthRuntime(
   const quota = createAuthQuotaStore(connection)
   await quota.verify()
   const throttle = createAuthThrottle(quota, config.SESSION_SECRET)
+  const guestOrders = guestOrderAccess(connection)
+  const guestSessions = options.guest
+    ? guestSessionService(
+        connection,
+        models,
+        options.sessions,
+        options.guest.sessionTtlSeconds,
+        guestOrders.verify,
+      )
+    : undefined
+  if (options.guest) await guestOrders.verifyPersistence()
   const router = Router()
   // Separate bootstrap adapters select their audience from the registered route.
   router.use(
-    browserSecurityRoutes(security, sessions, undefined, (req, res, next) =>
+    browserSecurityRoutes(security, sessions, guestSessions, (req, res, next) =>
       throttle.middleware(req.path.startsWith('/admin/') ? 'admin' : 'customer', 'bootstrap')(
         req,
         res,
@@ -51,6 +67,22 @@ export async function createAuthRuntime(
       ),
     ),
   )
+  if (options.guest && guestSessions)
+    router.use(
+      guestAccessRoutes(
+        guestAccessService(
+          models,
+          security,
+          guestSessions,
+          guestOrders,
+          notifications,
+          options.guest,
+        ),
+        guestSessions,
+        security,
+        throttle.middleware('customer', 'guest'),
+      ),
+    )
   if (config.CUSTOMER_AUTH_ENABLED)
     router.use(
       customerRoutes(
@@ -116,6 +148,8 @@ export async function createAuthRuntime(
     adminAccounts: createAdminAccountAccess(connection, models, sessions),
     customerAccounts: createCustomerAccountAccess(connection, models, sessions),
     mediaAdmin: createMediaAdminAccess(models, sessions),
+    // Session minting stays inside auth; business consumers receive owned scope only.
+    guestAccounts: guestSessions ? { owned: guestSessions.owned } : undefined,
   }
 }
 
@@ -126,6 +160,9 @@ export function composeProofDeliveries(
 ) {
   const models = createIdentityModels(connection)
   return {
+    guest: options?.guest
+      ? guestProofDelivery(models, guestOrderAccess(connection), options.guest)
+      : undefined,
     reset: options?.recovery ? createResetDelivery(models, options.recovery) : undefined,
     emailChange: options?.emailChange
       ? createEmailChangeDelivery(models, options.emailChange)
