@@ -1379,7 +1379,13 @@ fields, closed delivery statuses and safe nonnegative attempt counter. The physi
 `notifications_event_key_unique` (`{eventKey:1}`, unique) and `notifications_retry_queue` (`{status:1,nextAttemptAt:1}`).
 Delivery retry updates do not repeat account creation or reset existing delivery status. Registration stores no challenge,
 proof URL, session credential or password in this collection; initial email-verification challenge/delivery remains with its owning feature. Password-reset and email-change delivery reference their bound challenges.
-Later notification event types require an explicit backward-compatible validator/model expansion before activation.
+The additive checkout validator permits `order_received`/`order-received-v1` with required orderId,
+optional userId for registered buyers, and an empty payload; guest orders need no account reference.
+Existing account/proof events still require userId, forbid orderId and retain their exact challenge
+constraints. The previous admin-reset validator is an immutable known migration predecessor. Order
+receipt delivery remains queued until its owning commerce template/worker integration; it is never
+mistaken for registration or confirmation.
+Other notification event types require an explicit backward-compatible validator/model expansion before activation.
 Existing validators are checked, never silently replaced by startup or local bootstrap.
 
 Dispatch claims use optional `claimId:string`, `claimExpiresAt:Date` and `lastAttemptAt:Date` fields on notification intents,

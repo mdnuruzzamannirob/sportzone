@@ -1,5 +1,10 @@
+import { checkoutSubmitResult } from '../src/modules/checkout/checkout-intent.schema.js'
 import { deliveryAreasQuery, deliveryAreas } from '../src/modules/delivery/delivery.schema.js'
-import { checkoutQuoteInput, checkoutQuote } from '../src/modules/checkout/checkout.schema.js'
+import {
+  checkoutQuoteInput,
+  checkoutQuote,
+  checkoutSubmitInput,
+} from '../src/modules/checkout/checkout.schema.js'
 import {
   zoneInput,
   zonePatch,
@@ -137,6 +142,7 @@ export type Operation = {
   query: z.ZodType
   params: z.ZodType
   status: number
+  replayStatus?: number
   csrf: boolean
   namespace: 'storefront' | 'admin'
   paginated?: boolean
@@ -221,6 +227,24 @@ export const operations: readonly Operation[] = [
       'CHECKOUT_QUOTES_ENABLED with explicit TTL/required policies, CUSTOMER_AUTH_ENABLED, reviewed quote/catalog/delivery/settings/coupon persistence and eligible independently reviewed deadline policy. Online methods remain denied until verified provider/merchant capability is wired.',
     replay:
       'New quote per request; scope-bound immutable consent without reservations. Internal revalidation checks expiry, stable line IDs and commercial changes; order intent/consumption belongs to later tasks.',
+  },
+  {
+    method: 'POST',
+    path: '/checkout/orders',
+    access: 'public_csrf',
+    namespace: 'storefront',
+    query: empty,
+    params: empty,
+    request: checkoutSubmitInput,
+    response: checkoutSubmitResult,
+    status: 201,
+    replayStatus: 200,
+    csrf: true,
+    idempotency: true,
+    activation:
+      'CHECKOUT_COD_ENABLED and CHECKOUT_QUOTES_ENABLED with CUSTOMER_AUTH_ENABLED, current independently reviewed policies and provisioned order/intent/inventory/coupon/payment/notification persistence. COD only; online submission/provider calls remain disabled pending Phase 07.',
+    replay:
+      '201 new, 200 replay. Same scoped key returns current order; changed payload conflicts. Consent/order/stock/coupon/pending payment/order_received intent commit atomically. No unverified collection or early confirmation.',
   },
   ...(
     [

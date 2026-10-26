@@ -8,6 +8,14 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 27 October 2026 — Combined checkout allocation and COD feature
+
+- Added coordinated stock/coupon allocation, opt-in COD submission with atomic Pending order/payment
+  and order_received intent, plus private online 15-minute hold foundation. Added additive payment
+  persistence and backward-compatible notification migration; generated COD/replay API contracts.
+  Provider sessions, automatic hold expiry and commerce email dispatch remain owning later tasks.
+  [Per-task verification and limits](docs/evidence/P06-007-009-checkout-batch.md).
+
 ## 27 October 2026 — Durable checkout intent feature
 
 - Added hashed scope/key intent identities, canonical submission fingerprints, current authorized

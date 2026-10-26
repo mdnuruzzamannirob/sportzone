@@ -8,6 +8,7 @@ import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
 import { createRegistrationNotifications } from '../../src/modules/notifications/notification.service.js'
 import {
   legacyRegistrationNotificationValidator,
+  adminResetNotificationValidator,
   registrationNotificationValidator,
 } from '../../src/modules/notifications/notification.persistence.js'
 import { createResendAdapter } from '../../src/providers/email/resend.client.js'
@@ -421,4 +422,17 @@ describe('durable registration email pipeline with real MongoDB and local HTTP p
     expect(result.status).toBe('delivery_uncertain')
     expect(result.lastErrorCode).toBe('PROVIDER_UNCERTAIN')
   })
+})
+
+it('explicitly migrates the prior admin-reset validator while preserving existing notification evidence', async () => {
+  const user = await enqueue(),
+    prior = await row(user._id)
+  await fixture.connection.db?.command({
+    collMod: 'notifications',
+    validator: adminResetNotificationValidator,
+  })
+  await expect(store.initialize()).rejects.toThrow('reviewed migration')
+  await store.migrateFoundation()
+  expect((await row(user._id))._id).toEqual(prior._id)
+  await store.verifyIndexes()
 })

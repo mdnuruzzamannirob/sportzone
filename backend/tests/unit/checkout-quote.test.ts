@@ -93,3 +93,22 @@ it('keeps quote activation explicit and configuration failures value-free', asyn
       message: 'Invalid backend configuration.',
     })
 })
+
+it('requires explicit COD activation with quote/customer prerequisites and rejects malformed flags', async () => {
+  await expect(loadCheckoutOptions({ CHECKOUT_COD_ENABLED: 'true' })).rejects.toMatchObject({
+    fields: ['checkout_submission_configuration'],
+  })
+  const env = {
+    CHECKOUT_QUOTES_ENABLED: 'true',
+    CUSTOMER_AUTH_ENABLED: 'true',
+    CHECKOUT_QUOTE_TTL_SECONDS: '300',
+    CHECKOUT_REQUIRED_POLICY_TYPES: 'terms',
+  }
+  expect((await loadCheckoutOptions(env))?.codEnabled).toBe(false)
+  expect((await loadCheckoutOptions({ ...env, CHECKOUT_COD_ENABLED: 'true' }))?.codEnabled).toBe(
+    true,
+  )
+  await expect(loadCheckoutOptions({ ...env, CHECKOUT_COD_ENABLED: 'TRUE' })).rejects.toMatchObject(
+    { fields: ['checkout_quote_configuration'] },
+  )
+})

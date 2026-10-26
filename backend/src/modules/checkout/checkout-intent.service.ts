@@ -45,141 +45,143 @@ export function checkoutIntentService(
 ) {
   const intents = checkoutIntentModel(connection),
     quoteModel = checkoutQuoteModel(connection)
-  return {
-    async submit(credentials: CheckoutCredentials, raw: unknown, key: unknown) {
-      const input = parseInput(checkoutSubmitInput, raw),
-        idempotencyKeyHash = checkoutKeyHash(key),
-        requestFingerprint = checkoutSubmissionFingerprint(input)
-      // A duplicate index race aborts its transaction. Re-enter authorization in a fresh transaction
-      // to observe the winner; never continue a failed session or retry an external effect.
-      for (let attempt = 0; attempt < 2; attempt++) {
-        try {
-          return await access.owned(credentials, async (principal, session) => {
-            if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
-            const scope = parseInput(checkoutIntentScope, {
-              scopeType: principal.scopeType,
-              scopeKeyHash: principal.scopeKeyHash,
-            })
-            try {
-              await verifyCheckoutIntentPersistence(connection)
-            } catch {
-              throw new ApiError('SERVICE_UNAVAILABLE')
-            }
-            const existing = await intents
-              .findOne({ ...scope, idempotencyKeyHash })
-              .session(session)
-            if (existing) {
-              if (existing.requestFingerprint !== requestFingerprint)
-                throw new ApiError('IDEMPOTENCY_CONFLICT')
-              if (
-                !existing.orderId ||
-                !existing.resultSnapshot ||
-                !existing.orderId.equals(existing.resultSnapshot.orderId) ||
-                existing.status === 'preparing'
-              )
-                throw new ApiError('STATE_CONFLICT')
-              // Expired response windows still return the current resource, never reuse the key.
-              const result = parseInput(
-                checkoutOrderOutcome,
-                await completion.read(
-                  session,
-                  principal,
-                  existing.orderId.toHexString(),
-                  existing._id.toHexString(),
-                ),
-              )
-              if (result.id !== existing.orderId.toHexString()) throw new ApiError('STATE_CONFLICT')
-              return result
-            }
-            try {
-              await verifyCheckoutQuotePersistence(connection)
-            } catch {
-              throw new ApiError('SERVICE_UNAVAILABLE')
-            }
-            // Another key cannot expose/rebind the order attached to this quote.
-            if (await intents.exists({ quoteId: input.quoteId }).session(session))
+  async function execute(credentials: CheckoutCredentials, raw: unknown, key: unknown) {
+    const input = parseInput(checkoutSubmitInput, raw),
+      idempotencyKeyHash = checkoutKeyHash(key),
+      requestFingerprint = checkoutSubmissionFingerprint(input)
+    // A duplicate index race aborts its transaction. Re-enter authorization in a fresh transaction
+    // to observe the winner; never continue a failed session or retry an external effect.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        return await access.owned(credentials, async (principal, session) => {
+          if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+          const scope = parseInput(checkoutIntentScope, {
+            scopeType: principal.scopeType,
+            scopeKeyHash: principal.scopeKeyHash,
+          })
+          try {
+            await verifyCheckoutIntentPersistence(connection)
+          } catch {
+            throw new ApiError('SERVICE_UNAVAILABLE')
+          }
+          const existing = await intents.findOne({ ...scope, idempotencyKeyHash }).session(session)
+          if (existing) {
+            if (existing.requestFingerprint !== requestFingerprint)
+              throw new ApiError('IDEMPOTENCY_CONFLICT')
+            if (
+              !existing.orderId ||
+              !existing.resultSnapshot ||
+              !existing.orderId.equals(existing.resultSnapshot.orderId) ||
+              existing.status === 'preparing'
+            )
               throw new ApiError('STATE_CONFLICT')
-            const checked = await quotes.revalidate(principal, input, session),
-              intentId = new Types.ObjectId(),
-              orderId = new Types.ObjectId(),
-              acceptedAt = clock()
-            const [intent] = await intents.create(
-              [
-                {
-                  _id: intentId,
-                  ...scope,
-                  idempotencyKeyHash,
-                  requestFingerprint,
-                  quoteId: input.quoteId,
-                  status: 'preparing',
-                },
-              ],
-              { session },
-            )
-            if (!intent || checked.quoteId !== input.quoteId) throw new ApiError('STATE_CONFLICT')
-            const consumed = await quoteModel.updateOne(
-              {
-                _id: input.quoteId,
-                ...scope,
-                status: 'open',
-                expiresAt: { $gt: acceptedAt },
-                commercialDigest: checked.commercialDigest,
-              },
-              {
-                $set: {
-                  status: 'consumed',
-                  checkoutIntentId: intentId,
-                  orderId,
-                  consumedAt: acceptedAt,
-                },
-                $inc: { revision: 1 },
-              },
-              { session },
-            )
-            if (consumed.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
-            await completion.complete(
-              session,
-              {
-                orderId: orderId.toHexString(),
-                checkoutIntentId: intentId.toHexString(),
-                quoteId: input.quoteId,
-                userId: principal.profile?.id ?? null,
-                acceptedAt: acceptedAt.toISOString(),
-                commercialDigest: checked.commercialDigest,
-                snapshot: checked.snapshot,
-                ...(input.notes ? { notes: input.notes } : {}),
-              },
-              `checkout:${intentId.toHexString()}`,
-            )
+            // Expired response windows still return the current resource, never reuse the key.
             const result = parseInput(
               checkoutOrderOutcome,
               await completion.read(
                 session,
                 principal,
-                orderId.toHexString(),
-                intentId.toHexString(),
+                existing.orderId.toHexString(),
+                existing._id.toHexString(),
               ),
             )
-            if (result.id !== orderId.toHexString()) throw new ApiError('STATE_CONFLICT')
-            const recorded = await intents.updateOne(
-              { _id: intentId, status: 'preparing' },
+            if (result.id !== existing.orderId.toHexString()) throw new ApiError('STATE_CONFLICT')
+            return { order: result, replayed: true }
+          }
+          try {
+            await verifyCheckoutQuotePersistence(connection)
+          } catch {
+            throw new ApiError('SERVICE_UNAVAILABLE')
+          }
+          // Another key cannot expose/rebind the order attached to this quote.
+          if (await intents.exists({ quoteId: input.quoteId }).session(session))
+            throw new ApiError('STATE_CONFLICT')
+          const checked = await quotes.revalidate(principal, input, session),
+            intentId = new Types.ObjectId(),
+            orderId = new Types.ObjectId(),
+            acceptedAt = clock()
+          const [intent] = await intents.create(
+            [
               {
-                $set: { status: 'order_created', orderId, resultSnapshot: { orderId } },
+                _id: intentId,
+                ...scope,
+                idempotencyKeyHash,
+                requestFingerprint,
+                quoteId: input.quoteId,
+                status: 'preparing',
               },
-              { session, runValidators: true },
-            )
-            if (recorded.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
-            return result
-          })
-        } catch (error) {
-          const duplicate =
-            typeof error === 'object' && error !== null && 'code' in error && error.code === 11000
-          if (duplicate && attempt === 0) continue
-          if (duplicate) throw new ApiError('STATE_CONFLICT')
-          throw error
-        }
+            ],
+            { session },
+          )
+          if (!intent || checked.quoteId !== input.quoteId) throw new ApiError('STATE_CONFLICT')
+          const consumed = await quoteModel.updateOne(
+            {
+              _id: input.quoteId,
+              ...scope,
+              status: 'open',
+              expiresAt: { $gt: acceptedAt },
+              commercialDigest: checked.commercialDigest,
+            },
+            {
+              $set: {
+                status: 'consumed',
+                checkoutIntentId: intentId,
+                orderId,
+                consumedAt: acceptedAt,
+              },
+              $inc: { revision: 1 },
+            },
+            { session },
+          )
+          if (consumed.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
+          await completion.complete(
+            session,
+            {
+              orderId: orderId.toHexString(),
+              checkoutIntentId: intentId.toHexString(),
+              quoteId: input.quoteId,
+              userId: principal.profile?.id ?? null,
+              acceptedAt: acceptedAt.toISOString(),
+              commercialDigest: checked.commercialDigest,
+              snapshot: checked.snapshot,
+              ...(input.notes ? { notes: input.notes } : {}),
+            },
+            `checkout:${intentId.toHexString()}`,
+          )
+          const result = parseInput(
+            checkoutOrderOutcome,
+            await completion.read(
+              session,
+              principal,
+              orderId.toHexString(),
+              intentId.toHexString(),
+            ),
+          )
+          if (result.id !== orderId.toHexString()) throw new ApiError('STATE_CONFLICT')
+          const recorded = await intents.updateOne(
+            { _id: intentId, status: 'preparing' },
+            {
+              $set: { status: 'order_created', orderId, resultSnapshot: { orderId } },
+            },
+            { session, runValidators: true },
+          )
+          if (recorded.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
+          return { order: result, replayed: false }
+        })
+      } catch (error) {
+        const duplicate =
+          typeof error === 'object' && error !== null && 'code' in error && error.code === 11000
+        if (duplicate && attempt === 0) continue
+        if (duplicate) throw new ApiError('STATE_CONFLICT')
+        throw error
       }
-      throw new ApiError('STATE_CONFLICT')
+    }
+    throw new ApiError('STATE_CONFLICT')
+  }
+  return {
+    async submit(credentials: CheckoutCredentials, raw: unknown, key: unknown) {
+      return (await execute(credentials, raw, key)).order
     },
+    submitWithOutcome: execute,
   }
 }

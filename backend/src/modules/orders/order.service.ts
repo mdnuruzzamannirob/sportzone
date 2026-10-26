@@ -1,11 +1,11 @@
+import { Types, type ClientSession, type Connection } from 'mongoose'
 import { createHash, randomBytes } from 'node:crypto'
-import { Types, type Connection, type ClientSession } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
-import { orderCreateCommand, initialOrderResult } from './order.schema.js'
 import { buildOrderSnapshot } from './order-snapshot.service.js'
 import { orderModels } from './order.model.js'
 import { verifyOrderPersistence } from './order.persistence.js'
+import { initialOrderResult, orderCreateCommand } from './order.schema.js'
 // REQUIRED checkout coordinator capability. In THIS transaction it must authorize current
 // principal/consent, bind the intended order/intent, consume its valid quote and coordinate
 // durable intent outcome. Real allocations/payment intent must join before outer commit.
@@ -132,6 +132,68 @@ export function checkoutOrderReadAccess(connection: Connection) {
       fulfillmentStatus: row.fulfillmentStatus,
       paymentMethod: row.paymentMethod,
       revision: row.revision,
+      placedAt: row.placedAt.toISOString(),
+      finalTotalPoisha: row.pricingSnapshot.finalTotalPoisha,
+      currency: row.pricingSnapshot.currency,
+      ...(row.fulfillmentHold ? { fulfillmentHold: row.fulfillmentHold } : {}),
     }
+  }
+}
+
+// Initial checkout allocation only. Payment commits and cancellation/release need their own
+// durable eligibility capability; this access deliberately cannot authorize those later transitions.
+export function initialOrderAllocationAccess(connection: Connection) {
+  const { orders } = orderModels(connection)
+  return {
+    async authorize(session: ClientSession, orderId: string, generation: number, action: string) {
+      if (!session.inTransaction() || generation !== 1 || !['cod', 'hold'].includes(action))
+        throw new ApiError('STATE_CONFLICT')
+      const row = await orders.findOneAndUpdate(
+        {
+          _id: orderId,
+          fulfillmentStatus: 'pending',
+          paymentMethod: action === 'cod' ? 'cod' : 'online',
+          confirmedAt: { $exists: false },
+          shippedAt: { $exists: false },
+          cancelledAt: { $exists: false },
+          revision: { $lt: Number.MAX_SAFE_INTEGER },
+        },
+        { $inc: { revision: 1 } },
+        { session, returnDocument: 'after' },
+      )
+      if (!row) throw new ApiError('STATE_CONFLICT')
+      const items = row.items.map((item) => ({
+        id: item.id.toHexString(),
+        variantId: item.variantId.toHexString(),
+        quantity: item.quantity,
+        couponEligible: item.couponEligible,
+        regularUnitPoisha: item.regularUnitPoisha,
+        effectiveUnitPoisha: item.effectiveUnitPoisha,
+      }))
+      return {
+        orderId,
+        generation,
+        ...(row.userId ? { userId: row.userId.toHexString() } : {}),
+        pricing: {
+          items,
+          deliveryChargePoisha: row.pricingSnapshot.deliveryChargePoisha,
+        },
+        ...(row.couponSnapshot
+          ? {
+              coupon: {
+                couponId: row.couponSnapshot.couponId.toHexString(),
+                code: row.couponSnapshot.code,
+                type: row.couponSnapshot.type,
+                value: row.couponSnapshot.value,
+                version: row.couponSnapshot.termsVersion,
+                discountPoisha: row.couponSnapshot.discountPoisha,
+                eligibleLineIds: row.items
+                  .filter((item) => item.couponEligible)
+                  .map((item) => item.id.toHexString()),
+              },
+            }
+          : {}),
+      }
+    },
   }
 }

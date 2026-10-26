@@ -140,6 +140,7 @@ function openOperation(op: Operation) {
         : {}),
     },
   }
+  if (op.replayStatus) responses[op.replayStatus] = responses[op.status]
   for (const status of [
     ...new Set(Object.values(errorDefinitions).map((item) => item.status)),
   ].sort()) {

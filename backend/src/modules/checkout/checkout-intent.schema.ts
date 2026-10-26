@@ -19,6 +19,15 @@ export const checkoutOrderOutcome = z.strictObject({
   fulfillmentStatus,
   paymentMethod: z.enum(['online', 'cod']),
   revision: z.int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+  placedAt: z.iso.datetime({ offset: true }).optional(),
+  finalTotalPoisha: z.int().nonnegative().max(Number.MAX_SAFE_INTEGER).optional(),
+  currency: z.literal('BDT').optional(),
+  paymentStatus: z
+    .enum(['pending', 'paid', 'failed', 'cancelled', 'partially_refunded', 'refunded'])
+    .optional(),
+  fulfillmentHold: z
+    .enum(['none', 'payment_pending', 'risk_review', 'allocation_shortfall', 'admin_review'])
+    .optional(),
 })
 const digest = (value: string) => createHash('sha256').update(value).digest('hex')
 export function checkoutKeyHash(raw: unknown) {
@@ -32,3 +41,24 @@ export function checkoutSubmissionFingerprint(raw: unknown) {
   input.acceptedPolicyVersionIds.sort()
   return digest(JSON.stringify(input))
 }
+
+export const checkoutOrderSummary = z.strictObject({
+  id: quoteId,
+  orderNumber: z.string().min(1).max(64),
+  fulfillmentStatus,
+  paymentStatus: z.enum([
+    'pending',
+    'paid',
+    'failed',
+    'cancelled',
+    'partially_refunded',
+    'refunded',
+  ]),
+  finalTotalPoisha: z.int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+  currency: z.literal('BDT'),
+  placedAt: z.iso.datetime({ offset: true }),
+  fulfillmentHold: z
+    .enum(['none', 'payment_pending', 'risk_review', 'allocation_shortfall', 'admin_review'])
+    .optional(),
+})
+export const checkoutSubmitResult = z.strictObject({ order: checkoutOrderSummary })

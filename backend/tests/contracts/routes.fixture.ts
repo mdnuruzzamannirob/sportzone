@@ -105,7 +105,7 @@ export function registeredRouter() {
       sessions,
     ),
     deliveryAreaRoutes(unused, []),
-    checkoutRoutes({ create: unused }, security, guard),
+    checkoutRoutes({ create: unused }, security, guard, { submitWithOutcome: unused }),
     deliveryRoutes(
       {
         zones: unused,

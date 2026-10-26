@@ -1,5 +1,5 @@
-import { AsyncLocalStorage } from 'node:async_hooks'
 import type { ClientSession, Connection } from 'mongoose'
+import { AsyncLocalStorage } from 'node:async_hooks'
 import { DatabaseError } from '../errors/database-error.js'
 
 const scope = new AsyncLocalStorage<boolean>()

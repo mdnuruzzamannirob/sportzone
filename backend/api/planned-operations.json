@@ -363,7 +363,7 @@
       "path": "/checkout/orders",
       "success": "201 (replay 200)",
       "operationId": "post_checkout_orders",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",

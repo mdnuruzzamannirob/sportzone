@@ -47,7 +47,8 @@ export function createNotificationPersistence(connection: Connection, model: Not
           ) &&
           !isDeepStrictEqual(existing.options?.validator, foundationNotificationValidator) &&
           !isDeepStrictEqual(existing.options?.validator, passwordResetNotificationValidator) &&
-          !isDeepStrictEqual(existing.options?.validator, emailChangeNotificationValidator)
+          !isDeepStrictEqual(existing.options?.validator, emailChangeNotificationValidator) &&
+          !isDeepStrictEqual(existing.options?.validator, adminResetNotificationValidator)
         )
           throw new Error('Notification collection requires reviewed migration.')
         await connection.db.command({
@@ -223,7 +224,7 @@ export const emailChangeNotificationValidator = {
 }
 
 // P03-012 adds an admin-specific reset template without changing challenge purpose.
-export const registrationNotificationValidator = {
+export const adminResetNotificationValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -267,6 +268,55 @@ export const registrationNotificationValidator = {
           eventType: 'email_change',
           templateVersion: 'email-change-v1',
           'payload.challengeId': { $type: 'objectId' },
+        },
+      ],
+    },
+  ],
+}
+
+// Additive checkout receipt event; retain every exact known predecessor for explicit migration.
+export const registrationNotificationValidator = {
+  $and: [
+    {
+      $jsonSchema: {
+        ...foundationNotificationValidator.$jsonSchema,
+        required: foundationNotificationValidator.$jsonSchema.required.filter(
+          (field) => field !== 'userId',
+        ),
+        properties: {
+          ...foundationNotificationValidator.$jsonSchema.properties,
+          orderId: { bsonType: 'objectId' },
+          eventType: { enum: ['registration', 'password_reset', 'email_change', 'order_received'] },
+          templateVersion: {
+            enum: [
+              'registration-v1',
+              'password-reset-v1',
+              'email-change-v1',
+              'admin-password-reset-v1',
+              'order-received-v1',
+            ],
+          },
+          payload: {
+            bsonType: 'object',
+            additionalProperties: false,
+            properties: { challengeId: { bsonType: 'objectId' } },
+          },
+        },
+      },
+    },
+    {
+      $or: [
+        {
+          eventType: 'order_received',
+          templateVersion: 'order-received-v1',
+          orderId: { $type: 'objectId' },
+          'payload.challengeId': { $exists: false },
+        },
+        {
+          $and: [
+            { userId: { $type: 'objectId' }, orderId: { $exists: false } },
+            adminResetNotificationValidator.$and[1],
+          ],
         },
       ],
     },

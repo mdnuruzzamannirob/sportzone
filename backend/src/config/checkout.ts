@@ -11,13 +11,17 @@ export const checkoutOptions = z.strictObject({
     .refine((v) => new Set(v).size === v.length && v.includes('terms')),
 })
 export type CheckoutOptions = z.infer<typeof checkoutOptions> & {
+  codEnabled?: boolean
   deadline?: Awaited<ReturnType<typeof loadDeliveryDeadlinePolicy>>
 }
 export async function loadCheckoutOptions(
   env: NodeJS.ProcessEnv,
 ): Promise<CheckoutOptions | undefined> {
-  if (env.CHECKOUT_QUOTES_ENABLED === undefined || env.CHECKOUT_QUOTES_ENABLED === 'false')
+  if (env.CHECKOUT_QUOTES_ENABLED === undefined || env.CHECKOUT_QUOTES_ENABLED === 'false') {
+    if (env.CHECKOUT_COD_ENABLED && env.CHECKOUT_COD_ENABLED !== 'false')
+      throw new ConfigurationError(['checkout_submission_configuration'])
     return undefined
+  }
   try {
     if (
       env.CHECKOUT_QUOTES_ENABLED !== 'true' ||
@@ -25,11 +29,20 @@ export async function loadCheckoutOptions(
       !/^[1-9]\d*$/.test(env.CHECKOUT_QUOTE_TTL_SECONDS ?? '')
     )
       throw new Error()
+    if (
+      env.CHECKOUT_COD_ENABLED !== undefined &&
+      !['true', 'false'].includes(env.CHECKOUT_COD_ENABLED)
+    )
+      throw new Error()
     const options = checkoutOptions.parse({
       quoteTtlSeconds: Number(env.CHECKOUT_QUOTE_TTL_SECONDS),
       requiredPolicyTypes: env.CHECKOUT_REQUIRED_POLICY_TYPES?.split(','),
     })
-    return { ...options, deadline: await loadDeliveryDeadlinePolicy(env) }
+    return {
+      ...options,
+      codEnabled: env.CHECKOUT_COD_ENABLED === 'true',
+      deadline: await loadDeliveryDeadlinePolicy(env),
+    }
   } catch {
     throw new ConfigurationError(['checkout_quote_configuration'])
   }

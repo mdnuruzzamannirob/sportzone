@@ -921,6 +921,12 @@ references for renewed consent.
 guest browser context). Resolve an existing intent first, even when its quote has since expired/been consumed. For a new intent, in one transaction conditionally consume the open quote and create `checkoutIntents`, immutable order snapshot/consent digest and `orderItemBalances`, then
 either COD **committed** inventory/coupon or online **15-minute held** stock/coupon. Save one order per key before
 returning. A same-key replay returns the same operation resource/result; different payload is `409 IDEMPOTENCY_CONFLICT`.
+The current COD runtime is opt-in with `CHECKOUT_COD_ENABLED` and quote/customer-auth prerequisites.
+Its successful submission returns `201`, while the same scoped intent replay returns `200`, both with
+`{order:OrderSummary}`. Order and payment summaries remain Pending at COD placement; no receipt,
+Paid state or confirmation is fabricated. Online submission remains inactive until its owning payment
+integration; all required launch channels remain release requirements. Order receipt is a durable
+notification intent; asynchronous commerce delivery is integrated separately.
 Checkout submission keys contain 1–128 printable ASCII characters without spaces; clients generate
 opaque random keys and preserve them verbatim across retries. Persist only their SHA-256 hash.
 Canonical submission fingerprints normalize validated fields and set ordering; retries resolve their

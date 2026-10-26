@@ -1,3 +1,5 @@
+import { checkoutIntentService } from './modules/checkout/checkout-intent.service.js'
+import { checkoutCompletion } from './modules/checkout/checkout-completion.service.js'
 import { deliveryAreaRoutes } from './modules/delivery/delivery.routes.js'
 import { deliveryAreasAccess } from './modules/delivery/delivery-coverage.service.js'
 import type { CheckoutOptions } from './config/checkout.js'
@@ -209,26 +211,31 @@ export async function composeIdentityRoutes(
   if (checkout) {
     if (!config.CUSTOMER_AUTH_ENABLED)
       throw new Error('Customer authentication required for checkout quotes.')
+    const access = checkoutAccess(auth.customerAccounts, auth.security)
+    const quotes = checkoutQuoteService(
+      connection,
+      access,
+      {
+        catalog: catalogCheckoutAccess(connection),
+        delivery: checkoutDeliveryAccess(connection),
+        settings: checkoutSettingsAccess(connection, checkout.requiredPolicyTypes),
+        deadline: createDeliveryDeadlineService(checkout.deadline),
+        coupon: couponQuoteAccess(connection),
+        methods: paymentEligibility(),
+      },
+      {
+        quoteTtlSeconds: checkout.quoteTtlSeconds,
+        requiredPolicyTypes: checkout.requiredPolicyTypes,
+      },
+    )
     auth.router.use(
       checkoutRoutes(
-        checkoutQuoteService(
-          connection,
-          checkoutAccess(auth.customerAccounts, auth.security),
-          {
-            catalog: catalogCheckoutAccess(connection),
-            delivery: checkoutDeliveryAccess(connection),
-            settings: checkoutSettingsAccess(connection, checkout.requiredPolicyTypes),
-            deadline: createDeliveryDeadlineService(checkout.deadline),
-            coupon: couponQuoteAccess(connection),
-            methods: paymentEligibility(),
-          },
-          {
-            quoteTtlSeconds: checkout.quoteTtlSeconds,
-            requiredPolicyTypes: checkout.requiredPolicyTypes,
-          },
-        ),
+        quotes,
         auth.security,
         auth.throttle.middleware('customer', 'checkout'),
+        checkout.codEnabled
+          ? checkoutIntentService(connection, access, quotes, checkoutCompletion(connection))
+          : undefined,
       ),
     )
   }

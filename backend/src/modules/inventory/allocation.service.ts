@@ -1,7 +1,7 @@
 import type { ClientSession, Connection, HydratedDocument } from 'mongoose'
 import type { z } from 'zod'
 import { ApiError } from '../../shared/errors/app-error.js'
-import type { variantStockAccess } from '../catalog/variants/variant.service.js'
+import { variantStockAccess } from '../catalog/variants/variant.service.js'
 import { allocationInput, stockSnapshot } from './inventory.schema.js'
 import {
   inventoryMovementModel,
@@ -22,7 +22,7 @@ type Action =
 // eligibility in THIS transaction and abort it on any error; no nested transaction is opened here.
 export function allocationService(
   connection: Connection,
-  stock: ReturnType<typeof variantStockAccess>,
+  stock: ReturnType<typeof variantStockAccess> = variantStockAccess(connection),
   clock: () => Date = () => new Date(),
 ) {
   const reservations = inventoryReservationModel(connection)

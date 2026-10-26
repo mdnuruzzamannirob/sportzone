@@ -374,6 +374,29 @@ metadata works without a media provider; image writes additionally require expli
 Preserve category/media references and audit on rollback; deploy matching router/registry/generated artifacts
 together. Do not delete referenced data or use image replacement as an external provider delete operation.
 
+COD submission additionally requires `CHECKOUT_COD_ENABLED=true`; the default is false. It requires
+quote activation and customer authentication, current approved consent/deadline rules and reviewed
+order/intent/inventory/coupon/payment/notification persistence. Unsupported or malformed activation
+fails configuration validation. Startup never provisions collections or activates merchant channels.
+
+After build, `node --env-file=.env backend/scripts/bootstrap-checkout-submit.mjs` additively provisions
+the approved checkout collections/indexes in local/test only. Catalog, current coverage/settings and
+published policy prerequisites remain their owning procedures; no business settings are seeded. This
+explicit bootstrap also migrates only exact known predecessor notification validators, preserving all
+account/proof delivery evidence and adding order_received for guest/registered buyers. Unknown schema
+drift and staging/production are refused. The expanded validator must remain while new events exist;
+application rollback must not delete events or blindly restore an older incompatible validator.
+
+COD commits stock/coupon, Pending order/payment and one order_received intent in the same transaction.
+An uncertain browser response is retried with its original key; inspect current durable outcome before
+any recovery. Missing notification/payment/index readiness rolls back commerce effects. Monitor 409,
+429/503 and allocation/readiness failures using safe route/correlation codes, never buyer data or keys.
+Payment aggregate creation records zero verified funds and no paymentCollections/paymentAttempts.
+Queued order_received events are not claimed by registration/proof workers; commerce delivery belongs
+to P06-016. Online creation is private only, with shared 15-minute generation clocks and no provider
+call/public activation. Automatic expiry remains P06-010; do not enable online submission before its
+payment/expiry/reconciliation integrations and qualified compliance gates are accepted.
+
 Checkout quote runtime is opt-in: `CHECKOUT_QUOTES_ENABLED=true` requires `CUSTOMER_AUTH_ENABLED=true`,
 explicit `CHECKOUT_QUOTE_TTL_SECONDS` (1–86,400; technical bound, no operating default) and comma-separated
 `CHECKOUT_REQUIRED_POLICY_TYPES` (distinct PolicyType values including terms). The operator approves
@@ -393,9 +416,9 @@ After backend build, `node --env-file=.env backend/scripts/bootstrap-orders.mjs`
 canonical orders/orderItemBalances collections, strict validators and declared indexes in local/test
 only. It refuses existing validator drift and staging/production; it never repairs incompatible
 collections or deletes historical data. Runtime creation checks persistence readiness. Rollback must
-retain orders, unit balances and audit evidence. This private foundation enables no submission route:
-the owning checkout coordinator must atomically authorize current consent, consume the quote, persist
-the intent and coordinate allocations/payment before committing an order.
+retain orders, unit balances and audit evidence. This foundation requires explicit submission activation:
+the checkout coordinator atomically authorizes current consent, consumes the quote, persists
+the intent and coordinates allocations/pending payment before committing an order.
 
 After backend build, `node --env-file=.env backend/scripts/bootstrap-checkout-intents.mjs` provisions
 the canonical durable checkout identity registry in local/test only. It installs strict validators and
@@ -405,8 +428,8 @@ intents or tombstones to resolve a retry, expire them with TTL, or rotate a key 
 uncertain response. `replayUntil` affects no uniqueness/retention guarantee; replay reads current owned
 order state without revalidating an expired/consumed quote. Missing linked orders or stranded preparing
 records require investigation and safe reconciliation, not blind resubmission. Preserve registry,
-quotes, orders and audit across rollback/restore. No submission HTTP route is enabled by this private
-boundary; production allocation/payment/notification completion remains required before activation.
+quotes, orders and audit across rollback/restore. The COD route requires its explicit activation and
+combined completion boundary; online submission and provider/reconciliation integrations remain gated.
 
 Quote generation commits only its scope-bound quote and ordinary authorization fences; it does not
 reserve stock/coupons, create orders or invoke providers. GET /delivery/areas is public bounded advisory
@@ -420,8 +443,9 @@ guest access; quote lifetime does not extend its credential.
 Default online eligibility is closed until the owning payment integration supplies verified durable
 merchant/provider capability and amount bounds. Setting online flags cannot authorize collection or
 waive required initial-release channels. Roll back matching quote routes/contracts/capabilities together,
-retain private consent snapshots/digests, and leave existing orders/financial evidence intact. Submission
-intent/consumption, actual provider sessions and integrated release acceptance remain owning later tasks.
+retain private consent snapshots/digests, and leave existing orders/financial evidence intact. COD
+intent/consumption and allocation use the reviewed combined coordinator. Actual provider sessions and
+integrated release acceptance remain owning later tasks.
 
 Delivery management uses `node --env-file=.env backend/scripts/bootstrap-delivery.mjs` after a backend
 build, in local/test only. It adds delivery indexes and audit persistence without seeding zones, charge

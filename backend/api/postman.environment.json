@@ -362,6 +362,12 @@
       "type": "secret"
     },
     {
+      "key": "post_checkout_ordersBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
       "key": "post_checkout_quotesBody",
       "value": "",
       "enabled": true,

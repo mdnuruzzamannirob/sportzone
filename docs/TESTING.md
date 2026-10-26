@@ -598,6 +598,17 @@ and order/stock/coupon atomic acceptance remain the later submission coordinator
 
 ### 10.3 Required order/delivery assertions
 
+Combined checkout assertions exercise the real quote/identity/current-commerce boundaries with
+transaction-capable MongoDB. COD requires 201 creation/200 replay, Pending fulfillment/payment, exact
+stock/coupon commitment, one order_received intent and no unverified receipt/provider attempt. Cover
+Origin/CSRF/session/role, malformed/client financial input, duplicate submissions, independent last-SKU
+and final-coupon races, and late notification failure rolling back all effects. Online foundation
+asserts identical heldAt/expiresAt across every SKU/coupon, a fresh 15-minute window per generation,
+no replay extension, guarded commit/release and rollback of partial movement effects. Synthetic later
+payment/cancellation authority fixtures do not prove production provider/cancellation approval.
+Verify root activation/default-off behavior, compiled additive checkout bootstrap/production refusal,
+payment summary caps and additive notification migration retaining previous account/proof events.
+
 Checkout intent checks assert same-key canonical replay before quote expiry/current commercial reads,
 changed-payload conflict, same-quote/different-key exclusion, concurrent one-order creation, and atomic
 rollback of intent/consent/order/balances/audit. Replay after `replayUntil` returns the current authorized
