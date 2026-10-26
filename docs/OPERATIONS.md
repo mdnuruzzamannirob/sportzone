@@ -396,6 +396,25 @@ end boundaries, lineage, replay records, global/zone fences and audit. Never rew
 snapshots or roll commercial prices backward by editing history. Real operator coverage/amounts,
 scheduler deployment and legal deadlines remain separately approved operational inputs.
 
+Delivery deadline technical preflight is `node --env-file=.env backend/scripts/check-delivery-deadline.mjs`
+after a backend build. Optional `DELIVERY_DEADLINE_POLICY_FILE` names a protected read-only JSON
+`{rule,review}` manifest with the exact format in Database §7.2. Missing/inactive configuration produces
+under_review and nonzero exit; malformed, oversized (>100 KB), future-review or digest-mismatched input
+produces a sanitized error. No database, network, new collection or seed is required. The digest is
+computed by the owning `deliveryDeadlineDigest` service over normalized rule JSON; it is not a signature
+or an independent legal approval. A successful preflight proves technical eligibility of supplied
+configuration only. Do not treat synthetic fixtures or reviewer strings as real approval evidence.
+
+Before installing a real manifest, the store owner/authorized policy approver must retain qualified
+current review of applicable legal deadlines, start events and operator policy (EXT-07/EXT-08), approve
+the exact rule and identify its evidence reference/reviewer/date. Keep the manifest writable only by
+the authorized operator; retain old evidence and immutable order bases. Replace/reload future rules
+through reviewed configuration, never by rewriting accepted snapshots. No real manifest is supplied by
+the repository. This preflight/domain capability does not yet configure a running checkout/order API;
+those owning features must integrate snapshot capture and actual-event confirmation guards. Missing
+review blocks affected final publication/acceptance. ETA or exception handling must preserve existing
+commitments and use the owning order CAS/audit/customer-notification path when implemented.
+
 Store settings/policy persistence uses `node --env-file=.env backend/scripts/bootstrap-settings.mjs`
 after a backend build, in local/test only. Supply explicit approved `STORE_INITIAL_LOW_STOCK_THRESHOLD`
 (nonnegative safe integer); there is no default. Additive indexes and the unique primary singleton

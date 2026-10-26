@@ -588,7 +588,14 @@ Each scenario follows: **Fixture / action → expected HTTP+business outcome →
 
 ### 10.3 Required order/delivery assertions
 
-For `ORD-06`, compare `placedAt`, actual `confirmedAt`, snapshotted `deadlineBasis`, `targetDeadlineAt`, applicable `legalDeadlineAt` and final `effectiveDeadlineAt` per Database §7.2 and API §11.3. The ordinary target is 14 **calendar** days from confirmation unless an approved rule differs; any statutory cap requires an approved start event. If those decisions are missing, assert a correctly disclosed pending/under-review commitment rather than inventing a legal date.
+For `ORD-06`, compare `placedAt`, actual `confirmedAt`, snapshotted `deadlineBasis`, `targetDeadlineAt`, applicable `legalDeadlineAt` and final `effectiveDeadlineAt` per Database §7.2 and API §11.3. The ordinary target is 14 **calendar** days from confirmation unless an approved rule differs; any statutory cap requires an approved start event. If those decisions are missing, assert a correctly disclosed pending/under-review commitment rather than inventing a legal date. Additional boundary checks cover exact
+rule-digest binding, protected manifest parsing and compiled preflight, future/expired/missing review,
+actual event ordering, leap/year/offset arithmetic, nonexistent timezone wall times and immutable bases
+across later configuration changes. A known placement cap may appear before confirmation without a
+fabricated target/effective date. Earlier caps remain earlier even when overdue; estimates never extend
+them. These isolated cases do not prove qualified legal review, persisted order transitions or notification
+operations; retain those acceptance gates separately.
+
 
 ---
 

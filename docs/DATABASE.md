@@ -866,6 +866,21 @@ current product prices. Line identifiers and unit ordinals are stable across cla
 
 **Indexes:** unique `{orderNumber:1}`, unique `{checkoutIntentId:1}`; `{userId:1,placedAt:-1}`, `{fulfillmentStatus:1,placedAt:-1}`, `{customerSnapshot.emailNormalized:1,orderNumber:1}` (internal lookup only).
 
+**Deadline basis representation:** the immutable `deliverySnapshot.deadlineBasis` is
+`{rule,review,capturedAt}`. `rule` contains `{version,timezone:'Asia/Dhaka',effectiveFrom,effectiveTo?,
+target:{startEvent:'confirmedAt',calendarDays},estimate?:{startEvent,calendarDays},legalCaps[]}`;
+each cap is `{ruleRef,startEvent:'placedAt'|'confirmedAt',calendarDays}`. Require an explicit reviewed
+cap list (maximum 10 distinct references); an empty list means an independently reviewed no-additional-cap
+determination, never a default inferred from missing legal review. Durations are bounded integers
+1–3,660 calendar days (a technical bound, not a legal rule); references at most 2,000 characters and
+versions at most 100. `review:{evidenceRef,approvedAt,approvedBy,ruleDigest}` binds SHA-256 of canonical
+normalized rule JSON in validator field order. Require a nonfuture review and a rule effective at the
+server's capturedAt. Digest matching provides integrity, not proof of legal applicability or approval.
+The operator retains underlying qualified review evidence separately. Keep review metadata private.
+Calendar arithmetic preserves Asia/Dhaka wall-clock time using runtime timezone data; ambiguous or
+nonexistent local times fail closed rather than guessing. If review requires a non-calendar-day basis,
+change and verify the owning contract before enabling it; do not approximate it in this format.
+
 **Rules — delivery timing:** capture the approved delivery **rule basis** and charge at checkout, not a guessed 14-day
 absolute deadline. Upon the actual `confirmedAt` transition, set `targetDeadlineAt = confirmedAt + 14 calendar days`
 (unless the approved rule differs). A verified legal cap may start at a distinct documented event (including placement):

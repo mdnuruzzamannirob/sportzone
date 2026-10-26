@@ -946,6 +946,26 @@ The admin accepts/rejects after checking `pending/confirmed`, or `processing` wi
 - **Read/late updates:** return `{status,startEventAt?,targetDeadlineAt?,legalCapAt?,effectiveAt?}` and a distinct changeable `deliveryEstimate`. When no authorized event/rule exists, omit unavailable date fields and return `awaiting_start` or `under_review`, never a fictional firm date. Notify of changed estimates; log deadline-affecting policy corrections without overwriting snapshots.
 - **Boundary:** changing future charges or policies does not alter an accepted order's charge/rule snapshot. Fulfillment updates are manual (no courier/GPS integration). Legal applicability/start events must be approved before launch (API §§11.3, 14.3).
 
+**Deadline policy boundary:** `startEvent` uses the actual event field name `confirmedAt`; legal caps
+may independently start at `placedAt` or `confirmedAt`. No configured eligible basis returns
+`{status:'under_review',startEvent:'confirmedAt',ruleVersion:'unconfigured'}` without absolute dates.
+The reserved `unconfigured` value is not a policy version and cannot authorize checkout/confirmation.
+Approved configuration binds an immutable rule, review reference/digest and capture time (Database
+§7.2); new checkout capture rejects absent, future, expired or digest-mismatched rules. Existing accepted
+snapshots remain evaluated against their captured rule even after future configuration changes/expiry.
+Malformed, future or contradictory actual event timestamps expose under_review with no definitive dates.
+Before the target start, awaiting_start may expose a separately calculated legalCapAt when its real
+start event exists, but it cannot invent targetDeadlineAt/effectiveAt. Once all required events exist,
+effectiveAt is the earlier target/applicable cap; a late read or delayed confirmation never resets a
+past legal cap. Calculated timing alone does not authorize stock, funding or fulfillment transitions.
+
+An optional approved estimate basis is projected separately as deliveryEstimate after its actual start;
+it never postpones an effective deadline. ETA/exception updates do not change the accepted basis, waive
+legal caps or authorize automatic inventory/coupon effects. Actual order CAS/audit/notification and
+exception operations remain their owning order-service contracts. Rule/review metadata (reviewer,
+evidence reference and digest) is internal; public projections use only the DeliveryDeadline allowlist.
+
+
 ## 12. Payments, COD & gateway callbacks
 
 ### 12.1 Payment surfaces and statuses

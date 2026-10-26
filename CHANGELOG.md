@@ -8,6 +8,14 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 26 October 2026 — Delivery deadline policy boundary (local capability)
+
+- Added immutable reviewed-rule capture, actual-event deadline/independent-cap arithmetic, separate
+  estimates and safe under-review states. Added protected manifest validation and compiled technical
+  preflight with no default legal rule. Qualified policy sign-off remains missing; no checkout/order
+  API, confirmation mutation or legal approval is claimed.
+  [Verification and blocked acceptance](docs/evidence/P06-003-delivery-deadline-boundary.md).
+
 ## 26 October 2026 — Delivery zone and charge management
 
 - Added protected zone/charge APIs, the canonical store-wide coverage guard, immutable commercial
