@@ -888,56 +888,56 @@
       "path": "/admin/delivery/zones",
       "success": "200",
       "operationId": "get_admin_delivery_zones",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/delivery/zones",
       "success": "201",
       "operationId": "post_admin_delivery_zones",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "PATCH",
       "path": "/admin/delivery/zones/{zoneId}",
       "success": "200",
       "operationId": "patch_admin_delivery_zones_zoneId",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/delivery/charges",
       "success": "200",
       "operationId": "get_admin_delivery_charges",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/delivery/charges",
       "success": "201",
       "operationId": "post_admin_delivery_charges",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/delivery/charges/{chargeId}/activate",
       "success": "200",
       "operationId": "post_admin_delivery_charges_chargeId_activate",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/delivery/charges/{chargeId}/supersede",
       "success": "200",
       "operationId": "post_admin_delivery_charges_chargeId_supersede",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/delivery/charges/{chargeId}/deactivate",
       "success": "200",
       "operationId": "post_admin_delivery_charges_chargeId_deactivate",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",

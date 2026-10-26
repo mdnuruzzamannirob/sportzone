@@ -374,6 +374,28 @@ metadata works without a media provider; image writes additionally require expli
 Preserve category/media references and audit on rollback; deploy matching router/registry/generated artifacts
 together. Do not delete referenced data or use image replacement as an external provider delete operation.
 
+Delivery management uses `node --env-file=.env backend/scripts/bootstrap-delivery.mjs` after a backend
+build, in local/test only. It adds delivery indexes and audit persistence without seeding zones, charge
+amounts or coverage. Provision the canonical primary settings singleton first through its own bootstrap.
+Missing settings or index drift prevents delivery writes; HTTP/worker startup never repairs persistence.
+Staging/production index rollout requires separate operator review; existing conflicting coverage must
+be reconciled before adding the active-key partial unique index. Do not erase old charge versions.
+
+Schedule `node --env-file=.env backend/scripts/activate-delivery.mjs` with the approved worker scheduler.
+Each batch handles at most 100 due items, expires closed windows and activates due schedules behind the
+same store-wide guard as HTTP mutations. Disabled scheduled zones do not consume every batch slot;
+re-enable a zone only after reviewing its retained windows. Concurrent runs are safe, and failed
+transactions roll back their window/fence/audit effects. Monitor `delivery_activation_batch` counts,
+nonzero exits and due active-zone backlog. A failed batch remains retryable after investigation;
+public coverage fails closed until a valid active rule is present. Effective boundary gaps during
+worker delay do not justify using an expired or merely scheduled charge. API key/actor/payload-bound
+retries return original snapshots; avoid generating a new key to blindly repeat a command.
+
+Rollback matching delivery routes/services/contracts together, preserving charge versions, configured
+end boundaries, lineage, replay records, global/zone fences and audit. Never rewrite accepted order
+snapshots or roll commercial prices backward by editing history. Real operator coverage/amounts,
+scheduler deployment and legal deadlines remain separately approved operational inputs.
+
 Store settings/policy persistence uses `node --env-file=.env backend/scripts/bootstrap-settings.mjs`
 after a backend build, in local/test only. Supply explicit approved `STORE_INITIAL_LOW_STOCK_THRESHOLD`
 (nonnegative safe integer); there is no default. Additive indexes and the unique primary singleton

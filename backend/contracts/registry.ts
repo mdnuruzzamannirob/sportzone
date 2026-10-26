@@ -1,4 +1,19 @@
 import {
+  zoneInput,
+  zonePatch,
+  zoneView,
+  zoneParams,
+  zoneQuery,
+  chargeInput,
+  chargeView,
+  chargeQuery,
+  chargeParams,
+  chargeActivate,
+  chargeDeactivate,
+  chargeSupersede,
+  chargeReplacement,
+} from '../src/modules/delivery/delivery.schema.js'
+import {
   settingsPatch,
   settingsView,
   publicContact,
@@ -174,6 +189,106 @@ const identities: Operation[] = identity.operations
 
 export const operations: readonly Operation[] = [
   ...identities,
+  ...(
+    [
+      {
+        method: 'GET',
+        path: '/admin/delivery/zones',
+        query: zoneQuery,
+        params: empty,
+        response: z.array(zoneView),
+        status: 200,
+        paginated: true,
+      },
+      {
+        method: 'POST',
+        path: '/admin/delivery/zones',
+        query: empty,
+        params: empty,
+        request: zoneInput,
+        response: zoneView,
+        status: 201,
+        etag: true,
+      },
+      {
+        method: 'PATCH',
+        path: '/admin/delivery/zones/{zoneId}',
+        query: empty,
+        params: zoneParams,
+        request: zonePatch,
+        response: zoneView,
+        status: 200,
+        etag: true,
+        ifMatch: true,
+      },
+      {
+        method: 'GET',
+        path: '/admin/delivery/charges',
+        query: chargeQuery,
+        params: empty,
+        response: z.array(chargeView),
+        status: 200,
+        paginated: true,
+      },
+      {
+        method: 'POST',
+        path: '/admin/delivery/charges',
+        query: empty,
+        params: empty,
+        request: chargeInput,
+        response: chargeView,
+        status: 201,
+        etag: true,
+      },
+      {
+        method: 'POST',
+        path: '/admin/delivery/charges/{chargeId}/activate',
+        query: empty,
+        params: chargeParams,
+        request: chargeActivate,
+        response: chargeView,
+        status: 200,
+        etag: true,
+        ifMatch: true,
+        idempotency: true,
+      },
+      {
+        method: 'POST',
+        path: '/admin/delivery/charges/{chargeId}/deactivate',
+        query: empty,
+        params: chargeParams,
+        request: chargeDeactivate,
+        response: chargeView,
+        status: 200,
+        etag: true,
+        ifMatch: true,
+        idempotency: true,
+      },
+      {
+        method: 'POST',
+        path: '/admin/delivery/charges/{chargeId}/supersede',
+        query: empty,
+        params: chargeParams,
+        request: chargeSupersede,
+        response: chargeReplacement,
+        status: 200,
+        etag: true,
+        ifMatch: true,
+        idempotency: true,
+      },
+    ] as const
+  ).map(
+    (op): Operation => ({
+      ...op,
+      access: 'admin',
+      namespace: 'admin',
+      csrf: op.method !== 'GET',
+      activation:
+        'ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.',
+      replay:
+        'Revision CAS, durable actor/payload/revision/key-bound command replay and store-wide delivery coverage serialization; immutable charge versions and transactional audit',
+    }),
+  ),
 
   ...(
     [

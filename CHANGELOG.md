@@ -8,6 +8,14 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 26 October 2026 — Delivery zone and charge management
+
+- Added protected zone/charge APIs, the canonical store-wide coverage guard, immutable commercial
+  versions, globally nonoverlapping windows and replay-safe supersession/closure. Added bounded
+  activation/expiry worker, additive local/test bootstrap and generated contracts. Transactions
+  cover window/zone/settings fences and audit; existing saved-address coverage remains compatible.
+  [Implementation, tests and operational limits](docs/evidence/P06-001-delivery-management.md).
+
 ## 26 October 2026 — Store settings and public content APIs
 
 - Added canonical settings bootstrap, protected contact/branding/banner/threshold/payment configuration,

@@ -1,3 +1,4 @@
+import { deliveryRoutes } from '../../src/modules/delivery/delivery.routes.js'
 import {
   settingsAdminRoutes,
   settingsPublicRoutes,
@@ -96,6 +97,19 @@ export function registeredRouter() {
         createVariant: unused,
         patchVariant: unused,
         deactivateVariant: unused,
+      },
+      security,
+      sessions,
+    ),
+    deliveryRoutes(
+      {
+        zones: unused,
+        createZone: unused,
+        patchZone: unused,
+        charges: unused,
+        createCharge: unused,
+        transition: unused,
+        runDue: unused,
       },
       security,
       sessions,

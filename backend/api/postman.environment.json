@@ -44,6 +44,12 @@
       "type": "default"
     },
     {
+      "key": "chargeId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "couponId",
       "value": "",
       "enabled": true,
@@ -140,6 +146,12 @@
       "type": "secret"
     },
     {
+      "key": "patch_admin_delivery_zones_zoneIdBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
       "key": "patch_admin_products_productIdBody",
       "value": "",
       "enabled": true,
@@ -225,6 +237,36 @@
     },
     {
       "key": "post_admin_coupons_couponId_deactivateBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_delivery_chargesBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_delivery_charges_chargeId_activateBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_delivery_charges_chargeId_deactivateBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_delivery_charges_chargeId_supersedeBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_delivery_zonesBody",
       "value": "",
       "enabled": true,
       "type": "secret"
@@ -411,6 +453,12 @@
     },
     {
       "key": "variantId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "zoneId",
       "value": "",
       "enabled": true,
       "type": "default"

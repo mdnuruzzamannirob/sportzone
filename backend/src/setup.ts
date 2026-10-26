@@ -1,3 +1,6 @@
+import { deliveryService } from './modules/delivery/delivery.service.js'
+import { deliveryRoutes } from './modules/delivery/delivery.routes.js'
+import { deliverySettingsGuard } from './modules/settings/delivery-settings.service.js'
 import type { Connection } from 'mongoose'
 import { createApp } from './app.js'
 import type { RuntimeConfig } from './config/env.js'
@@ -158,6 +161,19 @@ export async function composeIdentityRoutes(
           auth.adminAccounts,
           createAuditWriter(connection),
           mediaService,
+        ),
+        auth.security,
+        auth.sessions,
+      ),
+    )
+  if (config.ADMIN_AUTH_ENABLED)
+    auth.router.use(
+      deliveryRoutes(
+        deliveryService(
+          connection,
+          auth.adminAccounts,
+          deliverySettingsGuard(connection),
+          createAuditWriter(connection),
         ),
         auth.security,
         auth.sessions,

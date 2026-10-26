@@ -946,9 +946,10 @@ restock. Claim completion and payout confirmation are independent facts.
 | `deliveryCharges.ruleVersion`! | int | Explicit immutable commercial version used by order snapshot |
 | `deliveryCharges.revision`! / `supersedesChargeId`? | int / ObjectId | CAS for activation/end/supersession; predecessor lineage remains queryable |
 | `deliveryCharges.endedAt`? / `endedReason`? | Date / string | Audited effective-window closure; never change historical charge amount/coverage |
+| `deliveryCharges.operations[]` | embedded[] | At most three server-only replay records (activate/deactivate/supersede), each with action, key/request digests and original allowlisted rule response; supersession also retains previous-rule response. Never expose replay metadata |
 
 **Indexes:** partial unique `deliveryCharges {coverageKey:1}` for `status:'active'`; unique
-`{coverageKey:1,ruleVersion:1}`; `{zoneId:1,status:1,effectiveFrom:1}`. Use `storeSettings.deliveryCoverageRevision:int` (initialized to 0 on the unique `primary` singleton) as the **store-wide write-serialization guard**; retain `deliveryZones.coverageRevision` only as a per-zone change sequence.
+`{coverageKey:1,ruleVersion:1}`; `{zoneId:1,status:1,effectiveFrom:1}`; `{status:1,effectiveFrom:1}`, `{status:1,effectiveTo:1}` for bounded due work; `{createdAt:-1,_id:-1}` on zones/charges for admin lists. Use `storeSettings.deliveryCoverageRevision:int` (initialized to 0 on the unique `primary` singleton) as the **store-wide write-serialization guard**; retain `deliveryZones.coverageRevision` only as a per-zone change sequence.
 
 **Rules:** `effectiveFrom <= checkoutAt < effectiveTo` (or no upper bound) for selected active rule. Resolve exact area
 coverage before its district wildcard; never combine two rules. In every charge insert/schedule/activate/end/supersede or zone-status transaction, first conditionally increment the **same singleton** `storeSettings.deliveryCoverageRevision`, then update affected zones in stable ID order and reject any **overlapping** effective windows globally for that
@@ -966,7 +967,7 @@ windows and legal deadlines are operator-approved, not invented.
 The delivery-owned read-only coverage boundary checks saved-address eligibility against these existing
 collections. It neither seeds delivery data nor creates/changes delivery indexes or master records. Its transaction reads
 exact eligible coverage before an eligible district wildcard; multiple active exact candidates or an inactive selected
-zone fail closed. P06-001 still owns validated delivery masters, index rollout, global revision serialization and admin
+zone fail closed. The same delivery module owns validated delivery masters, additive index rollout, global revision serialization and admin
 changes. A saved address is not a quote or permission to reuse a historic charge at checkout.
 
 ### 7.7 `inventoryReservations` — `inventory`

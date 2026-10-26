@@ -1466,6 +1466,36 @@ rating or unfairly suppress valid negative feedback. Always audit decisions/reas
 - To **edit a charge**, use `supersede` to create a new immutable-priced version and close the predecessor's effective window in **one** store-wide-guarded transaction. Deactivation ends the window without replacement; subsequent checkout for uncovered areas fails closed. Activate a scheduled version only if it is effective and nonoverlapping. Compare each rule's `revision` and return updated `ETag`; stale state is `412`, overlaps `409 STATE_CONFLICT`. Scheduled future changes do not retroactively alter order snapshots.
 - No unsupported zone can be quoted. Legal deadline/coverage rules require operator approval before activation (Database §7.6).
 
+**Delivery execution details:** zone and charge lists use canonical pagination (default 20, maximum
+100) ordered by createdAt/ID descending; charge filters are `zoneId,status`. Zone writes and charge
+creation return strong revision ETags. Charge transition responses carry the affected rule ETag;
+supersession carries the predecessor's updated ETag and includes each rule's revision in the body.
+Canonical coverage keys use lowercase ASCII slug identifiers for each district/area (1–64 characters,
+letters/digits separated by single hyphens), joined by `:`; `*` is permitted only as the area component.
+Trim/lowercase keys at input; these are operator-supplied identifiers, not invented geographic coverage.
+Charges use nonnegative safe integer poisha. New charge windows cannot start before the server's
+operation time; future starts remain scheduled, while a start effective now may become active. A
+scheduled charge is activated only when due and its zone is active; an optional activation `effectiveAt`
+must equal its immutable effectiveFrom. Worker delay never permits guessing an unactivated charge.
+
+Supersession requires the same coverageKey, allows a different active zone and binds replacement
+`effectiveFrom` to `effectiveAt`. Closing a window must be nonretroactive, strictly after its start
+and cannot extend its original configured end. An explicitly closed boundary cannot subsequently
+move; an unchanged boundary may be reused for a replacement. Future closures keep the predecessor's
+current status until the boundary; the guarded worker ends it before activating the successor.
+Zone status changes preserve charge history and windows; an inactive exact zone never falls through
+to a district wildcard. All charge writes and zone-status changes acquire the canonical settings
+coverage guard before interval checks and update affected zone fences in stable ID order. The settings
+edit revision is independent. Missing singleton/indexes or exhausted counters fail closed.
+
+Activate/deactivate/supersede each retain one private durable replay identity and original response
+snapshot per charge. Keys bind actor, action, rule, normalized payload and original revision. Exact
+replays return the original result after later worker transitions; changed actor/payload/key conflicts
+fail without repeating domain effects. Global guard increments are serialization tokens, not public
+settings edits. Commercial amount, coverage, start and version are immutable; future edits create a
+new version allocated across the full key history, including inactive rules. Mutations and automatic
+expiry/activation audit commit together. There is no charge PATCH/DELETE or physical history deletion.
+
 **Coupons:**
 `CouponInput:{code,type,value,minEligibleSubtotalPoisha,startsAt,expiresAt,status,overallLimit?,perCustomerLimit?,eligibleProductIds?,eligibleCategoryIds?}`;
 `type=percentage` uses basis points `1..10000`, fixed uses poisha. No client edit to `heldCount`, `redeemedCount`,

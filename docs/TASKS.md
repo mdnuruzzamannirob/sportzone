@@ -130,14 +130,14 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |     21 |        0 |
 | 04 — Product Catalog and Inventory            |      20 |           8 |     0 |           0 |       1 |         0 |     11 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
-| 06 — Checkout, Orders, and Delivery Rules     |      22 |          22 |     0 |           0 |       0 |         0 |      0 |        0 |
+| 06 — Checkout, Orders, and Delivery Rules     |      22 |          21 |     0 |           0 |       0 |         0 |      1 |        0 |
 | 07 — Payment Integration and Verification     |      18 |          18 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 08 — Returns and Refunds                      |      19 |          19 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       1 |         0 |      1 |        0 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **127** | **0** | **0** | **2** | **0** | **81** | **0** |
+| **Total** | **210** | **126** | **0** | **0** | **2** | **0** | **82** | **0** |
 
 ## 4. Milestone tracker
 
@@ -1040,14 +1040,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
 
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 06. **Associated gate:** M3. **Tasks:** 22.
 
-- [ ] **P06-001 — Implement delivery zones and future-only charge settings**\
-  **Status:** `Not Started` · **Area:** Backend/delivery\
+- [x] **P06-001 — Implement delivery zones and future-only charge settings**\
+  **Status:** `Done` · **Area:** Backend/delivery · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-16; FR-28\
   **Depends on:** `P09-013`\
   **Deliverable:** Use the primary settings singleton established by P09-013 before delivery writes (Database §10.4); create district/area zone/charge schema and admin CRUD; acquire shared storeSettings.deliveryCoverageRevision before every charge/zone-status transaction, including cross-zone scheduling, supersession and activation.\
   **Acceptance:** Prices never negative; past orders unchanged; concurrent different-zone writers cannot approve overlapping windows for the same coverageKey. No zone-local guard substitutes for the global guard.\
-  **Evidence to attach:** Delivery setting and snapshot tests.
+  **Evidence:** [Delivery feature, verification and recovery](./evidence/P06-001-delivery-management.md). Project owner accepted on 26 October 2026: “done koro”. [Acceptance record](./evidence/P06-001-delivery-management.md#independent-acceptance). Actual checkout/order snapshot integration and operator/deployment/legal gates remain separate.
 
 - [ ] **P06-002 — Implement admin Delivery Settings and customer location selection**\
   **Status:** `Not Started` · **Area:** Storefront/delivery\
@@ -2466,3 +2466,7 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **26 October 2026 — P09-013:** Ready → In Progress → In Review. Delivered one settings/public-content backend feature: canonical bootstrap, protected settings/media/CAS, public contact, evidence-bound policy approval/publication/replay and scheduled activation. Owner delegated contact/evidence contract clarifications; no legal content approval inferred. [Observed verification and recovery](./evidence/P09-013-settings-public-content.md). Overall: 210 tasks, 80 Done, 127 Not Started, 2 Blocked and 1 In Review. Independent acceptance pending; real provider/staging, clients and milestone gates remain separate.
 
 **26 October 2026 — P09-013 acceptance:** In Review → Done after explicit project-owner instruction: “done koro”. [Acceptance record](./evidence/P09-013-settings-public-content.md#independent-acceptance). Overall: 210 tasks, 81 Done, 127 Not Started, 2 Blocked and zero In Review. Real legal/provider/staging, client-stage and milestone gates remain separate.
+
+**26 October 2026 — P06-001:** Not Started → In Progress → In Review. Implemented one delivery configuration backend feature: canonical zone/charge APIs, store-wide serialization, globally versioned nonoverlapping windows, transactional supersession/replay and bounded activation/expiry. [Observed verification and recovery](./evidence/P06-001-delivery-management.md). Overall: 210 tasks, 81 Done, 126 Not Started, 2 Blocked and 1 In Review. Independent acceptance pending; actual orders/checkout, clients, legal/operator/provider/staging and milestone gates remain separate.
+
+**26 October 2026 — P06-001 acceptance:** In Review → Done after explicit project-owner instruction: “done koro”. [Acceptance record](./evidence/P06-001-delivery-management.md#independent-acceptance). Overall: 210 tasks, 82 Done, 126 Not Started, 2 Blocked and zero In Review. Actual checkout/order integration, client stages, legal/operator/provider/staging and milestone gates remain separate.

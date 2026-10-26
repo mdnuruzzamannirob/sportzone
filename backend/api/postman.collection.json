@@ -506,6 +506,310 @@
       "response": []
     },
     {
+      "name": "get_admin_delivery_charges",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Replay: Revision CAS, durable actor/payload/revision/key-bound command replay and store-wide delivery coverage serialization; immutable charge versions and transactional audit. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/delivery/charges",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "zoneId",
+              "value": "{{zoneId}}",
+              "disabled": true
+            },
+            {
+              "key": "status",
+              "value": "{{status}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_delivery_charges. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_delivery_charges",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Replay: Revision CAS, durable actor/payload/revision/key-bound command replay and store-wide delivery coverage serialization; immutable charge versions and transactional audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/delivery/charges",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_delivery_charges. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_delivery_chargesBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_delivery_charges_chargeId_activate",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Replay: Revision CAS, durable actor/payload/revision/key-bound command replay and store-wide delivery coverage serialization; immutable charge versions and transactional audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/delivery/charges/{{chargeId}}/activate",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{ifMatch}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_delivery_charges_chargeId_activate. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_delivery_charges_chargeId_activateBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_delivery_charges_chargeId_deactivate",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Replay: Revision CAS, durable actor/payload/revision/key-bound command replay and store-wide delivery coverage serialization; immutable charge versions and transactional audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/delivery/charges/{{chargeId}}/deactivate",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{ifMatch}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_delivery_charges_chargeId_deactivate. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_delivery_charges_chargeId_deactivateBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_delivery_charges_chargeId_supersede",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Replay: Revision CAS, durable actor/payload/revision/key-bound command replay and store-wide delivery coverage serialization; immutable charge versions and transactional audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/delivery/charges/{{chargeId}}/supersede",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{ifMatch}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_delivery_charges_chargeId_supersede. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_delivery_charges_chargeId_supersedeBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_delivery_zones",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Replay: Revision CAS, durable actor/payload/revision/key-bound command replay and store-wide delivery coverage serialization; immutable charge versions and transactional audit. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/delivery/zones",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_delivery_zones. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_delivery_zones",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Replay: Revision CAS, durable actor/payload/revision/key-bound command replay and store-wide delivery coverage serialization; immutable charge versions and transactional audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/delivery/zones",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_delivery_zones. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_delivery_zonesBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "patch_admin_delivery_zones_zoneId",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Replay: Revision CAS, durable actor/payload/revision/key-bound command replay and store-wide delivery coverage serialization; immutable charge versions and transactional audit. No automatic mutation retry.",
+      "request": {
+        "method": "PATCH",
+        "url": {
+          "raw": "{{baseUrl}}/admin/delivery/zones/{{zoneId}}",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{ifMatch}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation patch_admin_delivery_zones_zoneId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{patch_admin_delivery_zones_zoneIdBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
       "name": "get_admin_inventory",
       "description": "Activation: ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings.. Replay: Exactly-once adjustment per variant/key; actor/payload mismatch conflicts; threshold uses revision CAS. No automatic mutation retry.",
       "request": {
