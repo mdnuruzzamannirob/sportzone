@@ -598,6 +598,15 @@ and order/stock/coupon atomic acceptance remain the later submission coordinator
 
 ### 10.3 Required order/delivery assertions
 
+Checkout intent checks assert same-key canonical replay before quote expiry/current commercial reads,
+changed-payload conflict, same-quote/different-key exclusion, concurrent one-order creation, and atomic
+rollback of intent/consent/order/balances/audit. Replay after `replayUntil` returns the current authorized
+order; invalid/missing order pointers and stranded preparing records fail closed without key reuse.
+Verify customer/session authorization on replay, guest scope isolation, strict secret-free result
+pointers, unique indexes, validator drift, no TTL registry and repeated additive compiled bootstrap.
+Private completion fixtures do not prove production stock/coupon/payment/notification coordination or
+submission HTTP security; those remain owning integration tasks.
+
 Order foundation checks use an isolated transaction-capable MongoDB replica set. Assert unique order
 numbers/intent identities/item balances, explicit null guest ownership, immutable nested snapshots,
 exact per-unit quotient/remainder entitlements, contiguous ordinals and held/completed refund caps.

@@ -921,6 +921,11 @@ references for renewed consent.
 guest browser context). Resolve an existing intent first, even when its quote has since expired/been consumed. For a new intent, in one transaction conditionally consume the open quote and create `checkoutIntents`, immutable order snapshot/consent digest and `orderItemBalances`, then
 either COD **committed** inventory/coupon or online **15-minute held** stock/coupon. Save one order per key before
 returning. A same-key replay returns the same operation resource/result; different payload is `409 IDEMPOTENCY_CONFLICT`.
+Checkout submission keys contain 1–128 printable ASCII characters without spaces; clients generate
+opaque random keys and preserve them verbatim across retries. Persist only their SHA-256 hash.
+Canonical submission fingerprints normalize validated fields and set ordering; retries resolve their
+existing intent before mutable saved-address/profile resolution or quote expiry checks. Durable result
+pointers contain no redirect/session secrets; replay reads the authorized current order state.
 A unique intent `quoteId` plus the quote consume guard also prevents two different keys from creating two orders for the same quote; a second key returns `409 STATE_CONFLICT` with no foreign-order disclosure. Renewed confirmation uses a fresh quote and fresh key after a rejected precommit submission. Timeout or disconnect must not create another order on retry. Do not hold a MongoDB transaction open while requesting
 hosted payment session.
 

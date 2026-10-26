@@ -8,6 +8,15 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 27 October 2026 — Durable checkout intent feature
+
+- Added hashed scope/key intent identities, canonical submission fingerprints, current authorized
+  outcome replay and transactional quote consumption/completion. Concurrent duplicate submissions
+  resolve to one order; changed commands and duplicate quote keys conflict. Added strict durable
+  registry validation, no-TTL readiness and additive local/test bootstrap. Production submission,
+  allocation/payment/notification adapters remain separate.
+  [Implementation and verification](docs/evidence/P06-006-checkout-intents.md).
+
 ## 26 October 2026 — Order snapshot foundation
 
 - Added canonical immutable order snapshots, exact per-unit merchandise entitlements, independent

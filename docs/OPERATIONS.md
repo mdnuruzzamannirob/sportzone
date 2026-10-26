@@ -397,6 +397,17 @@ retain orders, unit balances and audit evidence. This private foundation enables
 the owning checkout coordinator must atomically authorize current consent, consume the quote, persist
 the intent and coordinate allocations/payment before committing an order.
 
+After backend build, `node --env-file=.env backend/scripts/bootstrap-checkout-intents.mjs` provisions
+the canonical durable checkout identity registry in local/test only. It installs strict validators and
+unique scope/key, quote and optional order indexes; existing validator drift or any TTL index fails
+readiness and requires reviewed provisioning. Staging/production bootstrap is refused. Never delete
+intents or tombstones to resolve a retry, expire them with TTL, or rotate a key automatically after an
+uncertain response. `replayUntil` affects no uniqueness/retention guarantee; replay reads current owned
+order state without revalidating an expired/consumed quote. Missing linked orders or stranded preparing
+records require investigation and safe reconciliation, not blind resubmission. Preserve registry,
+quotes, orders and audit across rollback/restore. No submission HTTP route is enabled by this private
+boundary; production allocation/payment/notification completion remains required before activation.
+
 Quote generation commits only its scope-bound quote and ordinary authorization fences; it does not
 reserve stock/coupons, create orders or invoke providers. GET /delivery/areas is public bounded advisory
 discovery even with quote activation disabled. Persistent quote admission shares the customer 60/minute

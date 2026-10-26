@@ -824,7 +824,7 @@ buyer confirmation, never automatic resubmission. Stock/coupon capacity is check
 | `quoteId`! | ObjectId | Consumed server-issued quote; unique, bound to identical scope and commercial consent |
 | `orderId`? | ObjectId | Exactly one order once committed |
 | `status`! | enum(`preparing`,`order_created`,`resolved`) | Recover interrupted submission safely |
-| `resultSnapshot`? | embedded | Minimal durable result pointer/status, not sensitive response secrets |
+| `resultSnapshot`? | embedded | Minimal durable `{orderId:ObjectId}` pointer, matching `orderId`; no response secrets or cached financial authority |
 | `replayUntil`? | Date | Optional client replay-response availability deadline; **not** a deletion deadline |
 
 **Indexes:** unique `{quoteId:1}`; unique `{scopeType:1,scopeKeyHash:1,idempotencyKeyHash:1}`; `{orderId:1}` (partial unique when present); **No TTL** on the unique key registry; retain a minimal key/fingerprint/order tombstone while its order can be replayed, reconciled, or referenced.
@@ -833,6 +833,14 @@ buyer confirmation, never automatic resubmission. Stock/coupon capacity is check
 before reporting success. After `replayUntil`, an old key must return existing-order status or a `key_retired` conflict,
 **never** create a new order. Any future purge requires a durable equivalent uniqueness/tombstone mechanism first; the
 actual legal retention horizon remains an approved operations decision.
+Identity hashing uses the validated submitted command, including quote/consent, method, optional notes
+and saved-address selection; item and policy-set ordering is canonical. Resolve an existing key before
+loading mutable profile/address/commercial data. New keys still require authoritative resolved draft
+and commercial revalidation through their quote. `preparing` has no order/result pointer; committed
+`order_created`/`resolved` records require matching order/result pointers. Creation and completion commit
+in one transaction. A stranded preparing record or missing linked order fails closed for investigation;
+never silently replace its key or assume external/financial completion. Replay returns an authorized
+current order projection even after `replayUntil`; that field cannot expire the durable registry.
 
 ### 7.2 `orders` — `checkout` / `orders`
 

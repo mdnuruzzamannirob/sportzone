@@ -130,14 +130,14 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |     21 |        0 |
 | 04 — Product Catalog and Inventory            |      20 |           8 |     0 |           0 |       1 |         0 |     11 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
-| 06 — Checkout, Orders, and Delivery Rules     |      22 |          18 |     0 |           0 |       1 |         0 |      3 |        0 |
+| 06 — Checkout, Orders, and Delivery Rules     |      22 |          17 |     0 |           0 |       1 |         1 |      3 |        0 |
 | 07 — Payment Integration and Verification     |      18 |          18 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 08 — Returns and Refunds                      |      19 |          19 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       1 |         0 |      1 |        0 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **123** | **0** | **0** | **3** | **0** | **84** | **0** |
+| **Total** | **210** | **122** | **0** | **0** | **3** | **1** | **84** | **0** |
 
 ## 4. Milestone tracker
 
@@ -1087,13 +1087,13 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence:** [Order snapshots, persistence and verification](./evidence/P06-005-order-foundation.md). Immutable history, unit entitlements, lifecycle graph and transaction rollback verified; project owner accepted on 26 October 2026: “done koro”. [Acceptance record](./evidence/P06-005-order-foundation.md#independent-acceptance). Submission/allocation/payment integration and P06-003 qualified sign-off remain separate.
 
 - [ ] **P06-006 — Implement persistent checkout intent and idempotency keys**\
-  **Status:** `Not Started` · **Area:** Backend/checkout\
+  **Status:** `In Review` · **Area:** Backend/checkout · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-11; Architecture §§8,10\
   **Depends on:** `P06-005`\
   **Deliverable:** Deduplicate repeated user/guest submissions and persist operation outcome.\
   **Acceptance:** Concurrent identical intent creates one order and returns/safely resumes existing outcome.\
-  **Evidence to attach:** Duplicate-intent concurrency tests.
+  **Evidence:** [Durable intent, replay and observed verification](./evidence/P06-006-checkout-intents.md). Same-key concurrency, quote exclusion, rollback, expiry/current-state replay and authorization verified; independent acceptance pending. Production allocation/payment/submission integration remains separate.
 
 - [ ] **P06-007 — Coordinate stock and coupon changes transactionally**\
   **Status:** `Not Started` · **Area:** Backend/checkout\
@@ -2483,3 +2483,5 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **26 October 2026 — P06-005:** Not Started → In Progress → In Review. Canonical immutable order snapshots, unit merchandise entitlements, independent fulfillment graph, transactional creation/audit and additive persistence setup implemented. [Observed verification and integration limits](./evidence/P06-005-order-foundation.md). Overall: 210 tasks, 83 Done, 123 Not Started, 3 Blocked and 1 In Review. Executor: Codex; independent acceptance pending. No submission/payment/operational transition or milestone acceptance claimed.
 
 **26 October 2026 — P06-005 acceptance:** In Review → Done after explicit project-owner instruction: “done koro”. [Acceptance record](./evidence/P06-005-order-foundation.md#independent-acceptance). Overall: 210 tasks, 84 Done, 123 Not Started, 3 Blocked and zero In Review. Submission/intent/allocation/payment and operational transition integration, P06-003 qualified sign-off and milestone gates remain separate.
+
+**27 October 2026 — P06-006:** Not Started → In Progress → In Review. Durable hashed intent registry, canonical command fingerprints, atomic consent/completion and current authorized replay implemented. [Observed verification and recovery limits](./evidence/P06-006-checkout-intents.md). Overall: 210 tasks, 84 Done, 122 Not Started, 3 Blocked and 1 In Review. Executor: Codex; independent acceptance pending. P06-007–P06-009 production coordination, P06-003 qualified sign-off and all milestone/provider/staging gates remain separate.

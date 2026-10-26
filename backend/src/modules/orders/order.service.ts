@@ -105,3 +105,33 @@ export function orderService(
     },
   }
 }
+
+// Narrow checkout-only projection: intent scope is authorized by checkout, while canonical order
+// ownership and intent linkage are checked again here. Never returns contact/financial secrets.
+export function checkoutOrderReadAccess(connection: Connection) {
+  const { orders } = orderModels(connection)
+  return async (
+    session: ClientSession,
+    principal: import('../auth/checkout-access.service.js').CheckoutPrincipal,
+    orderId: string,
+    intentId: string,
+  ) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    if (principal.scopeType === 'customer' && !principal.profile) throw new ApiError('FORBIDDEN')
+    const row = await orders
+      .findOne({
+        _id: orderId,
+        checkoutIntentId: intentId,
+        userId: principal.scopeType === 'customer' ? (principal.profile?.id ?? null) : null,
+      })
+      .session(session)
+    if (!row) throw new ApiError('STATE_CONFLICT')
+    return {
+      id: row._id.toHexString(),
+      orderNumber: row.orderNumber,
+      fulfillmentStatus: row.fulfillmentStatus,
+      paymentMethod: row.paymentMethod,
+      revision: row.revision,
+    }
+  }
+}
