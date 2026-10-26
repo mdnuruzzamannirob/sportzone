@@ -390,7 +390,7 @@ activation and real mailbox acceptance remain operational gates.
 
 ### 4.9 Auth/recovery throttles and audit safety
 
-Activated identity composition uses a MongoDB-backed, atomic fixed-window throttle shared by API instances; no process-memory fallback on database failure. Every audience has a shared network budget of 60 requests/minute. Credential, recovery and email-change mutations additionally share 10 network attempts/minute per group; normalized supplied email targets share 10 attempts/minute per audience/group across source addresses. CSRF bootstrap/refresh uses the audience network budget. Customer/admin budgets and groups are independent; successful and failed attempts consume equally and no account lookup determines a limit. This is a request throttle, not an account suspension or lockout mutation.
+Activated identity composition uses a MongoDB-backed, atomic fixed-window throttle shared by API instances; no process-memory fallback on database failure. Every audience has a shared network budget of 60 requests/minute. Credential, recovery, email-change and checkout-quote mutations additionally share 10 network attempts/minute per group; normalized supplied email targets share 10 attempts/minute per audience/group across source addresses. CSRF bootstrap/refresh uses the audience network budget. Customer/admin budgets and groups are independent; successful and failed attempts consume equally and no account lookup determines a limit. This is a request throttle, not an account suspension or lockout mutation.
 
 Use only the socket address while trust proxy remains false; forwarded/client identity headers are ignored. Keys are domain-separated HMAC digests derived from SESSION_SECRET and bind audience/group/window; plaintext address/email/proof is never persisted or logged. Fixed minute boundaries govern reset even before TTL cleanup. A rejected quota returns generic 429 RATE_LIMITED plus integer Retry-After; no matching-account detail or counter key is exposed. Counter-store failure returns generic 503 SERVICE_UNAVAILABLE and never proceeds to credentials/recovery. Rotate the shared session secret consistently across API instances; rotation resets counter key namespaces and invalidates old sessions as already documented.
 
@@ -876,6 +876,39 @@ Stable quoted item IDs preserve deterministic rounding. Any commercial change is
 QUOTE_EXPIRED`; both require a fresh quote and explicit buyer confirmation. Neither error creates an order or gateway
 attempt. Do not automatically replace the quote and submit it. An unsupported method or unavailable capacity retains its
 specific business error. Draft fields inconsistent with the referenced quote return `409 QUOTE_CHANGED`; malformed input remains `400`. Wrong-scope/missing quote is scope-safe `404`. Verify quote comparison, single consumption, idempotency and reconfirmation in the checkout contract tests.
+
+**Executable quote contract:** quote creation is `200`, returns a new server quote per request and
+reserves no capacity. `QuoteItem` contains exactly `id,productId,variantId,productName,sku,variantAttributes,
+quantity,regularUnitPoisha,effectiveUnitPoisha,regularLinePoisha,productDiscountPoisha,couponAllocatedPoisha,
+netMerchandisePoisha,couponEligible`. IDs are server-assigned stable line identities; raw stock counters,
+private product configuration and recipient/contact data are not response fields. Resolve saved addresses
+only from the current customer; explicit buyer email is normalized, buyer phone defaults to recipient
+phone, and recipient/buyer snapshots remain distinct. Guest email is mandatory. Normalize lines in
+variant-ID order and fingerprint the resolved recipient/buyer draft; equivalent reordered selections do
+not invalidate consent. The commercial snapshot retains coupon identity/type/value/termsVersion and
+eligible subtotal, not just its resulting discount, so changed terms require renewed confirmation even
+if the total is unchanged. Validate stored snapshot/draft integrity before trusting its consent hashes.
+
+Quote persistence and recalculation use a transaction-bound principal scope. An invalid/present customer
+cookie cannot downgrade to guest; guests require the same active storefront browser context and CSRF.
+Quote admission uses the shared MongoDB throttle with a distinct checkout group (10/network/minute and
+normalized email target, within the existing 60/network/minute customer budget). No automatic order retry
+or quote-to-order submission is implemented by quote creation. Internal revalidation checks scope, open
+status, exact expiry, normalized draft/consent, stable allocation IDs and current commercial terms;
+insufficient stock/coupon capacity keeps its specific error. It does not consume consent or create an
+intent/order. The later submission coordinator must resolve existing intent first and atomically consume
+quote plus order/allocations, with its required replay/concurrency and current-policy fencing checks.
+The quote's capture timestamp and advisory capacity are not commercial changes. Missing approved
+policies/deadline basis fails closed with SERVICE_UNAVAILABLE; flags alone never establish online
+merchant activation. Known verified amount bounds produce PAYMENT_AMOUNT_UNSUPPORTED when selected.
+
+`GET /delivery/areas` returns `{supportedAreas:[{districtKey,areaKey,zoneId}],zoneKeys:string[]}` for current
+active effective rules in active zones. `zoneKeys` is the sorted distinct public zone-ID list; `areaKey:'*'`
+represents an operator district wildcard. Optional district is a normalized lowercase slug key (maximum
+64). Results are ordered by coverageKey and bounded to 1,000 rows; overflow fails closed rather than
+silently truncating (use district filter). This is advisory discovery: an inactive exact rule's zone still
+blocks that concrete quote even when a district wildcard is listed. No amounts, private metadata,
+credentials or scheduled/inactive regions are exposed. Actual destination eligibility is always rechecked.
 
 **Quote:** Recompute active SKU prices, stock visibility, product-discount-before-coupon, eligible coupon allocations,
 delivery-zone rule and eligible payment methods at request time. Return a **deadline rule/status**, not a made-up date
@@ -1525,7 +1558,7 @@ terms. Reacquisition must still honor immutable accepted line allocations/total;
 `CouponPatch` permits only optional CouponInput fields, with at least one field. Null clears only
 `overallLimit`, `perCustomerLimit`, `eligibleProductIds` or `eligibleCategoryIds`; omission preserves them.
 Revalidate the complete merged configuration (including date ordering, percentage bounds and distinct scope IDs).
-At most 200 IDs per scope list; absent/empty scopes mean global merchandise scope. Reject global or per-customer
+At most 200 IDs per scope list; absent/empty scopes mean global merchandise scope. Each nonempty scope is a restriction: when both product and category scopes are configured, a line must satisfy both (AND); a category match means membership in one of the listed product category IDs. Empty scopes impose no additional restriction. Reject global or per-customer
 limit reductions below current held plus redeemed usage (`422 BUSINESS_RULE_VIOLATION`). Configuration changes
 serialize with quota writes on the canonical coupon document. Code uniqueness is case-insensitive; conflicts
 return `409 STATE_CONFLICT`. No edit rewrites redemption terms or resets counters.

@@ -1896,6 +1896,62 @@
       "response": []
     },
     {
+      "name": "post_checkout_quotes",
+      "description": "Activation: CHECKOUT_QUOTES_ENABLED with explicit TTL/required policies, CUSTOMER_AUTH_ENABLED, reviewed quote/catalog/delivery/settings/coupon persistence and eligible independently reviewed deadline policy. Online methods remain denied until verified provider/merchant capability is wired.. Replay: New quote per request; scope-bound immutable consent without reservations. Internal revalidation checks expiry, stable line IDs and commercial changes; order intent/consumption belongs to later tasks.. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/checkout/quotes",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: CHECKOUT_QUOTES_ENABLED with explicit TTL/required policies, CUSTOMER_AUTH_ENABLED, reviewed quote/catalog/delivery/settings/coupon persistence and eligible independently reviewed deadline policy. Online methods remain denied until verified provider/merchant capability is wired.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_checkout_quotes. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_checkout_quotesBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_delivery_areas",
+      "description": "Activation: Reviewed delivery indexes and operator-configured currently active coverage; no quote/fulfillment guarantee.. Replay: Read-only bounded coverage projection; actual destination is revalidated at quote and submission.. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/delivery/areas",
+          "query": [
+            {
+              "key": "district",
+              "value": "{{district}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Reviewed delivery indexes and operator-configured currently active coverage; no quote/fulfillment guarantee.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_delivery_areas. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
       "name": "get_health_live",
       "description": "Activation: Always registered; operational ingress restrictions apply. Replay: read. No automatic mutation retry.",
       "request": {

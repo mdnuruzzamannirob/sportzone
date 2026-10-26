@@ -586,6 +586,16 @@ Each scenario follows: **Fixture / action → expected HTTP+business outcome →
 | `ORD-07` | Guest order lookup with correct/expired/cross-order proof                                                 | Only verified scope can read permitted order and initiate eligible actions                                                                                                                                                                                                                                  | 19         |
 | `ORD-08` | Missing/unsupported area; inactive gateway channel                                                        | Checkout rejects unsupported destination or unavailable method, without order/financial mutation                                                                                                                                                                                                            | 11–12, 16  |
 
+Quote-only verification before order submission exists uses actual guest/customer Origin/CSRF and
+transaction-bound scopes, strict money/recipient inputs, authoritative SKU/coupon/delivery/settings
+capabilities, explicit reviewed test rules and persistent rate limits. Assert no stock/coupon hold,
+order, payment or provider operation is created. Test exact expiry, cross-scope 404, normalized reordered
+lines, stable rounding IDs, sufficient-stock advisory changes, changed coupon terms with identical totals,
+policy/delivery/deadline/method changes, snapshot corruption and failed configuration/index prerequisites.
+Test compiled additive bootstrap and disabled/enabled root composition; synthetic merchant/deadline
+capabilities never prove actual provider activation/legal approval. Intent replay/single quote consumption
+and order/stock/coupon atomic acceptance remain the later submission coordinator's required evidence.
+
 ### 10.3 Required order/delivery assertions
 
 For `ORD-06`, compare `placedAt`, actual `confirmedAt`, snapshotted `deadlineBasis`, `targetDeadlineAt`, applicable `legalDeadlineAt` and final `effectiveDeadlineAt` per Database §7.2 and API §11.3. The ordinary target is 14 **calendar** days from confirmation unless an approved rule differs; any statutory cap requires an approved start event. If those decisions are missing, assert a correctly disclosed pending/under-review commitment rather than inventing a legal date. Additional boundary checks cover exact

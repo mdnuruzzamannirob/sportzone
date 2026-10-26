@@ -15,9 +15,7 @@ export async function loadDeliveryDeadlinePolicy(
   try {
     const bytes = await readFile(env.DELIVERY_DEADLINE_POLICY_FILE)
     if (bytes.length > 100000) throw new Error()
-    const manifest = deliveryDeadlineManifest.parse(
-      JSON.parse(bytes.toString('utf8')),
-    )
+    const manifest = deliveryDeadlineManifest.parse(JSON.parse(bytes.toString('utf8')))
     if (
       manifest.review.ruleDigest !== deliveryDeadlineDigest(manifest.rule) ||
       Date.parse(manifest.review.approvedAt) > Date.now()

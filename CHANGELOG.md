@@ -8,6 +8,16 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 26 October 2026 — Authoritative checkout quote feature
+
+- Added opt-in guest/customer quote APIs and public delivery-area discovery using current domain-owned
+  data, explicit lifetime/policies and reviewed deadline basis. Quotes preserve scope-bound consent,
+  stable allocation IDs and commercial hashes without stock/coupon reservations or provider effects.
+  Added internal expiry/change/integrity revalidation, durable admission limits and compiled bootstrap;
+  owner-approved product/category coupon scopes use AND. Actual order/financial consumption and legal/
+  provider/staging gates remain separate.
+  [Implementation and verification](docs/evidence/P06-004-checkout-quotes.md).
+
 ## 26 October 2026 — Delivery deadline policy boundary (local capability)
 
 - Added immutable reviewed-rule capture, actual-event deadline/independent-cap arithmetic, separate

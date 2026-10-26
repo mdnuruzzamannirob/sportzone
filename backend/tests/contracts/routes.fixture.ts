@@ -1,3 +1,5 @@
+import { deliveryAreaRoutes } from '../../src/modules/delivery/delivery.routes.js'
+import { checkoutRoutes } from '../../src/modules/checkout/checkout.routes.js'
 import { deliveryRoutes } from '../../src/modules/delivery/delivery.routes.js'
 import {
   settingsAdminRoutes,
@@ -30,6 +32,7 @@ const security = {
   cors: () => guard,
   require: () => guard,
   verifyContext: unused,
+  withContext: unused,
   consumeContext: unused,
   issueContext: unused,
   setContextCookie: () => {},
@@ -101,6 +104,8 @@ export function registeredRouter() {
       security,
       sessions,
     ),
+    deliveryAreaRoutes(unused, []),
+    checkoutRoutes({ create: unused }, security, guard),
     deliveryRoutes(
       {
         zones: unused,

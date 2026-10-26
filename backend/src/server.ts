@@ -1,3 +1,4 @@
+import { loadCheckoutOptions } from './config/checkout.js'
 import { loadPolicyApprovals } from './config/settings.js'
 import { createServer } from 'node:http'
 import { resolve } from 'node:path'
@@ -35,6 +36,7 @@ export async function startServer(
       logger,
       undefined,
       await loadPolicyApprovals(process.env),
+      await loadCheckoutOptions(process.env),
     )
   } catch (error) {
     await connection.destroy()

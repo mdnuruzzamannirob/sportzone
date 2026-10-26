@@ -1,3 +1,5 @@
+import { deliveryAreasQuery, deliveryAreas } from '../src/modules/delivery/delivery.schema.js'
+import { checkoutQuoteInput, checkoutQuote } from '../src/modules/checkout/checkout.schema.js'
 import {
   zoneInput,
   zonePatch,
@@ -189,6 +191,37 @@ const identities: Operation[] = identity.operations
 
 export const operations: readonly Operation[] = [
   ...identities,
+  {
+    method: 'GET',
+    path: '/delivery/areas',
+    access: 'public',
+    namespace: 'storefront',
+    query: deliveryAreasQuery,
+    params: empty,
+    response: deliveryAreas,
+    status: 200,
+    csrf: false,
+    activation:
+      'Reviewed delivery indexes and operator-configured currently active coverage; no quote/fulfillment guarantee.',
+    replay:
+      'Read-only bounded coverage projection; actual destination is revalidated at quote and submission.',
+  },
+  {
+    method: 'POST',
+    path: '/checkout/quotes',
+    access: 'public_csrf',
+    namespace: 'storefront',
+    query: empty,
+    params: empty,
+    request: checkoutQuoteInput,
+    response: checkoutQuote,
+    status: 200,
+    csrf: true,
+    activation:
+      'CHECKOUT_QUOTES_ENABLED with explicit TTL/required policies, CUSTOMER_AUTH_ENABLED, reviewed quote/catalog/delivery/settings/coupon persistence and eligible independently reviewed deadline policy. Online methods remain denied until verified provider/merchant capability is wired.',
+    replay:
+      'New quote per request; scope-bound immutable consent without reservations. Internal revalidation checks expiry, stable line IDs and commercial changes; order intent/consumption belongs to later tasks.',
+  },
   ...(
     [
       {

@@ -1,3 +1,8 @@
+import type { Connection, ClientSession } from 'mongoose'
+import type { z } from 'zod'
+import type { pricingInput } from './pricing.schema.js'
+import { couponModels } from './coupon.model.js'
+import { verifyCouponPersistence } from './coupon.persistence.js'
 import { isDeepStrictEqual } from 'node:util'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
@@ -114,5 +119,81 @@ export function evaluateCouponEligibility(raw: unknown, now: Date = new Date()) 
       discountPoisha: pricing.couponDiscountPoisha,
       eligibleLineIds: pricing.items.filter((line) => line.couponEligible).map((line) => line.id),
     },
+  }
+}
+
+export function couponQuoteAccess(connection: Connection) {
+  return async (
+    code: string,
+    principal: { kind: 'guest' } | { kind: 'customer'; userId: string },
+    lines: (z.output<typeof pricingInput>['items'][number] & {
+      productId: string
+      categoryIds: string[]
+    })[],
+    deliveryChargePoisha: number,
+    session: ClientSession,
+    now: Date,
+  ) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    try {
+      await verifyCouponPersistence(connection)
+    } catch {
+      throw new ApiError('SERVICE_UNAVAILABLE')
+    }
+    const models = couponModels(connection),
+      row = await models.coupons.findOne({ codeNormalized: code }).session(session)
+    if (!row) throw new ApiError('COUPON_UNAVAILABLE')
+    const productIds = row.eligibleProductIds?.map(String) ?? [],
+      categoryIds = row.eligibleCategoryIds?.map(String) ?? []
+    const items = lines.map(({ productId, categoryIds: categories, ...line }) => ({
+      ...line,
+      couponEligible:
+        (!productIds.length || productIds.includes(productId)) &&
+        (!categoryIds.length || categories.some((id) => categoryIds.includes(id))),
+    }))
+    const usage =
+      principal.kind === 'customer'
+        ? await models.customers
+            .findOne({ couponId: row._id, userId: principal.userId })
+            .session(session)
+        : null
+    const result = evaluateCouponEligibility(
+      {
+        code,
+        principal,
+        pricing: { items, deliveryChargePoisha },
+        coupon: {
+          id: row._id.toHexString(),
+          codeNormalized: row.codeNormalized,
+          type: row.type,
+          value: row.value,
+          startsAt: row.startsAt,
+          expiresAt: row.expiresAt,
+          status: row.status,
+          heldCount: row.heldCount,
+          redeemedCount: row.redeemedCount,
+          termsVersion: row.termsVersion,
+          minEligibleSubtotalPoisha: row.minEligibleSubtotalPoisha,
+          ...(row.overallLimit !== undefined ? { overallLimit: row.overallLimit } : {}),
+          ...(row.perCustomerLimit !== undefined ? { perCustomerLimit: row.perCustomerLimit } : {}),
+        },
+        ...(principal.kind === 'customer'
+          ? {
+              customerUsage: {
+                couponId: row._id.toHexString(),
+                userId: principal.userId,
+                heldCount: usage?.heldCount ?? 0,
+                redeemedCount: usage?.redeemedCount ?? 0,
+              },
+            }
+          : {}),
+      },
+      now,
+    )
+    return {
+      ...result,
+      couponId: row._id.toHexString(),
+      eligibleSubtotalPoisha: result.pricing.couponEligibleSubtotalPoisha,
+    }
   }
 }

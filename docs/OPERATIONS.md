@@ -374,6 +374,36 @@ metadata works without a media provider; image writes additionally require expli
 Preserve category/media references and audit on rollback; deploy matching router/registry/generated artifacts
 together. Do not delete referenced data or use image replacement as an external provider delete operation.
 
+Checkout quote runtime is opt-in: `CHECKOUT_QUOTES_ENABLED=true` requires `CUSTOMER_AUTH_ENABLED=true`,
+explicit `CHECKOUT_QUOTE_TTL_SECONDS` (1–86,400; technical bound, no operating default) and comma-separated
+`CHECKOUT_REQUIRED_POLICY_TYPES` (distinct PolicyType values including terms). The operator approves
+lifetime/applicable policies; no values are seeded. A protected eligible DELIVERY_DEADLINE_POLICY_FILE
+is loaded once through the existing deadline boundary. Invalid enabled configuration fails startup
+with value-free diagnostics. Missing independently reviewed deadline or current published policy pointers
+blocks quote publication. Existing P06-003 legal/compliance acceptance is not cleared by this switch.
+
+After backend build, `node --env-file=.env backend/scripts/bootstrap-checkout-quotes.mjs` additively
+creates quote indexes in local/test only. Provision identity/throttle, catalog, delivery, canonical
+settings/published policies and promotions through their owning reviewed procedures. Runtime never
+repairs indexes. Staging/production bootstrap is refused; review their additive provisioning separately.
+Quote records retain consent evidence without TTL; lifetime expiry does not authorize deletion. Never
+wipe open/consumed quotes as a rollback or substitute a new quote/intent automatically after an error.
+
+Quote generation commits only its scope-bound quote and ordinary authorization fences; it does not
+reserve stock/coupons, create orders or invoke providers. GET /delivery/areas is public bounded advisory
+discovery even with quote activation disabled. Persistent quote admission shares the customer 60/minute
+network budget and a separate checkout 10/minute network/email-target group. Respect Retry-After; no
+process-memory fallback is allowed. Request logs identify checkout.quote.create and correlation/error
+codes, never draft contact/address, cookies, quote scope hashes or fingerprints. Monitor 429/503/stock/
+quote-change rates before changing reviewed limits. Browser context expiry/rotation still invalidates
+guest access; quote lifetime does not extend its credential.
+
+Default online eligibility is closed until the owning payment integration supplies verified durable
+merchant/provider capability and amount bounds. Setting online flags cannot authorize collection or
+waive required initial-release channels. Roll back matching quote routes/contracts/capabilities together,
+retain private consent snapshots/digests, and leave existing orders/financial evidence intact. Submission
+intent/consumption, actual provider sessions and integrated release acceptance remain owning later tasks.
+
 Delivery management uses `node --env-file=.env backend/scripts/bootstrap-delivery.mjs` after a backend
 build, in local/test only. It adds delivery indexes and audit persistence without seeding zones, charge
 amounts or coverage. Provision the canonical primary settings singleton first through its own bootstrap.

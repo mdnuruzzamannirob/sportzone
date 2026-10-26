@@ -29,15 +29,11 @@ export const deliveryDeadlineRule = z
         }),
       )
       .max(10)
-      .refine(
-        (values) =>
-          new Set(values.map((value) => value.ruleRef)).size === values.length,
-      ),
+      .refine((values) => new Set(values.map((value) => value.ruleRef)).size === values.length),
   })
   .refine(
     (value) =>
-      !value.effectiveTo ||
-      Date.parse(value.effectiveTo) > Date.parse(value.effectiveFrom),
+      !value.effectiveTo || Date.parse(value.effectiveTo) > Date.parse(value.effectiveFrom),
   )
 export const deliveryDeadlineReview = z.strictObject({
   evidenceRef: text(2000),

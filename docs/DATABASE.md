@@ -791,6 +791,19 @@ coordinate additional retention/legal-hold decisions through this same asset fen
 | `status`! | enum(`open`,`consumed`) | Consumption commits with exactly one checkout intent/order |
 | `checkoutIntentId`? / `orderId`? / `consumedAt`? / `revision`! | ObjectId / ObjectId / Date / int | Write-once outcome pointers and conditional consume guard |
 
+**Quote snapshot representation:** `commercialSnapshot` contains `{draft,items,pricing,delivery,
+deadlineBasis,deliveryDeadline,availableMethods,policyVersions,coupon?}`. The resolved private draft is
+`{items,recipient,customer:{name,email,phone},couponCode?,method}`; never use email as principal scope.
+Items use API §11.1's QuoteItem allowlist and pricing uses its six integer-poisha totals plus BDT.
+Delivery is `{zoneId,chargeRuleId,coverageKey,amountPoisha,ruleVersion}`; retain canonical identity and
+version, not a client amount. Optional coupon is `{couponId,code,type,value,termsVersion,
+eligibleSubtotalPoisha,discountPoisha}`. Deadline basis uses §7.2; capture time is retained as evidence
+but excluded from the commercial digest, while rule/review/version remain included. Do not include
+advisory available stock counts in that digest. Policies and method eligibility are snapshotted from
+current authoritative sources. Canonical resolved draft hashing and stored-snapshot integrity checks
+precede reuse; only lifecycle outcome/status/revision fields may change in later consumption services.
+Recipient/buyer data is private consent evidence, not a public quote lookup surface.
+
 **Indexes:** `{scopeType:1,scopeKeyHash:1,expiresAt:1}`; partial unique `{checkoutIntentId:1}` and `{orderId:1}` when
 ObjectId. No TTL until approved retention permits deleting unused quotes; consumed consent evidence is retained with the
 order or an equivalent immutable snapshot/digest. Quote creation reserves neither stock nor coupon capacity. Final submit
@@ -1036,6 +1049,11 @@ changes. A saved address is not a quote or permission to reuse a historic charge
 | `termsVersion`! / `revision`! | int | Each meaningful edit increments terms version |
 
 **Indexes:** unique `{codeNormalized:1}`; `{status:1,startsAt:1,expiresAt:1}`; `{createdAt:-1,_id:-1}`; `{status:1,createdAt:-1,_id:-1}`.
+
+**Scope matching:** coupon scope arrays impose independent restrictions; when both are nonempty,
+a line must match an eligible product ID and one listed category ID (AND). Empty arrays impose no
+restriction. Resolve scope from current catalog-owned product/category facts; do not accept client
+couponEligible flags or use delivery charges as eligible merchandise. API §14.3 owns the exact contract.
 
 **Rules:** configuration edits use the canonical revision CAS and serialize with allocation writes; reject limit reductions below global or any affected customer held-plus-redeemed counts. Append an admin audit digest in the same transaction; never reset counters or rewrite redemptions. Normalized no-op edits preserve terms version and revision. Existing live holds keep their snapshotted terms until expiry; a new/reacquired hold checks *current* coupon state. Guest checkout cannot use any coupon with a per-customer limit (PRD FR-09). Coupon quotas are authoritative in conditional writes, not `countDocuments` alone.
 

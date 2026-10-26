@@ -349,14 +349,14 @@
       "path": "/delivery/areas",
       "success": "200",
       "operationId": "get_delivery_areas",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/checkout/quotes",
       "success": "200",
       "operationId": "post_checkout_quotes",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",

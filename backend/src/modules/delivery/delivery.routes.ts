@@ -1,3 +1,4 @@
+import { ApiError } from '../../shared/errors/app-error.js'
 import { Router } from 'express'
 import { z } from 'zod'
 import { parseInput } from '../../shared/middleware/validate.js'
@@ -77,5 +78,46 @@ export function deliveryRoutes(
       res.set('ETag', `"${'previous' in result ? result.previous.revision : result.revision}"`)
       respond(res, result)
     })
+  return router
+}
+
+export function deliveryAreaRoutes(
+  read: ReturnType<typeof import('./delivery-coverage.service.js').deliveryAreasAccess>,
+  origins: readonly string[],
+) {
+  const router = Router()
+  const cors: import('express').RequestHandler = (req, res, next) => {
+    res.vary('Origin')
+    const origin = req.get('Origin')
+    if (origin && !origins.includes(origin)) throw new ApiError('FORBIDDEN')
+    if (origin) {
+      res.set('Access-Control-Allow-Origin', origin)
+      res.set('Access-Control-Allow-Credentials', 'true')
+    }
+    if (req.method === 'OPTIONS') {
+      res.vary('Access-Control-Request-Headers')
+      res.vary('Access-Control-Request-Method')
+      const headers = (req.get('Access-Control-Request-Headers') ?? '')
+        .split(',')
+        .map((v) => v.trim().toLowerCase())
+        .filter(Boolean)
+      if (
+        !origin ||
+        !['GET', 'HEAD'].includes(req.get('Access-Control-Request-Method') ?? '') ||
+        headers.some((v) => v !== 'content-type')
+      )
+        throw new ApiError('FORBIDDEN')
+      res.set('Access-Control-Allow-Methods', 'GET, HEAD')
+      res.set('Access-Control-Allow-Headers', 'Content-Type')
+      res.status(204).end()
+      return
+    }
+    parseInput(z.undefined(), req.body)
+    next()
+  }
+  router.options('/delivery/areas', cors)
+  router.get('/delivery/areas', cors, async (req, res) => {
+    respond(res, await read(req.query))
+  })
   return router
 }

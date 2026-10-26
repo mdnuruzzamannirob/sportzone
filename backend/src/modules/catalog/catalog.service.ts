@@ -595,3 +595,41 @@ export function catalogService(
     },
   }
 }
+
+// Checkout receives only detached selected-SKU facts; catalog retains private persistence and
+// the same active product/category/variant visibility checks used by shopping reads.
+export function catalogCheckoutAccess(connection: Connection) {
+  const catalog = catalogService(connection, async () => new Map())
+  const models = productModels(connection)
+  return async (ids: readonly string[], session: ClientSession) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    const selections = await catalog.cartSelections(ids, session)
+    const variants = await models.variants
+      .find({ _id: { $in: [...selections.keys()] } })
+      .select('productId skuNormalized attributes')
+      .session(session)
+      .lean()
+    const products = await models.products
+      .find({ _id: { $in: variants.map((row) => row.productId) } })
+      .select('categoryIds')
+      .session(session)
+      .lean()
+    return new Map(
+      variants.map((row) => {
+        const id = row._id.toHexString(),
+          selected = selections.get(id)
+        const product = products.find((product) => product._id.equals(row.productId))
+        if (!selected || !product) throw new ApiError('STATE_CONFLICT')
+        return [
+          id,
+          {
+            ...selected,
+            sku: row.skuNormalized,
+            attributes: row.attributes,
+            categoryIds: product.categoryIds.map(String),
+          },
+        ] as const
+      }),
+    )
+  }
+}

@@ -63,3 +63,22 @@ export const chargeSupersede = z
   .refine((v) => Date.parse(v.effectiveAt) === Date.parse(v.replacement.effectiveFrom))
 export const chargeReplacement = z.strictObject({ previous: chargeView, replacement: chargeView })
 export const deliveryOperationKey = z.string().regex(/^[A-Za-z0-9._:-]{1,128}$/)
+export const deliveryAreasQuery = z.strictObject({
+  district: z
+    .string()
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+    .max(64)
+    .optional(),
+})
+export const deliveryAreas = z.strictObject({
+  supportedAreas: z
+    .array(
+      z.strictObject({
+        districtKey: z.string().min(1).max(64),
+        areaKey: z.string().min(1).max(64),
+        zoneId: deliveryId,
+      }),
+    )
+    .max(1000),
+  zoneKeys: z.array(deliveryId).max(1000),
+})

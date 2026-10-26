@@ -68,6 +68,12 @@
       "type": "secret"
     },
     {
+      "key": "district",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "from",
       "value": "",
       "enabled": true,
@@ -351,6 +357,12 @@
     },
     {
       "key": "post_cart_mergeBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_checkout_quotesBody",
       "value": "",
       "enabled": true,
       "type": "secret"

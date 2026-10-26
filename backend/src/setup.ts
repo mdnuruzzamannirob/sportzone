@@ -1,3 +1,15 @@
+import { deliveryAreaRoutes } from './modules/delivery/delivery.routes.js'
+import { deliveryAreasAccess } from './modules/delivery/delivery-coverage.service.js'
+import type { CheckoutOptions } from './config/checkout.js'
+import { checkoutAccess } from './modules/auth/checkout-access.service.js'
+import { checkoutQuoteService } from './modules/checkout/checkout-quote.service.js'
+import { checkoutRoutes } from './modules/checkout/checkout.routes.js'
+import { catalogCheckoutAccess } from './modules/catalog/catalog.service.js'
+import { checkoutDeliveryAccess } from './modules/delivery/delivery-coverage.service.js'
+import { checkoutSettingsAccess } from './modules/settings/checkout-settings.service.js'
+import { createDeliveryDeadlineService } from './modules/orders/delivery-deadline.service.js'
+import { couponQuoteAccess } from './modules/promotions/coupon.service.js'
+import { paymentEligibility } from './modules/payments/payment-eligibility.service.js'
 import { deliveryService } from './modules/delivery/delivery.service.js'
 import { deliveryRoutes } from './modules/delivery/delivery.routes.js'
 import { deliverySettingsGuard } from './modules/settings/delivery-settings.service.js'
@@ -57,6 +69,7 @@ export async function composeIdentityRoutes(
   config: RuntimeConfig,
   media?: MediaDependencies,
   approvals: readonly PolicyApproval[] = [],
+  checkout?: CheckoutOptions,
 ) {
   const notifications = createRegistrationNotifications(connection)
   const auth = await createAuthRuntime(connection, config, notifications)
@@ -193,6 +206,32 @@ export async function composeIdentityRoutes(
   )
   if (config.ADMIN_AUTH_ENABLED)
     auth.router.use(settingsAdminRoutes(settings, policies, auth.security, auth.sessions))
+  if (checkout) {
+    if (!config.CUSTOMER_AUTH_ENABLED)
+      throw new Error('Customer authentication required for checkout quotes.')
+    auth.router.use(
+      checkoutRoutes(
+        checkoutQuoteService(
+          connection,
+          checkoutAccess(auth.customerAccounts, auth.security),
+          {
+            catalog: catalogCheckoutAccess(connection),
+            delivery: checkoutDeliveryAccess(connection),
+            settings: checkoutSettingsAccess(connection, checkout.requiredPolicyTypes),
+            deadline: createDeliveryDeadlineService(checkout.deadline),
+            coupon: couponQuoteAccess(connection),
+            methods: paymentEligibility(),
+          },
+          {
+            quoteTtlSeconds: checkout.quoteTtlSeconds,
+            requiredPolicyTypes: checkout.requiredPolicyTypes,
+          },
+        ),
+        auth.security,
+        auth.throttle.middleware('customer', 'checkout'),
+      ),
+    )
+  }
   return auth.router
 }
 
@@ -203,10 +242,13 @@ export async function composeApplication(
   logger: Logger,
   media?: MediaDependencies,
   approvals: readonly PolicyApproval[] = [],
+  checkout?: CheckoutOptions,
 ) {
+  if (checkout && !config.CUSTOMER_AUTH_ENABLED)
+    throw new Error('Customer authentication required for checkout quotes.')
   const identity =
     config.CUSTOMER_AUTH_ENABLED || config.ADMIN_AUTH_ENABLED
-      ? await composeIdentityRoutes(connection, config, media, approvals)
+      ? await composeIdentityRoutes(connection, config, media, approvals, checkout)
       : undefined
   const catalog = catalogRoutes(
     catalogService(connection, publicMediaService(connection, media?.provider)),
@@ -221,7 +263,12 @@ export async function composeApplication(
     policyService(connection, publicAccess, unavailable),
     config.CORS_ALLOWED_ORIGINS,
   )
-  const apiRouter = createApiRouter(health, [catalog, content, ...(identity ? [identity] : [])])
+  const apiRouter = createApiRouter(health, [
+    deliveryAreaRoutes(deliveryAreasAccess(connection), config.CORS_ALLOWED_ORIGINS),
+    catalog,
+    content,
+    ...(identity ? [identity] : []),
+  ])
   if (media && !config.ADMIN_AUTH_ENABLED)
     throw new Error('Admin authentication required for media.')
   return createApp({ logger, apiRouter, mediaUploadsEnabled: Boolean(media) })
