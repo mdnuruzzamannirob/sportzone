@@ -598,6 +598,15 @@ and order/stock/coupon atomic acceptance remain the later submission coordinator
 
 ### 10.3 Required order/delivery assertions
 
+Order foundation checks use an isolated transaction-capable MongoDB replica set. Assert unique order
+numbers/intent identities/item balances, explicit null guest ownership, immutable nested snapshots,
+exact per-unit quotient/remainder entitlements, contiguous ordinals and held/completed refund caps.
+Exercise concurrent creation, audit-failure rollback, missing indexes, validator drift, additive compiled
+bootstrap and Unicode preservation. Invalid fulfillment edges must fail independently of financial
+state. A valid graph edge is not authorization to fulfill or cancel. Test-only quote/intent coordination
+proves atomic persistence only; production intent, stock/coupon allocation, payment and operational
+transition acceptance remain their owning tasks.
+
 For `ORD-06`, compare `placedAt`, actual `confirmedAt`, snapshotted `deadlineBasis`, `targetDeadlineAt`, applicable `legalDeadlineAt` and final `effectiveDeadlineAt` per Database §7.2 and API §11.3. The ordinary target is 14 **calendar** days from confirmation unless an approved rule differs; any statutory cap requires an approved start event. If those decisions are missing, assert a correctly disclosed pending/under-review commitment rather than inventing a legal date. Additional boundary checks cover exact
 rule-digest binding, protected manifest parsing and compiled preflight, future/expired/missing review,
 actual event ordering, leap/year/offset arithmetic, nonexistent timezone wall times and immutable bases

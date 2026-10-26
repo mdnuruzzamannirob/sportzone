@@ -389,6 +389,14 @@ repairs indexes. Staging/production bootstrap is refused; review their additive 
 Quote records retain consent evidence without TTL; lifetime expiry does not authorize deletion. Never
 wipe open/consumed quotes as a rollback or substitute a new quote/intent automatically after an error.
 
+After backend build, `node --env-file=.env backend/scripts/bootstrap-orders.mjs` provisions the
+canonical orders/orderItemBalances collections, strict validators and declared indexes in local/test
+only. It refuses existing validator drift and staging/production; it never repairs incompatible
+collections or deletes historical data. Runtime creation checks persistence readiness. Rollback must
+retain orders, unit balances and audit evidence. This private foundation enables no submission route:
+the owning checkout coordinator must atomically authorize current consent, consume the quote, persist
+the intent and coordinate allocations/payment before committing an order.
+
 Quote generation commits only its scope-bound quote and ordinary authorization fences; it does not
 reserve stock/coupons, create orders or invoke providers. GET /delivery/areas is public bounded advisory
 discovery even with quote activation disabled. Persistent quote admission shares the customer 60/minute

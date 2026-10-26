@@ -8,6 +8,14 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 26 October 2026 — Order snapshot foundation
+
+- Added canonical immutable order snapshots, exact per-unit merchandise entitlements, independent
+  fulfillment graph validation, transactional creation/audit and additive local/test persistence setup.
+  Shared checkout consent hashing preserves quote compatibility. Submission, allocation, payment and
+  operational transition integrations remain separate tasks.
+  [Implementation and verification](docs/evidence/P06-005-order-foundation.md).
+
 ## 26 October 2026 — Authoritative checkout quote feature
 
 - Added opt-in guest/customer quote APIs and public delivery-area discovery using current domain-owned

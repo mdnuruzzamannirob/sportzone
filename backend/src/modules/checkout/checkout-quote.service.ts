@@ -1,3 +1,4 @@
+import { checkoutDraftFingerprint, checkoutCommercialDigest } from './checkout-consent.service.js'
 import { createHash } from 'node:crypto'
 import { Types, type Connection, type ClientSession } from 'mongoose'
 import type { z } from 'zod'
@@ -28,7 +29,6 @@ import { checkoutQuoteModel } from './checkout-quote.model.js'
 import { verifyCheckoutQuotePersistence } from './checkout-quote.persistence.js'
 const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex')
 type Draft = z.output<typeof checkoutQuoteInput>
-type Snapshot = z.output<typeof checkoutCommercialSnapshot>
 export function checkoutQuoteService(
   connection: Connection,
   access: ReturnType<typeof checkoutAccess>,
@@ -68,12 +68,6 @@ export function checkoutQuoteService(
       ...(input.couponCode ? { couponCode: input.couponCode } : {}),
       method: input.method,
     })
-  }
-  function commercialDigest(snapshot: Snapshot) {
-    // Capture time is consent evidence, not a commercial change; advisory capacity is not stored here.
-    const { capturedAt, ...deadlineBasis } = snapshot.deadlineBasis
-    void capturedAt
-    return hash({ ...snapshot, deadlineBasis })
   }
   async function build(
     principal: CheckoutPrincipal,
@@ -197,9 +191,9 @@ export function checkoutQuoteService(
         const row = new model({
           scopeType: principal.scopeType,
           scopeKeyHash: principal.scopeKeyHash,
-          requestFingerprint: hash(draft),
+          requestFingerprint: checkoutDraftFingerprint(draft),
           commercialSnapshot: snapshot,
-          commercialDigest: commercialDigest(snapshot),
+          commercialDigest: checkoutCommercialDigest(snapshot),
           quotedAt: now,
           expiresAt,
         })
@@ -234,14 +228,15 @@ export function checkoutQuoteService(
       if (!row.expiresAt) throw new ApiError('SERVICE_UNAVAILABLE')
       if (row.expiresAt <= clock()) throw new ApiError('QUOTE_EXPIRED')
       const draft = normalize(principal, input)
-      if (row.requestFingerprint !== hash(draft)) throw new ApiError('QUOTE_CHANGED')
+      if (row.requestFingerprint !== checkoutDraftFingerprint(draft))
+        throw new ApiError('QUOTE_CHANGED')
       const stored = parseInput(
         checkoutCommercialSnapshot,
         row.toObject({ flattenMaps: true }).commercialSnapshot,
       )
       if (
-        commercialDigest(stored) !== row.commercialDigest ||
-        hash(stored.draft) !== row.requestFingerprint
+        checkoutCommercialDigest(stored) !== row.commercialDigest ||
+        checkoutDraftFingerprint(stored.draft) !== row.requestFingerprint
       )
         throw new ApiError('STATE_CONFLICT')
       const current = await build(
@@ -251,7 +246,7 @@ export function checkoutQuoteService(
         new Map(stored.items.map((line) => [line.variantId, line.id])),
       )
       if (
-        row.commercialDigest !== commercialDigest(current) ||
+        row.commercialDigest !== checkoutCommercialDigest(current) ||
         input.acceptedTermsVersion !==
           stored.policyVersions.find((policy) => policy.type === 'terms')?.version ||
         hash([...input.acceptedPolicyVersionIds].sort()) !==
