@@ -1,3 +1,4 @@
+import { loadPolicyApprovals } from './config/settings.js'
 import { createServer } from 'node:http'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -27,7 +28,14 @@ export async function startServer(
   }
   let app: Awaited<ReturnType<typeof composeApplication>>
   try {
-    app = await composeApplication(connection, config, health, logger)
+    app = await composeApplication(
+      connection,
+      config,
+      health,
+      logger,
+      undefined,
+      await loadPolicyApprovals(process.env),
+    )
   } catch (error) {
     await connection.destroy()
     throw error

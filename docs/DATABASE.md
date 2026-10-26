@@ -1390,9 +1390,9 @@ renderers remain disabled until their owning tasks expand the contracts safely.
 | --- | --- | --- |
 | `key`! | enum(`primary`) | Unique singleton identity |
 | `storeName`? / `branding`? | string / embedded | Operator-approved store name and logo media reference |
-| `homepageBanner`? | embedded | `{assetId,title,alt,href?}`; validated public `mediaAssets` reference, bounded operator-approved copy and internal relative destination only |
+| `homepageBanner`? | embedded | `{assetId,title,alt,href?,image}`; validated public `mediaAssets` reference plus server-resolved canonical MediaRef attachment snapshot for replacement/removal, bounded operator-approved copy and internal relative destination only; future public banner projection must recheck media eligibility |
 | `deliveryCoverageRevision`! | int | Server-only store-wide guard for every delivery-rule/zone-status transaction; independent of settings edit ETag |
-| `contact`? / `address`? | embedded | Public operator-supplied data only when approved |
+| `contact`? / `complaintContact`? / `address`? | embedded | Public operator-supplied allowlisted contact/complaint channels and store address; exact fields in API §14.3 |
 | `lowStockThreshold`! | int | Nonnegative default stock alert threshold |
 | `paymentChannels`! | embedded | `{bkashEnabled,nagadEnabled,rocketEnabled,codEnabled}`; operational eligibility subject to verified merchant activation |
 | `activePolicyVersions`! | embedded | Map with optional `shipping,cancellation,returns,refunds,privacy,terms,complaints` version IDs; absent keys mean unpublished, never empty-string/null references |
@@ -1416,10 +1416,11 @@ unknown confirmation-relative absolute deadline; later policy updates do not rew
 | `type`! / `version`! | enum(`shipping`,`cancellation`,`returns`,`refunds`,`privacy`,`terms`,`complaints`) / string | Immutable identity unique per policy type and version; no client-selected duplicate version |
 | `status`! | enum(`draft`,`approved`,`scheduled`,`published`,`superseded`,`withdrawn`) | Approval distinct from publication; withdrawn published history remains auditable |
 | `content`! / `contentDigest`! | sanitized bounded text / string | Full canonical versioned content; immutable from approval onward (new revision for correction) |
-| `effectiveAt`? / `publishedAt`? | Date | Never publish without reviewed approved effective time |
+| `proposedEffectiveAt`? / `effectiveAt`? / `publishedAt`? | Date | Draft proposal is separate from the approved effective time; never publish without reviewed approved effective time |
 | `approvalEvidenceRef`? / `approvedAt`? / `approvedBy`? | string / Date / ObjectId | Durable operator/legal approval proof; publication requires verified reference |
 | `supersedesId`? / `supersededAt`? | ObjectId / Date | Publication lineage; never physically replace older accepted versions |
 | `revision`! / `createdBy`! | int / ObjectId | CAS for draft edits; audit all publish/withdraw actions |
+| `approvalOperation`? / `publicationOperation`? | embedded | One durable replay identity per transition: `{keyDigest,requestDigest,revision,status}`; request digest binds actor, action, policy ID, payload and original If-Match; never public |
 
 **Indexes:** unique `{type:1,version:1}`; `{type:1,status:1,effectiveAt:-1}`; `{type:1,publishedAt:-1}`. A single
 `storeSettings.activePolicyVersions[type]` is the authoritative public lookup; immediate publication changes it atomically,

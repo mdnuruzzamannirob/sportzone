@@ -374,6 +374,33 @@ metadata works without a media provider; image writes additionally require expli
 Preserve category/media references and audit on rollback; deploy matching router/registry/generated artifacts
 together. Do not delete referenced data or use image replacement as an external provider delete operation.
 
+Store settings/policy persistence uses `node --env-file=.env backend/scripts/bootstrap-settings.mjs`
+after a backend build, in local/test only. Supply explicit approved `STORE_INITIAL_LOW_STOCK_THRESHOLD`
+(nonnegative safe integer); there is no default. Additive indexes and the unique primary singleton
+are provisioned without overwriting an existing singleton or enabling payment channels/policies.
+For staging/production, the operator reviews the same additive rollout separately; startup never
+repairs indexes or bootstraps content. Retain the collection, policy history, replay identities and
+audit on binary rollback; do not delete published policy documents or pointer history.
+
+`POLICY_APPROVALS_FILE` optionally names a protected, durable JSON approval register mounted read-only
+for the API process. Its array entries contain `evidenceRef,type,version,contentDigest,effectiveAt,
+approvedAt,approvedBy` (API §14.3); unknown fields, duplicate references, invalid/future approval dates,
+more than 1,000 entries or a file larger than 1 MB fail startup. Absence leaves approval unavailable.
+The authorized operator/legal reviewer must independently approve the exact policy text/version and
+effective date before adding an entry; neither the browser nor an arbitrary evidence string can
+create approval. Keep underlying evidence and historical registers durably retained with restricted
+write access; reload by reviewed API restart after an atomic register replacement. Do not commit real
+contact data, approval records or operational paths. Invalid files produce sanitized configuration
+errors. Existing persisted approvals remain durable when the live register rotates.
+
+Schedule `node --env-file=.env backend/scripts/activate-policies.mjs` repeatedly using the approved
+worker scheduler. Each run handles at most 100 due schedules in effective-date/ID order, uses real
+transactions and atomically records pointer/history/audit transitions. Concurrent runs are replay-safe;
+failed transactions leave work scheduled for retry. Monitor `policy_activation_batch` counts and
+nonzero exits; investigate due schedules left behind and rerun the batch after recovery. Public reads
+continue showing the prior effective pointer until activation commits. Worker scheduling/deployment
+and real legal approvals require operator evidence and are not established by local test fixtures.
+
 Product/variant administration uses `node --env-file=.env backend/scripts/bootstrap-catalog.mjs` after
 build for explicit local/test category indexes, strict product/variant persistence and canonical audit setup.
 It is additive, retains records/extra indexes, seeds no products/stock/media and refuses staging/production;

@@ -258,14 +258,14 @@
       "path": "/storefront/policies/{type}",
       "success": "200",
       "operationId": "get_storefront_policies_type",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/storefront/contact",
       "success": "200",
       "operationId": "get_storefront_contact",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
@@ -979,56 +979,56 @@
       "path": "/admin/settings",
       "success": "200",
       "operationId": "get_admin_settings",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "PATCH",
       "path": "/admin/settings",
       "success": "200",
       "operationId": "patch_admin_settings",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/settings/policies",
       "success": "200",
       "operationId": "get_admin_settings_policies",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/settings/policies",
       "success": "201",
       "operationId": "post_admin_settings_policies",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/settings/policies/{policyId}",
       "success": "200",
       "operationId": "get_admin_settings_policies_policyId",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "PATCH",
       "path": "/admin/settings/policies/{policyId}",
       "success": "200",
       "operationId": "patch_admin_settings_policies_policyId",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/settings/policies/{policyId}/approve",
       "success": "200",
       "operationId": "post_admin_settings_policies_policyId_approve",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/settings/policies/{policyId}/publish",
       "success": "200",
       "operationId": "post_admin_settings_policies_policyId_publish",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",

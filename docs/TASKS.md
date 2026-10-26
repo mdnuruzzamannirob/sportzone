@@ -133,11 +133,11 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |          22 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 07 — Payment Integration and Verification     |      18 |          18 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 08 — Returns and Refunds                      |      19 |          19 |     0 |           0 |       0 |         0 |      0 |        0 |
-| 09 — Admin Management and Reports             |      18 |          16 |     1 |           0 |       1 |         0 |      0 |        0 |
+| 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       1 |         0 |      1 |        0 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **127** | **1** | **0** | **2** | **0** | **80** | **0** |
+| **Total** | **210** | **127** | **0** | **0** | **2** | **0** | **81** | **0** |
 
 ## 4. Milestone tracker
 
@@ -1692,14 +1692,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Feature-complete staging includes accepted M1–M5 phase gates, public policy/contact pages and admin functionality; Phase 10 receives an isolated deployed environment with known fixture/reset process.\
   **Evidence to attach:** Staging deploy manifest and smoke tests.
 
-- [ ] **P09-013 — Expose store settings and public content APIs**\
-  **Status:** `Ready` · **Area:** Backend\
+- [x] **P09-013 — Expose store settings and public content APIs**\
+  **Status:** `Done` · **Area:** Backend · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-03; FR-34; API §§10.1,14.3\
   **Depends on:** `P03-013`, `P04-020`, `P01-007`\
   **Deliverable:** Implement canonical settings singleton bootstrap, branding/contact/address, low-stock threshold and approved versioned policies with protected input and safe public projections.\
   **Acceptance:** Unapproved policy placeholders never publish; stale writes fail; contact/policy projections exclude private configuration and media references are validated. Delivery settings reuse the same canonical singleton.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Feature implementation, observed checks and recovery](./evidence/P09-013-settings-public-content.md). Project owner accepted on 26 October 2026: “done koro”. [Acceptance record](./evidence/P09-013-settings-public-content.md#independent-acceptance). Real policy/provider/staging gates remain separate.
 
 - [ ] **P09-014 — Expose dashboard metrics APIs**\
   **Status:** `Not Started` · **Area:** Backend\
@@ -2461,3 +2461,8 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **25 October 2026 — P04-017:** Not Started → In Progress → In Review. Owner approved required atomic variants[] create and admin detail variants[] contracts; implemented full product/variant APIs and migrated threshold PATCH to its canonical owner. Parent stock/variant fences preserve detail ETags and last-active-SKU safety. [Verification, original failures and focused follow-ups](./evidence/P04-017-product-variant-administration.md). Overall: 210 tasks, 79 Done, 127 Not Started, 1 Ready, 2 Blocked and 1 In Review. Independent acceptance pending; external/stage/product gates remain separate.
 
 **25 October 2026 — P04-017 acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P04-017-product-variant-administration.md#independent-review). Overall: 210 tasks, 80 Done, 127 Not Started, 1 Ready, 2 Blocked and zero In Review. Next ready backend task: P09-013 settings/public content APIs. Real media/staging, client stages and product gates remain separate.
+
+
+**26 October 2026 — P09-013:** Ready → In Progress → In Review. Delivered one settings/public-content backend feature: canonical bootstrap, protected settings/media/CAS, public contact, evidence-bound policy approval/publication/replay and scheduled activation. Owner delegated contact/evidence contract clarifications; no legal content approval inferred. [Observed verification and recovery](./evidence/P09-013-settings-public-content.md). Overall: 210 tasks, 80 Done, 127 Not Started, 2 Blocked and 1 In Review. Independent acceptance pending; real provider/staging, clients and milestone gates remain separate.
+
+**26 October 2026 — P09-013 acceptance:** In Review → Done after explicit project-owner instruction: “done koro”. [Acceptance record](./evidence/P09-013-settings-public-content.md#independent-acceptance). Overall: 210 tasks, 81 Done, 127 Not Started, 2 Blocked and zero In Review. Real legal/provider/staging, client-stage and milestone gates remain separate.

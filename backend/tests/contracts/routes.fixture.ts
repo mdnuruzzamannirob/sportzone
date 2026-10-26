@@ -1,3 +1,7 @@
+import {
+  settingsAdminRoutes,
+  settingsPublicRoutes,
+} from '../../src/modules/settings/settings.routes.js'
 import { productAdminRoutes } from '../../src/modules/catalog/products/product-admin.routes.js'
 import { categoryAdminRoutes } from '../../src/modules/catalog/categories/category-admin.routes.js'
 import { inventoryAdminRoutes } from '../../src/modules/inventory/inventory-admin.routes.js'
@@ -65,6 +69,7 @@ const media = {
   detach: unused,
   protect: unused,
   changePublicReference: unused,
+  changePublicAssetReference: unused,
   cleanup: unused,
   maintenanceBatch: unused,
 }
@@ -95,6 +100,21 @@ export function registeredRouter() {
       security,
       sessions,
     ),
+    settingsAdminRoutes(
+      { get: unused, patch: unused, contact: unused },
+      {
+        create: unused,
+        patch: unused,
+        get: unused,
+        list: unused,
+        transition: unused,
+        publicPolicy: unused,
+        activateDue: unused,
+      },
+      security,
+      sessions,
+    ),
+    settingsPublicRoutes({ contact: unused }, { publicPolicy: unused }, []),
     inventoryAdminRoutes({ list: unused, history: unused, adjust: unused }, security, sessions),
     couponAdminRoutes(
       { create: unused, update: unused, deactivate: unused, list: unused, history: unused },

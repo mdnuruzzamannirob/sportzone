@@ -70,7 +70,7 @@ describe('executable API contract registry', () => {
         .filter((op) => op.method === 'OPTIONS')
         .every((op) => operations.some((item) => item.path === op.path)),
     ).toBe(true)
-    expect(operations).toHaveLength(59)
+    expect(operations).toHaveLength(69)
     const prefixed = Router().use('/untracked', registeredRouter())
     expect(() => registeredOperations(prefixed)).toThrow(/mount prefix/)
   })
@@ -120,6 +120,7 @@ describe('executable API contract registry', () => {
         'inventory/inventory-admin.routes.ts',
         'media/media.routes.ts',
         'promotions/coupon-admin.routes.ts',
+        'settings/settings.routes.ts',
       ].sort(),
     )
   })
@@ -166,9 +167,9 @@ describe('executable API contract registry', () => {
   it('keeps planned contracts non-executable and environment values blank', () => {
     const rows = artifacts['planned-operations.json'].operations
     expect(rows).toHaveLength(164)
-    expect(rows.filter((op) => op.implementation === 'planned')).toHaveLength(105)
+    expect(rows.filter((op) => op.implementation === 'planned')).toHaveLength(95)
     expect(openapi.paths['/checkout/orders']).toBeUndefined()
-    expect(artifacts['postman.collection.json'].item).toHaveLength(59)
+    expect(artifacts['postman.collection.json'].item).toHaveLength(69)
     expect(artifacts['postman.environment.json'].values.every((entry) => entry.value === '')).toBe(
       true,
     )

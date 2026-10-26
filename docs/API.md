@@ -1505,6 +1505,37 @@ visible until then. Historic approved content remains immutable. Rollback uses a
 `/storefront/policies/{type}` serves the effective published pointer only. Do not fabricate approval by passing an
 arbitrary string.
 
+**Settings projections:** `ContactInfo:{email?,phone?,website?}` requires at least one field;
+email is validated (maximum 254), phone is normalized Bangladesh mobile `+8801[3-9]` plus eight digits,
+and website is HTTPS without credentials, query or fragment (maximum 2,000).
+`StoreAddress:{line1,line2?,area,district,postalCode?}` uses 300-character address lines,
+120-character area/district and optional four-digit postal code. `SettingsPatch` also permits
+`complaintContact?:ContactInfo`; the public contact endpoint omits unset contact fields and never
+returns address, branding, payment flags, policy pointers or private configuration. All nested objects
+reject unknown fields. Operator-authenticated settings writes authorize public contact/banner copy;
+no placeholder content is seeded. Store names, banner title and alt are bounded to 120 characters.
+Banner destinations must be internal absolute paths beginning with a single `/`, without backslashes,
+whitespace or control characters. `homepageBanner:null` clears it. Branding uses verified `MediaRef`;
+client URLs alone cannot establish a valid attachment. Settings GET/PATCH use strong revision ETags;
+normalized no-op metadata PATCH preserves revision. Settings/policy changes preserve the independent
+delivery coverage revision. Policy content is bounded plain text (50,000 characters), rejecting HTML
+and non-whitespace controls; consumers render it as text.
+
+**Policy evidence and replay:** the platform operator maintains a protected, durable, read-only server
+approval register, separate from browser inputs. Each entry binds `evidenceRef,type,version,contentDigest,
+effectiveAt,approvedAt,approvedBy` to independently reviewed operator/legal evidence. Content digests
+are SHA-256 of the normalized UTF-8 policy text. The server accepts an approval only for an exact
+reference/type/version/digest match with a nonfuture approval date; the approved effective date is
+fixed and must match publication. Missing evidence rejects approval; an arbitrary browser reference
+never creates evidence. Register maintenance does not itself approve legal content. Approval and
+publication each retain durable hashed key/request identities, actor, original revision and response
+state on the policy document. Same key/actor/payload/revision replays the original result even after
+later transitions; a conflicting request fails with `409 IDEMPOTENCY_CONFLICT`. Approval returns an
+ETag; publication returns its canonical version/effectiveAt/status DTO. Immediate publication requires
+an effective time strictly later than the active version. Scheduled activation serializes on the
+canonical singleton, preserves immutable prior content and cannot replace a later effective version
+with an older scheduled one. Both privileged and worker transitions commit their audit atomically.
+
 **Settings:** editable store branding/contact/address, approved public complaint channel, low-stock threshold, configured
 payment eligibility and versioned policies. `paymentChannels.*Enabled=true` is **not** evidence of live merchant
 activation; provider capability verification and PRD §3.3 acceptance remain independent. Secrets/credentials are never
@@ -1967,7 +1998,7 @@ The following field allowlists define client inputs and server responses. `*Inpu
 | `DeliveryZone`             | `id!,name!,description?,status!,revision:int!,coverageRevision:int!`                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `ETag` refers to `revision`, not `coverageRevision`                                                                                                              |
 | `DeliveryChargeInput`      | `zoneId:id!,coverageKey:string!,amountPoisha:money!,effectiveFrom:date!,effectiveTo:date?`                                                                                                                                                                                                                                                                                                                                                                                                                                      | Admin approved, no conflicting windows                                                                                                                           |
 | `DeliveryChargeRule`       | `id!,zoneId!,coverageKey!,amountPoisha!,ruleVersion:int!,status:enum(scheduled,active,inactive)!,effectiveFrom!,effectiveTo?,revision:int!,supersedesChargeId?`                                                                                                                                                                                                                                                                                                                                                                 | Historic charge amount/coverage write-once; deactivation only closes window                                                                                      |
-| `SettingsPatch`            | `storeName?,branding?:MediaRef,contact?:ContactInfo,address?:ContactInfo,homepageBanner:nullable<HomepageBannerInput>?,lowStockThreshold?:int,paymentChannels?:{bkashEnabled?,nagadEnabled?,rocketEnabled?,codEnabled?}`                                                                                                                                                                                                                                                                                                        | No credentials; channel flag alone cannot assert live activation; CAS required                                                                                   |
+| `SettingsPatch`            | `storeName?,branding?:MediaRef,contact?:ContactInfo,complaintContact?:ContactInfo,address?:StoreAddress,homepageBanner:nullable<HomepageBannerInput>?,lowStockThreshold?:int,paymentChannels?:{bkashEnabled?,nagadEnabled?,rocketEnabled?,codEnabled?}`                                                                                                                                                                                                                                                                                                        | No credentials; channel flag alone cannot assert live activation; CAS required                                                                                   |
 | `StoreSettings`            | Resolved settings read form (homepageBanner includes verified image; nullable clear inputs become omitted optional fields) plus `key:'primary',activePolicyVersions:Partial<Record<PolicyType,string>>,revision:int!,updatedBy:id?`                                                                                                                                                                                                                                                                                             | Admin only; published policies external `policyDocuments`                                                                                                        |
 | `HomepageBanner`           | `assetId:id!,title:string!,alt:string!,href:string?,image:MediaRef!`                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Resolved approved public projection; image supplied by server from mediaAssets                                                                                   |
 | `HomepageBannerInput`      | `assetId:id!,title:string!,alt:string!,href:string?`                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Validated public media asset; relative internal destination; null in SettingsPatch removes banner safely                                                         |

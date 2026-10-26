@@ -146,6 +146,18 @@
       "type": "secret"
     },
     {
+      "key": "patch_admin_settingsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "patch_admin_settings_policies_policyIdBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
       "key": "patch_admin_variants_variantIdBody",
       "value": "",
       "enabled": true,
@@ -162,6 +174,12 @@
       "value": "",
       "enabled": true,
       "type": "secret"
+    },
+    {
+      "key": "policyId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
     },
     {
       "key": "post_admin_auth_loginBody",
@@ -231,6 +249,24 @@
     },
     {
       "key": "post_admin_products_productId_variantsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_settings_policiesBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_settings_policies_policyId_approveBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_settings_policies_policyId_publishBody",
       "value": "",
       "enabled": true,
       "type": "secret"
@@ -363,6 +399,12 @@
     },
     {
       "key": "to",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "type",
       "value": "",
       "enabled": true,
       "type": "default"

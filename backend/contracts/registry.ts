@@ -1,4 +1,23 @@
 import {
+  settingsPatch,
+  settingsView,
+  publicContact,
+} from '../src/modules/settings/settings.schema.js'
+import {
+  policyDraftInput,
+  policyDraftPatch,
+  policyParams,
+  policyListQuery,
+  policyDocument,
+  policySummary,
+  policyCreated,
+  policyApprove,
+  policyPublish,
+  policyPublication,
+  policyPublic,
+  policyType,
+} from '../src/modules/settings/policy.schema.js'
+import {
   productCreate,
   productPatch,
   productDeactivate,
@@ -155,6 +174,135 @@ const identities: Operation[] = identity.operations
 
 export const operations: readonly Operation[] = [
   ...identities,
+
+  ...(
+    [
+      {
+        method: 'GET',
+        path: '/admin/settings',
+        query: empty,
+        params: empty,
+        response: settingsView,
+        status: 200,
+        etag: true,
+      },
+      {
+        method: 'PATCH',
+        path: '/admin/settings',
+        query: empty,
+        params: empty,
+        request: settingsPatch,
+        response: settingsView,
+        status: 200,
+        etag: true,
+        ifMatch: true,
+      },
+      {
+        method: 'GET',
+        path: '/admin/settings/policies',
+        query: policyListQuery,
+        params: empty,
+        response: z.array(policySummary),
+        status: 200,
+        paginated: true,
+      },
+      {
+        method: 'POST',
+        path: '/admin/settings/policies',
+        query: empty,
+        params: empty,
+        request: policyDraftInput,
+        response: policyCreated,
+        status: 201,
+        etag: true,
+      },
+      {
+        method: 'GET',
+        path: '/admin/settings/policies/{policyId}',
+        query: empty,
+        params: policyParams,
+        response: policyDocument,
+        status: 200,
+        etag: true,
+      },
+      {
+        method: 'PATCH',
+        path: '/admin/settings/policies/{policyId}',
+        query: empty,
+        params: policyParams,
+        request: policyDraftPatch,
+        response: policyDocument,
+        status: 200,
+        etag: true,
+        ifMatch: true,
+      },
+      {
+        method: 'POST',
+        path: '/admin/settings/policies/{policyId}/approve',
+        query: empty,
+        params: policyParams,
+        request: policyApprove,
+        response: policyDocument,
+        status: 200,
+        etag: true,
+        ifMatch: true,
+        idempotency: true,
+      },
+      {
+        method: 'POST',
+        path: '/admin/settings/policies/{policyId}/publish',
+        query: empty,
+        params: policyParams,
+        request: policyPublish,
+        response: policyPublication,
+        status: 200,
+        ifMatch: true,
+        idempotency: true,
+      },
+    ] as const
+  ).map(
+    (op): Operation => ({
+      ...op,
+      access: 'admin',
+      namespace: 'admin',
+      csrf: op.method !== 'GET',
+      activation:
+        'ADMIN_AUTH_ENABLED; settings/policy indexes, canonical bootstrap and audit persistence. Approval requires a matching protected operator evidence register; media writes require explicit verified media composition.',
+      replay:
+        'Revision CAS; durable actor/payload/key-bound approval/publication replay; transactional effective pointer and audit',
+    }),
+  ),
+  ...(
+    [
+      {
+        method: 'GET',
+        path: '/storefront/contact',
+        query: empty,
+        params: empty,
+        response: publicContact,
+        status: 200,
+      },
+      {
+        method: 'GET',
+        path: '/storefront/policies/{type}',
+        query: empty,
+        params: z.strictObject({ type: policyType }),
+        response: policyPublic,
+        status: 200,
+      },
+    ] as const
+  ).map(
+    (op): Operation => ({
+      ...op,
+      access: 'public',
+      namespace: 'storefront',
+      csrf: false,
+      activation:
+        'Reviewed settings/policy persistence; only approved effective published pointers become public',
+      replay: 'Read only; no drafts or private configuration',
+    }),
+  ),
+
   ...(
     [
       {

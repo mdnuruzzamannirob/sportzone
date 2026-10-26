@@ -8,6 +8,15 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 26 October 2026 — Store settings and public content APIs
+
+- Added canonical settings bootstrap, protected contact/branding/banner/threshold/payment configuration,
+  effective public policy/contact projections and transactional audit/media/CAS. Policy approval uses
+  a protected operator evidence register; durable replay and bounded scheduled activation preserve
+  prior versions. Clarified owning contact/evidence contracts and documented compiled bootstrap/worker
+  procedures. No real legal/provider/staging approval is implied.
+  [Implementation and verification](docs/evidence/P09-013-settings-public-content.md).
+
 ## 25 October 2026 — Product and variant administration APIs
 
 - Added protected product/variant management, owner-approved atomic initial variants and full variant

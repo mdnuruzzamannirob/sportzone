@@ -114,6 +114,33 @@ export function createMediaAttachments(context: MediaContext) {
   }
   return {
     ...attachments,
+    async changePublicAssetReference(
+      credential: string | undefined,
+      previousPublicId: string | undefined,
+      assetId: string | null,
+      alt: string,
+      reference: MediaReference,
+      session: ClientSession,
+      mutateTarget: (image: { publicId: string; url: string; alt: string } | null) => Promise<void>,
+    ) {
+      requireTransaction(session)
+      const asset = assetId ? await model.findById(key(assetId)).session(session) : null
+      if (assetId && !asset) throw new ApiError('NOT_FOUND')
+      return this.changePublicReference(
+        credential,
+        previousPublicId,
+        asset
+          ? {
+              publicId: asset.publicId,
+              url: context.provider.publicUrl(asset.publicId, asset.format),
+              alt,
+            }
+          : null,
+        reference,
+        session,
+        mutateTarget,
+      )
+    },
     async changePublicReference(
       credential: string | undefined,
       previousPublicId: string | undefined,
