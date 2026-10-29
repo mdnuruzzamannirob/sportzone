@@ -212,6 +212,12 @@
       "type": "secret"
     },
     {
+      "key": "paymentId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "policyId",
       "value": "",
       "enabled": true,
@@ -297,6 +303,12 @@
     },
     {
       "key": "post_admin_inventory_variantId_adjustmentsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_payments_paymentId_risk_decisionsBody",
       "value": "",
       "enabled": true,
       "type": "secret"

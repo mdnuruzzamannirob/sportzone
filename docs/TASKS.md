@@ -131,13 +131,13 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       1 |         0 |     12 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |          12 |     0 |           0 |       1 |         6 |      3 |        0 |
-| 07 — Payment Integration and Verification     |      18 |          10 |     0 |           0 |       0 |         1 |      7 |        0 |
+| 07 — Payment Integration and Verification     |      18 |           8 |     0 |           0 |       0 |         1 |      9 |        0 |
 | 08 — Returns and Refunds                      |      19 |          19 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       1 |         0 |      1 |        0 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **108** | **0** | **0** | **3** | **7** | **92** | **0** |
+| **Total** | **210** | **106** | **0** | **0** | **3** | **7** | **94** | **0** |
 
 ## 4. Milestone tracker
 
@@ -1315,23 +1315,23 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** One order only fulfilled once; failed attempt cannot release another active/paid allocation.\
   **Evidence:** [Independent P07-008 assertions, real stock/coupon rollback and review](./evidence/P07-007-008-receipts-allocation.md). Live holds only; confirmation and late reacquisition remain separately owned. Project-owner acceptance recorded [here](./evidence/P07-007-008-receipts-allocation.md#independent-acceptance).
 
-- [ ] **P07-009 — Reacquire expired stock and coupon on late verified payment**\
-  **Status:** `Not Started` · **Area:** Backend/payments\
+- [x] **P07-009 — Reacquire expired stock and coupon on late verified payment**\
+  **Status:** `Done` · **Area:** Backend/payments · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-12; FR-13; FR-09\
   **Depends on:** `P07-008`, `P06-010`\
   **Deliverable:** Check fulfillment eligibility first. For Cancelled orders, preserve collection, keep Cancelled, and create a payment-correction obligation without reallocation. For eligible orders, recheck both capacities atomically; otherwise preserve Paid and hold fulfillment for resolution.\
   **Acceptance:** Cancelled fulfillment never reopens or reallocates after collection; eligible orders confirm only with inventory/coupon allocation and cleared risk review. No false payment failure or forced allocation with insufficient capacity.\
-  **Evidence to attach:** Expired-hold late-payment tests.
+  **Evidence:** [P07-009 recovery/correction assertions, approved contract clarification and observed tests](./evidence/P07-009-010-late-risk-payments.md). Local/test only; exact-predecessor payment migration and unreserved correction intents. Project-owner acceptance recorded [here](./evidence/P07-009-010-late-risk-payments.md#independent-acceptance); prior P06-010 review remains separate.
 
-- [ ] **P07-010 — Hold high-risk verified collections for authorized review**\
-  **Status:** `Not Started` · **Area:** Backend/payments\
+- [x] **P07-010 — Hold high-risk verified collections for authorized review**\
+  **Status:** `Done` · **Area:** Backend/payments · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-12; FR-29\
   **Depends on:** `P07-008`\
   **Deliverable:** Model risk_level=1/other provider flags independently of allocation outcome and add authorized resolution.\
   **Acceptance:** Risk review cannot automatically release payment or fulfill without valid allocation.\
-  **Evidence to attach:** Risk decision/audit tests.
+  **Evidence:** [P07-010 current-admin/CSRF/replay/risk-hold assertions and observed tests](./evidence/P07-009-010-late-risk-payments.md). Local/test route only; no automatic fulfillment or payout; project-owner acceptance recorded [here](./evidence/P07-009-010-late-risk-payments.md#independent-acceptance).
 
 - [ ] **P07-011 — Handle multiple paid attempts for one order**\
   **Status:** `Not Started` · **Area:** Backend/payments\
@@ -2524,3 +2524,9 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 
 
 **29 October 2026 — P07-007/008 acceptance:** Each In Review → Done after explicit project-owner review acceptance: “দুটোই গ্রহণ করছি—Done করুন”. [Separate acceptance record](./evidence/P07-007-008-receipts-allocation.md#independent-acceptance). Overall: 210 tasks, 92 Done, 108 Not Started, 3 Blocked and 7 In Review. Accepted scope is the submitted local/test durable receipt replay and live allocation commitment with recorded checks. P07-005 review, late/cancelled correction, full risk/reconciliation operations and provider/legal/deployed/milestone gates remain separate.
+
+
+**29 October 2026 — P07-009/010 combined batch:** Each Not Started → In Progress → In Review under paired owner request. Added separately fenced paid late allocation recovery, cancelled correction-only receipts/unreserved obligations, and authorized audited risk decisions. Owner approved omitted method/policy only for under_review/not_reserved correction intents, mandatory before approval/payout; no channel or policy approval inferred. [Separate acceptance rows, migration, verification and review](./evidence/P07-009-010-late-risk-payments.md). Overall: 210 tasks, 92 Done, 106 Not Started, 3 Blocked and 9 In Review. Independent review pending for each task. P06-010/P07-005 reviews and provider/legal/deployed/milestone gates remain separate.
+
+
+**29 October 2026 — P07-009/010 acceptance:** Each In Review → Done following explicit project-owner review acceptance: “দুটোই গ্রহণ করছি—Done করুন”. [Separate acceptance record](./evidence/P07-009-010-late-risk-payments.md#independent-acceptance). Overall: 210 tasks, 94 Done, 106 Not Started, 3 Blocked and 7 In Review. Acceptance covers submitted local/test late allocation/correction handling and authorized risk review with recorded checks and approved contract clarification. P06-010/P07-005 reviews, refund approval/payout, confirmation, provider/legal/deployed and milestone gates remain separate.

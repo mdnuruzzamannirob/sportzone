@@ -1,3 +1,6 @@
+import { paymentRiskRoutes } from './modules/payments/payment-risk.routes.js'
+import { paymentRiskService } from './modules/payments/payment-risk.service.js'
+import { paymentSettlementService } from './modules/payments/payment-settlement.service.js'
 import { createHash } from 'node:crypto'
 import { paymentProcessingService } from './modules/payments/payment-processing.service.js'
 import { paymentVerificationService } from './modules/payments/payment-verification.service.js'
@@ -179,6 +182,21 @@ export async function composeIdentityRoutes(
         auth.sessions,
       ),
     )
+  if (config.ADMIN_AUTH_ENABLED && ['local', 'test'].includes(config.APP_ENV)) {
+    const orderAccess = verifiedFundingOrderAccess(connection)
+    const settlement = paymentSettlementService(
+      connection,
+      orderAccess,
+      verifiedAllocationService(connection),
+    )
+    auth.router.use(
+      paymentRiskRoutes(
+        paymentRiskService(connection, auth.adminAccounts, orderAccess, settlement),
+        auth.security,
+        auth.sessions,
+      ),
+    )
+  }
   let mediaService: ReturnType<typeof createMediaService> | undefined
   if (media) {
     if (!config.ADMIN_AUTH_ENABLED) throw new Error('Admin authentication required for media.')

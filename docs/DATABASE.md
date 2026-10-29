@@ -1152,6 +1152,12 @@ creates a second receipt but **does not** create a second order, coupon redempti
 review may hold delivery while collected funds remain verified. Never fold correction refunds into the merchandise refund
 progress indicator.
 
+The payments validator permits Paid when merchandise is fully funded or when verified correction-only
+funds exist with zero merchandise funding. Service-level order fencing restricts new late correction
+classification to cancelled fulfillment. Bootstrap accepts only the exact prior/current strict validator
+and additively enables correction-only projection; unknown drift aborts. Existing receipts/counters are
+not rewritten. Runtime only verifies protection; never downgrade the validator over correction-only data.
+
 ### 8.5 `paymentAttempts` — `payments`
 
 | Field | Type | Constraints / notes |
@@ -1365,14 +1371,21 @@ ordinal namespace. A completed claim does not mean the payout has completed.
 | `items[]` | embedded[] | For merchandise: `{orderItemId,unitAmounts:[{ordinal,amountPoisha}],amountPoisha}`; sum unit amounts equals line refund and each ordinal respects its unreimbursed net cap; empty for pure correction |
 | `merchandiseAmountPoisha`! / `deliveryAmountPoisha`! | int | Both nonnegative; correction uses explicit `correctionAmountPoisha` |
 | `correctionAmountPoisha`! / `amountPoisha`! | int | `amount = merchandise + delivery + correction`; positive total |
-| `method`! | enum(`gateway`,`manual_bkash`,`manual_nagad`,`manual_rocket`,`manual_bank`) | Original channel preferred if supported; fallback needs consent |
+| `method`? | enum(`gateway`,`manual_bkash`,`manual_nagad`,`manual_rocket`,`manual_bank`) | Required before approval/reservation/payout; may be absent only in under_review/not_reserved correction intent. Original channel preferred if supported; fallback needs consent |
 | `status`! | enum(`requested`,`under_review`,`approved`,`processing`,`completed`,`failed`,`rejected`) | Gateway initiation is not completion |
 | `capacityStatus`! | enum(`not_reserved`,`reserved`,`completed`,`released`) | Source-collection balance commitment stage |
 | `consentEvidenceRef`? | string | Required when switching from supported original channel to approved manual method |
 | `approvedBy`? / `approvedAt`? / `completedAt`? | ObjectId / Date / Date | Recorded approvals and verified payout |
 | `timingSnapshot`? | embedded | Set at approval: `{policyVersion,timezone:'Asia/Dhaka',targetBusinessDays:7,calendarVersion?,legalRuleRef?,targetAt?,status:calculated or under_review}`; approved shorter rule wins; no date without approved business calendar/start basis |
 | `decisionKey`! | string | Idempotency token for one approved refund obligation |
-| `policyVersion`! / `revision`! | string / int | Snapshot applicable approved rules; guarded updates |
+| `policyVersion`? / `revision`! | string / int | Approved policy required before approval/reservation/payout; may be absent only in under_review/not_reserved correction intent. Revision always required; guarded updates |
+
+Cancelled late collections create one correction obligation per verified linked source with
+basis/classification=payment_correction, empty items, zero merchandise/delivery, positive correction
+amount equal to the source correction entitlement and stable decisionKey. The initial writer creates
+only under_review/not_reserved intents, reserves no money and exposes no approval/payout operation.
+Missing method/policy is never replaced by a guessed default. Generic saves/updates/deletes cannot
+rewrite the intent; future refund approval needs its reviewed schema/capacity transition.
 
 `requestedAt` in the API maps to immutable refund `createdAt`. The public timeline is a bounded projection of durable status/audit events; retain approval/completion facts separately so history truncation cannot remove timing authority. Timing basis corrections require audited domain updates, preserve approvedAt, and must not delay an otherwise authorized payout.
 

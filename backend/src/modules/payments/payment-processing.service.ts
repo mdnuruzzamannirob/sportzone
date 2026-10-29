@@ -1,3 +1,6 @@
+import { createHash } from 'node:crypto'
+import { correctionObligationService } from '../refunds/correction-obligation.service.js'
+import { paymentSettlementService } from './payment-settlement.service.js'
 import type { ClientSession, Connection } from 'mongoose'
 import { assertOutsideTransaction, inTransaction } from '../../shared/database/transaction.js'
 import { ApiError } from '../../shared/errors/app-error.js'
@@ -41,7 +44,9 @@ export function paymentProcessingService(
   const { attempts, intake, collections } = paymentRecordModels(connection),
     payments = paymentModel(connection),
     initiations = paymentInitiationModel(connection),
-    audit = createAuditWriter(connection, true)
+    audit = createAuditWriter(connection, true),
+    corrections = correctionObligationService(connection),
+    settlement = paymentSettlementService(connection, orders, allocation, clock)
   async function applyReceipt(session: ClientSession, receipt: Receipt, now: Date) {
     const collectedAt = collectionTime(receipt.providerCollectedAt)
     if (
@@ -83,7 +88,19 @@ export function paymentProcessingService(
         if (!linked) throw new ApiError('STATE_CONFLICT')
         const payment = await payments.findById(linked.paymentId).session(session)
         if (!payment) throw new ApiError('STATE_CONFLICT')
-        if (payment.riskStatus === 'clear') {
+        const originalAttempt = linked.attemptId
+          ? await attempts.findById(linked.attemptId).session(session)
+          : undefined
+        if (
+          payment.riskStatus === 'clear' &&
+          !(
+            originalAttempt &&
+            originalAttempt.riskLevel === receipt.riskLevel &&
+            (receipt.riskLevel === 1
+              ? !receipt.riskTitle || originalAttempt.riskTitle === receipt.riskTitle
+              : Boolean(receipt.riskTitle) && originalAttempt.riskTitle === receipt.riskTitle)
+          )
+        ) {
           await payments.updateOne(
             { _id: payment._id, revision: payment.revision },
             { $inc: { revision: 1 }, $set: { riskStatus: 'review' } },
@@ -92,7 +109,13 @@ export function paymentProcessingService(
           if (linked.attemptId)
             await attempts.updateOne(
               { _id: linked.attemptId, state: 'verified_paid' },
-              { $set: { riskLevel: 1, lastCheckedAt: now } },
+              {
+                $set: {
+                  riskLevel: receipt.riskLevel,
+                  ...(receipt.riskTitle ? { riskTitle: receipt.riskTitle } : {}),
+                  lastCheckedAt: now,
+                },
+              },
               { session },
             )
           await orders.inspect(session, payment.orderId.toHexString())
@@ -102,7 +125,7 @@ export function paymentProcessingService(
             action: 'payment.receipt.risk_escalation',
             targetType: 'payment',
             targetId: payment._id.toHexString(),
-            operationKey: `risk-escalation:${previous._id}`,
+            operationKey: `risk-escalation:${previous._id}:${receipt.evidenceDigest}`,
             afterDigest: receipt.evidenceDigest,
             occurredAt: now,
           })
@@ -168,10 +191,12 @@ export function paymentProcessingService(
     if (!payment || payment.revision >= Number.MAX_SAFE_INTEGER)
       throw new ApiError('STATE_CONFLICT')
     const order = await orders.inspect(session, mapping.orderId)
-    if (!order || order.cancelled || order.expectedPoisha !== payment.expectedPoisha) return
+    if (!order || order.expectedPoisha !== payment.expectedPoisha) return
     const remaining = payment.expectedPoisha - payment.merchandiseFundedPoisha
     // Additional settled collections are preserved as unassigned, never counted as merchandise twice.
-    const merchandise = remaining === receipt.amountPoisha ? receipt.amountPoisha : 0
+    const correction = order.cancelled ? receipt.amountPoisha : 0
+    const merchandise =
+      !order.cancelled && remaining === receipt.amountPoisha ? receipt.amountPoisha : 0
     const nextFunded = payment.merchandiseFundedPoisha + merchandise,
       nextCollected = payment.verifiedCollectedPoisha + receipt.amountPoisha
     if (!Number.isSafeInteger(nextCollected)) throw new ApiError('STATE_CONFLICT')
@@ -197,9 +222,11 @@ export function paymentProcessingService(
               name,
               name === 'merchandiseAllocatedPoisha'
                 ? merchandise
-                : name === 'unassignedAllocatedPoisha'
-                  ? amount - merchandise
-                  : 0,
+                : name === 'correctionAllocatedPoisha'
+                  ? correction
+                  : name === 'unassignedAllocatedPoisha'
+                    ? amount - merchandise - correction
+                    : 0,
             ]),
           ),
           revision: 0,
@@ -221,8 +248,9 @@ export function paymentProcessingService(
           verifiedCollectedPoisha: nextCollected,
           merchandiseFundedPoisha: nextFunded,
           unassignedCollectedPoisha:
-            payment.unassignedCollectedPoisha + receipt.amountPoisha - merchandise,
-          ...(nextFunded === payment.expectedPoisha &&
+            payment.unassignedCollectedPoisha + receipt.amountPoisha - merchandise - correction,
+          correctionCollectedPoisha: payment.correctionCollectedPoisha + correction,
+          ...((nextFunded === payment.expectedPoisha || (order.cancelled && correction > 0)) &&
           !['partially_refunded', 'refunded'].includes(payment.paymentStatus)
             ? { paymentStatus: 'paid' }
             : {}),
@@ -247,6 +275,7 @@ export function paymentProcessingService(
             providerValidationId: receipt.validationId,
             bankTranId: receipt.bankTranId,
             riskLevel: receipt.riskLevel,
+            ...(receipt.riskTitle ? { riskTitle: receipt.riskTitle } : {}),
             lastCheckedAt: now,
             verification: {
               verifiedAt: now,
@@ -261,10 +290,18 @@ export function paymentProcessingService(
         },
         { session },
       )
+    if (correction > 0)
+      await corrections.create(session, {
+        orderId: mapping.orderId,
+        paymentId: mapping.paymentId,
+        sourceCollectionId: linked._id.toHexString(),
+        amountPoisha: correction,
+        decisionKey: createHash('sha256').update(`late-cancelled:${linked._id}`).digest('hex'),
+      })
     let committed = false
     if (order.eligible && !risk && merchandise > 0 && nextFunded === payment.expectedPoisha)
       committed = await allocation.commitLive(session, order.binding)
-    if (order.eligible && (merchandise > 0 || risk))
+    if (risk || (order.eligible && merchandise > 0))
       await orders.finish(session, mapping.orderId, committed, risk)
     await audit(session, {
       actorType: 'system',
@@ -352,6 +389,19 @@ export function paymentProcessingService(
               occurredAt: now,
             })
           })
+          if (verified.kind === 'receipts') {
+            for (const paymentId of new Set(
+              verified.receipts.flatMap((receipt) =>
+                receipt.mapping && receipt.referenceMatch ? [receipt.mapping.paymentId] : [],
+              ),
+            )) {
+              try {
+                await settlement.recover(paymentId)
+              } catch {
+                /* Receipt remains durably Paid/on hold; capacity retry never reverses funds. */
+              }
+            }
+          }
           return 'committed'
         } catch (error) {
           if (!(error && typeof error === 'object' && 'code' in error && error.code === 11000))

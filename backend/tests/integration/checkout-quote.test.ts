@@ -1,3 +1,8 @@
+import { paymentRiskRoutes } from '../../src/modules/payments/payment-risk.routes.js'
+import { paymentRiskService } from '../../src/modules/payments/payment-risk.service.js'
+import { paymentSettlementService } from '../../src/modules/payments/payment-settlement.service.js'
+import { createAdminAccountAccess } from '../../src/modules/auth/admin-account.service.js'
+import { initializeCorrectionPersistence } from '../../src/modules/refunds/refund.persistence.js'
 import { createAuditWriter } from '../../src/modules/audit/audit.service.js'
 import { paymentProcessingService } from '../../src/modules/payments/payment-processing.service.js'
 import { paymentVerificationService } from '../../src/modules/payments/payment-verification.service.js'
@@ -266,6 +271,7 @@ beforeAll(async () => {
   await initializeCheckoutIntentPersistence(db.connection)
   await initializeOrderPersistence(db.connection)
   await initializePaymentPersistence(db.connection)
+  await initializeCorrectionPersistence(db.connection)
   await initializeAllocationPersistence(db.connection)
   await initializeAuditPersistence(db.connection)
   await initializeJobLeases(db.connection)
@@ -318,6 +324,7 @@ beforeEach(async () => {
     'paymentInitiations',
     'providerReceiptIntake',
     'paymentCollections',
+    'refunds',
     'inventoryReservations',
     'inventoryMovements',
     'notifications',
@@ -1847,11 +1854,13 @@ async function initiationApp(
     ReturnType<typeof createSslcommerzAdapter>,
     'validate' | 'queryTransaction'
   >,
+  adminEnabled = false,
 ) {
   await initializePaymentRecordPersistence(db.connection)
   await initializePaymentInitiationPersistence(db.connection)
   const config = loadEnvironment({
     ...identityEnvironment(),
+    ADMIN_AUTH_ENABLED: adminEnabled ? 'true' : 'false',
     SESSION_SECRET: authSecret,
     GUEST_ACCESS_ENABLED: 'true',
     GUEST_ORDER_ACCESS_TTL_SECONDS: '300',
@@ -1930,9 +1939,12 @@ async function initiationApp(
   )
   return { root, transport }
 }
-async function customerHeldOrder(withCoupon = false) {
+async function customerHeldOrder(
+  withCoupon = false,
+  existingVariant?: Awaited<ReturnType<typeof variant>>,
+) {
   const who = await customer(),
-    selected = await variant(2000, 1500)
+    selected = existingVariant ?? (await variant(2000, 1500))
   await settingsModel(db.connection).updateOne(
     {},
     { $set: { 'paymentChannels.bkashEnabled': true } },
@@ -1942,7 +1954,11 @@ async function customerHeldOrder(withCoupon = false) {
       { channel: 'bkash', active: true, minPoisha: 1, maxPoisha: 1000000 },
     ]),
   })
-  if (withCoupon) await coupon()
+  if (
+    withCoupon &&
+    !(await couponModels(db.connection).coupons.exists({ codeNormalized: 'SYNTHETIC' }))
+  )
+    await coupon()
   const input = {
       ...body([selected.item]),
       method: 'bkash',
@@ -2205,8 +2221,11 @@ it('hosted-init replay withholds a historical URL after channel disablement, ris
   expect(transport).toHaveBeenCalledTimes(1)
 })
 
-async function processingFixture(withCoupon = false) {
-  const held = await customerHeldOrder(withCoupon),
+async function processingFixture(
+  withCoupon = false,
+  existingVariant?: Awaited<ReturnType<typeof variant>>,
+) {
+  const held = await customerHeldOrder(withCoupon, existingVariant),
     { root } = await initiationApp()
   await request(root)
     .post(`/api/v1/orders/${held.result.id}/payment-attempts`)
@@ -2233,6 +2252,7 @@ async function processingFixture(withCoupon = false) {
     currency_amount: decimal(attempt.expectedAmountPoisha),
     tran_date: new Date(now.getTime() - 1000).toISOString(),
     risk_level: '0',
+    risk_title: 'Safe',
   }
   const transport = vi
     .fn<typeof fetch>()
@@ -2340,21 +2360,29 @@ it('receipt batch: later paid proof supersedes terminal failure without duplicat
   ).toMatchObject({ state: 'verified_paid' })
 })
 it.each(['risk', 'expired'])(
-  'receipt batch: preserves paid money while %s prevents live allocation commit',
+  'receipt batch: risk retains hold while expired paid capacity is recovered safely: %s',
   async (mode) => {
     const f = await processingFixture(true)
     if (mode === 'risk') f.change({ risk_level: '1' })
     else now = new Date(now.getTime() + 900001)
     expect(await f.processor().process(f.claim)).toBe('committed')
     expect(
-      await paymentModel(db.connection).findOne({ orderId: f.result.id }).lean(),
+      await paymentModel(db.connection)
+        .findOne({ orderId: f.result.id })
+        .sort({ generation: -1 })
+        .lean(),
     ).toMatchObject({ paymentStatus: 'paid' })
     expect(
       await productModels(db.connection).variants.findById(f.selected.row._id).lean(),
-    ).toMatchObject({ stock: { reserved: 2, committed: 0 } })
+    ).toMatchObject({
+      stock: mode === 'risk' ? { reserved: 2, committed: 0 } : { reserved: 0, committed: 2 },
+    })
     expect(
-      await couponModels(db.connection).redemptions.findOne({ orderId: f.result.id }).lean(),
-    ).toMatchObject({ status: 'held' })
+      await couponModels(db.connection)
+        .redemptions.findOne({ orderId: f.result.id })
+        .sort({ generation: -1 })
+        .lean(),
+    ).toMatchObject({ status: mode === 'risk' ? 'held' : 'redeemed' })
   },
 )
 it.each(['unmatched', 'under', 'over', 'cancelled'])(
@@ -2374,10 +2402,20 @@ it.each(['unmatched', 'under', 'over', 'cancelled'])(
       })
     expect(await f.processor().process(f.claim)).toBe('committed')
     expect(await paymentRecordModels(db.connection).intake.countDocuments()).toBe(1)
-    expect(await paymentRecordModels(db.connection).collections.countDocuments()).toBe(0)
+    expect(await paymentRecordModels(db.connection).collections.countDocuments()).toBe(
+      mode === 'cancelled' ? 1 : 0,
+    )
     expect(
       await paymentModel(db.connection).findOne({ orderId: f.result.id }).lean(),
-    ).toMatchObject({ paymentStatus: 'pending', verifiedCollectedPoisha: 0 })
+    ).toMatchObject(
+      mode === 'cancelled'
+        ? {
+            paymentStatus: 'paid',
+            merchandiseFundedPoisha: 0,
+            correctionCollectedPoisha: f.attempt.expectedAmountPoisha,
+          }
+        : { paymentStatus: 'pending', verifiedCollectedPoisha: 0 },
+    )
   },
 )
 it('receipt batch: offset-free provider time remains retryable and does not guess or lose historical evidence', async () => {
@@ -2412,6 +2450,7 @@ it('receipt batch: failure after stock writes rolls back stock, coupon, receipts
     f.verifier,
     verifiedFundingOrderAccess(db.connection),
     {
+      ensureCommitted: real.ensureCommitted,
       commitLive: async (session, binding) => {
         await real.commitLive(session, binding)
         throw new Error('synthetic-after-allocation')
@@ -2552,8 +2591,8 @@ it('receipt batch: competing expiry and verified late collection preserve money 
     verifiedCollectedPoisha: f.attempt.expectedAmountPoisha,
   })
   const stock = await productModels(db.connection).variants.findById(f.selected.row._id).lean()
-  expect(stock?.stock.committed).toBe(0)
-  expect([0, 2]).toContain(stock?.stock.reserved)
+  expect(stock?.stock.committed).toBe(2)
+  expect(stock?.stock.reserved).toBe(0)
   expect(await paymentRecordModels(db.connection).intake.countDocuments()).toBe(1)
 })
 it('receipt batch: two distinct concurrent collections cannot overfund merchandise or double commit capacity', async () => {
@@ -2618,4 +2657,405 @@ it('receipt batch: later collection cannot downgrade an existing refund projecti
     paymentStatus: 'partially_refunded',
     unassignedCollectedPoisha: f.attempt.expectedAmountPoisha,
   })
+})
+async function lateRiskFixture(initialRisk = '1') {
+  const f = await processingFixture(true)
+  f.change({ risk_level: initialRisk })
+  expect(await f.processor().process(f.claim)).toBe('committed')
+  const orderAccess = verifiedFundingOrderAccess(db.connection)
+  const settlement = paymentSettlementService(
+    db.connection,
+    orderAccess,
+    verifiedAllocationService(db.connection, () => now),
+    () => now,
+  )
+  const risk = paymentRiskService(
+    db.connection,
+    createAdminAccountAccess(db.connection, identities, sessions),
+    orderAccess,
+    settlement,
+    () => now,
+  )
+  const riskApp = createApp({ apiRouter: paymentRiskRoutes(risk, security, sessions) })
+  const admin = await customer('admin')
+  const paymentId = f.attempt.paymentId.toHexString()
+  const post = (
+    data = { decision: 'approve', reason: 'Synthetic independent review' },
+    key = 'risk-review',
+  ) =>
+    request(riskApp)
+      .post(`/api/v1/admin/payments/${paymentId}/risk-decisions`)
+      .set('Origin', 'http://localhost:5173')
+      .set('Cookie', admin.cookie)
+      .set('X-CSRF-Token', admin.csrf)
+      .set('Idempotency-Key', key)
+      .send(data)
+  return { ...f, risk, riskApp, admin, paymentId, post }
+}
+it('late/risk batch: late funds recover released stock and coupon atomically under a new generation', async () => {
+  const f = await processingFixture(true)
+  now = new Date(now.getTime() + 900001)
+  await inTransaction(db.connection, (session) =>
+    checkoutExpiryService(db.connection, () => now).expire(session, f.result.id, 1),
+  )
+  expect(await f.processor().process(f.claim)).toBe('committed')
+  expect(
+    await inventoryReservationModel(db.connection)
+      .find({ orderId: f.result.id })
+      .sort({ generation: 1 })
+      .lean(),
+  ).toMatchObject([
+    { generation: 1, status: 'released' },
+    { generation: 2, status: 'committed' },
+  ])
+  expect(
+    await couponModels(db.connection)
+      .redemptions.find({ orderId: f.result.id })
+      .sort({ generation: 1 })
+      .lean(),
+  ).toMatchObject([
+    { generation: 1, status: 'released' },
+    { generation: 2, status: 'redeemed' },
+  ])
+  expect(await paymentModel(db.connection).findOne({ orderId: f.result.id }).lean()).toMatchObject({
+    paymentStatus: 'paid',
+  })
+})
+it.each(['stock', 'coupon'])(
+  'late/risk batch: unavailable %s preserves Paid and rolls back all partial reacquisition',
+  async (missing) => {
+    const f = await processingFixture(true)
+    now = new Date(now.getTime() + 900001)
+    await inTransaction(db.connection, (session) =>
+      checkoutExpiryService(db.connection, () => now).expire(session, f.result.id, 1),
+    )
+    if (missing === 'stock')
+      await productModels(db.connection).variants.updateOne(
+        { _id: f.selected.row._id },
+        { $set: { 'stock.physical': 0 } },
+      )
+    else
+      await couponModels(db.connection).coupons.updateOne(
+        { codeNormalized: 'SYNTHETIC' },
+        { $set: { status: 'inactive' } },
+      )
+    expect(await f.processor().process(f.claim)).toBe('committed')
+    expect(
+      await paymentModel(db.connection).findOne({ orderId: f.result.id }).lean(),
+    ).toMatchObject({
+      paymentStatus: 'paid',
+      merchandiseFundedPoisha: f.attempt.expectedAmountPoisha,
+    })
+    expect(
+      await inventoryReservationModel(db.connection).countDocuments({
+        orderId: f.result.id,
+        generation: 2,
+      }),
+    ).toBe(0)
+    expect(
+      await productModels(db.connection).variants.findById(f.selected.row._id).lean(),
+    ).toMatchObject({ stock: { reserved: 0, committed: 0 } })
+    expect(await orderModels(db.connection).orders.findById(f.result.id).lean()).toMatchObject({
+      fulfillmentStatus: 'pending',
+      fulfillmentHold: 'allocation_shortfall',
+    })
+  },
+)
+it('late/risk batch: cancelled late funds create one correction-only obligation without any reallocation or invented payout', async () => {
+  const f = await processingFixture(true)
+  now = new Date(now.getTime() + 900001)
+  await inTransaction(db.connection, (session) =>
+    checkoutExpiryService(db.connection, () => now).expire(session, f.result.id, 1),
+  )
+  await orderModels(db.connection).orders.updateOne(
+    { _id: f.result.id, fulfillmentStatus: 'pending' },
+    { $set: { fulfillmentStatus: 'cancelled', cancelledAt: now } },
+  )
+  expect(
+    await Promise.all([f.processor().process(f.claim), f.processor().process(f.claim)]),
+  ).toEqual(['committed', 'committed'])
+  expect(await paymentModel(db.connection).findOne({ orderId: f.result.id }).lean()).toMatchObject({
+    paymentStatus: 'paid',
+    merchandiseFundedPoisha: 0,
+    correctionCollectedPoisha: f.attempt.expectedAmountPoisha,
+    correctionRefundHeldPoisha: 0,
+  })
+  const refunds = await db.connection.collection('refunds').find({}).toArray()
+  expect(refunds).toHaveLength(1)
+  expect(refunds[0]).toMatchObject({
+    status: 'under_review',
+    capacityStatus: 'not_reserved',
+    classification: 'payment_correction',
+    amountPoisha: f.attempt.expectedAmountPoisha,
+  })
+  expect(refunds[0]).not.toHaveProperty('method')
+  expect(refunds[0]).not.toHaveProperty('policyVersion')
+  expect(await orderModels(db.connection).orders.findById(f.result.id).lean()).toMatchObject({
+    fulfillmentStatus: 'cancelled',
+  })
+  expect(await inventoryReservationModel(db.connection).countDocuments({ generation: 2 })).toBe(0)
+})
+it('late/risk batch: authorized approval clears risk only with once-only committed allocation and durable replay', async () => {
+  const f = await lateRiskFixture()
+  await f
+    .post()
+    .expect(200)
+    .expect((result) =>
+      expect(result.body.data).toEqual({ riskStatus: 'clear', fulfillmentHold: 'admin_review' }),
+    )
+  await f.post().expect(200)
+  expect(
+    await db.connection.collection('auditLogs').countDocuments({ action: 'payment.risk.decision' }),
+  ).toBe(1)
+  expect(
+    await productModels(db.connection).variants.findById(f.selected.row._id).lean(),
+  ).toMatchObject({ stock: { reserved: 0, committed: 2 } })
+  // Same already-reviewed provider flag is a replay, not a fresh risk review.
+  expect(await f.processor().process(f.claim)).toBe('committed')
+  expect(await paymentModel(db.connection).findById(f.paymentId).lean()).toMatchObject({
+    riskStatus: 'clear',
+    paymentStatus: 'paid',
+  })
+  f.change({ bank_tran_id: 'new-risk-bank', val_id: 'new-risk-validation' })
+  expect(await f.processor().process({ ...f.claim, validationId: 'new-risk-validation' })).toBe(
+    'committed',
+  )
+  await f
+    .post()
+    .expect(200)
+    .expect((result) => expect(result.body.data.riskStatus).toBe('review'))
+  await f.post({ decision: 'reject', reason: 'Different command' }).expect(409)
+  expect(await paymentModel(db.connection).findById(f.paymentId).lean()).toMatchObject({
+    riskStatus: 'review',
+  })
+})
+it('late/risk batch: rejection preserves verified Paid and risk hold without allocating, releasing or paying', async () => {
+  const f = await lateRiskFixture()
+  await f
+    .post({ decision: 'reject', reason: 'Synthetic risk rejection' })
+    .expect(200)
+    .expect((result) =>
+      expect(result.body.data).toEqual({ riskStatus: 'rejected', fulfillmentHold: 'risk_review' }),
+    )
+  expect(await paymentModel(db.connection).findById(f.paymentId).lean()).toMatchObject({
+    paymentStatus: 'paid',
+    riskStatus: 'rejected',
+  })
+  expect(
+    await productModels(db.connection).variants.findById(f.selected.row._id).lean(),
+  ).toMatchObject({ stock: { reserved: 2, committed: 0 } })
+  expect(await db.connection.collection('refunds').countDocuments()).toBe(0)
+})
+it('late/risk batch: approving expired risk payment without capacity keeps Paid on allocation hold', async () => {
+  const f = await lateRiskFixture()
+  now = new Date(now.getTime() + 900001)
+  await productModels(db.connection).variants.updateOne(
+    { _id: f.selected.row._id },
+    { $set: { 'stock.physical': 2 } },
+  )
+  await couponModels(db.connection).coupons.updateOne(
+    { codeNormalized: 'SYNTHETIC' },
+    { $set: { status: 'inactive' } },
+  )
+  await f
+    .post()
+    .expect(200)
+    .expect((result) =>
+      expect(result.body.data).toEqual({
+        riskStatus: 'clear',
+        fulfillmentHold: 'allocation_shortfall',
+      }),
+    )
+  expect(await paymentModel(db.connection).findById(f.paymentId).lean()).toMatchObject({
+    paymentStatus: 'paid',
+  })
+  expect(await inventoryReservationModel(db.connection).countDocuments({ generation: 2 })).toBe(0)
+})
+it('late/risk batch: admin route enforces Origin, CSRF, role, current account, exact input and durable key', async () => {
+  const f = await lateRiskFixture(),
+    path = `/api/v1/admin/payments/${f.paymentId}/risk-decisions`
+  await request(f.riskApp).post(path).send({ decision: 'approve', reason: 'review' }).expect(403)
+  await request(f.riskApp)
+    .post(path)
+    .set('Cookie', f.admin.cookie)
+    .set('Origin', 'http://localhost:5173')
+    .send({ decision: 'approve', reason: 'review' })
+    .expect(403)
+  await request(f.riskApp)
+    .post(path)
+    .set('Cookie', f.who.cookie)
+    .set('Origin', 'http://localhost:5173')
+    .set('X-CSRF-Token', f.who.csrf)
+    .send({ decision: 'approve', reason: 'review' })
+    .expect(403)
+  await f.post({ decision: 'approve', reason: '' }).expect(400)
+  await f.post({ decision: 'approve', reason: 'review' }, '').expect(400)
+  await identities.users.updateOne({ _id: f.admin.user._id }, { $set: { status: 'suspended' } })
+  await f.post().expect(403)
+  await expect(
+    f.risk.decide(
+      f.admin.credentials.customerToken,
+      f.paymentId,
+      { decision: 'approve', reason: 'Direct service denial' },
+      'direct-denial',
+    ),
+  ).rejects.toMatchObject({ code: 'AUTH_REQUIRED' })
+  expect(await paymentModel(db.connection).findById(f.paymentId).lean()).toMatchObject({
+    riskStatus: 'review',
+  })
+})
+it.each(['stock', 'coupon'])(
+  'late/risk batch: concurrent paid orders competing for last %s retain both collections but commit only one allocation',
+  async (capacity) => {
+    if (capacity === 'coupon') await coupon({ overallLimit: 1 })
+    const first = await processingFixture(capacity === 'coupon')
+    now = new Date(now.getTime() + 900001)
+    await inTransaction(db.connection, (session) =>
+      checkoutExpiryService(db.connection, () => now).expire(session, first.result.id, 1),
+    )
+    const second = await processingFixture(
+      capacity === 'coupon',
+      capacity === 'stock' ? first.selected : undefined,
+    )
+    second.change({ val_id: 'other-validation', bank_tran_id: 'other-bank' })
+    now = new Date(now.getTime() + 900001)
+    await inTransaction(db.connection, (session) =>
+      checkoutExpiryService(db.connection, () => now).expire(session, second.result.id, 1),
+    )
+    if (capacity === 'stock')
+      await productModels(db.connection).variants.updateOne(
+        { _id: first.selected.row._id },
+        { $set: { 'stock.physical': 2 } },
+      )
+    expect(
+      await Promise.all([
+        first.processor().process(first.claim),
+        second.processor().process({ ...second.claim, validationId: 'other-validation' }),
+      ]),
+    ).toEqual(['committed', 'committed'])
+    expect(await paymentModel(db.connection).countDocuments({ paymentStatus: 'paid' })).toBe(2)
+    expect(await paymentRecordModels(db.connection).intake.countDocuments()).toBe(2)
+    expect(
+      await inventoryReservationModel(db.connection).countDocuments({ status: 'committed' }),
+    ).toBe(1)
+    expect(
+      await orderModels(db.connection).orders.countDocuments({
+        fulfillmentHold: 'allocation_shortfall',
+      }),
+    ).toBe(1)
+    if (capacity === 'coupon')
+      expect(
+        await couponModels(db.connection).coupons.findOne({ codeNormalized: 'SYNTHETIC' }).lean(),
+      ).toMatchObject({ heldCount: 0, redeemedCount: 1 })
+    else
+      expect(
+        await productModels(db.connection).variants.findById(first.selected.row._id).lean(),
+      ).toMatchObject({ stock: { physical: 2, reserved: 0, committed: 2 } })
+  },
+)
+it('late/risk batch: competing authorized decisions have one audited winner with no duplicate allocation or automatic payout', async () => {
+  const f = await lateRiskFixture()
+  const results = await Promise.all([
+    f.post({ decision: 'approve', reason: 'Synthetic approval' }, 'approve-key'),
+    f.post({ decision: 'reject', reason: 'Synthetic rejection' }, 'reject-key'),
+  ])
+  expect(results.map((result) => result.status).sort()).toEqual([200, 409])
+  expect(
+    await db.connection.collection('auditLogs').countDocuments({ action: 'payment.risk.decision' }),
+  ).toBe(1)
+  expect(await paymentModel(db.connection).findById(f.paymentId).lean()).toMatchObject({
+    paymentStatus: 'paid',
+  })
+  expect(await db.connection.collection('refunds').countDocuments()).toBe(0)
+})
+it('late/risk batch: a new flag holds already confirmed fulfillment and approval needs retained committed capacity', async () => {
+  const f = await lateRiskFixture('0')
+  // Synthetic confirmed projection; the owning confirmation workflow is not activated by this test.
+  await orderModels(db.connection).orders.updateOne(
+    { _id: f.result.id, fulfillmentStatus: 'pending' },
+    { $set: { fulfillmentStatus: 'confirmed', confirmedAt: now, fulfillmentHold: 'none' } },
+  )
+  f.change({ risk_level: '1' })
+  expect(await f.processor().process(f.claim)).toBe('committed')
+  expect(await orderModels(db.connection).orders.findById(f.result.id).lean()).toMatchObject({
+    fulfillmentStatus: 'confirmed',
+    fulfillmentHold: 'risk_review',
+  })
+  await f
+    .post()
+    .expect(200)
+    .expect((result) =>
+      expect(result.body.data).toEqual({ riskStatus: 'clear', fulfillmentHold: 'none' }),
+    )
+  expect(
+    await productModels(db.connection).variants.findById(f.selected.row._id).lean(),
+  ).toMatchObject({ stock: { reserved: 0, committed: 2 } })
+})
+
+it('late/risk batch: independently verified contradictory risk description holds funds without fabricating the numeric risk level', async () => {
+  const f = await processingFixture()
+  f.change({ risk_level: '0', risk_title: 'Not Safe' })
+  expect(await f.processor().process(f.claim)).toBe('committed')
+  expect(await paymentModel(db.connection).findById(f.attempt.paymentId).lean()).toMatchObject({
+    paymentStatus: 'paid',
+    riskStatus: 'review',
+  })
+  expect(
+    await paymentRecordModels(db.connection).attempts.findById(f.attempt._id).lean(),
+  ).toMatchObject({ riskLevel: 0, riskTitle: 'Not Safe' })
+  expect(
+    await productModels(db.connection).variants.findById(f.selected.row._id).lean(),
+  ).toMatchObject({ stock: { reserved: 2, committed: 0 } })
+})
+
+it('late/risk batch: missing audit protection cannot clear risk and the identical key works after safe repair', async () => {
+  const f = await lateRiskFixture()
+  await db.connection.collection('auditLogs').dropIndex('audit_cause_unique')
+  try {
+    await f.post().expect(503)
+    expect(await paymentModel(db.connection).findById(f.paymentId).lean()).toMatchObject({
+      riskStatus: 'review',
+    })
+  } finally {
+    await initializeAuditPersistence(db.connection)
+  }
+  await f.post().expect(200)
+})
+it('late/risk batch: actual root composition registers current-admin decisions only when admin auth is enabled', async () => {
+  const f = await lateRiskFixture()
+  const { root } = await initiationApp(false, undefined, true)
+  await request(root)
+    .post(`/api/v1/admin/payments/${f.paymentId}/risk-decisions`)
+    .set('Origin', 'https://admin.example.test')
+    .set('Cookie', f.admin.cookie)
+    .set('X-CSRF-Token', f.admin.csrf)
+    .set('Idempotency-Key', 'root-risk')
+    .send({ decision: 'approve', reason: 'Synthetic root review' })
+    .expect(200)
+  const disabled = await initiationApp(false)
+  await request(disabled.root)
+    .post(`/api/v1/admin/payments/${f.paymentId}/risk-decisions`)
+    .send({ decision: 'approve', reason: 'No admin activation' })
+    .expect(404)
+})
+it('late/risk batch: distinct fresh verified risk descriptions on one receipt each create a review without duplicate money', async () => {
+  const f = await lateRiskFixture()
+  await f.post().expect(200)
+  f.change({ risk_title: 'Not Safe' })
+  expect(await f.processor().process(f.claim)).toBe('committed')
+  await f
+    .post({ decision: 'approve', reason: 'Second verified flag reviewed' }, 'second-risk')
+    .expect(200)
+  f.change({ risk_title: 'Manual Review' })
+  expect(await f.processor().process(f.claim)).toBe('committed')
+  expect(await paymentModel(db.connection).findById(f.paymentId).lean()).toMatchObject({
+    riskStatus: 'review',
+    verifiedCollectedPoisha: f.attempt.expectedAmountPoisha,
+  })
+  expect(
+    await db.connection
+      .collection('auditLogs')
+      .countDocuments({ action: 'payment.receipt.risk_escalation' }),
+  ).toBe(2)
+  expect(await paymentRecordModels(db.connection).intake.countDocuments()).toBe(1)
 })

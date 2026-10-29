@@ -698,6 +698,15 @@ owned; no automatic legal/deadline clearance, late reacquisition or reliable pen
 Repeat conflicting receipt audit evidence must acknowledge without duplicate audit facts; a different
 digest under one audit operation identity must fail without overwriting the first event.
 
+Late/risk payment tests must separately commit verified funds before failure-prone expired allocation
+recovery; check last-stock and last-coupon races, fully rolled-back losers with Paid preserved, cancelled
+orders never reopened, source-specific correction intents, zero invented method/policy/payout, and exact
+known-predecessor schema rollout preserving financial history. Risk decisions require current admin,
+Origin/CSRF, strict input and durable idempotency; test concurrent approve/reject, changed-command
+conflict, historical approval after a fresh risk signal, already reviewed flag replay, confirmed-order
+hold/clear, and approval without capacity leaving a hold. Review/rejection never implicitly releases
+another attempt or pays. Public DTOs and actual root router must agree with generated artifacts.
+
 Hosted-initiation verification uses real replica-set transactions, actual stock/coupon APIs and
 synthetic provider transport. Assert committed durable dispatch before I/O, one call across concurrent
 identical/different keys and process instances, reauthorization/CSRF/order isolation, request conflicts,

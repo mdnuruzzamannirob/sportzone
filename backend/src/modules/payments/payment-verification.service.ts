@@ -64,6 +64,9 @@ export function paymentVerificationService(
       ![0, 1].includes(record.riskLevel ?? -1)
     )
       return undefined
+    const risk =
+      record.riskLevel === 1 ||
+      Boolean(record.riskTitle && record.riskTitle.toLowerCase() !== 'safe')
     const linked = await mapping(record.tranId),
       referenceMatch = record.tranId === notificationTranId,
       amountDisposition = !linked
@@ -86,14 +89,14 @@ export function paymentVerificationService(
       referenceMatch,
       amountDisposition,
       providerAmountConsistent,
-      riskStatus: record.riskLevel === 1 ? ('review_required' as const) : ('clear' as const),
+      riskStatus: risk ? ('review_required' as const) : ('clear' as const),
       // Permission for later transactional consideration only, never proof of funding/fulfillment.
       allocationCandidate:
         Boolean(linked) &&
         referenceMatch &&
         amountDisposition === 'matched' &&
         providerAmountConsistent &&
-        record.riskLevel === 0,
+        !risk,
     }
   }
   return {

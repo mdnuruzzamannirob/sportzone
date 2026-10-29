@@ -8,6 +8,16 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 29 October 2026 — Late-payment recovery and authorized risk decisions
+
+- Added independently fenced late stock/coupon recovery preserving Paid on capacity failure, and
+  cancelled-order correction-only receipts with immutable unreserved refund review intents.
+- Added local/test admin risk decisions with current auth/CSRF, durable command replay and audited
+  approve/reject. Allocation remains mandatory; duplicate provider flags do not replay an approval.
+- Owner approved omitting unknown refund method/policy only before approval in an unreserved review
+  intent. Added exact-predecessor payment validator rollout and canonical correction-intent bootstrap.
+  The project owner accepted P07-009/P07-010; no live provider, payout, legal or milestone gate accepted.
+
 ## 29 October 2026 — Durable payment receipts and live allocation commitment
 
 - Added local/test opt-in durable receipt processing with merchant-scoped deduplication, guarded

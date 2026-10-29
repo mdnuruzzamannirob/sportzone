@@ -1,4 +1,9 @@
 import {
+  paymentRiskParams,
+  paymentRiskInput,
+  paymentRiskResult,
+} from '../src/modules/payments/payment-risk.schema.js'
+import {
   paymentIpnForm,
   paymentReturnForm,
   paymentReturnParams,
@@ -341,6 +346,23 @@ export const operations: readonly Operation[] = [
         'Display hint only. Empty-body 303 strips all provider query/form values; no session/cookie/access or financial state transition. Untrusted success never establishes Paid.',
     }),
   ),
+  {
+    method: 'POST',
+    path: '/admin/payments/{paymentId}/risk-decisions',
+    namespace: 'admin',
+    query: empty,
+    replay:
+      'Current authorized replay returns current risk/hold without reapplying a historical approval. Changed body conflicts; every new decision is audited in the payment transaction.',
+    access: 'admin',
+    csrf: true,
+    idempotency: true,
+    params: paymentRiskParams,
+    request: paymentRiskInput,
+    response: paymentRiskResult,
+    status: 200,
+    activation:
+      'ADMIN_AUTH_ENABLED in local/test only; independent risk decision, current admin/CSRF, durable idempotency and funded allocation gates; no payout or confirmation',
+  },
   {
     method: 'POST',
     path: '/orders/{orderId}/payment-attempts',

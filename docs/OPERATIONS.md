@@ -462,11 +462,11 @@ Operator-approved safe behavior pending timezone evidence: accept only valid, ex
 timestamps and fail closed on timezone-free provider tran_date. Do not replace it with current time.
 A 503 means uncertain processing, not noncollection. Test doubles with explicit offsets are not provider
 qualification. Pending/unavailable validation and failed transactions remain retryable; no poll worker
-is enabled here. Quarantined/mismatched/cancelled-order intake and unassigned additional collections
-require the owning supervised reconciliation/correction workflow; do not manually mark them funded.
+is enabled here. Quarantined/mismatched intake, cancelled correction obligations and unassigned additional collections
+require the owning supervised reconciliation/correction workflow; do not manually convert them into merchandise funding.
 
-Exact linked funding and eligible live allocations commit together. Risk/expired holds retain funds
-without forced fulfillment or reacquisition. Committed orders remain pending/admin_review for the
+Initial linked funding and eligible live allocations commit together. Risk/expired holds retain funds
+without forced fulfillment; late recovery follows the separately fenced rules below. Committed orders remain pending/admin_review for the
 separate confirmation/deadline/notification workflow. A terminal nonpayment updates its attempt only,
 never releases another attempt's allocations. Inspect immutable intake, collection, guarded attempt and
 audit events for duplicate identity conflicts or risk escalation; preserve the original core proof.
@@ -474,10 +474,31 @@ Disable PAYMENT_PROCESSING_ENABLED first to roll back local processing while ret
 IPN then returns 503. Preserve all receipt/payment/audit and allocation history. Disabling the flag
 cannot roll back verified money, and any deployed recovery still requires qualified reconciliation.
 
+Late allocation recovery follows the durable receipt transaction in a separate payment/order-fenced
+transaction. It honors current stock and coupon capacity together, reuses valid committed generation,
+and rolls back any partial reacquisition on shortfall. Verified Paid survives unavailable capacity.
+Cancelled late money remains cancelled, links entirely as correction, and creates an immutable
+under_review/not_reserved source obligation with no guessed method/policy or automatic payout.
+
+After build, rerun the local/test `bootstrap-payment-initiation.mjs`: it applies only the exact known
+payments-validator additive change and provisions the canonical refunds correction-intent slice and
+indexes. Repeats preserve data; unknown validator/index protection fails closed. HTTP never migrates.
+Existing full/unknown refunds schemas require separate reviewed migration rather than replacement.
+An old backend cannot safely restore its former validator over correction-only Paid data. Preserve
+all receipt/source/obligation/audit facts; rollback means disable writes, not delete verified money.
+
+Risk-decision API is mounted only with ADMIN_AUTH_ENABLED in local/test. Every mutation requires
+current admin session, Origin/CSRF and explicit Idempotency-Key/reason. Approval does not itself
+fulfill: retained/reacquired stock/coupon must pass the separate funded recovery transaction. Rejection
+holds funds and fulfillment without automatic refund. Replaying a historical approval cannot clear a
+new review. The same already reviewed provider flag is not reopened by ordinary duplicate IPN.
+Disable processing plus admin mutations for a local financial freeze; processing flag alone does
+not unmount risk decisions. Staging/production activation and provider/legal qualifications stay blocked.
+
 Rollback disables callback composition while preserving audit/quota and all financial histories.
-This work adds no callback/receipt collection or worker, no destructive migration and no live SDK
-calls. A deployed rollback must reconcile provider retry queues and uncertain payment outcomes through
-its reviewed procedure; local transport tests are not deployed/provider acceptance.
+Keep canonical receipt, correction-obligation and audit history; no separate raw callback collection
+or automatic uncertain-payment worker is implied. A deployed rollback must reconcile provider retry
+queues and uncertain payment outcomes through its reviewed procedure; local tests are not provider acceptance.
 
 Hosted initiation requires `PAYMENT_INITIATION_ENABLED=true`, CUSTOMER_AUTH_ENABLED, valid explicit
 adapter options and current merchant evidence. It is local/test only: both configuration and root

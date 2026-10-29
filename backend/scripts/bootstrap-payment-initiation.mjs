@@ -1,3 +1,4 @@
+import { initializeCorrectionPersistence } from '../dist/modules/refunds/refund.persistence.js'
 import { migrateIdentityPostalCode } from '../dist/modules/auth/identity.persistence.js'
 import { migrateOrderPostalCode } from '../dist/modules/orders/order.persistence.js'
 import { loadEnvironment } from '../dist/config/env.js'
@@ -13,6 +14,7 @@ try {
   await migrateIdentityPostalCode(connection)
   await migrateOrderPostalCode(connection)
   await initializePaymentRecordPersistence(connection)
+  await initializeCorrectionPersistence(connection)
   await initializePaymentInitiationPersistence(connection)
   await initializeAuditPersistence(connection)
   console.log('Payment initiation persistence ready; no HTTP/provider activation enabled.')

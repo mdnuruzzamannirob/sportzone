@@ -482,7 +482,7 @@
       "path": "/admin/payments/{paymentId}/risk-decisions",
       "success": "200",
       "operationId": "post_admin_payments_paymentId_risk_decisions",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",

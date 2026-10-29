@@ -1218,8 +1218,10 @@ Durable payment processing has its own local/test opt-in, PAYMENT_PROCESSING_ENA
 callback composition and the configured sandbox adapter. Independent verification runs outside all
 transaction retries. Protected canonical receipt identity deduplicates money; a single transaction
 links eligible exact receipts, serializes payment funding, updates guarded attempt proof, and commits
-only matching live stock/coupon holds. Paid money remains Paid when risk or expired capacity blocks
-allocation. Confirmation remains a separate authorized transition (§12.4). Partial/excess or unknown
+only matching live stock/coupon holds. After receipt commit, a separate fenced recovery transaction can
+reacquire the exact accepted stock/coupon generation for an eligible non-cancelled funded order; failure
+rolls back recovery only and retains Paid with allocation_shortfall. Confirmation remains a separate
+authorized transition (§12.4). Partial/excess or unknown
 mapping remains durable intake for supervised reconciliation; later distinct collections cannot fund
 merchandise twice. Stale terminal failure never releases capacity or downgrades verified paid proof.
 
@@ -1228,6 +1230,22 @@ Offset-free v4 tran_date remains retryable 503 until qualified timezone evidence
 substitute receipt arrival time or silently assume a timezone. Conflicting duplicate receipt cores are
 preserved through immutable original evidence plus a replay-safe security audit, without reallocating
 money. A new verified risk flag can only escalate the hold. No reliable pending-poll job is implied.
+
+**Risk decisions:** the local/test admin route requires current admin session, Origin/CSRF,
+strict approve/reject plus reason and Idempotency-Key. Decision and audit commit with a payment
+revision fence. Identical authorized replay returns current risk/hold without applying historical
+approval to a newer review; changed input conflicts. Approval clears risk only, followed by fenced
+allocation recovery; capacity failure leaves Paid on allocation_shortfall. Rejection retains funds
+and risk hold, never pays or releases capacity automatically. Already reviewed identical provider
+risk is not a fresh review; newly verified flags/collections can escalate it. Only independently verified risk fields count: retain numeric level and bounded description; a non-Safe
+description conservatively requires review even with numeric zero. Unknown numeric levels remain uncertain.
+Risk can hold pending, confirmed or processing fulfillment without reversing its lifecycle. Cancelled orders never reopen.
+
+A safely matched late collection for a cancelled order links as correction-only money and creates
+one source-funded, unreserved correction obligation per collection in the same transaction; it does
+not reacquire stock/coupon or pay. Until an approved method/policy exists, that obligation remains
+under_review/not_reserved with method and policyVersion omitted (§13.3). Unknown mapping or disputed
+amount remains quarantined intake rather than an invented correction source.
 
 **Browser returns:** map only approved `{result}` values (`success`, `fail`, `cancel`) and redirect using fixed configured
 storefront URLs after stripping untrusted provider parameters; browser success is *display-only*. The actual provider
@@ -1342,7 +1360,7 @@ and unique `decisionKey` per slice. Group status is a **derived projection** ove
 `refundGroups` collection (Database §9.2). Client may **not** set per-source allocation/ordinal amounts, capacity flags, or
 completed status. A pure payment correction does not consume merchandise quantities.
 
-**Approval:** re-evaluate current legal/policy basis; for physical return require receipt and inspection; for shortage
+**Approval:** require approved refund method and applicable policyVersion before approval, capacity reservation or payout. A correction obligation may omit either only while status=under_review and capacityStatus=not_reserved; never infer gateway support or a policy version from the payment channel. Re-evaluate current legal/policy basis; for physical return require receipt and inspection; for shortage
 require approved missing quantity; for cancellation require accepted cancellation; for COD require verified original
 collection. Reserve source-class capacity **and** unit/delivery entitlement transactionally before external payout. Reject
 attempts exceeding per-source or order total, per-ordinal entitlement, or delivery charge cap with `409
@@ -1354,6 +1372,9 @@ verified `bank_tran_id` **before** provider request. Store provider-issued `refu
 initiation acknowledgment is not payout completion. Reconcile through supported refund-status API and the source
 collection; `uncertain` retains held balance. A new refund transaction ID is issued only after verifying the old attempt
 cannot pay. Partial gateway refund / uniqueness/account limits need merchant sandbox verification (Database Database §§8.6, 9.3).
+
+For an unreserved correction review with no approved policy, timing remains awaiting_approval or
+under_review and omits policyVersion and dates; an approved timing snapshot requires policyVersion.
 
 **Refund detail/timing:** public `Refund` includes `approvedAt?`, safe item amounts, a bounded status timeline and
 `timing:{status,targetBusinessDays:7,timezone:'Asia/Dhaka',policyVersion,calendarVersion?,targetAt?}`. Before approval,
@@ -2199,9 +2220,9 @@ The following field allowlists define client inputs and server responses. `*Inpu
 | `AdminOrderDetail`         | `OrderDetail` plus `customerContactMasked?,allocationSummary,fulfillmentActions[],auditRefs[]`                                                                                                                                                                                                                                                                                                                                                                                                                                  | Fields operationally necessary only; protected admin view                                                                                                        |
 | `ClaimInput`               | `claimType:enum(physical_return,shortage)!,items:[{orderItemId:id!,quantity:int!,reason:string!,evidenceAssetIds:id[]?}]!,description?`                                                                                                                                                                                                                                                                                                                                                                                         | Reject overlapping protected item ordinals; backend owns amounts/ordinal selection                                                                               |
 | `Claim`                    | `id!,orderId!,claimType!,items:[{orderItemId,requestedQty,approvedQty?,reason}]!,status!,requestedAt:date!,evidence[]`                                                                                                                                                                                                                                                                                                                                                                                                          | Claim evidence private; only masked metadata/authorized links                                                                                                    |
-| `Refund`                   | `id!,orderId!,refundGroupKey:string?,classification:enum(merchandise,payment_correction)!,basis!,sourceCollectionId!,amountPoisha!,method!,status!,capacityStatus!,requestedAt:date!,approvedAt:date?,completedAt:date?,items:[{orderItemId,amountPoisha}]!,timing:RefundTiming!,timeline:RefundStatusEvent[]!`                                                                                                                                                                                                                 | Source caps enforced; item totals reconcile; timing from approval snapshot, timeline max 40 public status facts                                                  |
+| `Refund`                   | `id!,orderId!,refundGroupKey:string?,classification:enum(merchandise,payment_correction)!,basis!,sourceCollectionId!,amountPoisha!,method?,status!,capacityStatus!,requestedAt:date!,approvedAt:date?,completedAt:date?,items:[{orderItemId,amountPoisha}]!,timing:RefundTiming!,timeline:RefundStatusEvent[]!`                                                                                                                                                                                                                 | Source caps enforced; item totals reconcile; timing from approval snapshot, timeline max 40 public status facts                                                  |
 | `RefundStatusEvent`        | `status:enum(requested,under_review,approved,processing,completed,failed,rejected)!,at:date!,reasonCode:string?`                                                                                                                                                                                                                                                                                                                                                                                                                | Public status fact only; no actor identifiers, internal notes or transfer evidence                                                                               |
-| `RefundTiming`             | `status:enum(awaiting_approval,calculated,under_review)!,targetBusinessDays:int!,timezone:enum(Asia/Dhaka)!,policyVersion:string!,calendarVersion:string?,targetAt:date?`                                                                                                                                                                                                                                                                                                                                                       | Standard target 7 business days; approved shorter rule prevails; absent date when basis missing                                                                  |
+| `RefundTiming`             | `status:enum(awaiting_approval,calculated,under_review)!,targetBusinessDays:int!,timezone:enum(Asia/Dhaka)!,policyVersion:string?,calendarVersion:string?,targetAt:date?`                                                                                                                                                                                                                                                                                                                                                       | Standard target 7 business days; approved shorter rule prevails; absent date when basis missing                                                                  |
 | `ComplaintInput`           | `orderId:id?,issue:string!,contactName:string? (required anonymous),contactEmail:string? (required anonymous),contactPhone:string?,description:string?`                                                                                                                                                                                                                                                                                                                                                                         | Order ID only with verified owner/guest proof; anti-spam limits                                                                                                  |
 | `Complaint`                | `id!,orderId?,status!,issue!,createdAt:date!,response?,resolvedAt?`                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Customer sees only own/submitted authorized complaints                                                                                                           |
 | `Review`                   | `id!,productId!,rating:int!,comment:string!,status!,createdAt:date!,verifiedPurchase:bool!`                                                                                                                                                                                                                                                                                                                                                                                                                                     | `verifiedPurchase` server-derived from delivered qualifying order                                                                                                |

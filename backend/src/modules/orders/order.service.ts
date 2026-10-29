@@ -450,6 +450,13 @@ export function paymentInitiationOrderData(connection: Connection) {
 export function verifiedFundingOrderAccess(connection: Connection) {
   const { orders } = orderModels(connection)
   return {
+    async riskState(session: ClientSession, orderId: string) {
+      if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+      await verifyOrderPersistence(connection)
+      const row = await orders.findById(orderId).session(session)
+      if (!row) throw new ApiError('NOT_FOUND')
+      return row.fulfillmentHold ?? 'none'
+    },
     async inspect(session: ClientSession, orderId: string) {
       if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
       await verifyOrderPersistence(connection)
@@ -467,24 +474,31 @@ export function verifiedFundingOrderAccess(connection: Connection) {
           !row.cancelledAt &&
           !row.shippedAt &&
           !row.confirmedAt,
+        recoverable:
+          ['pending', 'confirmed', 'processing'].includes(row.fulfillmentStatus) &&
+          !row.cancelledAt &&
+          !row.shippedAt,
         cancelled: row.fulfillmentStatus === 'cancelled',
       }
     },
     async finish(session: ClientSession, orderId: string, committed: boolean, risk: boolean) {
       if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
       const row = await orders.findById(orderId).session(session)
-      if (row?.fulfillmentStatus !== 'pending' || row.cancelledAt || row.confirmedAt) return
+      if (!row || row.fulfillmentStatus === 'cancelled' || row.cancelledAt) return
+      if (!risk && !['pending', 'confirmed', 'processing'].includes(row.fulfillmentStatus)) return
       // Confirmation/deadline and outbound notifications retain their owning workflow. Committing
       // capacity is distinct from confirming fulfillment; never invent compliance clearance here.
       await orders.updateOne(
-        { _id: row._id, fulfillmentStatus: 'pending', revision: row.revision },
+        { _id: row._id, fulfillmentStatus: row.fulfillmentStatus, revision: row.revision },
         {
           $inc: { revision: 1 },
           $set: {
             fulfillmentHold: risk
               ? 'risk_review'
               : committed
-                ? 'admin_review'
+                ? row.fulfillmentStatus === 'pending'
+                  ? 'admin_review'
+                  : 'none'
                 : 'allocation_shortfall',
           },
         },

@@ -62,3 +62,26 @@ export function createAuditWriter(connection: Connection, replaySameDigest = fal
     await row.save({ session })
   }
 }
+
+// Narrow durable operation identity lookup; exposes no persistence model or mutable audit capability.
+export function auditOperationReader(connection: Connection) {
+  const model = auditModel(connection)
+  return async (session: ClientSession, raw: unknown) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    try {
+      await verifyAuditPersistence(connection)
+    } catch {
+      throw new ApiError('SERVICE_UNAVAILABLE')
+    }
+    const input = z
+      .strictObject({
+        action: z.string().min(1).max(128),
+        targetType: z.string().min(1).max(128),
+        targetId: id,
+        operationKey: z.string().min(1).max(128),
+      })
+      .parse(raw)
+    const row = await model.findOne(input).session(session)
+    return row ? { afterDigest: row.afterDigest } : undefined
+  }
+}

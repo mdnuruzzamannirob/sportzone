@@ -1,3 +1,4 @@
+import { paymentRiskRoutes } from '../../src/modules/payments/payment-risk.routes.js'
 import { paymentCallbackRoutes } from '../../src/modules/payments/payment-callback.routes.js'
 import { paymentInitiationRoutes } from '../../src/modules/payments/payment-initiation.routes.js'
 import { paymentMethodsRoutes } from '../../src/modules/payments/payment-methods.routes.js'
@@ -164,6 +165,7 @@ export function registeredRouter() {
     ),
     settingsPublicRoutes({ contact: unused }, { publicPolicy: unused }, []),
     inventoryAdminRoutes({ list: unused, history: unused, adjust: unused }, security, sessions),
+    paymentRiskRoutes({ decide: unused }, security, sessions),
     couponAdminRoutes(
       { create: unused, update: unused, deactivate: unused, list: unused, history: unused },
       security,
