@@ -8,6 +8,14 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 29 October 2026 — Private SSLCOMMERZ v4 adapter
+
+- Added fixed-origin server-only hosted initiation, validation and session/transaction status transport,
+  explicit environment-safe configuration, exact money conversion and redacted provider reports.
+- Unknown transport/results remain uncertain, without automatic retry; provider calls are excluded
+  from business transactions. Added unit and loopback HTTP/replica-set contract verification.
+- P07-001 accepted by the project owner on 29 October 2026. No live merchant, payment HTTP, funding or channel activation implied.
+
 ## 29 October 2026 — Payment record foundation
 
 - Added private attempt preparation with transactional retry lineage, unique provider references,

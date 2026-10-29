@@ -131,13 +131,13 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       1 |         0 |     12 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |          12 |     0 |           0 |       1 |         6 |      3 |        0 |
-| 07 — Payment Integration and Verification     |      18 |          17 |     0 |           0 |       0 |         0 |      1 |        0 |
+| 07 — Payment Integration and Verification     |      18 |          16 |     0 |           0 |       0 |         0 |      2 |        0 |
 | 08 — Returns and Refunds                      |      19 |          19 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       1 |         0 |      1 |        0 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **115** | **0** | **0** | **3** | **6** | **86** | **0** |
+| **Total** | **210** | **114** | **0** | **0** | **3** | **6** | **87** | **0** |
 
 ## 4. Milestone tracker
 
@@ -1243,14 +1243,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
 
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 07. **Associated gate:** M4. **Tasks:** 18.
 
-- [ ] **P07-001 — Implement server-only SSLCOMMERZ adapter**\
-  **Status:** `Not Started` · **Area:** Backend/payments\
+- [x] **P07-001 — Implement server-only SSLCOMMERZ adapter**\
+  **Status:** `Done` · **Area:** Backend/payments · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-12; Architecture §10\
   **Depends on:** `P06-009`, `P01-006`\
   **Deliverable:** Define sandbox configuration, init/validate/status integration and provider-specific safe error translation.\
   **Acceptance:** Merchant credentials remain server-only; unknown provider outcome is preserved as uncertain.\
-  **Evidence to attach:** Provider contract test with sandbox/mocks.
+  **Evidence:** [Server adapter contract verification](./evidence/P07-001-sslcommerz-adapter.md). Project owner accepted 29 October 2026: [acceptance record](./evidence/P07-001-sslcommerz-adapter.md#independent-acceptance). Live sandbox/merchant qualification remains separate.
 
 - [x] **P07-002 — Persist payment aggregate and attempts with unique IDs**\
   **Status:** `Done` · **Area:** Backend/payments · **Owner:** Codex\
@@ -2497,3 +2497,7 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **29 October 2026 — P07-002:** Not Started → In Progress → In Review. Added private payment attempt preparation and durable receipt/collection schemas with guarded histories, unique identities and additive local/test provisioning. [Observed verification and integration limits](./evidence/P07-002-payment-records.md). Executor: Codex; independent acceptance pending. Overall: 210 tasks, 85 Done, 115 Not Started, 3 Blocked and 7 In Review. No provider, financial-ingestion, HTTP initiation or milestone acceptance implied.
 
 **29 October 2026 — P07-002 acceptance:** In Review → Done following explicit project-owner instruction “done koro”. [Acceptance record](./evidence/P07-002-payment-records.md#independent-acceptance). Overall: 210 tasks, 86 Done, 115 Not Started, 3 Blocked and 6 In Review. Acceptance covers the submitted persistence foundation; provider initiation/verification, merchant qualification and milestone gates remain separate.
+
+**29 October 2026 — P07-001:** Not Started → In Progress → In Review. Added private server-only v4 initiation/validation/status adapter with fixed origins, environment-safe configuration, exact money and safe uncertainty. [Observed unit/local HTTP and transaction exclusion evidence](./evidence/P07-001-sslcommerz-adapter.md). Executor: Codex; independent acceptance pending. P06-009 remains In Review; this isolated adapter does not enable checkout/provider effects or waive that prerequisite. Overall: 210 tasks, 86 Done, 114 Not Started, 3 Blocked and 7 In Review. No live merchant/channel/funding or milestone acceptance implied.
+
+**29 October 2026 — P07-001 acceptance:** In Review → Done following explicit project-owner instruction “done koro”. Corrected the stale per-task Not Started label to match the previously submitted evidence/execution log, then recorded acceptance. [Acceptance record](./evidence/P07-001-sslcommerz-adapter.md#independent-acceptance). Overall: 210 tasks, 87 Done, 114 Not Started, 3 Blocked and 6 In Review. Acceptance covers the private adapter and observed local verification; P06-009 acceptance, live merchant/channel qualification, payment integration and milestones remain separate.

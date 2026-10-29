@@ -665,6 +665,16 @@ operations; retain those acceptance gates separately.
 
 ### 11.1 Payment provider and COD scenarios
 
+Gateway adapter contract tests use synthetic v4 responses and a loopback HTTP server. Assert fixed
+origins, environment separation, exact poisha formatting/parsing, bounded form/response fields,
+credential redaction, session-bound hosted URLs and fixed callback paths. Exercise actual timeout,
+redirect refusal and malformed responses without retry; preserve unknown results as uncertain.
+Validation/status parsing must retain all distinct reports, currency/amount/risk facts and evidence
+digests while stripping card/customer details. Identity/count/auth mismatches fail closed, and empty
+query results never prove nonpayment. All provider operations must fail before transport inside a
+business transaction. These checks do not prove merchant credentials, channel activation or live
+provider verification; record real sandbox/deployed qualification separately.
+
 Payment persistence foundation checks use an isolated transaction-capable replica set. Verify unique
 provider references, same-operation replay with reauthorization, concurrent new-attempt exclusion,
 terminal retry lineage, immutable request snapshots, uncertain-attempt blocking and audit rollback.

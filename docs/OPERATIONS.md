@@ -388,6 +388,28 @@ API; changes appear on a subsequent public read. Policy links require the curren
 effective pointer, never a scheduled/draft/latest-version fallback. Retain existing media references
 and policy history during rollback; disabling or reverting presentation does not delete those records.
 
+Private SSLCOMMERZ adapter configuration is loaded only by explicit backend composition through
+`loadSslcommerzOptions`; it is not wired into HTTP startup. `SSLCOMMERZ_ADAPTER_ENABLED=false`
+(or absent) disables loading. Enabling requires explicit `SSLCOMMERZ_MODE`, `SSLCOMMERZ_STORE_ID`,
+`SSLCOMMERZ_STORE_PASSWORD`, `SSLCOMMERZ_CALLBACK_ORIGIN` and `SSLCOMMERZ_TIMEOUT_MS` (1–60,000).
+Local/test/staging permit sandbox only; production permits live only. Credentials must belong to the
+selected merchant/environment; this validation does not prove merchant enablement. Callback origin
+must be an absolute HTTPS origin without credentials, trailing slash, path, query or fragment.
+Canonical API return/IPN paths are derived; do not configure arbitrary client redirect destinations.
+
+Transport uses the published v4 endpoints on fixed sandbox/securepay origins. It never follows
+redirects or automatically retries. Hosted URLs are restricted to the mode's `/gwprocess/v4/gw.php`
+with the returned SESSIONKEY and optional Q=PAY; an unexpected gateway URL requires reviewed provider
+qualification. Query API credentials are sent in the documented GET query: redact full outbound URLs,
+query strings and response bodies in HTTP instrumentation, proxies and incident artifacts. Returned
+records are redacted provider reports/digests, not a funding decision; authenticate and match merchant,
+order, amount/currency and references in the owning verification service before financial mutation.
+Persist intent before initiation; reconcile uncertain outcomes using the original references.
+No provider endpoint/channel is activated by the adapter flag. Before production integration, verify
+merchant-owned credentials, callback transport, channel keys/limits and public egress/IP registration
+with the merchant owner. Rollback disables composition while preserving all attempts and receipts;
+never retry an uncertain external request solely because a deployment was reverted.
+
 After backend build, `node --env-file=.env backend/scripts/bootstrap-payment-records.mjs`
 additively provisions payment attempts, receipt intake, linked collections and audit persistence in
 local/test only. Existing validator drift is refused; records and extra indexes are preserved, and
