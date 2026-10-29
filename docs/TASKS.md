@@ -131,13 +131,13 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       1 |         0 |     12 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |          12 |     0 |           0 |       1 |         6 |      3 |        0 |
-| 07 — Payment Integration and Verification     |      18 |          14 |     0 |           0 |       0 |         0 |      4 |        0 |
+| 07 — Payment Integration and Verification     |      18 |          13 |     0 |           0 |       0 |         1 |      4 |        0 |
 | 08 — Returns and Refunds                      |      19 |          19 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       1 |         0 |      1 |        0 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **112** | **0** | **0** | **3** | **6** | **89** | **0** |
+| **Total** | **210** | **111** | **0** | **0** | **3** | **7** | **89** | **0** |
 
 ## 4. Milestone tracker
 
@@ -1280,13 +1280,13 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence:** [Hosted initiation, owned HTTP, allocation and migration verification](./evidence/P07-004-hosted-initiation.md). Project owner accepted 29 October 2026: [acceptance record](./evidence/P07-004-hosted-initiation.md#independent-acceptance). Local/test scope; deployed merchant/callback qualification remains separate.
 
 - [ ] **P07-005 — Separate browser return and provider IPN endpoints**\
-  **Status:** `Not Started` · **Area:** Backend/payments\
+  **Status:** `In Review` · **Area:** Backend/payments · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-12\
   **Depends on:** `P07-004`\
   **Deliverable:** Accept return as UI signal and IPN as untrusted provider input pending independent validation.\
   **Acceptance:** Browser success never marks Paid; CSRF exemption applies only to the documented provider IPN/return endpoints; they grant no customer/admin access, and any financial transition requires independent provider verification. Normal browser initiation/retry APIs remain CSRF-protected.\
-  **Evidence to attach:** Return/IPN endpoint tests.
+  **Evidence:** [Callback transport, isolation, verification and recovery](./evidence/P07-005-payment-callbacks.md). Local/test only; independent acceptance pending. Runtime IPN remains 503 until a separately verified durable processor is composed; no provider/financial gate accepted.
 
 - [ ] **P07-006 — Implement independent provider payment validation**\
   **Status:** `Not Started` · **Area:** Backend/payments\
@@ -2509,3 +2509,6 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **29 October 2026 — P07-004:** Not Started → In Progress → In Review. Added gated local/test hosted initiation/status with durable one-shot dispatch, current owner/CSRF checks, merchant binding, uncertainty recovery, atomic stock/coupon reacquisition and durable shortfall. Project owner explicitly approved optional postalCode in address/quote/order with mandatory online-initiation validation; exact-predecessor additive migration preserves historical facts. [Observed verification, approval and rollout limits](./evidence/P07-004-hosted-initiation.md). Executor: Codex; independent task acceptance pending. Overall: 210 tasks, 88 Done, 112 Not Started, 3 Blocked and 7 In Review. P06 checkout reviews, P07-005/006/009/012/013, live merchant/legal and milestone gates remain separate.
 
 **29 October 2026 — P07-004 acceptance:** In Review → Done following explicit project-owner instruction “done koro”. [Acceptance record](./evidence/P07-004-hosted-initiation.md#independent-acceptance). Overall: 210 tasks, 89 Done, 112 Not Started, 3 Blocked and 6 In Review. Acceptance covers the submitted local/test initiation feature and recorded verification; staging/live remains disabled, and checkout, callback/verification, merchant/legal and milestone gates remain separate.
+
+
+**29 October 2026 — P07-005:** Not Started → In Progress → In Review. Added distinct bounded form IPN and fixed browser-return transport, narrow parser/CSRF exceptions, protected keyed security fingerprints and Auth-owned real-peer quota admission. Default IPN remains retryable 503; injected committed outcomes prove acknowledgment ordering only. [Observed verification and limits](./evidence/P07-005-payment-callbacks.md). Overall: 210 tasks, 89 Done, 111 Not Started, 3 Blocked and 7 In Review. Independent acceptance pending; no financial verification, deployed merchant or milestone gate accepted.

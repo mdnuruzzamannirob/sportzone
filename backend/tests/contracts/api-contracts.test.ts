@@ -70,7 +70,7 @@ describe('executable API contract registry', () => {
         .filter((op) => op.method === 'OPTIONS')
         .every((op) => operations.some((item) => item.path === op.path)),
     ).toBe(true)
-    expect(operations).toHaveLength(88)
+    expect(operations).toHaveLength(91)
     const prefixed = Router().use('/untracked', registeredRouter())
     expect(() => registeredOperations(prefixed)).toThrow(/mount prefix/)
   })
@@ -124,6 +124,7 @@ describe('executable API contract registry', () => {
         'media/media.routes.ts',
         'payments/payment-methods.routes.ts',
         'payments/payment-initiation.routes.ts',
+        'payments/payment-callback.routes.ts',
         'promotions/coupon-admin.routes.ts',
         'settings/settings.routes.ts',
       ].sort(),
@@ -164,7 +165,13 @@ describe('executable API contract registry', () => {
       })
       if (op.request && !(op.request instanceof z.ZodUndefined))
         expect(ajv.validateSchema(wireSchema(op.request))).toBe(true)
-      if (op.status !== 204)
+      if (op.responseFormat === 'redirect') {
+        expect(openapi.paths[op.path]?.[op.method.toLowerCase()]).toMatchObject({
+          responses: { '303': { headers: { Location: expect.any(Object) } } },
+        })
+      } else if (op.responseFormat === 'text' && op.response) {
+        expect(ajv.validateSchema(wireSchema(op.response))).toBe(true)
+      } else if (op.status !== 204)
         expect(
           ajv.validateSchema(envelope(op.path, op.method.toLowerCase(), String(op.status))),
         ).toBe(true)
@@ -172,7 +179,7 @@ describe('executable API contract registry', () => {
   it('keeps planned contracts non-executable and environment values blank', () => {
     const rows = artifacts['planned-operations.json'].operations
     expect(rows).toHaveLength(164)
-    expect(rows.filter((op) => op.implementation === 'planned')).toHaveLength(76)
+    expect(rows.filter((op) => op.implementation === 'planned')).toHaveLength(73)
     expect(openapi.paths['/orders/{orderId}/payment-attempts']).toMatchObject({
       post: {
         security: [
@@ -185,7 +192,7 @@ describe('executable API contract registry', () => {
     expect(ajv.validateSchema(envelope('/checkout/payment-methods', 'get', '200'))).toBe(true)
     expect(openapi.paths['/checkout/orders']).toBeDefined()
     expect(ajv.validateSchema(envelope('/checkout/orders', 'post', '200'))).toBe(true)
-    expect(artifacts['postman.collection.json'].item).toHaveLength(88)
+    expect(artifacts['postman.collection.json'].item).toHaveLength(91)
     expect(artifacts['postman.environment.json'].values.every((entry) => entry.value === '')).toBe(
       true,
     )

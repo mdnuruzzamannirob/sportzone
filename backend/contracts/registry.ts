@@ -1,4 +1,9 @@
 import {
+  paymentIpnForm,
+  paymentReturnForm,
+  paymentReturnParams,
+} from '../src/modules/payments/payment-callback.schema.js'
+import {
   paymentInitiationInput,
   paymentInitiationResult,
   paymentInitiationParams,
@@ -163,6 +168,7 @@ export type Operation = {
     | 'monitor'
     | 'guest'
     | 'customer_or_guest'
+    | 'provider_callback'
   activation: string
   request?: z.ZodType
   response?: z.ZodType
@@ -177,6 +183,8 @@ export type Operation = {
   ifMatch?: boolean
   etag?: boolean
   multipart?: boolean
+  form?: boolean
+  responseFormat?: 'text' | 'redirect'
   replay: string
 }
 const empty = z.strictObject({})
@@ -297,6 +305,42 @@ export const operations: readonly Operation[] = [
     replay:
       'No-store bounded read; current operator settings and approved published policy pointers on each request. No fabricated merchandising fallback.',
   },
+  {
+    method: 'POST',
+    path: '/webhooks/sslcommerz/ipn',
+    access: 'provider_callback',
+    namespace: 'storefront',
+    params: empty,
+    query: empty,
+    request: paymentIpnForm,
+    response: z.literal('OK'),
+    status: 200,
+    csrf: false,
+    form: true,
+    responseFormat: 'text',
+    activation:
+      'PAYMENT_CALLBACKS_ENABLED local/test only, explicit same-storefront return URLs and reviewed audit/quota persistence. Runtime returns 503 until an independent durable processor is composed; no raw notification proves funds.',
+    replay:
+      'Bounded URL-encoded untrusted claims; only normalized references cross the verifier boundary. 200 text OK only after durable verified outcome/recoverable reconciliation commit. Replays never imply new money; default is retryable 503.',
+  },
+  ...(['GET', 'POST'] as const).map(
+    (method): Operation => ({
+      method,
+      path: '/payment-returns/sslcommerz/{result}',
+      access: 'provider_callback',
+      namespace: 'storefront',
+      params: paymentReturnParams,
+      query: z.record(z.string(), z.string()),
+      ...(method === 'POST' ? { request: paymentReturnForm, form: true } : {}),
+      status: 303,
+      csrf: false,
+      responseFormat: 'redirect',
+      activation:
+        'PAYMENT_CALLBACKS_ENABLED with explicit fixed HTTPS URLs on the configured storefront origin; local/test only pending deployed provider transport qualification.',
+      replay:
+        'Display hint only. Empty-body 303 strips all provider query/form values; no session/cookie/access or financial state transition. Untrusted success never establishes Paid.',
+    }),
+  ),
   {
     method: 'POST',
     path: '/orders/{orderId}/payment-attempts',

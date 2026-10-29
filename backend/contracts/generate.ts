@@ -66,7 +66,7 @@ const errorEnvelope = (codes = Object.keys(errorDefinitions)) =>
   })
 function security(op: Operation) {
   if (op.access === 'monitor') return [{ MonitorBearer: [] }]
-  if (op.access === 'public') return []
+  if (op.access === 'public' || op.access === 'provider_callback') return []
   if (op.access === 'customer_or_guest')
     return [
       { CustomerSession: [], ...(op.csrf ? { CsrfHeader: [] } : {}) },
@@ -122,6 +122,13 @@ function openOperation(op: Operation) {
       headers: {
         'X-Request-Id': header('Server-generated request UUID'),
         ...(op.etag ? { ETag: header('Strong quoted numeric revision') } : {}),
+        ...(op.responseFormat === 'redirect'
+          ? {
+              Location: header(
+                'Fixed configured HTTPS storefront URL; no provider parameters forwarded',
+              ),
+            }
+          : {}),
         'Cache-Control': { schema: { const: 'no-store' } },
         'X-Content-Type-Options': { schema: { const: 'nosniff' } },
         ...(op.status === 201 && ['/me/addresses', '/admin/products'].includes(op.path)
@@ -141,10 +148,16 @@ function openOperation(op: Operation) {
       ...(op.status !== 204 && op.response
         ? {
             content: {
-              'application/json': {
-                schema: wireSchema(
-                  z.strictObject({ data: op.response, meta: op.paginated ? page : requestId }),
-                ),
+              [op.responseFormat === 'text' ? 'text/plain' : 'application/json']: {
+                schema:
+                  op.responseFormat === 'text'
+                    ? wireSchema(op.response)
+                    : wireSchema(
+                        z.strictObject({
+                          data: op.response,
+                          meta: op.paginated ? page : requestId,
+                        }),
+                      ),
               },
             },
           }
@@ -185,7 +198,11 @@ function openOperation(op: Operation) {
           requestBody: {
             required: !op.request.safeParse(undefined).success,
             content: {
-              [op.multipart ? 'multipart/form-data' : 'application/json']: {
+              [op.multipart
+                ? 'multipart/form-data'
+                : op.form
+                  ? 'application/x-www-form-urlencoded'
+                  : 'application/json']: {
                 schema: wireSchema(op.request),
               },
             },
@@ -312,7 +329,12 @@ export function generateArtifacts(apiMarkdown: string) {
           ? [{ key: 'Authorization', value: 'Bearer {{monitorToken}}' }]
           : []),
         ...(hasBody(op) && !op.multipart
-          ? [{ key: 'Content-Type', value: 'application/json' }]
+          ? [
+              {
+                key: 'Content-Type',
+                value: op.form ? 'application/x-www-form-urlencoded' : 'application/json',
+              },
+            ]
           : []),
       ],
       description: `Implemented conditionally: ${op.activation}. Query parameters and exact request/response schemas are in the companion OpenAPI operation ${operationId(op)}. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.`,
@@ -320,11 +342,20 @@ export function generateArtifacts(apiMarkdown: string) {
         ? {
             body: op.multipart
               ? { mode: 'formdata', formdata: [{ key: 'file', type: 'file', src: [] }] }
-              : {
-                  mode: 'raw',
-                  raw: `{{${operationId(op)}Body}}`,
-                  options: { raw: { language: 'json' } },
-                },
+              : op.form && op.request
+                ? {
+                    mode: 'urlencoded',
+                    urlencoded: parameters(op.request, 'query').map((field) => ({
+                      key: field.name,
+                      value: `{{${operationId(op)}_${field.name}}}`,
+                      disabled: !field.required,
+                    })),
+                  }
+                : {
+                    mode: 'raw',
+                    raw: `{{${operationId(op)}Body}}`,
+                    options: { raw: { language: 'json' } },
+                  },
           }
         : {}),
     },
@@ -343,7 +374,10 @@ export function generateArtifacts(apiMarkdown: string) {
     if (op.ifMatch) variables.add('ifMatch')
     if (op.idempotency) variables.add('idempotencyKey')
     for (const param of parameters(op.query, 'query')) variables.add(param.name)
-    if (hasBody(op) && !op.multipart) variables.add(`${operationId(op)}Body`)
+    if (op.form && op.request) {
+      for (const field of parameters(op.request, 'query'))
+        variables.add(`${operationId(op)}_${field.name}`)
+    } else if (hasBody(op) && !op.multipart) variables.add(`${operationId(op)}Body`)
   }
   return {
     'openapi.json': openapi,

@@ -420,6 +420,41 @@ Without merchant evidence, online channels remain unavailable; bKash, Nagad, Roc
 require separate live launch acceptance. Availability does not enable the separately gated hosted initiation path or activate callbacks/receipt verification. Rollback can clear the evidence-file setting/restart or disable store
 flags while preserving attempt/receipt and approval history. No collection migration is introduced.
 
+Callback transport is independently gated by `PAYMENT_CALLBACKS_ENABLED=true` in local/test only;
+configuration and root composition refuse staging/production pending independent verification and
+provider qualification. Supply SSLCOMMERZ_MODE=sandbox, explicit SSLCOMMERZ_STORE_ID,
+PAYMENT_CALLBACK_RATE_LIMIT (1–60 requests per real peer per fixed minute), and
+PAYMENT_RETURN_SUCCESS_URL / PAYMENT_RETURN_FAIL_URL / PAYMENT_RETURN_CANCEL_URL. Return targets
+must be canonical absolute HTTPS URLs on STOREFRONT_ORIGIN, without credentials/query/fragment.
+Configure actual approved result routes; no route is guessed. All three may target one result page
+that reads authoritative scoped status. Default/false leaves callback routes unmounted.
+
+After build, `node --env-file=.env backend/scripts/bootstrap-payment-callbacks.mjs` additively
+provisions audit and the existing protected quota collection in an owned local/test database. It
+preserves audit facts, refuses unknown drift/deployed environments and never creates financial records
+or verifies merchant activation. HTTP startup never provisions this state. Missing audit/quota
+protection fails admission closed; quota hashing uses a distinct purpose with the backend secret.
+Register exact POST IPN and GET/POST return URLs only after provider transport qualification.
+
+Only the callback router accepts URL-encoded forms before the normal JSON parser (8 KiB, 64 fields,
+no compression/duplicate fields). It does not grant a wider parser/CSRF exception. Normal initiation,
+admin/customer and guest mutations retain their own JSON, Origin, CSRF, role and ownership checks.
+Callback responses grant no credentialed CORS access or sessions. Do not log request bodies, full
+callback URLs/queries, card fields, signatures, credentials or raw peer addresses in infrastructure.
+Browser success/fail/cancel is an untrusted display hint; empty-body 303 forwards none of those values.
+
+Runtime IPN returns retryable 503 until a separately composed independent processor verifies and
+commits its durable receipt/nonpayment/quarantine/reconciliation outcome. A security fingerprint alone
+never permits 200. A configured processor's 200 response is plain-text OK only after its durable result;
+confirm provider retry behavior/ACK transport and all merchant/channel gates independently. Do not
+interpret retry/no-IPN/browser navigation as noncollection or blindly create another charge.
+P07-006/007/012 own independent financial verification, replay protection and reliable reconciliation.
+
+Rollback disables callback composition while preserving audit/quota and all financial histories.
+This work adds no callback/receipt collection or worker, no destructive migration and no live SDK
+calls. A deployed rollback must reconcile provider retry queues and uncertain payment outcomes through
+its reviewed procedure; local transport tests are not deployed/provider acceptance.
+
 Hosted initiation requires `PAYMENT_INITIATION_ENABLED=true`, CUSTOMER_AUTH_ENABLED, valid explicit
 adapter options and current merchant evidence. It is local/test only: both configuration and root
 composition refuse staging/production until callback/independent verification tasks are qualified.

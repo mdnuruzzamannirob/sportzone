@@ -1,3 +1,5 @@
+import type { Connection } from 'mongoose'
+import { createAuthQuotaStore } from './auth-throttle.persistence.js'
 import { createHash, createHmac } from 'node:crypto'
 import type { RequestHandler } from 'express'
 import { ApiError } from '../../../shared/errors/app-error.js'
@@ -87,5 +89,44 @@ export function localAuthRateLimit(clock: () => number = Date.now, maximum = 10)
     }
     bucket.count++
     next(bucket.count > maximum ? new ApiError('RATE_LIMITED') : undefined)
+  }
+}
+
+export function createPaymentCallbackThrottle(
+  connection: Connection,
+  secret: string,
+  limit: number,
+  clock = Date.now,
+): RequestHandler {
+  if (!/^[a-f0-9]{64}$/.test(secret) || !Number.isInteger(limit) || limit < 1 || limit > 60)
+    throw new Error('Invalid callback rate policy')
+  const store = createAuthQuotaStore(connection)
+  return async (req, res, next) => {
+    try {
+      await store.verify?.()
+      const now = clock()
+      if (!Number.isFinite(now) || now < 0) throw new Error('Invalid callback clock')
+      const bucket = Math.floor(now / 60000),
+        expiry = new Date((bucket + 1) * 60000)
+      const key = createHmac('sha256', Buffer.from(secret, 'hex'))
+        .update(
+          JSON.stringify([
+            'sportzone:callback-rate:v1',
+            req.socket.remoteAddress ?? 'unknown',
+            bucket,
+          ]),
+        )
+        .digest('hex')
+      if ((await store.increment(key, expiry, limit)) > limit) {
+        res.set('Retry-After', String(Math.max(1, Math.ceil((expiry.getTime() - now) / 1000))))
+        res.locals.securityReason = 'rate_limited'
+        next(new ApiError('RATE_LIMITED'))
+        return
+      }
+      next()
+    } catch {
+      res.locals.securityReason = 'throttle_unavailable'
+      next(new ApiError('SERVICE_UNAVAILABLE'))
+    }
   }
 }

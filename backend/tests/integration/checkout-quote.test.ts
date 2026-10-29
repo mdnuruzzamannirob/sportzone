@@ -1900,6 +1900,19 @@ async function initiationApp(enabled = true) {
           clock: () => now,
         }
       : undefined,
+    {
+      options: {
+        mode: 'sandbox',
+        storeId: 'synthetic-store',
+        storefrontOrigin: 'https://shop.example.test',
+        rateLimit: 60,
+        returns: {
+          success: 'https://shop.example.test/payment/result',
+          fail: 'https://shop.example.test/payment/result',
+          cancel: 'https://shop.example.test/payment/result',
+        },
+      },
+    },
   )
   return { root, transport }
 }
@@ -1988,6 +2001,15 @@ it('hosted-init HTTP denies missing/invalid CSRF, origins and financial injectio
     .set('X-CSRF-Token', who.csrf)
     .set('Idempotency-Key', 'a')
     .send({ requestedChannel: 'bkash', totalAmount: 1 })
+    .expect(400)
+  await request(root)
+    .post(path)
+    .set('Origin', 'https://shop.example.test')
+    .set('Cookie', who.cookie)
+    .set('X-CSRF-Token', who.csrf)
+    .set('Idempotency-Key', 'form-cannot-bypass')
+    .type('form')
+    .send({ requestedChannel: 'bkash' })
     .expect(400)
   expect(transport).not.toHaveBeenCalled()
   expect(await paymentInitiationModel(db.connection).countDocuments()).toBe(0)

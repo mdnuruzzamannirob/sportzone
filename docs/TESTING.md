@@ -665,6 +665,18 @@ operations; retain those acceptance gates separately.
 
 ### 11.1 Payment provider and COD scenarios
 
+Callback transport tests must prove browser GET/POST hints never call financial processing, issue
+credentials or forward provider query/form values. Check fixed canonical same-storefront 303 targets,
+no-store/referrer/CORS behavior and all approved result values. IPN tests use untrusted form claims:
+without independent durable processing return 503 even for VALID; a delayed processor cannot cause an
+early 200. Reject unknown merchants, invalid references/statuses, duplicates, excessive bytes/parameters,
+compression and JSON; discard known sensitive provider fields before the processor/audit boundary.
+Verify HMAC-only security persistence, real-peer quota/forwarding-header isolation, missing-protection
+failure, duplicate notifications and processor failure/pending behavior. With callback routing enabled,
+actual normal initiation must still require JSON, Origin/CSRF and exact customer/guest ownership.
+Exercise transaction exclusion, additive local bootstrap and deployed activation refusal. Mock durable
+processor outcomes do not prove independent provider validation, receipt allocation or live retry SLA.
+
 Hosted-initiation verification uses real replica-set transactions, actual stock/coupon APIs and
 synthetic provider transport. Assert committed durable dispatch before I/O, one call across concurrent
 identical/different keys and process instances, reauthorization/CSRF/order isolation, request conflicts,

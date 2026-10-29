@@ -1,3 +1,4 @@
+import { paymentCallbackOptions } from '../modules/payments/payment-callback.schema.js'
 import { readFile } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
 import { createHash } from 'node:crypto'
@@ -82,4 +83,34 @@ export function loadPaymentInitiationOptions(environment: NodeJS.ProcessEnv) {
   const options = loadSslcommerzOptions(environment)
   if (!options) throw new ConfigurationError(['payment_initiation_activation'])
   return options
+}
+
+export function loadPaymentCallbackOptions(environment: NodeJS.ProcessEnv) {
+  if (
+    environment.PAYMENT_CALLBACKS_ENABLED === undefined ||
+    environment.PAYMENT_CALLBACKS_ENABLED === 'false'
+  )
+    return undefined
+  try {
+    if (
+      environment.PAYMENT_CALLBACKS_ENABLED !== 'true' ||
+      !['local', 'test'].includes(environment.APP_ENV ?? '')
+    )
+      throw new Error()
+    return paymentCallbackOptions.parse({
+      mode: environment.SSLCOMMERZ_MODE,
+      storeId: environment.SSLCOMMERZ_STORE_ID,
+      storefrontOrigin: environment.STOREFRONT_ORIGIN,
+      returns: {
+        success: environment.PAYMENT_RETURN_SUCCESS_URL,
+        fail: environment.PAYMENT_RETURN_FAIL_URL,
+        cancel: environment.PAYMENT_RETURN_CANCEL_URL,
+      },
+      rateLimit: /^[1-9]\d*$/.test(environment.PAYMENT_CALLBACK_RATE_LIMIT ?? '')
+        ? Number(environment.PAYMENT_CALLBACK_RATE_LIMIT)
+        : NaN,
+    })
+  } catch {
+    throw new ConfigurationError(['payment_callback_configuration'])
+  }
 }

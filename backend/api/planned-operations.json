@@ -440,21 +440,21 @@
       "path": "/webhooks/sslcommerz/ipn",
       "success": "200 / 4xx / 5xx",
       "operationId": "post_webhooks_sslcommerz_ipn",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/payment-returns/sslcommerz/{result}",
       "success": "303",
       "operationId": "get_payment_returns_sslcommerz_result",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/payment-returns/sslcommerz/{result}",
       "success": "303",
       "operationId": "post_payment_returns_sslcommerz_result",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",

@@ -1,3 +1,17 @@
+import { paymentCallbackRoutes } from './modules/payments/payment-callback.routes.js'
+import {
+  paymentCallbackService,
+  type PaymentCallbackProcessor,
+} from './modules/payments/payment-callback.service.js'
+import {
+  paymentCallbackOptions,
+  type PaymentCallbackOptions,
+} from './modules/payments/payment-callback.schema.js'
+import { createPaymentCallbackThrottle } from './modules/auth/sessions/auth-throttle.service.js'
+export type PaymentCallbackDependencies = {
+  options: PaymentCallbackOptions
+  process?: PaymentCallbackProcessor
+}
 import { paymentInitiationChannelAccess } from './modules/payments/payment-eligibility.service.js'
 import { paymentInitiationService } from './modules/payments/payment-initiation.service.js'
 import { paymentInitiationRoutes } from './modules/payments/payment-initiation.routes.js'
@@ -349,6 +363,7 @@ export async function composeApplication(
   checkout?: CheckoutOptions,
   channelApprovals: readonly PaymentChannelApproval[] = [],
   paymentGateway?: PaymentInitiationDependencies,
+  callbacks?: PaymentCallbackDependencies,
 ) {
   if (paymentGateway && !config.CUSTOMER_AUTH_ENABLED)
     throw new Error('Customer auth required for payment initiation')
@@ -402,7 +417,24 @@ export async function composeApplication(
   ])
   if (media && !config.ADMIN_AUTH_ENABLED)
     throw new Error('Admin authentication required for media.')
-  return createApp({ logger, apiRouter, mediaUploadsEnabled: Boolean(media) })
+  let providerCallbacks: import('express').Router | undefined
+  if (callbacks) {
+    if (!['local', 'test'].includes(config.APP_ENV))
+      throw new Error('Payment callbacks require reviewed local/test composition')
+    const options = paymentCallbackOptions.parse(callbacks.options)
+    if (options.storefrontOrigin !== config.STOREFRONT_ORIGIN)
+      throw new Error('Callback storefront mismatch')
+    providerCallbacks = paymentCallbackRoutes(
+      paymentCallbackService(connection, options, config.SESSION_SECRET, callbacks.process),
+      createPaymentCallbackThrottle(connection, config.SESSION_SECRET, options.rateLimit),
+    )
+  }
+  return createApp({
+    logger,
+    apiRouter,
+    mediaUploadsEnabled: Boolean(media),
+    ...(providerCallbacks ? { providerCallbacks } : {}),
+  })
 }
 
 export async function composeNotificationWorker(

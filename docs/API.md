@@ -1200,6 +1200,20 @@ smaller/larger amount is real evidence but **quarantined**, not dropped or treat
 partial amount and subsequently compute a safe new remaining-balance attempt. Excess goes to correction/unassigned and
 never auto-funds merchandise twice.
 
+Callback transport is separately enabled for local/test with PAYMENT_CALLBACKS_ENABLED and explicit
+same-storefront HTTPS return URLs/rate limit. Exact IPN and browser-return routes alone accept bounded
+URL-encoded forms (8 KiB, at most 64 parameters, no compression/duplicate fields); JSON remains the
+normal browser-mutation transport. Unknown form fields fail IPN admission; known card/customer/signature
+fields are discarded before processing/persistence. Only bounded reference/status/amount/currency
+claims and the configured merchant fingerprint cross into the independent processor. They remain untrusted.
+
+IPN success responds plain-text `OK` only after the injected independent processor reports a durable
+commit. Without that processor, or for pending/unrecoverable processing, return 503; recording an
+untrusted security fingerprint is not payment processing acknowledgment. Fingerprints and rate limits
+use purpose-separated HMAC; no raw payload, card data, credentials, IP address or unverified receipt is
+persisted. Browser GET/POST returns use empty-body 303 to fixed configured URLs, no query/body forwarding,
+no session/cookie issuance and no financial write. Callback routes grant no CORS credential access.
+
 **Browser returns:** map only approved `{result}` values (`success`, `fail`, `cancel`) and redirect using fixed configured
 storefront URLs after stripping untrusted provider parameters; browser success is *display-only*. The actual provider
 return HTTP method must be configured/tested with SSLCOMMERZ before deployment. The result screen polls `GET

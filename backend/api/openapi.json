@@ -28431,6 +28431,452 @@
         }
       }
     },
+    "/payment-returns/sslcommerz/{result}": {
+      "get": {
+        "operationId": "get_payment_returns_sslcommerz_result",
+        "tags": [
+          "payment-returns"
+        ],
+        "summary": "GET /payment-returns/sslcommerz/{result}",
+        "description": "Runtime Zod validation, Unicode/phone/password policies, ownership, coverage and cross-field refinements remain mandatory. JSON Schema describes the wire shape and representable constraints; it does not replace domain validation.",
+        "x-implementation-status": "implemented",
+        "x-activation": "PAYMENT_CALLBACKS_ENABLED with explicit fixed HTTPS URLs on the configured storefront origin; local/test only pending deployed provider transport qualification.",
+        "x-replay-policy": "Display hint only. Empty-body 303 strips all provider query/form values; no session/cookie/access or financial state transition. Untrusted success never establishes Paid.",
+        "x-runtime-validation": true,
+        "x-unknown-query-fields": "rejected except health probes",
+        "x-transport": "Exact approved-origin CORS; OPTIONS preflight, implicit HEAD on GET",
+        "parameters": [
+          {
+            "name": "result",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "success",
+                "fail",
+                "cancel"
+              ]
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "303": {
+            "description": "Successful operation",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Server-generated request UUID",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Location": {
+                "description": "Fixed configured HTTPS storefront URL; no provider parameters forwarded",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "const": "nosniff"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error family 400; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error400"
+                }
+              }
+            },
+            "x-error-codes": [
+              "UNSUPPORTED_DELIVERY_AREA",
+              "INVALID_REQUEST",
+              "VALIDATION_FAILED"
+            ]
+          },
+          "401": {
+            "description": "Error family 401; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error401"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INVALID_CREDENTIALS",
+              "GUEST_PROOF_REQUIRED",
+              "AUTH_REQUIRED"
+            ]
+          },
+          "403": {
+            "description": "Error family 403; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error403"
+                }
+              }
+            },
+            "x-error-codes": [
+              "FORBIDDEN",
+              "CSRF_INVALID"
+            ]
+          },
+          "404": {
+            "description": "Error family 404; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error404"
+                }
+              }
+            },
+            "x-error-codes": [
+              "NOT_FOUND"
+            ]
+          },
+          "409": {
+            "description": "Error family 409; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error409"
+                }
+              }
+            },
+            "x-error-codes": [
+              "OUT_OF_STOCK",
+              "QUOTE_CHANGED",
+              "QUOTE_EXPIRED",
+              "IDEMPOTENCY_CONFLICT",
+              "COUPON_UNAVAILABLE",
+              "STATE_CONFLICT"
+            ]
+          },
+          "412": {
+            "description": "Error family 412; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error412"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_FAILED"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PAYMENT_AMOUNT_UNSUPPORTED",
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
+          "428": {
+            "description": "Error family 428; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error428"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_REQUIRED"
+            ]
+          },
+          "429": {
+            "description": "Error family 429; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error429"
+                }
+              }
+            },
+            "x-error-codes": [
+              "RATE_LIMITED"
+            ]
+          },
+          "500": {
+            "description": "Error family 500; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error500"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INTERNAL_ERROR"
+            ]
+          },
+          "503": {
+            "description": "Error family 503; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error503"
+                }
+              }
+            },
+            "x-error-codes": [
+              "SERVICE_UNAVAILABLE"
+            ]
+          }
+        }
+      },
+      "post": {
+        "operationId": "post_payment_returns_sslcommerz_result",
+        "tags": [
+          "payment-returns"
+        ],
+        "summary": "POST /payment-returns/sslcommerz/{result}",
+        "description": "Runtime Zod validation, Unicode/phone/password policies, ownership, coverage and cross-field refinements remain mandatory. JSON Schema describes the wire shape and representable constraints; it does not replace domain validation.",
+        "x-implementation-status": "implemented",
+        "x-activation": "PAYMENT_CALLBACKS_ENABLED with explicit fixed HTTPS URLs on the configured storefront origin; local/test only pending deployed provider transport qualification.",
+        "x-replay-policy": "Display hint only. Empty-body 303 strips all provider query/form values; no session/cookie/access or financial state transition. Untrusted success never establishes Paid.",
+        "x-runtime-validation": true,
+        "x-unknown-query-fields": "rejected except health probes",
+        "x-transport": "Exact approved-origin CORS; OPTIONS preflight, implicit HEAD on GET",
+        "parameters": [
+          {
+            "name": "result",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "success",
+                "fail",
+                "cancel"
+              ]
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "303": {
+            "description": "Successful operation",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Server-generated request UUID",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Location": {
+                "description": "Fixed configured HTTPS storefront URL; no provider parameters forwarded",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "const": "nosniff"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error family 400; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error400"
+                }
+              }
+            },
+            "x-error-codes": [
+              "UNSUPPORTED_DELIVERY_AREA",
+              "INVALID_REQUEST",
+              "VALIDATION_FAILED"
+            ]
+          },
+          "401": {
+            "description": "Error family 401; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error401"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INVALID_CREDENTIALS",
+              "GUEST_PROOF_REQUIRED",
+              "AUTH_REQUIRED"
+            ]
+          },
+          "403": {
+            "description": "Error family 403; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error403"
+                }
+              }
+            },
+            "x-error-codes": [
+              "FORBIDDEN",
+              "CSRF_INVALID"
+            ]
+          },
+          "404": {
+            "description": "Error family 404; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error404"
+                }
+              }
+            },
+            "x-error-codes": [
+              "NOT_FOUND"
+            ]
+          },
+          "409": {
+            "description": "Error family 409; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error409"
+                }
+              }
+            },
+            "x-error-codes": [
+              "OUT_OF_STOCK",
+              "QUOTE_CHANGED",
+              "QUOTE_EXPIRED",
+              "IDEMPOTENCY_CONFLICT",
+              "COUPON_UNAVAILABLE",
+              "STATE_CONFLICT"
+            ]
+          },
+          "412": {
+            "description": "Error family 412; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error412"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_FAILED"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PAYMENT_AMOUNT_UNSUPPORTED",
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
+          "428": {
+            "description": "Error family 428; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error428"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_REQUIRED"
+            ]
+          },
+          "429": {
+            "description": "Error family 429; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error429"
+                }
+              }
+            },
+            "x-error-codes": [
+              "RATE_LIMITED"
+            ]
+          },
+          "500": {
+            "description": "Error family 500; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error500"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INTERNAL_ERROR"
+            ]
+          },
+          "503": {
+            "description": "Error family 503; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error503"
+                }
+              }
+            },
+            "x-error-codes": [
+              "SERVICE_UNAVAILABLE"
+            ]
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "additionalProperties": {
+                  "type": "string",
+                  "maxLength": 2048
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/products": {
       "get": {
         "operationId": "get_products",
@@ -30588,6 +31034,410 @@
             "x-error-codes": [
               "SERVICE_UNAVAILABLE"
             ]
+          }
+        }
+      }
+    },
+    "/webhooks/sslcommerz/ipn": {
+      "post": {
+        "operationId": "post_webhooks_sslcommerz_ipn",
+        "tags": [
+          "webhooks"
+        ],
+        "summary": "POST /webhooks/sslcommerz/ipn",
+        "description": "Runtime Zod validation, Unicode/phone/password policies, ownership, coverage and cross-field refinements remain mandatory. JSON Schema describes the wire shape and representable constraints; it does not replace domain validation.",
+        "x-implementation-status": "implemented",
+        "x-activation": "PAYMENT_CALLBACKS_ENABLED local/test only, explicit same-storefront return URLs and reviewed audit/quota persistence. Runtime returns 503 until an independent durable processor is composed; no raw notification proves funds.",
+        "x-replay-policy": "Bounded URL-encoded untrusted claims; only normalized references cross the verifier boundary. 200 text OK only after durable verified outcome/recoverable reconciliation commit. Replays never imply new money; default is retryable 503.",
+        "x-runtime-validation": true,
+        "x-unknown-query-fields": "rejected except health probes",
+        "x-transport": "Exact approved-origin CORS; OPTIONS preflight, implicit HEAD on GET",
+        "parameters": [],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Server-generated request UUID",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "const": "nosniff"
+                }
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "const": "OK"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error family 400; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error400"
+                }
+              }
+            },
+            "x-error-codes": [
+              "UNSUPPORTED_DELIVERY_AREA",
+              "INVALID_REQUEST",
+              "VALIDATION_FAILED"
+            ]
+          },
+          "401": {
+            "description": "Error family 401; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error401"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INVALID_CREDENTIALS",
+              "GUEST_PROOF_REQUIRED",
+              "AUTH_REQUIRED"
+            ]
+          },
+          "403": {
+            "description": "Error family 403; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error403"
+                }
+              }
+            },
+            "x-error-codes": [
+              "FORBIDDEN",
+              "CSRF_INVALID"
+            ]
+          },
+          "404": {
+            "description": "Error family 404; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error404"
+                }
+              }
+            },
+            "x-error-codes": [
+              "NOT_FOUND"
+            ]
+          },
+          "409": {
+            "description": "Error family 409; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error409"
+                }
+              }
+            },
+            "x-error-codes": [
+              "OUT_OF_STOCK",
+              "QUOTE_CHANGED",
+              "QUOTE_EXPIRED",
+              "IDEMPOTENCY_CONFLICT",
+              "COUPON_UNAVAILABLE",
+              "STATE_CONFLICT"
+            ]
+          },
+          "412": {
+            "description": "Error family 412; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error412"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_FAILED"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PAYMENT_AMOUNT_UNSUPPORTED",
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
+          "428": {
+            "description": "Error family 428; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error428"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_REQUIRED"
+            ]
+          },
+          "429": {
+            "description": "Error family 429; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error429"
+                }
+              }
+            },
+            "x-error-codes": [
+              "RATE_LIMITED"
+            ]
+          },
+          "500": {
+            "description": "Error family 500; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error500"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INTERNAL_ERROR"
+            ]
+          },
+          "503": {
+            "description": "Error family 503; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error503"
+                }
+              }
+            },
+            "x-error-codes": [
+              "SERVICE_UNAVAILABLE"
+            ]
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "VALID",
+                      "VALIDATED",
+                      "FAILED",
+                      "CANCELLED",
+                      "EXPIRED",
+                      "UNATTEMPTED",
+                      "PENDING"
+                    ]
+                  },
+                  "tran_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 30
+                  },
+                  "val_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "const": ""
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 50
+                      }
+                    ]
+                  },
+                  "store_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 30
+                  },
+                  "bank_tran_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "const": ""
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 80
+                      }
+                    ]
+                  },
+                  "amount": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "const": ""
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^(0|[1-9]\\d{0,13})(\\.\\d{1,2})?$"
+                      }
+                    ]
+                  },
+                  "currency": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "const": ""
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^[A-Z]{3}$"
+                      }
+                    ]
+                  },
+                  "tran_date": {
+                    "type": "string",
+                    "maxLength": 32
+                  },
+                  "store_amount": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "const": ""
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^(0|[1-9]\\d{0,13})(\\.\\d{1,2})?$"
+                      }
+                    ]
+                  },
+                  "currency_type": {
+                    "type": "string",
+                    "maxLength": 3
+                  },
+                  "currency_amount": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "const": ""
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^(0|[1-9]\\d{0,13})(\\.\\d{1,2})?$"
+                      }
+                    ]
+                  },
+                  "currency_rate": {
+                    "type": "string",
+                    "maxLength": 30
+                  },
+                  "base_fair": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "const": ""
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^(0|[1-9]\\d{0,13})(\\.\\d{1,2})?$"
+                      }
+                    ]
+                  },
+                  "card_type": {
+                    "type": "string",
+                    "maxLength": 50
+                  },
+                  "card_no": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "card_issuer": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "card_brand": {
+                    "type": "string",
+                    "maxLength": 30
+                  },
+                  "card_issuer_country": {
+                    "type": "string",
+                    "maxLength": 50
+                  },
+                  "card_issuer_country_code": {
+                    "type": "string",
+                    "maxLength": 2
+                  },
+                  "value_a": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "value_b": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "value_c": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "value_d": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "verify_sign": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "verify_key": {
+                    "type": "string",
+                    "maxLength": 2048
+                  },
+                  "cus_fax": {
+                    "type": "string",
+                    "maxLength": 20
+                  },
+                  "risk_level": {
+                    "type": "string",
+                    "enum": [
+                      "0",
+                      "1",
+                      ""
+                    ]
+                  },
+                  "risk_title": {
+                    "type": "string",
+                    "maxLength": 50
+                  }
+                },
+                "required": [
+                  "status",
+                  "tran_id"
+                ],
+                "additionalProperties": false
+              }
+            }
           }
         }
       }

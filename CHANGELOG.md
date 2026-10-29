@@ -8,6 +8,15 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 29 October 2026 — Untrusted payment callback transport
+
+- Added separate local/test IPN and GET/POST browser-return routes with narrowly scoped bounded form
+  parsing, fixed storefront redirects and no financial/session authority from browser/provider hints.
+- IPN acknowledges only an independently committed processing outcome; default remains retryable 503.
+  Added keyed security fingerprints and service-owned protected rate admission without raw payloads.
+- Updated form/plain-text/redirect API/Postman contracts and callback/CSRF isolation checks, plus an
+  additive local audit/quota bootstrap. P07-005 submitted for review; no live verification or gate accepted.
+
 ## 29 October 2026 — Local hosted payment initiation
 
 - Added durable owner/order request identities, one-shot hosted session dispatch and owned status

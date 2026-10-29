@@ -580,6 +580,13 @@ Explicit identity bootstrap adds this collection/index without modifying existin
 
 ---
 
+Payment callbacks reuse this canonical collection only through Auth's purpose-specific service
+capability, not cross-module persistence imports. Callback keys HMAC a separate callback-rate namespace,
+real peer and fixed minute; explicit callback limits remain 1–60 to fit the existing saturated counter.
+X-Forwarded-For is not an authority. Callback security audit facts contain only reason/class and keyed
+fingerprints of selected untrusted references; raw forms/cards/credentials/network addresses are not
+retained. Such audit facts are not verified receipts, payment attempts or reliable reconciliation jobs.
+
 ## 6. Catalog and shopping collections
 
 ### 6.1 `categories` — `catalog`

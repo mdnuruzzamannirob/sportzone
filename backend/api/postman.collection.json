@@ -2578,6 +2578,43 @@
       "response": []
     },
     {
+      "name": "get_payment_returns_sslcommerz_result",
+      "description": "Activation: PAYMENT_CALLBACKS_ENABLED with explicit fixed HTTPS URLs on the configured storefront origin; local/test only pending deployed provider transport qualification.. Replay: Display hint only. Empty-body 303 strips all provider query/form values; no session/cookie/access or financial state transition. Untrusted success never establishes Paid.. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/payment-returns/sslcommerz/{{result}}",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: PAYMENT_CALLBACKS_ENABLED with explicit fixed HTTPS URLs on the configured storefront origin; local/test only pending deployed provider transport qualification.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_payment_returns_sslcommerz_result. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_payment_returns_sslcommerz_result",
+      "description": "Activation: PAYMENT_CALLBACKS_ENABLED with explicit fixed HTTPS URLs on the configured storefront origin; local/test only pending deployed provider transport qualification.. Replay: Display hint only. Empty-body 303 strips all provider query/form values; no session/cookie/access or financial state transition. Untrusted success never establishes Paid.. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/payment-returns/sslcommerz/{{result}}",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "description": "Implemented conditionally: PAYMENT_CALLBACKS_ENABLED with explicit fixed HTTPS URLs on the configured storefront origin; local/test only pending deployed provider transport qualification.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_payment_returns_sslcommerz_result. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": []
+        }
+      },
+      "response": []
+    },
+    {
       "name": "get_products",
       "description": "Activation: Always registered; required indexes/visibility/media checks must pass. Replay: read. No automatic mutation retry.",
       "request": {
@@ -2685,6 +2722,170 @@
         },
         "header": [],
         "description": "Implemented conditionally: Reviewed settings/policy persistence; only approved effective published pointers become public. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_storefront_policies_type. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_webhooks_sslcommerz_ipn",
+      "description": "Activation: PAYMENT_CALLBACKS_ENABLED local/test only, explicit same-storefront return URLs and reviewed audit/quota persistence. Runtime returns 503 until an independent durable processor is composed; no raw notification proves funds.. Replay: Bounded URL-encoded untrusted claims; only normalized references cross the verifier boundary. 200 text OK only after durable verified outcome/recoverable reconciliation commit. Replays never imply new money; default is retryable 503.. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/webhooks/sslcommerz/ipn",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "description": "Implemented conditionally: PAYMENT_CALLBACKS_ENABLED local/test only, explicit same-storefront return URLs and reviewed audit/quota persistence. Runtime returns 503 until an independent durable processor is composed; no raw notification proves funds.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_webhooks_sslcommerz_ipn. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "status",
+              "value": "{{post_webhooks_sslcommerz_ipn_status}}",
+              "disabled": false
+            },
+            {
+              "key": "tran_id",
+              "value": "{{post_webhooks_sslcommerz_ipn_tran_id}}",
+              "disabled": false
+            },
+            {
+              "key": "val_id",
+              "value": "{{post_webhooks_sslcommerz_ipn_val_id}}",
+              "disabled": true
+            },
+            {
+              "key": "store_id",
+              "value": "{{post_webhooks_sslcommerz_ipn_store_id}}",
+              "disabled": true
+            },
+            {
+              "key": "bank_tran_id",
+              "value": "{{post_webhooks_sslcommerz_ipn_bank_tran_id}}",
+              "disabled": true
+            },
+            {
+              "key": "amount",
+              "value": "{{post_webhooks_sslcommerz_ipn_amount}}",
+              "disabled": true
+            },
+            {
+              "key": "currency",
+              "value": "{{post_webhooks_sslcommerz_ipn_currency}}",
+              "disabled": true
+            },
+            {
+              "key": "tran_date",
+              "value": "{{post_webhooks_sslcommerz_ipn_tran_date}}",
+              "disabled": true
+            },
+            {
+              "key": "store_amount",
+              "value": "{{post_webhooks_sslcommerz_ipn_store_amount}}",
+              "disabled": true
+            },
+            {
+              "key": "currency_type",
+              "value": "{{post_webhooks_sslcommerz_ipn_currency_type}}",
+              "disabled": true
+            },
+            {
+              "key": "currency_amount",
+              "value": "{{post_webhooks_sslcommerz_ipn_currency_amount}}",
+              "disabled": true
+            },
+            {
+              "key": "currency_rate",
+              "value": "{{post_webhooks_sslcommerz_ipn_currency_rate}}",
+              "disabled": true
+            },
+            {
+              "key": "base_fair",
+              "value": "{{post_webhooks_sslcommerz_ipn_base_fair}}",
+              "disabled": true
+            },
+            {
+              "key": "card_type",
+              "value": "{{post_webhooks_sslcommerz_ipn_card_type}}",
+              "disabled": true
+            },
+            {
+              "key": "card_no",
+              "value": "{{post_webhooks_sslcommerz_ipn_card_no}}",
+              "disabled": true
+            },
+            {
+              "key": "card_issuer",
+              "value": "{{post_webhooks_sslcommerz_ipn_card_issuer}}",
+              "disabled": true
+            },
+            {
+              "key": "card_brand",
+              "value": "{{post_webhooks_sslcommerz_ipn_card_brand}}",
+              "disabled": true
+            },
+            {
+              "key": "card_issuer_country",
+              "value": "{{post_webhooks_sslcommerz_ipn_card_issuer_country}}",
+              "disabled": true
+            },
+            {
+              "key": "card_issuer_country_code",
+              "value": "{{post_webhooks_sslcommerz_ipn_card_issuer_country_code}}",
+              "disabled": true
+            },
+            {
+              "key": "value_a",
+              "value": "{{post_webhooks_sslcommerz_ipn_value_a}}",
+              "disabled": true
+            },
+            {
+              "key": "value_b",
+              "value": "{{post_webhooks_sslcommerz_ipn_value_b}}",
+              "disabled": true
+            },
+            {
+              "key": "value_c",
+              "value": "{{post_webhooks_sslcommerz_ipn_value_c}}",
+              "disabled": true
+            },
+            {
+              "key": "value_d",
+              "value": "{{post_webhooks_sslcommerz_ipn_value_d}}",
+              "disabled": true
+            },
+            {
+              "key": "verify_sign",
+              "value": "{{post_webhooks_sslcommerz_ipn_verify_sign}}",
+              "disabled": true
+            },
+            {
+              "key": "verify_key",
+              "value": "{{post_webhooks_sslcommerz_ipn_verify_key}}",
+              "disabled": true
+            },
+            {
+              "key": "cus_fax",
+              "value": "{{post_webhooks_sslcommerz_ipn_cus_fax}}",
+              "disabled": true
+            },
+            {
+              "key": "risk_level",
+              "value": "{{post_webhooks_sslcommerz_ipn_risk_level}}",
+              "disabled": true
+            },
+            {
+              "key": "risk_title",
+              "value": "{{post_webhooks_sslcommerz_ipn_risk_title}}",
+              "disabled": true
+            }
+          ]
+        }
       },
       "response": []
     },

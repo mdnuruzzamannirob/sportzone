@@ -452,6 +452,174 @@
       "type": "secret"
     },
     {
+      "key": "post_webhooks_sslcommerz_ipn_amount",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_bank_tran_id",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_base_fair",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_card_brand",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_card_issuer",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_card_issuer_country",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_card_issuer_country_code",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_card_no",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_card_type",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_currency",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_currency_amount",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_currency_rate",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_currency_type",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_cus_fax",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_risk_level",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_risk_title",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_status",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_store_amount",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_store_id",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_tran_date",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_tran_id",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_val_id",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_value_a",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_value_b",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_value_c",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_value_d",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_verify_key",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "post_webhooks_sslcommerz_ipn_verify_sign",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "productId",
       "value": "",
       "enabled": true,
@@ -465,6 +633,12 @@
     },
     {
       "key": "q",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "result",
       "value": "",
       "enabled": true,
       "type": "default"

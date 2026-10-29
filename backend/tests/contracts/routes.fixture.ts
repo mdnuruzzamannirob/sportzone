@@ -1,3 +1,4 @@
+import { paymentCallbackRoutes } from '../../src/modules/payments/payment-callback.routes.js'
 import { paymentInitiationRoutes } from '../../src/modules/payments/payment-initiation.routes.js'
 import { paymentMethodsRoutes } from '../../src/modules/payments/payment-methods.routes.js'
 import { guestAccessRoutes } from '../../src/modules/auth/guest-access/guest-access.routes.js'
@@ -82,6 +83,10 @@ const media = {
 }
 export function registeredRouter() {
   return createApiRouter({ isReady: async () => true }, [
+    paymentCallbackRoutes(
+      { malformed: unused, receive: unused, redirect: () => 'https://shop.example.test/result' },
+      guard,
+    ),
     paymentInitiationRoutes(
       { initiate: unused, read: unused },
       security,
