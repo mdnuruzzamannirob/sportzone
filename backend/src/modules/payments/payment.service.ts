@@ -68,3 +68,21 @@ export function checkoutPaymentAccess(connection: Connection) {
     },
   }
 }
+
+export function paymentMethodBalanceAccess(connection: Connection) {
+  const model = paymentModel(connection)
+  return async (session: ClientSession, orderId: string) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    try {
+      await verifyPaymentPersistence(connection)
+    } catch {
+      throw new ApiError('SERVICE_UNAVAILABLE')
+    }
+    const row = await model.findOne({ orderId }).session(session)
+    if (!row) throw new ApiError('SERVICE_UNAVAILABLE')
+    return {
+      method: row.method,
+      remainingPoisha: Math.max(0, row.expectedPoisha - row.merchandiseFundedPoisha),
+    }
+  }
+}

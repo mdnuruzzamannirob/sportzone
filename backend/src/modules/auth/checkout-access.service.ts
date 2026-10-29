@@ -43,3 +43,34 @@ export function checkoutAccess(customers: CustomerAccountAccess, security: Brows
     },
   }
 }
+
+export function paymentMethodAccess(
+  customers: CustomerAccountAccess,
+  guests?: Pick<import('./guest-access/guest-session.service.js').GuestSessions, 'owned'>,
+) {
+  return {
+    async owned<T>(
+      credentials: {
+        customerPresent: boolean
+        customerToken?: string | undefined
+        guestToken?: string | undefined
+      },
+      orderId: string,
+      work: (
+        scope: { customerId?: string; guestOrderId?: string },
+        session: ClientSession,
+      ) => Promise<T>,
+    ) {
+      if (credentials.customerPresent)
+        return customers.owned(
+          credentials.customerToken,
+          (profile, scope) => work({ customerId: profile.id }, scope.transaction),
+          false,
+        )
+      if (!guests) throw new ApiError('GUEST_PROOF_REQUIRED')
+      return guests.owned(credentials.guestToken, orderId, (scope, session) =>
+        work({ guestOrderId: scope.orderId }, session),
+      )
+    },
+  }
+}

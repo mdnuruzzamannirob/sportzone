@@ -20,6 +20,12 @@
       "type": "default"
     },
     {
+      "key": "amountPoisha",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "assetId",
       "value": "",
       "enabled": true,
@@ -120,6 +126,12 @@
       "value": "",
       "enabled": true,
       "type": "secret"
+    },
+    {
+      "key": "orderId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
     },
     {
       "key": "page",

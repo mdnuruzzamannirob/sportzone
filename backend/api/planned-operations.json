@@ -412,7 +412,7 @@
       "path": "/checkout/payment-methods",
       "success": "200",
       "operationId": "get_checkout_payment_methods",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",

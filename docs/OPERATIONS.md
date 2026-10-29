@@ -388,6 +388,39 @@ API; changes appear on a subsequent public read. Policy links require the curren
 effective pointer, never a scheduled/draft/latest-version fallback. Retain existing media references
 and policy history during rollback; disabling or reverting presentation does not delete those records.
 
+`GET /api/v1/checkout/payment-methods` reads current store payment flags in a transaction.
+No checkout activation or identity is needed for a general read; order-specific reads require the
+current customer owner or an enabled scoped guest session. Only active methods are returned;
+an unknown online amount remains ineligible (AMOUNT_REQUIRED). Amount query values are advisory;
+owned order reads use remaining canonical merchandise funding and the original payment method.
+The API and checkout quotes share the same verified capability projection. COD follows store flags.
+No provider request, new attempt or financial mutation is performed by this availability read.
+
+Online publication requires `PAYMENT_CHANNEL_APPROVALS_FILE`, an operator-controlled JSON array
+(maximum three entries), plus explicit valid adapter configuration below. Each entry includes
+channel (bkash/nagad/rocket), appEnv, mode, merchantAccountKey, gatewayKey, minPoisha/maxPoisha,
+verifiedAt, validUntil, approvedBy, evidenceRef, evidenceFile and evidenceDigest. Bind the merchant
+key to SHA-256 of `mode + NUL + storeId`; it must match the configured account/environment.
+EvidenceFile is a plain sibling filename, not a path/URL; evidenceDigest is SHA-256 of its nonempty
+bytes. Both manifest and each artifact are capped at 1 MB. Store these files outside public/web
+content under deployment/operator write controls; do not include credentials or personal payment data.
+
+The merchant owner must supply actual channel enablement/limits and authoritative sign-off evidence;
+writing a boolean, copying a synthetic fixture or computing a digest is not approval. Each verified
+lifetime and gateway key must be explicitly approved. Amount bounds are the merchant-approved
+intersection with published gateway constraints; no automatic channel-key mapping or default range
+is supplied. Missing manifest means no online capability. Malformed, duplicate, expired, future,
+wrong-account/environment, missing or digest-mismatched evidence fails startup configuration safely.
+Qualifying metadata and underlying evidence are loaded at startup; lifetimes are rechecked on every
+read/quote. Revoke immediately through the owning store flag, then replace/review evidence and restart
+to load changed qualifications. Expired evidence hides the affected channel automatically. Keep the
+approval revision/evidence in the protected operational inventory for audit/recovery.
+
+Without merchant evidence, online channels remain unavailable; bKash, Nagad, Rocket and COD still each
+require separate live launch acceptance. Availability does not activate the still-separate hosted
+initiation/callback/receipt path. Rollback can clear the evidence-file setting/restart or disable store
+flags while preserving attempt/receipt and approval history. No collection migration is introduced.
+
 Private SSLCOMMERZ adapter configuration is loaded only by explicit backend composition through
 `loadSslcommerzOptions`; it is not wired into HTTP startup. `SSLCOMMERZ_ADAPTER_ENABLED=false`
 (or absent) disables loading. Enabling requires explicit `SSLCOMMERZ_MODE`, `SSLCOMMERZ_STORE_ID`,

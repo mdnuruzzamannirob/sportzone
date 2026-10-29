@@ -70,7 +70,7 @@ describe('executable API contract registry', () => {
         .filter((op) => op.method === 'OPTIONS')
         .every((op) => operations.some((item) => item.path === op.path)),
     ).toBe(true)
-    expect(operations).toHaveLength(85)
+    expect(operations).toHaveLength(86)
     const prefixed = Router().use('/untracked', registeredRouter())
     expect(() => registeredOperations(prefixed)).toThrow(/mount prefix/)
   })
@@ -122,6 +122,7 @@ describe('executable API contract registry', () => {
         'health/health.routes.ts',
         'inventory/inventory-admin.routes.ts',
         'media/media.routes.ts',
+        'payments/payment-methods.routes.ts',
         'promotions/coupon-admin.routes.ts',
         'settings/settings.routes.ts',
       ].sort(),
@@ -170,10 +171,12 @@ describe('executable API contract registry', () => {
   it('keeps planned contracts non-executable and environment values blank', () => {
     const rows = artifacts['planned-operations.json'].operations
     expect(rows).toHaveLength(164)
-    expect(rows.filter((op) => op.implementation === 'planned')).toHaveLength(79)
+    expect(rows.filter((op) => op.implementation === 'planned')).toHaveLength(78)
+    expect(openapi.paths['/checkout/payment-methods']).toBeDefined()
+    expect(ajv.validateSchema(envelope('/checkout/payment-methods', 'get', '200'))).toBe(true)
     expect(openapi.paths['/checkout/orders']).toBeDefined()
     expect(ajv.validateSchema(envelope('/checkout/orders', 'post', '200'))).toBe(true)
-    expect(artifacts['postman.collection.json'].item).toHaveLength(85)
+    expect(artifacts['postman.collection.json'].item).toHaveLength(86)
     expect(artifacts['postman.environment.json'].values.every((entry) => entry.value === '')).toBe(
       true,
     )

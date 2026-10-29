@@ -8,6 +8,15 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 29 October 2026 — Payment-method availability API
+
+- Added public payment-method discovery with active-only filtering, canonical owned-order balance
+  eligibility and customer/scoped-guest authorization; checkout quotes share verified capabilities.
+- Added an operator-controlled channel evidence manifest with account/environment/digest/lifetime
+  verification. Missing qualification keeps online channels unavailable; flags alone cannot activate them.
+- Updated generated API/Postman artifacts and safety/contract checks. P07-003 accepted by the project owner on 29 October 2026;
+  no hosted initiation, live merchant or milestone acceptance implied.
+
 ## 29 October 2026 — Private SSLCOMMERZ v4 adapter
 
 - Added fixed-origin server-only hosted initiation, validation and session/transaction status transport,

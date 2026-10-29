@@ -1,3 +1,4 @@
+import { loadPaymentChannelApprovals } from './config/payments.js'
 import { loadCheckoutOptions } from './config/checkout.js'
 import { loadPolicyApprovals } from './config/settings.js'
 import { createServer } from 'node:http'
@@ -37,6 +38,7 @@ export async function startServer(
       undefined,
       await loadPolicyApprovals(process.env),
       await loadCheckoutOptions(process.env),
+      await loadPaymentChannelApprovals(process.env),
     )
   } catch (error) {
     await connection.destroy()

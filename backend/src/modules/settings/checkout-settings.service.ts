@@ -39,3 +39,18 @@ export function checkoutSettingsAccess(
     return { flags: flags.data, policyVersions }
   }
 }
+
+export function paymentChannelSettingsAccess(connection: Connection) {
+  return async (session: ClientSession) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    try {
+      await verifySettingsPersistence(connection)
+    } catch {
+      throw new ApiError('SERVICE_UNAVAILABLE')
+    }
+    const row = await settingsModel(connection).findOne({ key: 'primary' }).session(session)
+    const result = paymentChannels.safeParse(row?.toObject().paymentChannels)
+    if (!result.success) throw new ApiError('SERVICE_UNAVAILABLE')
+    return result.data
+  }
+}

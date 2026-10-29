@@ -4,16 +4,19 @@ import { parseInput } from '../../shared/middleware/validate.js'
 import { paymentChannels } from '../settings/settings.schema.js'
 import {
   paymentChannel,
+  paymentChannelApproval,
   paymentMethodEligibility,
   verifiedChannelCapability,
+  type PaymentChannelApproval,
 } from './payment-eligibility.schema.js'
 // The live provider/merchant verification adapter belongs to P07. Absence denies every online
 // channel; configured flags alone never prove activation. No provider call belongs in this read.
 export function paymentEligibility(
   verified: (session: ClientSession) => Promise<unknown> = async () => [],
 ) {
-  return async (rawFlags: unknown, amountPoisha: number, session: ClientSession) => {
-    parseInput(z.int().nonnegative().max(Number.MAX_SAFE_INTEGER), amountPoisha)
+  return async (rawFlags: unknown, amountPoisha: number | undefined, session: ClientSession) => {
+    if (amountPoisha !== undefined)
+      parseInput(z.int().nonnegative().max(Number.MAX_SAFE_INTEGER), amountPoisha)
     const flags = parseInput(paymentChannels, rawFlags),
       capabilities = parseInput(
         z
@@ -36,6 +39,7 @@ export function paymentEligibility(
       const eligible =
         active &&
         capability !== undefined &&
+        amountPoisha !== undefined &&
         amountPoisha >= capability.minPoisha &&
         amountPoisha <= capability.maxPoisha
       return parseInput(paymentMethodEligibility, {
@@ -43,7 +47,13 @@ export function paymentEligibility(
         active,
         eligible,
         ...(!eligible
-          ? { reasonCode: active ? 'PAYMENT_AMOUNT_UNSUPPORTED' : 'CHANNEL_UNAVAILABLE' }
+          ? {
+              reasonCode: active
+                ? amountPoisha === undefined
+                  ? 'AMOUNT_REQUIRED'
+                  : 'PAYMENT_AMOUNT_UNSUPPORTED'
+                : 'CHANNEL_UNAVAILABLE',
+            }
           : {}),
         ...(capability?.active
           ? { minPoisha: capability.minPoisha, maxPoisha: capability.maxPoisha }
@@ -51,4 +61,29 @@ export function paymentEligibility(
       })
     })
   }
+}
+
+// Only privileged composition supplies digest-checked operator evidence. Recheck lifetime on every read.
+export function verifiedMerchantChannels(
+  rows: readonly PaymentChannelApproval[],
+  clock: () => Date = () => new Date(),
+) {
+  const approved = z
+    .array(paymentChannelApproval)
+    .max(3)
+    .refine((items) => new Set(items.map((row) => row.channel)).size === items.length)
+    .parse(rows)
+  return async () =>
+    approved
+      .filter(
+        (row) =>
+          Date.parse(row.verifiedAt) <= clock().getTime() &&
+          Date.parse(row.validUntil) > clock().getTime(),
+      )
+      .map((row) => ({
+        channel: row.channel,
+        active: true,
+        minPoisha: row.minPoisha,
+        maxPoisha: row.maxPoisha,
+      }))
 }

@@ -1072,6 +1072,16 @@ available, amount eligibility. Client-supplied `amountPoisha` is advisory only: 
 initiation. Inactive channels are omitted, while active-but-amount-ineligible channels may be returned with
 `eligible:false` and a safe reason. This response does not itself authorize a payment.
 
+With no amount/order context, active online methods return `eligible:false,reasonCode:'AMOUNT_REQUIRED'`;
+COD needs no gateway amount check. A supplied `amountPoisha` must be a canonical nonnegative integer
+query string and is advisory only. When `orderId` is supplied, require its current customer owner or
+scoped guest proof, ignore the advisory amount for eligibility, and use canonical remaining merchandise
+funding. The selected order payment method cannot change; fully funded online orders return no methods.
+Inactive methods are omitted. Responses, including order-specific errors, use no-store.
+Merchant qualification uses an operator-controlled evidence manifest with environment/account binding,
+explicit verified lifetime, channel key and approved limits, plus a digest-checked evidence artifact.
+Unknown, expired or mismatched qualification never activates a channel; settings flags alone cannot.
+
 The merchant activation rule reflects **verified enablement**, not merely a boolean set by a local UI. bKash, Nagad and Rocket are each required for launch; other gateway channels are not newly approved product methods.
 A caller may suggest a channel; the server validates live merchant permissions and controls the SSLCOMMERZ hosted flow.
 `PaymentAttemptPublic` contains no provider validation secrets or card/bank data.

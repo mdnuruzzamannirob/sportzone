@@ -665,6 +665,15 @@ operations; retain those acceptance gates separately.
 
 ### 11.1 Payment provider and COD scenarios
 
+Payment-method availability tests exercise public/no-store reads, flag-only denial of online channels,
+verified evidence/account/environment/lifetime/digest boundaries and current settings/expiry changes.
+Check inclusive min/max integer-poisha eligibility and unknown amount behavior. Order-specific tests
+must use actual customer/guest sessions: cross-owner, missing/revoked/expired/invalid/duplicate cookies
+cannot disclose eligibility for an order. Advisory amounts cannot override remaining canonical funding;
+fully funded online and cancelled orders expose no selectable methods. Check original method binding,
+invalid query/body, CORS/HEAD/preflight, missing persistence and executable API/route parity. Test evidence
+is synthetic and does not prove real merchant activation; qualify every live launch channel separately.
+
 Gateway adapter contract tests use synthetic v4 responses and a loopback HTTP server. Assert fixed
 origins, environment separation, exact poisha formatting/parsing, bounded form/response fields,
 credential redaction, session-bound hosted URLs and fixed callback paths. Exercise actual timeout,

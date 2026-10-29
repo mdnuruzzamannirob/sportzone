@@ -300,3 +300,26 @@ export function guestOrderAccess(connection: Connection) {
     },
   }
 }
+
+// Only an authenticated customer or proven guest scope may request this private projection.
+export function paymentMethodOrderAccess(connection: Connection) {
+  const { orders } = orderModels(connection)
+  return async (
+    session: ClientSession,
+    orderId: string,
+    scope: { customerId?: string; guestOrderId?: string },
+  ) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    if (!scope.customerId && scope.guestOrderId !== orderId) throw new ApiError('NOT_FOUND')
+    try {
+      await verifyOrderPersistence(connection)
+    } catch {
+      throw new ApiError('SERVICE_UNAVAILABLE')
+    }
+    const row = await orders
+      .findOne({ _id: orderId, userId: scope.customerId ?? null })
+      .session(session)
+    if (!row) throw new ApiError('NOT_FOUND')
+    return { method: row.paymentMethod, cancelled: row.fulfillmentStatus === 'cancelled' }
+  }
+}

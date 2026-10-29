@@ -1,20 +1,20 @@
 import { createHash } from 'node:crypto'
-import {
-  validateSslcommerzOptions,
-  initiationInput,
-  bdtDecimal,
-  sessionAcceptance,
-  sessionFailure,
-  validationQuery,
-  sessionQuery,
-  transactionQuery,
-  providerRecord,
-  transactionResponse,
-  sessionResponse,
-  type SslcommerzOptions,
-} from './sslcommerz.schema.js'
 import type { z } from 'zod'
 import { assertOutsideTransaction } from '../../shared/database/transaction.js'
+import {
+  bdtDecimal,
+  initiationInput,
+  providerRecord,
+  sessionAcceptance,
+  sessionFailure,
+  sessionQuery,
+  sessionResponse,
+  transactionQuery,
+  transactionResponse,
+  validateSslcommerzOptions,
+  validationQuery,
+  type SslcommerzOptions,
+} from './sslcommerz.schema.js'
 
 const uncertain = { kind: 'uncertain', code: 'PROVIDER_UNCERTAIN' } as const
 const invalid = { kind: 'rejected', code: 'INVALID_PROVIDER_INPUT' } as const
@@ -77,7 +77,10 @@ export function createSslcommerzAdapter(
         chunks.push(chunk.value)
       }
       const bytes = Buffer.concat(chunks)
-      return { raw: JSON.parse(bytes.toString('utf8')) as unknown, digest: hash(bytes) }
+      return {
+        raw: JSON.parse(bytes.toString('utf8')) as unknown,
+        digest: hash(bytes),
+      }
     } finally {
       signal.removeEventListener('abort', abort)
       reader.releaseLock()

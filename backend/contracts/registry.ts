@@ -1,3 +1,7 @@
+import {
+  paymentMethodsQuery,
+  paymentMethodsView,
+} from '../src/modules/payments/payment-eligibility.schema.js'
 import { storefrontHome } from '../src/modules/catalog/catalog.schema.js'
 import {
   guestChallengeInput,
@@ -278,6 +282,21 @@ export const operations: readonly Operation[] = [
       'Reviewed catalog/settings/policy persistence. Only active visible SKU/category data and exact attached clean public media references publish; missing configured metadata is omitted.',
     replay:
       'No-store bounded read; current operator settings and approved published policy pointers on each request. No fabricated merchandising fallback.',
+  },
+  {
+    method: 'GET',
+    path: '/checkout/payment-methods',
+    access: 'public',
+    namespace: 'storefront',
+    query: paymentMethodsQuery,
+    params: empty,
+    response: paymentMethodsView,
+    status: 200,
+    csrf: false,
+    activation:
+      'Reviewed settings persistence; online requires current digest-checked environment/account-bound operator merchant evidence plus store flag. Order context additionally requires customer ownership or scoped guest proof.',
+    replay:
+      'No-store read; inactive omitted, advisory amount never authorizes collection. Canonical remaining funding overrides advisory amount for an owned order; unknown amount keeps online eligibility false.',
   },
   {
     method: 'POST',

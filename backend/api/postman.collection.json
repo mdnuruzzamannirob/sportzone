@@ -1936,6 +1936,31 @@
       "response": []
     },
     {
+      "name": "get_checkout_payment_methods",
+      "description": "Activation: Reviewed settings persistence; online requires current digest-checked environment/account-bound operator merchant evidence plus store flag. Order context additionally requires customer ownership or scoped guest proof.. Replay: No-store read; inactive omitted, advisory amount never authorizes collection. Canonical remaining funding overrides advisory amount for an owned order; unknown amount keeps online eligibility false.. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/checkout/payment-methods",
+          "query": [
+            {
+              "key": "amountPoisha",
+              "value": "{{amountPoisha}}",
+              "disabled": true
+            },
+            {
+              "key": "orderId",
+              "value": "{{orderId}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Reviewed settings persistence; online requires current digest-checked environment/account-bound operator merchant evidence plus store flag. Order context additionally requires customer ownership or scoped guest proof.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_checkout_payment_methods. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
       "name": "post_checkout_quotes",
       "description": "Activation: CHECKOUT_QUOTES_ENABLED with explicit TTL/required policies, CUSTOMER_AUTH_ENABLED, reviewed quote/catalog/delivery/settings/coupon persistence and eligible independently reviewed deadline policy. Online methods remain denied until verified provider/merchant capability is wired.. Replay: New quote per request; scope-bound immutable consent without reservations. Internal revalidation checks expiry, stable line IDs and commercial changes; order intent/consumption belongs to later tasks.. No automatic mutation retry.",
       "request": {

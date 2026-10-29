@@ -1,3 +1,10 @@
+import { paymentMethodsRoutes } from './modules/payments/payment-methods.routes.js'
+import { paymentMethodsService } from './modules/payments/payment-methods.service.js'
+import { paymentMethodOrderAccess } from './modules/orders/order.service.js'
+import { paymentMethodAccess } from './modules/auth/checkout-access.service.js'
+import { paymentChannelSettingsAccess } from './modules/settings/checkout-settings.service.js'
+import { verifiedMerchantChannels } from './modules/payments/payment-eligibility.service.js'
+import type { PaymentChannelApproval } from './modules/payments/payment-eligibility.schema.js'
 import { checkoutIntentService } from './modules/checkout/checkout-intent.service.js'
 import { checkoutCompletion } from './modules/checkout/checkout-completion.service.js'
 import { deliveryAreaRoutes } from './modules/delivery/delivery.routes.js'
@@ -72,6 +79,7 @@ export async function composeIdentityRoutes(
   media?: MediaDependencies,
   approvals: readonly PolicyApproval[] = [],
   checkout?: CheckoutOptions,
+  channelApprovals: readonly PaymentChannelApproval[] = [],
 ) {
   const notifications = createRegistrationNotifications(connection)
   const auth = await createAuthRuntime(connection, config, notifications)
@@ -208,6 +216,26 @@ export async function composeIdentityRoutes(
   )
   if (config.ADMIN_AUTH_ENABLED)
     auth.router.use(settingsAdminRoutes(settings, policies, auth.security, auth.sessions))
+  auth.router.use(
+    paymentMethodsRoutes(
+      paymentMethodsService(connection, {
+        access: paymentMethodAccess(
+          config.CUSTOMER_AUTH_ENABLED
+            ? auth.customerAccounts
+            : {
+                owned: async () => {
+                  throw new ApiError('AUTH_REQUIRED')
+                },
+              },
+          auth.guestAccounts,
+        ),
+        order: paymentMethodOrderAccess(connection),
+        settings: paymentChannelSettingsAccess(connection),
+        verified: verifiedMerchantChannels(channelApprovals),
+      }),
+      [config.STOREFRONT_ORIGIN],
+    ),
+  )
   if (checkout) {
     if (!config.CUSTOMER_AUTH_ENABLED)
       throw new Error('Customer authentication required for checkout quotes.')
@@ -221,7 +249,7 @@ export async function composeIdentityRoutes(
         settings: checkoutSettingsAccess(connection, checkout.requiredPolicyTypes),
         deadline: createDeliveryDeadlineService(checkout.deadline),
         coupon: couponQuoteAccess(connection),
-        methods: paymentEligibility(),
+        methods: paymentEligibility(verifiedMerchantChannels(channelApprovals)),
       },
       {
         quoteTtlSeconds: checkout.quoteTtlSeconds,
@@ -250,12 +278,20 @@ export async function composeApplication(
   media?: MediaDependencies,
   approvals: readonly PolicyApproval[] = [],
   checkout?: CheckoutOptions,
+  channelApprovals: readonly PaymentChannelApproval[] = [],
 ) {
   if (checkout && !config.CUSTOMER_AUTH_ENABLED)
     throw new Error('Customer authentication required for checkout quotes.')
   const identity =
     config.CUSTOMER_AUTH_ENABLED || config.ADMIN_AUTH_ENABLED
-      ? await composeIdentityRoutes(connection, config, media, approvals, checkout)
+      ? await composeIdentityRoutes(
+          connection,
+          config,
+          media,
+          approvals,
+          checkout,
+          channelApprovals,
+        )
       : undefined
   const unavailable = async (): Promise<never> => {
     throw new ApiError('AUTH_REQUIRED')
@@ -276,6 +312,19 @@ export async function composeApplication(
     deliveryAreaRoutes(deliveryAreasAccess(connection), config.CORS_ALLOWED_ORIGINS),
     catalog,
     content,
+    ...(!identity
+      ? [
+          paymentMethodsRoutes(
+            paymentMethodsService(connection, {
+              access: publicAccess,
+              order: paymentMethodOrderAccess(connection),
+              settings: paymentChannelSettingsAccess(connection),
+              verified: verifiedMerchantChannels(channelApprovals),
+            }),
+            [config.STOREFRONT_ORIGIN],
+          ),
+        ]
+      : []),
     ...(identity ? [identity] : []),
   ])
   if (media && !config.ADMIN_AUTH_ENABLED)

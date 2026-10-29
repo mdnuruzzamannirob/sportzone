@@ -1,3 +1,4 @@
+import { paymentMethodsRoutes } from '../../src/modules/payments/payment-methods.routes.js'
 import { guestAccessRoutes } from '../../src/modules/auth/guest-access/guest-access.routes.js'
 import { deliveryAreaRoutes } from '../../src/modules/delivery/delivery.routes.js'
 import { checkoutRoutes } from '../../src/modules/checkout/checkout.routes.js'
@@ -80,6 +81,7 @@ const media = {
 }
 export function registeredRouter() {
   return createApiRouter({ isReady: async () => true }, [
+    paymentMethodsRoutes({ read: unused }, []),
     browserSecurityRoutes(security, sessions),
     guestAccessRoutes(
       { request: unused, exchange: unused },
