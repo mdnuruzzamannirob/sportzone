@@ -1250,8 +1250,9 @@ Duplicate core money facts do not rewrite evidence; contradictory core facts app
 and retain the original. Audit replay can explicitly reuse an identical operation identity/digest without
 inserting another event; conflicting digests are rejected and the first event remains immutable.
 Provider VALID → VALIDATED alone does not create a new collection. Fresh verified risk can escalate
-review without duplicating funding. Additional distinct collections remain unassigned when merchandise
-is already funded. Terminal nonpayment cannot overwrite a verified-paid attempt or release capacity.
+review without duplicating funding. New safely matched distinct collections allocate at most remaining
+merchandise entitlement and assign the rest to correction, with an unreserved source-specific obligation.
+Historical unassigned receipts are not automatically reclassified; supervised reconciliation owns them. Terminal nonpayment cannot overwrite a verified-paid attempt or release capacity.
 
 **`paymentCollections` — linked source receipts with immutable core and guarded accounting**
 
@@ -1585,6 +1586,22 @@ success. Checkpoints advance past protected candidates so they cannot starve lat
 wraps after its end. Failure records retain a static error code/count. This registry has no TTL; missing
 indexes, unexpected validators or TTL indexes fail readiness rather than rewriting durable progress.
 lastSucceededAt means the bounded scan completed, not that every protected hold was releasable.
+
+Payment reconciliation partitions jobKey by the configured merchant-account fingerprint. It scans
+canonical attempt IDs with unresolved/terminal state-aware lastCheckedAt cutoffs; the bounded cursor
+advances past skipped/foreign candidates and wraps. No alternate payment/job payload collection or TTL
+is introduced. Missing-IPN attempts remain durable through their canonical initiation/attempt records.
+Provider reads occur outside transactions. Before/after processing, recovery and observation writes,
+owner/expiry fences make real monotonic updatedAt writes even at one clock instant, preventing a no-op
+fence from admitting an old owner. The final cursor checkpoint also requires live ownership.
+
+Successful scan is not proof every payment resolved. lastCheckedAt records observation time, not proof
+of collection/noncollection. Unknown current provider results never become Failed; original verified
+proof is retained. Pending or quarantined money keeps an investigation unresolved even if earlier
+funding is Paid. Fixed status-aware retry intervals are explicit configuration, not financial deadlines.
+Protected escalation/resolution audit identities are stable per attempt; new escalation counts mean
+newly recorded investigations, not repeated identical notifications. Financial effects remain guarded
+by canonical receipt identity and payment/order revisions independently of the worker lease.
 
 ## 11. Indexes and query contracts
 

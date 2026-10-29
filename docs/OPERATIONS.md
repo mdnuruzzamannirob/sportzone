@@ -461,8 +461,8 @@ Existing inventory/coupon/order provisioning and immutable order snapshots remai
 Operator-approved safe behavior pending timezone evidence: accept only valid, explicit-offset collection
 timestamps and fail closed on timezone-free provider tran_date. Do not replace it with current time.
 A 503 means uncertain processing, not noncollection. Test doubles with explicit offsets are not provider
-qualification. Pending/unavailable validation and failed transactions remain retryable; no poll worker
-is enabled here. Quarantined/mismatched intake, cancelled correction obligations and unassigned additional collections
+qualification. Pending/unavailable validation and failed transactions remain retryable; polling is
+separately activated through the explicit worker procedure in §8.2 and never by API startup. Quarantined/mismatched intake, cancelled correction obligations and unassigned additional collections
 require the owning supervised reconciliation/correction workflow; do not manually convert them into merchandise funding.
 
 Initial linked funding and eligible live allocations commit together. Risk/expired holds retain funds
@@ -497,7 +497,7 @@ not unmount risk decisions. Staging/production activation and provider/legal qua
 
 Rollback disables callback composition while preserving audit/quota and all financial histories.
 Keep canonical receipt, correction-obligation and audit history; no separate raw callback collection
-or automatic uncertain-payment worker is implied. A deployed rollback must reconcile provider retry
+or API-started automatic worker is implied. A deployed rollback must reconcile provider retry
 queues and uncertain payment outcomes through its reviewed procedure; local tests are not provider acceptance.
 
 Hosted initiation requires `PAYMENT_INITIATION_ENABLED=true`, CUSTOMER_AUTH_ENABLED, valid explicit
@@ -1227,12 +1227,51 @@ schema expansion accepts prior registration data, but old binaries with exact ol
 restart. Use a compatible rollback build; do not erase new lease/receipt fields or downgrade validation destructively.
 Verify provider/recipient behavior, reconciliation exercises and operator approval separately in the target environment.
 
+**Payment reconciliation — local/test command:** build, then run the reviewed additive
+`node --env-file=.env backend/scripts/bootstrap-payment-initiation.mjs` against the owned local/test
+database. It now also provisions existing jobLeases protection, preserving all progress and financial
+history. The worker never provisions/migrates state. Run one bounded scan with
+`node --env-file=.env backend/scripts/reconcile-payments.mjs` only after explicit configuration.
+
+Required: PAYMENT_RECONCILIATION_ENABLED=true plus valid SSLCOMMERZ_ADAPTER_ENABLED sandbox settings;
+PAYMENT_RECONCILIATION_BATCH_SIZE (1–100), PAYMENT_RECONCILIATION_LEASE_MS (1,000–3,600,000),
+PAYMENT_RECONCILIATION_POLL_MS (1,000–86,400,000),
+PAYMENT_RECONCILIATION_TERMINAL_POLL_MS (at least poll interval, up to 604,800,000), and
+PAYMENT_RECONCILIATION_ESCALATE_AFTER_MS (at least poll interval, up to 2,592,000,000).
+These are technical bounds, not defaults, provider limits or legal deadlines. Agree cadence/budget with
+the merchant/backend owner and record the actual external scheduler, duty contact and environment.
+Allow the lease budget for configured provider timeouts and batch validation work; insufficient lease
+budget fails closed rather than extending ownership or acknowledging stale effects. Staging/production
+execution is refused until separate provider/scheduler qualification. No deployed schedule is claimed.
+
+The command is independent of callback availability and API processing activation: it only reads
+original merchant-scoped transaction identities and applies independently verified results through the
+same domain processor. Terminal attempts are revisited less frequently as explicitly configured to
+catch late/distinct collections. No timeout or missing result creates Failed or a new charge. A stale
+worker cannot commit receipt/stock/coupon effects, observation state or a checkpoint. On crash, replay
+may repeat safe provider queries but receipt/payment/allocation identities suppress financial duplication.
+
+Monitor payment_reconciliation counts (scanned/resolved/unresolved/escalated/skipped), jobLeases last
+success/failureCount and lease age, paymentAttempts.lastCheckedAt, quarantined intake and protected
+payment.reconcile.escalated/payment.reconcile.resolved audit facts. Escalated counts are newly recorded
+once-only investigations; unresolved can remain nonzero after a prior escalation. A Paid attempt with
+new quarantined money or unavailable current verification is not reported resolved. Inspect current
+protected payment/attempt/intake evidence through authorized operational access; do not log references,
+raw provider responses or secrets in public output. Escalation is a durable operator investigation fact,
+not a new customer email or permission to refund/retry. P07-013 owns safe user payment retry admission.
+
+To freeze local financial writes, stop/disable scheduled reconciliation too, alongside API processing
+and admin financial mutations. Preserve cursor, attempts, immutable receipts and correction obligations;
+do not clear leases/counters blindly or reset financial identities. Existing unassigned collections
+require supervised reclassification; new exactly matched excess goes to source-specific correction
+accounting and unreserved refund review, never duplicate fulfillment or merchandise refund totals.
+
 ### 8.3 Schedule and ownership record
 
 | Job key                           | Scheduling basis (UTC)                                                  | Retry/backoff                        | Responsible role         | Environment scope                                   |
 | --------------------------------- | ----------------------------------------------------------------------- | ------------------------------------ | ------------------------ | --------------------------------------------------- |
 | Reservation/coupon expiry         | Process eligible holds at their recorded expiry                         | Bounded and idempotent               | Backend owner            | Local/CI, staging and production                    |
-| Payment intake/verification       | Callback-driven intake plus provider-compatible reconciliation interval | Bounded; status-aware                | Backend / merchant owner | Isolated sandbox; activated live merchant           |
+| Payment intake/verification       | Callback plus explicitly scheduled status-aware reconciliation | Bounded fixed intervals; lease-fenced | Backend / merchant owner | Executable local/test; deployed qualification separate |
 | Refund status verification        | Provider-supported polling and uncertainty reconciliation               | Bounded; no duplicate payout         | Backend / finance owner  | Sandbox and authorized live service                 |
 | Notification dispatch             | Durable outbox availability and configured retry policy                 | Bounded; dedupe by `eventKey`        | Backend owner            | Separate provider resources per environment         |
 | Delivery-charge/policy activation | Recorded UTC effective instants                                         | CAS-protected, idempotent activation | Backend / store operator | Staging and production; synthetic local/CI triggers |

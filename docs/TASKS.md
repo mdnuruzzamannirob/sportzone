@@ -131,13 +131,13 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       1 |         0 |     12 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |          12 |     0 |           0 |       1 |         6 |      3 |        0 |
-| 07 — Payment Integration and Verification     |      18 |           8 |     0 |           0 |       0 |         1 |      9 |        0 |
+| 07 — Payment Integration and Verification     |      18 |           6 |     0 |           0 |       0 |         1 |     11 |        0 |
 | 08 — Returns and Refunds                      |      19 |          19 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       1 |         0 |      1 |        0 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **106** | **0** | **0** | **3** | **7** | **94** | **0** |
+| **Total** | **210** | **104** | **0** | **0** | **3** | **7** | **96** | **0** |
 
 ## 4. Milestone tracker
 
@@ -1333,23 +1333,23 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Risk review cannot automatically release payment or fulfill without valid allocation.\
   **Evidence:** [P07-010 current-admin/CSRF/replay/risk-hold assertions and observed tests](./evidence/P07-009-010-late-risk-payments.md). Local/test route only; no automatic fulfillment or payout; project-owner acceptance recorded [here](./evidence/P07-009-010-late-risk-payments.md#independent-acceptance).
 
-- [ ] **P07-011 — Handle multiple paid attempts for one order**\
-  **Status:** `Not Started` · **Area:** Backend/payments\
+- [x] **P07-011 — Handle multiple paid attempts for one order**\
+  **Status:** `Done` · **Area:** Backend/payments · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-12; FR-18\
   **Depends on:** `P07-008`\
   **Deliverable:** Record each independently collected attempt; flag excess collection for authorized financial resolution. Keep per-collection balances and separate payment-correction refunds from merchandise refund summaries.\
   **Acceptance:** Exactly one fulfillment/allocation despite multiple paid attempts.\
-  **Evidence to attach:** Dual-paid-attempt test.
+  **Evidence:** [P07-011 independent source/correction/allocation assertions and verification](./evidence/P07-011-012-multiple-payments-reconciliation.md). New exact excess is correction, historical unassigned remains supervised; project-owner acceptance recorded [here](./evidence/P07-011-012-multiple-payments-reconciliation.md#independent-acceptance).
 
-- [ ] **P07-012 — Implement durable uncertain-payment reconciliation jobs**\
-  **Status:** `Not Started` · **Area:** Backend/jobs\
+- [x] **P07-012 — Implement durable uncertain-payment reconciliation jobs**\
+  **Status:** `Done` · **Area:** Backend/jobs · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-12; FR-29\
   **Depends on:** `P07-007`\
   **Deliverable:** Query status for missing/delayed IPNs with leases, retries, safe timeouts and admin escalation.\
   **Acceptance:** Timeouts never prove Failed; restart and duplicate job runs do not double-apply collection.\
-  **Evidence to attach:** Reconciliation/restart tests.
+  **Evidence:** [P07-012 durable scheduling, leases, timeout/escalation/restart assertions and verification](./evidence/P07-011-012-multiple-payments-reconciliation.md). Explicit local/test worker only; project-owner acceptance recorded [here](./evidence/P07-011-012-multiple-payments-reconciliation.md#independent-acceptance); deployed cadence/provider qualification remains separate.
 
 - [ ] **P07-013 — Implement safe payment retries and attempt ownership checks**\
   **Status:** `Not Started` · **Area:** Backend/payments\
@@ -2530,3 +2530,9 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 
 
 **29 October 2026 — P07-009/010 acceptance:** Each In Review → Done following explicit project-owner review acceptance: “দুটোই গ্রহণ করছি—Done করুন”. [Separate acceptance record](./evidence/P07-009-010-late-risk-payments.md#independent-acceptance). Overall: 210 tasks, 94 Done, 106 Not Started, 3 Blocked and 7 In Review. Acceptance covers submitted local/test late allocation/correction handling and authorized risk review with recorded checks and approved contract clarification. P06-010/P07-005 reviews, refund approval/payout, confirmation, provider/legal/deployed and milestone gates remain separate.
+
+
+**29 October 2026 — P07-011/012 combined batch:** Each Not Started → In Progress → In Review under paired owner request. Added capped multi-source merchandise funding with separate correction obligations and explicit merchant-leased status reconciliation with durable progress/retry observations and protected escalation/resolution facts. [Separate acceptance rows, observed checks and review](./evidence/P07-011-012-multiple-payments-reconciliation.md). Overall: 210 tasks, 94 Done, 104 Not Started, 3 Blocked and 9 In Review. Independent task acceptance pending; actual scheduler/provider/timezone qualification, safe retry admission, refund/confirmation/legal and milestone gates remain separate.
+
+
+**29 October 2026 — P07-011/012 acceptance:** Each In Review → Done following explicit project-owner review acceptance: “দুটোই গ্রহণ করছি—Done করুন”. [Separate acceptance record](./evidence/P07-011-012-multiple-payments-reconciliation.md#independent-acceptance). Overall: 210 tasks, 96 Done, 104 Not Started, 3 Blocked and 7 In Review. Acceptance covers submitted local/test multiple-paid correction handling and durable reconciliation with recorded verification. Deployed scheduler/provider/timezone qualification, prior reviews, safe retry admission, actual refunds/legal and milestone gates remain separate.

@@ -1,3 +1,4 @@
+import { initializeJobLeases } from '../dist/shared/jobs/job-lease.model.js'
 import { initializeCorrectionPersistence } from '../dist/modules/refunds/refund.persistence.js'
 import { migrateIdentityPostalCode } from '../dist/modules/auth/identity.persistence.js'
 import { migrateOrderPostalCode } from '../dist/modules/orders/order.persistence.js'
@@ -17,6 +18,7 @@ try {
   await initializeCorrectionPersistence(connection)
   await initializePaymentInitiationPersistence(connection)
   await initializeAuditPersistence(connection)
+  await initializeJobLeases(connection)
   console.log('Payment initiation persistence ready; no HTTP/provider activation enabled.')
 } catch {
   console.error(

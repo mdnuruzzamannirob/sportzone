@@ -193,10 +193,10 @@ export function paymentProcessingService(
     const order = await orders.inspect(session, mapping.orderId)
     if (!order || order.expectedPoisha !== payment.expectedPoisha) return
     const remaining = payment.expectedPoisha - payment.merchandiseFundedPoisha
-    // Additional settled collections are preserved as unassigned, never counted as merchandise twice.
-    const correction = order.cancelled ? receipt.amountPoisha : 0
-    const merchandise =
-      !order.cancelled && remaining === receipt.amountPoisha ? receipt.amountPoisha : 0
+    // Every exactly verified source is retained. Merchandise is capped at remaining entitlement;
+    // distinct excess/duplicate collections fund correction only, never a second fulfillment.
+    const merchandise = order.cancelled ? 0 : Math.min(remaining, receipt.amountPoisha)
+    const correction = receipt.amountPoisha - merchandise
     const nextFunded = payment.merchandiseFundedPoisha + merchandise,
       nextCollected = payment.verifiedCollectedPoisha + receipt.amountPoisha
     if (!Number.isSafeInteger(nextCollected)) throw new ApiError('STATE_CONFLICT')
@@ -296,7 +296,7 @@ export function paymentProcessingService(
         paymentId: mapping.paymentId,
         sourceCollectionId: linked._id.toHexString(),
         amountPoisha: correction,
-        decisionKey: createHash('sha256').update(`late-cancelled:${linked._id}`).digest('hex'),
+        decisionKey: createHash('sha256').update(`payment-correction:${linked._id}`).digest('hex'),
       })
     let committed = false
     if (order.eligible && !risk && merchandise > 0 && nextFunded === payment.expectedPoisha)
@@ -314,8 +314,12 @@ export function paymentProcessingService(
     })
   }
   return {
-    async process(claim: PaymentCallbackClaim): Promise<'committed' | 'retry'> {
+    async process(
+      claim: PaymentCallbackClaim,
+      control?: { fence(session: ClientSession): Promise<void> },
+    ): Promise<'committed' | 'retry'> {
       assertOutsideTransaction()
+      if (control) await inTransaction(connection, control.fence)
       const verified = await verifier.verify(claim)
       if (verified.kind === 'uncertain') return 'retry'
       const now = clock()
@@ -327,67 +331,73 @@ export function paymentProcessingService(
           await verifyPaymentRecordPersistence(connection)
           await verifyPaymentInitiationPersistence(connection)
           await inTransaction(connection, async (session) => {
-            if (verified.kind === 'receipts') {
-              for (const receipt of verified.receipts) await applyReceipt(session, receipt, now)
-              return
-            }
-            const attempt = await attempts
-              .findOne({
-                _id: verified.mapping.attemptId,
-                orderId: verified.mapping.orderId,
-                paymentId: verified.mapping.paymentId,
-              })
-              .session(session)
-            const operation = await initiations
-              .findOne({
-                attemptId: verified.mapping.attemptId,
-                merchantAccountKey: verified.merchantAccountKey,
-                orderId: verified.mapping.orderId,
-              })
-              .session(session)
-            if (!attempt || !operation) throw new ApiError('STATE_CONFLICT')
-            const payment = await payments.findById(attempt.paymentId).session(session)
-            if (!payment || payment.revision >= Number.MAX_SAFE_INTEGER)
-              throw new ApiError('STATE_CONFLICT')
-            // Serialize with funding/expiry; never release any allocation on a failure message.
-            await payments.updateOne(
-              { _id: payment._id, revision: payment.revision },
-              { $inc: { revision: 1 } },
-              { session },
-            )
-            if (
-              attempt.state === 'verified_paid' ||
-              ['verified_failed', 'verified_cancelled'].includes(attempt.state)
-            )
-              return
-            await attempts.updateOne(
-              { _id: attempt._id, state: attempt.state },
-              {
-                $set: {
-                  state: verified.status === 'CANCELLED' ? 'verified_cancelled' : 'verified_failed',
-                  lastCheckedAt: now,
-                  verification: {
-                    verifiedAt: now,
-                    verifiedStatus: verified.status,
-                    merchantIdMatch: true,
-                    amountMatch: false,
-                    currencyMatch: true,
-                    referenceMatch: true,
-                    rawRecordDigest: verified.evidenceDigest,
+            await control?.fence(session)
+            try {
+              if (verified.kind === 'receipts') {
+                for (const receipt of verified.receipts) await applyReceipt(session, receipt, now)
+                return
+              }
+              const attempt = await attempts
+                .findOne({
+                  _id: verified.mapping.attemptId,
+                  orderId: verified.mapping.orderId,
+                  paymentId: verified.mapping.paymentId,
+                })
+                .session(session)
+              const operation = await initiations
+                .findOne({
+                  attemptId: verified.mapping.attemptId,
+                  merchantAccountKey: verified.merchantAccountKey,
+                  orderId: verified.mapping.orderId,
+                })
+                .session(session)
+              if (!attempt || !operation) throw new ApiError('STATE_CONFLICT')
+              const payment = await payments.findById(attempt.paymentId).session(session)
+              if (!payment || payment.revision >= Number.MAX_SAFE_INTEGER)
+                throw new ApiError('STATE_CONFLICT')
+              // Serialize with funding/expiry; never release any allocation on a failure message.
+              await payments.updateOne(
+                { _id: payment._id, revision: payment.revision },
+                { $inc: { revision: 1 } },
+                { session },
+              )
+              if (
+                attempt.state === 'verified_paid' ||
+                ['verified_failed', 'verified_cancelled'].includes(attempt.state)
+              )
+                return
+              await attempts.updateOne(
+                { _id: attempt._id, state: attempt.state },
+                {
+                  $set: {
+                    state:
+                      verified.status === 'CANCELLED' ? 'verified_cancelled' : 'verified_failed',
+                    lastCheckedAt: now,
+                    verification: {
+                      verifiedAt: now,
+                      verifiedStatus: verified.status,
+                      merchantIdMatch: true,
+                      amountMatch: false,
+                      currencyMatch: true,
+                      referenceMatch: true,
+                      rawRecordDigest: verified.evidenceDigest,
+                    },
                   },
                 },
-              },
-              { session },
-            )
-            await audit(session, {
-              actorType: 'system',
-              action: 'payment.attempt.nonpayment',
-              targetType: 'payment_attempt',
-              targetId: attempt._id.toHexString(),
-              operationKey: `nonpayment:${attempt._id}`,
-              afterDigest: verified.evidenceDigest,
-              occurredAt: now,
-            })
+                { session },
+              )
+              await audit(session, {
+                actorType: 'system',
+                action: 'payment.attempt.nonpayment',
+                targetType: 'payment_attempt',
+                targetId: attempt._id.toHexString(),
+                operationKey: `nonpayment:${attempt._id}`,
+                afterDigest: verified.evidenceDigest,
+                occurredAt: now,
+              })
+            } finally {
+              await control?.fence(session)
+            }
           })
           if (verified.kind === 'receipts') {
             for (const paymentId of new Set(
@@ -396,7 +406,7 @@ export function paymentProcessingService(
               ),
             )) {
               try {
-                await settlement.recover(paymentId)
+                await settlement.recover(paymentId, control?.fence)
               } catch {
                 /* Receipt remains durably Paid/on hold; capacity retry never reverses funds. */
               }

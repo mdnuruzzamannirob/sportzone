@@ -8,6 +8,16 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 29 October 2026 — Multiple paid attempts and durable reconciliation
+
+- Classed new exactly verified excess/duplicate collections as correction with source-specific
+  unreserved obligations, one capped merchandise funding/allocation and separate refund accounting.
+- Added merchant-partitioned leased status reconciliation, durable scan/retry state, once-only
+  investigation/resolution audits and guarded local/test worker entry. Timeout never proves Failed.
+- Strengthened real lease fences around financial/recovery writes; verified duplicate, crash/restart,
+  takeover, quarantine and compiled-entry paths. The project owner accepted P07-011/P07-012; deployed
+  schedules, provider/timezone qualification, actual refunds and milestone gates remain separate.
+
 ## 29 October 2026 — Late-payment recovery and authorized risk decisions
 
 - Added independently fenced late stock/coupon recovery preserving Paid on capacity failure, and

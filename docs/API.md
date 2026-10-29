@@ -1221,15 +1221,27 @@ links eligible exact receipts, serializes payment funding, updates guarded attem
 only matching live stock/coupon holds. After receipt commit, a separate fenced recovery transaction can
 reacquire the exact accepted stock/coupon generation for an eligible non-cancelled funded order; failure
 rolls back recovery only and retains Paid with allocation_shortfall. Confirmation remains a separate
-authorized transition (§12.4). Partial/excess or unknown
-mapping remains durable intake for supervised reconciliation; later distinct collections cannot fund
-merchandise twice. Stale terminal failure never releases capacity or downgrades verified paid proof.
+authorized transition (§12.4). Amounts mismatching immutable attempt expectation or unknown mapping
+remain durable intake for supervised reconciliation. Safely matched distinct collections allocate only
+remaining merchandise entitlement; the remainder is correction with its own unreserved source obligation.
+They never fund merchandise twice or consume merchandise-refund quantities. Stale terminal failure never releases capacity or downgrades verified paid proof.
 
 Collection timestamps must include an explicit UTC offset or Z and be valid nonfuture instants.
 Offset-free v4 tran_date remains retryable 503 until qualified timezone evidence is approved; never
 substitute receipt arrival time or silently assume a timezone. Conflicting duplicate receipt cores are
 preserved through immutable original evidence plus a replay-safe security audit, without reallocating
-money. A new verified risk flag can only escalate the hold. No reliable pending-poll job is implied.
+money. A new verified risk flag can only escalate the hold. The separately activated local/test reconciliation
+worker queries persisted attempts under merchant-partition leases; API startup does not schedule it.
+Pending IPN acknowledgment remains retryable unless qualified reliable polling has actually been activated.
+
+Reconciliation uses original transaction references, never a new charge or browser status. Durable
+lastCheckedAt plus explicit unresolved/terminal polling intervals and a wrapping attempt-ID cursor
+survive restarts. Status queries and validation run outside transactions; matching lease owner/expiry
+is fenced before/after financial writes and checkpoints. Timeout/unknown results remain unresolved,
+never fresh proof of Failed. Existing verified Paid/terminal proof is preserved while a later query
+is unavailable. Quarantined money on a Paid attempt also remains an unresolved investigation.
+Overdue unresolved observations create a protected once-only escalation audit; verified resolution
+records its separate audit. Poll results do not authorize refunds or unsafe retries (P07-013).
 
 **Risk decisions:** the local/test admin route requires current admin session, Origin/CSRF,
 strict approve/reject plus reason and Idempotency-Key. Decision and audit commit with a payment

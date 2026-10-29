@@ -707,6 +707,15 @@ conflict, historical approval after a fresh risk signal, already reviewed flag r
 hold/clear, and approval without capacity leaving a hold. Review/rejection never implicitly releases
 another attempt or pays. Public DTOs and actual root router must agree with generated artifacts.
 
+Multiple-paid/reconciliation tests must preserve each independently verified attempt/source, cap
+merchandise funding once and class additional exact collections as correction with separate source
+obligations/counters. Retry/restart never repeats fulfillment, coupon use or merchandise refund capacity.
+For the worker, test missing IPN, concurrent job/IPN, provider timeout and later recovery, stable escalation/
+resolution audits, Paid proof retention on later uncertainty, quarantined funds on Paid remaining unresolved,
+merchant rotation isolation, cursor fairness, crash after commit before checkpoint, lease takeover during
+provider reads and lease expiry after financial/allocation writes. Check monotonic real lease fences,
+compiled command opt-in/bounds/deployed refusal, aggregate-only output and no real provider calls in fixtures.
+
 Hosted-initiation verification uses real replica-set transactions, actual stock/coupon APIs and
 synthetic provider transport. Assert committed durable dispatch before I/O, one call across concurrent
 identical/different keys and process instances, reauthorization/CSRF/order isolation, request conflicts,
