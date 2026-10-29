@@ -677,6 +677,16 @@ actual normal initiation must still require JSON, Origin/CSRF and exact customer
 Exercise transaction exclusion, additive local bootstrap and deployed activation refusal. Mock durable
 processor outcomes do not prove independent provider validation, receipt allocation or live retry SLA.
 
+Independent verification tests must use the actual version-aware adapter with synthetic server responses
+and canonical replica-set-backed attempt/initiation/payment mapping. Callback status/amount/currency
+are not evidence. Assert credential-bound merchant identity, validation/transaction/collection reference
+matching, exact BDT conversion, immutable expected amount, unknown mapping, partial/excess quarantine
+classification and high-risk review. Query-discovered paid receipts require individual validation;
+keep multiple collections and prefer verified paid evidence over stale nonpayment. Missing/pending
+records are uncertain. Verify no financial mutation, no early callback acknowledgment, sanitized digest
+stability, missing-index failure and provider I/O exclusion inside transactions. These verification
+results require transactional receipt processing and replay/recovery qualification before runtime use.
+
 Hosted-initiation verification uses real replica-set transactions, actual stock/coupon APIs and
 synthetic provider transport. Assert committed durable dispatch before I/O, one call across concurrent
 identical/different keys and process instances, reauthorization/CSRF/order isolation, request conflicts,

@@ -8,6 +8,14 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 29 October 2026 — Independent payment verification capability
+
+- Added Payments-owned server verification using credential-bound validation/status queries and
+  canonical attempt/merchant/order mapping. Classifies exact, partial/excess, unmatched and high-risk
+  evidence without financial writes or callback acknowledgment.
+- Added real replica-set/adapter mismatch, fraud, uncertainty and transaction-exclusion checks.
+  P07-006 accepted by the project owner; durable receipt processing and live provider qualification remain separate.
+
 ## 29 October 2026 — Untrusted payment callback transport
 
 - Added separate local/test IPN and GET/POST browser-return routes with narrowly scoped bounded form

@@ -131,13 +131,13 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       1 |         0 |     12 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |          12 |     0 |           0 |       1 |         6 |      3 |        0 |
-| 07 — Payment Integration and Verification     |      18 |          13 |     0 |           0 |       0 |         1 |      4 |        0 |
+| 07 — Payment Integration and Verification     |      18 |          12 |     0 |           0 |       0 |         1 |      5 |        0 |
 | 08 — Returns and Refunds                      |      19 |          19 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       1 |         0 |      1 |        0 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **111** | **0** | **0** | **3** | **7** | **89** | **0** |
+| **Total** | **210** | **110** | **0** | **0** | **3** | **7** | **90** | **0** |
 
 ## 4. Milestone tracker
 
@@ -1288,14 +1288,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Browser success never marks Paid; CSRF exemption applies only to the documented provider IPN/return endpoints; they grant no customer/admin access, and any financial transition requires independent provider verification. Normal browser initiation/retry APIs remain CSRF-protected.\
   **Evidence:** [Callback transport, isolation, verification and recovery](./evidence/P07-005-payment-callbacks.md). Local/test only; independent acceptance pending. Runtime IPN remains 503 until a separately verified durable processor is composed; no provider/financial gate accepted.
 
-- [ ] **P07-006 — Implement independent provider payment validation**\
-  **Status:** `Not Started` · **Area:** Backend/payments\
+- [x] **P07-006 — Implement independent provider payment validation**\
+  **Status:** `Done` · **Area:** Backend/payments · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-12\
   **Depends on:** `P07-005`\
   **Deliverable:** Validate merchant, order, transaction, amount, BDT, accepted status and risk using provider status/validation APIs.\
   **Acceptance:** Mismatched or forged results cannot mark Paid; only verified provider collection changes status.\
-  **Evidence to attach:** Provider mismatch/fraud tests.
+  **Evidence:** [Independent verification, mismatch/fraud checks and integration limits](./evidence/P07-006-payment-verification.md). Read-only capability; receipt/replay coordination remains separate, callback runtime stays 503. Project owner accepted the submitted read-only capability: [acceptance record](./evidence/P07-006-payment-verification.md#independent-acceptance). P07-005 remains In Review; no deployed activation or financial mutation enabled.
 
 - [ ] **P07-007 — Deduplicate repeated and out-of-order payment results**\
   **Status:** `Not Started` · **Area:** Backend/payments\
@@ -2512,3 +2512,9 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 
 
 **29 October 2026 — P07-005:** Not Started → In Progress → In Review. Added distinct bounded form IPN and fixed browser-return transport, narrow parser/CSRF exceptions, protected keyed security fingerprints and Auth-owned real-peer quota admission. Default IPN remains retryable 503; injected committed outcomes prove acknowledgment ordering only. [Observed verification and limits](./evidence/P07-005-payment-callbacks.md). Overall: 210 tasks, 89 Done, 111 Not Started, 3 Blocked and 7 In Review. Independent acceptance pending; no financial verification, deployed merchant or milestone gate accepted.
+
+
+**29 October 2026 — P07-006:** Not Started → In Progress → In Review. Added isolated Payments-owned independent validation/status capability with canonical merchant/attempt/order mapping, exact BDT amounts, sanitized evidence and risk/discrepancy classification. [Observed verification and limits](./evidence/P07-006-payment-verification.md). Overall: 210 tasks, 89 Done, 110 Not Started, 3 Blocked and 8 In Review. P07-005 acceptance remains pending; isolated verification enables no financial writer or deployed callback. Independent task, provider and milestone gates remain unaccepted.
+
+
+**29 October 2026 — P07-006 acceptance:** In Review → Done following explicit project-owner instruction “done koro”. [Acceptance record](./evidence/P07-006-payment-verification.md#independent-acceptance). Overall: 210 tasks, 90 Done, 110 Not Started, 3 Blocked and 7 In Review. Acceptance covers the submitted read-only verification capability and recorded checks; durable financial processing, P07-005 review, deployed merchant and milestone gates remain separate.
