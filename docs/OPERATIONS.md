@@ -450,6 +450,30 @@ confirm provider retry behavior/ACK transport and all merchant/channel gates ind
 interpret retry/no-IPN/browser navigation as noncollection or blindly create another charge.
 P07-006/007/012 own independent financial verification, replay protection and reliable reconciliation.
 
+For local/test durable intake, explicitly set PAYMENT_PROCESSING_ENABLED=true alongside callbacks
+and valid SSLCOMMERZ_ADAPTER_ENABLED sandbox configuration. Default false preserves retryable IPN.
+Staging/production is refused; this flag does not qualify merchant channels, legal rules or reconciliation.
+Provision existing payment/attempt/intake/collection/initiation and audit state with the reviewed
+`bootstrap-payment-initiation.mjs`, plus callback quota with `bootstrap-payment-callbacks.mjs`, after
+build in an owned local/test database. No new schema/index migration is introduced by processing.
+Existing inventory/coupon/order provisioning and immutable order snapshots remain required.
+
+Operator-approved safe behavior pending timezone evidence: accept only valid, explicit-offset collection
+timestamps and fail closed on timezone-free provider tran_date. Do not replace it with current time.
+A 503 means uncertain processing, not noncollection. Test doubles with explicit offsets are not provider
+qualification. Pending/unavailable validation and failed transactions remain retryable; no poll worker
+is enabled here. Quarantined/mismatched/cancelled-order intake and unassigned additional collections
+require the owning supervised reconciliation/correction workflow; do not manually mark them funded.
+
+Exact linked funding and eligible live allocations commit together. Risk/expired holds retain funds
+without forced fulfillment or reacquisition. Committed orders remain pending/admin_review for the
+separate confirmation/deadline/notification workflow. A terminal nonpayment updates its attempt only,
+never releases another attempt's allocations. Inspect immutable intake, collection, guarded attempt and
+audit events for duplicate identity conflicts or risk escalation; preserve the original core proof.
+Disable PAYMENT_PROCESSING_ENABLED first to roll back local processing while retaining callbacks;
+IPN then returns 503. Preserve all receipt/payment/audit and allocation history. Disabling the flag
+cannot roll back verified money, and any deployed recovery still requires qualified reconciliation.
+
 Rollback disables callback composition while preserving audit/quota and all financial histories.
 This work adds no callback/receipt collection or worker, no destructive migration and no live SDK
 calls. A deployed rollback must reconcile provider retry queues and uncertain payment outcomes through

@@ -1214,6 +1214,21 @@ use purpose-separated HMAC; no raw payload, card data, credentials, IP address o
 persisted. Browser GET/POST returns use empty-body 303 to fixed configured URLs, no query/body forwarding,
 no session/cookie issuance and no financial write. Callback routes grant no CORS credential access.
 
+Durable payment processing has its own local/test opt-in, PAYMENT_PROCESSING_ENABLED, requiring
+callback composition and the configured sandbox adapter. Independent verification runs outside all
+transaction retries. Protected canonical receipt identity deduplicates money; a single transaction
+links eligible exact receipts, serializes payment funding, updates guarded attempt proof, and commits
+only matching live stock/coupon holds. Paid money remains Paid when risk or expired capacity blocks
+allocation. Confirmation remains a separate authorized transition (§12.4). Partial/excess or unknown
+mapping remains durable intake for supervised reconciliation; later distinct collections cannot fund
+merchandise twice. Stale terminal failure never releases capacity or downgrades verified paid proof.
+
+Collection timestamps must include an explicit UTC offset or Z and be valid nonfuture instants.
+Offset-free v4 tran_date remains retryable 503 until qualified timezone evidence is approved; never
+substitute receipt arrival time or silently assume a timezone. Conflicting duplicate receipt cores are
+preserved through immutable original evidence plus a replay-safe security audit, without reallocating
+money. A new verified risk flag can only escalate the hold. No reliable pending-poll job is implied.
+
 **Browser returns:** map only approved `{result}` values (`success`, `fail`, `cancel`) and redirect using fixed configured
 storefront URLs after stripping untrusted provider parameters; browser success is *display-only*. The actual provider
 return HTTP method must be configured/tested with SSLCOMMERZ before deployment. The result screen polls `GET

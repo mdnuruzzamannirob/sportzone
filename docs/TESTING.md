@@ -687,6 +687,17 @@ records are uncertain. Verify no financial mutation, no early callback acknowled
 stability, missing-index failure and provider I/O exclusion inside transactions. These verification
 results require transactional receipt processing and replay/recovery qualification before runtime use.
 
+Durable receipt/allocation tests must exercise concurrent duplicate and distinct collections, replay
+across service instances, stale failure after Paid, Paid after terminal failure, and simultaneous paid/
+failure. Verify one merchant-scoped intake identity, no double merchandise funding, preserved history,
+and exactly one live stock/coupon commitment. Include high-risk replay escalation, expired/cancelled
+orders, partial/excess/unmatched quarantine, refund-projection preservation, missing timezone/invalid
+calendar dates, actual coupon failure after stock processing, full rollback and recovery, competing
+expiry and committed-transaction acknowledgment through composed IPN. Confirmation is separately
+owned; no automatic legal/deadline clearance, late reacquisition or reliable pending worker is implied.
+Repeat conflicting receipt audit evidence must acknowledge without duplicate audit facts; a different
+digest under one audit operation identity must fail without overwriting the first event.
+
 Hosted-initiation verification uses real replica-set transactions, actual stock/coupon APIs and
 synthetic provider transport. Assert committed durable dispatch before I/O, one call across concurrent
 identical/different keys and process instances, reauthorization/CSRF/order isolation, request conflicts,

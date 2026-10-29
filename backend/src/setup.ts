@@ -1,3 +1,8 @@
+import { createHash } from 'node:crypto'
+import { paymentProcessingService } from './modules/payments/payment-processing.service.js'
+import { paymentVerificationService } from './modules/payments/payment-verification.service.js'
+import { verifiedAllocationService } from './modules/checkout/verified-allocation.service.js'
+import { verifiedFundingOrderAccess } from './modules/orders/order.service.js'
 import { paymentCallbackRoutes } from './modules/payments/payment-callback.routes.js'
 import {
   paymentCallbackService,
@@ -11,6 +16,11 @@ import { createPaymentCallbackThrottle } from './modules/auth/sessions/auth-thro
 export type PaymentCallbackDependencies = {
   options: PaymentCallbackOptions
   process?: PaymentCallbackProcessor
+  verificationGateway?: Pick<
+    ReturnType<typeof createSslcommerzAdapter>,
+    'validate' | 'queryTransaction'
+  >
+  clock?: () => Date
 }
 import { paymentInitiationChannelAccess } from './modules/payments/payment-eligibility.service.js'
 import { paymentInitiationService } from './modules/payments/payment-initiation.service.js'
@@ -424,8 +434,24 @@ export async function composeApplication(
     const options = paymentCallbackOptions.parse(callbacks.options)
     if (options.storefrontOrigin !== config.STOREFRONT_ORIGIN)
       throw new Error('Callback storefront mismatch')
+    if (callbacks.process && callbacks.verificationGateway)
+      throw new Error('Ambiguous callback processor')
+    const clock = callbacks.clock ?? (() => new Date())
+    const process = callbacks.verificationGateway
+      ? paymentProcessingService(
+          connection,
+          paymentVerificationService(
+            connection,
+            callbacks.verificationGateway,
+            createHash('sha256').update(`${options.mode}\0${options.storeId}`).digest('hex'),
+          ),
+          verifiedFundingOrderAccess(connection),
+          verifiedAllocationService(connection, clock),
+          clock,
+        ).process
+      : callbacks.process
     providerCallbacks = paymentCallbackRoutes(
-      paymentCallbackService(connection, options, config.SESSION_SECRET, callbacks.process),
+      paymentCallbackService(connection, options, config.SESSION_SECRET, process),
       createPaymentCallbackThrottle(connection, config.SESSION_SECRET, options.rateLimit),
     )
   }

@@ -24,7 +24,7 @@ const eventInput = z.strictObject({
   reason: z.string().trim().min(1).max(2000).optional(),
   requestCorrelationId: z.string().min(1).max(128).optional(),
 })
-export function createAuditWriter(connection: Connection) {
+export function createAuditWriter(connection: Connection, replaySameDigest = false) {
   const model = auditModel(connection)
   // Append-only capability: callers receive no model, query, update or delete operation.
   return async (session: ClientSession, raw: unknown) => {
@@ -35,6 +35,27 @@ export function createAuditWriter(connection: Connection) {
       throw new ApiError('SERVICE_UNAVAILABLE')
     }
     const event = parseInput(eventInput, raw)
+    if (replaySameDigest) {
+      const previous = await model
+        .findOne({
+          operationKey: event.operationKey,
+          action: event.action,
+          targetType: event.targetType,
+          ...(event.targetId ? { targetId: event.targetId } : { targetId: { $exists: false } }),
+        })
+        .session(session)
+      if (previous) {
+        if (
+          previous.afterDigest !== event.afterDigest ||
+          previous.beforeDigest !== event.beforeDigest ||
+          previous.actorType !== event.actorType ||
+          previous.actorId?.toHexString() !== event.actorId ||
+          previous.reason !== event.reason
+        )
+          throw new ApiError('STATE_CONFLICT')
+        return
+      }
+    }
     const row = new model(event)
     if (event.actorId) row.actorId = new Types.ObjectId(event.actorId)
     if (event.targetId) row.targetId = new Types.ObjectId(event.targetId)

@@ -8,6 +8,16 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 29 October 2026 — Durable payment receipts and live allocation commitment
+
+- Added local/test opt-in durable receipt processing with merchant-scoped deduplication, guarded
+  attempt history and atomic payment/stock/coupon effects. Preserved uncertain, mismatched, unmatched,
+  high-risk and expired outcomes without forced fulfillment or duplicate funding.
+- Added replay-safe immutable security audits, conflict/risk handling and composed IPN acknowledgment
+  after commit. Explicit-offset collection time is required pending approved provider timezone evidence.
+- Added concurrent/retry/rollback coverage for P07-007/P07-008; the project owner accepted both tasks.
+  External provider/legal/deployed gates remain separate.
+
 ## 29 October 2026 — Independent payment verification capability
 
 - Added Payments-owned server verification using credential-bound validation/status queries and

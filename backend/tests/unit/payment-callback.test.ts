@@ -1,5 +1,8 @@
 import { expect, it } from 'vitest'
-import { loadPaymentCallbackOptions } from '../../src/config/payments.js'
+import {
+  loadPaymentCallbackOptions,
+  loadPaymentProcessingOptions,
+} from '../../src/config/payments.js'
 import { ConfigurationError } from '../../src/shared/errors/configuration-error.js'
 import { paymentIpnForm } from '../../src/modules/payments/payment-callback.schema.js'
 const env = {
@@ -67,6 +70,29 @@ it('rejects ambiguous or control-bearing redirect configuration', () => {
     'https://shop.example.test/a/../result',
   ])
     expect(() => loadPaymentCallbackOptions({ ...env, PAYMENT_RETURN_SUCCESS_URL: url })).toThrow(
+      ConfigurationError,
+    )
+})
+
+it('keeps durable processing opt-in and refuses missing callback/adapter or deployed activation', () => {
+  expect(loadPaymentProcessingOptions({})).toBeUndefined()
+  const configured = {
+    ...env,
+    PAYMENT_PROCESSING_ENABLED: 'true',
+    SSLCOMMERZ_ADAPTER_ENABLED: 'true',
+    SSLCOMMERZ_STORE_PASSWORD: 'synthetic-password',
+    SSLCOMMERZ_CALLBACK_ORIGIN: 'https://api.example.test',
+    SSLCOMMERZ_TIMEOUT_MS: '1000',
+  }
+  expect(loadPaymentProcessingOptions(configured)?.mode).toBe('sandbox')
+  for (const change of [
+    { APP_ENV: 'production' },
+    { APP_ENV: 'staging' },
+    { PAYMENT_CALLBACKS_ENABLED: 'false' },
+    { SSLCOMMERZ_ADAPTER_ENABLED: 'false' },
+    { PAYMENT_PROCESSING_ENABLED: 'yes' },
+  ])
+    expect(() => loadPaymentProcessingOptions({ ...configured, ...change })).toThrow(
       ConfigurationError,
     )
 })

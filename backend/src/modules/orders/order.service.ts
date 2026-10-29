@@ -444,3 +444,52 @@ export function paymentInitiationOrderData(connection: Connection) {
     },
   }
 }
+
+// Internal verified-funding capability. The caller must fence the canonical payment and durable
+// receipt in the SAME transaction. This is not a browser mutation or a fulfillment authorization API.
+export function verifiedFundingOrderAccess(connection: Connection) {
+  const { orders } = orderModels(connection)
+  return {
+    async inspect(session: ClientSession, orderId: string) {
+      if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+      await verifyOrderPersistence(connection)
+      const row = await orders.findOneAndUpdate(
+        { _id: orderId, paymentMethod: 'online', revision: { $lt: Number.MAX_SAFE_INTEGER } },
+        { $inc: { revision: 1 } },
+        { session, returnDocument: 'after' },
+      )
+      if (!row) return undefined
+      return {
+        binding: orderAllocationBinding(row, 1),
+        expectedPoisha: row.pricingSnapshot.finalTotalPoisha,
+        eligible:
+          row.fulfillmentStatus === 'pending' &&
+          !row.cancelledAt &&
+          !row.shippedAt &&
+          !row.confirmedAt,
+        cancelled: row.fulfillmentStatus === 'cancelled',
+      }
+    },
+    async finish(session: ClientSession, orderId: string, committed: boolean, risk: boolean) {
+      if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+      const row = await orders.findById(orderId).session(session)
+      if (row?.fulfillmentStatus !== 'pending' || row.cancelledAt || row.confirmedAt) return
+      // Confirmation/deadline and outbound notifications retain their owning workflow. Committing
+      // capacity is distinct from confirming fulfillment; never invent compliance clearance here.
+      await orders.updateOne(
+        { _id: row._id, fulfillmentStatus: 'pending', revision: row.revision },
+        {
+          $inc: { revision: 1 },
+          $set: {
+            fulfillmentHold: risk
+              ? 'risk_review'
+              : committed
+                ? 'admin_review'
+                : 'allocation_shortfall',
+          },
+        },
+        { session },
+      )
+    },
+  }
+}

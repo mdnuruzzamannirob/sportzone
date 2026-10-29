@@ -131,13 +131,13 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       1 |         0 |     12 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |          12 |     0 |           0 |       1 |         6 |      3 |        0 |
-| 07 — Payment Integration and Verification     |      18 |          12 |     0 |           0 |       0 |         1 |      5 |        0 |
+| 07 — Payment Integration and Verification     |      18 |          10 |     0 |           0 |       0 |         1 |      7 |        0 |
 | 08 — Returns and Refunds                      |      19 |          19 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       1 |         0 |      1 |        0 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **110** | **0** | **0** | **3** | **7** | **90** | **0** |
+| **Total** | **210** | **108** | **0** | **0** | **3** | **7** | **92** | **0** |
 
 ## 4. Milestone tracker
 
@@ -1297,23 +1297,23 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Mismatched or forged results cannot mark Paid; only verified provider collection changes status.\
   **Evidence:** [Independent verification, mismatch/fraud checks and integration limits](./evidence/P07-006-payment-verification.md). Read-only capability; receipt/replay coordination remains separate, callback runtime stays 503. Project owner accepted the submitted read-only capability: [acceptance record](./evidence/P07-006-payment-verification.md#independent-acceptance). P07-005 remains In Review; no deployed activation or financial mutation enabled.
 
-- [ ] **P07-007 — Deduplicate repeated and out-of-order payment results**\
-  **Status:** `Not Started` · **Area:** Backend/payments\
+- [x] **P07-007 — Deduplicate repeated and out-of-order payment results**\
+  **Status:** `Done` · **Area:** Backend/payments · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-12\
   **Depends on:** `P07-006`\
   **Deliverable:** Enforce provider-scoped unique references and guarded paid/failure transitions on all attempts.\
   **Acceptance:** Multiple callbacks have single business effect and history remains intact.\
-  **Evidence to attach:** Concurrent/IPN idempotency tests.
+  **Evidence:** [Independent P07-007 assertions, real transaction verification and review](./evidence/P07-007-008-receipts-allocation.md). Local/test opt-in; project-owner acceptance recorded [here](./evidence/P07-007-008-receipts-allocation.md#independent-acceptance). No provider/deployed gate accepted.
 
-- [ ] **P07-008 — Convert verified payment holds into committed stock/coupon**\
-  **Status:** `Not Started` · **Area:** Backend/payments\
+- [x] **P07-008 — Convert verified payment holds into committed stock/coupon**\
+  **Status:** `Done` · **Area:** Backend/payments · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-12; FR-13; FR-09\
   **Depends on:** `P07-007`\
   **Deliverable:** After verified collection atomically transition eligible live holds to committed allocation.\
   **Acceptance:** One order only fulfilled once; failed attempt cannot release another active/paid allocation.\
-  **Evidence to attach:** Payment/allocation concurrency tests.
+  **Evidence:** [Independent P07-008 assertions, real stock/coupon rollback and review](./evidence/P07-007-008-receipts-allocation.md). Live holds only; confirmation and late reacquisition remain separately owned. Project-owner acceptance recorded [here](./evidence/P07-007-008-receipts-allocation.md#independent-acceptance).
 
 - [ ] **P07-009 — Reacquire expired stock and coupon on late verified payment**\
   **Status:** `Not Started` · **Area:** Backend/payments\
@@ -2518,3 +2518,9 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 
 
 **29 October 2026 — P07-006 acceptance:** In Review → Done following explicit project-owner instruction “done koro”. [Acceptance record](./evidence/P07-006-payment-verification.md#independent-acceptance). Overall: 210 tasks, 90 Done, 110 Not Started, 3 Blocked and 7 In Review. Acceptance covers the submitted read-only verification capability and recorded checks; durable financial processing, P07-005 review, deployed merchant and milestone gates remain separate.
+
+
+**29 October 2026 — P07-007/008 combined batch:** Each Not Started → In Progress → In Review under owner-requested paired execution. Durable merchant-scoped receipt replay/attempt proof and atomic live stock/coupon commitment implemented. Owner approved fail-closed behavior for timezone-free collection dates pending qualified evidence. [Separate task assertions, observed verification and review](./evidence/P07-007-008-receipts-allocation.md). Overall: 210 tasks, 90 Done, 108 Not Started, 3 Blocked and 9 In Review. Executor review passed; independent review of each task remains pending. P07-005 and all provider/legal/deployed/milestone gates remain separate.
+
+
+**29 October 2026 — P07-007/008 acceptance:** Each In Review → Done after explicit project-owner review acceptance: “দুটোই গ্রহণ করছি—Done করুন”. [Separate acceptance record](./evidence/P07-007-008-receipts-allocation.md#independent-acceptance). Overall: 210 tasks, 92 Done, 108 Not Started, 3 Blocked and 7 In Review. Accepted scope is the submitted local/test durable receipt replay and live allocation commitment with recorded checks. P07-005 review, late/cancelled correction, full risk/reconciliation operations and provider/legal/deployed/milestone gates remain separate.

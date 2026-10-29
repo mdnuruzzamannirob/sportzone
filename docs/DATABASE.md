@@ -1236,6 +1236,17 @@ ObjectId; `{matchingStatus:1,verifiedAt:1}`. A provider message **not independen
 unverified notification to reconcile, not a `providerReceiptIntake` entry. Reject conflicting verification digests/amounts
 for the same provider identity into a supervised security/reconciliation incident; never overwrite historical evidence.
 
+Receipt processing uses the canonical merchant-scoped bank collection reference as its unique money
+identity, verified validation/transaction references and valid explicit-offset collection time. Missing
+timezone evidence remains uncommitted/retryable rather than inventing collectedAt. Receipt creation,
+linking, payment projection, attempt proof and live stock/coupon commitment share a transaction.
+Duplicate core money facts do not rewrite evidence; contradictory core facts append a security audit
+and retain the original. Audit replay can explicitly reuse an identical operation identity/digest without
+inserting another event; conflicting digests are rejected and the first event remains immutable.
+Provider VALID → VALIDATED alone does not create a new collection. Fresh verified risk can escalate
+review without duplicating funding. Additional distinct collections remain unassigned when merchandise
+is already funded. Terminal nonpayment cannot overwrite a verified-paid attempt or release capacity.
+
 **`paymentCollections` — linked source receipts with immutable core and guarded accounting**
 
 | Field | Type | Constraints / notes |

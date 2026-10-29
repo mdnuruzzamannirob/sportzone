@@ -114,3 +114,21 @@ export function loadPaymentCallbackOptions(environment: NodeJS.ProcessEnv) {
     throw new ConfigurationError(['payment_callback_configuration'])
   }
 }
+
+export function loadPaymentProcessingOptions(environment: NodeJS.ProcessEnv) {
+  if (
+    environment.PAYMENT_PROCESSING_ENABLED === undefined ||
+    environment.PAYMENT_PROCESSING_ENABLED === 'false'
+  )
+    return undefined
+  if (
+    environment.PAYMENT_PROCESSING_ENABLED !== 'true' ||
+    !['local', 'test'].includes(environment.APP_ENV ?? '') ||
+    environment.PAYMENT_CALLBACKS_ENABLED !== 'true'
+  )
+    throw new ConfigurationError(['payment_processing_activation'])
+  loadPaymentCallbackOptions(environment)
+  const options = loadSslcommerzOptions(environment)
+  if (!options) throw new ConfigurationError(['payment_processing_activation'])
+  return options
+}
