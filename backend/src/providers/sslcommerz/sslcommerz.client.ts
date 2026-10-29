@@ -138,6 +138,8 @@ export function createSslcommerzAdapter(
         ship_country: input.shipping.country,
       }
       for (const [key, value] of Object.entries(fields)) params.set(key, value)
+      if (input.customer.addressLine2) params.set('cus_add2', input.customer.addressLine2)
+      if (input.shipping.addressLine2) params.set('ship_add2', input.shipping.addressLine2)
       try {
         const response = await request('/gwprocess/v4/api.php', params, 'POST')
         if (sessionFailure.safeParse(response.raw).success) return rejected

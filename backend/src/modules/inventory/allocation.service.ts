@@ -1,4 +1,4 @@
-import type { ClientSession, Connection, HydratedDocument } from 'mongoose'
+import { Types, type ClientSession, type Connection, type HydratedDocument } from 'mongoose'
 import type { z } from 'zod'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { variantStockAccess } from '../catalog/variants/variant.service.js'
@@ -220,6 +220,17 @@ export function allocationService(
             generation: row.generation,
           })),
         )
+    },
+    async available(session: ClientSession, variantId: string) {
+      if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+      const row = await stock.read(new Types.ObjectId(variantId), session)
+      return row ? stockSnapshot(row).available : 0
+    },
+    async latestGeneration(session: ClientSession, orderId: string) {
+      if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+      await verifyAllocationPersistence(connection)
+      const row = await reservations.findOne({ orderId }).sort({ generation: -1 }).session(session)
+      return row?.generation
     },
     async generation(session: ClientSession, orderId: string, generation: number) {
       if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')

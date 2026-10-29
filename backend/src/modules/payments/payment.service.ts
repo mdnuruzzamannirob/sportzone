@@ -1,3 +1,5 @@
+import { paymentRecordModels } from './payment-record.model.js'
+import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
 import { Types, type ClientSession, type Connection } from 'mongoose'
 import { z } from 'zod'
 import { ApiError } from '../../shared/errors/app-error.js'
@@ -84,5 +86,35 @@ export function paymentMethodBalanceAccess(connection: Connection) {
       method: row.method,
       remainingPoisha: Math.max(0, row.expectedPoisha - row.merchandiseFundedPoisha),
     }
+  }
+}
+
+// Required fence for unpaid allocation refresh/shortfall. All funding/expiry decisions serialize here.
+export function paymentInitiationEligibilityAccess(connection: Connection) {
+  const payments = paymentModel(connection),
+    { attempts } = paymentRecordModels(connection)
+  return async (session: ClientSession, orderId: string) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyPaymentRecordPersistence(connection)
+    const payment = await payments.findOneAndUpdate(
+      {
+        orderId,
+        method: 'online',
+        paymentStatus: { $in: ['pending', 'failed'] },
+        riskStatus: 'clear',
+        unassignedCollectedPoisha: 0,
+        revision: { $lt: Number.MAX_SAFE_INTEGER },
+        $expr: { $gt: ['$expectedPoisha', '$merchandiseFundedPoisha'] },
+      },
+      { $inc: { revision: 1 } },
+      { session, returnDocument: 'after' },
+    )
+    if (
+      !payment ||
+      (await attempts
+        .exists({ orderId, state: { $in: ['created', 'initiated', 'pending', 'uncertain'] } })
+        .session(session))
+    )
+      throw new ApiError('STATE_CONFLICT')
   }
 }

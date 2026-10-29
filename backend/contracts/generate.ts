@@ -67,6 +67,11 @@ const errorEnvelope = (codes = Object.keys(errorDefinitions)) =>
 function security(op: Operation) {
   if (op.access === 'monitor') return [{ MonitorBearer: [] }]
   if (op.access === 'public') return []
+  if (op.access === 'customer_or_guest')
+    return [
+      { CustomerSession: [], ...(op.csrf ? { CsrfHeader: [] } : {}) },
+      { GuestOrderSession: [], ...(op.csrf ? { CsrfHeader: [] } : {}) },
+    ]
   const session =
     op.path.startsWith('/guest-access/') || op.access === 'guest'
       ? 'GuestOrderSession'

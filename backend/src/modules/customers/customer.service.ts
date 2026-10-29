@@ -55,10 +55,11 @@ export function createProfileService(
         if (user.addresses.length >= 10) throw new ApiError('STATE_CONFLICT')
         await supported(input, session)
         const id = new Types.ObjectId()
-        const { addressLine2, ...fields } = input
+        const { addressLine2, postalCode, ...fields } = input
         user.addresses.push({
           ...fields,
           ...(addressLine2 !== undefined ? { addressLine2 } : {}),
+          ...(postalCode !== undefined ? { postalCode } : {}),
           id: id.toHexString(),
           isDefault: false,
         })

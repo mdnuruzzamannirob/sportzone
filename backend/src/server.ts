@@ -1,4 +1,6 @@
-import { loadPaymentChannelApprovals } from './config/payments.js'
+import { createSslcommerzAdapter } from './providers/sslcommerz/sslcommerz.client.js'
+import { initiationInput } from './providers/sslcommerz/sslcommerz.schema.js'
+import { loadPaymentChannelApprovals, loadPaymentInitiationOptions } from './config/payments.js'
 import { loadCheckoutOptions } from './config/checkout.js'
 import { loadPolicyApprovals } from './config/settings.js'
 import { createServer } from 'node:http'
@@ -30,6 +32,7 @@ export async function startServer(
   }
   let app: Awaited<ReturnType<typeof composeApplication>>
   try {
+    const initiationOptions = loadPaymentInitiationOptions(process.env)
     app = await composeApplication(
       connection,
       config,
@@ -39,6 +42,12 @@ export async function startServer(
       await loadPolicyApprovals(process.env),
       await loadCheckoutOptions(process.env),
       await loadPaymentChannelApprovals(process.env),
+      initiationOptions
+        ? {
+            gateway: createSslcommerzAdapter(initiationOptions),
+            validateRequest: (input) => initiationInput.safeParse(input).success,
+          }
+        : undefined,
     )
   } catch (error) {
     await connection.destroy()

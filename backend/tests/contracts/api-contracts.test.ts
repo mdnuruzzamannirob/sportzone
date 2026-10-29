@@ -70,7 +70,7 @@ describe('executable API contract registry', () => {
         .filter((op) => op.method === 'OPTIONS')
         .every((op) => operations.some((item) => item.path === op.path)),
     ).toBe(true)
-    expect(operations).toHaveLength(86)
+    expect(operations).toHaveLength(88)
     const prefixed = Router().use('/untracked', registeredRouter())
     expect(() => registeredOperations(prefixed)).toThrow(/mount prefix/)
   })
@@ -123,6 +123,7 @@ describe('executable API contract registry', () => {
         'inventory/inventory-admin.routes.ts',
         'media/media.routes.ts',
         'payments/payment-methods.routes.ts',
+        'payments/payment-initiation.routes.ts',
         'promotions/coupon-admin.routes.ts',
         'settings/settings.routes.ts',
       ].sort(),
@@ -171,12 +172,20 @@ describe('executable API contract registry', () => {
   it('keeps planned contracts non-executable and environment values blank', () => {
     const rows = artifacts['planned-operations.json'].operations
     expect(rows).toHaveLength(164)
-    expect(rows.filter((op) => op.implementation === 'planned')).toHaveLength(78)
+    expect(rows.filter((op) => op.implementation === 'planned')).toHaveLength(76)
+    expect(openapi.paths['/orders/{orderId}/payment-attempts']).toMatchObject({
+      post: {
+        security: [
+          { CustomerSession: [], CsrfHeader: [] },
+          { GuestOrderSession: [], CsrfHeader: [] },
+        ],
+      },
+    })
     expect(openapi.paths['/checkout/payment-methods']).toBeDefined()
     expect(ajv.validateSchema(envelope('/checkout/payment-methods', 'get', '200'))).toBe(true)
     expect(openapi.paths['/checkout/orders']).toBeDefined()
     expect(ajv.validateSchema(envelope('/checkout/orders', 'post', '200'))).toBe(true)
-    expect(artifacts['postman.collection.json'].item).toHaveLength(86)
+    expect(artifacts['postman.collection.json'].item).toHaveLength(88)
     expect(artifacts['postman.environment.json'].values.every((entry) => entry.value === '')).toBe(
       true,
     )

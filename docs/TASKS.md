@@ -131,13 +131,13 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       1 |         0 |     12 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |          12 |     0 |           0 |       1 |         6 |      3 |        0 |
-| 07 — Payment Integration and Verification     |      18 |          15 |     0 |           0 |       0 |         0 |      3 |        0 |
+| 07 — Payment Integration and Verification     |      18 |          14 |     0 |           0 |       0 |         0 |      4 |        0 |
 | 08 — Returns and Refunds                      |      19 |          19 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       1 |         0 |      1 |        0 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **113** | **0** | **0** | **3** | **6** | **88** | **0** |
+| **Total** | **210** | **112** | **0** | **0** | **3** | **6** | **89** | **0** |
 
 ## 4. Milestone tracker
 
@@ -1270,14 +1270,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Disabled/unknown bKash, Nagad or Rocket channels are never offered as activated.\
   **Evidence:** [Availability API, ownership and evidence verification](./evidence/P07-003-payment-methods.md). Project owner accepted 29 October 2026: [acceptance record](./evidence/P07-003-payment-methods.md#independent-acceptance). Real merchant/channel activation remains separate.
 
-- [ ] **P07-004 — Implement hosted checkout initiation for existing order**\
-  **Status:** `Not Started` · **Area:** Backend/payments\
+- [x] **P07-004 — Implement hosted checkout initiation for existing order**\
+  **Status:** `Done` · **Area:** Backend/payments · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-11; FR-12\
   **Depends on:** `P07-002`, `P07-003`\
   **Deliverable:** Persist new unique attempt then request hosted URL for same order; ensure financial intent exists before provider calls.\
   **Acceptance:** Retry cannot silently create another order; expired holds require safe reallocation.\
-  **Evidence to attach:** Payment-init integration.
+  **Evidence:** [Hosted initiation, owned HTTP, allocation and migration verification](./evidence/P07-004-hosted-initiation.md). Project owner accepted 29 October 2026: [acceptance record](./evidence/P07-004-hosted-initiation.md#independent-acceptance). Local/test scope; deployed merchant/callback qualification remains separate.
 
 - [ ] **P07-005 — Separate browser return and provider IPN endpoints**\
   **Status:** `Not Started` · **Area:** Backend/payments\
@@ -2505,3 +2505,7 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **29 October 2026 — P07-003:** Not Started → In Progress → In Review. Added active-only payment-method API and shared quote capabilities with current store flags, digest-checked operator qualification and exact owned-order remaining-funding eligibility. [Observed evidence, authorization checks and operational limits](./evidence/P07-003-payment-methods.md). Executor: Codex; independent acceptance pending. Overall: 210 tasks, 87 Done, 113 Not Started, 3 Blocked and 7 In Review. No hosted initiation, merchant/channel launch or milestone acceptance implied.
 
 **29 October 2026 — P07-003 acceptance:** In Review → Done following explicit project-owner instruction “done koro”. [Acceptance record](./evidence/P07-003-payment-methods.md#independent-acceptance). Overall: 210 tasks, 88 Done, 113 Not Started, 3 Blocked and 6 In Review. Acceptance covers the availability API and recorded verification; actual merchant/channel qualification, hosted initiation and milestone gates remain separate.
+
+**29 October 2026 — P07-004:** Not Started → In Progress → In Review. Added gated local/test hosted initiation/status with durable one-shot dispatch, current owner/CSRF checks, merchant binding, uncertainty recovery, atomic stock/coupon reacquisition and durable shortfall. Project owner explicitly approved optional postalCode in address/quote/order with mandatory online-initiation validation; exact-predecessor additive migration preserves historical facts. [Observed verification, approval and rollout limits](./evidence/P07-004-hosted-initiation.md). Executor: Codex; independent task acceptance pending. Overall: 210 tasks, 88 Done, 112 Not Started, 3 Blocked and 7 In Review. P06 checkout reviews, P07-005/006/009/012/013, live merchant/legal and milestone gates remain separate.
+
+**29 October 2026 — P07-004 acceptance:** In Review → Done following explicit project-owner instruction “done koro”. [Acceptance record](./evidence/P07-004-hosted-initiation.md#independent-acceptance). Overall: 210 tasks, 89 Done, 112 Not Started, 3 Blocked and 6 In Review. Acceptance covers the submitted local/test initiation feature and recorded verification; staging/live remains disabled, and checkout, callback/verification, merchant/legal and milestone gates remain separate.

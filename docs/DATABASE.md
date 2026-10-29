@@ -336,7 +336,7 @@ flowchart TD
 | `role`! | enum(`customer`,`admin`) | Default `customer`; admin privately provisioned only |
 | `status`! | enum(`active`,`suspended`,`deletion_pending`,`deactivated`) | Suspended/deactivated identities cannot authenticate |
 | `emailVerifiedAt`? | Date | Set only after challenge verification |
-| `addresses[]` | embedded[] | `{id,recipient,phone,districtKey,areaKey,street,addressLine2?,isDefault}`; bounded per customer |
+| `addresses[]` | embedded[] | `{id,recipient,phone,districtKey,areaKey,street,addressLine2?,postalCode?,isDefault}`; bounded per customer |
 | `securityRevision`! | int | Increment when passwords, privileges, suspension, or security posture changes |
 | `challengeRevisions`! | embedded | Per-purpose nonnegative counters for email verification/change/reset; issuance/reissue and consumption serialize on the same principal/purpose counter |
 | `deletionRequest`? | embedded | `{id,requestedAt,verifiedAt,status,reason?,decisionAt?,decisionReason?}`; approval/retention-controlled (§5.5) |
@@ -479,7 +479,7 @@ saved addresses and deletion requests instead use the explicit stable `id` Objec
 | `users.role`, `users.status` | Required closed enums from §5.1; public registration supplies neither and writes `customer`/`active`; private provisioning owns admin creation |
 | `users.securityRevision` | Required, initial `0`; security changes increment atomically; clients cannot choose/reset it |
 | `users.challengeRevisions` | Required exact object `{email_verify,email_change,password_reset}`, each initial `0`; the keys deliberately match challenge purposes, not notification event names |
-| `users.addresses` | Required array, initial `[]`, maximum 10; distinct ObjectId `id`; required recipient/phone/districtKey/areaKey/street/isDefault; street and optional addressLine2 at most 300 characters; keys validated against supported coverage; zero or one default |
+| `users.addresses` | Required array, initial `[]`, maximum 10; distinct ObjectId `id`; required recipient/phone/districtKey/areaKey/street/isDefault; street and optional addressLine2 at most 300 characters; optional postalCode at most 30; keys validated against supported coverage; zero or one default |
 | `users.deletionRequest` | Optional exact object; required `id:ObjectId`, UTC requestedAt/verifiedAt, status enum(`requested`,`under_review`,`approved`,`rejected`,`completed`); optional nonempty reason/decisionReason at most 2,000 characters and UTC decisionAt; terminal decisions require decisionAt; review approval alone does not erase data |
 | Token/CSRF/context digests | Required nonempty one-way verifier strings, backend-only and excluded from default projections; token generation/digest encoding follows API §§4.4–4.5 and must be consistent between issuer and verifier; schema acceptance alone cannot prove a string is a hash |
 | `sessions.kind` and references | Customer/admin: userId and securityRevisionAtIssue required, orderId absent; guest_order: orderId required, userId and securityRevisionAtIssue absent; no dual-principal record |
@@ -859,7 +859,7 @@ current order projection even after `replayUntil`; that field cannot expire the 
 | `checkoutIntentId`! | ObjectId | Unique; one order per intent |
 | `items[]`! | embedded[] | Nonempty immutable item snapshots (below) |
 | `customerSnapshot`! | embedded | `{name,emailNormalized,phone}` captured at checkout |
-| `deliverySnapshot`! | embedded | **Immutable checkout facts:** `{recipient,phone,districtKey,areaKey,street,addressLine2?,zoneId,chargeRuleId,chargePoisha,estimateAtCheckout?,deadlineRuleVersion,deadlineBasis}`. `deadlineBasis` captures the approved target duration (normally 14 calendar days), start-event type, and applicable legal-cap rule reference/start event; it does **not** contain a fabricated confirmation-relative absolute deadline. |
+| `deliverySnapshot`! | embedded | **Immutable checkout facts:** `{recipient,phone,districtKey,areaKey,street,addressLine2?,postalCode?,zoneId,chargeRuleId,chargePoisha,estimateAtCheckout?,deadlineRuleVersion,deadlineBasis}`. `deadlineBasis` captures the approved target duration (normally 14 calendar days), start-event type, and applicable legal-cap rule reference/start event; it does **not** contain a fabricated confirmation-relative absolute deadline. |
 | `deliveryCommitment`! | embedded | **Operational projection:** `{status:'awaiting_start'\|'calculated'\|'under_review',startEventAt?,targetDeadlineAt?,legalDeadlineAt?,effectiveDeadlineAt?,calculatedAt?,revision}`; omit absolute dates where the governing start event has not occurred. Changes require controlled transition/audit and never overwrite `deliverySnapshot`. |
 | `pricingSnapshot`! | embedded | `{regularSubtotalPoisha,productDiscountPoisha,saleSubtotalPoisha,couponDiscountPoisha,deliveryChargePoisha,finalTotalPoisha,currency:'BDT'}` |
 | `couponSnapshot`? | embedded | `{couponId,code,type,value,eligibleSubtotalPoisha,discountPoisha,termsVersion}` |
@@ -920,6 +920,11 @@ confirmation/acceptance until resolved. Later operational ETA notices do not rew
 confirmed legal commitments. Changes to `deliveryCommitment` require order CAS, a reason, audit, and customer notification
 when the estimate changes. Test a delayed COD confirmation, checkout-relative statutory cap, unconfirmed order and
 exception handling (PRD FR-16).
+
+Optional postalCode (maximum 30 characters) is retained in saved addresses, quote recipients and
+immutable order delivery snapshots. Online initiation requires it; old snapshots are not backfilled.
+Explicit additive migration accepts only the exact previous/current users and orders validators,
+preserves all records, and refuses unknown drift. Runtime admission never auto-migrates these schemas.
 
 ### 7.3 `orderItemBalances` — cross-claim quantity guard
 
@@ -1179,6 +1184,23 @@ reconciliation may allocate the verified smaller receipt, leaving an exact remai
 attempt; overpayments are correction/unassigned, not duplicate merchandise funding. No collection is discarded merely for
 an amount mismatch. Never discard a validated paid receipt due to an older failed/cancelled message. Provider-specific
 behavior needs sandbox sign-off.
+
+**Hosted-initiation operation identity (`paymentInitiations`, owner: payments):** persist
+`orderId`, `scopeKeyHash`, `idempotencyKeyHash`, `requestFingerprint`, `status`, optional `attemptId`,
+optional `redirectUrl`, immutable merchantAccountKey/gatewayKey dispatch snapshots, plus timestamps. Hash fields are SHA-256; raw browser keys and provider payloads
+are not retained. Status is dispatching/accepted/uncertain/rejected/allocation_shortfall; dispatching
+requires an attempt and merchant/gateway binding, allocation_shortfall has neither, and accepted additionally requires an approved
+hosted URL. Unique `{orderId:1,scopeKeyHash:1,idempotencyKeyHash:1}` preserves the request tombstone;
+partial unique `{attemptId:1}` binds exactly one operation to an attempt. No TTL or financial-history
+delete. An accepted URL is private and returned only while its attempt is initiated and unexpired.
+
+Preparation and attempt creation commit together, marking the attempt uncertain before any provider
+call. Only the transaction winner dispatches once; replays and crashes never resend automatically.
+A provider result updates only the same dispatching operation and still-uncertain attempt; a later
+independently verified attempt outcome cannot be downgraded. Rejection of session creation is not
+proof of payment failure and does not create verified financial evidence. Uncertain/rejected dispatch
+requires reconciliation before another attempt. Durable allocation shortfall records no attempt and
+performs no provider call. New keys never resolve an existing uncertain attempt by themselves.
 
 ### 8.6 `providerReceiptIntake` and `paymentCollections` — verified receipts
 
@@ -1562,6 +1584,7 @@ Collection-level tables define the exact intended fields. This list contains min
 | `couponCustomerCounters` | `{couponId:1,userId:1}` | Unique |
 | `payments` | `{orderId:1}` | Unique |
 | `paymentAttempts` | `{provider:1,tranId:1}` | Unique attempt reference; **not** unique per receipt |
+| `paymentInitiations` | `{orderId:1,scopeKeyHash:1,idempotencyKeyHash:1}`; partial `{attemptId:1}` | Unique durable operation and attempt binding; no TTL |
 | `providerReceiptIntake` | `{provider:1,merchantAccountKey:1,providerCollectionRef:1}` | Unique independently verified online money identity |
 | `providerReceiptIntake` | `{linkedCollectionId:1}` | Unique only where linked ID is ObjectId |
 | `paymentCollections` | `{provider:1,merchantAccountKey:1,providerCollectionRef:1}` | Unique linked provider/COD receipt |

@@ -426,14 +426,14 @@
       "path": "/orders/{orderId}/payment-attempts",
       "success": "200 / 202",
       "operationId": "post_orders_orderId_payment_attempts",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/orders/{orderId}/payment-attempts/{attemptId}",
       "success": "200",
       "operationId": "get_orders_orderId_payment_attempts_attemptId",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",

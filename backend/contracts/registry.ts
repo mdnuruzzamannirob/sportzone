@@ -1,4 +1,11 @@
 import {
+  paymentInitiationInput,
+  paymentInitiationResult,
+  paymentInitiationParams,
+  paymentAttemptParams,
+  paymentAttemptStatus,
+} from '../src/modules/payments/payment-initiation.schema.js'
+import {
   paymentMethodsQuery,
   paymentMethodsView,
 } from '../src/modules/payments/payment-eligibility.schema.js'
@@ -148,7 +155,14 @@ const identity = createIdentityContracts({
 export type Operation = {
   method: string
   path: string
-  access: 'public' | 'public_csrf' | 'customer' | 'admin' | 'monitor' | 'guest'
+  access:
+    | 'public'
+    | 'public_csrf'
+    | 'customer'
+    | 'admin'
+    | 'monitor'
+    | 'guest'
+    | 'customer_or_guest'
   activation: string
   request?: z.ZodType
   response?: z.ZodType
@@ -282,6 +296,38 @@ export const operations: readonly Operation[] = [
       'Reviewed catalog/settings/policy persistence. Only active visible SKU/category data and exact attached clean public media references publish; missing configured metadata is omitted.',
     replay:
       'No-store bounded read; current operator settings and approved published policy pointers on each request. No fabricated merchandising fallback.',
+  },
+  {
+    method: 'POST',
+    path: '/orders/{orderId}/payment-attempts',
+    access: 'customer_or_guest',
+    namespace: 'storefront',
+    query: empty,
+    params: paymentInitiationParams,
+    request: paymentInitiationInput,
+    response: paymentInitiationResult,
+    status: 200,
+    csrf: true,
+    idempotency: true,
+    activation:
+      'PAYMENT_INITIATION_ENABLED local/test only, customer auth and reviewed merchant evidence, payment/operation/order/stock/coupon/audit persistence, immutable gateway-compatible address including postalCode. No deployed/live collection qualification implied.',
+    replay:
+      'Durable per-owner/order/key tombstone before one provider call. Identical replay never resends or extends holds; uncertain results block new attempts. Allocation shortfall records no attempt.',
+  },
+  {
+    method: 'GET',
+    path: '/orders/{orderId}/payment-attempts/{attemptId}',
+    access: 'customer_or_guest',
+    namespace: 'storefront',
+    query: empty,
+    params: paymentAttemptParams,
+    response: paymentAttemptStatus,
+    status: 200,
+    csrf: false,
+    activation:
+      'Same reviewed local/test initiation composition; authenticated order owner or proven guest order scope on every read.',
+    replay:
+      'No-store database projection only; no provider call, redirect, merchant secrets or payment success inferred from browser navigation.',
   },
   {
     method: 'GET',

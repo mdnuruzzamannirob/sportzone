@@ -323,3 +323,124 @@ export function paymentMethodOrderAccess(connection: Connection) {
     return { method: row.paymentMethod, cancelled: row.fulfillmentStatus === 'cancelled' }
   }
 }
+
+export function paymentAllocationOrderAccess(
+  connection: Connection,
+  eligible: (session: ClientSession, orderId: string) => Promise<void>,
+) {
+  const { orders } = orderModels(connection)
+  return {
+    async authorize(session: ClientSession, orderId: string, generation: number, action: string) {
+      if (
+        !session.inTransaction() ||
+        !Number.isSafeInteger(generation) ||
+        generation < 1 ||
+        !['hold', 'release_held'].includes(action)
+      )
+        throw new ApiError('STATE_CONFLICT')
+      await eligible(session, orderId)
+      await verifyOrderPersistence(connection)
+      const row = await orders.findOneAndUpdate(
+        {
+          _id: orderId,
+          paymentMethod: 'online',
+          fulfillmentStatus: 'pending',
+          fulfillmentHold: { $in: ['payment_pending', 'allocation_shortfall'] },
+          confirmedAt: { $exists: false },
+          shippedAt: { $exists: false },
+          cancelledAt: { $exists: false },
+          revision: { $lt: Number.MAX_SAFE_INTEGER },
+        },
+        { $inc: { revision: 1 }, $set: { fulfillmentHold: 'payment_pending' } },
+        { session, returnDocument: 'after' },
+      )
+      if (!row) throw new ApiError('STATE_CONFLICT')
+      return orderAllocationBinding(row, generation)
+    },
+    async shortfall(session: ClientSession, orderId: string) {
+      if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+      await eligible(session, orderId)
+      await verifyOrderPersistence(connection)
+      const row = await orders.updateOne(
+        {
+          _id: orderId,
+          paymentMethod: 'online',
+          fulfillmentStatus: 'pending',
+          fulfillmentHold: { $in: ['payment_pending', 'allocation_shortfall'] },
+          revision: { $lt: Number.MAX_SAFE_INTEGER },
+        },
+        { $inc: { revision: 1 }, $set: { fulfillmentHold: 'allocation_shortfall' } },
+        { session },
+      )
+      if (row.matchedCount !== 1) throw new ApiError('STATE_CONFLICT')
+    },
+  }
+}
+
+export function paymentInitiationOrderData(connection: Connection) {
+  const { orders } = orderModels(connection)
+  return {
+    async authorize(session: ClientSession, orderId: string) {
+      if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+      await verifyOrderPersistence(connection)
+      const row = await orders.findOneAndUpdate(
+        {
+          _id: orderId,
+          paymentMethod: 'online',
+          fulfillmentStatus: 'pending',
+          fulfillmentHold: { $in: ['payment_pending', 'allocation_shortfall'] },
+          confirmedAt: { $exists: false },
+          shippedAt: { $exists: false },
+          cancelledAt: { $exists: false },
+          revision: { $lt: Number.MAX_SAFE_INTEGER },
+        },
+        { $inc: { revision: 1 } },
+        { session, returnDocument: 'after' },
+      )
+      if (!row) throw new ApiError('STATE_CONFLICT')
+      return row.pricingSnapshot.finalTotalPoisha
+    },
+    async redirectAllowed(session: ClientSession, orderId: string) {
+      if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+      return Boolean(
+        await orders
+          .exists({
+            _id: orderId,
+            paymentMethod: 'online',
+            fulfillmentStatus: 'pending',
+            fulfillmentHold: 'payment_pending',
+            confirmedAt: { $exists: false },
+            shippedAt: { $exists: false },
+            cancelledAt: { $exists: false },
+          })
+          .session(session),
+      )
+    },
+    async metadata(session: ClientSession, orderId: string) {
+      if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+      const row = await orders.findById(orderId).session(session)
+      if (!row?.deliverySnapshot.postalCode) throw new ApiError('BUSINESS_RULE_VIOLATION')
+      const address = {
+        address: row.deliverySnapshot.street,
+        city: row.deliverySnapshot.districtKey,
+        postcode: row.deliverySnapshot.postalCode,
+        country: 'Bangladesh' as const,
+        ...(row.deliverySnapshot.addressLine2
+          ? { addressLine2: row.deliverySnapshot.addressLine2 }
+          : {}),
+      }
+      return {
+        customer: {
+          ...address,
+          name: row.customerSnapshot.name,
+          email: row.customerSnapshot.emailNormalized,
+          phone: row.customerSnapshot.phone,
+        },
+        shipping: { ...address, name: row.deliverySnapshot.recipient },
+        itemCount: row.items.reduce((total, item) => total + item.quantity, 0),
+        productName: row.items.map((item) => item.productName).join(', '),
+        productCategory: 'Sports',
+      }
+    },
+  }
+}

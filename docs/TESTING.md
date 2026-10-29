@@ -665,6 +665,21 @@ operations; retain those acceptance gates separately.
 
 ### 11.1 Payment provider and COD scenarios
 
+Hosted-initiation verification uses real replica-set transactions, actual stock/coupon APIs and
+synthetic provider transport. Assert committed durable dispatch before I/O, one call across concurrent
+identical/different keys and process instances, reauthorization/CSRF/order isolation, request conflicts,
+rollback before dispatch and uncertainty after failed result commit. No session acceptance can fund an
+order. Verify expired/released holds reacquire one shared 15-minute generation, preserve old clocks and
+immutable prices, and roll back every SKU/coupon effect on shortfall or changed terms. Race expiry
+against reacquisition; unresolved attempts protect capacity from refresh/shortfall mutation. Verify
+explicit capacity-recovery retries and current lifecycle/risk/channel/funding redirect suppression.
+
+Exercise real customer/scoped guest HTTP reads and mutations, disabled-by-default/deployed activation
+refusal and new API security alternatives. Saved address/quote/order postalCode must round-trip; reject
+missing/unrepresentable online gateway metadata without fabrication. Additive migration must preserve
+legacy documents/order immutability, reject unknown validators and remain safely repeatable. Live
+callback/provider verification and merchant qualification require separate evidence, not these fixtures.
+
 Payment-method availability tests exercise public/no-store reads, flag-only denial of online channels,
 verified evidence/account/environment/lifetime/digest boundaries and current settings/expiry changes.
 Check inclusive min/max integer-poisha eligibility and unknown amount behavior. Order-specific tests

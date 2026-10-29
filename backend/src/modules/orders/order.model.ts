@@ -47,6 +47,7 @@ export type Order = {
     districtKey: string
     areaKey: string
     street: string
+    postalCode?: string
     addressLine2?: string
     zoneId: Types.ObjectId
     chargeRuleId: Types.ObjectId
@@ -215,6 +216,7 @@ const orderSchema = new Schema<Order>(
           districtKey: text(64),
           areaKey: text(64),
           street: text(300),
+          postalCode: { type: String, maxlength: 30, default: undefined },
           addressLine2: {
             type: String,
             default: undefined,

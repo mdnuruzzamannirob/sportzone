@@ -1,3 +1,19 @@
+import { paymentInitiationChannelAccess } from './modules/payments/payment-eligibility.service.js'
+import { paymentInitiationService } from './modules/payments/payment-initiation.service.js'
+import { paymentInitiationRoutes } from './modules/payments/payment-initiation.routes.js'
+import { paymentInitiationAuthAccess } from './modules/auth/checkout-access.service.js'
+import { paymentAllocationService } from './modules/checkout/payment-allocation.service.js'
+import {
+  paymentAllocationOrderAccess,
+  paymentInitiationOrderData,
+} from './modules/orders/order.service.js'
+import { paymentInitiationEligibilityAccess } from './modules/payments/payment.service.js'
+import type { createSslcommerzAdapter } from './providers/sslcommerz/sslcommerz.client.js'
+export type PaymentInitiationDependencies = {
+  gateway: Pick<ReturnType<typeof createSslcommerzAdapter>, 'initiate'>
+  validateRequest(request: unknown): boolean
+  clock?: () => Date
+}
 import { paymentMethodsRoutes } from './modules/payments/payment-methods.routes.js'
 import { paymentMethodsService } from './modules/payments/payment-methods.service.js'
 import { paymentMethodOrderAccess } from './modules/orders/order.service.js'
@@ -80,6 +96,7 @@ export async function composeIdentityRoutes(
   approvals: readonly PolicyApproval[] = [],
   checkout?: CheckoutOptions,
   channelApprovals: readonly PaymentChannelApproval[] = [],
+  paymentGateway?: PaymentInitiationDependencies,
 ) {
   const notifications = createRegistrationNotifications(connection)
   const auth = await createAuthRuntime(connection, config, notifications)
@@ -236,6 +253,58 @@ export async function composeIdentityRoutes(
       [config.STOREFRONT_ORIGIN],
     ),
   )
+  if (paymentGateway) {
+    if (!config.CUSTOMER_AUTH_ENABLED || !['local', 'test'].includes(config.APP_ENV))
+      throw new Error('Payment initiation is restricted to reviewed local/test composition.')
+    const clock = paymentGateway.clock ?? (() => new Date()),
+      settings = paymentChannelSettingsAccess(connection),
+      orderData = paymentInitiationOrderData(connection),
+      allocationOrder = paymentAllocationOrderAccess(
+        connection,
+        paymentInitiationEligibilityAccess(connection),
+      ),
+      allocation = paymentAllocationService(connection, allocationOrder, clock)
+    const channel = paymentInitiationChannelAccess(settings, channelApprovals, clock)
+    const initiation = paymentInitiationService(
+      connection,
+      {
+        ...paymentInitiationAuthAccess(
+          auth.customerAccounts,
+          auth.sessions,
+          paymentMethodOrderAccess(connection),
+          auth.guestAccounts,
+        ),
+        metadata: orderData.metadata,
+        redirectAllowed: orderData.redirectAllowed,
+        authorize: orderData.authorize,
+        channel,
+        allocation: async (session, orderId, requested, amount) => {
+          const capability = await channel(session, requested, amount),
+            held = await allocation.ensure(session, orderId)
+          return {
+            orderId,
+            channel: requested,
+            heldAt: held.heldAt,
+            expiresAt: held.expiresAt,
+            minPoisha: capability.minPoisha,
+            maxPoisha: capability.maxPoisha,
+          }
+        },
+        shortfall: allocationOrder.shortfall,
+      },
+      paymentGateway.gateway,
+      paymentGateway.validateRequest,
+      clock,
+    )
+    auth.router.use(
+      paymentInitiationRoutes(
+        initiation,
+        auth.security,
+        auth.throttle.middleware('customer', 'checkout'),
+        config.STOREFRONT_ORIGIN,
+      ),
+    )
+  }
   if (checkout) {
     if (!config.CUSTOMER_AUTH_ENABLED)
       throw new Error('Customer authentication required for checkout quotes.')
@@ -279,7 +348,10 @@ export async function composeApplication(
   approvals: readonly PolicyApproval[] = [],
   checkout?: CheckoutOptions,
   channelApprovals: readonly PaymentChannelApproval[] = [],
+  paymentGateway?: PaymentInitiationDependencies,
 ) {
+  if (paymentGateway && !config.CUSTOMER_AUTH_ENABLED)
+    throw new Error('Customer auth required for payment initiation')
   if (checkout && !config.CUSTOMER_AUTH_ENABLED)
     throw new Error('Customer authentication required for checkout quotes.')
   const identity =
@@ -291,6 +363,7 @@ export async function composeApplication(
           approvals,
           checkout,
           channelApprovals,
+          paymentGateway,
         )
       : undefined
   const unavailable = async (): Promise<never> => {

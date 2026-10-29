@@ -8,6 +8,18 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 29 October 2026 — Local hosted payment initiation
+
+- Added durable owner/order request identities, one-shot hosted session dispatch and owned status
+  reads with CSRF, current authorization and uncertainty recovery. No acceptance implies verified money.
+- Added transactional expired stock/coupon reacquisition, durable capacity shortfall and current
+  policy/risk/funding checks before reissuing a hosted URL; staging/live activation remains refused.
+- Owner approved optional postalCode across address/quote/order, required before online initiation.
+  Added exact-predecessor additive migration/local bootstrap without rewriting historical snapshots.
+- Added financial race/crash/HTTP/migration coverage and regenerated API/Postman security contracts.
+  P07-004 local/test scope accepted by the project owner on 29 October 2026; provider/callback,
+  checkout and milestone gates remain separate.
+
 ## 29 October 2026 — Payment-method availability API
 
 - Added public payment-method discovery with active-only filtering, canonical owned-order balance

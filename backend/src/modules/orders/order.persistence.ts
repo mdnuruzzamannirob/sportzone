@@ -117,6 +117,7 @@ const orderValidator = {
           districtKey: text(64),
           areaKey: text(64),
           street: text(300),
+          postalCode: text(30),
           addressLine2: text(300),
           zoneId: oid,
           chargeRuleId: oid,
@@ -375,4 +376,29 @@ export async function verifyOrderPersistence(connection: Connection) {
   const models = orderModels(connection)
   await verifyDeclaredIndexes(models.orders)
   await verifyDeclaredIndexes(models.balances)
+}
+
+export async function migrateOrderPostalCode(connection: Connection) {
+  const db = connection.db
+  if (!db) throw new Error('Order database unavailable')
+  const row = await db.listCollections({ name: 'orders' }, { nameOnly: false }).next()
+  if (!row) return
+  const current = orderValidators.orders
+  const legacy: unknown = JSON.parse(
+    JSON.stringify(current, (key, value: unknown) => (key === 'postalCode' ? undefined : value)),
+  )
+  if (
+    row.options?.validationLevel !== 'strict' ||
+    row.options?.validationAction !== 'error' ||
+    (!isDeepStrictEqual(row.options.validator, current) &&
+      !isDeepStrictEqual(row.options.validator, legacy))
+  )
+    throw new Error('Unknown order validator; reviewed migration required')
+  if (isDeepStrictEqual(row.options.validator, legacy))
+    await db.command({
+      collMod: 'orders',
+      validator: current,
+      validationLevel: 'strict',
+      validationAction: 'error',
+    })
 }

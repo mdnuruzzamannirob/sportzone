@@ -417,12 +417,46 @@ to load changed qualifications. Expired evidence hides the affected channel auto
 approval revision/evidence in the protected operational inventory for audit/recovery.
 
 Without merchant evidence, online channels remain unavailable; bKash, Nagad, Rocket and COD still each
-require separate live launch acceptance. Availability does not activate the still-separate hosted
-initiation/callback/receipt path. Rollback can clear the evidence-file setting/restart or disable store
+require separate live launch acceptance. Availability does not enable the separately gated hosted initiation path or activate callbacks/receipt verification. Rollback can clear the evidence-file setting/restart or disable store
 flags while preserving attempt/receipt and approval history. No collection migration is introduced.
 
-Private SSLCOMMERZ adapter configuration is loaded only by explicit backend composition through
-`loadSslcommerzOptions`; it is not wired into HTTP startup. `SSLCOMMERZ_ADAPTER_ENABLED=false`
+Hosted initiation requires `PAYMENT_INITIATION_ENABLED=true`, CUSTOMER_AUTH_ENABLED, valid explicit
+adapter options and current merchant evidence. It is local/test only: both configuration and root
+composition refuse staging/production until callback/independent verification tasks are qualified.
+Absent/false leaves initiation and attempt-status routes unmounted. This does not enable online order
+submission or accept the existing checkout review gates. Merchant channel qualification remains distinct.
+
+After backend build, run `node --env-file=.env backend/scripts/bootstrap-payment-initiation.mjs` in
+an owned local/test database. It additively provisions paymentInitiations plus payment record/audit
+persistence, and upgrades only exact known predecessor users/orders validators for optional postalCode.
+Existing records, indexes and historical snapshots are retained; unknown drift or deployed environments
+are refused. A partial provisioning failure can leave already-created collections/schema expansion;
+inspect and resume explicitly. Existing identity/catalog/order/stock/coupon/notification prerequisites
+remain their owning bootstraps. Startup verifies admission but never migrates/provisions silently.
+
+Saved address/quote/order postalCode is optional for compatibility; online initiation requires the
+actual immutable snapshot value. Missing postcode, overlong gateway contact/shipment fields or other
+unrepresentable historical metadata fail before any provider call. Do not invent, truncate or backfill
+contacts/postcodes. Shipping addressLine2 is preserved when gateway-compatible. A legacy order requiring
+additional facts needs reviewed resolution; deployment cannot rewrite its commercial snapshot.
+
+Initiation persists its unique request/attempt and uncertain dispatch before external I/O. Identical
+requests never resend or restart holds; a timeout, crash or failed result transaction remains unresolved
+for independent reconciliation using the original tranId/session references. Do not reset an operation,
+generate another financial attempt or infer noncollection from an absent browser result. Stock and
+coupon reacquisition share one new 15-minute generation in a single transaction, guarded by current
+order/payment/attempt state. Allocation shortfall has no attempt or provider call; its original key
+retains that outcome. A fresh explicit request after capacity recovers may proceed only without an
+unresolved attempt. Current risk/funding/channel/lifecycle changes suppress historical hosted URLs.
+
+Rollback disables initiation first while preserving operations, attempts, receipts and audit. New
+postalCode data/expanded validators require a compatible rollback build: do not erase fields or
+blindly downgrade validators. Staging schema changes use the reviewed operational migration process;
+the convenience bootstrap never authorizes deployed collection effects. Session acceptance is not
+payment verification, fulfillment confirmation or permission to bypass required launch channels.
+
+SSLCOMMERZ adapter configuration is loaded by explicit backend composition through
+`loadSslcommerzOptions`. HTTP startup composes initiation only under the separate gated option below. `SSLCOMMERZ_ADAPTER_ENABLED=false`
 (or absent) disables loading. Enabling requires explicit `SSLCOMMERZ_MODE`, `SSLCOMMERZ_STORE_ID`,
 `SSLCOMMERZ_STORE_PASSWORD`, `SSLCOMMERZ_CALLBACK_ORIGIN` and `SSLCOMMERZ_TIMEOUT_MS` (1–60,000).
 Local/test/staging permit sandbox only; production permits live only. Credentials must belong to the
@@ -448,8 +482,8 @@ additively provisions payment attempts, receipt intake, linked collections and a
 local/test only. Existing validator drift is refused; records and extra indexes are preserved, and
 financial TTL indexes fail readiness. Staging/production requires the reviewed migration procedure.
 This script enables no provider, callback or receipt writer. Preserve financial histories on rollback;
-do not drop collections or restore incompatible validators. Private attempt preparation requires an
-explicit transactional authorization/allocation adapter before integration; test fixtures do not
+do not drop collections or restore incompatible validators. Private attempt preparation requires its
+transactional authorization/allocation adapter; the gated local/test composition supplies that boundary; test fixtures do not
 establish verified merchant capability or independently verified receipts.
 
 COD submission additionally requires `CHECKOUT_COD_ENABLED=true`; the default is false. It requires

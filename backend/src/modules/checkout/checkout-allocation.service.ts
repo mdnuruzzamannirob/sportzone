@@ -12,7 +12,7 @@ const command = z.strictObject({
   generation: z.int().min(1).max(Number.MAX_SAFE_INTEGER),
   action: allocationAction,
 })
-const binding = z.strictObject({
+export const checkoutAllocationBinding = z.strictObject({
   orderId: id,
   placedAt: z.date().optional(),
   generation: z.int().min(1),
@@ -51,7 +51,7 @@ export function checkoutAllocationService(
       if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
       const input = parseInput(command, raw),
         data = parseInput(
-          binding,
+          checkoutAllocationBinding,
           await access.authorize(session, input.orderId, input.generation, input.action),
         )
       if (data.orderId !== input.orderId || data.generation !== input.generation)

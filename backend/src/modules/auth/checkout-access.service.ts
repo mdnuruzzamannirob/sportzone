@@ -74,3 +74,75 @@ export function paymentMethodAccess(
     },
   }
 }
+
+export type PaymentInitiationCredentials = {
+  customerPresent: boolean
+  customerToken?: string | undefined
+  guestToken?: string | undefined
+  csrfToken?: string | undefined
+}
+export function paymentInitiationAuthAccess(
+  customers: CustomerAccountAccess,
+  sessions: import('./sessions/session.service.js').SessionService,
+  order: (
+    session: ClientSession,
+    orderId: string,
+    scope: { customerId?: string; guestOrderId?: string },
+  ) => Promise<unknown>,
+  guests?: Pick<import('./guest-access/guest-session.service.js').GuestSessions, 'owned'>,
+) {
+  return {
+    async owned<T>(
+      credentials: PaymentInitiationCredentials,
+      orderId: string,
+      work: (scopeKeyHash: string, session: ClientSession) => Promise<T>,
+      mutating = true,
+    ) {
+      if (credentials.customerPresent) {
+        if (
+          mutating &&
+          !(await sessions.verifyCsrfMaterial(
+            'customer',
+            credentials.customerToken,
+            credentials.csrfToken,
+          ))
+        )
+          throw new ApiError('CSRF_INVALID')
+        return customers.owned(
+          credentials.customerToken,
+          async (profile, scope) => {
+            if (
+              mutating &&
+              !(await sessions.verifyCsrfMaterial(
+                'customer',
+                credentials.customerToken,
+                credentials.csrfToken,
+              ))
+            )
+              throw new ApiError('CSRF_INVALID')
+            await order(scope.transaction, orderId, { customerId: profile.id })
+            return work(
+              createHash('sha256').update(`customer:${profile.id}`).digest('hex'),
+              scope.transaction,
+            )
+          },
+          mutating,
+        )
+      }
+      if (!guests || (mutating && !credentials.csrfToken))
+        throw new ApiError('GUEST_PROOF_REQUIRED')
+      return guests.owned(
+        credentials.guestToken,
+        orderId,
+        async (scope, session) => {
+          await order(session, orderId, { guestOrderId: scope.orderId })
+          return work(
+            createHash('sha256').update(`guest_order:${scope.orderId}`).digest('hex'),
+            session,
+          )
+        },
+        mutating ? credentials.csrfToken : undefined,
+      )
+    },
+  }
+}

@@ -3,7 +3,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createHash } from 'node:crypto'
 import { afterEach, expect, it } from 'vitest'
-import { loadPaymentChannelApprovals } from '../../src/config/payments.js'
+import {
+  loadPaymentChannelApprovals,
+  loadPaymentInitiationOptions,
+} from '../../src/config/payments.js'
 import { ConfigurationError } from '../../src/shared/errors/configuration-error.js'
 import {
   paymentMethodsQuery,
@@ -117,3 +120,29 @@ it.each(['-1', '1.1', '1e3', '+1', '01', '9007199254740992', ['1000', '2000']])(
     expect(paymentMethodsQuery.safeParse({ amountPoisha }).success).toBe(false)
   },
 )
+
+it('keeps initiation disabled by default and refuses unsafe/deployed activation without required prerequisites', () => {
+  expect(loadPaymentInitiationOptions({})).toBeUndefined()
+  const env = {
+    APP_ENV: 'test',
+    PAYMENT_INITIATION_ENABLED: 'true',
+    CUSTOMER_AUTH_ENABLED: 'true',
+    SSLCOMMERZ_ADAPTER_ENABLED: 'true',
+    SSLCOMMERZ_MODE: 'sandbox',
+    SSLCOMMERZ_STORE_ID: 'synthetic-store',
+    SSLCOMMERZ_STORE_PASSWORD: 'synthetic-password',
+    SSLCOMMERZ_CALLBACK_ORIGIN: 'https://api.example.test',
+    SSLCOMMERZ_TIMEOUT_MS: '1000',
+    PAYMENT_CHANNEL_APPROVALS_FILE: '/synthetic/reviewed.json',
+  }
+  expect(loadPaymentInitiationOptions(env)?.mode).toBe('sandbox')
+  for (const patch of [
+    { PAYMENT_INITIATION_ENABLED: 'yes' },
+    { APP_ENV: 'staging' },
+    { APP_ENV: 'production', SSLCOMMERZ_MODE: 'live' },
+    { CUSTOMER_AUTH_ENABLED: 'false' },
+    { SSLCOMMERZ_ADAPTER_ENABLED: 'false' },
+    { PAYMENT_CHANNEL_APPROVALS_FILE: '' },
+  ])
+    expect(() => loadPaymentInitiationOptions({ ...env, ...patch })).toThrow(ConfigurationError)
+})

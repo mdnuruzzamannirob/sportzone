@@ -49,6 +49,7 @@ export function validateSslcommerzOptions(raw: unknown): Readonly<SslcommerzOpti
 const address = z.strictObject({
   name: text(50),
   address: text(50),
+  addressLine2: text(50).optional(),
   city: text(50),
   postcode: text(30),
   country: z.literal('Bangladesh'),

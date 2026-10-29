@@ -16,6 +16,7 @@ const address = new Schema(
     districtKey: text,
     areaKey: text,
     street: text,
+    postalCode: String,
     addressLine2: String,
   },
   embedded,

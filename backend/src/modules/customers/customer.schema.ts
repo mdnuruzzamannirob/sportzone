@@ -38,6 +38,7 @@ export const addressInput = z.strictObject({
   districtKey: key,
   areaKey: key,
   street: text(300),
+  postalCode: text(30).optional(),
   addressLine2: text(300).optional(),
 })
 export const addressPatch = addressInput

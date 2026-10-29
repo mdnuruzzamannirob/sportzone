@@ -9,6 +9,7 @@ export function addressDto(address: Address) {
     districtKey: address.districtKey,
     areaKey: address.areaKey,
     street: address.street,
+    ...(address.postalCode ? { postalCode: address.postalCode } : {}),
     ...(address.addressLine2 ? { addressLine2: address.addressLine2 } : {}),
     isDefault: address.isDefault,
   }

@@ -193,9 +193,12 @@ function protect(
   schema.pre('save', function () {
     if (!this.isNew) throw new ApiError('STATE_CONFLICT')
   })
-  schema.pre(['replaceOne', 'findOneAndReplace', 'updateMany', 'deleteMany'], () => {
-    throw new ApiError('STATE_CONFLICT')
-  })
+  schema.pre(
+    ['replaceOne', 'findOneAndReplace', 'findOneAndDelete', 'updateMany', 'deleteMany'],
+    () => {
+      throw new ApiError('STATE_CONFLICT')
+    },
+  )
   schema.pre('deleteOne', { document: true, query: true }, () => {
     throw new ApiError('STATE_CONFLICT')
   })

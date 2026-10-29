@@ -53,6 +53,7 @@ export function createIdentityContracts(policy: {
     areaKey: text(64),
     street: text(300),
     addressLine2: text(300).optional(),
+    postalCode: text(30).optional(),
   }
   const addressInput = z
     .strictObject(addressFields)

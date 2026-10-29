@@ -32,6 +32,12 @@
       "type": "default"
     },
     {
+      "key": "attemptId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "baseUrl",
       "value": "",
       "enabled": true,
@@ -435,6 +441,12 @@
     },
     {
       "key": "post_me_password_changeBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_orders_orderId_payment_attemptsBody",
       "value": "",
       "enabled": true,
       "type": "secret"

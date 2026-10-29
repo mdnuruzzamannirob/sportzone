@@ -437,7 +437,7 @@ scoped operational fields; external provider evidence is redacted even to admini
 | `SignedMoneyPoisha` | Signed safe integer                                          | Derived net cash-flow reporting only; a period with more payouts than collections is negative |
 | `Instant`           | ISO UTC string, e.g. `2026-10-16T00:00:00Z`                  | Reject ambiguous timezone formats in writes                                                   |
 | `Channel`           | `cod` / `bkash` / `nagad` / `rocket`                         | Business choice; actual online provider display/availability subject to verified activation   |
-| `AddressInput`      | `{recipient,phone,districtKey,areaKey,street,addressLine2?}` | Bangladesh-supported area keys, no arbitrary delivery-zone ID                                 |
+| `AddressInput`      | `{recipient,phone,districtKey,areaKey,street,addressLine2?,postalCode?}` | Bangladesh-supported area keys, no arbitrary delivery-zone ID                                 |
 | `CartLineInput`     | `{variantId,quantity}`                                       | Bounded positive integer qty, unique variant                                                  |
 | `PageMeta`          | `{page,pageSize,totalItems,totalPages}`                      | Current snapshot estimate; deterministic sort on stable ID tie-break                          |
 | `PolicyRef`         | `{type,version,effectiveAt}`                                 | Approved version used for terms/checkout snapshot                                             |
@@ -603,7 +603,7 @@ invent offset pagination where it risks missing/duplicating mutations. Query and
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `RegisterInput`   | `name,email,password`; public role omitted and forced `customer`; enforce approved password policy                                     |
 | `Credentials`     | `email,password`; client may **not** supply role or cookie scope                                                                       |
-| `AddressPatch`    | Optional editable `recipient,phone,districtKey,areaKey,street,addressLine2,isDefault` only; explicit fields, no arbitrary object merge |
+| `AddressPatch`    | Optional editable `recipient,phone,districtKey,areaKey,street,addressLine2,postalCode,isDefault` only; explicit fields, no arbitrary object merge |
 | `Account`         | Database §5.1 allowlist: `id,name,email,phone?,emailVerified,addresses,status`; no hashes/security revision details                    |
 | `DeletionRequest` | Verified customer identity and approved retention/review process; **not** immediate hard deletion of financial records                 |
 
@@ -1053,7 +1053,7 @@ evidence reference and digest) is internal; public projections use only the Deli
 | ------ | ---------------------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | `GET`  | `/checkout/payment-methods`                          | Public                     | `amountPoisha?,orderId? (owned if supplied) → {methods:[{channel,active,eligible,reasonCode?,minPoisha?,maxPoisha?}]}`              | 12     |
 | `GET`  | `/orders/{orderId}/payments`                         | C owner or G-scoped        | `— → {payment:PaymentSummary,attempts:PaymentAttemptPublic[]}`                                                                      | 12, 19 |
-| `POST` | `/orders/{orderId}/payment-attempts`                 | C owner or G-scoped        | `{requestedChannel} + Idempotency-Key → {attemptId,expectedAmountPoisha,state,redirectUrl?,expiresAt?}`                             | 12     |
+| `POST` | `/orders/{orderId}/payment-attempts`                 | C owner or G-scoped        | `{requestedChannel} + Idempotency-Key → {attemptId?,expectedAmountPoisha?,state,redirectUrl?,expiresAt?}`                             | 12     |
 | `GET`  | `/orders/{orderId}/payment-attempts/{attemptId}`     | C owner or G-scoped        | `— → {id,state,riskStatus?,lastCheckedAt?}`                                                                                         | 12     |
 | `POST` | `/webhooks/sslcommerz/ipn`                           | P-untrusted intake         | Provider form fields → HTTP acknowledgment; **never** client payment DTO                                                            | 12     |
 | `GET`  | `/payment-returns/sslcommerz/{result}`               | Provider/browser untrusted | Redirect to safe storefront result page; no payment mutation                                                                        | 12     |
@@ -1088,6 +1088,25 @@ A caller may suggest a channel; the server validates live merchant permissions a
 `GET /orders/{id}/payments` does not expose **unmatched** provider intake as belonging to that customer.
 
 ### 12.2 Hosted initiation, retries and uncertain state
+
+Address/quote/order retain optional postalCode (at most 30 characters). Online initiation requires a
+stored postcode and gateway-bounded contact/shipment fields; missing historical data is a reviewed
+business conflict, never a fabricated default or a rewrite of an order snapshot.
+
+The initiation/status routes are independently gated by PAYMENT_INITIATION_ENABLED for local/test
+only; staging/live activation requires later callback and verification qualification. POST requires
+current customer or scoped guest ownership, exact storefront Origin, CSRF and a bounded Idempotency-Key.
+The durable key is scoped to the current principal and existing order. Every replay reauthorizes scope,
+returns current attempt state and never dispatches again. A dispatch committed without a known outcome
+remains uncertain, including crash-before-call; a new key cannot bypass reconciliation. Allocation
+shortfall returns `{state:'allocation_shortfall'}` without an attempt/provider call; a fresh explicit
+request can retry capacity after resolution, while the original key retains its shortfall outcome.
+
+An accepted session URL is returned only while the attempt, original amount, order lifecycle,
+funding/risk state, current channel qualification and fixed hold expiry still permit it. Revocation
+or cancellation does not erase the historical session or imply provider noncollection. Session
+creation rejection is not independent payment-failure verification. GET returns only the owned current
+database projection; it performs no provider query or financial transition.
 
 1. Verify ownership, approved channel, lifecycle and all unresolved attempts. Derive `remainingMerchandiseFundingPoisha =
 max(0, originalFinalTotalPoisha - currentVerifiedMerchandiseAllocatedPoisha)` from locked authoritative projections, not a

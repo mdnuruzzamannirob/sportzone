@@ -64,3 +64,22 @@ export async function loadPaymentChannelApprovals(environment: NodeJS.ProcessEnv
     throw new ConfigurationError(['payment_channel_approvals'])
   }
 }
+
+// Real staging/live collection must wait for independently reviewed callback/verification integration.
+export function loadPaymentInitiationOptions(environment: NodeJS.ProcessEnv) {
+  if (
+    environment.PAYMENT_INITIATION_ENABLED === undefined ||
+    environment.PAYMENT_INITIATION_ENABLED === 'false'
+  )
+    return undefined
+  if (
+    environment.PAYMENT_INITIATION_ENABLED !== 'true' ||
+    !['local', 'test'].includes(environment.APP_ENV ?? '') ||
+    environment.CUSTOMER_AUTH_ENABLED !== 'true' ||
+    !environment.PAYMENT_CHANNEL_APPROVALS_FILE
+  )
+    throw new ConfigurationError(['payment_initiation_activation'])
+  const options = loadSslcommerzOptions(environment)
+  if (!options) throw new ConfigurationError(['payment_initiation_activation'])
+  return options
+}

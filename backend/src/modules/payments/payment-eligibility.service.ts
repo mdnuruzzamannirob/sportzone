@@ -1,3 +1,4 @@
+import { ApiError } from '../../shared/errors/app-error.js'
 import type { ClientSession } from 'mongoose'
 import { z } from 'zod'
 import { parseInput } from '../../shared/middleware/validate.js'
@@ -86,4 +87,37 @@ export function verifiedMerchantChannels(
         minPoisha: row.minPoisha,
         maxPoisha: row.maxPoisha,
       }))
+}
+
+// Initiation and URL replay policy stays in payments; root supplies only settings/evidence capabilities.
+export function paymentInitiationChannelAccess(
+  settings: (session: ClientSession) => Promise<unknown>,
+  rows: readonly PaymentChannelApproval[],
+  clock: () => Date = () => new Date(),
+) {
+  const approved = z
+    .array(paymentChannelApproval)
+    .max(3)
+    .refine((items) => new Set(items.map((item) => item.channel)).size === items.length)
+    .parse(rows)
+  return async (session: ClientSession, requested: string, amount: number) => {
+    parseInput(z.int().positive().max(Number.MAX_SAFE_INTEGER), amount)
+    const flags = parseInput(paymentChannels, await settings(session)),
+      row = approved.find(
+        (entry) =>
+          entry.channel === requested &&
+          Date.parse(entry.verifiedAt) <= clock().getTime() &&
+          Date.parse(entry.validUntil) > clock().getTime(),
+      )
+    if (!row || !flags[`${row.channel}Enabled`]) throw new ApiError('BUSINESS_RULE_VIOLATION')
+    if (amount < row.minPoisha || amount > row.maxPoisha)
+      throw new ApiError('PAYMENT_AMOUNT_UNSUPPORTED')
+    return {
+      gatewayKey: row.gatewayKey,
+      merchantAccountKey: row.merchantAccountKey,
+      minPoisha: row.minPoisha,
+      maxPoisha: row.maxPoisha,
+      validUntil: new Date(row.validUntil),
+    }
+  }
 }

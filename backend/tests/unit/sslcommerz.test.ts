@@ -19,6 +19,7 @@ const settings: SslcommerzOptions = {
 const address = {
   name: 'Synthetic Buyer',
   address: 'Test road',
+  addressLine2: 'Synthetic second line',
   city: 'Dhaka',
   postcode: '1000',
   country: 'Bangladesh',
@@ -91,6 +92,8 @@ describe('SSLCOMMERZ v4 server transport contract (synthetic provider responses)
       num_of_item: '2',
       cus_country: 'Bangladesh',
       ship_country: 'Bangladesh',
+      cus_add2: 'Synthetic second line',
+      ship_add2: 'Synthetic second line',
       success_url: 'https://api.example.test/api/v1/payment-returns/sslcommerz/success',
       fail_url: 'https://api.example.test/api/v1/payment-returns/sslcommerz/fail',
       cancel_url: 'https://api.example.test/api/v1/payment-returns/sslcommerz/cancel',

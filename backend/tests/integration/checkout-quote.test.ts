@@ -1,3 +1,17 @@
+import { guestSessionService } from '../../src/modules/auth/guest-access/guest-session.service.js'
+import { guestOrderAccess } from '../../src/modules/orders/order.service.js'
+import { createSslcommerzAdapter } from '../../src/providers/sslcommerz/sslcommerz.client.js'
+import { initiationInput } from '../../src/providers/sslcommerz/sslcommerz.schema.js'
+import { paymentAllocationService } from '../../src/modules/checkout/payment-allocation.service.js'
+import { paymentAllocationOrderAccess } from '../../src/modules/orders/order.service.js'
+import { paymentInitiationEligibilityAccess } from '../../src/modules/payments/payment.service.js'
+import { initializePaymentRecordPersistence } from '../../src/modules/payments/payment-record.persistence.js'
+import { initializePaymentInitiationPersistence } from '../../src/modules/payments/payment-initiation.persistence.js'
+import { paymentInitiationModel } from '../../src/modules/payments/payment-initiation.model.js'
+import { paymentRecordModels } from '../../src/modules/payments/payment-record.model.js'
+import { createHash } from 'node:crypto'
+import { identityEnvironment } from '../helpers/environment.js'
+import { vi } from 'vitest'
 import { reservationExpiryJob } from '../../src/jobs/expire-reservations.job.js'
 import { checkoutExpiryService } from '../../src/modules/checkout/checkout-expiry.service.js'
 import {
@@ -84,6 +98,7 @@ let security: ReturnType<typeof createBrowserSecurity>
 let access: ReturnType<typeof checkoutAccess>
 let service: ReturnType<typeof checkoutQuoteService>
 let app: ReturnType<typeof createApp>
+const authSecret = randomBytes(32).toString('hex')
 let now: Date
 let categoryId: Types.ObjectId
 const origin = 'http://localhost:3000',
@@ -95,6 +110,7 @@ const recipient = {
   districtKey: 'dhaka',
   areaKey: 'synthetic',
   street: 'Synthetic street',
+  postalCode: '1000',
 }
 function deadline(version = 'synthetic-v1') {
   const rule = deliveryDeadlineRule.parse({
@@ -249,7 +265,7 @@ beforeAll(async () => {
   await initializeAuditPersistence(db.connection)
   await initializeJobLeases(db.connection)
   sessions = createSessionService(db.connection, identities, {
-    secret: randomBytes(32).toString('hex'),
+    secret: authSecret,
     customerTtlSeconds: 600,
     adminTtlSeconds: 300,
     sameSite: 'lax',
@@ -293,6 +309,8 @@ beforeEach(async () => {
     'orders',
     'orderItemBalances',
     'payments',
+    'paymentAttempts',
+    'paymentInitiations',
     'inventoryReservations',
     'inventoryMovements',
     'notifications',
@@ -1689,4 +1707,459 @@ it('initial hold clocks equal actual order placement even when service calls adv
   expect(redemption.heldAt).toEqual(order.placedAt)
   expect(reservation.expiresAt?.getTime()).toBe(order.placedAt.getTime() + 900000)
   expect(redemption.expiresAt).toEqual(reservation.expiresAt)
+})
+
+async function paymentAllocations() {
+  await initializePaymentRecordPersistence(db.connection)
+  return paymentAllocationService(
+    db.connection,
+    paymentAllocationOrderAccess(db.connection, paymentInitiationEligibilityAccess(db.connection)),
+    () => now,
+  )
+}
+it('payment allocation preparation retains valid holds and never extends a generation on replay', async () => {
+  const { result } = await heldOrder(),
+    allocation = await paymentAllocations()
+  const initial = await inTransaction(db.connection, (session) =>
+    allocation.ensure(session, result.id),
+  )
+  now = new Date(now.getTime() + 1000)
+  const replay = await inTransaction(db.connection, (session) =>
+    allocation.ensure(session, result.id),
+  )
+  expect(replay).toEqual(initial)
+  expect(initial.generation).toBe(1)
+})
+it('payment preparation atomically reacquires expired stock and coupon under one new 15-minute generation', async () => {
+  const { result, selected, promotion } = await heldOrder(),
+    allocation = await paymentAllocations()
+  now = new Date(now.getTime() + 900000)
+  const result2 = await inTransaction(db.connection, (session) =>
+    allocation.ensure(session, result.id),
+  )
+  expect(result2).toEqual({
+    generation: 2,
+    heldAt: now,
+    expiresAt: new Date(now.getTime() + 900000),
+  })
+  expect(
+    await inventoryReservationModel(db.connection).findOne({ orderId: result.id, generation: 1 }),
+  ).toMatchObject({ status: 'released' })
+  expect(
+    await couponModels(db.connection).redemptions.findOne({ orderId: result.id, generation: 2 }),
+  ).toMatchObject({ status: 'held', heldAt: now, expiresAt: result2.expiresAt })
+  expect(
+    (await productModels(db.connection).variants.findById(selected.row._id))?.stock.reserved,
+  ).toBe(2)
+  expect((await couponModels(db.connection).coupons.findById(promotion._id))?.heldCount).toBe(1)
+})
+it('concurrent payment reacquisition/expiry retains exactly one active stock/coupon generation', async () => {
+  const { result, selected, promotion } = await heldOrder(),
+    allocation = await paymentAllocations()
+  now = new Date(now.getTime() + 900000)
+  const [refreshed] = await Promise.all([
+    Promise.all([
+      inTransaction(db.connection, (session) => allocation.ensure(session, result.id)),
+      inTransaction(db.connection, (session) => allocation.ensure(session, result.id)),
+    ]),
+    expiryJob().run(),
+  ])
+  expect(refreshed[0]).toEqual(refreshed[1])
+  expect(
+    await inventoryReservationModel(db.connection).countDocuments({
+      orderId: result.id,
+      activeKey: 'active',
+    }),
+  ).toBe(1)
+  expect(
+    (await productModels(db.connection).variants.findById(selected.row._id))?.stock.reserved,
+  ).toBe(2)
+  expect((await couponModels(db.connection).coupons.findById(promotion._id))?.heldCount).toBe(1)
+})
+it('a late coupon failure rolls back stock release/reacquisition and leaves the original snapshots untouched', async () => {
+  const { result, selected, promotion } = await heldOrder(),
+    allocation = await paymentAllocations()
+  const original = (await orderModels(db.connection).orders.findById(result.id))?.pricingSnapshot
+  now = new Date(now.getTime() + 900000)
+  await couponModels(db.connection).coupons.updateOne(
+    { _id: promotion._id },
+    { $set: { status: 'inactive' } },
+  )
+  await expect(
+    inTransaction(db.connection, (session) => allocation.ensure(session, result.id)),
+  ).rejects.toMatchObject({ code: 'COUPON_UNAVAILABLE' })
+  expect(
+    await inventoryReservationModel(db.connection).countDocuments({ orderId: result.id }),
+  ).toBe(1)
+  expect(
+    (await inventoryReservationModel(db.connection).findOne({ orderId: result.id }))?.status,
+  ).toBe('held')
+  expect(
+    (await productModels(db.connection).variants.findById(selected.row._id))?.stock.reserved,
+  ).toBe(2)
+  expect((await orderModels(db.connection).orders.findById(result.id))?.pricingSnapshot).toEqual(
+    original,
+  )
+})
+it('unresolved attempts protect both stock/coupon capacity against payment reacquisition and shortfall writes', async () => {
+  const { result } = await heldOrder(),
+    allocation = await paymentAllocations()
+  const payment = await paymentModel(db.connection).findOne({ orderId: result.id }).orFail()
+  await paymentRecordModels(db.connection).attempts.create({
+    orderId: new Types.ObjectId(result.id),
+    paymentId: payment._id,
+    provider: 'sslcommerz',
+    tranId: 'synthetic-pending',
+    expectedAmountPoisha: payment.expectedPoisha,
+    initiatedOutstandingPoisha: payment.expectedPoisha,
+    currency: 'BDT',
+    state: 'uncertain',
+    amountDisposition: 'not_checked',
+  })
+  now = new Date(now.getTime() + 900000)
+  await expect(
+    inTransaction(db.connection, (session) => allocation.ensure(session, result.id)),
+  ).rejects.toMatchObject({ code: 'STATE_CONFLICT' })
+  const orderAccess = paymentAllocationOrderAccess(
+    db.connection,
+    paymentInitiationEligibilityAccess(db.connection),
+  )
+  await expect(
+    inTransaction(db.connection, (session) => orderAccess.shortfall(session, result.id)),
+  ).rejects.toMatchObject({ code: 'STATE_CONFLICT' })
+  expect(
+    await inventoryReservationModel(db.connection).countDocuments({
+      orderId: result.id,
+      status: 'held',
+    }),
+  ).toBe(1)
+})
+async function initiationApp(enabled = true) {
+  await initializePaymentRecordPersistence(db.connection)
+  await initializePaymentInitiationPersistence(db.connection)
+  const config = loadEnvironment({
+    ...identityEnvironment(),
+    SESSION_SECRET: authSecret,
+    GUEST_ACCESS_ENABLED: 'true',
+    GUEST_ORDER_ACCESS_TTL_SECONDS: '300',
+    GUEST_ORDER_ACCESS_COOLDOWN_SECONDS: '60',
+    GUEST_ORDER_ACCESS_RESPONSE_FLOOR_MS: '100',
+    GUEST_ORDER_SESSION_TTL_SECONDS: '600',
+  })
+  const merchant = createHash('sha256').update('sandbox\0synthetic-store').digest('hex')
+  const transport = vi.fn<typeof fetch>().mockImplementation(
+    async () =>
+      new Response(
+        JSON.stringify({
+          status: 'SUCCESS',
+          sessionkey: 'synthetic-session',
+          GatewayPageURL:
+            'https://sandbox.sslcommerz.com/gwprocess/v4/gw.php?Q=PAY&SESSIONKEY=synthetic-session',
+        }),
+      ),
+  )
+  const root = await composeApplication(
+    db.connection,
+    config,
+    { isReady: async () => true },
+    createLogger(config, () => {}),
+    undefined,
+    [],
+    undefined,
+    [
+      {
+        channel: 'bkash',
+        appEnv: 'test',
+        mode: 'sandbox',
+        merchantAccountKey: merchant,
+        gatewayKey: 'bkash',
+        minPoisha: 1000,
+        maxPoisha: 50000,
+        verifiedAt: new Date(now.getTime() - 1000).toISOString(),
+        validUntil: new Date(now.getTime() + 3600000).toISOString(),
+        approvedBy: 'Synthetic reviewer',
+        evidenceRef: 'synthetic:test',
+        evidenceFile: 'synthetic.txt',
+        evidenceDigest: 'a'.repeat(64),
+      },
+    ],
+    enabled
+      ? {
+          gateway: createSslcommerzAdapter(
+            {
+              appEnv: 'test',
+              mode: 'sandbox',
+              storeId: 'synthetic-store',
+              storePassword: 'synthetic-password',
+              callbackOrigin: 'https://api.example.test',
+              timeoutMs: 1000,
+            },
+            transport,
+          ),
+          validateRequest: (raw) => initiationInput.safeParse(raw).success,
+          clock: () => now,
+        }
+      : undefined,
+  )
+  return { root, transport }
+}
+async function customerHeldOrder() {
+  const who = await customer(),
+    selected = await variant(2000, 1500)
+  await settingsModel(db.connection).updateOne(
+    {},
+    { $set: { 'paymentChannels.bkashEnabled': true } },
+  )
+  const quotes = makeService({
+    methods: paymentEligibility(async () => [
+      { channel: 'bkash', active: true, minPoisha: 1, maxPoisha: 1000000 },
+    ]),
+  })
+  const input = { ...body([selected.item]), method: 'bkash' },
+    quote = await quotes.create(who.credentials, input)
+  const result = await submissionService(quotes).submit(
+    who.credentials,
+    submit(input, quote),
+    randomUUID(),
+  )
+  return { who, result, selected }
+}
+it('actual hosted-init HTTP authorizes/CSRF-checks an existing order, dispatches once and exposes only current owner status', async () => {
+  const { who, result } = await customerHeldOrder(),
+    { root, transport } = await initiationApp()
+  const path = `/api/v1/orders/${result.id}/payment-attempts`
+  const post = () =>
+    request(root)
+      .post(path)
+      .set('Origin', 'https://shop.example.test')
+      .set('Cookie', who.cookie)
+      .set('X-CSRF-Token', who.csrf)
+      .set('Idempotency-Key', 'synthetic-http-init')
+      .send({ requestedChannel: 'bkash' })
+  const first = await post().expect(200),
+    replay = await post().expect(200)
+  expect(first.body.data.state).toBe('initiated')
+  expect(replay.body.data).toEqual(first.body.data)
+  expect(transport).toHaveBeenCalledTimes(1)
+  expect(await db.connection.db?.collection('orders').countDocuments()).toBe(1)
+  const status = await request(root)
+    .get(`${path}/${first.body.data.attemptId}`)
+    .set('Cookie', who.cookie)
+    .expect(200)
+  expect(status.body.data).toMatchObject({ id: first.body.data.attemptId, state: 'initiated' })
+  expect(status.body.data).not.toHaveProperty('redirectUrl')
+  expect(first.headers['cache-control']).toContain('no-store')
+  const other = await customer()
+  await request(root)
+    .get(`${path}/${first.body.data.attemptId}`)
+    .set('Cookie', other.cookie)
+    .expect(404)
+  await request(root)
+    .post(path)
+    .set('Origin', 'https://shop.example.test')
+    .set('Cookie', other.cookie)
+    .set('X-CSRF-Token', other.csrf)
+    .set('Idempotency-Key', 'cross-owner')
+    .send({ requestedChannel: 'bkash' })
+    .expect(404)
+  await request(root).get(`${path}/${first.body.data.attemptId}`).expect(401)
+})
+it('hosted-init HTTP denies missing/invalid CSRF, origins and financial injection before any provider effect', async () => {
+  const { who, result } = await customerHeldOrder(),
+    { root, transport } = await initiationApp()
+  const path = `/api/v1/orders/${result.id}/payment-attempts`
+  await request(root)
+    .post(path)
+    .set('Cookie', who.cookie)
+    .set('Idempotency-Key', 'a')
+    .send({ requestedChannel: 'bkash' })
+    .expect(403)
+  await request(root)
+    .post(path)
+    .set('Origin', 'https://shop.example.test')
+    .set('Cookie', who.cookie)
+    .set('Idempotency-Key', 'a')
+    .send({ requestedChannel: 'bkash' })
+    .expect(403)
+  await request(root)
+    .post(path)
+    .set('Origin', 'https://shop.example.test')
+    .set('Cookie', who.cookie)
+    .set('X-CSRF-Token', who.csrf)
+    .set('Idempotency-Key', 'a')
+    .send({ requestedChannel: 'bkash', totalAmount: 1 })
+    .expect(400)
+  expect(transport).not.toHaveBeenCalled()
+  expect(await paymentInitiationModel(db.connection).countDocuments()).toBe(0)
+})
+it('hosted-init defaults off and rejects missing historical postcode without fabricating or dispatching', async () => {
+  const { who, result } = await customerHeldOrder(),
+    disabled = await initiationApp(false)
+  const path = `/api/v1/orders/${result.id}/payment-attempts`
+  await request(disabled.root).post(path).send({ requestedChannel: 'bkash' }).expect(404)
+  await orderModels(db.connection).orders.collection.updateOne(
+    { _id: new Types.ObjectId(result.id) },
+    { $unset: { 'deliverySnapshot.postalCode': '' } },
+  )
+  const { root, transport } = await initiationApp()
+  await request(root)
+    .post(path)
+    .set('Origin', 'https://shop.example.test')
+    .set('Cookie', who.cookie)
+    .set('X-CSRF-Token', who.csrf)
+    .set('Idempotency-Key', 'a')
+    .send({ requestedChannel: 'bkash' })
+    .expect(422)
+  expect(transport).not.toHaveBeenCalled()
+  expect(await paymentRecordModels(db.connection).attempts.countDocuments()).toBe(0)
+})
+
+it('hosted-init authorizes exact proven guest orders with mutation CSRF and never downgrades an invalid customer cookie', async () => {
+  const { result } = await heldOrder(),
+    { root, transport } = await initiationApp()
+  const guests = guestSessionService(
+    db.connection,
+    identities,
+    {
+      secret: authSecret,
+      customerTtlSeconds: 600,
+      adminTtlSeconds: 300,
+      sameSite: 'lax',
+      appEnvironment: 'test',
+      apiOrigin: 'https://api.example.test',
+    },
+    600,
+    guestOrderAccess(db.connection).verify,
+    () => now,
+  )
+  // Proof exchange is separately covered by guest-access tests; this fixture mints only after actual guest-order existence validation.
+  const issued = await inTransaction(db.connection, (session) =>
+    guests.issueAfterProof(session, result.id),
+  )
+  const cookie = `sz_guest_order_sid=${issued.token}`,
+    path = `/api/v1/orders/${result.id}/payment-attempts`
+  await request(root)
+    .post(path)
+    .set('Origin', 'https://shop.example.test')
+    .set('Cookie', cookie)
+    .set('Idempotency-Key', 'a')
+    .send({ requestedChannel: 'bkash' })
+    .expect(401)
+  await request(root)
+    .post(path)
+    .set('Origin', 'https://shop.example.test')
+    .set('Cookie', `${cookie}; sz_customer_sid=invalid`)
+    .set('X-CSRF-Token', issued.csrfToken)
+    .set('Idempotency-Key', 'a')
+    .send({ requestedChannel: 'bkash' })
+    .expect(403)
+  const first = await request(root)
+    .post(path)
+    .set('Origin', 'https://shop.example.test')
+    .set('Cookie', cookie)
+    .set('X-CSRF-Token', issued.csrfToken)
+    .set('Idempotency-Key', 'a')
+    .send({ requestedChannel: 'bkash' })
+    .expect(200)
+  await request(root).get(`${path}/${first.body.data.attemptId}`).set('Cookie', cookie).expect(200)
+  const other = await heldOrder()
+  await request(root)
+    .post(`/api/v1/orders/${other.result.id}/payment-attempts`)
+    .set('Origin', 'https://shop.example.test')
+    .set('Cookie', cookie)
+    .set('X-CSRF-Token', issued.csrfToken)
+    .set('Idempotency-Key', 'b')
+    .send({ requestedChannel: 'bkash' })
+    .expect(401)
+  expect(transport).toHaveBeenCalledTimes(1)
+})
+it('hosted-init HTTP records a durable stock shortfall without an attempt or provider effect', async () => {
+  const { who, result, selected } = await customerHeldOrder(),
+    { root, transport } = await initiationApp()
+  now = new Date(now.getTime() + 900000)
+  await expiryJob().run()
+  await productModels(db.connection).variants.updateOne(
+    { _id: selected.row._id },
+    { $set: { 'stock.physical': 0 } },
+  )
+  const path = `/api/v1/orders/${result.id}/payment-attempts`
+  const result1 = await request(root)
+    .post(path)
+    .set('Origin', 'https://shop.example.test')
+    .set('Cookie', who.cookie)
+    .set('X-CSRF-Token', who.csrf)
+    .set('Idempotency-Key', 'shortfall')
+    .send({ requestedChannel: 'bkash' })
+    .expect(200)
+  expect(result1.body.data).toEqual({ state: 'allocation_shortfall' })
+  expect((await orderModels(db.connection).orders.findById(result.id))?.fulfillmentHold).toBe(
+    'allocation_shortfall',
+  )
+  expect(await paymentRecordModels(db.connection).attempts.countDocuments()).toBe(0)
+  expect(transport).not.toHaveBeenCalled()
+  await productModels(db.connection).variants.updateOne(
+    { _id: selected.row._id },
+    { $set: { 'stock.physical': 10 } },
+  )
+  const recovered = await request(root)
+    .post(path)
+    .set('Origin', 'https://shop.example.test')
+    .set('Cookie', who.cookie)
+    .set('X-CSRF-Token', who.csrf)
+    .set('Idempotency-Key', 'explicit-fresh-retry')
+    .send({ requestedChannel: 'bkash' })
+    .expect(200)
+  expect(recovered.body.data.state).toBe('initiated')
+  expect(transport).toHaveBeenCalledTimes(1)
+  expect(
+    (await productModels(db.connection).variants.findById(selected.row._id))?.stock.reserved,
+  ).toBe(2)
+})
+
+it('hosted-init replay withholds a historical URL after channel disablement, risk review or cancellation', async () => {
+  const { who, result } = await customerHeldOrder(),
+    { root, transport } = await initiationApp()
+  const path = `/api/v1/orders/${result.id}/payment-attempts`
+  const post = () =>
+    request(root)
+      .post(path)
+      .set('Origin', 'https://shop.example.test')
+      .set('Cookie', who.cookie)
+      .set('X-CSRF-Token', who.csrf)
+      .set('Idempotency-Key', 'replay-policy')
+      .send({ requestedChannel: 'bkash' })
+  const first = await post().expect(200)
+  expect(first.body.data.redirectUrl).toBeDefined()
+  await settingsModel(db.connection).updateOne(
+    {},
+    { $set: { 'paymentChannels.bkashEnabled': false } },
+  )
+  expect((await post().expect(200)).body.data.redirectUrl).toBeUndefined()
+  await settingsModel(db.connection).updateOne(
+    {},
+    { $set: { 'paymentChannels.bkashEnabled': true } },
+  )
+  await paymentModel(db.connection).updateOne(
+    { orderId: result.id },
+    { $set: { riskStatus: 'review' } },
+  )
+  expect((await post().expect(200)).body.data.redirectUrl).toBeUndefined()
+  expect(
+    (
+      await request(root)
+        .get(`${path}/${first.body.data.attemptId}`)
+        .set('Cookie', who.cookie)
+        .expect(200)
+    ).body.data.riskStatus,
+  ).toBe('review')
+  await paymentModel(db.connection).updateOne(
+    { orderId: result.id },
+    { $set: { riskStatus: 'clear' } },
+  )
+  await orderModels(db.connection).orders.collection.updateOne(
+    { _id: new Types.ObjectId(result.id) },
+    { $set: { fulfillmentStatus: 'cancelled', cancelledAt: now } },
+  )
+  expect((await post().expect(200)).body.data.redirectUrl).toBeUndefined()
+  expect(transport).toHaveBeenCalledTimes(1)
 })
