@@ -544,6 +544,15 @@ Each scenario follows: **Fixture / action → expected HTTP+business outcome →
 
 ### 10.1 Catalog, shopping and pricing
 
+Homepage checks cover bounded independent featured/new/discounted sections, deterministic newest/ID
+ties, active category ancestry/SKU visibility and discount qualification of the displayed cheapest SKU.
+Assert honest absent content, independent logo/banner slots, current public contact/policy links,
+exact settings target/slot/banner asset identity, canonical provider URLs and rejection of private,
+quarantined/deleting/deleted assets. Verify persisted admin updates and clear operations appear on a
+subsequent no-store public read; scheduled/unapproved/stale policy versions do not become footer links.
+Exercise root composition, strict query/body, safe CORS/HEAD, bounds and missing persistence readiness.
+
+
 | ID       | Fixture / action                                                                                                                                | Expected behavior and durable assertion                                                                                                                                                                                                                        | FR           |
 | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
 | `CAT-01` | Admin activates/deactivates product and category; public list/search/detail                                                                     | Only eligible active records publicly appear; category/product association intact; slug uniqueness                                                                                                                                                             | 03–06, 23–24 |

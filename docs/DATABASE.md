@@ -1459,7 +1459,7 @@ renderers remain disabled until their owning tasks expand the contracts safely.
 | --- | --- | --- |
 | `key`! | enum(`primary`) | Unique singleton identity |
 | `storeName`? / `branding`? | string / embedded | Operator-approved store name and logo media reference |
-| `homepageBanner`? | embedded | `{assetId,title,alt,href?,image}`; validated public `mediaAssets` reference plus server-resolved canonical MediaRef attachment snapshot for replacement/removal, bounded operator-approved copy and internal relative destination only; future public banner projection must recheck media eligibility |
+| `homepageBanner`? | embedded | `{assetId,title,alt,href?,image}`; validated public `mediaAssets` reference plus server-resolved canonical MediaRef attachment snapshot for replacement/removal, bounded operator-approved copy and internal relative destination only; public banner projection rechecks clean attached public media, exact settings target/slot and ledger asset identity |
 | `deliveryCoverageRevision`! | int | Server-only store-wide guard for every delivery-rule/zone-status transaction; independent of settings edit ETag |
 | `contact`? / `complaintContact`? / `address`? | embedded | Public operator-supplied allowlisted contact/complaint channels and store address; exact fields in API §14.3 |
 | `lowStockThreshold`! | int | Nonnegative default stock alert threshold |

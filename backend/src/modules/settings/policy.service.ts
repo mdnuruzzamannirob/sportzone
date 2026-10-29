@@ -1,3 +1,4 @@
+import { publicPolicyLink, policyType as publicPolicyType } from './policy.schema.js'
 import { randomUUID } from 'node:crypto'
 import { Types, type ClientSession, type Connection } from 'mongoose'
 import type { PolicyApproval } from '../../config/settings.js'
@@ -304,6 +305,41 @@ export function policyService(
               effectiveAt: target.effectiveAt?.toISOString(),
               status: target.status,
             })
+      })
+    },
+    async publicLinks() {
+      await verify()
+      return inTransaction(connection, async (session) => {
+        const primary = await settings.findOne({ key: 'primary' }).session(session)
+        if (!primary) throw new ApiError('SERVICE_UNAVAILABLE')
+        const pointers = publicPolicyType.options.flatMap((type) => {
+          const version: unknown = primary.get(`activePolicyVersions.${type}`)
+          return typeof version === 'string' && version ? [{ type, version }] : []
+        })
+        if (!pointers.length) return []
+        const now = clock(),
+          targets = await policies
+            .find({
+              $or: pointers,
+              status: 'published',
+              effectiveAt: { $lte: now },
+              approvedAt: { $lte: now },
+              approvalEvidenceRef: { $type: 'string', $ne: '' },
+            })
+            .session(session)
+            .maxTimeMS(3000)
+        return pointers.flatMap((pointer) =>
+          targets.some(
+            (target) => target.type === pointer.type && target.version === pointer.version,
+          )
+            ? [
+                publicPolicyLink.parse({
+                  ...pointer,
+                  href: `/api/v1/storefront/policies/${pointer.type}`,
+                }),
+              ]
+            : [],
+        )
       })
     },
     async publicPolicy(raw: unknown) {

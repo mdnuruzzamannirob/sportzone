@@ -1,3 +1,10 @@
+import { catalogService } from '../../src/modules/catalog/catalog.service.js'
+import { catalogRoutes } from '../../src/modules/catalog/catalog.routes.js'
+import { categoryModel } from '../../src/modules/catalog/categories/category.model.js'
+import { initializeProductPersistence } from '../../src/modules/catalog/products/product.persistence.js'
+import { createDeclaredIndexes } from '../../src/shared/database/indexes.js'
+import { publicMediaService } from '../../src/modules/media/public-media.service.js'
+import { storefrontSettingsAccess } from '../../src/modules/settings/settings.service.js'
 import { spawnSync } from 'node:child_process'
 import { testEnvironment } from '../helpers/environment.js'
 import { randomBytes, randomUUID } from 'node:crypto'
@@ -117,6 +124,8 @@ beforeAll(async () => {
   await initializeAuditPersistence(db.connection)
   await initializeSettingsPersistence(db.connection, 5)
   await initializeMediaPersistence(db.connection)
+  await initializeProductPersistence(db.connection)
+  await createDeclaredIndexes(categoryModel(db.connection))
   sessions = createSessionService(db.connection, identities, {
     secret: randomBytes(32).toString('hex'),
     customerTtlSeconds: 600,
@@ -164,6 +173,18 @@ beforeEach(async () => {
   app = createApp({
     apiRouter: Router().use(
       settingsAdminRoutes(settings, policies, security, sessions),
+      catalogRoutes(
+        catalogService(db.connection, publicMediaService(db.connection), {
+          settings: storefrontSettingsAccess(
+            db.connection,
+            publicMediaService(db.connection, {
+              publicUrl: (id, format) => `https://public.example.test/${id}.${format}`,
+            }),
+          ),
+          policies: policies.publicLinks,
+        }),
+        [origin],
+      ),
       settingsPublicRoutes(settings, policies, [origin]),
     ),
   })
@@ -643,4 +664,166 @@ it('runs compiled additive bootstrap and scheduled worker; refuses production bo
     expect(refused.status).toBe(1)
     expect(refused.stderr).not.toContain(env.MONGODB_URI)
   }
+})
+
+it('public home reflects persisted admin contact/banner updates with independent verified branding slots', async () => {
+  const actor = await account(),
+    uploaded = await media.uploadPublic(actor.token, imageFile())
+  if (!uploaded.publicId || !uploaded.url) throw new Error('Synthetic upload unavailable')
+  const asset = await mediaModel(db.connection).findOne({ publicId: uploaded.publicId }).orFail()
+  await write(
+    actor,
+    '',
+    {
+      storeName: 'Synthetic Store',
+      contact: { email: 'store@example.test' },
+      complaintContact: { email: 'complaints@example.test' },
+      homepageBanner: {
+        assetId: asset._id.toHexString(),
+        title: 'Approved banner',
+        alt: 'Banner alt',
+        href: '/products',
+      },
+      branding: { publicId: uploaded.publicId, url: uploaded.url, alt: 'Logo alt' },
+    },
+    '"0"',
+    randomUUID(),
+    'patch',
+  ).expect(200)
+  const home = (await request(app).get('/api/v1/storefront/home').expect(200)).body.data
+  expect(home).toMatchObject({
+    storeName: 'Synthetic Store',
+    contact: { email: 'store@example.test' },
+    complaintContact: { email: 'complaints@example.test' },
+    branding: { alt: 'Logo alt' },
+    banner: {
+      assetId: asset._id.toHexString(),
+      title: 'Approved banner',
+      alt: 'Banner alt',
+      image: { alt: 'Banner alt' },
+    },
+  })
+  expect(home.banner.image.url).toContain('https://public.example.test/')
+  expect(home.banner.image.url).not.toBe(uploaded.url)
+  const noProvider = await storefrontSettingsAccess(
+    db.connection,
+    publicMediaService(db.connection),
+  )()
+  expect(noProvider).not.toHaveProperty('banner')
+  expect(noProvider).not.toHaveProperty('branding')
+  const unsafeProvider = await storefrontSettingsAccess(
+    db.connection,
+    publicMediaService(db.connection, { publicUrl: () => 'http://unsafe.example.test/image.png' }),
+  )()
+  expect(unsafeProvider).not.toHaveProperty('banner')
+  expect(unsafeProvider).not.toHaveProperty('branding')
+  await write(actor, '', { homepageBanner: null }, '"1"', randomUUID(), 'patch').expect(200)
+  const cleared = (await request(app).get('/api/v1/storefront/home').expect(200)).body.data
+  expect(cleared).not.toHaveProperty('banner')
+  expect(cleared.branding.alt).toBe('Logo alt')
+})
+it('public home rechecks clean/public/attached ledger state and exact settings slot/asset identity', async () => {
+  const actor = await account(),
+    uploaded = await media.uploadPublic(actor.token, imageFile())
+  if (!uploaded.publicId || !uploaded.url) throw new Error('Synthetic upload unavailable')
+  const asset = await mediaModel(db.connection).findOne({ publicId: uploaded.publicId }).orFail()
+  await write(
+    actor,
+    '',
+    {
+      homepageBanner: { assetId: asset._id.toHexString(), title: 'Banner', alt: 'Banner' },
+      branding: { publicId: uploaded.publicId, url: uploaded.url, alt: 'Logo' },
+    },
+    '"0"',
+    randomUUID(),
+    'patch',
+  ).expect(200)
+  const references = (await mediaModel(db.connection).findById(asset._id).orFail()).toObject()
+    .references
+  for (const changes of [
+    { status: 'quarantined', scanStatus: 'rejected', references: [] },
+    { status: 'deleting', references: [] },
+    { status: 'deleted', references: [] },
+    {
+      assetKind: 'claim_evidence',
+      access: 'private',
+      owner: { kind: 'customer', principalId: new Types.ObjectId() },
+      orderId: new Types.ObjectId(),
+      claimType: 'physical_return',
+      orderItemIds: [new Types.ObjectId()],
+      status: 'quarantined',
+      scanStatus: 'rejected',
+      references: [],
+    },
+  ]) {
+    await mediaModel(db.connection).collection.updateOne({ _id: asset._id }, { $set: changes })
+    const home = (await request(app).get('/api/v1/storefront/home').expect(200)).body.data
+    expect(home).not.toHaveProperty('branding')
+    expect(home).not.toHaveProperty('banner')
+    await mediaModel(db.connection).collection.updateOne(
+      { _id: asset._id },
+      {
+        $set: {
+          assetKind: 'public_media',
+          owner: asset.toObject().owner,
+          scanStatus: 'clean',
+          access: 'public',
+          status: 'attached',
+          references,
+          orderItemIds: [],
+        },
+        $unset: { orderId: 1, claimType: 1 },
+      },
+    )
+  }
+  await mediaModel(db.connection).collection.updateOne(
+    { _id: asset._id },
+    { $set: { references: references.filter((ref) => ref.slot !== 'homepageBanner') } },
+  )
+  const wrongSlot = (await request(app).get('/api/v1/storefront/home').expect(200)).body.data
+  expect(wrongSlot).not.toHaveProperty('banner')
+  expect(wrongSlot).toHaveProperty('branding')
+  await mediaModel(db.connection).collection.updateOne({ _id: asset._id }, { $set: { references } })
+  await settingsModel(db.connection).collection.updateOne(
+    { key: 'primary' },
+    { $set: { 'homepageBanner.assetId': new Types.ObjectId() } },
+  )
+  expect(
+    (await request(app).get('/api/v1/storefront/home').expect(200)).body.data,
+  ).not.toHaveProperty('banner')
+})
+it('home policy links expose only the current approved effective publication and track later supersession', async () => {
+  const actor = await account(),
+    created = await draft(actor),
+    publication = await approve(actor, created)
+  expect(
+    (await request(app).get('/api/v1/storefront/home').expect(200)).body.data.policyLinks,
+  ).toEqual([])
+  await write(actor, `/policies/${created.policyId}/publish`, publication, '"1"').expect(200)
+  expect(
+    (await request(app).get('/api/v1/storefront/home').expect(200)).body.data.policyLinks,
+  ).toEqual([
+    { type: 'terms', version: created.version, href: '/api/v1/storefront/policies/terms' },
+  ])
+  const next = await draft(actor),
+    future = new Date(now.getTime() + 60000).toISOString(),
+    scheduled = await approve(actor, next, future)
+  await write(actor, `/policies/${next.policyId}/publish`, scheduled, '"1"').expect(200)
+  expect(
+    (await request(app).get('/api/v1/storefront/home').expect(200)).body.data.policyLinks[0]
+      .version,
+  ).toBe(created.version)
+  now = new Date(future)
+  await policies.activateDue()
+  expect(
+    (await request(app).get('/api/v1/storefront/home').expect(200)).body.data.policyLinks[0]
+      .version,
+  ).toBe(next.version)
+  await policyModel(db.connection).updateOne(
+    { version: next.version },
+    { $unset: { approvalEvidenceRef: 1 } },
+  )
+  expect(
+    (await request(app).get('/api/v1/storefront/home').expect(200)).body.data.policyLinks,
+  ).toEqual([])
 })

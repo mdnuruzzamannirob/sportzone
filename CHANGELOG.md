@@ -8,6 +8,14 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 29 October 2026 — Public homepage discovery API
+
+- Added bounded featured/new-arrival/discounted sections and category discovery using existing catalog
+  visibility/pricing rules. Public home includes configured contact/branding/banner and current approved
+  policy links, with exact media slot/asset checks and no stored-URL publication or fabricated content.
+  Reused protected settings/media updates; added root wiring and generated homepage API contracts.
+  [Implementation and verification](docs/evidence/P04-019-storefront-home.md).
+
 ## 27 October 2026 — Reservation expiry and verified guest access
 
 - Added a leased, bounded expiry worker with whole-generation stock/coupon release, payment/order

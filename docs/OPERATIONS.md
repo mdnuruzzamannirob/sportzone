@@ -374,6 +374,20 @@ metadata works without a media provider; image writes additionally require expli
 Preserve category/media references and audit on rollback; deploy matching router/registry/generated artifacts
 together. Do not delete referenced data or use image replacement as an external provider delete operation.
 
+Public GET /api/v1/storefront/home reads current catalog sections, configured contact/branding/banner
+and approved effective policy pointers with no-store. Provision the existing catalog/category/SKU,
+settings and policy indexes/singleton through their owning procedures; runtime never seeds content or
+repairs missing persistence. No additional collection, migration, feature flag or provider activation
+is introduced. Missing configured copy/media is omitted; missing required persistence returns 503.
+
+Logo and banner use independent settings ledger slots. Public rendering rechecks attached/public/clean
+media and banner asset identity, generating URLs through the owning provider rather than trusting a
+stored URL. An unavailable provider omits image content; private/quarantined/deleting/deleted or
+unreferenced assets cannot publish. Configure/clear homepageBanner through the protected settings CAS
+API; changes appear on a subsequent public read. Policy links require the current approved, published,
+effective pointer, never a scheduled/draft/latest-version fallback. Retain existing media references
+and policy history during rollback; disabling or reverting presentation does not delete those records.
+
 COD submission additionally requires `CHECKOUT_COD_ENABLED=true`; the default is false. It requires
 quote activation and customer authentication, current approved consent/deadline rules and reviewed
 order/intent/inventory/coupon/payment/notification persistence. Unsupported or malformed activation

@@ -2582,6 +2582,20 @@
       "response": []
     },
     {
+      "name": "get_storefront_home",
+      "description": "Activation: Reviewed catalog/settings/policy persistence. Only active visible SKU/category data and exact attached clean public media references publish; missing configured metadata is omitted.. Replay: No-store bounded read; current operator settings and approved published policy pointers on each request. No fabricated merchandising fallback.. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/storefront/home",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: Reviewed catalog/settings/policy persistence. Only active visible SKU/category data and exact attached clean public media references publish; missing configured metadata is omitted.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_storefront_home. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
       "name": "get_storefront_policies_type",
       "description": "Activation: Reviewed settings/policy persistence; only approved effective published pointers become public. Replay: Read only; no drafts or private configuration. No automatic mutation retry.",
       "request": {

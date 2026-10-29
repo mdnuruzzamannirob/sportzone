@@ -86,3 +86,11 @@ export const policyPublic = policyDocument
   .pick({ version: true, content: true, effectiveAt: true })
   .required()
 export const policyKey = z.string().regex(/^[A-Za-z0-9._:-]{1,128}$/)
+
+export const publicPolicyLink = z
+  .strictObject({
+    type: policyType,
+    version: z.string().min(1).max(100),
+    href: z.string(),
+  })
+  .refine((value) => value.href === `/api/v1/storefront/policies/${value.type}`)

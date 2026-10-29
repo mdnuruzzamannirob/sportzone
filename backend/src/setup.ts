@@ -58,7 +58,7 @@ import { couponAdminRoutes } from './modules/promotions/coupon-admin.routes.js'
 import { couponAdminService } from './modules/promotions/coupon-admin.service.js'
 import { policyService } from './modules/settings/policy.service.js'
 import { settingsAdminRoutes, settingsPublicRoutes } from './modules/settings/settings.routes.js'
-import { settingsService } from './modules/settings/settings.service.js'
+import { storefrontSettingsAccess, settingsService } from './modules/settings/settings.service.js'
 import { stockSettingsReader } from './modules/settings/stock-settings.service.js'
 import { createResendAdapter } from './providers/email/resend.client.js'
 import { createApiRouter } from './routes.js'
@@ -257,19 +257,21 @@ export async function composeApplication(
     config.CUSTOMER_AUTH_ENABLED || config.ADMIN_AUTH_ENABLED
       ? await composeIdentityRoutes(connection, config, media, approvals, checkout)
       : undefined
-  const catalog = catalogRoutes(
-    catalogService(connection, publicMediaService(connection, media?.provider)),
-    config.CORS_ALLOWED_ORIGINS,
-  )
   const unavailable = async (): Promise<never> => {
     throw new ApiError('AUTH_REQUIRED')
   }
   const publicAccess = { owned: unavailable }
-  const content = settingsPublicRoutes(
-    settingsService(connection, publicAccess, unavailable),
-    policyService(connection, publicAccess, unavailable),
+  const images = publicMediaService(connection, media?.provider)
+  const settings = settingsService(connection, publicAccess, unavailable)
+  const policies = policyService(connection, publicAccess, unavailable)
+  const catalog = catalogRoutes(
+    catalogService(connection, images, {
+      settings: storefrontSettingsAccess(connection, images),
+      policies: policies.publicLinks,
+    }),
     config.CORS_ALLOWED_ORIGINS,
   )
+  const content = settingsPublicRoutes(settings, policies, config.CORS_ALLOWED_ORIGINS)
   const apiRouter = createApiRouter(health, [
     deliveryAreaRoutes(deliveryAreasAccess(connection), config.CORS_ALLOWED_ORIGINS),
     catalog,

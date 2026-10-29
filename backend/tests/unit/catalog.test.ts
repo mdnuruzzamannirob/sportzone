@@ -1,3 +1,4 @@
+import { storefrontHome } from '../../src/modules/catalog/catalog.schema.js'
 import { expect, it } from 'vitest'
 import {
   productQuery,
@@ -112,6 +113,35 @@ it('requires bounded nonempty actual variants and related card allowlists', () =
     productDetail.safeParse({
       ...data,
       images: Array(13).fill({ url: 'https://media.example.test/ball.png', alt: 'Ball' }),
+    }).success,
+  ).toBe(false)
+})
+
+it('bounds homepage sections and rejects private metadata or invented banner destinations', () => {
+  const empty = { featured: [], newArrivals: [], discounted: [], categories: [], policyLinks: [] }
+  expect(storefrontHome.parse(empty)).toEqual(empty)
+  expect(
+    storefrontHome.safeParse({ ...empty, paymentChannels: { codEnabled: true } }).success,
+  ).toBe(false)
+  expect(
+    storefrontHome.safeParse({
+      ...empty,
+      policyLinks: [{ type: 'terms', version: 'v1', href: 'https://foreign.example.test/policy' }],
+    }).success,
+  ).toBe(false)
+  const card = {
+    id: 'a'.repeat(24),
+    slug: 'synthetic',
+    name: 'Synthetic',
+    regularPricePoisha: 1,
+    effectivePricePoisha: 1,
+    availability: 'unavailable',
+  }
+  expect(storefrontHome.safeParse({ ...empty, featured: Array(9).fill(card) }).success).toBe(false)
+  expect(
+    storefrontHome.safeParse({
+      ...empty,
+      categories: Array(13).fill({ id: 'a'.repeat(24), slug: 'sports', name: 'Sports' }),
     }).success,
   ).toBe(false)
 })

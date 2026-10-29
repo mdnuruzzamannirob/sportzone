@@ -1,3 +1,4 @@
+import { storefrontHome } from '../src/modules/catalog/catalog.schema.js'
 import {
   guestChallengeInput,
   guestExchangeInput,
@@ -263,6 +264,21 @@ export const operations: readonly Operation[] = [
     replay:
       'Non-enumerating rate-limited lookup; single-use email proof exchange grants exact order scope only. Tokens stay in cookies/email, never lookup responses or logs. Revoked/expired/wrong-scope credentials fail closed.',
   })),
+  {
+    method: 'GET',
+    path: '/storefront/home',
+    access: 'public',
+    namespace: 'storefront',
+    query: empty,
+    params: empty,
+    response: storefrontHome,
+    status: 200,
+    csrf: false,
+    activation:
+      'Reviewed catalog/settings/policy persistence. Only active visible SKU/category data and exact attached clean public media references publish; missing configured metadata is omitted.',
+    replay:
+      'No-store bounded read; current operator settings and approved published policy pointers on each request. No fabricated merchandising fallback.',
+  },
   {
     method: 'POST',
     path: '/checkout/quotes',

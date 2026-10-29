@@ -5,10 +5,13 @@ import { mediaModel } from './media.model.js'
 
 export type PublicImageCandidate = {
   targetId: Types.ObjectId
-  targetType: 'product' | 'category'
   publicId: string
   alt: string
-}
+} & (
+  | { targetType: 'product' | 'category' }
+  | { targetType: 'store_settings'; slot: 'branding' }
+  | { targetType: 'store_settings'; slot: 'homepageBanner'; assetId: Types.ObjectId }
+)
 // Read-only publication boundary: never reuse a caller/stored URL or sign private delivery.
 export function publicMediaService(
   connection: Connection,
@@ -39,9 +42,14 @@ export function publicMediaService(
       const row = rows.find(
         (row) =>
           row.publicId === candidate.publicId &&
+          (candidate.targetType !== 'store_settings' ||
+            candidate.slot !== 'homepageBanner' ||
+            row._id.equals(candidate.assetId)) &&
           row.references.some(
             (ref) =>
-              ref.targetType === candidate.targetType && ref.targetId.equals(candidate.targetId),
+              ref.targetType === candidate.targetType &&
+              ref.targetId.equals(candidate.targetId) &&
+              (candidate.targetType !== 'store_settings' || ref.slot === candidate.slot),
           ),
       )
       if (!row) continue

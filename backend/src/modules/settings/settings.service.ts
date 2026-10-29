@@ -1,3 +1,5 @@
+import type { publicMediaService } from '../media/public-media.service.js'
+import { publicHomeSettings } from './settings.schema.js'
 import type { ClientSession, Connection } from 'mongoose'
 import { createHash, randomUUID } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
@@ -144,5 +146,73 @@ export function settingsService(
         return result
       })
     },
+  }
+}
+
+// Public homepage projection only; settings persistence and approved metadata remain with settings.
+export function storefrontSettingsAccess(
+  connection: Connection,
+  images: ReturnType<typeof publicMediaService>,
+) {
+  const model = settingsModel(connection)
+  return async () => {
+    try {
+      await verifySettingsPersistence(connection)
+    } catch {
+      throw new ApiError('SERVICE_UNAVAILABLE')
+    }
+    const row = await model.findOne({ key: 'primary' }).maxTimeMS(3000)
+    if (!row) throw new ApiError('SERVICE_UNAVAILABLE')
+    const safe = {
+      ...(row.storeName ? { storeName: row.storeName } : {}),
+      ...(row.contact ? { contact: row.toObject().contact } : {}),
+      ...(row.complaintContact ? { complaintContact: row.toObject().complaintContact } : {}),
+    }
+    let branding: import('zod').output<typeof publicHomeSettings>['branding']
+    let banner: import('zod').output<typeof publicHomeSettings>['banner']
+    // Separate batches preserve independent slots/alt text even when both slots share one asset.
+    if (row.branding) {
+      const ref = row.branding,
+        approved = await images([
+          {
+            targetId: row._id,
+            targetType: 'store_settings',
+            slot: 'branding',
+            publicId: ref.publicId,
+            alt: ref.alt,
+          },
+        ])
+      const image = approved.get(row._id.toHexString())?.get(ref.publicId)
+      if (image) branding = { publicId: ref.publicId, ...image }
+    }
+    if (row.homepageBanner) {
+      const ref = row.homepageBanner,
+        approved = await images([
+          {
+            targetId: row._id,
+            targetType: 'store_settings',
+            slot: 'homepageBanner',
+            assetId: ref.assetId,
+            publicId: ref.image.publicId,
+            alt: ref.alt,
+          },
+        ])
+      const image = approved.get(row._id.toHexString())?.get(ref.image.publicId)
+      if (image)
+        banner = {
+          assetId: ref.assetId.toHexString(),
+          title: ref.title,
+          alt: ref.alt,
+          ...(ref.href ? { href: ref.href } : {}),
+          image: { publicId: ref.image.publicId, ...image },
+        }
+    }
+    const result = publicHomeSettings.safeParse({
+      ...safe,
+      ...(branding ? { branding } : {}),
+      ...(banner ? { banner } : {}),
+    })
+    if (!result.success) throw new ApiError('SERVICE_UNAVAILABLE')
+    return result.data
   }
 }

@@ -216,7 +216,7 @@
       "path": "/storefront/home",
       "success": "200",
       "operationId": "get_storefront_home",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",

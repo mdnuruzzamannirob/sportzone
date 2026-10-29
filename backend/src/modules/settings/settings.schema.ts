@@ -105,3 +105,9 @@ export const publicContact = z.strictObject({
   contact: contactInfo.optional(),
   complaintContact: contactInfo.optional(),
 })
+
+export const publicHomeSettings = publicContact.extend({
+  storeName: text(120).optional(),
+  branding: mediaRef.optional(),
+  banner: bannerInput.extend({ image: mediaRef }).optional(),
+})
