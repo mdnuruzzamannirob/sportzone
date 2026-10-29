@@ -1161,6 +1161,15 @@ progress indicator.
 
 **Indexes:** unique `{provider:1,tranId:1}`; `{state:1,lastCheckedAt:1}`. `providerValidationId`/`bankTranId` lookup indexes are **nonunique** unless the merchant provider contract confirms uniqueness across distinct independently verifiable charges.
 
+Attempt history also uses `{orderId:1,createdAt:-1,_id:-1}` and a nonunique
+`{retryOfAttemptId:1}` lineage lookup. Transactional preparation serializes on the canonical payment
+revision; a new attempt requires the last childless terminal attempt as its parent. The server reserves
+an attempt identity and unique provider reference; HTTP idempotency and provider initiation are separate
+contracts. Request amount, outstanding snapshot, channel, expiry and parent remain immutable.
+Technical input bounds are 30 characters for tranId, 128 for merchantAccountKey, 256 for provider
+references, 200 for riskTitle and 64 for verifiedStatus; evidence digests are 64 lowercase hex characters.
+References exclude control characters. These bounds do not establish provider channel qualification.
+
 **Rules:** select `expectedAmountPoisha` from authoritative **unfunded merchandise entitlement** after independently
 verified prior allocations (never from client total). Uncertain earlier attempts block new initiation until reconciled.
 Compare provider verified amount to the immutable requested amount and persist both. Mismatched amounts remain in

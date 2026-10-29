@@ -131,13 +131,13 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       1 |         0 |     12 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |          12 |     0 |           0 |       1 |         6 |      3 |        0 |
-| 07 — Payment Integration and Verification     |      18 |          18 |     0 |           0 |       0 |         0 |      0 |        0 |
+| 07 — Payment Integration and Verification     |      18 |          17 |     0 |           0 |       0 |         0 |      1 |        0 |
 | 08 — Returns and Refunds                      |      19 |          19 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       1 |         0 |      1 |        0 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **116** | **0** | **0** | **3** | **6** | **85** | **0** |
+| **Total** | **210** | **115** | **0** | **0** | **3** | **6** | **86** | **0** |
 
 ## 4. Milestone tracker
 
@@ -1252,14 +1252,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Merchant credentials remain server-only; unknown provider outcome is preserved as uncertain.\
   **Evidence to attach:** Provider contract test with sandbox/mocks.
 
-- [ ] **P07-002 — Persist payment aggregate and attempts with unique IDs**\
-  **Status:** `Not Started` · **Area:** Backend/payments\
+- [x] **P07-002 — Persist payment aggregate and attempts with unique IDs**\
+  **Status:** `Done` · **Area:** Backend/payments · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-12; FR-29\
   **Depends on:** `P06-005`\
   **Deliverable:** Track provider scoped tran_id, attempts, merchant refs, amount, BDT, expiry, risk and paid collections.\
   **Acceptance:** Distinct retries never reuse reference; all attempts remain auditable.\
-  **Evidence to attach:** Unique-index/payment-model tests.
+  **Evidence:** [Persistence, concurrency and retry verification](./evidence/P07-002-payment-records.md). Project owner accepted 29 October 2026: [acceptance record](./evidence/P07-002-payment-records.md#independent-acceptance).
 
 - [ ] **P07-003 — Expose only enabled merchant channels**\
   **Status:** `Not Started` · **Area:** Backend/storefront\
@@ -2493,3 +2493,7 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **29 October 2026 — P04-019:** Not Started → In Progress → In Review. Added safe bounded homepage merchandising, current configured metadata, exact-slot public media and effective approved policy links. [Observed verification and operational limits](./evidence/P04-019-storefront-home.md). Overall: 210 tasks, 84 Done, 116 Not Started, 3 Blocked and 7 In Review. Executor: Codex; independent acceptance pending. P06-003 sign-off and review API return-eligibility dependencies remain separate; no milestone/provider/frontend acceptance claimed.
 
 **29 October 2026 — P04-019 acceptance:** In Review → Done after explicit project-owner instruction: “done koro”. [Acceptance record](./evidence/P04-019-storefront-home.md#independent-acceptance). Overall: 210 tasks, 85 Done, 116 Not Started, 3 Blocked and 6 In Review. Prior checkout/guest task reviews, frontend/live-provider/staging and milestone gates remain separate.
+
+**29 October 2026 — P07-002:** Not Started → In Progress → In Review. Added private payment attempt preparation and durable receipt/collection schemas with guarded histories, unique identities and additive local/test provisioning. [Observed verification and integration limits](./evidence/P07-002-payment-records.md). Executor: Codex; independent acceptance pending. Overall: 210 tasks, 85 Done, 115 Not Started, 3 Blocked and 7 In Review. No provider, financial-ingestion, HTTP initiation or milestone acceptance implied.
+
+**29 October 2026 — P07-002 acceptance:** In Review → Done following explicit project-owner instruction “done koro”. [Acceptance record](./evidence/P07-002-payment-records.md#independent-acceptance). Overall: 210 tasks, 86 Done, 115 Not Started, 3 Blocked and 6 In Review. Acceptance covers the submitted persistence foundation; provider initiation/verification, merchant qualification and milestone gates remain separate.

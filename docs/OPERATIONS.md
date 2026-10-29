@@ -388,6 +388,15 @@ API; changes appear on a subsequent public read. Policy links require the curren
 effective pointer, never a scheduled/draft/latest-version fallback. Retain existing media references
 and policy history during rollback; disabling or reverting presentation does not delete those records.
 
+After backend build, `node --env-file=.env backend/scripts/bootstrap-payment-records.mjs`
+additively provisions payment attempts, receipt intake, linked collections and audit persistence in
+local/test only. Existing validator drift is refused; records and extra indexes are preserved, and
+financial TTL indexes fail readiness. Staging/production requires the reviewed migration procedure.
+This script enables no provider, callback or receipt writer. Preserve financial histories on rollback;
+do not drop collections or restore incompatible validators. Private attempt preparation requires an
+explicit transactional authorization/allocation adapter before integration; test fixtures do not
+establish verified merchant capability or independently verified receipts.
+
 COD submission additionally requires `CHECKOUT_COD_ENABLED=true`; the default is false. It requires
 quote activation and customer authentication, current approved consent/deadline rules and reviewed
 order/intent/inventory/coupon/payment/notification persistence. Unsupported or malformed activation

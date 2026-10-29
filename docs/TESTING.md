@@ -665,6 +665,14 @@ operations; retain those acceptance gates separately.
 
 ### 11.1 Payment provider and COD scenarios
 
+Payment persistence foundation checks use an isolated transaction-capable replica set. Verify unique
+provider references, same-operation replay with reauthorization, concurrent new-attempt exclusion,
+terminal retry lineage, immutable request snapshots, uncertain-attempt blocking and audit rollback.
+Receipt schema tests cover unmatched intake without fabricated ownership, multiple real source
+identities per attempt, immutable evidence, allocation/refund caps, CAS guards and bootstrap drift/TTL
+refusal. Synthetic validation records prove persistence constraints only; provider verification,
+HTTP authorization/idempotency, reconciliation and merchant activation require their own evidence.
+
 | ID       | Stimulus                                                                                                   | Expected outcome / invariant                                                                                                                                                                                                                   | FR            |
 | -------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
 | `PAY-01` | Active channel, correct BDT attempt, verified sandbox success                                              | Collection recorded exactly once; order Paid only after server validation; fulfillment subject to allocation/risk gates                                                                                                                        | 12            |

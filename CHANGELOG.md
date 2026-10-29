@@ -8,6 +8,14 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 29 October 2026 — Payment record foundation
+
+- Added private attempt preparation with transactional retry lineage, unique provider references,
+  remaining-balance snapshots and durable audit rollback.
+- Added strict receipt intake/collection schemas, identity indexes, allocation/refund caps and
+  additive local/test bootstrap. Provider initiation and receipt ingestion remain separate tasks.
+- P07-002 submitted for independent review; no merchant or milestone acceptance implied.
+
 ## 29 October 2026 — Public homepage discovery API
 
 - Added bounded featured/new-arrival/discounted sections and category discovery using existing catalog
