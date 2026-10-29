@@ -1,3 +1,16 @@
+import { paymentInitiationRoutes } from '../../src/modules/payments/payment-initiation.routes.js'
+import { paymentMethodsRoutes } from '../../src/modules/payments/payment-methods.routes.js'
+import { guestAccessRoutes } from '../../src/modules/auth/guest-access/guest-access.routes.js'
+import { deliveryAreaRoutes } from '../../src/modules/delivery/delivery.routes.js'
+import { checkoutRoutes } from '../../src/modules/checkout/checkout.routes.js'
+import { deliveryRoutes } from '../../src/modules/delivery/delivery.routes.js'
+import {
+  settingsAdminRoutes,
+  settingsPublicRoutes,
+} from '../../src/modules/settings/settings.routes.js'
+import { productAdminRoutes } from '../../src/modules/catalog/products/product-admin.routes.js'
+import { categoryAdminRoutes } from '../../src/modules/catalog/categories/category-admin.routes.js'
+import { inventoryAdminRoutes } from '../../src/modules/inventory/inventory-admin.routes.js'
 import { couponAdminRoutes } from '../../src/modules/promotions/coupon-admin.routes.js'
 import { wishlistRoutes } from '../../src/modules/cart/wishlist.routes.js'
 import { cartRoutes } from '../../src/modules/cart/cart.routes.js'
@@ -22,6 +35,7 @@ const security = {
   cors: () => guard,
   require: () => guard,
   verifyContext: unused,
+  withContext: unused,
   consumeContext: unused,
   issueContext: unused,
   setContextCookie: () => {},
@@ -61,17 +75,90 @@ const media = {
   attach: unused,
   detach: unused,
   protect: unused,
+  changePublicReference: unused,
+  changePublicAssetReference: unused,
   cleanup: unused,
   maintenanceBatch: unused,
 }
 export function registeredRouter() {
   return createApiRouter({ isReady: async () => true }, [
+    paymentInitiationRoutes(
+      { initiate: unused, read: unused },
+      security,
+      guard,
+      'https://shop.example.test',
+    ),
+    paymentMethodsRoutes({ read: unused }, []),
     browserSecurityRoutes(security, sessions),
+    guestAccessRoutes(
+      { request: unused, exchange: unused },
+      {
+        issueAfterProof: unused,
+        owned: unused,
+        refresh: unused,
+        verify: unused,
+        logout: unused,
+        cookiePolicy: sessions.cookiePolicy,
+      },
+      security,
+      guard,
+    ),
     customerRoutes(credentials, security, sessions),
     adminRoutes(credentials, recovery, security, sessions),
     recoveryRoutes(recovery, security, sessions),
     emailChangeRoutes(recovery, security, sessions),
     profileRoutes(profile, security, sessions),
+    categoryAdminRoutes(
+      { list: unused, create: unused, patch: unused, deactivate: unused },
+      security,
+      sessions,
+    ),
+    productAdminRoutes(
+      {
+        list: unused,
+        detail: unused,
+        create: unused,
+        patch: unused,
+        deactivate: unused,
+        createVariant: unused,
+        patchVariant: unused,
+        deactivateVariant: unused,
+      },
+      security,
+      sessions,
+    ),
+    deliveryAreaRoutes(unused, []),
+    checkoutRoutes({ create: unused }, security, guard, { submitWithOutcome: unused }),
+    deliveryRoutes(
+      {
+        zones: unused,
+        createZone: unused,
+        patchZone: unused,
+        charges: unused,
+        createCharge: unused,
+        transition: unused,
+        runDue: unused,
+      },
+      security,
+      sessions,
+    ),
+    settingsAdminRoutes(
+      { get: unused, patch: unused, contact: unused },
+      {
+        create: unused,
+        patch: unused,
+        get: unused,
+        list: unused,
+        transition: unused,
+        publicPolicy: unused,
+        publicLinks: unused,
+        activateDue: unused,
+      },
+      security,
+      sessions,
+    ),
+    settingsPublicRoutes({ contact: unused }, { publicPolicy: unused }, []),
+    inventoryAdminRoutes({ list: unused, history: unused, adjust: unused }, security, sessions),
     couponAdminRoutes(
       { create: unused, update: unused, deactivate: unused, list: unused, history: unused },
       security,
@@ -85,6 +172,7 @@ export function registeredRouter() {
         product: unused,
         cartSelections: unused,
         wishlistProducts: unused,
+        home: unused,
         categories: unused,
         category: unused,
       },

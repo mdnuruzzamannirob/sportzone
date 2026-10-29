@@ -172,6 +172,26 @@ describe('profile/address ownership on real transactional persistence', () => {
     expect((await mutate('patch', '/me', own, body)).status).toBe(400)
     expect((await models.users.findById(own.user._id))?.name).toBe('Synthetic')
   })
+  it('round-trips optional postalCode through protected address add/edit and current profile reads', async () => {
+    const own = await account(),
+      created = await mutate('post', '/me/addresses', own, { ...address, postalCode: '1000' })
+    expect(created.status).toBe(201)
+    expect(created.body.data.postalCode).toBe('1000')
+    const updated = await mutate('patch', `/me/addresses/${created.body.data.id}`, own, {
+      postalCode: '1200',
+    })
+    expect(updated.status).toBe(200)
+    expect(updated.body.data.postalCode).toBe('1200')
+    const profile = await request(app).get('/api/v1/me').set('Cookie', own.cookie).expect(200)
+    expect(profile.body.data.addresses[0].postalCode).toBe('1200')
+    expect(
+      (
+        await mutate('patch', `/me/addresses/${created.body.data.id}`, own, {
+          postalCode: 'x'.repeat(31),
+        })
+      ).status,
+    ).toBe(400)
+  })
   it('adds, lists, partially edits, sets/clears defaults and deletes own address', async () => {
     const own = await account(),
       a = await add(own),

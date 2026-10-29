@@ -372,15 +372,15 @@ These cases complement the UI matrices; verify real API/database state as well a
 | `SUP-02` | Admin lists, investigates and resolves open complaint with documented response                                                         | Authorized status transition, durable response/contact outcome, audit, and appropriate customer-visible history; repeated command not duplicate                                                                                                                                                                                                                                         | FR-26; API §14.4                       |
 | `SUP-03` | Customer A/guest proof A probes B's complaint or B's order complaint list                                                              | Scope-safe denial; no private customer/complaint data leaked; no state mutation                                                                                                                                                                                                                                                                                                         | PRD §9; API §14.4                      |
 | `SUP-04` | Late-delivery complaint under approved operator policy; retry notification delivery                                                    | Tracked acknowledgement/response and escalation evidence against **approved** deadline; no invented statutory SLA; notification failure does not delete complaint                                                                                                                                                                                                                       | PRD §6, FR-16, FR-26; API §§11.3, 14.3 |
-| `SET-01` | Admin creates/edit policy draft, submits stale ETag, tries unauthorized write                                                          | Draft persists separately from published document; CAS rejects stale edit with no partial changes; activity auditable                                                                                                                                                                                                                                                                   | FR-34; API §14.3                       |
-| `SET-02` | Authorized policy approval/publish/schedule for every PolicyType, including privacy, then public read before/after effective time      | Only approved effective revision shown publicly; past published versions/history remain intact; no draft leaks                                                                                                                                                                                                                                                                          | FR-34; API §14.3; DB policyDocuments   |
+| `SET-01` | Admin creates/edit policy draft, submits stale ETag, tries unauthorized write                                                          | Draft persists separately from published document; CAS rejects stale/malformed/missing preconditions with no partial changes; activity auditable; untrusted/HTML/oversized content and client-assigned approval fields fail                                                                                                                                                                                                                                                                   | FR-34; API §14.3                       |
+| `SET-02` | Authorized policy approval/publish/schedule for every PolicyType, including privacy, then public read before/after effective time      | Only approved effective revision shown publicly; evidence register binds reference/type/version/content digest/effective date; missing or mismatched evidence fails. Approval/publication replays bind actor/payload/revision; concurrent activation audits once; older schedules cannot overwrite newer effective publication. Past published versions/history remain intact; no draft leaks                                                                                                                                                                                                                                                                          | FR-34; API §14.3; DB policyDocuments   |
 | `SET-03` | Product/order already accepted under old policy; publish new version                                                                   | Accepted order terms/policy references unchanged; future eligible orders reference newly effective policy                                                                                                                                                                                                                                                                               | FR-34, FR-11; Database §7              |
-| `SET-04` | Admin patches store contact, branding/low-stock threshold with stale and valid revisions                                               | Allowlisted values validated; ETag advances only on valid write; public contact changes after update; old order snapshots stable                                                                                                                                                                                                                                                        | FR-34; API §14.3                       |
+| `SET-04` | Admin patches store contact, branding/low-stock threshold with stale and valid revisions                                               | Allowlisted values validated; same-revision races have one winner; ETag advances only on valid changes and metadata no-ops preserve it. Public contact excludes address/payment/private data; missing singleton fails closed. Branding/banner use the real media ledger and roll back with failed audit; compiled bootstrap preserves existing settings, requires explicit threshold and refuses production; old order snapshots stable                                                                                                                                                                                                                                                        | FR-34; API §14.3                       |
 | `ADM-01` | Admin searches, filters and pages customer records/history                                                                             | Exact authorized masked fields, bounded stable pages; customer role cannot access admin records                                                                                                                                                                                                                                                                                         | FR-27; API §14.2                       |
 | `ADM-02` | Admin suspends active customer, then attempts new and existing authenticated actions                                                   | Status decision audited; existing protected sessions denied/revoked per source contract; no unauthorized write possible                                                                                                                                                                                                                                                                 | FR-27, FR-01; API §14.2; SEC-03        |
 | `ADM-03` | Admin reactivates customer with reason; replay suspend/reactivate command                                                              | Authorized transition recorded once; status accurate; no automatic recreation of revoked session without fresh valid authentication                                                                                                                                                                                                                                                     | FR-27; API §14.2                       |
 | `ADM-04` | Unauthorized actor targets suspend/reactivate route; admin submits invalid decision                                                    | Scope-safe denial/error; no status/audit spoofing or protected customer data exposure                                                                                                                                                                                                                                                                                                   | FR-27; API §14.2                       |
-| `ADM-05` | Activate/deactivate zone, replace charge rule, quote unsupported area, then inspect old order                                          | Global singleton guard serializes two-zone writers for the same coverageKey (different ruleVersions) and rejects overlapping scheduled windows before activation; same-zone/cross-zone insert, supersede, deactivate and activation races preserve one eligible rule; transaction abort leaves no partial window change; disabled region rejected; historical delivery charge unchanged | FR-28; API §14.3                       |
+| `ADM-05` | Activate/deactivate zone, replace charge rule, quote unsupported area, then inspect old order                                          | Global singleton guard serializes different-zone writers for the same coverageKey and allocates versions across inactive history; reject overlapping scheduled windows before activation. Adjacent half-open windows, concurrent supersession/activation/deactivation and worker replays preserve at most one active rule. Audit failure rolls back guard/zone/window/successor state. Missing or exhausted singleton fails closed; settings edit revision stays independent. Disabled exact coverage never falls back to wildcard; disabled schedules cannot starve due active zones. Historical amount/start/key/version stay immutable; compiled bootstrap/worker reruns preserve data and production bootstrap is refused. Order-snapshot integration is verified with the owning checkout/order implementation | FR-28; API §14.3                       |
 | `ADM-06` | Seed COD-unpaid, verified COD receipt, merchandise refund held/paid, duplicate correction receipt across reporting interval boundaries | Validate full DashboardMetrics allowlist: all counts/status sums, outstanding COD, discounts, cutoff balances, pending physical returns, recentOrders/lowStockItems lists ≤20, and timezone/date basis; reject unreconstructible historical cutoff. Period financial sums agree with source records; separate sales, verified cash flow, corrections and refund classes                 | FR-22, FR-29, FR-33; API §14.4         |
 
 ### 7.4 Transactional notification event coverage
@@ -544,6 +544,15 @@ Each scenario follows: **Fixture / action → expected HTTP+business outcome →
 
 ### 10.1 Catalog, shopping and pricing
 
+Homepage checks cover bounded independent featured/new/discounted sections, deterministic newest/ID
+ties, active category ancestry/SKU visibility and discount qualification of the displayed cheapest SKU.
+Assert honest absent content, independent logo/banner slots, current public contact/policy links,
+exact settings target/slot/banner asset identity, canonical provider URLs and rejection of private,
+quarantined/deleting/deleted assets. Verify persisted admin updates and clear operations appear on a
+subsequent no-store public read; scheduled/unapproved/stale policy versions do not become footer links.
+Exercise root composition, strict query/body, safe CORS/HEAD, bounds and missing persistence readiness.
+
+
 | ID       | Fixture / action                                                                                                                                | Expected behavior and durable assertion                                                                                                                                                                                                                        | FR           |
 | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
 | `CAT-01` | Admin activates/deactivates product and category; public list/search/detail                                                                     | Only eligible active records publicly appear; category/product association intact; slug uniqueness                                                                                                                                                             | 03–06, 23–24 |
@@ -553,6 +562,8 @@ Each scenario follows: **Fixture / action → expected HTTP+business outcome →
 | `CAT-05` | Configure/change/remove homepage banner with approved and foreign/private/invalid media references                                              | Public home shows only approved banner; internal href/alt enforced; logo unaffected; no arbitrary URL attachment; absent content does not waive FR-03                                                                                                          | 03, 23, 34   |
 | `CAT-06` | Read product detail with default/options SKUs, zero availability, approved/private galleries and related candidates                             | Only actual valid active combinations; paired prices and derived quantity; hidden records excluded; ordered approved gallery; bounded eligible related cards; strict detail allowlist and query rejection. Cart/checkout purchase validation remains separate. | 05–06        |
 | `CAT-07` | Production Next server against isolated public API representations; edit/deactivate between requests and send distinct private cookies          | New content/metadata/prices on next request; correct canonical/JSON-LD; removal yields 404/noindex; public upstream sees no credentials; private pages remain no-store/noindex; keyboard refresh, responsive themes and read-only stock disclaimer             | 04–06        |
+| `CAT-08` | Protected category create/list/edit/deactivate with hierarchy and media | Strict auth/CSRF/CAS and normalized slug uniqueness; ancestor edits invalidate ETags; cycles/races rejected; omitted/null semantics; canonical eligible image attachment/replace/remove and private/unknown media denial; audit failure rolls back target/ancestry/references; dependent public visibility follows ancestry; no destructive HTTP route. | 24 |
+| `CAT-09` | Protected product/variant administration with atomic initial SKUs | Slug/SKU/combination uniqueness; default/option consistency; bounded full active/inactive detail; strict CAS/stock/privacy; nullable pricing/threshold and merged-price checks; parent fence/last-active-SKU races; public price/visibility/search refresh; atomic galleries at reference capacity; audit rollback; stock events invalidate detail ETag; additive local/test bootstrap. | 06, 23 |
 | `SHP-01` | Guest cart → user cart after login, quantities and repeated adds                                                                                | Persistent cart HTTP checks: ownership/CSRF, absolute quantities 1–50, 100-line cap, safe current-price/unavailable projections, concurrent first creation/updates, rollback, strict validator/index checks and zero stock movements. Merge additionally covers max-quantity deduplication/replay, per-item exclusions, strict input limits, concurrent merge/PUT and atomic capacity/overflow rollback; cart does **not** reserve inventory                                                                                                                                                                                    | 07–08        |
 | `SHP-02` | Customer A adds/re-adds item, logs out, starts a new session, logs back in, removes item and repeats login; Customer B and guest attempt access | Same item persists without duplicates across authenticated sessions; removal persists; hidden/deleted products expose only an ID/unavailable marker; 200-item cap, concurrent set-membership, validator/index and no-stock/cart-side-effect checks pass; guest and cross-owner access cannot expose A's list                                                                         | 08           |
 | `PRM-01` | `FX-MONEY-01/02` percentage/fixed coupons with sale prices                                                                                      | Server matches integer/rounding example, proportional largest remainder, delivery excluded                                                                                                                                                                     | 09, 11       |
@@ -574,6 +585,7 @@ Each scenario follows: **Fixture / action → expected HTTP+business outcome →
 | `INV-02` | Online checkout at 10:00, expiry at 10:15, safely reconciled retry/reacquisition at 10:20                 | First hold releases once; new generation has heldAt 10:20 and expiry 10:35 for every stock line and coupon; replay does not extend expiry, expiry/payment races cannot double release/commit                                                                                                                | 09, 12–13  |
 | `INV-03` | Commit → shipment → inspected resellable return                                                           | Shipment reduces physical/committed once; only inspected recovered goods restocked                                                                                                                                                                                                                          | 13–14, 17  |
 | `INV-04` | Internal transaction-scoped reserve/COD commit/hold commit/release/ship; replay and competing transitions | Fifteen-minute generation clock never extended; one stock effect; expected-state release cannot undo payment commit; shipment/cancellation race has one winner; caller or ledger failure rolls back all records; missing schema/index fails closed. Does not substitute for checkout INV-01–03 integration. | 13         |
+| `INV-05` | Admin inventory list/filter, threshold CAS, physical adjustment and bounded history | Separate counters and all-match totals; canonical settings fallback only; safe overflow; strict role/CSRF/inputs; replay yields one movement/audit; changed actor/payload conflicts; concurrent reservations preserve availability; audit failure rolls back stock/ledger/fences; no threshold edit changes stock. | 25 |
 | `ORD-01` | Pending → Confirmed → Processing → Shipped → Delivered                                                    | Only guarded transitions succeed; timestamps/history accurate; invalid/replayed transition blocked                                                                                                                                                                                                          | 14, 26     |
 | `ORD-02` | Customer requests cancellation in Pending/Confirmed/Processing                                            | Admin approves/rejects explicitly; before-dispatch recheck is atomic; not cancelled by request itself                                                                                                                                                                                                       | 15         |
 | `ORD-03` | Concurrent cancel approval and shipment                                                                   | Exactly one eligible transition wins; no duplicate stock release or shipment reversal                                                                                                                                                                                                                       | 14–15      |
@@ -583,15 +595,117 @@ Each scenario follows: **Fixture / action → expected HTTP+business outcome →
 | `ORD-07` | Guest order lookup with correct/expired/cross-order proof                                                 | Only verified scope can read permitted order and initiate eligible actions                                                                                                                                                                                                                                  | 19         |
 | `ORD-08` | Missing/unsupported area; inactive gateway channel                                                        | Checkout rejects unsupported destination or unavailable method, without order/financial mutation                                                                                                                                                                                                            | 11–12, 16  |
 
+Quote-only verification before order submission exists uses actual guest/customer Origin/CSRF and
+transaction-bound scopes, strict money/recipient inputs, authoritative SKU/coupon/delivery/settings
+capabilities, explicit reviewed test rules and persistent rate limits. Assert no stock/coupon hold,
+order, payment or provider operation is created. Test exact expiry, cross-scope 404, normalized reordered
+lines, stable rounding IDs, sufficient-stock advisory changes, changed coupon terms with identical totals,
+policy/delivery/deadline/method changes, snapshot corruption and failed configuration/index prerequisites.
+Test compiled additive bootstrap and disabled/enabled root composition; synthetic merchant/deadline
+capabilities never prove actual provider activation/legal approval. Intent replay/single quote consumption
+and order/stock/coupon atomic acceptance remain the later submission coordinator's required evidence.
+
 ### 10.3 Required order/delivery assertions
 
-For `ORD-06`, compare `placedAt`, actual `confirmedAt`, snapshotted `deadlineBasis`, `targetDeadlineAt`, applicable `legalDeadlineAt` and final `effectiveDeadlineAt` per Database §7.2 and API §11.3. The ordinary target is 14 **calendar** days from confirmation unless an approved rule differs; any statutory cap requires an approved start event. If those decisions are missing, assert a correctly disclosed pending/under-review commitment rather than inventing a legal date.
+Expiry tests assert exact due boundaries, whole-generation stock/coupon release, no payment/order
+cancellation, verified-funding/risk protection and concurrent funding serialization. Exercise audit
+failure rollback, duplicate runners, durable cursor fairness, expired owner denial, lease loss after
+writes, restart/replay, strict registry/no-TTL readiness and the compiled bounded entry point. Verify
+initial hold clocks equal actual placement even when service clock calls advance.
+
+Guest access tests cover ambiguous lookup/response floor, current guest-only order/email binding,
+reference-only encrypted outbox, actual worker rendering, single-use exchange and exact order sessions.
+Include Origin/context-CSRF, duplicate/wrong-kind cookies, cross-order denial, concurrent exchange and
+reissue/consume, cooldown/supersession, expiry independent of TTL, session rotation/revocation, guest
+CSRF refresh/logout, AEAD/key-loss denial, transaction rollback and uncertainty without blind resend.
+Known-schema notification migration must retain existing order events without dispatching them as proofs.
+Synthetic email adapters do not prove live sender/domain or inbox delivery acceptance.
+
+Combined checkout assertions exercise the real quote/identity/current-commerce boundaries with
+transaction-capable MongoDB. COD requires 201 creation/200 replay, Pending fulfillment/payment, exact
+stock/coupon commitment, one order_received intent and no unverified receipt/provider attempt. Cover
+Origin/CSRF/session/role, malformed/client financial input, duplicate submissions, independent last-SKU
+and final-coupon races, and late notification failure rolling back all effects. Online foundation
+asserts identical heldAt/expiresAt across every SKU/coupon, a fresh 15-minute window per generation,
+no replay extension, guarded commit/release and rollback of partial movement effects. Synthetic later
+payment/cancellation authority fixtures do not prove production provider/cancellation approval.
+Verify root activation/default-off behavior, compiled additive checkout bootstrap/production refusal,
+payment summary caps and additive notification migration retaining previous account/proof events.
+
+Checkout intent checks assert same-key canonical replay before quote expiry/current commercial reads,
+changed-payload conflict, same-quote/different-key exclusion, concurrent one-order creation, and atomic
+rollback of intent/consent/order/balances/audit. Replay after `replayUntil` returns the current authorized
+order; invalid/missing order pointers and stranded preparing records fail closed without key reuse.
+Verify customer/session authorization on replay, guest scope isolation, strict secret-free result
+pointers, unique indexes, validator drift, no TTL registry and repeated additive compiled bootstrap.
+Private completion fixtures do not prove production stock/coupon/payment/notification coordination or
+submission HTTP security; those remain owning integration tasks.
+
+Order foundation checks use an isolated transaction-capable MongoDB replica set. Assert unique order
+numbers/intent identities/item balances, explicit null guest ownership, immutable nested snapshots,
+exact per-unit quotient/remainder entitlements, contiguous ordinals and held/completed refund caps.
+Exercise concurrent creation, audit-failure rollback, missing indexes, validator drift, additive compiled
+bootstrap and Unicode preservation. Invalid fulfillment edges must fail independently of financial
+state. A valid graph edge is not authorization to fulfill or cancel. Test-only quote/intent coordination
+proves atomic persistence only; production intent, stock/coupon allocation, payment and operational
+transition acceptance remain their owning tasks.
+
+For `ORD-06`, compare `placedAt`, actual `confirmedAt`, snapshotted `deadlineBasis`, `targetDeadlineAt`, applicable `legalDeadlineAt` and final `effectiveDeadlineAt` per Database §7.2 and API §11.3. The ordinary target is 14 **calendar** days from confirmation unless an approved rule differs; any statutory cap requires an approved start event. If those decisions are missing, assert a correctly disclosed pending/under-review commitment rather than inventing a legal date. Additional boundary checks cover exact
+rule-digest binding, protected manifest parsing and compiled preflight, future/expired/missing review,
+actual event ordering, leap/year/offset arithmetic, nonexistent timezone wall times and immutable bases
+across later configuration changes. A known placement cap may appear before confirmation without a
+fabricated target/effective date. Earlier caps remain earlier even when overdue; estimates never extend
+them. These isolated cases do not prove qualified legal review, persisted order transitions or notification
+operations; retain those acceptance gates separately.
+
 
 ---
 
 ## 11. Payments, returns & refunds test cases
 
 ### 11.1 Payment provider and COD scenarios
+
+Hosted-initiation verification uses real replica-set transactions, actual stock/coupon APIs and
+synthetic provider transport. Assert committed durable dispatch before I/O, one call across concurrent
+identical/different keys and process instances, reauthorization/CSRF/order isolation, request conflicts,
+rollback before dispatch and uncertainty after failed result commit. No session acceptance can fund an
+order. Verify expired/released holds reacquire one shared 15-minute generation, preserve old clocks and
+immutable prices, and roll back every SKU/coupon effect on shortfall or changed terms. Race expiry
+against reacquisition; unresolved attempts protect capacity from refresh/shortfall mutation. Verify
+explicit capacity-recovery retries and current lifecycle/risk/channel/funding redirect suppression.
+
+Exercise real customer/scoped guest HTTP reads and mutations, disabled-by-default/deployed activation
+refusal and new API security alternatives. Saved address/quote/order postalCode must round-trip; reject
+missing/unrepresentable online gateway metadata without fabrication. Additive migration must preserve
+legacy documents/order immutability, reject unknown validators and remain safely repeatable. Live
+callback/provider verification and merchant qualification require separate evidence, not these fixtures.
+
+Payment-method availability tests exercise public/no-store reads, flag-only denial of online channels,
+verified evidence/account/environment/lifetime/digest boundaries and current settings/expiry changes.
+Check inclusive min/max integer-poisha eligibility and unknown amount behavior. Order-specific tests
+must use actual customer/guest sessions: cross-owner, missing/revoked/expired/invalid/duplicate cookies
+cannot disclose eligibility for an order. Advisory amounts cannot override remaining canonical funding;
+fully funded online and cancelled orders expose no selectable methods. Check original method binding,
+invalid query/body, CORS/HEAD/preflight, missing persistence and executable API/route parity. Test evidence
+is synthetic and does not prove real merchant activation; qualify every live launch channel separately.
+
+Gateway adapter contract tests use synthetic v4 responses and a loopback HTTP server. Assert fixed
+origins, environment separation, exact poisha formatting/parsing, bounded form/response fields,
+credential redaction, session-bound hosted URLs and fixed callback paths. Exercise actual timeout,
+redirect refusal and malformed responses without retry; preserve unknown results as uncertain.
+Validation/status parsing must retain all distinct reports, currency/amount/risk facts and evidence
+digests while stripping card/customer details. Identity/count/auth mismatches fail closed, and empty
+query results never prove nonpayment. All provider operations must fail before transport inside a
+business transaction. These checks do not prove merchant credentials, channel activation or live
+provider verification; record real sandbox/deployed qualification separately.
+
+Payment persistence foundation checks use an isolated transaction-capable replica set. Verify unique
+provider references, same-operation replay with reauthorization, concurrent new-attempt exclusion,
+terminal retry lineage, immutable request snapshots, uncertain-attempt blocking and audit rollback.
+Receipt schema tests cover unmatched intake without fabricated ownership, multiple real source
+identities per attempt, immutable evidence, allocation/refund caps, CAS guards and bootstrap drift/TTL
+refusal. Synthetic validation records prove persistence constraints only; provider verification,
+HTTP authorization/idempotency, reconciliation and merchant activation require their own evidence.
 
 | ID       | Stimulus                                                                                                   | Expected outcome / invariant                                                                                                                                                                                                                   | FR            |
 | -------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
@@ -969,7 +1083,7 @@ All FR rows below refer to planned scenario outlines and/or suite aliases, not e
 | FR-22 | Admin dashboard                       | `ADM-06`, `PERF-ADM`, `UI-ADMIN`                     | 09        |
 | FR-23 | Product administration                | `CAT-01`, `CAT-02`, `API-04`, `UI-ADMIN`             | 04, 09    |
 | FR-24 | Category administration               | `CAT-01`, `DB-02`, `UI-ADMIN`                        | 04        |
-| FR-25 | Inventory administration              | `DB-09`, `INV-01`–`INV-03`, `UI-ADMIN`               | 04, 09    |
+| FR-25 | Inventory administration              | `DB-09`, `INV-01`–`INV-03`, `INV-05`, `UI-ADMIN`               | 04, 09    |
 | FR-26 | Order administration                  | `ORD-01`–`ORD-04`, `SUP-01`–`SUP-04`, `UI-ADMIN`     | 06, 09    |
 | FR-27 | Customer administration               | `ADM-01`–`ADM-04`, `API-08`, `SEC-06`                | 09        |
 | FR-28 | Delivery charges                      | `ADM-05`, `ORD-05`, `ORD-06`, `API-04`               | 06, 09    |

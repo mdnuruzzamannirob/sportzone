@@ -1,4 +1,12 @@
 export const errorDefinitions = {
+  OUT_OF_STOCK: { status: 409, message: 'Requested stock is not available.' },
+  QUOTE_CHANGED: { status: 409, message: 'Review and confirm a new checkout quote.' },
+  QUOTE_EXPIRED: { status: 409, message: 'Checkout quote has expired.' },
+  PAYMENT_AMOUNT_UNSUPPORTED: { status: 422, message: 'Payment amount is not supported.' },
+  IDEMPOTENCY_CONFLICT: {
+    status: 409,
+    message: 'The operation key was already used for a different request.',
+  },
   PRECONDITION_REQUIRED: { status: 428, message: 'A current resource version is required.' },
   PRECONDITION_FAILED: { status: 412, message: 'The resource version is no longer current.' },
   COUPON_UNAVAILABLE: { status: 409, message: 'Coupon is not available.' },

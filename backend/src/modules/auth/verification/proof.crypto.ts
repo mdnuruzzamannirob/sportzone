@@ -4,23 +4,28 @@ import { ConfigurationError } from '../../../shared/errors/configuration-error.j
 export const proofPattern = /^[A-Za-z0-9_-]{43}$/
 export const proofHash = (
   proof: string,
-  purpose: 'password_reset' | 'email_change' | 'admin_password_reset' = 'password_reset',
+  purpose:
+    | 'password_reset'
+    | 'email_change'
+    | 'admin_password_reset'
+    | 'guest_order_access' = 'password_reset',
 ) =>
   createHash('sha256')
     .update(
-      `sportzone:${purpose === 'password_reset' ? 'password-reset' : purpose === 'email_change' ? 'email-change' : 'admin-password-reset'}:v1:${proof}`,
+      `sportzone:${purpose === 'password_reset' ? 'password-reset' : purpose === 'email_change' ? 'email-change' : purpose === 'guest_order_access' ? 'guest-order-access' : 'admin-password-reset'}:v1:${proof}`,
     )
     .digest('hex')
 export type ProofBinding = {
   id: string
-  userId: string
   email: string
   expiresAt: Date
   revision: number
-  purpose?: 'password_reset' | 'email_change'
   targetEmail?: string
   audience?: 'admin'
-}
+} & (
+  | { userId: string; purpose?: 'password_reset' | 'email_change'; orderId?: never }
+  | { userId?: never; orderId: string; purpose: 'guest_order_access' }
+)
 export type ProofEnvelope = {
   algorithm: 'AES-256-GCM'
   keyVersion: string
@@ -56,7 +61,7 @@ export function createProofEncryption(
       JSON.stringify([
         `sportzone:${binding.purpose ?? 'password_reset'}:v1`,
         binding.id,
-        binding.userId,
+        binding.purpose === 'guest_order_access' ? binding.orderId : binding.userId,
         binding.email,
         binding.expiresAt.toISOString(),
         binding.revision,

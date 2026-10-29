@@ -1,3 +1,5 @@
+import { publicHomeSettings } from '../settings/settings.schema.js'
+import { publicPolicyLink } from '../settings/policy.schema.js'
 import { z } from 'zod'
 import { paginationSchema } from '../../shared/pagination.js'
 // Existing aggregate inputs remain numeric; HTTP price filters are separately parsed strings.
@@ -102,4 +104,12 @@ export const productDetail = productCard.safeExtend({
   images: z.array(publicImage).max(12),
   variants: z.array(publicVariant).min(1).max(100),
   relatedProducts: z.array(productCard).max(6),
+})
+
+export const storefrontHome = publicHomeSettings.extend({
+  featured: z.array(productCard).max(8),
+  newArrivals: z.array(productCard).max(8),
+  discounted: z.array(productCard).max(8),
+  categories: z.array(categoryCard).max(12),
+  policyLinks: z.array(publicPolicyLink).max(7),
 })

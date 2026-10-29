@@ -1,7 +1,7 @@
-import type { ClientSession, Connection, HydratedDocument } from 'mongoose'
+import { Types, type ClientSession, type Connection, type HydratedDocument } from 'mongoose'
 import type { z } from 'zod'
 import { ApiError } from '../../shared/errors/app-error.js'
-import type { variantStockAccess } from '../catalog/variants/variant.service.js'
+import { variantStockAccess } from '../catalog/variants/variant.service.js'
 import { allocationInput, stockSnapshot } from './inventory.schema.js'
 import {
   inventoryMovementModel,
@@ -22,7 +22,7 @@ type Action =
 // eligibility in THIS transaction and abort it on any error; no nested transaction is opened here.
 export function allocationService(
   connection: Connection,
-  stock: ReturnType<typeof variantStockAccess>,
+  stock: ReturnType<typeof variantStockAccess> = variantStockAccess(connection),
   clock: () => Date = () => new Date(),
 ) {
   const reservations = inventoryReservationModel(connection)
@@ -195,6 +195,50 @@ export function allocationService(
     return projection(row)
   }
   return {
+    async due(now: Date, limit: number, cursor?: string) {
+      if (
+        !Number.isSafeInteger(limit) ||
+        limit < 1 ||
+        limit > 100 ||
+        (cursor !== undefined && !/^[a-f0-9]{24}$/.test(cursor))
+      )
+        throw new ApiError('VALIDATION_FAILED')
+      await verifyAllocationPersistence(connection)
+      return reservations
+        .find({
+          status: 'held',
+          expiresAt: { $lte: now },
+          ...(cursor ? { _id: { $gt: cursor } } : {}),
+        })
+        .sort({ _id: 1 })
+        .limit(limit)
+        .lean()
+        .then((rows) =>
+          rows.map((row) => ({
+            cursor: row._id.toHexString(),
+            orderId: row.orderId.toHexString(),
+            generation: row.generation,
+          })),
+        )
+    },
+    async available(session: ClientSession, variantId: string) {
+      if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+      const row = await stock.read(new Types.ObjectId(variantId), session)
+      return row ? stockSnapshot(row).available : 0
+    },
+    async latestGeneration(session: ClientSession, orderId: string) {
+      if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+      await verifyAllocationPersistence(connection)
+      const row = await reservations.findOne({ orderId }).sort({ generation: -1 }).session(session)
+      return row?.generation
+    },
+    async generation(session: ClientSession, orderId: string, generation: number) {
+      if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+      return reservations
+        .find({ orderId, generation })
+        .session(session)
+        .then((rows) => rows.map(projection))
+    },
     // Capture one trusted heldAt in the outer transaction and reuse it for every line and coupon.
     reserve: (session: ClientSession, input: unknown, heldAt: Date) =>
       apply(session, input, 'reserve', heldAt),

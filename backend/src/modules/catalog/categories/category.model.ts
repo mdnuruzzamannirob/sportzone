@@ -23,7 +23,7 @@ const categorySchema = new Schema(
           url: { type: String, required: true },
           alt: { type: String, required: true },
         },
-        { _id: false, strict: 'throw' },
+        { _id: false, strict: 'throw', versionKey: false },
       ),
       default: undefined,
     },

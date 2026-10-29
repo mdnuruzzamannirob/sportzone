@@ -121,19 +121,19 @@ executable validators/contract tests define the API; generated OpenAPI/Postman a
 
 ### 3.1 Transport and representation
 
-| Item                | Contract                                                                                                                                                                                                                           |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Root                | `https://<configured-api-host>/api/v1` (deployment host configurable)                                                                                                                                                              |
-| Format              | UTF-8 JSON (`Content-Type: application/json`), except documented multipart uploads and gateway form POSTs                                                                                                                          |
-| Resource names      | Lowercase plural, hyphenated paths; JSON names `camelCase`; IDs serialized strings                                                                                                                                                 |
-| Time                | ISO 8601 UTC instants ending `Z`; Bangladesh display derived from `Asia/Dhaka`                                                                                                                                                     |
-| Currency            | Always `BDT`; **integer poisha** on every business API and internally; no floating-point money                                                                                                                                     |
-| Status values       | Persisted `snake_case` enum values from Database v1.0; UI labels are presentation only                                                                                                                                             |
-| Creation            | `201 Created` + `Location` where appropriate; replay may return `200 OK` with same logical result                                                                                                                                  |
-| Deletion            | Use `204 No Content` only where deletion/deactivation is an approved operation; no body                                                                                                                                            |
+| Item                | Contract                                                                                                                                                                                                                                   |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Root                | `https://<configured-api-host>/api/v1` (deployment host configurable)                                                                                                                                                                      |
+| Format              | UTF-8 JSON (`Content-Type: application/json`), except documented multipart uploads and gateway form POSTs                                                                                                                                  |
+| Resource names      | Lowercase plural, hyphenated paths; JSON names `camelCase`; IDs serialized strings                                                                                                                                                         |
+| Time                | ISO 8601 UTC instants ending `Z`; Bangladesh display derived from `Asia/Dhaka`                                                                                                                                                             |
+| Currency            | Always `BDT`; **integer poisha** on every business API and internally; no floating-point money                                                                                                                                             |
+| Status values       | Persisted `snake_case` enum values from Database v1.0; UI labels are presentation only                                                                                                                                                     |
+| Creation            | `201 Created` + `Location` where appropriate; replay may return `200 OK` with same logical result                                                                                                                                          |
+| Deletion            | Use `204 No Content` only where deletion/deactivation is an approved operation; no body                                                                                                                                                    |
 | Concurrency         | `If-Match`/strong ETag for approved editable master records; backed by the `revision` CAS fields on category, product, variant, coupon, delivery-zone and charge-rule documents (Database v1.0); domain CAS for financial/stock operations |
-| Request correlation | Server-issued `X-Request-Id` returned on every response; incoming value never trusted as evidence                                                                                                                                  |
-| API evolution       | Additive compatible fields within `/api/v1`; incompatible changes require version review and consumer migration                                                                                                                    |
+| Request correlation | Server-issued `X-Request-Id` returned on every response; incoming value never trusted as evidence                                                                                                                                          |
+| API evolution       | Additive compatible fields within `/api/v1`; incompatible changes require version review and consumer migration                                                                                                                            |
 
 `GET` never mutates commerce state, and provider browser returns are not payment approvals. `POST` denotes
 submissions/actions, `PATCH` limited updates, `PUT` idempotent item replacements where stated, `DELETE` removal of an
@@ -295,7 +295,7 @@ principal from the storefront. Unknown/duplicate query parameters are invalid. G
 | Bootstrap refresh    | New anonymous context atomically invalidates the supplied same-audience predecessor. Authenticated refresh replaces only that session's CSRF verifier by conditional update, preserving session expiry and rejecting concurrent stale refresh. Previous CSRF fails.                                                                                                                              |
 | Mutation guard       | Route selects context-only, customer-only, admin-only or customer-or-context; all unsafe methods require exact Origin and custom token header. Invalid customer cookie never falls back to anonymous checkout. These guards grant no account/order authorization; apply session/role/ownership guards as well.                                                                                   |
 | Successful exchange  | The credential/proof service must use consumeContext with its durable effect in the same MongoDB transaction. One concurrent exchange wins; failed effect rolls back consumption. Do not perform provider/email calls in that callback or start a nested independent transaction.                                                                                                                |
-| Guest handoff        | P06-015 supplies an order-bound refresh/verify adapter; only an exact, single opaque guest cookie reaches it. Customer/admin/browser contexts cannot substitute. Its real proof/session persistence remains in that task.                                                                                                                                                                        |
+| Guest handoff        | GUEST_ACCESS_ENABLED wires the order-bound refresh/verify adapter to real proof/session persistence; only one exact opaque guest cookie reaches it. Customer/admin/browser credentials cannot substitute.                                                                                                                                                                        |
 | Provider segregation | Register provider notifications/returns outside browser guards and bootstrap. Their own verification and acknowledgment contracts remain mandatory; omission of browser CSRF never proves payment success.                                                                                                                                                                                       |
 
 ### 4.6 Customer credentials and registration delivery intent
@@ -390,7 +390,7 @@ activation and real mailbox acceptance remain operational gates.
 
 ### 4.9 Auth/recovery throttles and audit safety
 
-Activated identity composition uses a MongoDB-backed, atomic fixed-window throttle shared by API instances; no process-memory fallback on database failure. Every audience has a shared network budget of 60 requests/minute. Credential, recovery and email-change mutations additionally share 10 network attempts/minute per group; normalized supplied email targets share 10 attempts/minute per audience/group across source addresses. CSRF bootstrap/refresh uses the audience network budget. Customer/admin budgets and groups are independent; successful and failed attempts consume equally and no account lookup determines a limit. This is a request throttle, not an account suspension or lockout mutation.
+Activated identity composition uses a MongoDB-backed, atomic fixed-window throttle shared by API instances; no process-memory fallback on database failure. Every audience has a shared network budget of 60 requests/minute. Credential, recovery, email-change, checkout and guest-access groups additionally share 10 network attempts/minute per group; normalized supplied email targets share 10 attempts/minute per audience/group across source addresses. CSRF bootstrap/refresh uses the audience network budget. Customer/admin budgets and groups are independent; successful and failed attempts consume equally and no account lookup determines a limit. This is a request throttle, not an account suspension or lockout mutation.
 
 Use only the socket address while trust proxy remains false; forwarded/client identity headers are ignored. Keys are domain-separated HMAC digests derived from SESSION_SECRET and bind audience/group/window; plaintext address/email/proof is never persisted or logged. Fixed minute boundaries govern reset even before TTL cleanup. A rejected quota returns generic 429 RATE_LIMITED plus integer Retry-After; no matching-account detail or counter key is exposed. Counter-store failure returns generic 503 SERVICE_UNAVAILABLE and never proceeds to credentials/recovery. Rotate the shared session secret consistently across API instances; rotation resets counter key namespaces and invalidates old sessions as already documented.
 
@@ -437,7 +437,7 @@ scoped operational fields; external provider evidence is redacted even to admini
 | `SignedMoneyPoisha` | Signed safe integer                                          | Derived net cash-flow reporting only; a period with more payouts than collections is negative |
 | `Instant`           | ISO UTC string, e.g. `2026-10-16T00:00:00Z`                  | Reject ambiguous timezone formats in writes                                                   |
 | `Channel`           | `cod` / `bkash` / `nagad` / `rocket`                         | Business choice; actual online provider display/availability subject to verified activation   |
-| `AddressInput`      | `{recipient,phone,districtKey,areaKey,street,addressLine2?}` | Bangladesh-supported area keys, no arbitrary delivery-zone ID                                 |
+| `AddressInput`      | `{recipient,phone,districtKey,areaKey,street,addressLine2?,postalCode?}` | Bangladesh-supported area keys, no arbitrary delivery-zone ID                                 |
 | `CartLineInput`     | `{variantId,quantity}`                                       | Bounded positive integer qty, unique variant                                                  |
 | `PageMeta`          | `{page,pageSize,totalItems,totalPages}`                      | Current snapshot estimate; deterministic sort on stable ID tie-break                          |
 | `PolicyRef`         | `{type,version,effectiveAt}`                                 | Approved version used for terms/checkout snapshot                                             |
@@ -603,7 +603,7 @@ invent offset pagination where it risks missing/duplicating mutations. Query and
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `RegisterInput`   | `name,email,password`; public role omitted and forced `customer`; enforce approved password policy                                     |
 | `Credentials`     | `email,password`; client may **not** supply role or cookie scope                                                                       |
-| `AddressPatch`    | Optional editable `recipient,phone,districtKey,areaKey,street,addressLine2,isDefault` only; explicit fields, no arbitrary object merge |
+| `AddressPatch`    | Optional editable `recipient,phone,districtKey,areaKey,street,addressLine2,postalCode,isDefault` only; explicit fields, no arbitrary object merge |
 | `Account`         | Database §5.1 allowlist: `id,name,email,phone?,emailVerified,addresses,status`; no hashes/security revision details                    |
 | `DeletionRequest` | Verified customer identity and approved retention/review process; **not** immediate hard deletion of financial records                 |
 
@@ -654,6 +654,28 @@ Proof exchange atomically consumes `authChallenges` and grants only the verified
 An attacker cannot enumerate orders by timing, HTTP status or message differences.
 Subsequent guest order actions use the same `/orders/{orderId}` routes as a customer, but with *exact* bound order ID checks.
 Do not include a public `GET /orders?email=...` endpoint.
+
+The guest runtime is opt-in with `GUEST_ACCESS_ENABLED=true` and customer-auth infrastructure. Configure
+explicit guest proof lifetime/cooldown/response floor and session lifetime, the protected `AUTH_PROOF_*`
+key ring and an exact HTTPS storefront origin. Lookup trims the case-sensitive order reference and
+normalizes email; only a guest-owned order matching both can issue a challenge. Valid-shaped unknown,
+wrong-email, registered-owned and cooldown-suppressed requests return the same accepted response with
+the configured minimum response duration. No proof or order identifier appears in that response.
+
+Issuance consumes the storefront pre-auth context transactionally; re-bootstrap before another request.
+Email contains a fixed `/guest-access#token=...` fragment link. Exchange consumes its fresh pre-auth
+context and proof atomically with guest-session issuance; failures roll everything back. A new exchange
+revokes the prior guest cookie presented by that browser. Sessions grant exact order scope only and
+expire server-side independently of TTL. `GET /auth/csrf?sessionKind=guest` refreshes the guest CSRF
+verifier without extending session expiry. Logout accepts approved pre-auth-context or guest-session
+CSRF, durably revokes the selected guest cookie, clears it and returns fresh browser-context CSRF.
+Customer/admin credentials cannot be revoked or used as guest authority through these endpoints.
+
+Guest proof notifications contain only challenge references; delivery verifies expiry, revision,
+recipient, order ownership and authenticated envelope binding. Reissue invalidates the prior proof;
+uncertain delivery is not blindly retried. These APIs establish scoped access, while individual order/
+claim/cancellation routes still enforce their owning eligibility contracts. The four §9.2 DTOs are owned
+by `backend/src/modules/auth/guest-access/guest-access.schema.ts`.
 
 ### 9.3 Identity validation and replay contract
 
@@ -712,7 +734,7 @@ are exposed; the presence of a schema or operation-table row never registers an 
 
 | Method | Path                            | Access | Query / request → response                                                                    | FR     |
 | ------ | ------------------------------- | ------ | --------------------------------------------------------------------------------------------- | ------ |
-| `GET`  | `/storefront/home`              | Public | `— → {featured[],newArrivals[],discounted[],categories[],banner?}`                            | 03     |
+| `GET`  | `/storefront/home`              | Public | `— → StorefrontHome`                            | 03     |
 | `GET`  | `/categories`                   | Public | `parent?,page?,pageSize? → Category[]`                                                        | 04     |
 | `GET`  | `/categories/{slug}`            | Public | `— → CategoryDetail`                                                                          | 04     |
 | `GET`  | `/products`                     | Public | `q?,category?,minPricePoisha?,maxPricePoisha?,inStock?,sort?,page?,pageSize? → ProductCard[]` | 04     |
@@ -754,19 +776,32 @@ there is no unrelated fallback. Review content, return-policy publication and ca
 separate owning endpoints/tasks; this detail read does not fabricate them.
 
 Product listings and homepage merchandising only include operator-approved media/content; no fabricated promotional claims.
+Homepage sections are bounded: at most eight cards each for featured, newArrivals and discounted,
+plus the first twelve visible categories in the existing sortOrder/ID order. Each product section uses
+newest createdAt descending with descending product-ID ties; featured requires the operator flag,
+and discounted requires the displayed cheapest eligible SKU effective price to be below its own regular
+price. Sections may overlap; do not fabricate fallback featured products or promotional claims.
+`storeName`, `branding`, `contact` and `complaintContact` are optional configured public metadata;
+`policyLinks:[{type,version,href}]` lists only current approved effective published policy pointers, with
+href `/api/v1/storefront/policies/{type}`. Links identify public API resources for client consumption.
+Missing configured fields/banner are omitted; policyLinks may be empty. Missing required persistence
+fails readiness rather than inventing a singleton. Home uses no-store and rejects body/query inputs.
+Logo and banner are independent: recheck public clean attached media against the exact settings target/
+slot, and additionally bind banner assetId to its ledger row. Generate URLs through the media owner;
+never return an unverified stored URL, quarantined/private asset or configuration/audit secrets.
 The homepage `banner` maps to `storeSettings.homepageBanner` with a validated public media asset and operator-approved content (API §10.1). Return `HomepageBanner:{assetId,title,alt,href?,image:MediaRef}` only when configured and eligible; otherwise omit it honestly. Banner capability is required by FR-03; publish only operator-approved content. Store the banner in settings rather than a separate collection.
 
 ### 10.2 Cart and wishlist
 
-| Method   | Path                             | Access | Request → response               | FR  |
-| -------- | -------------------------------- | ------ | -------------------------------- | --- |
-| `GET`    | `/cart`                          | C      | `— → Cart`                       | 07  |
-| `PUT`    | `/cart/items/{variantId}`        | C      | `{quantity} → Cart`              | 07  |
-| `DELETE` | `/cart/items/{variantId}`        | C      | `— → Cart`                       | 07  |
+| Method   | Path                             | Access | Request → response                          | FR  |
+| -------- | -------------------------------- | ------ | ------------------------------------------- | --- |
+| `GET`    | `/cart`                          | C      | `— → Cart`                                  | 07  |
+| `PUT`    | `/cart/items/{variantId}`        | C      | `{quantity} → Cart`                         | 07  |
+| `DELETE` | `/cart/items/{variantId}`        | C      | `— → Cart`                                  | 07  |
 | `POST`   | `/cart/merge`                    | C      | `{items:CartLineInput[]} → CartMergeResult` | 07  |
-| `GET`    | `/wishlist`                      | C      | `— → {products:WishlistProduct[]}`   | 08  |
-| `PUT`    | `/wishlist/products/{productId}` | C      | `— → {saved:true}`               | 08  |
-| `DELETE` | `/wishlist/products/{productId}` | C      | `— → {saved:false}`              | 08  |
+| `GET`    | `/wishlist`                      | C      | `— → {products:WishlistProduct[]}`          | 08  |
+| `PUT`    | `/wishlist/products/{productId}` | C      | `— → {saved:true}`                          | 08  |
+| `DELETE` | `/wishlist/products/{productId}` | C      | `— → {saved:false}`                         | 08  |
 
 Guest cart is **browser-local** and is not created server-side by an anonymous `/cart` route. A merge deduplicates on
 `variantId` using the maximum of saved and submitted quantities, including duplicate input lines; retries do not
@@ -877,6 +912,39 @@ QUOTE_EXPIRED`; both require a fresh quote and explicit buyer confirmation. Neit
 attempt. Do not automatically replace the quote and submit it. An unsupported method or unavailable capacity retains its
 specific business error. Draft fields inconsistent with the referenced quote return `409 QUOTE_CHANGED`; malformed input remains `400`. Wrong-scope/missing quote is scope-safe `404`. Verify quote comparison, single consumption, idempotency and reconfirmation in the checkout contract tests.
 
+**Executable quote contract:** quote creation is `200`, returns a new server quote per request and
+reserves no capacity. `QuoteItem` contains exactly `id,productId,variantId,productName,sku,variantAttributes,
+quantity,regularUnitPoisha,effectiveUnitPoisha,regularLinePoisha,productDiscountPoisha,couponAllocatedPoisha,
+netMerchandisePoisha,couponEligible`. IDs are server-assigned stable line identities; raw stock counters,
+private product configuration and recipient/contact data are not response fields. Resolve saved addresses
+only from the current customer; explicit buyer email is normalized, buyer phone defaults to recipient
+phone, and recipient/buyer snapshots remain distinct. Guest email is mandatory. Normalize lines in
+variant-ID order and fingerprint the resolved recipient/buyer draft; equivalent reordered selections do
+not invalidate consent. The commercial snapshot retains coupon identity/type/value/termsVersion and
+eligible subtotal, not just its resulting discount, so changed terms require renewed confirmation even
+if the total is unchanged. Validate stored snapshot/draft integrity before trusting its consent hashes.
+
+Quote persistence and recalculation use a transaction-bound principal scope. An invalid/present customer
+cookie cannot downgrade to guest; guests require the same active storefront browser context and CSRF.
+Quote admission uses the shared MongoDB throttle with a distinct checkout group (10/network/minute and
+normalized email target, within the existing 60/network/minute customer budget). No automatic order retry
+or quote-to-order submission is implemented by quote creation. Internal revalidation checks scope, open
+status, exact expiry, normalized draft/consent, stable allocation IDs and current commercial terms;
+insufficient stock/coupon capacity keeps its specific error. It does not consume consent or create an
+intent/order. The later submission coordinator must resolve existing intent first and atomically consume
+quote plus order/allocations, with its required replay/concurrency and current-policy fencing checks.
+The quote's capture timestamp and advisory capacity are not commercial changes. Missing approved
+policies/deadline basis fails closed with SERVICE_UNAVAILABLE; flags alone never establish online
+merchant activation. Known verified amount bounds produce PAYMENT_AMOUNT_UNSUPPORTED when selected.
+
+`GET /delivery/areas` returns `{supportedAreas:[{districtKey,areaKey,zoneId}],zoneKeys:string[]}` for current
+active effective rules in active zones. `zoneKeys` is the sorted distinct public zone-ID list; `areaKey:'*'`
+represents an operator district wildcard. Optional district is a normalized lowercase slug key (maximum
+64). Results are ordered by coverageKey and bounded to 1,000 rows; overflow fails closed rather than
+silently truncating (use district filter). This is advisory discovery: an inactive exact rule's zone still
+blocks that concrete quote even when a district wildcard is listed. No amounts, private metadata,
+credentials or scheduled/inactive regions are exposed. Actual destination eligibility is always rechecked.
+
 **Quote:** Recompute active SKU prices, stock visibility, product-discount-before-coupon, eligible coupon allocations,
 delivery-zone rule and eligible payment methods at request time. Return a **deadline rule/status**, not a made-up date
 anchored to a future confirmation. An approved placement-started legal cap may be absolute; a 14-day-from-confirmation
@@ -888,6 +956,17 @@ references for renewed consent.
 guest browser context). Resolve an existing intent first, even when its quote has since expired/been consumed. For a new intent, in one transaction conditionally consume the open quote and create `checkoutIntents`, immutable order snapshot/consent digest and `orderItemBalances`, then
 either COD **committed** inventory/coupon or online **15-minute held** stock/coupon. Save one order per key before
 returning. A same-key replay returns the same operation resource/result; different payload is `409 IDEMPOTENCY_CONFLICT`.
+The current COD runtime is opt-in with `CHECKOUT_COD_ENABLED` and quote/customer-auth prerequisites.
+Its successful submission returns `201`, while the same scoped intent replay returns `200`, both with
+`{order:OrderSummary}`. Order and payment summaries remain Pending at COD placement; no receipt,
+Paid state or confirmation is fabricated. Online submission remains inactive until its owning payment
+integration; all required launch channels remain release requirements. Order receipt is a durable
+notification intent; asynchronous commerce delivery is integrated separately.
+Checkout submission keys contain 1–128 printable ASCII characters without spaces; clients generate
+opaque random keys and preserve them verbatim across retries. Persist only their SHA-256 hash.
+Canonical submission fingerprints normalize validated fields and set ordering; retries resolve their
+existing intent before mutable saved-address/profile resolution or quote expiry checks. Durable result
+pointers contain no redirect/session secrets; replay reads the authorized current order state.
 A unique intent `quoteId` plus the quote consume guard also prevents two different keys from creating two orders for the same quote; a second key returns `409 STATE_CONFLICT` with no foreign-order disclosure. Renewed confirmation uses a fresh quote and fresh key after a rejected precommit submission. Timeout or disconnect must not create another order on retry. Do not hold a MongoDB transaction open while requesting
 hosted payment session.
 
@@ -946,6 +1025,26 @@ The admin accepts/rejects after checking `pending/confirmed`, or `processing` wi
 - **Read/late updates:** return `{status,startEventAt?,targetDeadlineAt?,legalCapAt?,effectiveAt?}` and a distinct changeable `deliveryEstimate`. When no authorized event/rule exists, omit unavailable date fields and return `awaiting_start` or `under_review`, never a fictional firm date. Notify of changed estimates; log deadline-affecting policy corrections without overwriting snapshots.
 - **Boundary:** changing future charges or policies does not alter an accepted order's charge/rule snapshot. Fulfillment updates are manual (no courier/GPS integration). Legal applicability/start events must be approved before launch (API §§11.3, 14.3).
 
+**Deadline policy boundary:** `startEvent` uses the actual event field name `confirmedAt`; legal caps
+may independently start at `placedAt` or `confirmedAt`. No configured eligible basis returns
+`{status:'under_review',startEvent:'confirmedAt',ruleVersion:'unconfigured'}` without absolute dates.
+The reserved `unconfigured` value is not a policy version and cannot authorize checkout/confirmation.
+Approved configuration binds an immutable rule, review reference/digest and capture time (Database
+§7.2); new checkout capture rejects absent, future, expired or digest-mismatched rules. Existing accepted
+snapshots remain evaluated against their captured rule even after future configuration changes/expiry.
+Malformed, future or contradictory actual event timestamps expose under_review with no definitive dates.
+Before the target start, awaiting_start may expose a separately calculated legalCapAt when its real
+start event exists, but it cannot invent targetDeadlineAt/effectiveAt. Once all required events exist,
+effectiveAt is the earlier target/applicable cap; a late read or delayed confirmation never resets a
+past legal cap. Calculated timing alone does not authorize stock, funding or fulfillment transitions.
+
+An optional approved estimate basis is projected separately as deliveryEstimate after its actual start;
+it never postpones an effective deadline. ETA/exception updates do not change the accepted basis, waive
+legal caps or authorize automatic inventory/coupon effects. Actual order CAS/audit/notification and
+exception operations remain their owning order-service contracts. Rule/review metadata (reviewer,
+evidence reference and digest) is internal; public projections use only the DeliveryDeadline allowlist.
+
+
 ## 12. Payments, COD & gateway callbacks
 
 ### 12.1 Payment surfaces and statuses
@@ -954,7 +1053,7 @@ The admin accepts/rejects after checking `pending/confirmed`, or `processing` wi
 | ------ | ---------------------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | `GET`  | `/checkout/payment-methods`                          | Public                     | `amountPoisha?,orderId? (owned if supplied) → {methods:[{channel,active,eligible,reasonCode?,minPoisha?,maxPoisha?}]}`              | 12     |
 | `GET`  | `/orders/{orderId}/payments`                         | C owner or G-scoped        | `— → {payment:PaymentSummary,attempts:PaymentAttemptPublic[]}`                                                                      | 12, 19 |
-| `POST` | `/orders/{orderId}/payment-attempts`                 | C owner or G-scoped        | `{requestedChannel} + Idempotency-Key → {attemptId,expectedAmountPoisha,state,redirectUrl?,expiresAt?}`                             | 12     |
+| `POST` | `/orders/{orderId}/payment-attempts`                 | C owner or G-scoped        | `{requestedChannel} + Idempotency-Key → {attemptId?,expectedAmountPoisha?,state,redirectUrl?,expiresAt?}`                             | 12     |
 | `GET`  | `/orders/{orderId}/payment-attempts/{attemptId}`     | C owner or G-scoped        | `— → {id,state,riskStatus?,lastCheckedAt?}`                                                                                         | 12     |
 | `POST` | `/webhooks/sslcommerz/ipn`                           | P-untrusted intake         | Provider form fields → HTTP acknowledgment; **never** client payment DTO                                                            | 12     |
 | `GET`  | `/payment-returns/sslcommerz/{result}`               | Provider/browser untrusted | Redirect to safe storefront result page; no payment mutation                                                                        | 12     |
@@ -973,12 +1072,41 @@ available, amount eligibility. Client-supplied `amountPoisha` is advisory only: 
 initiation. Inactive channels are omitted, while active-but-amount-ineligible channels may be returned with
 `eligible:false` and a safe reason. This response does not itself authorize a payment.
 
+With no amount/order context, active online methods return `eligible:false,reasonCode:'AMOUNT_REQUIRED'`;
+COD needs no gateway amount check. A supplied `amountPoisha` must be a canonical nonnegative integer
+query string and is advisory only. When `orderId` is supplied, require its current customer owner or
+scoped guest proof, ignore the advisory amount for eligibility, and use canonical remaining merchandise
+funding. The selected order payment method cannot change; fully funded online orders return no methods.
+Inactive methods are omitted. Responses, including order-specific errors, use no-store.
+Merchant qualification uses an operator-controlled evidence manifest with environment/account binding,
+explicit verified lifetime, channel key and approved limits, plus a digest-checked evidence artifact.
+Unknown, expired or mismatched qualification never activates a channel; settings flags alone cannot.
+
 The merchant activation rule reflects **verified enablement**, not merely a boolean set by a local UI. bKash, Nagad and Rocket are each required for launch; other gateway channels are not newly approved product methods.
 A caller may suggest a channel; the server validates live merchant permissions and controls the SSLCOMMERZ hosted flow.
 `PaymentAttemptPublic` contains no provider validation secrets or card/bank data.
 `GET /orders/{id}/payments` does not expose **unmatched** provider intake as belonging to that customer.
 
 ### 12.2 Hosted initiation, retries and uncertain state
+
+Address/quote/order retain optional postalCode (at most 30 characters). Online initiation requires a
+stored postcode and gateway-bounded contact/shipment fields; missing historical data is a reviewed
+business conflict, never a fabricated default or a rewrite of an order snapshot.
+
+The initiation/status routes are independently gated by PAYMENT_INITIATION_ENABLED for local/test
+only; staging/live activation requires later callback and verification qualification. POST requires
+current customer or scoped guest ownership, exact storefront Origin, CSRF and a bounded Idempotency-Key.
+The durable key is scoped to the current principal and existing order. Every replay reauthorizes scope,
+returns current attempt state and never dispatches again. A dispatch committed without a known outcome
+remains uncertain, including crash-before-call; a new key cannot bypass reconciliation. Allocation
+shortfall returns `{state:'allocation_shortfall'}` without an attempt/provider call; a fresh explicit
+request can retry capacity after resolution, while the original key retains its shortfall outcome.
+
+An accepted session URL is returned only while the attempt, original amount, order lifecycle,
+funding/risk state, current channel qualification and fixed hold expiry still permit it. Revocation
+or cancellation does not erase the historical session or imply provider noncollection. Session
+creation rejection is not independent payment-failure verification. GET returns only the owned current
+database projection; it performs no provider query or financial transition.
 
 1. Verify ownership, approved channel, lifecycle and all unresolved attempts. Derive `remainingMerchandiseFundingPoisha =
 max(0, originalFinalTotalPoisha - currentVerifiedMerchandiseAllocatedPoisha)` from locked authoritative projections, not a
@@ -1283,12 +1411,12 @@ No public endpoint can mutate base/sale prices, SKU identity or stock.
 
 | Method  | Path                                        | Request → response                                                        | FR  |
 | ------- | ------------------------------------------- | ------------------------------------------------------------------------- | --- |
-| `GET`   | `/admin/products`                           | `q?,status?,page? → AdminProduct[]`                                       | 23  |
+| `GET`   | `/admin/products`                           | `q?,status?,page?,pageSize? → AdminProduct[]`                                       | 23  |
 | `POST`  | `/admin/products`                           | `ProductCreateInput → AdminProduct`                                       | 23  |
-| `GET`   | `/admin/products/{productId}`               | `— → AdminProduct`                                                        | 23  |
+| `GET`   | `/admin/products/{productId}`               | `— → AdminProductDetail`                                                  | 23  |
 | `PATCH` | `/admin/products/{productId}`               | `ProductPatch + If-Match → AdminProduct`                                  | 23  |
 | `POST`  | `/admin/products/{productId}/deactivate`    | `{reason} + If-Match → AdminProduct`                                      | 23  |
-| `GET`   | `/admin/categories`                         | `status?,page? → AdminCategory[]`                                         | 24  |
+| `GET`   | `/admin/categories`                         | `status?,page?,pageSize? → AdminCategory[]`                               | 24  |
 | `POST`  | `/admin/categories`                         | `CategoryCreateInput → AdminCategory`                                     | 24  |
 | `PATCH` | `/admin/categories/{categoryId}`            | `CategoryPatch + If-Match → AdminCategory`                                | 24  |
 | `POST`  | `/admin/categories/{categoryId}/deactivate` | `{reason} + If-Match → AdminCategory`                                     | 24  |
@@ -1306,21 +1434,99 @@ No public endpoint can mutate base/sale prices, SKU identity or stock.
 banner). Persist absence via controlled unset; response optional fields remain omitted. Reject null elsewhere, invalid
 prices and protected fields. Empty bounded arrays replace a list only where the corresponding patch allows it.
 
+Category administration uses strict create/patch/deactivation bodies and standard pagination (default 20,
+maximum 100), sorted by sortOrder then ID ascending. Names trim to 1–200 characters, slugs trim/lowercase
+and use at most 160 ASCII slug characters; nonnegative sortOrder is a safe integer. Create returns 201
+with ETag; PATCH and reasoned deactivation return 200 with ETag. Lists expose each row's revision.
+If-Match must be a strong canonical quoted numeric revision; absent returns 428, malformed/stale returns
+412, unknown category returns 404 and normalized slug conflicts return 409 STATE_CONFLICT. Hierarchy
+writes may advance ancestor revisions, so refresh list state after a stale-edit response.
+
+CategoryCreateInput does not accept null parent/image; root creation omits parentId. CategoryPatch requires
+at least one declared field. Omitted parent/image remain unchanged; explicit null clears the corresponding
+reference. Image writes require an eligible public media ledger record, canonical provider URL and guarded
+attachment/detachment in the same transaction as category metadata and audit. Unknown/private/quarantined,
+expired or deleting media cannot be attached; a caller's URL never establishes eligibility. Omitted/blank alt
+uses the category name bounded to 120 Unicode characters. Replacement/removal releases only that category's
+image reference and never calls provider deletion inside the transaction.
+
+Default-disabled media composition permits metadata-only operations; image-bearing writes fail closed with
+503 until explicit verified media capabilities are supplied. This does not approve the account or activate
+live uploads. Deactivation retains dependent categories/products and removes their inactive ancestry from
+public projections; active product associations still require active ancestry. There is no category DELETE
+HTTP route. Internal deletion remains guarded by children/product references and attached-image state.
+Category writes, media references, authorization fences and audit facts roll back together on failure.
+
+Product creation includes required `variants:VariantCreateInput[]` (1–100), and commits product, initial
+SKUs, category fences, media references and audit atomically. A no-options product has exactly one default
+SKU (`attributes:{}`); option variants share the same normalized attribute keys and distinct combinations.
+Draft/inactive products also retain at least one configured SKU. Active products require active ancestry
+and at least one active SKU. `GET /admin/products/{productId}` returns `AdminProductDetail`, the AdminProduct
+fields plus bounded `variants:AdminVariant[]` including inactive SKUs; other product responses remain AdminProduct.
+The configured aggregate is bounded to 100 SKUs; subsequent variant creation validates against that aggregate.
+SKU and attributes are creation-time identity; VariantPatch permits only its declared price/status/threshold fields.
+Product list search is a bounded literal name/slug substring, newest/ID descending, with standard pagination.
+Default product status is draft; SKU status defaults active and counters start at zero. Stock changes only
+through inventory services. Nullable sale price/threshold clears persist absence; omitted fields remain.
+Merged variant prices must satisfy sale ≤ regular price. Product, category, rating and stock fields are not
+accepted by VariantPatch; initial variants and all protected counters/revisions cannot be edited in ProductPatch.
+Deactivation is non-destructive. An active product cannot lose its last active SKU; concurrent variant writes
+serialize on a parent-product revision fence, and newly active SKUs require valid active ancestry.
+
+Product gallery order defines positions and media reference slots; at most 12 distinct public images are
+allowed. Omitted images are preserved and `[]` removes the gallery through transactional detachment. Reordering
+first detaches old slots then attaches new slots inside one transaction, so the 40-reference public reuse
+limit is never temporarily exceeded. Target metadata, media ledger and audit commit or roll back together;
+there are no provider calls or destructive asset deletes in this transaction. Metadata-only work does not
+activate media; image mutations need explicit verified media capabilities.
+
+Create returns Location for the product resource and strong ETag. Variant edits and canonical stock events
+also advance the parent product revision in their transaction, keeping the detail's revision/ETag coherent
+with its variant representation. Refresh after stale edits, including when inventory activity invalidates
+a product/variant token. Required If-Match failure codes remain 428/412; duplicate normalized identities
+return 409 STATE_CONFLICT and a last-active-SKU violation returns 422 BUSINESS_RULE_VIOLATION.
+
+
 **Master record schemas:**
 
-| Input                 | Validated field allowlist / guard                                                                                                     |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `ProductCreateInput`  | `name,slug,description,categoryIds[],images[],keywords?,featured?,status?`; activate only with valid category and purchasable variant |
-| `ProductPatch`        | Same editable fields; cannot edit immutable order snapshots or internal rating counters                                               |
-| `VariantCreateInput`  | `sku,attributes,regularPricePoisha,salePricePoisha?,status?`; default SKU required for no-options product                             |
-| `VariantPatch`        | `regularPricePoisha?,salePricePoisha:nullable<money>?,status?,lowStockThreshold:nullable<int>?`; **no stock fields**                  |
-| `CategoryCreateInput` | `name,slug,parentId?,status?,image?,sortOrder?`; reject cycles and invalid parents                                                    |
-| `CategoryPatch`       | Editable metadata/status; reassignment required before prohibited destructive changes                                                 |
+| Input                 | Validated field allowlist / guard                                                                                                                                   |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ProductCreateInput`  | `name,slug,description,categoryIds[],variants[],images?,keywords?,featured?,status?`; atomic product/SKU creation; activate only with valid category and active SKU |
+| `ProductPatch`        | Same editable fields; cannot edit immutable order snapshots or internal rating counters                                                                             |
+| `VariantCreateInput`  | `sku,attributes,regularPricePoisha,salePricePoisha?,status?`; default SKU required for no-options product                                                           |
+| `VariantPatch`        | `regularPricePoisha?,salePricePoisha:nullable<money>?,status?,lowStockThreshold:nullable<int>?`; **no stock fields**                                                |
+| `CategoryCreateInput` | `name,slug,parentId?,status?,image?,sortOrder?`; reject cycles and invalid parents                                                                                  |
+| `CategoryPatch`       | Editable metadata/status; reassignment required before prohibited destructive changes                                                                               |
 
 SKU and slug normalization and uniqueness are Database §§6.1–6.3. An `adjustments` call changes only verified physical
 stock through an inventory service and appends `inventoryMovements` in one transaction; reject any adjustment leaving
 `physical < reserved + committed`. `deltaPhysical` may be negative but must be a bounded safe integer. A duplicated
 `Idempotency-Key` must not create another movement. Do not invent a generic `/admin/inventory/{id}` PATCH.
+
+Inventory list uses standard `page`/`pageSize` bounds (default 20, maximum 100). `q` is a literal,
+case-insensitive SKU/product-name substring, at most 120 characters. `lowStock` accepts only `true`/`false`;
+low means derived available quantity is at or below the variant override or approved primary store threshold.
+Missing/invalid default settings or missing singleton uniqueness fail closed with 503; never invent a threshold.
+Adjustment/history and explicit threshold edits do not depend on a global threshold being configured.
+
+`InventoryList` contains a bounded `variants` page and all-matching (not page-only) `physical,reserved,committed,available`
+totals, with standard pagination metadata. Each row exposes `variantId,productId,sku,status,revision,stock`,
+optional `lowStockThreshold` and resolved `effectiveLowStockThreshold`. Lists include inactive records for authorized
+inventory management, sort by SKU then ID ascending, and never expose product/provider internals. Unsafe aggregate
+integer overflow returns 409 STATE_CONFLICT rather than rounded counters.
+
+Movement history sorts by occurredAt then ID descending. Optional UTC `from` is inclusive and `to` exclusive;
+require from before to when both exist. Unknown variants return 404. Private replay keys, order/reservation internals
+and connection metadata are not in the movement allowlist. Threshold PATCH requires strong numeric If-Match and
+returns AdminVariant with a new ETag; `null` removes only the override, while zero is a valid explicit threshold.
+It never edits stock and commits its admin audit with the revision update.
+
+Adjustment keys are opaque nonempty strings of at most 128 characters, with no leading/trailing whitespace or
+control characters. Their natural scope is variant + adjustment type. Repeated identical actor/delta/reason returns
+the same movement ID and the current transaction's stock without a second stock/audit effect; a changed payload or
+actor returns 409 IDEMPOTENCY_CONFLICT. Physical change, movement, admin authorization fences and audit commit
+atomically; failure rolls them all back. Reservations/commits and threshold edits share the canonical variant write
+conflict boundary, preventing overselling or stale CAS even across different administrators.
 
 ### 14.2 Orders, delivery, customers and review moderation (admin)
 
@@ -1367,11 +1573,11 @@ rating or unfairly suppress valid negative feedback. Always audit decisions/reas
 | `POST`  | `/admin/delivery/charges/{chargeId}/activate`   | `{reason,effectiveAt?} + If-Match + Idempotency-Key → DeliveryChargeRule`                                                                          | 28  |
 | `POST`  | `/admin/delivery/charges/{chargeId}/supersede`  | `{replacement:DeliveryChargeInput,effectiveAt,reason} + If-Match + Idempotency-Key → {previous:DeliveryChargeRule,replacement:DeliveryChargeRule}` | 28  |
 | `POST`  | `/admin/delivery/charges/{chargeId}/deactivate` | `{effectiveAt,reason} + If-Match + Idempotency-Key → DeliveryChargeRule`                                                                           | 28  |
-| `GET`   | `/admin/coupons`                                | `status?,page?,pageSize? → CouponAdmin[]`                                                                                                                    | 30  |
+| `GET`   | `/admin/coupons`                                | `status?,page?,pageSize? → CouponAdmin[]`                                                                                                          | 30  |
 | `POST`  | `/admin/coupons`                                | `CouponInput → CouponAdmin`                                                                                                                        | 30  |
 | `PATCH` | `/admin/coupons/{couponId}`                     | `CouponPatch + If-Match → CouponAdmin`                                                                                                             | 30  |
 | `POST`  | `/admin/coupons/{couponId}/deactivate`          | `{reason} + If-Match → CouponAdmin`                                                                                                                | 30  |
-| `GET`   | `/admin/coupons/{couponId}/redemptions`         | `page?,pageSize? → CouponRedemptionSummary[]`                                                                                                                | 30  |
+| `GET`   | `/admin/coupons/{couponId}/redemptions`         | `page?,pageSize? → CouponRedemptionSummary[]`                                                                                                      | 30  |
 | `GET`   | `/admin/settings`                               | `— → StoreSettings (allowlisted)`                                                                                                                  | 34  |
 | `PATCH` | `/admin/settings`                               | `SettingsPatch + If-Match → StoreSettings`                                                                                                         | 34  |
 | `GET`   | `/admin/settings/policies`                      | `type?,status?,page?,pageSize? → paginated PolicyDocumentSummary[]`                                                                                | 34  |
@@ -1388,6 +1594,36 @@ rating or unfairly suppress valid negative feedback. Always audit decisions/reas
 - To **edit a charge**, use `supersede` to create a new immutable-priced version and close the predecessor's effective window in **one** store-wide-guarded transaction. Deactivation ends the window without replacement; subsequent checkout for uncovered areas fails closed. Activate a scheduled version only if it is effective and nonoverlapping. Compare each rule's `revision` and return updated `ETag`; stale state is `412`, overlaps `409 STATE_CONFLICT`. Scheduled future changes do not retroactively alter order snapshots.
 - No unsupported zone can be quoted. Legal deadline/coverage rules require operator approval before activation (Database §7.6).
 
+**Delivery execution details:** zone and charge lists use canonical pagination (default 20, maximum
+100) ordered by createdAt/ID descending; charge filters are `zoneId,status`. Zone writes and charge
+creation return strong revision ETags. Charge transition responses carry the affected rule ETag;
+supersession carries the predecessor's updated ETag and includes each rule's revision in the body.
+Canonical coverage keys use lowercase ASCII slug identifiers for each district/area (1–64 characters,
+letters/digits separated by single hyphens), joined by `:`; `*` is permitted only as the area component.
+Trim/lowercase keys at input; these are operator-supplied identifiers, not invented geographic coverage.
+Charges use nonnegative safe integer poisha. New charge windows cannot start before the server's
+operation time; future starts remain scheduled, while a start effective now may become active. A
+scheduled charge is activated only when due and its zone is active; an optional activation `effectiveAt`
+must equal its immutable effectiveFrom. Worker delay never permits guessing an unactivated charge.
+
+Supersession requires the same coverageKey, allows a different active zone and binds replacement
+`effectiveFrom` to `effectiveAt`. Closing a window must be nonretroactive, strictly after its start
+and cannot extend its original configured end. An explicitly closed boundary cannot subsequently
+move; an unchanged boundary may be reused for a replacement. Future closures keep the predecessor's
+current status until the boundary; the guarded worker ends it before activating the successor.
+Zone status changes preserve charge history and windows; an inactive exact zone never falls through
+to a district wildcard. All charge writes and zone-status changes acquire the canonical settings
+coverage guard before interval checks and update affected zone fences in stable ID order. The settings
+edit revision is independent. Missing singleton/indexes or exhausted counters fail closed.
+
+Activate/deactivate/supersede each retain one private durable replay identity and original response
+snapshot per charge. Keys bind actor, action, rule, normalized payload and original revision. Exact
+replays return the original result after later worker transitions; changed actor/payload/key conflicts
+fail without repeating domain effects. Global guard increments are serialization tokens, not public
+settings edits. Commercial amount, coverage, start and version are immutable; future edits create a
+new version allocated across the full key history, including inactive rules. Mutations and automatic
+expiry/activation audit commit together. There is no charge PATCH/DELETE or physical history deletion.
+
 **Coupons:**
 `CouponInput:{code,type,value,minEligibleSubtotalPoisha,startsAt,expiresAt,status,overallLimit?,perCustomerLimit?,eligibleProductIds?,eligibleCategoryIds?}`;
 `type=percentage` uses basis points `1..10000`, fixed uses poisha. No client edit to `heldCount`, `redeemedCount`,
@@ -1397,7 +1633,7 @@ terms. Reacquisition must still honor immutable accepted line allocations/total;
 `CouponPatch` permits only optional CouponInput fields, with at least one field. Null clears only
 `overallLimit`, `perCustomerLimit`, `eligibleProductIds` or `eligibleCategoryIds`; omission preserves them.
 Revalidate the complete merged configuration (including date ordering, percentage bounds and distinct scope IDs).
-At most 200 IDs per scope list; absent/empty scopes mean global merchandise scope. Reject global or per-customer
+At most 200 IDs per scope list; absent/empty scopes mean global merchandise scope. Each nonempty scope is a restriction: when both product and category scopes are configured, a line must satisfy both (AND); a category match means membership in one of the listed product category IDs. Empty scopes impose no additional restriction. Reject global or per-customer
 limit reductions below current held plus redeemed usage (`422 BUSINESS_RULE_VIOLATION`). Configuration changes
 serialize with quota writes on the canonical coupon document. Code uniqueness is case-insensitive; conflicts
 return `409 STATE_CONFLICT`. No edit rewrites redemption terms or resets counters.
@@ -1426,6 +1662,37 @@ operator/legal approval evidence, then `publish` checks approved status, CAS and
 visible until then. Historic approved content remains immutable. Rollback uses a **new reviewed version**. Public
 `/storefront/policies/{type}` serves the effective published pointer only. Do not fabricate approval by passing an
 arbitrary string.
+
+**Settings projections:** `ContactInfo:{email?,phone?,website?}` requires at least one field;
+email is validated (maximum 254), phone is normalized Bangladesh mobile `+8801[3-9]` plus eight digits,
+and website is HTTPS without credentials, query or fragment (maximum 2,000).
+`StoreAddress:{line1,line2?,area,district,postalCode?}` uses 300-character address lines,
+120-character area/district and optional four-digit postal code. `SettingsPatch` also permits
+`complaintContact?:ContactInfo`; the public contact endpoint omits unset contact fields and never
+returns address, branding, payment flags, policy pointers or private configuration. All nested objects
+reject unknown fields. Operator-authenticated settings writes authorize public contact/banner copy;
+no placeholder content is seeded. Store names, banner title and alt are bounded to 120 characters.
+Banner destinations must be internal absolute paths beginning with a single `/`, without backslashes,
+whitespace or control characters. `homepageBanner:null` clears it. Branding uses verified `MediaRef`;
+client URLs alone cannot establish a valid attachment. Settings GET/PATCH use strong revision ETags;
+normalized no-op metadata PATCH preserves revision. Settings/policy changes preserve the independent
+delivery coverage revision. Policy content is bounded plain text (50,000 characters), rejecting HTML
+and non-whitespace controls; consumers render it as text.
+
+**Policy evidence and replay:** the platform operator maintains a protected, durable, read-only server
+approval register, separate from browser inputs. Each entry binds `evidenceRef,type,version,contentDigest,
+effectiveAt,approvedAt,approvedBy` to independently reviewed operator/legal evidence. Content digests
+are SHA-256 of the normalized UTF-8 policy text. The server accepts an approval only for an exact
+reference/type/version/digest match with a nonfuture approval date; the approved effective date is
+fixed and must match publication. Missing evidence rejects approval; an arbitrary browser reference
+never creates evidence. Register maintenance does not itself approve legal content. Approval and
+publication each retain durable hashed key/request identities, actor, original revision and response
+state on the policy document. Same key/actor/payload/revision replays the original result even after
+later transitions; a conflicting request fails with `409 IDEMPOTENCY_CONFLICT`. Approval returns an
+ETag; publication returns its canonical version/effectiveAt/status DTO. Immediate publication requires
+an effective time strictly later than the active version. Scheduled activation serializes on the
+canonical singleton, preserves immutable prior content and cannot replace a later effective version
+with an older scheduled one. Both privileged and worker transitions commit their audit atomically.
 
 **Settings:** editable store branding/contact/address, approved public complaint channel, low-stock threshold, configured
 payment eligibility and versioned policies. `paymentChannels.*Enabled=true` is **not** evidence of live merchant
@@ -1567,6 +1834,7 @@ unique references and explicit compensating recovery paths.
 
 - **SSLCOMMERZ hosted checkout:** API sends server-side credentials, unique `tran_id`, expected **decimal BDT representation derived exactly from integer poisha**, customer/shipment details within gateway field limits, and configured success/fail/cancel/IPN URLs. Never trust frontend-calculated money or allow direct merchant credential exposure.
 - **Validation:** independent transaction validation/status; verify merchant identity, references, currency, amount, successful settlement status and `risk_level`. Provider status/result fields vary by API, therefore use an isolated version-aware adapter; no raw gateway shape exposed to browsers.
+- **Adapter transport:** fixed mode-specific HTTPS origins and documented v4 paths, no redirects or automatic retries. Initiation rejection requires a well-formed explicit provider FAILED response without a session; HTTP/network/timeout/malformed outcomes remain uncertain. Validation/status results are redacted provider reports, never order funding decisions. Exact decimal strings are converted to integer poisha without floating-point rounding. Queries use documented credential-bearing GET parameters; do not log outbound URLs or response bodies. Callback URLs are built from an explicitly configured API origin and the canonical §12.1 paths. An isolated adapter configuration never enables a channel or public endpoint.
 - **Refunds:** originate from a specific verified `paymentCollections` source; persist merchant-generated `refund_trans_id`, store provider-returned `refund_ref_id`, verify status; gateway capability and partial refund support require merchant sandbox/production approval.
 - **Unmatched receipts:** verified merchant money enters separate `providerReceiptIntake` and remains admin-only until a defensible link decision; never fabricate an order/attempt.
 - **Live launch gate:** bKash, Nagad, Rocket and COD each need tested/verified acceptance. Sandbox simulation is not production merchant activation.
@@ -1867,12 +2135,13 @@ The following field allowlists define client inputs and server responses. `*Inpu
 | `CategoryCreateInput`      | `name:string!,slug:string!,parentId:id?,status:enum(active,inactive)?,image:MediaRef?,sortOrder:int?`                                                                                                                                                                                                                                                                                                                                                                                                                           | Parent acyclic; active ancestry required for public use                                                                                                          |
 | `CategoryPatch`            | `name?,slug?,parentId:nullable<id>?,status?,image:nullable<MediaRef>?,sortOrder?`                                                                                                                                                                                                                                                                                                                                                                                                                                               | Null parent makes root after hierarchy checks; null image removes reference safely; CAS required                                                                 |
 | `AdminCategory`            | `id!,name!,slug!,parentId?,status!,revision:int!,sortOrder:int!,image?`                                                                                                                                                                                                                                                                                                                                                                                                                                                         | `ETag` on read/edit; hidden categories admin-only                                                                                                                |
-| `ProductCreateInput`       | `name:string!,slug:string!,description:string!,categoryIds:id[]!,images:MediaRef[]?,keywords:string[]?,featured:bool?,status:enum(draft,active,inactive)?`                                                                                                                                                                                                                                                                                                                                                                      | No direct stock or variant price object                                                                                                                          |
+| `ProductCreateInput`       | `name:string!,slug:string!,description:string!,categoryIds:id[]!,variants:VariantCreateInput[]!,images:MediaRef[]?,keywords:string[]?,featured:bool?,status:enum(draft,active,inactive)?`                                                                                                                                                                                                                                                                                                                                       | No direct stock; initial variant prices belong only to the required variants entries                                                                             |
 | `ProductPatch`             | `name?,slug?,description?,categoryIds?,images?,keywords?,featured?,status?`                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Approved fields only; CAS and audit                                                                                                                              |
 | `AdminProduct`             | `id!,name!,slug!,description!,categoryIds:id[]!,status!,featured!,images:MediaRef[]!,createdAt:date!,updatedAt:date!,revision:int!`                                                                                                                                                                                                                                                                                                                                                                                             | Variants separate; no raw Mongoose shape                                                                                                                         |
+| `AdminProductDetail`       | AdminProduct fields plus `variants:AdminVariant[]!`                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Includes every configured active/inactive SKU, maximum 100; admin-only                                                                                           |
 | `VariantCreateInput`       | `sku:string!,attributes:map<string,string>!,regularPricePoisha:money!,salePricePoisha:money?,status:enum(active,inactive)?`                                                                                                                                                                                                                                                                                                                                                                                                     | Owning `productId` comes from the authorized path, never a conflicting body field; stock assigned by inventory service                                           |
 | `VariantPatch`             | `regularPricePoisha:money?,salePricePoisha:nullable<money>?,status:enum(active,inactive)?,lowStockThreshold:nullable<int>?`                                                                                                                                                                                                                                                                                                                                                                                                     | Null clears sale/threshold override; omission unchanged; same allowlist as §14.1; no stock, SKU or attribute writes; every change increments the record revision |
-| `AdminVariant`             | `id!,productId!,sku!,attributes!,regularPricePoisha!,salePricePoisha?,status!,stock:{physical,reserved,committed,available},revision:int!`                                                                                                                                                                                                                                                                                                                                                                                      | Available stock derived, never client-writable                                                                                                                   |
+| `AdminVariant`             | `id!,productId!,sku!,attributes!,regularPricePoisha!,salePricePoisha?,status!,stock:{physical,reserved,committed,available},revision:int!,lowStockThreshold:int?`                                                                                                                                                                                                                                                                                                                                                               | Available stock derived, never client-writable                                                                                                                   |
 | `CartLineInput`            | `variantId:id!,quantity:int!`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Positive quantity; duplicate variant rejected/merged once                                                                                                        |
 | `CheckoutQuoteInput`       | `items:CartLineInput[]!,recipient:AddressInput! XOR savedAddressId:id!,email:string? (required guest),contactPhone:string?,couponCode:string?,method:enum(cod,bkash,nagad,rocket)!`                                                                                                                                                                                                                                                                                                                                             | Contact phone defaults to `recipient.phone`; guest recipient phone required; no client money totals                                                              |
 | `CheckoutSubmitInput`      | All quote fields plus `quoteId:id!,acceptedTermsVersion:string!,acceptedPolicyVersionIds:string[]!,notes:string?`                                                                                                                                                                                                                                                                                                                                                                                                               | Same normalization as quote; request `Idempotency-Key` mandatory                                                                                                 |
@@ -1888,8 +2157,9 @@ The following field allowlists define client inputs and server responses. `*Inpu
 | `DeliveryZone`             | `id!,name!,description?,status!,revision:int!,coverageRevision:int!`                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `ETag` refers to `revision`, not `coverageRevision`                                                                                                              |
 | `DeliveryChargeInput`      | `zoneId:id!,coverageKey:string!,amountPoisha:money!,effectiveFrom:date!,effectiveTo:date?`                                                                                                                                                                                                                                                                                                                                                                                                                                      | Admin approved, no conflicting windows                                                                                                                           |
 | `DeliveryChargeRule`       | `id!,zoneId!,coverageKey!,amountPoisha!,ruleVersion:int!,status:enum(scheduled,active,inactive)!,effectiveFrom!,effectiveTo?,revision:int!,supersedesChargeId?`                                                                                                                                                                                                                                                                                                                                                                 | Historic charge amount/coverage write-once; deactivation only closes window                                                                                      |
-| `SettingsPatch`            | `storeName?,branding?:MediaRef,contact?:ContactInfo,address?:ContactInfo,homepageBanner:nullable<HomepageBannerInput>?,lowStockThreshold?:int,paymentChannels?:{bkashEnabled?,nagadEnabled?,rocketEnabled?,codEnabled?}`                                                                                                                                                                                                                                                                                                        | No credentials; channel flag alone cannot assert live activation; CAS required                                                                                   |
+| `SettingsPatch`            | `storeName?,branding?:MediaRef,contact?:ContactInfo,complaintContact?:ContactInfo,address?:StoreAddress,homepageBanner:nullable<HomepageBannerInput>?,lowStockThreshold?:int,paymentChannels?:{bkashEnabled?,nagadEnabled?,rocketEnabled?,codEnabled?}`                                                                                                                                                                                                                                                                                                        | No credentials; channel flag alone cannot assert live activation; CAS required                                                                                   |
 | `StoreSettings`            | Resolved settings read form (homepageBanner includes verified image; nullable clear inputs become omitted optional fields) plus `key:'primary',activePolicyVersions:Partial<Record<PolicyType,string>>,revision:int!,updatedBy:id?`                                                                                                                                                                                                                                                                                             | Admin only; published policies external `policyDocuments`                                                                                                        |
+| `StorefrontHome` | `featured:ProductCard[]!,newArrivals:ProductCard[]!,discounted:ProductCard[]!,categories:Category[]!,storeName?,branding:MediaRef?,contact:ContactInfo?,complaintContact:ContactInfo?,banner:HomepageBanner?,policyLinks:[{type,version,href}]!` | Bounded current public merchandising; no internal settings or unpublished policies |
 | `HomepageBanner`           | `assetId:id!,title:string!,alt:string!,href:string?,image:MediaRef!`                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Resolved approved public projection; image supplied by server from mediaAssets                                                                                   |
 | `HomepageBannerInput`      | `assetId:id!,title:string!,alt:string!,href:string?`                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Validated public media asset; relative internal destination; null in SettingsPatch removes banner safely                                                         |
 | `PolicyDraftInput`         | `type:enum(shipping,cancellation,returns,refunds,privacy,terms,complaints)!,content:string!,proposedEffectiveAt:date?`                                                                                                                                                                                                                                                                                                                                                                                                          | Server generates version and ID; content length/sanitization enforced                                                                                            |

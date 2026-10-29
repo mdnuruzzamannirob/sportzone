@@ -334,3 +334,13 @@ export function couponAllocationService(
     },
   }
 }
+
+export function couponGenerationAccess(connection: Connection) {
+  const models = couponModels(connection)
+  return async (session: ClientSession, orderId: string, generation: number) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyCouponPersistence(connection)
+    const row = await models.redemptions.findOne({ orderId, generation }).session(session)
+    return row ? { status: row.status, heldAt: row.heldAt, expiresAt: row.expiresAt } : null
+  }
+}

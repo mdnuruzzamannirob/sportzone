@@ -45,6 +45,7 @@ const address = object(
     districtKey: text(64),
     areaKey: text(64),
     street: text(300),
+    postalCode: text(30),
     addressLine2: text(300),
     isDefault: { bsonType: 'bool' },
   },
@@ -313,4 +314,30 @@ export async function verifyIdentityPersistence(connection: Connection, models: 
       throw new Error('Identity persistence requires reviewed bootstrap/migration.')
   }
   for (const model of Object.values(models)) await verifyDeclaredIndexes(model)
+}
+
+// Explicit additive rollout for the owner-approved optional postalCode. No HTTP auto-migration.
+export async function migrateIdentityPostalCode(connection: Connection) {
+  const db = connection.db
+  if (!db) throw new Error('Identity database unavailable')
+  const row = await db.listCollections({ name: 'users' }, { nameOnly: false }).next()
+  if (!row) return
+  const current = identityCollectionValidators.users
+  const legacy: unknown = JSON.parse(
+    JSON.stringify(current, (key, value: unknown) => (key === 'postalCode' ? undefined : value)),
+  )
+  if (
+    row.options?.validationLevel !== 'strict' ||
+    row.options?.validationAction !== 'error' ||
+    (!isDeepStrictEqual(row.options.validator, current) &&
+      !isDeepStrictEqual(row.options.validator, legacy))
+  )
+    throw new Error('Unknown identity validator; reviewed migration required')
+  if (isDeepStrictEqual(row.options.validator, legacy))
+    await db.command({
+      collMod: 'users',
+      validator: current,
+      validationLevel: 'strict',
+      validationAction: 'error',
+    })
 }

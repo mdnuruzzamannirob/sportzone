@@ -116,7 +116,18 @@ Within backend, implement identity/security → catalog/media/inventory manageme
 
 A work package follows `Confirm contracts → Implement owning application capability → Verify affected behavior → Record evidence → Independent review`. Backend implementation does not require frontend builds, browser installation or screen development. Shared contract changes require compatibility assessment; client integration is verified in its owning stage. Keep existing public contracts compatible unless an explicit contract change is approved.
 
-External prerequisites remain real gates. Continue safe work within the stage while blocked; do not declare the backend fully accepted or silently advance to admin when required backend acceptance remains blocked. For high-risk mutations, write state-transition/concurrency tests before integrated activation and keep external calls outside database transactions.
+Separate reusable local capabilities from external acceptance when the latter is not needed to implement a
+consumer safely. P04-020 verifies the media ledger, authorization, scanner/provider protocol boundaries and
+fail-closed composition using isolated MongoDB and explicit test doubles. Its independent acceptance is the
+technical prerequisite for category/settings implementation. P04-003 retains the complete media outcome,
+including real account, scanner, policy and upload/private-delivery/deletion evidence. Local acceptance never
+activates an unapproved provider or substitutes a fake in ordinary runtime. Dependent tasks must still validate
+media references and deny unavailable capabilities; tests use clearly identified synthetic fixtures.
+
+External prerequisites remain real gates. P03-022 explicitly requires P04-003 and P09-011, so local media
+acceptance does not accept the backend stage, permit the admin stage or waive integrated/release evidence.
+Continue safe work within the stage while blocked; do not declare the backend fully accepted or silently
+advance to admin when required backend acceptance remains blocked. For high-risk mutations, write state-transition/concurrency tests before integrated activation and keep external calls outside database transactions.
 
 ### 3.2 Standard phase format
 
@@ -353,7 +364,7 @@ The twelve phase labels below classify requirement ownership and preserve existi
 
 **Objective:** Make approved products discoverable and purchasable by SKU while establishing authoritative stock accounting.
 
-**Prerequisites:** Protected admin API and data foundation; client work additionally requires its owning stage and UI foundation. Cloudinary account, upload policy and credentials must be confirmed or tracked as media-acceptance blockers.
+**Prerequisites:** Protected admin API and data foundation; client work additionally requires its owning stage and UI foundation. Cloudinary account, upload policy and credentials remain media-acceptance prerequisites. Local media capability verification (P04-020) may unblock category/settings implementation under §3.1; complete media acceptance stays with P04-003.
 
 **Backend work packages:**
 
@@ -495,7 +506,7 @@ The twelve phase labels below classify requirement ownership and preserve existi
 
 **Deliverable:** Integrated store-management portal and basic reporting capability.
 
-**Exit gate:** P09-010 confirms all required administration tasks can be completed using authorized screens and verified backend outcomes. P09-011/P09-012 separately provide integrated staging for Phase 10 after storefront acceptance; earlier isolated infrastructure/provider provisioning may support backend verification.
+**Exit gate:** P09-010 confirms all required administration tasks can be completed using authorized screens and verified backend outcomes. P09-011 supplies isolated backend staging before backend closeout; P09-012 supplies the feature-complete integrated deployment for Phase 10 after storefront acceptance.
 
 ### Phase 10 — Testing, security review, and bug fixing
 
@@ -591,7 +602,7 @@ Independent work may proceed within the active application stage once prerequisi
 
 ### 7.3 Dependency and blocker rules
 
-- A blocked external integration retains an explicit blocker; replace it with a fake provider only for tests, not for acceptance.
+- A blocked external integration retains its blocker and complete acceptance obligation. Explicit test doubles may verify an independently scoped local-capability task, never real provider/staging/production acceptance; dependency changes must preserve the external task in application and release closeouts.
 - A feature may be marked **implemented but not externally verified** when local tests pass and a real provider or operator approval is unavailable. It is not considered launch-accepted.
 - A change to pricing, reservation duration, authorization, state transitions, or refunds requires review against the PRD/Architecture and affected tests before development proceeds.
 - No unresolved prerequisite should be hidden by marking an entire milestone complete.

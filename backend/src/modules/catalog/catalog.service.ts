@@ -1,3 +1,4 @@
+import { publicHomeSettings } from '../settings/settings.schema.js'
 import { Types, type ClientSession, type Connection, type PipelineStage } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
@@ -13,6 +14,7 @@ import {
   productCard,
   productQuery,
   productDetail,
+  storefrontHome,
 } from './catalog.schema.js'
 import { attributes, attributeSignature } from './variants/variant.schema.js'
 import type { publicMediaService, PublicImageCandidate } from '../media/public-media.service.js'
@@ -202,6 +204,7 @@ type Result = { rows: Row[]; total: { count: number }[] }
 export function catalogService(
   connection: Connection,
   images: ReturnType<typeof publicMediaService>,
+  homeContent?: { settings: () => Promise<unknown>; policies: () => Promise<unknown> },
 ) {
   const models = productModels(connection),
     categories = categoryModel(connection)
@@ -252,7 +255,96 @@ export function catalogService(
       throw new ApiError('SERVICE_UNAVAILABLE')
     }
   }
+  async function readCategories(query: unknown) {
+    const input = parseInput(categoryQuery, query)
+    await verify('category')
+    const result = await run(
+      [
+        { $match: { status: 'active' } },
+        { $sort: { sortOrder: 1, _id: 1 } },
+        ...ancestry,
+        ...(input.parent
+          ? [
+              {
+                $lookup: {
+                  from: 'categories',
+                  localField: 'parentId',
+                  foreignField: '_id',
+                  as: '_parent',
+                },
+              },
+              { $match: { '_parent.slug': input.parent } },
+            ]
+          : []),
+        {
+          $project: {
+            _id: 0,
+            id: { $toString: '$_id' },
+            name: 1,
+            slug: 1,
+            parentId: {
+              $cond: [
+                { $eq: [{ $type: '$parentId' }, 'objectId'] },
+                { $toString: '$parentId' },
+                '$$REMOVE',
+              ],
+            },
+            _image: '$image',
+          },
+        },
+        facet(input.page, input.pageSize),
+      ],
+      'category',
+    )
+    return {
+      data: await projectMedia(result.rows, 'category'),
+      page: pageMeta(input, result.total[0]?.count ?? 0),
+    }
+  }
   return {
+    async home() {
+      if (!homeContent) throw new ApiError('SERVICE_UNAVAILABLE')
+      await verify('product')
+      const section = async (kind: 'featured' | 'newArrivals' | 'discounted') => {
+        const rows = await models.products
+          .aggregate<Row>([
+            { $match: { status: 'active', ...(kind === 'featured' ? { featured: true } : {}) } },
+            { $sort: { createdAt: -1, _id: -1 } },
+            ...visibleProducts(),
+            ...(kind === 'discounted'
+              ? [{ $match: { $expr: { $lt: ['$_offer.effective', '$_offer.regular'] } } }]
+              : []),
+            { $limit: 8 },
+            cardProjection,
+          ])
+          .option({ maxTimeMS: 3000, allowDiskUse: false })
+          .catch(() => {
+            throw new ApiError('SERVICE_UNAVAILABLE')
+          })
+        return projectMedia(rows, 'product')
+      }
+      const [featured, newArrivals, discounted, categoryRows, metadata, policyLinks] =
+        await Promise.all([
+          section('featured'),
+          section('newArrivals'),
+          section('discounted'),
+          readCategories({ page: '1', pageSize: '12' }),
+          homeContent.settings(),
+          homeContent.policies(),
+        ])
+      const safeMetadata = publicHomeSettings.safeParse(metadata)
+      if (!safeMetadata.success) throw new ApiError('SERVICE_UNAVAILABLE')
+      const result = storefrontHome.safeParse({
+        ...safeMetadata.data,
+        featured,
+        newArrivals,
+        discounted,
+        categories: categoryRows.data,
+        policyLinks,
+      })
+      if (!result.success) throw new ApiError('SERVICE_UNAVAILABLE')
+      return result.data
+    },
     async wishlistProducts(ids: readonly string[], session?: ClientSession) {
       if (ids.length > 200 || ids.some((id) => !/^[a-f0-9]{24}$/.test(id)))
         throw new ApiError('VALIDATION_FAILED')
@@ -517,52 +609,7 @@ export function catalogService(
       if (!detail.success) throw new ApiError('SERVICE_UNAVAILABLE')
       return detail.data
     },
-    async categories(query: unknown) {
-      const input = parseInput(categoryQuery, query)
-      await verify('category')
-      const result = await run(
-        [
-          { $match: { status: 'active' } },
-          { $sort: { sortOrder: 1, _id: 1 } },
-          ...ancestry,
-          ...(input.parent
-            ? [
-                {
-                  $lookup: {
-                    from: 'categories',
-                    localField: 'parentId',
-                    foreignField: '_id',
-                    as: '_parent',
-                  },
-                },
-                { $match: { '_parent.slug': input.parent } },
-              ]
-            : []),
-          {
-            $project: {
-              _id: 0,
-              id: { $toString: '$_id' },
-              name: 1,
-              slug: 1,
-              parentId: {
-                $cond: [
-                  { $eq: [{ $type: '$parentId' }, 'objectId'] },
-                  { $toString: '$parentId' },
-                  '$$REMOVE',
-                ],
-              },
-              _image: '$image',
-            },
-          },
-          facet(input.page, input.pageSize),
-        ],
-        'category',
-      )
-      return {
-        data: await projectMedia(result.rows, 'category'),
-        page: pageMeta(input, result.total[0]?.count ?? 0),
-      }
-    },
+    categories: readCategories,
     async category(slug: string) {
       const input = parseInput(categorySlug, { slug })
       await verify('category')
@@ -593,5 +640,43 @@ export function catalogService(
       if (!result.rows.length) throw new ApiError('NOT_FOUND')
       return (await projectMedia(result.rows, 'category'))[0]
     },
+  }
+}
+
+// Checkout receives only detached selected-SKU facts; catalog retains private persistence and
+// the same active product/category/variant visibility checks used by shopping reads.
+export function catalogCheckoutAccess(connection: Connection) {
+  const catalog = catalogService(connection, async () => new Map())
+  const models = productModels(connection)
+  return async (ids: readonly string[], session: ClientSession) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    const selections = await catalog.cartSelections(ids, session)
+    const variants = await models.variants
+      .find({ _id: { $in: [...selections.keys()] } })
+      .select('productId skuNormalized attributes')
+      .session(session)
+      .lean()
+    const products = await models.products
+      .find({ _id: { $in: variants.map((row) => row.productId) } })
+      .select('categoryIds')
+      .session(session)
+      .lean()
+    return new Map(
+      variants.map((row) => {
+        const id = row._id.toHexString(),
+          selected = selections.get(id)
+        const product = products.find((product) => product._id.equals(row.productId))
+        if (!selected || !product) throw new ApiError('STATE_CONFLICT')
+        return [
+          id,
+          {
+            ...selected,
+            sku: row.skuNormalized,
+            attributes: row.attributes,
+            categoryIds: product.categoryIds.map(String),
+          },
+        ] as const
+      }),
+    )
   }
 }

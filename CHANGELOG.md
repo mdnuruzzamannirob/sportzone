@@ -8,6 +8,156 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 29 October 2026 — Local hosted payment initiation
+
+- Added durable owner/order request identities, one-shot hosted session dispatch and owned status
+  reads with CSRF, current authorization and uncertainty recovery. No acceptance implies verified money.
+- Added transactional expired stock/coupon reacquisition, durable capacity shortfall and current
+  policy/risk/funding checks before reissuing a hosted URL; staging/live activation remains refused.
+- Owner approved optional postalCode across address/quote/order, required before online initiation.
+  Added exact-predecessor additive migration/local bootstrap without rewriting historical snapshots.
+- Added financial race/crash/HTTP/migration coverage and regenerated API/Postman security contracts.
+  P07-004 local/test scope accepted by the project owner on 29 October 2026; provider/callback,
+  checkout and milestone gates remain separate.
+
+## 29 October 2026 — Payment-method availability API
+
+- Added public payment-method discovery with active-only filtering, canonical owned-order balance
+  eligibility and customer/scoped-guest authorization; checkout quotes share verified capabilities.
+- Added an operator-controlled channel evidence manifest with account/environment/digest/lifetime
+  verification. Missing qualification keeps online channels unavailable; flags alone cannot activate them.
+- Updated generated API/Postman artifacts and safety/contract checks. P07-003 accepted by the project owner on 29 October 2026;
+  no hosted initiation, live merchant or milestone acceptance implied.
+
+## 29 October 2026 — Private SSLCOMMERZ v4 adapter
+
+- Added fixed-origin server-only hosted initiation, validation and session/transaction status transport,
+  explicit environment-safe configuration, exact money conversion and redacted provider reports.
+- Unknown transport/results remain uncertain, without automatic retry; provider calls are excluded
+  from business transactions. Added unit and loopback HTTP/replica-set contract verification.
+- P07-001 accepted by the project owner on 29 October 2026. No live merchant, payment HTTP, funding or channel activation implied.
+
+## 29 October 2026 — Payment record foundation
+
+- Added private attempt preparation with transactional retry lineage, unique provider references,
+  remaining-balance snapshots and durable audit rollback.
+- Added strict receipt intake/collection schemas, identity indexes, allocation/refund caps and
+  additive local/test bootstrap. Provider initiation and receipt ingestion remain separate tasks.
+- P07-002 submitted for independent review; no merchant or milestone acceptance implied.
+
+## 29 October 2026 — Public homepage discovery API
+
+- Added bounded featured/new-arrival/discounted sections and category discovery using existing catalog
+  visibility/pricing rules. Public home includes configured contact/branding/banner and current approved
+  policy links, with exact media slot/asset checks and no stored-URL publication or fabricated content.
+  Reused protected settings/media updates; added root wiring and generated homepage API contracts.
+  [Implementation and verification](docs/evidence/P04-019-storefront-home.md).
+
+## 27 October 2026 — Reservation expiry and verified guest access
+
+- Added a leased, bounded expiry worker with whole-generation stock/coupon release, payment/order
+  fences, audit, restart-safe cursor and preserved financial history. Initial holds use actual placement.
+- Added opt-in single-use email proof exchange, order-scoped guest sessions, guest CSRF/logout and
+  authenticated encrypted delivery through the existing notification worker. Added explicit compatible
+  notification migration, guest API contracts and expiry entry packaging.
+  [Per-task verification and limits](docs/evidence/P06-010-015-expiry-guest-access.md).
+
+## 27 October 2026 — Combined checkout allocation and COD feature
+
+- Added coordinated stock/coupon allocation, opt-in COD submission with atomic Pending order/payment
+  and order_received intent, plus private online 15-minute hold foundation. Added additive payment
+  persistence and backward-compatible notification migration; generated COD/replay API contracts.
+  Provider sessions, automatic hold expiry and commerce email dispatch remain owning later tasks.
+  [Per-task verification and limits](docs/evidence/P06-007-009-checkout-batch.md).
+
+## 27 October 2026 — Durable checkout intent feature
+
+- Added hashed scope/key intent identities, canonical submission fingerprints, current authorized
+  outcome replay and transactional quote consumption/completion. Concurrent duplicate submissions
+  resolve to one order; changed commands and duplicate quote keys conflict. Added strict durable
+  registry validation, no-TTL readiness and additive local/test bootstrap. Production submission,
+  allocation/payment/notification adapters remain separate.
+  [Implementation and verification](docs/evidence/P06-006-checkout-intents.md).
+
+## 26 October 2026 — Order snapshot foundation
+
+- Added canonical immutable order snapshots, exact per-unit merchandise entitlements, independent
+  fulfillment graph validation, transactional creation/audit and additive local/test persistence setup.
+  Shared checkout consent hashing preserves quote compatibility. Submission, allocation, payment and
+  operational transition integrations remain separate tasks.
+  [Implementation and verification](docs/evidence/P06-005-order-foundation.md).
+
+## 26 October 2026 — Authoritative checkout quote feature
+
+- Added opt-in guest/customer quote APIs and public delivery-area discovery using current domain-owned
+  data, explicit lifetime/policies and reviewed deadline basis. Quotes preserve scope-bound consent,
+  stable allocation IDs and commercial hashes without stock/coupon reservations or provider effects.
+  Added internal expiry/change/integrity revalidation, durable admission limits and compiled bootstrap;
+  owner-approved product/category coupon scopes use AND. Actual order/financial consumption and legal/
+  provider/staging gates remain separate.
+  [Implementation and verification](docs/evidence/P06-004-checkout-quotes.md).
+
+## 26 October 2026 — Delivery deadline policy boundary (local capability)
+
+- Added immutable reviewed-rule capture, actual-event deadline/independent-cap arithmetic, separate
+  estimates and safe under-review states. Added protected manifest validation and compiled technical
+  preflight with no default legal rule. Qualified policy sign-off remains missing; no checkout/order
+  API, confirmation mutation or legal approval is claimed.
+  [Verification and blocked acceptance](docs/evidence/P06-003-delivery-deadline-boundary.md).
+
+## 26 October 2026 — Delivery zone and charge management
+
+- Added protected zone/charge APIs, the canonical store-wide coverage guard, immutable commercial
+  versions, globally nonoverlapping windows and replay-safe supersession/closure. Added bounded
+  activation/expiry worker, additive local/test bootstrap and generated contracts. Transactions
+  cover window/zone/settings fences and audit; existing saved-address coverage remains compatible.
+  [Implementation, tests and operational limits](docs/evidence/P06-001-delivery-management.md).
+
+## 26 October 2026 — Store settings and public content APIs
+
+- Added canonical settings bootstrap, protected contact/branding/banner/threshold/payment configuration,
+  effective public policy/contact projections and transactional audit/media/CAS. Policy approval uses
+  a protected operator evidence register; durable replay and bounded scheduled activation preserve
+  prior versions. Clarified owning contact/evidence contracts and documented compiled bootstrap/worker
+  procedures. No real legal/provider/staging approval is implied.
+  [Implementation and verification](docs/evidence/P09-013-settings-public-content.md).
+
+## 25 October 2026 — Product and variant administration APIs
+
+- Added protected product/variant management, owner-approved atomic initial variants and full variant
+  detail, pricing/threshold CAS, transactional galleries and audit. Parent revision fences preserve
+  last-active-SKU rules and stock/detail ETags; one catalog handler owns variant PATCH. Added local/test
+  catalog bootstrap and generated contracts. [Implementation and verification](docs/evidence/P04-017-product-variant-administration.md).
+
+## 25 October 2026 — Category administration APIs
+
+- Added protected category list/create/edit/deactivate with hierarchy/CAS guards and transactional
+  media reference replacement/removal plus audit. Metadata remains usable with media disabled;
+  image writes require verified capabilities. Added explicit local/test persistence bootstrap and
+  regenerated API artifacts. [Implementation and verification](docs/evidence/P04-016-category-administration.md).
+
+## 25 October 2026 — Separate local media verification from provider acceptance
+
+- Added P04-020 as the independently reviewed technical prerequisite for category/settings work.
+  P04-003 retains live media acceptance; backend/catalog closeouts explicitly preserve that gate
+  and backend staging remains required. Existing local media checks were rerun without enabling
+  a provider or changing application behavior.
+  [Verification and queue decision](docs/evidence/P04-020-local-media-capability.md).
+
+## 25 October 2026 — Backend container preparation
+
+- Prepared a backend-only Docker recipe/context and credential-free liveness probe; isolated host
+  build/dependency checks and probe tests pass. Image build and staging deployment remain blocked
+  by Docker access and missing approved staging resources/configuration.
+  [Observed evidence and resume prerequisites](docs/evidence/P09-011-staging-runtime.md).
+
+## 25 October 2026 — Inventory administration APIs
+
+- Added protected stock lists/threshold edits, replay-safe physical adjustments and bounded movement
+  history with transactional audit. Fixed movement-actor transaction rollback and kept default threshold
+  provisioning with canonical settings. Generated API artifacts describe activation limits.
+  [Implementation and verification](docs/evidence/P04-018-inventory-administration.md).
+
 ## 25 October 2026 — Coupon administration APIs
 
 - Added protected coupon configuration, revision-based edits/deactivation and bounded usage history.

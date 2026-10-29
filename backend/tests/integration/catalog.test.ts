@@ -1,3 +1,8 @@
+import { storefrontSettingsAccess } from '../../src/modules/settings/settings.service.js'
+import { policyService } from '../../src/modules/settings/policy.service.js'
+import { settingsModel } from '../../src/modules/settings/settings.model.js'
+import { policyModel } from '../../src/modules/settings/policy.model.js'
+import { initializeSettingsPersistence } from '../../src/modules/settings/settings.persistence.js'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { Types, type PipelineStage } from 'mongoose'
 import { z } from 'zod'
@@ -47,6 +52,7 @@ beforeAll(async () => {
   db = await isolatedDatabase()
   await createDeclaredIndexes(categoryModel(db.connection))
   await initializeProductPersistence(db.connection)
+  await initializeSettingsPersistence(db.connection, 5)
   await createDeclaredIndexes(mediaModel(db.connection))
   // Public delivery is synthetic in this isolated test; no external provider activation is claimed.
   const images = publicMediaService(db.connection, {
@@ -54,7 +60,23 @@ beforeAll(async () => {
   })
   app = createApp({
     apiRouter: createApiRouter(undefined, [
-      catalogRoutes(catalogService(db.connection, images), [origin]),
+      catalogRoutes(
+        catalogService(db.connection, images, {
+          settings: storefrontSettingsAccess(db.connection, images),
+          policies: policyService(
+            db.connection,
+            {
+              owned: async () => {
+                throw new Error('No admin authority')
+              },
+            },
+            async () => {
+              throw new Error('No audit writes')
+            },
+          ).publicLinks,
+        }),
+        [origin],
+      ),
     ]),
   })
 })
@@ -63,6 +85,9 @@ beforeEach(async () => {
   await productModels(db.connection).products.deleteMany({})
   await categoryModel(db.connection).deleteMany({})
   await mediaModel(db.connection).deleteMany({})
+  await settingsModel(db.connection).deleteMany({})
+  await policyModel(db.connection).deleteMany({})
+  await initializeSettingsPersistence(db.connection, 5)
   const categories = categoryService(db.connection)
   root = (await categories.create({ name: 'Sports', slug: 'sports' }))._id
   child = (
@@ -819,6 +844,11 @@ it('omits galleries without a composed provider and fails detail reads closed wh
   expect(
     (await request(composed).get('/api/v1/products/ball').expect(200)).body.data.images,
   ).toEqual([])
+  expect(
+    (await request(composed).get('/api/v1/storefront/home').expect(200)).body.data.newArrivals.some(
+      (row: { slug: string }) => row.slug === 'ball',
+    ),
+  ).toBe(true)
   await productModels(db.connection).variants.collection.dropIndex('variant_product_status')
   try {
     await request(app).get('/api/v1/products/ball').expect(503)
@@ -846,4 +876,108 @@ it('excludes related products with a hidden secondary category and returns safe 
   const data = (await request(app).get('/api/v1/products/main-ball').expect(200)).body.data
   expect(data.relatedProducts).toEqual([])
   expect(data.categories).toEqual([{ id: root.toHexString(), name: 'Sports', slug: 'sports' }])
+})
+
+it('serves honest empty home content with safe read-only transport and no internal settings fields', async () => {
+  const response = await request(app)
+    .get('/api/v1/storefront/home')
+    .set('Origin', origin)
+    .expect(200)
+  expect(response.body.data).toMatchObject({
+    featured: [],
+    newArrivals: [],
+    discounted: [],
+    policyLinks: [],
+  })
+  expect(response.body.data.categories.map((row: { slug: string }) => row.slug).sort()).toEqual([
+    'cricket',
+    'sports',
+  ])
+  for (const key of [
+    'banner',
+    'branding',
+    'storeName',
+    'contact',
+    'lowStockThreshold',
+    'paymentChannels',
+    'revision',
+    'updatedBy',
+  ])
+    expect(response.body.data).not.toHaveProperty(key)
+  expect(response.headers['cache-control']).toBe('no-store')
+  await request(app).head('/api/v1/storefront/home').expect(200)
+  await request(app).get('/api/v1/storefront/home?featured=true').expect(400)
+  await request(app).get('/api/v1/storefront/home').send({ unsafe: true }).expect(400)
+  await request(app)
+    .get('/api/v1/storefront/home')
+    .set('Origin', 'https://foreign.example.test')
+    .expect(403)
+  await request(app)
+    .options('/api/v1/storefront/home')
+    .set('Origin', origin)
+    .set('Access-Control-Request-Method', 'GET')
+    .expect(204)
+})
+it('bounds independent home sections, orders ties deterministically and never fabricates featured fallback', async () => {
+  for (let index = 0; index < 11; index++)
+    await make(`home-${String(index).padStart(2, '0')}`, 200, { featured: true }, [
+      { sku: `HOME-${index}`, attributes: {}, regularPricePoisha: 200, salePricePoisha: 100 },
+    ])
+  await productModels(db.connection).products.collection.updateMany(
+    {},
+    { $set: { createdAt: new Date('2026-01-01T00:00:00Z') } },
+  )
+  const response = (await request(app).get('/api/v1/storefront/home').expect(200)).body.data
+  for (const section of ['featured', 'newArrivals', 'discounted']) {
+    expect(response[section]).toHaveLength(8)
+    expect(response[section].map((row: { slug: string }) => row.slug)).toEqual([
+      'home-10',
+      'home-09',
+      'home-08',
+      'home-07',
+      'home-06',
+      'home-05',
+      'home-04',
+      'home-03',
+    ])
+  }
+  await productModels(db.connection).products.updateMany({}, { $set: { featured: false } })
+  expect(
+    (await request(app).get('/api/v1/storefront/home').expect(200)).body.data.featured,
+  ).toEqual([])
+})
+it('home discounts use the displayed SKU and hide inactive products/categories rather than arbitrary sale flags', async () => {
+  await make('misleading-sale', 100, {}, [
+    { sku: 'CHEAP', attributes: { size: 'S' }, regularPricePoisha: 100 },
+    { sku: 'EXPENSIVE', attributes: { size: 'L' }, regularPricePoisha: 1000, salePricePoisha: 200 },
+  ])
+  await make('real-sale', 200, { featured: true }, [
+    { sku: 'REAL', attributes: {}, regularPricePoisha: 200, salePricePoisha: 100 },
+  ])
+  await make('hidden-home', 100, { status: 'draft', featured: true })
+  const response = (await request(app).get('/api/v1/storefront/home').expect(200)).body.data
+  expect(response.discounted.map((row: { slug: string }) => row.slug)).toEqual(['real-sale'])
+  expect(response.newArrivals.map((row: { slug: string }) => row.slug).sort()).toEqual([
+    'misleading-sale',
+    'real-sale',
+  ])
+  await categoryModel(db.connection).updateOne({ _id: root }, { $set: { status: 'inactive' } })
+  const hidden = (await request(app).get('/api/v1/storefront/home').expect(200)).body.data
+  expect(hidden.featured).toEqual([])
+  expect(hidden.newArrivals).toEqual([])
+  expect(hidden.discounted).toEqual([])
+  expect(hidden.categories).toEqual([])
+})
+it('home bounds category discovery and fails readiness if required settings persistence is absent', async () => {
+  for (let index = 0; index < 15; index++)
+    await categoryService(db.connection).create({ name: `Extra ${index}`, slug: `extra-${index}` })
+  expect(
+    (await request(app).get('/api/v1/storefront/home').expect(200)).body.data.categories,
+  ).toHaveLength(12)
+  await settingsModel(db.connection).collection.dropIndex('settings_primary_unique')
+  try {
+    await request(app).get('/api/v1/storefront/home').expect(503)
+  } finally {
+    await initializeSettingsPersistence(db.connection, 5)
+  }
 })

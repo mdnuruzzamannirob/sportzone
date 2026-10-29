@@ -131,6 +131,25 @@ export function createBrowserSecurity(
   }
   return {
     verifyContext,
+    async withContext<T>(
+      audience: BrowserAudience,
+      token: string | undefined,
+      csrf: string | undefined,
+      effect: (scope: { keyHash: string }, session: ClientSession) => Promise<T>,
+    ) {
+      if (!token || !csrf || !opaque.test(token) || !opaque.test(csrf)) throw denied()
+      return inTransaction(connection, async (session) => {
+        const record = await models.contexts
+          .findOne({
+            ...active(audience, token, now()),
+            csrfSecretHash: hash(audience, 'csrf', csrf, hash(audience, 'context', token)),
+          })
+          .select('+contextTokenHash')
+          .session(session)
+        if (!record) throw denied()
+        return effect({ keyHash: record.contextTokenHash }, session)
+      })
+    },
     // An owning credential/proof service composes its durable effect in this transaction.
     // No external call belongs in effect; a failed effect rolls back consumption.
     async consumeContext<T>(

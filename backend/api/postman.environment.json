@@ -20,7 +20,19 @@
       "type": "default"
     },
     {
+      "key": "amountPoisha",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "assetId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "attemptId",
       "value": "",
       "enabled": true,
       "type": "default"
@@ -33,6 +45,18 @@
     },
     {
       "key": "category",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "categoryId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "chargeId",
       "value": "",
       "enabled": true,
       "type": "default"
@@ -56,6 +80,24 @@
       "type": "secret"
     },
     {
+      "key": "district",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "from",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "idempotencyKey",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "ifMatch",
       "value": "",
       "enabled": true,
@@ -63,6 +105,12 @@
     },
     {
       "key": "inStock",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "lowStock",
       "value": "",
       "enabled": true,
       "type": "default"
@@ -86,6 +134,12 @@
       "type": "secret"
     },
     {
+      "key": "orderId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "page",
       "value": "",
       "enabled": true,
@@ -104,7 +158,43 @@
       "type": "default"
     },
     {
+      "key": "patch_admin_categories_categoryIdBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
       "key": "patch_admin_coupons_couponIdBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "patch_admin_delivery_zones_zoneIdBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "patch_admin_products_productIdBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "patch_admin_settingsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "patch_admin_settings_policies_policyIdBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "patch_admin_variants_variantIdBody",
       "value": "",
       "enabled": true,
       "type": "secret"
@@ -120,6 +210,12 @@
       "value": "",
       "enabled": true,
       "type": "secret"
+    },
+    {
+      "key": "policyId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
     },
     {
       "key": "post_admin_auth_loginBody",
@@ -146,6 +242,18 @@
       "type": "secret"
     },
     {
+      "key": "post_admin_categoriesBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_categories_categoryId_deactivateBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
       "key": "post_admin_couponsBody",
       "value": "",
       "enabled": true,
@@ -153,6 +261,84 @@
     },
     {
       "key": "post_admin_coupons_couponId_deactivateBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_delivery_chargesBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_delivery_charges_chargeId_activateBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_delivery_charges_chargeId_deactivateBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_delivery_charges_chargeId_supersedeBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_delivery_zonesBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_inventory_variantId_adjustmentsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_productsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_products_productId_deactivateBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_products_productId_variantsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_settings_policiesBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_settings_policies_policyId_approveBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_settings_policies_policyId_publishBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_variants_variantId_deactivateBody",
       "value": "",
       "enabled": true,
       "type": "secret"
@@ -194,6 +380,36 @@
       "type": "secret"
     },
     {
+      "key": "post_checkout_ordersBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_checkout_quotesBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_guest_access_challengesBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_guest_access_logoutBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_guest_access_sessionsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
       "key": "post_me_addressesBody",
       "value": "",
       "enabled": true,
@@ -225,6 +441,12 @@
     },
     {
       "key": "post_me_password_changeBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_orders_orderId_payment_attemptsBody",
       "value": "",
       "enabled": true,
       "type": "secret"
@@ -278,7 +500,25 @@
       "type": "default"
     },
     {
+      "key": "to",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "type",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "variantId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "zoneId",
       "value": "",
       "enabled": true,
       "type": "default"

@@ -1,0 +1,25 @@
+# Dockerfile-specific allowlist, relative to the repository-root build context.
+**
+!package.json
+!package-lock.json
+!backend/
+!backend/package.json
+!backend/tsconfig.json
+!backend/src/
+!backend/src/**
+!backend/scripts/
+!backend/scripts/build.mjs
+!backend/scripts/notification-worker.mjs
+!backend/scripts/expire-reservations.mjs
+!backend/scripts/container-health.mjs
+!backend/Dockerfile
+!backend/Dockerfile.dockerignore
+# Defense in depth even beneath an allowed source directory.
+**/.env
+**/.env.*
+**/.npmrc
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/node_modules/**

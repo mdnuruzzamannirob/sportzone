@@ -70,7 +70,7 @@ describe('executable API contract registry', () => {
         .filter((op) => op.method === 'OPTIONS')
         .every((op) => operations.some((item) => item.path === op.path)),
     ).toBe(true)
-    expect(operations).toHaveLength(44)
+    expect(operations).toHaveLength(88)
     const prefixed = Router().use('/untracked', registeredRouter())
     expect(() => registeredOperations(prefixed)).toThrow(/mount prefix/)
   })
@@ -107,16 +107,25 @@ describe('executable API contract registry', () => {
       [
         'auth/credentials/admin-auth.routes.ts',
         'auth/credentials/customer-auth.routes.ts',
+        'auth/guest-access/guest-access.routes.ts',
         'auth/recovery/password-recovery.routes.ts',
         'auth/sessions/browser-security.routes.ts',
         'auth/verification/email-change.routes.ts',
         'catalog/catalog.routes.ts',
+        'catalog/categories/category-admin.routes.ts',
+        'catalog/products/product-admin.routes.ts',
         'cart/cart.routes.ts',
         'cart/wishlist.routes.ts',
+        'checkout/checkout.routes.ts',
         'customers/customer.routes.ts',
+        'delivery/delivery.routes.ts',
         'health/health.routes.ts',
+        'inventory/inventory-admin.routes.ts',
         'media/media.routes.ts',
+        'payments/payment-methods.routes.ts',
+        'payments/payment-initiation.routes.ts',
         'promotions/coupon-admin.routes.ts',
+        'settings/settings.routes.ts',
       ].sort(),
     )
   })
@@ -163,9 +172,20 @@ describe('executable API contract registry', () => {
   it('keeps planned contracts non-executable and environment values blank', () => {
     const rows = artifacts['planned-operations.json'].operations
     expect(rows).toHaveLength(164)
-    expect(rows.filter((op) => op.implementation === 'planned')).toHaveLength(120)
-    expect(openapi.paths['/checkout/orders']).toBeUndefined()
-    expect(artifacts['postman.collection.json'].item).toHaveLength(44)
+    expect(rows.filter((op) => op.implementation === 'planned')).toHaveLength(76)
+    expect(openapi.paths['/orders/{orderId}/payment-attempts']).toMatchObject({
+      post: {
+        security: [
+          { CustomerSession: [], CsrfHeader: [] },
+          { GuestOrderSession: [], CsrfHeader: [] },
+        ],
+      },
+    })
+    expect(openapi.paths['/checkout/payment-methods']).toBeDefined()
+    expect(ajv.validateSchema(envelope('/checkout/payment-methods', 'get', '200'))).toBe(true)
+    expect(openapi.paths['/checkout/orders']).toBeDefined()
+    expect(ajv.validateSchema(envelope('/checkout/orders', 'post', '200'))).toBe(true)
+    expect(artifacts['postman.collection.json'].item).toHaveLength(88)
     expect(artifacts['postman.environment.json'].values.every((entry) => entry.value === '')).toBe(
       true,
     )
@@ -228,6 +248,53 @@ describe('executable API contract registry', () => {
       (item) => item.name === 'patch_admin_coupons_couponId',
     )
     expect(postman?.request.header).toContainEqual({ key: 'If-Match', value: '{{ifMatch}}' })
+  })
+  it('generates required inventory adjustment replay headers and blank manual variables', () => {
+    expect(openapi.paths['/admin/inventory/{variantId}/adjustments']?.post).toMatchObject({
+      parameters: expect.arrayContaining([
+        expect.objectContaining({ name: 'Idempotency-Key', in: 'header', required: true }),
+      ]),
+    })
+    const item = artifacts['postman.collection.json'].item.find(
+      (row) => row.name === 'post_admin_inventory_variantId_adjustments',
+    )
+    expect(item?.request.header).toContainEqual({
+      key: 'Idempotency-Key',
+      value: '{{idempotencyKey}}',
+    })
+    expect(artifacts['postman.environment.json'].values).toContainEqual(
+      expect.objectContaining({ key: 'idempotencyKey', value: '' }),
+    )
+  })
+  it('documents atomic product variants and complete admin variant detail without broadening public DTOs', () => {
+    expect(openapi.paths['/admin/products']?.post).toMatchObject({
+      requestBody: {
+        content: {
+          'application/json': {
+            schema: {
+              required: expect.arrayContaining(['variants']),
+              properties: { variants: { minItems: 1, maxItems: 100 } },
+            },
+          },
+        },
+      },
+    })
+    expect(envelope('/admin/products/{productId}')).toMatchObject({
+      properties: { data: { properties: { variants: { minItems: 1, maxItems: 100 } } } },
+    })
+    expect(openapi.paths['/admin/products/{productId}/variants']?.post).toMatchObject({
+      requestBody: {
+        content: {
+          'application/json': {
+            schema: {
+              properties: {
+                attributes: { type: 'object', additionalProperties: { type: 'string' } },
+              },
+            },
+          },
+        },
+      },
+    })
   })
   it('validates real HTTP health and unauthorized responses without a database', async () => {
     const app = createApp({ apiRouter: registeredRouter() })

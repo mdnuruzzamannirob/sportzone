@@ -37,6 +37,55 @@ export function createRegistrationNotifications(
         { upsert: true, session, runValidators: true },
       )
     },
+    async enqueueOrderReceived(
+      input: { orderId: Types.ObjectId; userId?: Types.ObjectId; email: string; name: string },
+      session: ClientSession,
+    ) {
+      if (!session.inTransaction())
+        throw new Error('Notification intent requires business transaction.')
+      await createNotificationPersistence(connection, model).verifyIndexes()
+      await model.updateOne(
+        { eventKey: `order_received:${input.orderId.toHexString()}:v1` },
+        {
+          $setOnInsert: {
+            orderId: input.orderId,
+            ...(input.userId ? { userId: input.userId } : {}),
+            recipient: { emailNormalized: input.email, displayName: input.name },
+            eventType: 'order_received',
+            templateVersion: 'order-received-v1',
+            payload: {},
+            status: 'queued',
+            attemptCount: 0,
+            nextAttemptAt: clock(),
+          },
+        },
+        { upsert: true, session, runValidators: true },
+      )
+    },
+    async enqueueGuestAccess(
+      input: {
+        id: Types.ObjectId
+        challengeId: Types.ObjectId
+        orderId: Types.ObjectId
+        email: string
+      },
+      session: ClientSession,
+    ) {
+      if (!session.inTransaction())
+        throw new Error('Notification intent requires business transaction.')
+      await new model({
+        _id: input.id,
+        eventKey: `guest_order_access:${input.challengeId.toHexString()}:v1`,
+        orderId: input.orderId,
+        recipient: { emailNormalized: input.email },
+        eventType: 'guest_order_access',
+        templateVersion: 'guest-order-access-v1',
+        payload: { challengeId: input.challengeId },
+        status: 'queued',
+        attemptCount: 0,
+        nextAttemptAt: clock(),
+      }).save({ session })
+    },
     async enqueuePasswordReset(
       input: {
         id: Types.ObjectId
@@ -93,6 +142,7 @@ export function createRegistrationNotifications(
       includeProofs = false,
       includeEmailChanges = false,
       includeAdminResets = false,
+      includeGuestProofs = false,
     ) {
       const claimId = randomUUID()
       const row = await model
@@ -113,6 +163,14 @@ export function createRegistrationNotifications(
                     {
                       eventType: 'email_change' as const,
                       templateVersion: 'email-change-v1',
+                    },
+                  ]
+                : []),
+              ...(includeGuestProofs
+                ? [
+                    {
+                      eventType: 'guest_order_access' as const,
+                      templateVersion: 'guest-order-access-v1',
                     },
                   ]
                 : []),
@@ -146,10 +204,13 @@ export function createRegistrationNotifications(
           },
         )
         .select('+recipient')
+      const userId = row?.userId
+      if (row && !userId && !row.orderId) throw new Error('Invalid proof notification identity.')
       return row
         ? {
             id: row._id,
-            userId: row.userId,
+            userId,
+            orderId: row.orderId,
             eventType: row.eventType,
             templateVersion: row.templateVersion,
             challengeId: row.payload.challengeId,

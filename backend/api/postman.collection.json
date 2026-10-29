@@ -7,7 +7,7 @@
   "item": [
     {
       "name": "get_admin_auth_csrf",
-      "description": "Activation: CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest adapter not wired. Replay: read. No automatic mutation retry.",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest selection additionally requires GUEST_ACCESS_ENABLED and a verified guest session. Replay: read. No automatic mutation retry.",
       "request": {
         "method": "GET",
         "url": {
@@ -26,7 +26,7 @@
             "value": "{{adminOrigin}}"
           }
         ],
-        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest adapter not wired. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_auth_csrf. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest selection additionally requires GUEST_ACCESS_ENABLED and a verified guest session. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_auth_csrf. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
       },
       "response": []
     },
@@ -185,6 +185,152 @@
         },
         "header": [],
         "description": "Implemented conditionally: ADMIN_AUTH_ENABLED with validated admin recovery configuration. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_auth_session. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_categories",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category indexes and audit persistence. Image writes additionally require explicit verified media composition; no provider activation implied.. Replay: Revision CAS for edits/deactivation; guarded ancestry and transactional image references/audit. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/categories",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "status",
+              "value": "{{status}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed category indexes and audit persistence. Image writes additionally require explicit verified media composition; no provider activation implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_categories. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_categories",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category indexes and audit persistence. Image writes additionally require explicit verified media composition; no provider activation implied.. Replay: Revision CAS for edits/deactivation; guarded ancestry and transactional image references/audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/categories",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed category indexes and audit persistence. Image writes additionally require explicit verified media composition; no provider activation implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_categories. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_categoriesBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "patch_admin_categories_categoryId",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category indexes and audit persistence. Image writes additionally require explicit verified media composition; no provider activation implied.. Replay: Revision CAS for edits/deactivation; guarded ancestry and transactional image references/audit. No automatic mutation retry.",
+      "request": {
+        "method": "PATCH",
+        "url": {
+          "raw": "{{baseUrl}}/admin/categories/{{categoryId}}",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{ifMatch}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed category indexes and audit persistence. Image writes additionally require explicit verified media composition; no provider activation implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation patch_admin_categories_categoryId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{patch_admin_categories_categoryIdBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_categories_categoryId_deactivate",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category indexes and audit persistence. Image writes additionally require explicit verified media composition; no provider activation implied.. Replay: Revision CAS for edits/deactivation; guarded ancestry and transactional image references/audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/categories/{{categoryId}}/deactivate",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{ifMatch}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed category indexes and audit persistence. Image writes additionally require explicit verified media composition; no provider activation implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_categories_categoryId_deactivate. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_categories_categoryId_deactivateBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
       },
       "response": []
     },
@@ -360,6 +506,420 @@
       "response": []
     },
     {
+      "name": "get_admin_delivery_charges",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Replay: Revision CAS, durable actor/payload/revision/key-bound command replay and store-wide delivery coverage serialization; immutable charge versions and transactional audit. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/delivery/charges",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "zoneId",
+              "value": "{{zoneId}}",
+              "disabled": true
+            },
+            {
+              "key": "status",
+              "value": "{{status}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_delivery_charges. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_delivery_charges",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Replay: Revision CAS, durable actor/payload/revision/key-bound command replay and store-wide delivery coverage serialization; immutable charge versions and transactional audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/delivery/charges",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_delivery_charges. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_delivery_chargesBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_delivery_charges_chargeId_activate",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Replay: Revision CAS, durable actor/payload/revision/key-bound command replay and store-wide delivery coverage serialization; immutable charge versions and transactional audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/delivery/charges/{{chargeId}}/activate",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{ifMatch}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_delivery_charges_chargeId_activate. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_delivery_charges_chargeId_activateBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_delivery_charges_chargeId_deactivate",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Replay: Revision CAS, durable actor/payload/revision/key-bound command replay and store-wide delivery coverage serialization; immutable charge versions and transactional audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/delivery/charges/{{chargeId}}/deactivate",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{ifMatch}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_delivery_charges_chargeId_deactivate. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_delivery_charges_chargeId_deactivateBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_delivery_charges_chargeId_supersede",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Replay: Revision CAS, durable actor/payload/revision/key-bound command replay and store-wide delivery coverage serialization; immutable charge versions and transactional audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/delivery/charges/{{chargeId}}/supersede",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{ifMatch}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_delivery_charges_chargeId_supersede. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_delivery_charges_chargeId_supersedeBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_delivery_zones",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Replay: Revision CAS, durable actor/payload/revision/key-bound command replay and store-wide delivery coverage serialization; immutable charge versions and transactional audit. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/delivery/zones",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_delivery_zones. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_delivery_zones",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Replay: Revision CAS, durable actor/payload/revision/key-bound command replay and store-wide delivery coverage serialization; immutable charge versions and transactional audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/delivery/zones",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_delivery_zones. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_delivery_zonesBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "patch_admin_delivery_zones_zoneId",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Replay: Revision CAS, durable actor/payload/revision/key-bound command replay and store-wide delivery coverage serialization; immutable charge versions and transactional audit. No automatic mutation retry.",
+      "request": {
+        "method": "PATCH",
+        "url": {
+          "raw": "{{baseUrl}}/admin/delivery/zones/{{zoneId}}",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{ifMatch}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation patch_admin_delivery_zones_zoneId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{patch_admin_delivery_zones_zoneIdBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_inventory",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings.. Replay: Exactly-once adjustment per variant/key; actor/payload mismatch conflicts; threshold uses revision CAS. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/inventory",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "q",
+              "value": "{{q}}",
+              "disabled": true
+            },
+            {
+              "key": "lowStock",
+              "value": "{{lowStock}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_inventory. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_inventory_variantId_adjustments",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings.. Replay: Exactly-once adjustment per variant/key; actor/payload mismatch conflicts; threshold uses revision CAS. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/inventory/{{variantId}}/adjustments",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_inventory_variantId_adjustments. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_inventory_variantId_adjustmentsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_inventory_variantId_movements",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings.. Replay: Exactly-once adjustment per variant/key; actor/payload mismatch conflicts; threshold uses revision CAS. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/inventory/{{variantId}}/movements",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "from",
+              "value": "{{from}}",
+              "disabled": true
+            },
+            {
+              "key": "to",
+              "value": "{{to}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_inventory_variantId_movements. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
       "name": "post_admin_media_uploads",
       "description": "Activation: Explicit media composition, ADMIN_AUTH_ENABLED and EXT-04 approval; not enabled by standard startup. Replay: No automatic retry after uncertain provider outcome. No automatic mutation retry.",
       "request": {
@@ -416,8 +976,556 @@
       "response": []
     },
     {
+      "name": "get_admin_products",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Replay: Strong revision CAS for edits; parent aggregate fence prevents invalid concurrent variants; immutable SKU/attribute identities and transactional media/audit. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/products",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "q",
+              "value": "{{q}}",
+              "disabled": true
+            },
+            {
+              "key": "status",
+              "value": "{{status}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_products. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_products",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Replay: Strong revision CAS for edits; parent aggregate fence prevents invalid concurrent variants; immutable SKU/attribute identities and transactional media/audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/products",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_products. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_productsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_products_productId",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Replay: Strong revision CAS for edits; parent aggregate fence prevents invalid concurrent variants; immutable SKU/attribute identities and transactional media/audit. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/products/{{productId}}",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_products_productId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "patch_admin_products_productId",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Replay: Strong revision CAS for edits; parent aggregate fence prevents invalid concurrent variants; immutable SKU/attribute identities and transactional media/audit. No automatic mutation retry.",
+      "request": {
+        "method": "PATCH",
+        "url": {
+          "raw": "{{baseUrl}}/admin/products/{{productId}}",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{ifMatch}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Query parameters and exact request/response schemas are in the companion OpenAPI operation patch_admin_products_productId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{patch_admin_products_productIdBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_products_productId_deactivate",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Replay: Strong revision CAS for edits; parent aggregate fence prevents invalid concurrent variants; immutable SKU/attribute identities and transactional media/audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/products/{{productId}}/deactivate",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{ifMatch}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_products_productId_deactivate. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_products_productId_deactivateBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_products_productId_variants",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Replay: Strong revision CAS for edits; parent aggregate fence prevents invalid concurrent variants; immutable SKU/attribute identities and transactional media/audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/products/{{productId}}/variants",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_products_productId_variants. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_products_productId_variantsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_settings",
+      "description": "Activation: ADMIN_AUTH_ENABLED; settings/policy indexes, canonical bootstrap and audit persistence. Approval requires a matching protected operator evidence register; media writes require explicit verified media composition.. Replay: Revision CAS; durable actor/payload/key-bound approval/publication replay; transactional effective pointer and audit. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/settings",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; settings/policy indexes, canonical bootstrap and audit persistence. Approval requires a matching protected operator evidence register; media writes require explicit verified media composition.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_settings. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "patch_admin_settings",
+      "description": "Activation: ADMIN_AUTH_ENABLED; settings/policy indexes, canonical bootstrap and audit persistence. Approval requires a matching protected operator evidence register; media writes require explicit verified media composition.. Replay: Revision CAS; durable actor/payload/key-bound approval/publication replay; transactional effective pointer and audit. No automatic mutation retry.",
+      "request": {
+        "method": "PATCH",
+        "url": {
+          "raw": "{{baseUrl}}/admin/settings",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{ifMatch}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; settings/policy indexes, canonical bootstrap and audit persistence. Approval requires a matching protected operator evidence register; media writes require explicit verified media composition.. Query parameters and exact request/response schemas are in the companion OpenAPI operation patch_admin_settings. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{patch_admin_settingsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_settings_policies",
+      "description": "Activation: ADMIN_AUTH_ENABLED; settings/policy indexes, canonical bootstrap and audit persistence. Approval requires a matching protected operator evidence register; media writes require explicit verified media composition.. Replay: Revision CAS; durable actor/payload/key-bound approval/publication replay; transactional effective pointer and audit. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/settings/policies",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "type",
+              "value": "{{type}}",
+              "disabled": true
+            },
+            {
+              "key": "status",
+              "value": "{{status}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; settings/policy indexes, canonical bootstrap and audit persistence. Approval requires a matching protected operator evidence register; media writes require explicit verified media composition.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_settings_policies. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_settings_policies",
+      "description": "Activation: ADMIN_AUTH_ENABLED; settings/policy indexes, canonical bootstrap and audit persistence. Approval requires a matching protected operator evidence register; media writes require explicit verified media composition.. Replay: Revision CAS; durable actor/payload/key-bound approval/publication replay; transactional effective pointer and audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/settings/policies",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; settings/policy indexes, canonical bootstrap and audit persistence. Approval requires a matching protected operator evidence register; media writes require explicit verified media composition.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_settings_policies. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_settings_policiesBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_settings_policies_policyId",
+      "description": "Activation: ADMIN_AUTH_ENABLED; settings/policy indexes, canonical bootstrap and audit persistence. Approval requires a matching protected operator evidence register; media writes require explicit verified media composition.. Replay: Revision CAS; durable actor/payload/key-bound approval/publication replay; transactional effective pointer and audit. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/settings/policies/{{policyId}}",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; settings/policy indexes, canonical bootstrap and audit persistence. Approval requires a matching protected operator evidence register; media writes require explicit verified media composition.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_settings_policies_policyId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "patch_admin_settings_policies_policyId",
+      "description": "Activation: ADMIN_AUTH_ENABLED; settings/policy indexes, canonical bootstrap and audit persistence. Approval requires a matching protected operator evidence register; media writes require explicit verified media composition.. Replay: Revision CAS; durable actor/payload/key-bound approval/publication replay; transactional effective pointer and audit. No automatic mutation retry.",
+      "request": {
+        "method": "PATCH",
+        "url": {
+          "raw": "{{baseUrl}}/admin/settings/policies/{{policyId}}",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{ifMatch}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; settings/policy indexes, canonical bootstrap and audit persistence. Approval requires a matching protected operator evidence register; media writes require explicit verified media composition.. Query parameters and exact request/response schemas are in the companion OpenAPI operation patch_admin_settings_policies_policyId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{patch_admin_settings_policies_policyIdBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_settings_policies_policyId_approve",
+      "description": "Activation: ADMIN_AUTH_ENABLED; settings/policy indexes, canonical bootstrap and audit persistence. Approval requires a matching protected operator evidence register; media writes require explicit verified media composition.. Replay: Revision CAS; durable actor/payload/key-bound approval/publication replay; transactional effective pointer and audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/settings/policies/{{policyId}}/approve",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{ifMatch}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; settings/policy indexes, canonical bootstrap and audit persistence. Approval requires a matching protected operator evidence register; media writes require explicit verified media composition.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_settings_policies_policyId_approve. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_settings_policies_policyId_approveBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_settings_policies_policyId_publish",
+      "description": "Activation: ADMIN_AUTH_ENABLED; settings/policy indexes, canonical bootstrap and audit persistence. Approval requires a matching protected operator evidence register; media writes require explicit verified media composition.. Replay: Revision CAS; durable actor/payload/key-bound approval/publication replay; transactional effective pointer and audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/settings/policies/{{policyId}}/publish",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{ifMatch}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; settings/policy indexes, canonical bootstrap and audit persistence. Approval requires a matching protected operator evidence register; media writes require explicit verified media composition.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_settings_policies_policyId_publish. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_settings_policies_policyId_publishBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "patch_admin_variants_variantId",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Replay: Strong revision CAS for edits; parent aggregate fence prevents invalid concurrent variants; immutable SKU/attribute identities and transactional media/audit. No automatic mutation retry.",
+      "request": {
+        "method": "PATCH",
+        "url": {
+          "raw": "{{baseUrl}}/admin/variants/{{variantId}}",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{ifMatch}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Query parameters and exact request/response schemas are in the companion OpenAPI operation patch_admin_variants_variantId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{patch_admin_variants_variantIdBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_variants_variantId_deactivate",
+      "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Replay: Strong revision CAS for edits; parent aggregate fence prevents invalid concurrent variants; immutable SKU/attribute identities and transactional media/audit. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/variants/{{variantId}}/deactivate",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{ifMatch}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_variants_variantId_deactivate. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_variants_variantId_deactivateBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
       "name": "get_auth_csrf",
-      "description": "Activation: CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest adapter not wired. Replay: read. No automatic mutation retry.",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest selection additionally requires GUEST_ACCESS_ENABLED and a verified guest session. Replay: read. No automatic mutation retry.",
       "request": {
         "method": "GET",
         "url": {
@@ -436,7 +1544,7 @@
             "value": "{{storefrontOrigin}}"
           }
         ],
-        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest adapter not wired. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_auth_csrf. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest selection additionally requires GUEST_ACCESS_ENABLED and a verified guest session. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_auth_csrf. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
       },
       "response": []
     },
@@ -784,6 +1892,249 @@
         },
         "header": [],
         "description": "Implemented conditionally: Always registered; required indexes/visibility/media checks must pass. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_categories_slug. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_checkout_orders",
+      "description": "Activation: CHECKOUT_COD_ENABLED and CHECKOUT_QUOTES_ENABLED with CUSTOMER_AUTH_ENABLED, current independently reviewed policies and provisioned order/intent/inventory/coupon/payment/notification persistence. COD only; online submission/provider calls remain disabled pending Phase 07.. Replay: 201 new, 200 replay. Same scoped key returns current order; changed payload conflicts. Consent/order/stock/coupon/pending payment/order_received intent commit atomically. No unverified collection or early confirmation.. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/checkout/orders",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: CHECKOUT_COD_ENABLED and CHECKOUT_QUOTES_ENABLED with CUSTOMER_AUTH_ENABLED, current independently reviewed policies and provisioned order/intent/inventory/coupon/payment/notification persistence. COD only; online submission/provider calls remain disabled pending Phase 07.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_checkout_orders. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_checkout_ordersBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_checkout_payment_methods",
+      "description": "Activation: Reviewed settings persistence; online requires current digest-checked environment/account-bound operator merchant evidence plus store flag. Order context additionally requires customer ownership or scoped guest proof.. Replay: No-store read; inactive omitted, advisory amount never authorizes collection. Canonical remaining funding overrides advisory amount for an owned order; unknown amount keeps online eligibility false.. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/checkout/payment-methods",
+          "query": [
+            {
+              "key": "amountPoisha",
+              "value": "{{amountPoisha}}",
+              "disabled": true
+            },
+            {
+              "key": "orderId",
+              "value": "{{orderId}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Reviewed settings persistence; online requires current digest-checked environment/account-bound operator merchant evidence plus store flag. Order context additionally requires customer ownership or scoped guest proof.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_checkout_payment_methods. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_checkout_quotes",
+      "description": "Activation: CHECKOUT_QUOTES_ENABLED with explicit TTL/required policies, CUSTOMER_AUTH_ENABLED, reviewed quote/catalog/delivery/settings/coupon persistence and eligible independently reviewed deadline policy. Online methods remain denied until verified provider/merchant capability is wired.. Replay: New quote per request; scope-bound immutable consent without reservations. Internal revalidation checks expiry, stable line IDs and commercial changes; order intent/consumption belongs to later tasks.. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/checkout/quotes",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: CHECKOUT_QUOTES_ENABLED with explicit TTL/required policies, CUSTOMER_AUTH_ENABLED, reviewed quote/catalog/delivery/settings/coupon persistence and eligible independently reviewed deadline policy. Online methods remain denied until verified provider/merchant capability is wired.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_checkout_quotes. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_checkout_quotesBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_delivery_areas",
+      "description": "Activation: Reviewed delivery indexes and operator-configured currently active coverage; no quote/fulfillment guarantee.. Replay: Read-only bounded coverage projection; actual destination is revalidated at quote and submission.. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/delivery/areas",
+          "query": [
+            {
+              "key": "district",
+              "value": "{{district}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Reviewed delivery indexes and operator-configured currently active coverage; no quote/fulfillment guarantee.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_delivery_areas. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_guest_access_challenges",
+      "description": "Activation: GUEST_ACCESS_ENABLED with CUSTOMER_AUTH_ENABLED, explicit guest proof/session lifetimes, protected proof key ring/HTTPS storefront and reviewed identity/order/notification/throttle persistence.. Replay: Non-enumerating rate-limited lookup; single-use email proof exchange grants exact order scope only. Tokens stay in cookies/email, never lookup responses or logs. Revoked/expired/wrong-scope credentials fail closed.. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/guest-access/challenges",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: GUEST_ACCESS_ENABLED with CUSTOMER_AUTH_ENABLED, explicit guest proof/session lifetimes, protected proof key ring/HTTPS storefront and reviewed identity/order/notification/throttle persistence.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_guest_access_challenges. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_guest_access_challengesBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_guest_access_logout",
+      "description": "Activation: GUEST_ACCESS_ENABLED with CUSTOMER_AUTH_ENABLED, explicit guest proof/session lifetimes, protected proof key ring/HTTPS storefront and reviewed identity/order/notification/throttle persistence.. Replay: Non-enumerating rate-limited lookup; single-use email proof exchange grants exact order scope only. Tokens stay in cookies/email, never lookup responses or logs. Revoked/expired/wrong-scope credentials fail closed.. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/guest-access/logout",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: GUEST_ACCESS_ENABLED with CUSTOMER_AUTH_ENABLED, explicit guest proof/session lifetimes, protected proof key ring/HTTPS storefront and reviewed identity/order/notification/throttle persistence.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_guest_access_logout. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_guest_access_logoutBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_guest_access_session",
+      "description": "Activation: GUEST_ACCESS_ENABLED with CUSTOMER_AUTH_ENABLED, explicit guest proof/session lifetimes, protected proof key ring/HTTPS storefront and reviewed identity/order/notification/throttle persistence.. Replay: Non-enumerating rate-limited lookup; single-use email proof exchange grants exact order scope only. Tokens stay in cookies/email, never lookup responses or logs. Revoked/expired/wrong-scope credentials fail closed.. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/guest-access/session",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: GUEST_ACCESS_ENABLED with CUSTOMER_AUTH_ENABLED, explicit guest proof/session lifetimes, protected proof key ring/HTTPS storefront and reviewed identity/order/notification/throttle persistence.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_guest_access_session. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_guest_access_sessions",
+      "description": "Activation: GUEST_ACCESS_ENABLED with CUSTOMER_AUTH_ENABLED, explicit guest proof/session lifetimes, protected proof key ring/HTTPS storefront and reviewed identity/order/notification/throttle persistence.. Replay: Non-enumerating rate-limited lookup; single-use email proof exchange grants exact order scope only. Tokens stay in cookies/email, never lookup responses or logs. Revoked/expired/wrong-scope credentials fail closed.. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/guest-access/sessions",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: GUEST_ACCESS_ENABLED with CUSTOMER_AUTH_ENABLED, explicit guest proof/session lifetimes, protected proof key ring/HTTPS storefront and reviewed identity/order/notification/throttle persistence.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_guest_access_sessions. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_guest_access_sessionsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
       },
       "response": []
     },
@@ -1173,6 +2524,60 @@
       "response": []
     },
     {
+      "name": "post_orders_orderId_payment_attempts",
+      "description": "Activation: PAYMENT_INITIATION_ENABLED local/test only, customer auth and reviewed merchant evidence, payment/operation/order/stock/coupon/audit persistence, immutable gateway-compatible address including postalCode. No deployed/live collection qualification implied.. Replay: Durable per-owner/order/key tombstone before one provider call. Identical replay never resends or extends holds; uncertain results block new attempts. Allocation shortfall records no attempt.. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/orders/{{orderId}}/payment-attempts",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: PAYMENT_INITIATION_ENABLED local/test only, customer auth and reviewed merchant evidence, payment/operation/order/stock/coupon/audit persistence, immutable gateway-compatible address including postalCode. No deployed/live collection qualification implied.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_orders_orderId_payment_attempts. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_orders_orderId_payment_attemptsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_orders_orderId_payment_attempts_attemptId",
+      "description": "Activation: Same reviewed local/test initiation composition; authenticated order owner or proven guest order scope on every read.. Replay: No-store database projection only; no provider call, redirect, merchant secrets or payment success inferred from browser navigation.. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/orders/{{orderId}}/payment-attempts/{{attemptId}}",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: Same reviewed local/test initiation composition; authenticated order owner or proven guest order scope on every read.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_orders_orderId_payment_attempts_attemptId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
       "name": "get_products",
       "description": "Activation: Always registered; required indexes/visibility/media checks must pass. Replay: read. No automatic mutation retry.",
       "request": {
@@ -1238,6 +2643,48 @@
         },
         "header": [],
         "description": "Implemented conditionally: Always registered; required indexes/visibility/media checks must pass. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_products_slug. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_storefront_contact",
+      "description": "Activation: Reviewed settings/policy persistence; only approved effective published pointers become public. Replay: Read only; no drafts or private configuration. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/storefront/contact",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: Reviewed settings/policy persistence; only approved effective published pointers become public. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_storefront_contact. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_storefront_home",
+      "description": "Activation: Reviewed catalog/settings/policy persistence. Only active visible SKU/category data and exact attached clean public media references publish; missing configured metadata is omitted.. Replay: No-store bounded read; current operator settings and approved published policy pointers on each request. No fabricated merchandising fallback.. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/storefront/home",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: Reviewed catalog/settings/policy persistence. Only active visible SKU/category data and exact attached clean public media references publish; missing configured metadata is omitted.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_storefront_home. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_storefront_policies_type",
+      "description": "Activation: Reviewed settings/policy persistence; only approved effective published pointers become public. Replay: Read only; no drafts or private configuration. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/storefront/policies/{{type}}",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: Reviewed settings/policy persistence; only approved effective published pointers become public. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_storefront_policies_type. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
       },
       "response": []
     },

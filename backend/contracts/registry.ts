@@ -1,4 +1,98 @@
 import {
+  paymentInitiationInput,
+  paymentInitiationResult,
+  paymentInitiationParams,
+  paymentAttemptParams,
+  paymentAttemptStatus,
+} from '../src/modules/payments/payment-initiation.schema.js'
+import {
+  paymentMethodsQuery,
+  paymentMethodsView,
+} from '../src/modules/payments/payment-eligibility.schema.js'
+import { storefrontHome } from '../src/modules/catalog/catalog.schema.js'
+import {
+  guestChallengeInput,
+  guestExchangeInput,
+  guestAccepted,
+  guestExchangeView,
+  guestSessionView,
+  guestLogoutView,
+} from '../src/modules/auth/guest-access/guest-access.schema.js'
+import { checkoutSubmitResult } from '../src/modules/checkout/checkout-intent.schema.js'
+import { deliveryAreasQuery, deliveryAreas } from '../src/modules/delivery/delivery.schema.js'
+import {
+  checkoutQuoteInput,
+  checkoutQuote,
+  checkoutSubmitInput,
+} from '../src/modules/checkout/checkout.schema.js'
+import {
+  zoneInput,
+  zonePatch,
+  zoneView,
+  zoneParams,
+  zoneQuery,
+  chargeInput,
+  chargeView,
+  chargeQuery,
+  chargeParams,
+  chargeActivate,
+  chargeDeactivate,
+  chargeSupersede,
+  chargeReplacement,
+} from '../src/modules/delivery/delivery.schema.js'
+import {
+  settingsPatch,
+  settingsView,
+  publicContact,
+} from '../src/modules/settings/settings.schema.js'
+import {
+  policyDraftInput,
+  policyDraftPatch,
+  policyParams,
+  policyListQuery,
+  policyDocument,
+  policySummary,
+  policyCreated,
+  policyApprove,
+  policyPublish,
+  policyPublication,
+  policyPublic,
+  policyType,
+} from '../src/modules/settings/policy.schema.js'
+import {
+  productCreate,
+  productPatch,
+  productDeactivate,
+  productParams,
+  productListQuery,
+  adminProduct,
+  adminProductDetail,
+} from '../src/modules/catalog/products/product-admin.schema.js'
+import {
+  variantInput,
+  variantPatch,
+  variantParams as adminVariantParams,
+  variantDeactivate,
+} from '../src/modules/catalog/variants/variant.schema.js'
+import {
+  categoryCreate,
+  categoryPatch,
+  categoryDeactivate,
+  categoryParams,
+  categoryListQuery,
+  adminCategory,
+} from '../src/modules/catalog/categories/category-admin.schema.js'
+import { adminVariant } from '../src/modules/catalog/variants/variant.schema.js'
+import {
+  inventoryQuery,
+  movementQuery,
+  inventoryParams,
+  inventoryList,
+  movementView,
+  adjustmentBody,
+  adjustmentResult,
+} from '../src/modules/inventory/inventory-admin.schema.js'
+import {
   couponInput,
   couponPatch,
   couponDeactivate,
@@ -61,16 +155,25 @@ const identity = createIdentityContracts({
 export type Operation = {
   method: string
   path: string
-  access: 'public' | 'public_csrf' | 'customer' | 'admin' | 'monitor'
+  access:
+    | 'public'
+    | 'public_csrf'
+    | 'customer'
+    | 'admin'
+    | 'monitor'
+    | 'guest'
+    | 'customer_or_guest'
   activation: string
   request?: z.ZodType
   response?: z.ZodType
   query: z.ZodType
   params: z.ZodType
   status: number
+  replayStatus?: number
   csrf: boolean
   namespace: 'storefront' | 'admin'
   paginated?: boolean
+  idempotency?: boolean
   ifMatch?: boolean
   etag?: boolean
   multipart?: boolean
@@ -95,7 +198,7 @@ const runtimeInputs: Record<string, z.ZodType> = {
 }
 const identityActivation = (path: string) => {
   if (path.endsWith('/auth/csrf'))
-    return 'CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest adapter not wired'
+    return 'CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest selection additionally requires GUEST_ACCESS_ENABLED and a verified guest session'
   if (path.startsWith('/admin/'))
     return 'ADMIN_AUTH_ENABLED with validated admin recovery configuration'
   if (path.includes('password-resets') || path.endsWith('password-change'))
@@ -121,6 +224,588 @@ const identities: Operation[] = identity.operations
 
 export const operations: readonly Operation[] = [
   ...identities,
+  {
+    method: 'GET',
+    path: '/delivery/areas',
+    access: 'public',
+    namespace: 'storefront',
+    query: deliveryAreasQuery,
+    params: empty,
+    response: deliveryAreas,
+    status: 200,
+    csrf: false,
+    activation:
+      'Reviewed delivery indexes and operator-configured currently active coverage; no quote/fulfillment guarantee.',
+    replay:
+      'Read-only bounded coverage projection; actual destination is revalidated at quote and submission.',
+  },
+  ...[
+    {
+      method: 'POST',
+      path: '/guest-access/challenges',
+      access: 'public_csrf' as const,
+      request: guestChallengeInput,
+      response: guestAccepted,
+      csrf: true,
+    },
+    {
+      method: 'POST',
+      path: '/guest-access/sessions',
+      access: 'public_csrf' as const,
+      request: guestExchangeInput,
+      response: guestExchangeView,
+      csrf: true,
+    },
+    {
+      method: 'GET',
+      path: '/guest-access/session',
+      access: 'guest' as const,
+      response: guestSessionView,
+      csrf: false,
+    },
+    {
+      method: 'POST',
+      path: '/guest-access/logout',
+      access: 'public_csrf' as const,
+      request: z.union([z.undefined(), empty]),
+      response: guestLogoutView,
+      csrf: true,
+    },
+  ].map((operation) => ({
+    ...operation,
+    namespace: 'storefront' as const,
+    query: empty,
+    params: empty,
+    status: 200,
+    activation:
+      'GUEST_ACCESS_ENABLED with CUSTOMER_AUTH_ENABLED, explicit guest proof/session lifetimes, protected proof key ring/HTTPS storefront and reviewed identity/order/notification/throttle persistence.',
+    replay:
+      'Non-enumerating rate-limited lookup; single-use email proof exchange grants exact order scope only. Tokens stay in cookies/email, never lookup responses or logs. Revoked/expired/wrong-scope credentials fail closed.',
+  })),
+  {
+    method: 'GET',
+    path: '/storefront/home',
+    access: 'public',
+    namespace: 'storefront',
+    query: empty,
+    params: empty,
+    response: storefrontHome,
+    status: 200,
+    csrf: false,
+    activation:
+      'Reviewed catalog/settings/policy persistence. Only active visible SKU/category data and exact attached clean public media references publish; missing configured metadata is omitted.',
+    replay:
+      'No-store bounded read; current operator settings and approved published policy pointers on each request. No fabricated merchandising fallback.',
+  },
+  {
+    method: 'POST',
+    path: '/orders/{orderId}/payment-attempts',
+    access: 'customer_or_guest',
+    namespace: 'storefront',
+    query: empty,
+    params: paymentInitiationParams,
+    request: paymentInitiationInput,
+    response: paymentInitiationResult,
+    status: 200,
+    csrf: true,
+    idempotency: true,
+    activation:
+      'PAYMENT_INITIATION_ENABLED local/test only, customer auth and reviewed merchant evidence, payment/operation/order/stock/coupon/audit persistence, immutable gateway-compatible address including postalCode. No deployed/live collection qualification implied.',
+    replay:
+      'Durable per-owner/order/key tombstone before one provider call. Identical replay never resends or extends holds; uncertain results block new attempts. Allocation shortfall records no attempt.',
+  },
+  {
+    method: 'GET',
+    path: '/orders/{orderId}/payment-attempts/{attemptId}',
+    access: 'customer_or_guest',
+    namespace: 'storefront',
+    query: empty,
+    params: paymentAttemptParams,
+    response: paymentAttemptStatus,
+    status: 200,
+    csrf: false,
+    activation:
+      'Same reviewed local/test initiation composition; authenticated order owner or proven guest order scope on every read.',
+    replay:
+      'No-store database projection only; no provider call, redirect, merchant secrets or payment success inferred from browser navigation.',
+  },
+  {
+    method: 'GET',
+    path: '/checkout/payment-methods',
+    access: 'public',
+    namespace: 'storefront',
+    query: paymentMethodsQuery,
+    params: empty,
+    response: paymentMethodsView,
+    status: 200,
+    csrf: false,
+    activation:
+      'Reviewed settings persistence; online requires current digest-checked environment/account-bound operator merchant evidence plus store flag. Order context additionally requires customer ownership or scoped guest proof.',
+    replay:
+      'No-store read; inactive omitted, advisory amount never authorizes collection. Canonical remaining funding overrides advisory amount for an owned order; unknown amount keeps online eligibility false.',
+  },
+  {
+    method: 'POST',
+    path: '/checkout/quotes',
+    access: 'public_csrf',
+    namespace: 'storefront',
+    query: empty,
+    params: empty,
+    request: checkoutQuoteInput,
+    response: checkoutQuote,
+    status: 200,
+    csrf: true,
+    activation:
+      'CHECKOUT_QUOTES_ENABLED with explicit TTL/required policies, CUSTOMER_AUTH_ENABLED, reviewed quote/catalog/delivery/settings/coupon persistence and eligible independently reviewed deadline policy. Online methods remain denied until verified provider/merchant capability is wired.',
+    replay:
+      'New quote per request; scope-bound immutable consent without reservations. Internal revalidation checks expiry, stable line IDs and commercial changes; order intent/consumption belongs to later tasks.',
+  },
+  {
+    method: 'POST',
+    path: '/checkout/orders',
+    access: 'public_csrf',
+    namespace: 'storefront',
+    query: empty,
+    params: empty,
+    request: checkoutSubmitInput,
+    response: checkoutSubmitResult,
+    status: 201,
+    replayStatus: 200,
+    csrf: true,
+    idempotency: true,
+    activation:
+      'CHECKOUT_COD_ENABLED and CHECKOUT_QUOTES_ENABLED with CUSTOMER_AUTH_ENABLED, current independently reviewed policies and provisioned order/intent/inventory/coupon/payment/notification persistence. COD only; online submission/provider calls remain disabled pending Phase 07.',
+    replay:
+      '201 new, 200 replay. Same scoped key returns current order; changed payload conflicts. Consent/order/stock/coupon/pending payment/order_received intent commit atomically. No unverified collection or early confirmation.',
+  },
+  ...(
+    [
+      {
+        method: 'GET',
+        path: '/admin/delivery/zones',
+        query: zoneQuery,
+        params: empty,
+        response: z.array(zoneView),
+        status: 200,
+        paginated: true,
+      },
+      {
+        method: 'POST',
+        path: '/admin/delivery/zones',
+        query: empty,
+        params: empty,
+        request: zoneInput,
+        response: zoneView,
+        status: 201,
+        etag: true,
+      },
+      {
+        method: 'PATCH',
+        path: '/admin/delivery/zones/{zoneId}',
+        query: empty,
+        params: zoneParams,
+        request: zonePatch,
+        response: zoneView,
+        status: 200,
+        etag: true,
+        ifMatch: true,
+      },
+      {
+        method: 'GET',
+        path: '/admin/delivery/charges',
+        query: chargeQuery,
+        params: empty,
+        response: z.array(chargeView),
+        status: 200,
+        paginated: true,
+      },
+      {
+        method: 'POST',
+        path: '/admin/delivery/charges',
+        query: empty,
+        params: empty,
+        request: chargeInput,
+        response: chargeView,
+        status: 201,
+        etag: true,
+      },
+      {
+        method: 'POST',
+        path: '/admin/delivery/charges/{chargeId}/activate',
+        query: empty,
+        params: chargeParams,
+        request: chargeActivate,
+        response: chargeView,
+        status: 200,
+        etag: true,
+        ifMatch: true,
+        idempotency: true,
+      },
+      {
+        method: 'POST',
+        path: '/admin/delivery/charges/{chargeId}/deactivate',
+        query: empty,
+        params: chargeParams,
+        request: chargeDeactivate,
+        response: chargeView,
+        status: 200,
+        etag: true,
+        ifMatch: true,
+        idempotency: true,
+      },
+      {
+        method: 'POST',
+        path: '/admin/delivery/charges/{chargeId}/supersede',
+        query: empty,
+        params: chargeParams,
+        request: chargeSupersede,
+        response: chargeReplacement,
+        status: 200,
+        etag: true,
+        ifMatch: true,
+        idempotency: true,
+      },
+    ] as const
+  ).map(
+    (op): Operation => ({
+      ...op,
+      access: 'admin',
+      namespace: 'admin',
+      csrf: op.method !== 'GET',
+      activation:
+        'ADMIN_AUTH_ENABLED; reviewed delivery indexes, canonical settings singleton and audit persistence. Only operator-configured coverage; no legal deadline or provider activation implied.',
+      replay:
+        'Revision CAS, durable actor/payload/revision/key-bound command replay and store-wide delivery coverage serialization; immutable charge versions and transactional audit',
+    }),
+  ),
+
+  ...(
+    [
+      {
+        method: 'GET',
+        path: '/admin/settings',
+        query: empty,
+        params: empty,
+        response: settingsView,
+        status: 200,
+        etag: true,
+      },
+      {
+        method: 'PATCH',
+        path: '/admin/settings',
+        query: empty,
+        params: empty,
+        request: settingsPatch,
+        response: settingsView,
+        status: 200,
+        etag: true,
+        ifMatch: true,
+      },
+      {
+        method: 'GET',
+        path: '/admin/settings/policies',
+        query: policyListQuery,
+        params: empty,
+        response: z.array(policySummary),
+        status: 200,
+        paginated: true,
+      },
+      {
+        method: 'POST',
+        path: '/admin/settings/policies',
+        query: empty,
+        params: empty,
+        request: policyDraftInput,
+        response: policyCreated,
+        status: 201,
+        etag: true,
+      },
+      {
+        method: 'GET',
+        path: '/admin/settings/policies/{policyId}',
+        query: empty,
+        params: policyParams,
+        response: policyDocument,
+        status: 200,
+        etag: true,
+      },
+      {
+        method: 'PATCH',
+        path: '/admin/settings/policies/{policyId}',
+        query: empty,
+        params: policyParams,
+        request: policyDraftPatch,
+        response: policyDocument,
+        status: 200,
+        etag: true,
+        ifMatch: true,
+      },
+      {
+        method: 'POST',
+        path: '/admin/settings/policies/{policyId}/approve',
+        query: empty,
+        params: policyParams,
+        request: policyApprove,
+        response: policyDocument,
+        status: 200,
+        etag: true,
+        ifMatch: true,
+        idempotency: true,
+      },
+      {
+        method: 'POST',
+        path: '/admin/settings/policies/{policyId}/publish',
+        query: empty,
+        params: policyParams,
+        request: policyPublish,
+        response: policyPublication,
+        status: 200,
+        ifMatch: true,
+        idempotency: true,
+      },
+    ] as const
+  ).map(
+    (op): Operation => ({
+      ...op,
+      access: 'admin',
+      namespace: 'admin',
+      csrf: op.method !== 'GET',
+      activation:
+        'ADMIN_AUTH_ENABLED; settings/policy indexes, canonical bootstrap and audit persistence. Approval requires a matching protected operator evidence register; media writes require explicit verified media composition.',
+      replay:
+        'Revision CAS; durable actor/payload/key-bound approval/publication replay; transactional effective pointer and audit',
+    }),
+  ),
+  ...(
+    [
+      {
+        method: 'GET',
+        path: '/storefront/contact',
+        query: empty,
+        params: empty,
+        response: publicContact,
+        status: 200,
+      },
+      {
+        method: 'GET',
+        path: '/storefront/policies/{type}',
+        query: empty,
+        params: z.strictObject({ type: policyType }),
+        response: policyPublic,
+        status: 200,
+      },
+    ] as const
+  ).map(
+    (op): Operation => ({
+      ...op,
+      access: 'public',
+      namespace: 'storefront',
+      csrf: false,
+      activation:
+        'Reviewed settings/policy persistence; only approved effective published pointers become public',
+      replay: 'Read only; no drafts or private configuration',
+    }),
+  ),
+
+  ...(
+    [
+      {
+        method: 'GET',
+        path: '/admin/products',
+        query: productListQuery,
+        params: empty,
+        response: z.array(adminProduct),
+        paginated: true,
+        status: 200,
+      },
+      {
+        method: 'POST',
+        path: '/admin/products',
+        query: empty,
+        params: empty,
+        request: productCreate,
+        response: adminProduct,
+        etag: true,
+        status: 201,
+      },
+      {
+        method: 'GET',
+        path: '/admin/products/{productId}',
+        query: empty,
+        params: productParams,
+        response: adminProductDetail,
+        etag: true,
+        status: 200,
+      },
+      {
+        method: 'PATCH',
+        path: '/admin/products/{productId}',
+        query: empty,
+        params: productParams,
+        request: productPatch,
+        response: adminProduct,
+        etag: true,
+        ifMatch: true,
+        status: 200,
+      },
+      {
+        method: 'POST',
+        path: '/admin/products/{productId}/deactivate',
+        query: empty,
+        params: productParams,
+        request: productDeactivate,
+        response: adminProduct,
+        etag: true,
+        ifMatch: true,
+        status: 200,
+      },
+      {
+        method: 'POST',
+        path: '/admin/products/{productId}/variants',
+        query: empty,
+        params: productParams,
+        request: variantInput,
+        response: adminVariant,
+        etag: true,
+        status: 201,
+      },
+      {
+        method: 'PATCH',
+        path: '/admin/variants/{variantId}',
+        query: empty,
+        params: adminVariantParams,
+        request: variantPatch,
+        response: adminVariant,
+        etag: true,
+        ifMatch: true,
+        status: 200,
+      },
+      {
+        method: 'POST',
+        path: '/admin/variants/{variantId}/deactivate',
+        query: empty,
+        params: adminVariantParams,
+        request: variantDeactivate,
+        response: adminVariant,
+        etag: true,
+        ifMatch: true,
+        status: 200,
+      },
+    ] as const
+  ).map(
+    (op): Operation => ({
+      ...op,
+      access: 'admin',
+      namespace: 'admin',
+      csrf: op.method !== 'GET',
+      activation:
+        'ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.',
+      replay:
+        'Strong revision CAS for edits; parent aggregate fence prevents invalid concurrent variants; immutable SKU/attribute identities and transactional media/audit',
+    }),
+  ),
+
+  ...(
+    [
+      {
+        method: 'GET',
+        path: '/admin/categories',
+        query: categoryListQuery,
+        params: empty,
+        response: z.array(adminCategory),
+        paginated: true,
+        status: 200,
+      },
+      {
+        method: 'POST',
+        path: '/admin/categories',
+        query: empty,
+        params: empty,
+        request: categoryCreate,
+        response: adminCategory,
+        status: 201,
+        etag: true,
+      },
+      {
+        method: 'PATCH',
+        path: '/admin/categories/{categoryId}',
+        query: empty,
+        params: categoryParams,
+        request: categoryPatch,
+        response: adminCategory,
+        status: 200,
+        etag: true,
+        ifMatch: true,
+      },
+      {
+        method: 'POST',
+        path: '/admin/categories/{categoryId}/deactivate',
+        query: empty,
+        params: categoryParams,
+        request: categoryDeactivate,
+        response: adminCategory,
+        status: 200,
+        etag: true,
+        ifMatch: true,
+      },
+    ] as const
+  ).map(
+    (op): Operation => ({
+      ...op,
+      access: 'admin',
+      namespace: 'admin',
+      csrf: op.method !== 'GET',
+      activation:
+        'ADMIN_AUTH_ENABLED; reviewed category indexes and audit persistence. Image writes additionally require explicit verified media composition; no provider activation implied.',
+      replay:
+        'Revision CAS for edits/deactivation; guarded ancestry and transactional image references/audit',
+    }),
+  ),
+
+  ...(
+    [
+      {
+        method: 'GET',
+        path: '/admin/inventory',
+        query: inventoryQuery,
+        params: empty,
+        response: inventoryList,
+        paginated: true,
+        status: 200,
+      },
+      {
+        method: 'GET',
+        path: '/admin/inventory/{variantId}/movements',
+        query: movementQuery,
+        params: inventoryParams,
+        response: z.array(movementView),
+        paginated: true,
+        status: 200,
+      },
+      {
+        method: 'POST',
+        path: '/admin/inventory/{variantId}/adjustments',
+        query: empty,
+        params: inventoryParams,
+        request: adjustmentBody,
+        response: adjustmentResult,
+        idempotency: true,
+        status: 200,
+      },
+    ] as const
+  ).map(
+    (op): Operation => ({
+      ...op,
+      access: 'admin',
+      namespace: 'admin',
+      csrf: op.method !== 'GET',
+      activation:
+        'ADMIN_AUTH_ENABLED; reviewed product/inventory/audit persistence; inventory list additionally requires approved primary store settings.',
+      replay:
+        'Exactly-once adjustment per variant/key; actor/payload mismatch conflicts; threshold uses revision CAS',
+    }),
+  ),
+
   ...(
     [
       {

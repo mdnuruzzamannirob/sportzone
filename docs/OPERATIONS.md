@@ -365,6 +365,287 @@ without dropping data; incompatible existing audit collections require a reviewe
 are append-only through the owning capability and commit with configuration changes. Preserve both coupon
 and audit history during application rollback; roll back router/registry/artifacts together, retaining indexes.
 
+Category administration activates with ADMIN_AUTH_ENABLED. After build, the explicit local/test command
+`node --env-file=.env backend/scripts/bootstrap-categories.mjs` creates only missing category indexes and
+canonical audit persistence, preserving records/extra indexes; it never activates media or creates seed data.
+The script refuses staging/production; reviewed rollout there uses the same owning initializers and existing
+migration controls. Requests fail closed when required indexes/audit persistence are unavailable. Category
+metadata works without a media provider; image writes additionally require explicit verified media composition.
+Preserve category/media references and audit on rollback; deploy matching router/registry/generated artifacts
+together. Do not delete referenced data or use image replacement as an external provider delete operation.
+
+Public GET /api/v1/storefront/home reads current catalog sections, configured contact/branding/banner
+and approved effective policy pointers with no-store. Provision the existing catalog/category/SKU,
+settings and policy indexes/singleton through their owning procedures; runtime never seeds content or
+repairs missing persistence. No additional collection, migration, feature flag or provider activation
+is introduced. Missing configured copy/media is omitted; missing required persistence returns 503.
+
+Logo and banner use independent settings ledger slots. Public rendering rechecks attached/public/clean
+media and banner asset identity, generating URLs through the owning provider rather than trusting a
+stored URL. An unavailable provider omits image content; private/quarantined/deleting/deleted or
+unreferenced assets cannot publish. Configure/clear homepageBanner through the protected settings CAS
+API; changes appear on a subsequent public read. Policy links require the current approved, published,
+effective pointer, never a scheduled/draft/latest-version fallback. Retain existing media references
+and policy history during rollback; disabling or reverting presentation does not delete those records.
+
+`GET /api/v1/checkout/payment-methods` reads current store payment flags in a transaction.
+No checkout activation or identity is needed for a general read; order-specific reads require the
+current customer owner or an enabled scoped guest session. Only active methods are returned;
+an unknown online amount remains ineligible (AMOUNT_REQUIRED). Amount query values are advisory;
+owned order reads use remaining canonical merchandise funding and the original payment method.
+The API and checkout quotes share the same verified capability projection. COD follows store flags.
+No provider request, new attempt or financial mutation is performed by this availability read.
+
+Online publication requires `PAYMENT_CHANNEL_APPROVALS_FILE`, an operator-controlled JSON array
+(maximum three entries), plus explicit valid adapter configuration below. Each entry includes
+channel (bkash/nagad/rocket), appEnv, mode, merchantAccountKey, gatewayKey, minPoisha/maxPoisha,
+verifiedAt, validUntil, approvedBy, evidenceRef, evidenceFile and evidenceDigest. Bind the merchant
+key to SHA-256 of `mode + NUL + storeId`; it must match the configured account/environment.
+EvidenceFile is a plain sibling filename, not a path/URL; evidenceDigest is SHA-256 of its nonempty
+bytes. Both manifest and each artifact are capped at 1 MB. Store these files outside public/web
+content under deployment/operator write controls; do not include credentials or personal payment data.
+
+The merchant owner must supply actual channel enablement/limits and authoritative sign-off evidence;
+writing a boolean, copying a synthetic fixture or computing a digest is not approval. Each verified
+lifetime and gateway key must be explicitly approved. Amount bounds are the merchant-approved
+intersection with published gateway constraints; no automatic channel-key mapping or default range
+is supplied. Missing manifest means no online capability. Malformed, duplicate, expired, future,
+wrong-account/environment, missing or digest-mismatched evidence fails startup configuration safely.
+Qualifying metadata and underlying evidence are loaded at startup; lifetimes are rechecked on every
+read/quote. Revoke immediately through the owning store flag, then replace/review evidence and restart
+to load changed qualifications. Expired evidence hides the affected channel automatically. Keep the
+approval revision/evidence in the protected operational inventory for audit/recovery.
+
+Without merchant evidence, online channels remain unavailable; bKash, Nagad, Rocket and COD still each
+require separate live launch acceptance. Availability does not enable the separately gated hosted initiation path or activate callbacks/receipt verification. Rollback can clear the evidence-file setting/restart or disable store
+flags while preserving attempt/receipt and approval history. No collection migration is introduced.
+
+Hosted initiation requires `PAYMENT_INITIATION_ENABLED=true`, CUSTOMER_AUTH_ENABLED, valid explicit
+adapter options and current merchant evidence. It is local/test only: both configuration and root
+composition refuse staging/production until callback/independent verification tasks are qualified.
+Absent/false leaves initiation and attempt-status routes unmounted. This does not enable online order
+submission or accept the existing checkout review gates. Merchant channel qualification remains distinct.
+
+After backend build, run `node --env-file=.env backend/scripts/bootstrap-payment-initiation.mjs` in
+an owned local/test database. It additively provisions paymentInitiations plus payment record/audit
+persistence, and upgrades only exact known predecessor users/orders validators for optional postalCode.
+Existing records, indexes and historical snapshots are retained; unknown drift or deployed environments
+are refused. A partial provisioning failure can leave already-created collections/schema expansion;
+inspect and resume explicitly. Existing identity/catalog/order/stock/coupon/notification prerequisites
+remain their owning bootstraps. Startup verifies admission but never migrates/provisions silently.
+
+Saved address/quote/order postalCode is optional for compatibility; online initiation requires the
+actual immutable snapshot value. Missing postcode, overlong gateway contact/shipment fields or other
+unrepresentable historical metadata fail before any provider call. Do not invent, truncate or backfill
+contacts/postcodes. Shipping addressLine2 is preserved when gateway-compatible. A legacy order requiring
+additional facts needs reviewed resolution; deployment cannot rewrite its commercial snapshot.
+
+Initiation persists its unique request/attempt and uncertain dispatch before external I/O. Identical
+requests never resend or restart holds; a timeout, crash or failed result transaction remains unresolved
+for independent reconciliation using the original tranId/session references. Do not reset an operation,
+generate another financial attempt or infer noncollection from an absent browser result. Stock and
+coupon reacquisition share one new 15-minute generation in a single transaction, guarded by current
+order/payment/attempt state. Allocation shortfall has no attempt or provider call; its original key
+retains that outcome. A fresh explicit request after capacity recovers may proceed only without an
+unresolved attempt. Current risk/funding/channel/lifecycle changes suppress historical hosted URLs.
+
+Rollback disables initiation first while preserving operations, attempts, receipts and audit. New
+postalCode data/expanded validators require a compatible rollback build: do not erase fields or
+blindly downgrade validators. Staging schema changes use the reviewed operational migration process;
+the convenience bootstrap never authorizes deployed collection effects. Session acceptance is not
+payment verification, fulfillment confirmation or permission to bypass required launch channels.
+
+SSLCOMMERZ adapter configuration is loaded by explicit backend composition through
+`loadSslcommerzOptions`. HTTP startup composes initiation only under the separate gated option below. `SSLCOMMERZ_ADAPTER_ENABLED=false`
+(or absent) disables loading. Enabling requires explicit `SSLCOMMERZ_MODE`, `SSLCOMMERZ_STORE_ID`,
+`SSLCOMMERZ_STORE_PASSWORD`, `SSLCOMMERZ_CALLBACK_ORIGIN` and `SSLCOMMERZ_TIMEOUT_MS` (1–60,000).
+Local/test/staging permit sandbox only; production permits live only. Credentials must belong to the
+selected merchant/environment; this validation does not prove merchant enablement. Callback origin
+must be an absolute HTTPS origin without credentials, trailing slash, path, query or fragment.
+Canonical API return/IPN paths are derived; do not configure arbitrary client redirect destinations.
+
+Transport uses the published v4 endpoints on fixed sandbox/securepay origins. It never follows
+redirects or automatically retries. Hosted URLs are restricted to the mode's `/gwprocess/v4/gw.php`
+with the returned SESSIONKEY and optional Q=PAY; an unexpected gateway URL requires reviewed provider
+qualification. Query API credentials are sent in the documented GET query: redact full outbound URLs,
+query strings and response bodies in HTTP instrumentation, proxies and incident artifacts. Returned
+records are redacted provider reports/digests, not a funding decision; authenticate and match merchant,
+order, amount/currency and references in the owning verification service before financial mutation.
+Persist intent before initiation; reconcile uncertain outcomes using the original references.
+No provider endpoint/channel is activated by the adapter flag. Before production integration, verify
+merchant-owned credentials, callback transport, channel keys/limits and public egress/IP registration
+with the merchant owner. Rollback disables composition while preserving all attempts and receipts;
+never retry an uncertain external request solely because a deployment was reverted.
+
+After backend build, `node --env-file=.env backend/scripts/bootstrap-payment-records.mjs`
+additively provisions payment attempts, receipt intake, linked collections and audit persistence in
+local/test only. Existing validator drift is refused; records and extra indexes are preserved, and
+financial TTL indexes fail readiness. Staging/production requires the reviewed migration procedure.
+This script enables no provider, callback or receipt writer. Preserve financial histories on rollback;
+do not drop collections or restore incompatible validators. Private attempt preparation requires its
+transactional authorization/allocation adapter; the gated local/test composition supplies that boundary; test fixtures do not
+establish verified merchant capability or independently verified receipts.
+
+COD submission additionally requires `CHECKOUT_COD_ENABLED=true`; the default is false. It requires
+quote activation and customer authentication, current approved consent/deadline rules and reviewed
+order/intent/inventory/coupon/payment/notification persistence. Unsupported or malformed activation
+fails configuration validation. Startup never provisions collections or activates merchant channels.
+
+After build, `node --env-file=.env backend/scripts/bootstrap-checkout-submit.mjs` additively provisions
+the approved checkout collections/indexes in local/test only. Catalog, current coverage/settings and
+published policy prerequisites remain their owning procedures; no business settings are seeded. This
+explicit bootstrap also migrates only exact known predecessor notification validators, preserving all
+account/proof delivery evidence and adding order_received for guest/registered buyers. Unknown schema
+drift and staging/production are refused. The expanded validator must remain while new events exist;
+application rollback must not delete events or blindly restore an older incompatible validator.
+
+COD commits stock/coupon, Pending order/payment and one order_received intent in the same transaction.
+An uncertain browser response is retried with its original key; inspect current durable outcome before
+any recovery. Missing notification/payment/index readiness rolls back commerce effects. Monitor 409,
+429/503 and allocation/readiness failures using safe route/correlation codes, never buyer data or keys.
+Payment aggregate creation records zero verified funds and no paymentCollections/paymentAttempts.
+Queued order_received events are not claimed by registration/proof workers; commerce delivery belongs
+to P06-016. Online creation is private only, with shared 15-minute generation clocks and no provider
+call/public activation. Automatic expiry remains P06-010; do not enable online submission before its
+payment/expiry/reconciliation integrations and qualified compliance gates are accepted.
+
+Checkout quote runtime is opt-in: `CHECKOUT_QUOTES_ENABLED=true` requires `CUSTOMER_AUTH_ENABLED=true`,
+explicit `CHECKOUT_QUOTE_TTL_SECONDS` (1–86,400; technical bound, no operating default) and comma-separated
+`CHECKOUT_REQUIRED_POLICY_TYPES` (distinct PolicyType values including terms). The operator approves
+lifetime/applicable policies; no values are seeded. A protected eligible DELIVERY_DEADLINE_POLICY_FILE
+is loaded once through the existing deadline boundary. Invalid enabled configuration fails startup
+with value-free diagnostics. Missing independently reviewed deadline or current published policy pointers
+blocks quote publication. Existing P06-003 legal/compliance acceptance is not cleared by this switch.
+
+After backend build, `node --env-file=.env backend/scripts/bootstrap-checkout-quotes.mjs` additively
+creates quote indexes in local/test only. Provision identity/throttle, catalog, delivery, canonical
+settings/published policies and promotions through their owning reviewed procedures. Runtime never
+repairs indexes. Staging/production bootstrap is refused; review their additive provisioning separately.
+Quote records retain consent evidence without TTL; lifetime expiry does not authorize deletion. Never
+wipe open/consumed quotes as a rollback or substitute a new quote/intent automatically after an error.
+
+After backend build, `node --env-file=.env backend/scripts/bootstrap-orders.mjs` provisions the
+canonical orders/orderItemBalances collections, strict validators and declared indexes in local/test
+only. It refuses existing validator drift and staging/production; it never repairs incompatible
+collections or deletes historical data. Runtime creation checks persistence readiness. Rollback must
+retain orders, unit balances and audit evidence. This foundation requires explicit submission activation:
+the checkout coordinator atomically authorizes current consent, consumes the quote, persists
+the intent and coordinates allocations/pending payment before committing an order.
+
+After backend build, `node --env-file=.env backend/scripts/bootstrap-checkout-intents.mjs` provisions
+the canonical durable checkout identity registry in local/test only. It installs strict validators and
+unique scope/key, quote and optional order indexes; existing validator drift or any TTL index fails
+readiness and requires reviewed provisioning. Staging/production bootstrap is refused. Never delete
+intents or tombstones to resolve a retry, expire them with TTL, or rotate a key automatically after an
+uncertain response. `replayUntil` affects no uniqueness/retention guarantee; replay reads current owned
+order state without revalidating an expired/consumed quote. Missing linked orders or stranded preparing
+records require investigation and safe reconciliation, not blind resubmission. Preserve registry,
+quotes, orders and audit across rollback/restore. The COD route requires its explicit activation and
+combined completion boundary; online submission and provider/reconciliation integrations remain gated.
+
+Quote generation commits only its scope-bound quote and ordinary authorization fences; it does not
+reserve stock/coupons, create orders or invoke providers. GET /delivery/areas is public bounded advisory
+discovery even with quote activation disabled. Persistent quote admission shares the customer 60/minute
+network budget and a separate checkout 10/minute network/email-target group. Respect Retry-After; no
+process-memory fallback is allowed. Request logs identify checkout.quote.create and correlation/error
+codes, never draft contact/address, cookies, quote scope hashes or fingerprints. Monitor 429/503/stock/
+quote-change rates before changing reviewed limits. Browser context expiry/rotation still invalidates
+guest access; quote lifetime does not extend its credential.
+
+Default online eligibility is closed until the owning payment integration supplies verified durable
+merchant/provider capability and amount bounds. Setting online flags cannot authorize collection or
+waive required initial-release channels. Roll back matching quote routes/contracts/capabilities together,
+retain private consent snapshots/digests, and leave existing orders/financial evidence intact. COD
+intent/consumption and allocation use the reviewed combined coordinator. Actual provider sessions and
+integrated release acceptance remain owning later tasks.
+
+Delivery management uses `node --env-file=.env backend/scripts/bootstrap-delivery.mjs` after a backend
+build, in local/test only. It adds delivery indexes and audit persistence without seeding zones, charge
+amounts or coverage. Provision the canonical primary settings singleton first through its own bootstrap.
+Missing settings or index drift prevents delivery writes; HTTP/worker startup never repairs persistence.
+Staging/production index rollout requires separate operator review; existing conflicting coverage must
+be reconciled before adding the active-key partial unique index. Do not erase old charge versions.
+
+Schedule `node --env-file=.env backend/scripts/activate-delivery.mjs` with the approved worker scheduler.
+Each batch handles at most 100 due items, expires closed windows and activates due schedules behind the
+same store-wide guard as HTTP mutations. Disabled scheduled zones do not consume every batch slot;
+re-enable a zone only after reviewing its retained windows. Concurrent runs are safe, and failed
+transactions roll back their window/fence/audit effects. Monitor `delivery_activation_batch` counts,
+nonzero exits and due active-zone backlog. A failed batch remains retryable after investigation;
+public coverage fails closed until a valid active rule is present. Effective boundary gaps during
+worker delay do not justify using an expired or merely scheduled charge. API key/actor/payload-bound
+retries return original snapshots; avoid generating a new key to blindly repeat a command.
+
+Rollback matching delivery routes/services/contracts together, preserving charge versions, configured
+end boundaries, lineage, replay records, global/zone fences and audit. Never rewrite accepted order
+snapshots or roll commercial prices backward by editing history. Real operator coverage/amounts,
+scheduler deployment and legal deadlines remain separately approved operational inputs.
+
+Delivery deadline technical preflight is `node --env-file=.env backend/scripts/check-delivery-deadline.mjs`
+after a backend build. Optional `DELIVERY_DEADLINE_POLICY_FILE` names a protected read-only JSON
+`{rule,review}` manifest with the exact format in Database §7.2. Missing/inactive configuration produces
+under_review and nonzero exit; malformed, oversized (>100 KB), future-review or digest-mismatched input
+produces a sanitized error. No database, network, new collection or seed is required. The digest is
+computed by the owning `deliveryDeadlineDigest` service over normalized rule JSON; it is not a signature
+or an independent legal approval. A successful preflight proves technical eligibility of supplied
+configuration only. Do not treat synthetic fixtures or reviewer strings as real approval evidence.
+
+Before installing a real manifest, the store owner/authorized policy approver must retain qualified
+current review of applicable legal deadlines, start events and operator policy (EXT-07/EXT-08), approve
+the exact rule and identify its evidence reference/reviewer/date. Keep the manifest writable only by
+the authorized operator; retain old evidence and immutable order bases. Replace/reload future rules
+through reviewed configuration, never by rewriting accepted snapshots. No real manifest is supplied by
+the repository. This preflight/domain capability does not yet configure a running checkout/order API;
+those owning features must integrate snapshot capture and actual-event confirmation guards. Missing
+review blocks affected final publication/acceptance. ETA or exception handling must preserve existing
+commitments and use the owning order CAS/audit/customer-notification path when implemented.
+
+Store settings/policy persistence uses `node --env-file=.env backend/scripts/bootstrap-settings.mjs`
+after a backend build, in local/test only. Supply explicit approved `STORE_INITIAL_LOW_STOCK_THRESHOLD`
+(nonnegative safe integer); there is no default. Additive indexes and the unique primary singleton
+are provisioned without overwriting an existing singleton or enabling payment channels/policies.
+For staging/production, the operator reviews the same additive rollout separately; startup never
+repairs indexes or bootstraps content. Retain the collection, policy history, replay identities and
+audit on binary rollback; do not delete published policy documents or pointer history.
+
+`POLICY_APPROVALS_FILE` optionally names a protected, durable JSON approval register mounted read-only
+for the API process. Its array entries contain `evidenceRef,type,version,contentDigest,effectiveAt,
+approvedAt,approvedBy` (API §14.3); unknown fields, duplicate references, invalid/future approval dates,
+more than 1,000 entries or a file larger than 1 MB fail startup. Absence leaves approval unavailable.
+The authorized operator/legal reviewer must independently approve the exact policy text/version and
+effective date before adding an entry; neither the browser nor an arbitrary evidence string can
+create approval. Keep underlying evidence and historical registers durably retained with restricted
+write access; reload by reviewed API restart after an atomic register replacement. Do not commit real
+contact data, approval records or operational paths. Invalid files produce sanitized configuration
+errors. Existing persisted approvals remain durable when the live register rotates.
+
+Schedule `node --env-file=.env backend/scripts/activate-policies.mjs` repeatedly using the approved
+worker scheduler. Each run handles at most 100 due schedules in effective-date/ID order, uses real
+transactions and atomically records pointer/history/audit transitions. Concurrent runs are replay-safe;
+failed transactions leave work scheduled for retry. Monitor `policy_activation_batch` counts and
+nonzero exits; investigate due schedules left behind and rerun the batch after recovery. Public reads
+continue showing the prior effective pointer until activation commits. Worker scheduling/deployment
+and real legal approvals require operator evidence and are not established by local test fixtures.
+
+Product/variant administration uses `node --env-file=.env backend/scripts/bootstrap-catalog.mjs` after
+build for explicit local/test category indexes, strict product/variant persistence and canonical audit setup.
+It is additive, retains records/extra indexes, seeds no products/stock/media and refuses staging/production;
+those environments use reviewed owning initializers/migration controls. Category-only bootstrap remains
+supported. Missing validators/indexes/audit cause requests to fail closed; startup never repairs them.
+Full variant PATCH now owns threshold edits at the existing URL; inventory list/adjustment/history stay in
+inventory, with one registered PATCH handler. Deploy routers/contracts together and preserve SKU/stock,
+media references, audit and historical commerce data during rollback. Real provider activation remains
+separate, and metadata-only APIs do not require frontend builds or media credentials.
+
+Inventory administration activates with ADMIN_AUTH_ENABLED and requires reviewed product/inventory persistence;
+mutations additionally require canonical audit persistence. Reuse the product/inventory owning initializers and
+promotion/audit bootstrap under their existing environment restrictions; HTTP startup never creates or repairs
+collections. Inventory lists additionally require an operator-approved primary storeSettings.lowStockThreshold
+and an unconditional unique key index. The read-only stock-settings capability does not seed that singleton;
+settings provisioning remains its owning task. Missing defaults return 503, with no environment fallback or
+fabricated approval. Adjustment/history remain usable independently. Preserve movements, audit records and
+canonical stock during rollback; roll back router/registry/artifacts together without deleting movement history.
+
 Review persistence uses `node --env-file=.env backend/scripts/bootstrap-reviews.mjs` after backend
 build, from the repository root. The local/test-only command creates only the missing `reviews`
 collection and declared indexes with its strict validator; compatible reruns preserve records and
@@ -545,7 +826,34 @@ exceptions, and missing/invalid/expired records fail the check. The scan does no
 
 Use protected `main`, short task branches and reviewed squash merges; a persistent develop branch is not required. PRs identify task IDs, behavioral scope, test evidence and compatibility/recovery impact. Require the successful CI job and independent review; changes to security/financial paths include their owning negative/concurrency tests. Repository protection/environment settings must be inspected and verified during implementation; local YAML is not proof they are enabled or available on the selected account plan. Retain the equivalent release approval record if a platform protection feature is unavailable.
 
-Applications are private workspaces with a coordinated release record; no public package publication or Changesets workflow is required. Release IDs trace immutable commit and artifact digests. Build backend images once per candidate using locked dependencies, excluding source secrets and running without privileged identity; API and worker use the same compatible image with distinct entry commands. Image/container setup remains a deployment implementation task, not an existing command. Admin is a static artifact; storefront is a supported Next.js runtime artifact. Frontend public env values may be compiled into bundles: record environment/build-config identity and rebuild/reverify for a different environment when necessary. Never promote a staging-baked API origin as a production artifact by assumption.
+Applications are private workspaces with a coordinated release record; no public package publication or Changesets workflow is required. Release IDs trace immutable commit and artifact digests. Build backend images once per candidate using locked dependencies, excluding source secrets and running without privileged identity; API and worker use the same compatible image with distinct entry commands.
+
+The backend recipe is `backend/Dockerfile`, built from repository root with its Dockerfile-specific
+allowlist (`backend/Dockerfile.dockerignore`). It pins the official Node image digest, installs the pinned
+npm toolchain, compiles only backend source and places only production backend dependencies, compiled output
+and HTTP/notification/reservation-expiry commands in the runtime stage. No frontend install/build is part of this recipe.
+Secrets are runtime inputs, never Docker build arguments or copied environment files. Actual builder,
+image inspection and staging execution evidence remain required before deployment acceptance.
+
+On an authorized Docker builder, use `docker build --pull -f backend/Dockerfile -t sportzone-backend:<revision> .`.
+Record the resulting immutable image digest and verify effective non-root user, dependency/file inventory,
+secret absence, health, SIGTERM draining and restart behavior before publishing/promoting. The default command
+is `node dist/server.js`; the same image runs a scheduled notification batch with
+`docker run --rm --no-healthcheck --env-file /protected/staging.env sportzone-backend:<revision> scripts/notification-worker.mjs`.
+The same image also runs expiry with `scripts/expire-reservations.mjs` and the same `--no-healthcheck`
+container pattern. Both workers are one-shot batches, not second HTTP servers; monitor exit status, durable backlog and lease recovery.
+Do not apply an always-restart loop to a normally completed batch.
+
+Supply protected staging environment values privately, including APP_ENV=staging, the approved origins,
+isolated DB credentials and test-mode provider/sender restrictions. Container HTTP binds to 0.0.0.0:4000 by
+default; publish behind the approved TLS edge, not as an unreviewed public plaintext port. Run with read-only
+root filesystem, no added capabilities/no-new-privileges and an appropriate bounded temporary mount after
+verifying provider/runtime compatibility. The image's credential-free health probe checks only loopback
+`/api/v1/health/live`; authenticated readiness remains a separate protected monitoring responsibility.
+Neither Docker's liveness result nor a host-side build substitutes for deployed database transactions,
+secure origins/sessions, worker restart or real sandbox/email evidence.
+
+Admin is a static artifact; storefront is a supported Next.js runtime artifact. Frontend public env values may be compiled into bundles: record environment/build-config identity and rebuild/reverify for a different environment when necessary. Never promote a staging-baked API origin as a production artifact by assumption.
 
 Eligible candidates may deploy to isolated staging after CI. Production promotion requires the existing milestone/provider/policy gates and a recorded release approval. Run additive schema/index operations as explicit controlled jobs, not from every API replica startup. Preserve API/worker compatibility during rollout and follow §6 for rollback. Managed runtime/static hosting and transaction-capable managed MongoDB are the deployment class; exact vendor, region, resources and billable plan are selected against the environment inventory before provisioning.
 
@@ -752,6 +1060,55 @@ Remove expired/consumed/invalidated challenge delivery envelopes without waiting
 verification/audit facts for the approved period. Quote cleanup must preserve consumed consent evidence and intent/order
 uniqueness. Record schedules, key custodians, temporary upload/quote lifetimes and retention in the environment configuration inventory.
 
+#### Reservation expiry worker
+
+After backend build and reviewed checkout bootstrap, schedule
+`node --env-file=.env backend/scripts/expire-reservations.mjs` with explicit
+RESERVATION_EXPIRY_BATCH_SIZE (1–100) and RESERVATION_EXPIRY_LEASE_MS (1000–3600000).
+No operating defaults or HTTP background loop are supplied. `bootstrap-checkout-submit.mjs` adds the
+canonical strict jobLeases collection/indexes in local/test only; staging/production provisioning needs
+normal operator review. Runtime only verifies readiness and refuses TTL or unknown validator drift.
+
+Each invocation scans one bounded batch under a durable lease and cursor. It releases only consistent,
+due unpaid online stock/coupon generations in a transaction with order/payment fences and audit. COD,
+verified-funded/risk-held, cancelled, missing or inconsistent state is retained for its owning resolution.
+Expiry does not cancel orders/attempts, mark payment failure or discard possible late verified funds.
+Cursor wrap and status-guarded movements make restart/checkpoint replay safe. A stale owner cannot
+commit or checkpoint. Do not delete held records, movements, coupons or lease history as recovery.
+
+Monitor scheduler exit status, scanned/released/skipped counts, durable failure metadata and overdue
+held backlog. Repeated skips need protected order/payment/generation investigation; a successful scan
+is not proof every hold was eligible. The CLI logs counts/static failure only. Schedule cadence/lease
+capacity requires operator approval; no provider call or financial retry belongs in this worker.
+
+#### Guest proof activation and recovery
+
+`GUEST_ACCESS_ENABLED=true` requires CUSTOMER_AUTH_ENABLED, explicit GUEST_ORDER_ACCESS_TTL_SECONDS
+(60–1800), GUEST_ORDER_ACCESS_COOLDOWN_SECONDS (60–3600),
+GUEST_ORDER_ACCESS_RESPONSE_FLOOR_MS (100–5000), GUEST_ORDER_SESSION_TTL_SECONDS (60–604800),
+protected AUTH_PROOF_ACTIVE_KEY_VERSION/AUTH_PROOF_KEYS_JSON and the exact HTTPS storefront origin.
+Bounds are technical limits, not approved operating defaults. Keys must be distinct from session/monitor
+secrets and held outside database/backups. The sanitized template leaves durations blank and activation off.
+
+Before identity startup, explicitly migrate exact known notification predecessors with the existing
+local/test `migrate-notifications.mjs` procedure or combined checkout bootstrap. Migration preserves
+account/proof/order receipt events and expands only the guest proof branch; unknown drift is refused.
+Review equivalent staging rollout separately. Root composition verifies order/identity/notification/
+throttle persistence before serving activated guest routes. Normal startup never repairs it.
+
+The existing separately scheduled notification worker dispatches guest proofs only when this feature
+and its protected proof renderer are enabled. Nonproduction email still requires approved test-recipient
+redirection. No raw proof, URL, envelope or key belongs in logs/outbox payloads. Delivery uncertainty
+stays uncertain; reconcile or explicitly reissue an invalidating proof after cooldown, never reset a send
+counter and blindly resend. Remove expired/invalidated/consumed envelopes independently of TTL lag.
+Missing keys/tamper deny delivery; hash verification of an already delivered valid proof needs no key.
+
+Guest exchange returns an order-scoped cookie and CSRF, never durable access from order/email text.
+Refresh guest CSRF with explicit sessionKind=guest; logout revokes only the guest credential and returns
+a fresh browser context. Preserve challenges, notification evidence, session revocations and order scope
+revisions across compatible rollouts. Retain the expanded validator while new rows exist; do not erase
+proof or financial evidence to force an older binary's exact-validator check to pass.
+
 #### Registration notification worker and recovery
 
 Registration commits its intent without invoking email. Build the backend; use the common protected environment plus
@@ -765,7 +1122,7 @@ Production requires EMAIL_MODE=live. Local/test/staging require EMAIL_MODE=test 
 EMAIL_TEST_RECIPIENT; every outgoing recipient is redirected to that inbox. Sender/API keys remain separate per environment
 in protected config. Templates and original recipient addresses are not logged; CLI output contains counts or a generic
 failure. The outbox contains no plaintext proof/session/password or arbitrary email HTML. Enabled identity proof renderers supply authenticated
-envelope/challenge checks for explicitly activated customer-reset/email-change/admin-reset templates; other proof templates remain disabled.
+envelope/challenge checks for explicitly activated customer-reset/email-change/admin-reset/guest-access templates; other proof templates remain disabled.
 
 Policy bounds: 1–10 attempts; 1–100 claims per batch; base delay 100–3600000 ms; maximum delay at least the base and at most
 86400000 ms; lease 1000–3600000 ms; HTTP timeout 1–60000 ms. Require lease strictly greater than timeout plus 1000 ms.
@@ -775,7 +1132,7 @@ ambiguous/network/timeout/5xx outcomes stop in delivery_uncertain. Resend accept
 
 For an existing owned local/test P03-007/008 database, explicitly run
 `node --env-file=.env backend/scripts/migrate-notifications.mjs` before identity startup/worker readiness. It upgrades
-only the known strict P03-007/009/010/011 predecessor validators and ensures the claim-expiry index, preserving all records and statuses; repeat
+only exact known identity-proof/order-received predecessor validators and ensures the claim-expiry index, preserving all records and statuses; repeat
 migration is safe. Fresh local/test bootstrap creates the current schema. Neither HTTP startup nor the worker migrates.
 Production migration needs normal operator change control; the convenience migration command refuses deployed environments.
 
@@ -1758,7 +2115,7 @@ the template and runtime validator determine which exact keys are currently supp
 | MongoDB                    | `MONGODB_URI`, `MONGODB_DB_NAME`, optional TLS/CA path                                              | **Secret** URI; replica set and transaction capability checks                                                                                                        |
 | Operational monitor        | `HEALTH_MONITOR_TOKEN`                                                                              | **Secret**; separate 32-byte hex Bearer credential for restricted readiness only; rotate by protected config update/restart; never send in URLs/logs/browser bundles |
 | Sessions                   | `SESSION_SECRET`, CUSTOMER_SESSION_TTL_SECONDS, ADMIN_SESSION_TTL_SECONDS, SESSION_COOKIE_SAME_SITE | SESSION_SECRET is **secret**; separate kind/domain HMAC digests; lifetimes/SameSite explicitly approved and validated at session composition; no fallback            |
-| CSRF and guest access      | CSRF signing secret/context and one-time guest-token secret if implemented                          | **Secret**; expiry, rotation, no log/public bundle                                                                                                                   |
+| CSRF and guest access      | SESSION_SECRET for session/CSRF verifiers; AUTH_PROOF_* external AEAD key ring for proof delivery                          | **Secret**; expiry, rotation, no log/public bundle                                                                                                                   |
 | Proof delivery (API §16.3) | AUTH_PROOF_ACTIVE_KEY_VERSION / AUTH_PROOF_KEYS_JSON injected from the protected key store          | Encryption keys outside MongoDB/backups; worker-only decrypt, AEAD nonce/tamper checks, no plaintext/outbox envelope; fail closed if unavailable                     |
 | Quote/upload lifetimes     | CHECKOUT_QUOTE_TTL_SECONDS, MEDIA_TEMP_TTL_SECONDS                                                  | Positive bounded server configuration approved by owners; enforce expiry, no runtime fallback guessed here                                                           |
 | Refund business calendar   | Approved versioned calendar/holiday and policy-rule references                                      | Compute target from actual approvedAt; shorter applicable basis wins; under_review without guessed date                                                              |

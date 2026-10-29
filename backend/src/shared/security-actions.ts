@@ -1,5 +1,11 @@
 // Registered route patterns only. Never classify or log raw paths, IDs or input.
 const actions = {
+  'POST /guest-access/challenges': 'guest.proof.request',
+  'POST /guest-access/sessions': 'guest.proof.exchange',
+  'GET /guest-access/session': 'guest.session.read',
+  'POST /guest-access/logout': 'guest.session.logout',
+  'POST /checkout/orders': 'checkout.order.submit',
+  'POST /checkout/quotes': 'checkout.quote.create',
   'POST /admin/media/uploads': 'admin.media.upload',
   'DELETE /admin/media/:assetId': 'admin.media.delete',
   'GET /auth/csrf': 'customer.csrf.issue',

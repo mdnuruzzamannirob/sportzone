@@ -44,7 +44,7 @@ const movementSchema = new Schema(
           type: { type: String, required: true, enum: ['system', 'admin'] },
           id: optionalObjectIdField(),
         },
-        { _id: false, strict: 'throw' },
+        { _id: false, strict: 'throw', versionKey: false },
       ),
       required: true,
     },

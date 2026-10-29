@@ -67,7 +67,17 @@ const errorEnvelope = (codes = Object.keys(errorDefinitions)) =>
 function security(op: Operation) {
   if (op.access === 'monitor') return [{ MonitorBearer: [] }]
   if (op.access === 'public') return []
-  const session = op.namespace === 'admin' ? 'AdminSession' : 'CustomerSession'
+  if (op.access === 'customer_or_guest')
+    return [
+      { CustomerSession: [], ...(op.csrf ? { CsrfHeader: [] } : {}) },
+      { GuestOrderSession: [], ...(op.csrf ? { CsrfHeader: [] } : {}) },
+    ]
+  const session =
+    op.path.startsWith('/guest-access/') || op.access === 'guest'
+      ? 'GuestOrderSession'
+      : op.namespace === 'admin'
+        ? 'AdminSession'
+        : 'CustomerSession'
   const context = op.namespace === 'admin' ? 'AdminBrowserContext' : 'BrowserContext'
   if (op.access === 'public_csrf')
     return op.path.endsWith('/logout')
@@ -81,6 +91,13 @@ function security(op: Operation) {
 const header = (description: string) => ({ description, schema: { type: 'string' } })
 function openOperation(op: Operation) {
   const params = [...parameters(op.params, 'path'), ...parameters(op.query, 'query')]
+  if (op.idempotency)
+    params.push({
+      name: 'Idempotency-Key',
+      in: 'header',
+      required: true,
+      schema: { type: 'string', minLength: 1, maxLength: 128 },
+    })
   if (op.ifMatch)
     params.push({
       name: 'If-Match',
@@ -107,10 +124,11 @@ function openOperation(op: Operation) {
         ...(op.etag ? { ETag: header('Strong quoted numeric revision') } : {}),
         'Cache-Control': { schema: { const: 'no-store' } },
         'X-Content-Type-Options': { schema: { const: 'nosniff' } },
-        ...(op.status === 201 && op.path === '/me/addresses'
-          ? { Location: header('Created address resource URI') }
+        ...(op.status === 201 && ['/me/addresses', '/admin/products'].includes(op.path)
+          ? { Location: header('Created resource URI') }
           : {}),
         ...(op.path.includes('/auth/') ||
+        ['/guest-access/sessions', '/guest-access/logout'].includes(op.path) ||
         op.path.includes('password-change') ||
         op.path.includes('email-changes/confirm')
           ? {
@@ -133,6 +151,7 @@ function openOperation(op: Operation) {
         : {}),
     },
   }
+  if (op.replayStatus) responses[op.replayStatus] = responses[op.status]
   for (const status of [
     ...new Set(Object.values(errorDefinitions).map((item) => item.status)),
   ].sort()) {
@@ -244,6 +263,7 @@ export function generateArtifacts(apiMarkdown: string) {
       securitySchemes: {
         CustomerSession: cookie('sz_customer_sid'),
         AdminSession: cookie('sz_admin_sid'),
+        GuestOrderSession: cookie('sz_guest_order_sid'),
         BrowserContext: cookie('sz_browser_ctx'),
         AdminBrowserContext: cookie('sz_admin_browser_ctx'),
         CsrfHeader: { type: 'apiKey', in: 'header', name: 'X-CSRF-Token' },
@@ -287,6 +307,7 @@ export function generateArtifacts(apiMarkdown: string) {
             ]
           : []),
         ...(op.ifMatch ? [{ key: 'If-Match', value: '{{ifMatch}}' }] : []),
+        ...(op.idempotency ? [{ key: 'Idempotency-Key', value: '{{idempotencyKey}}' }] : []),
         ...(op.access === 'monitor'
           ? [{ key: 'Authorization', value: 'Bearer {{monitorToken}}' }]
           : []),
@@ -320,6 +341,7 @@ export function generateArtifacts(apiMarkdown: string) {
   for (const op of sorted) {
     for (const match of op.path.matchAll(/\{([^}]+)\}/g)) variables.add(z.string().parse(match[1]))
     if (op.ifMatch) variables.add('ifMatch')
+    if (op.idempotency) variables.add('idempotencyKey')
     for (const param of parameters(op.query, 'query')) variables.add(param.name)
     if (hasBody(op) && !op.multipart) variables.add(`${operationId(op)}Body`)
   }

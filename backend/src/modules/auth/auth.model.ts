@@ -70,6 +70,7 @@ const addressSchema = new Schema(
     districtKey: requiredText(64),
     areaKey: requiredText(64),
     street: requiredText(300),
+    postalCode: stringField(30),
     addressLine2: stringField(300),
     isDefault: {
       type: Boolean,

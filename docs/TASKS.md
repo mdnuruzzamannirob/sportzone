@@ -62,7 +62,7 @@ This document decomposes the approved implementation plan into independently ver
 | Stage              | Executable queue and closeout                                                                                                                                                                            |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Foundation         | P01-021 → P01-022 → P01-023 → P01-024.                                                                                                                                                                   |
-| Backend            | Every unfinished task marked Backend, in dependency order; P09-011 provisions backend staging prerequisites and P03-022 closes the stage. Includes protected admin APIs formerly hidden inside UI tasks. |
+| Backend            | Every unfinished task marked Backend, in dependency order; P04-020 is the local media prerequisite for category/settings; P04-003 retains real media acceptance. P09-011 provisions staging; both remain mandatory for P03-022. Includes protected admin APIs formerly hidden inside UI tasks. |
 | Admin              | Every task marked Admin after P03-022; P09-010 closes the complete admin stage.                                                                                                                          |
 | Storefront         | Every task marked Storefront after P09-010; P02-017 closes the complete storefront stage.                                                                                                                |
 | Integrated         | Original catalog/shopping/COD/payment/after-sales gates, integrated staging and P10 release-candidate verification after P02-017.                                                                        |
@@ -121,23 +121,23 @@ retain their own approver, environment, artifacts, blockers and explicit decisio
 
 ## 3. Project progress dashboard
 
-The register contains 209 tasks across twelve requirement groups. Application-stage execution is defined in §1; accepted IDs and evidence remain historical. Update totals when tasks are added or statuses change.
+The register contains 210 tasks across twelve requirement groups. Application-stage execution is defined in §1; accepted IDs and evidence remain historical. Update totals when tasks are added or statuses change.
 
 | Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |   Done | Deferred |
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
 | 01 — Requirements Finalization and Planning | 24 | 0 | 0 | 0 | 0 | 0 | 24 | 0 |
 | 02 — UI/UX Design                             |      17 |           1 |     0 |           0 |       0 |         0 |     16 |        0 |
 | 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |     21 |        0 |
-| 04 — Product Catalog and Inventory            |      19 |          11 |     0 |           0 |       1 |         0 |      7 |        0 |
+| 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       1 |         0 |     12 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
-| 06 — Checkout, Orders, and Delivery Rules     |      22 |          22 |     0 |           0 |       0 |         0 |      0 |        0 |
-| 07 — Payment Integration and Verification     |      18 |          18 |     0 |           0 |       0 |         0 |      0 |        0 |
+| 06 — Checkout, Orders, and Delivery Rules     |      22 |          12 |     0 |           0 |       1 |         6 |      3 |        0 |
+| 07 — Payment Integration and Verification     |      18 |          14 |     0 |           0 |       0 |         0 |      4 |        0 |
 | 08 — Returns and Refunds                      |      19 |          19 |     0 |           0 |       0 |         0 |      0 |        0 |
-| 09 — Admin Management and Reports             |      18 |          18 |     0 |           0 |       0 |         0 |      0 |        0 |
+| 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       1 |         0 |      1 |        0 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **209** | **132** | **0** | **0** | **1** | **0** | **76** | **0** |
+| **Total** | **210** | **112** | **0** | **0** | **3** | **6** | **89** | **0** |
 
 ## 4. Milestone tracker
 
@@ -696,14 +696,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-01–FR-34 backend surfaces; Plan §3.1; Testing §15\
-  **Depends on:** `P09-011`, `P05-004`, `P06-016`, `P07-016`, `P08-004`, `P04-017`, `P04-019`, `P05-014`, `P05-015`, `P05-016`, `P09-014`, `P09-016`, `P09-017`, `P09-018`\
+  **Depends on:** `P04-003`, `P09-011`, `P05-004`, `P06-016`, `P07-016`, `P08-004`, `P04-017`, `P04-019`, `P05-014`, `P05-015`, `P05-016`, `P09-014`, `P09-016`, `P09-017`, `P09-018`\
   **Deliverable:** Consolidate all customer/admin API, validator/index, transaction/race/replay, job/recovery, secret/privacy and required real provider evidence against one backend revision. Reconcile generated OpenAPI/Postman and operator procedures.\
   **Acceptance:** All backend-stage dependencies and applicable provider gates pass; no frontend server/build/test or browser engine is required. API scenario tests prove guest/customer/admin workflows. Independent owner acceptance permits admin stage; M1–M8 product gates remain separate.\
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
 
 ### Phase 04 — Product catalog and inventory
 
-**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 04. **Associated gate:** M2. **Tasks:** 19.
+**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 04. **Associated gate:** M2. **Tasks:** 20.
 
 - [x] **P04-001 — Model categories and hierarchy with activity rules**\
   **Status:** `Done` · **Area:** Backend/catalog · **Owner:** Codex\
@@ -725,11 +725,11 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Blocked` · **Area:** Backend/media · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-05; FR-23; Architecture §11\
-  **Depends on:** `P01-024`\
-  **Deliverable:** Implement the mediaAssets ownership/upload-intent ledger, validation/quarantine, transactionally attached references, private evidence authorization and CAS-protected orphan cleanup; upload/delete provider calls stay outside DB transactions (Database §6.7).\
+  **Depends on:** `P04-020`\
+  **Deliverable:** Retain the complete media outcome, with independently verified local capability in P04-020 and real provider/scanner/policy acceptance here. Implement the mediaAssets ownership/upload-intent ledger, validation/quarantine, transactionally attached references, private evidence authorization and CAS-protected orphan cleanup; upload/delete provider calls stay outside DB transactions (Database §6.7).\
   **Acceptance:** Only authorized admin uploads; credentials never reach browser bundles.\
   **Evidence:** [Local adapter/ledger/auth verification and EXT-04 blocker](./evidence/P04-003-controlled-media.md).\
-  **Blocked:** EXT-04 — store administrator/project owner must supply approved staging account/configuration, media/scanner/retention policy and actual provider security evidence. Local implementation and focused checks passed; default runtime activation stays off. Next: protected input references, real staging upload/private-delivery/deletion validation and independent review.
+  **Blocked:** EXT-04 — store administrator/project owner must supply approved staging account/configuration, media/scanner/retention policy and actual provider security evidence. Historical local implementation/checks remain in the evidence; P04-020 owns current local technical verification. Default runtime activation stays off. Next: protected input references, real staging upload/private-delivery/deletion validation and independent review.
 
 - [ ] **P04-004 — Implement admin category management**\
   **Status:** `Not Started` · **Area:** Admin/catalog\
@@ -829,46 +829,55 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `Not Started` · **Area:** Quality/catalog\
   **Stage:** `Integrated`\
   **Sources:** FR-03; FR-04; FR-05; FR-06; FR-13; FR-23; FR-24; FR-25\
-  **Depends on:** `P03-016`, `P02-017`\
+  **Depends on:** `P04-003`, `P03-016`, `P02-017`\
   **Deliverable:** Execute admin-to-storefront publishing, unique identities, concurrent stock and public visibility tests.\
   **Acceptance:** No static mock implies purchase readiness; M2 evidence demonstrates real API-backed catalog.\
   **Evidence to attach:** M2 catalog acceptance suite.
 
-- [ ] **P04-016 — Expose protected category management APIs**\
-  **Status:** `Not Started` · **Area:** Backend\
+- [x] **P04-016 — Expose protected category management APIs**\
+  **Status:** `Done` · **Area:** Backend · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-24; API §14.1\
-  **Depends on:** `P04-001`, `P03-013`, `P04-003`\
+  **Depends on:** `P04-001`, `P03-013`, `P04-020`\
   **Deliverable:** Register category list/create/edit/deactivate APIs over existing category services; enforce hierarchy, active assignment, safe deletion and null-versus-omitted parent/image semantics.\
   **Acceptance:** Admin/session/CSRF and conditional-update checks apply; category cycles, dependent deletion and invalid media references fail. HTTP integration proves writes and public visibility without UI.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Implementation, observed checks and media boundaries](./evidence/P04-016-category-administration.md). Accepted by project owner, 25 October 2026 — “Review করেছি—accept করছি, Done করো”; P04-003 real-provider gate remains separate.
 
-- [ ] **P04-017 — Expose protected product and variant management APIs**\
-  **Status:** `Not Started` · **Area:** Backend\
+- [x] **P04-017 — Expose protected product and variant management APIs**\
+  **Status:** `Done` · **Area:** Backend · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-06; FR-23; API §14.1\
   **Depends on:** `P04-002`, `P04-016`\
   **Deliverable:** Register product/variant CRUD, pricing, featured flags, SKU identity and approved image references over canonical services.\
   **Acceptance:** Unique slug/SKU, stale edits, invalid combinations and foreign media references fail; explicit null unsets permitted fields while omitted fields remain unchanged. Public projections follow saved state.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Approved contract corrections, implementation, observed checks and recovery](./evidence/P04-017-product-variant-administration.md). Accepted by project owner, 25 October 2026 — “Review করেছি—accept করছি, Done করো”; real media/staging gates remain separate.
 
-- [ ] **P04-018 — Expose stock adjustment and inventory history APIs**\
-  **Status:** `Not Started` · **Area:** Backend\
+- [x] **P04-018 — Expose stock adjustment and inventory history APIs**\
+  **Status:** `Done` · **Area:** Backend · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-13; FR-25; API §14.1\
   **Depends on:** `P04-008`, `P03-013`, `P01-024`\
   **Deliverable:** Expose authorized counters, low-stock queries, threshold edits, adjustments and bounded movement history; require actor/reason/replay identity.\
   **Acceptance:** HTTP replay/race tests preserve nonnegative availability and exactly-once movement; reserved and committed stock remain separate and private model access is not exposed.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Implementation, observed verification and readiness limits](./evidence/P04-018-inventory-administration.md). Production list requires approved primary settings from P09-013; threshold-only variant PATCH scope is explicit. Accepted by project owner, 25 October 2026 — “Review করেছি—accept করছি, Done করো”.
 
-- [ ] **P04-019 — Expose homepage content and catalog section APIs**\
-  **Status:** `Not Started` · **Area:** Backend\
+- [x] **P04-019 — Expose homepage content and catalog section APIs**\
+  **Status:** `Done` · **Area:** Backend · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-03; API §10.1\
   **Depends on:** `P09-013`, `P04-009`\
   **Deliverable:** Implement homepageBanner input/media references and safe public home projection, categories and featured/new/discounted sections with store contact/policy links; logo and banner remain separate.\
   **Acceptance:** Unconfigured content is represented honestly; inactive/quarantined/private assets never publish; persisted admin updates appear on a subsequent public read.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Homepage implementation, observed checks and limits](./evidence/P04-019-storefront-home.md). Current public sections, exact media eligibility, approved policy links and persisted admin-update freshness verified; project owner accepted on 29 October 2026: “done koro”. [Acceptance record](./evidence/P04-019-storefront-home.md#independent-acceptance). No frontend/provider/milestone acceptance claimed.
+
+- [x] **P04-020 — Verify local media capability for backend consumers**\
+  **Status:** `Done` · **Area:** Backend/media · **Owner:** Codex\
+  **Stage:** `Backend`\
+  **Sources:** FR-05; FR-23; Plan §3.1; API §16.2; Database §6.7\
+  **Depends on:** `P01-024`, `P03-013`\
+  **Deliverable:** Independently verify the existing local media ledger, strict validators/indexes, authorization/reference capabilities, scanner/provider protocol boundaries, cleanup/reconciliation and explicit root composition for category/settings consumers.\
+  **Acceptance:** Real isolated MongoDB/HTTP verifies ownership, attach/delete races, rollback, quarantine/unknown outcomes, private access and fail-closed/default-disabled runtime. Protocol fixtures are explicit test doubles; no live provider, policy approval, staging or release acceptance is inferred.\
+  **Evidence:** [Local verification, approved queue split and preserved external gates](./evidence/P04-020-local-media-capability.md). Accepted by project owner, 25 October 2026 — “Local verification ও queue গ্রহণ করছি—Done করো”. P04-003 and P09-011 remain Blocked and mandatory for backend closeout.
 
 ### Phase 05 — Cart, wishlist, coupons, and reviews
 
@@ -1031,14 +1040,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
 
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 06. **Associated gate:** M3. **Tasks:** 22.
 
-- [ ] **P06-001 — Implement delivery zones and future-only charge settings**\
-  **Status:** `Not Started` · **Area:** Backend/delivery\
+- [x] **P06-001 — Implement delivery zones and future-only charge settings**\
+  **Status:** `Done` · **Area:** Backend/delivery · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-16; FR-28\
   **Depends on:** `P09-013`\
   **Deliverable:** Use the primary settings singleton established by P09-013 before delivery writes (Database §10.4); create district/area zone/charge schema and admin CRUD; acquire shared storeSettings.deliveryCoverageRevision before every charge/zone-status transaction, including cross-zone scheduling, supersession and activation.\
   **Acceptance:** Prices never negative; past orders unchanged; concurrent different-zone writers cannot approve overlapping windows for the same coverageKey. No zone-local guard substitutes for the global guard.\
-  **Evidence to attach:** Delivery setting and snapshot tests.
+  **Evidence:** [Delivery feature, verification and recovery](./evidence/P06-001-delivery-management.md). Project owner accepted on 26 October 2026: “done koro”. [Acceptance record](./evidence/P06-001-delivery-management.md#independent-acceptance). Actual checkout/order snapshot integration and operator/deployment/legal gates remain separate.
 
 - [ ] **P06-002 — Implement admin Delivery Settings and customer location selection**\
   **Status:** `Not Started` · **Area:** Storefront/delivery\
@@ -1050,76 +1059,77 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence to attach:** Delivery UI integration.
 
 - [ ] **P06-003 — Implement delivery estimates, deadlines and exceptions policy boundary**\
-  **Status:** `Not Started` · **Area:** Backend/orders\
+  **Status:** `Blocked` · **Area:** Backend/orders · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-16; FR-26\
   **Depends on:** `P06-001`\
   **Deliverable:** Display the applicable deadline rule/status and estimated date from approved configuration/verified law. Preserve the checkout rule basis; calculate a confirmation-based absolute deadline only after actual confirmation (Database §7.2; API §11.3).\
   **Acceptance:** 14-day planning target cannot override shorter applicable requirements; uncertain policy blocks final publication.\
-  **Evidence to attach:** Deadline examples and compliance sign-off reference.
+  **Evidence:** [Verified local boundary, commands and missing sign-off](./evidence/P06-003-delivery-deadline-boundary.md). Project owner accepted the local implementation on 26 October 2026: “done koro”; [technical acceptance record](./evidence/P06-003-delivery-deadline-boundary.md#owner-review-of-local-implementation). Required qualified sign-off remains missing.
+  **Blocked:** Store owner/authorized policy approver must supply the exact approved deadline rule and qualified current compliance sign-off (EXT-07/EXT-08). Local synthetic checks do not establish legal applicability. Missing review blocks new basis capture and affected acceptance/confirmation; actual order/API integration remains with its owning tasks.
 
-- [ ] **P06-004 — Implement authoritative checkout quote and validation**\
-  **Status:** `Not Started` · **Area:** Backend/checkout\
+- [x] **P06-004 — Implement authoritative checkout quote and validation**\
+  **Status:** `Done` · **Area:** Backend/checkout · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-11; FR-09\
   **Depends on:** `P05-006`, `P04-008`, `P06-001`\
   **Deliverable:** Revalidate identity/contact, email, Bangladesh phone, terms, SKU stock, coupon and delivery with integer-poisha totals.\
   **Acceptance:** Invalid price/stock/area/coupon/terms rejected; quote is authoritative at calculation time; submission revalidates changes and obtains renewed confirmation rather than guaranteeing a stale price.\
-  **Evidence to attach:** Checkout quote unit/integration suite.
+  **Evidence:** [Quote/area feature, observed verification and recovery](./evidence/P06-004-checkout-quotes.md). Owner-approved AND coupon scopes; project owner accepted on 26 October 2026: “done koro”. [Acceptance record](./evidence/P06-004-checkout-quotes.md#independent-acceptance). Order consumption/provider integration and P06-003 qualified sign-off remain separate.
 
-- [ ] **P06-005 — Implement orders, item snapshots and independent lifecycles**\
-  **Status:** `Not Started` · **Area:** Backend/orders\
+- [x] **P06-005 — Implement orders, item snapshots and independent lifecycles**\
+  **Status:** `Done` · **Area:** Backend/orders · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-11; FR-14\
   **Depends on:** `P06-004`\
   **Deliverable:** Store unique order number, immutable item/variant/unit/discount/delivery/address/deadline-rule values with separate event-derived delivery commitments and payment/fulfillment states.\
   **Acceptance:** Historical changes do not rewrite snapshots; invalid transitions rejected.\
-  **Evidence to attach:** Order model/index tests.
+  **Evidence:** [Order snapshots, persistence and verification](./evidence/P06-005-order-foundation.md). Immutable history, unit entitlements, lifecycle graph and transaction rollback verified; project owner accepted on 26 October 2026: “done koro”. [Acceptance record](./evidence/P06-005-order-foundation.md#independent-acceptance). Submission/allocation/payment integration and P06-003 qualified sign-off remain separate.
 
 - [ ] **P06-006 — Implement persistent checkout intent and idempotency keys**\
-  **Status:** `Not Started` · **Area:** Backend/checkout\
+  **Status:** `In Review` · **Area:** Backend/checkout · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-11; Architecture §§8,10\
   **Depends on:** `P06-005`\
   **Deliverable:** Deduplicate repeated user/guest submissions and persist operation outcome.\
   **Acceptance:** Concurrent identical intent creates one order and returns/safely resumes existing outcome.\
-  **Evidence to attach:** Duplicate-intent concurrency tests.
+  **Evidence:** [Durable intent, replay and observed verification](./evidence/P06-006-checkout-intents.md). Same-key concurrency, quote exclusion, rollback, expiry/current-state replay and authorization verified; independent acceptance pending. Production allocation/payment/submission integration remains separate.
 
 - [ ] **P06-007 — Coordinate stock and coupon changes transactionally**\
-  **Status:** `Not Started` · **Area:** Backend/checkout\
+  **Status:** `In Review` · **Area:** Backend/checkout\
   **Stage:** `Backend`\
   **Sources:** FR-09; FR-13\
   **Depends on:** `P06-006`, `P05-007`\
   **Deliverable:** Atomically create/commit/release inventory and coupon allocations and movements with guarded transitions.\
   **Acceptance:** No negative available stock or breached coupon capacity under concurrent checkouts.\
-  **Evidence to attach:** Transaction/last-unit/final-coupon tests.
+  **Evidence:** [Combined implementation, independent per-task checks and limits](./evidence/P06-007-009-checkout-batch.md). Verified locally; independent acceptance pending. Provider/expiry/compliance/commerce-delivery gates remain separate.
 
 - [ ] **P06-008 — Implement COD placement and stock/coupon commitment**\
-  **Status:** `Not Started` · **Area:** Backend/orders\
+  **Status:** `In Review` · **Area:** Backend/orders\
   **Stage:** `Backend`\
   **Sources:** FR-11; FR-12; FR-13\
   **Depends on:** `P06-007`\
   **Deliverable:** Accept COD order once as Pending, commit allocations, create a pending payment aggregate (no unverified paymentCollections receipt), and order_received notification. Administrator confirmation separately moves eligible fulfillment to Confirmed.\
   **Acceptance:** COD Paid status requires later collection evidence; no provider payment falsely created.\
-  **Evidence to attach:** COD checkout integration.
+  **Evidence:** [Combined implementation, independent per-task checks and limits](./evidence/P06-007-009-checkout-batch.md). Verified locally; independent acceptance pending. Provider/expiry/compliance/commerce-delivery gates remain separate.
 
 - [ ] **P06-009 — Implement online order and 15-minute hold foundation**\
-  **Status:** `Not Started` · **Area:** Backend/checkout\
+  **Status:** `In Review` · **Area:** Backend/checkout\
   **Stage:** `Backend`\
   **Sources:** FR-11; FR-13; FR-09\
   **Depends on:** `P06-007`\
   **Deliverable:** Create order and temporary stock/coupon reservations for a future online payment attempt.\
   **Acceptance:** Each held generation expires 15 minutes after its own server heldAt; all stock/coupon clocks agree, replay never extends them. Provider calls remain disabled until Phase 07 integration.\
-  **Evidence to attach:** Hold lifecycle tests.
+  **Evidence:** [Combined implementation, independent per-task checks and limits](./evidence/P06-007-009-checkout-batch.md). Verified locally; independent acceptance pending. Provider/expiry/compliance/commerce-delivery gates remain separate.
 
 - [ ] **P06-010 — Implement reservation expiry, durable lease and release**\
-  **Status:** `Not Started` · **Area:** Backend/jobs\
+  **Status:** `In Review` · **Area:** Backend/jobs · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-13; FR-09\
   **Depends on:** `P06-009`\
   **Deliverable:** Expire only eligible unpaid holds using idempotent scheduled service and durable claims when needed.\
   **Acceptance:** TTL document deletion does not release business capacity; attempts preserve audit history.\
-  **Evidence to attach:** Expiry/restart/retry tests.
+  **Evidence:** [Expiry/guest implementation, per-task checks and operational limits](./evidence/P06-010-015-expiry-guest-access.md). Verified locally; independent acceptance pending. Live provider/email/staging, frontend and qualified compliance gates remain separate.
 
 - [ ] **P06-011 — Implement order transitions, shipping and movement logic**\
   **Status:** `Not Started` · **Area:** Backend/orders\
@@ -1158,13 +1168,13 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence to attach:** Order ownership tests.
 
 - [ ] **P06-015 — Implement secure guest order lookup and scoped proof**\
-  **Status:** `Not Started` · **Area:** Backend/guest-access\
+  **Status:** `In Review` · **Area:** Backend/guest-access · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-19\
   **Depends on:** `P06-005`\
   **Deliverable:** Require order number+email followed by expiring single-use email verification proof.\
   **Acceptance:** Non-enumerating rate-limited lookup and order-scoped eligible actions; no access by lookup text alone.\
-  **Evidence to attach:** Guest proof replay/ownership tests.
+  **Evidence:** [Expiry/guest implementation, per-task checks and operational limits](./evidence/P06-010-015-expiry-guest-access.md). Verified locally; independent acceptance pending. Live provider/email/staging, frontend and qualified compliance gates remain separate.
 
 - [ ] **P06-016 — Implement order, cancellation, shipment and delivery email intents**\
   **Status:** `Not Started` · **Area:** Backend/notifications\
@@ -1233,41 +1243,41 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
 
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 07. **Associated gate:** M4. **Tasks:** 18.
 
-- [ ] **P07-001 — Implement server-only SSLCOMMERZ adapter**\
-  **Status:** `Not Started` · **Area:** Backend/payments\
+- [x] **P07-001 — Implement server-only SSLCOMMERZ adapter**\
+  **Status:** `Done` · **Area:** Backend/payments · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-12; Architecture §10\
   **Depends on:** `P06-009`, `P01-006`\
   **Deliverable:** Define sandbox configuration, init/validate/status integration and provider-specific safe error translation.\
   **Acceptance:** Merchant credentials remain server-only; unknown provider outcome is preserved as uncertain.\
-  **Evidence to attach:** Provider contract test with sandbox/mocks.
+  **Evidence:** [Server adapter contract verification](./evidence/P07-001-sslcommerz-adapter.md). Project owner accepted 29 October 2026: [acceptance record](./evidence/P07-001-sslcommerz-adapter.md#independent-acceptance). Live sandbox/merchant qualification remains separate.
 
-- [ ] **P07-002 — Persist payment aggregate and attempts with unique IDs**\
-  **Status:** `Not Started` · **Area:** Backend/payments\
+- [x] **P07-002 — Persist payment aggregate and attempts with unique IDs**\
+  **Status:** `Done` · **Area:** Backend/payments · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-12; FR-29\
   **Depends on:** `P06-005`\
   **Deliverable:** Track provider scoped tran_id, attempts, merchant refs, amount, BDT, expiry, risk and paid collections.\
   **Acceptance:** Distinct retries never reuse reference; all attempts remain auditable.\
-  **Evidence to attach:** Unique-index/payment-model tests.
+  **Evidence:** [Persistence, concurrency and retry verification](./evidence/P07-002-payment-records.md). Project owner accepted 29 October 2026: [acceptance record](./evidence/P07-002-payment-records.md#independent-acceptance).
 
-- [ ] **P07-003 — Expose only enabled merchant channels**\
-  **Status:** `Not Started` · **Area:** Backend/storefront\
+- [x] **P07-003 — Expose only enabled merchant channels**\
+  **Status:** `Done` · **Area:** Backend/payments · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-12\
   **Depends on:** `P07-001`\
   **Deliverable:** Return available online channels from verified merchant configuration and COD from store config.\
   **Acceptance:** Disabled/unknown bKash, Nagad or Rocket channels are never offered as activated.\
-  **Evidence to attach:** Method-availability tests.
+  **Evidence:** [Availability API, ownership and evidence verification](./evidence/P07-003-payment-methods.md). Project owner accepted 29 October 2026: [acceptance record](./evidence/P07-003-payment-methods.md#independent-acceptance). Real merchant/channel activation remains separate.
 
-- [ ] **P07-004 — Implement hosted checkout initiation for existing order**\
-  **Status:** `Not Started` · **Area:** Backend/payments\
+- [x] **P07-004 — Implement hosted checkout initiation for existing order**\
+  **Status:** `Done` · **Area:** Backend/payments · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-11; FR-12\
   **Depends on:** `P07-002`, `P07-003`\
   **Deliverable:** Persist new unique attempt then request hosted URL for same order; ensure financial intent exists before provider calls.\
   **Acceptance:** Retry cannot silently create another order; expired holds require safe reallocation.\
-  **Evidence to attach:** Payment-init integration.
+  **Evidence:** [Hosted initiation, owned HTTP, allocation and migration verification](./evidence/P07-004-hosted-initiation.md). Project owner accepted 29 October 2026: [acceptance record](./evidence/P07-004-hosted-initiation.md#independent-acceptance). Local/test scope; deployed merchant/callback qualification remains separate.
 
 - [ ] **P07-005 — Separate browser return and provider IPN endpoints**\
   **Status:** `Not Started` · **Area:** Backend/payments\
@@ -1665,13 +1675,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence to attach:** Admin sitemap/accessibility review.
 
 - [ ] **P09-011 — Provision isolated staging runtime and transaction-capable DB**\
-  **Status:** `Not Started` · **Area:** Backend/staging\
+  **Status:** `Blocked` · **Area:** Backend/staging · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** Architecture §13; Implementation Plan §§4.1,12\
   **Depends on:** `P01-024`\
   **Deliverable:** Configure isolated API, MongoDB, workers, secret management, sandbox providers and test email for backend acceptance. Build a reviewed Docker image from locked backend dependencies with separate HTTP/worker entry commands and runtime-injected secrets; prepare storefront/admin hosting and origins without requiring their builds or deployment. P09-012 deploys the complete integrated applications.\
   **Acceptance:** Staging uses no production credentials; database connectivity and transaction capability, image health/draining, worker restart and absence of embedded secrets are verified; HTTPS/origin/session plans are testable.\
-  **Evidence to attach:** Staging configuration review.
+  **Evidence:** [Local preparation, observed checks and missing staging prerequisites](./evidence/P09-011-staging-runtime.md).
+  **Blocked:** Project owner/platform operator must supply approved hosting/registry/origins and isolated DB/provider/test-email secret references (EXT-03/04/05/09); an authorized Docker builder is also required because local daemon socket access is denied. Resume with actual image and staging verification; no independent acceptance or deployment is claimed.
 
 - [ ] **P09-012 — Deploy integrated feature-complete build to staging**\
   **Status:** `Not Started` · **Area:** DevOps/staging\
@@ -1682,14 +1693,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Feature-complete staging includes accepted M1–M5 phase gates, public policy/contact pages and admin functionality; Phase 10 receives an isolated deployed environment with known fixture/reset process.\
   **Evidence to attach:** Staging deploy manifest and smoke tests.
 
-- [ ] **P09-013 — Expose store settings and public content APIs**\
-  **Status:** `Not Started` · **Area:** Backend\
+- [x] **P09-013 — Expose store settings and public content APIs**\
+  **Status:** `Done` · **Area:** Backend · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-03; FR-34; API §§10.1,14.3\
-  **Depends on:** `P03-013`, `P04-003`, `P01-007`\
+  **Depends on:** `P03-013`, `P04-020`, `P01-007`\
   **Deliverable:** Implement canonical settings singleton bootstrap, branding/contact/address, low-stock threshold and approved versioned policies with protected input and safe public projections.\
   **Acceptance:** Unapproved policy placeholders never publish; stale writes fail; contact/policy projections exclude private configuration and media references are validated. Delivery settings reuse the same canonical singleton.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Feature implementation, observed checks and recovery](./evidence/P09-013-settings-public-content.md). Project owner accepted on 26 October 2026: “done koro”. [Acceptance record](./evidence/P09-013-settings-public-content.md#independent-acceptance). Real policy/provider/staging gates remain separate.
 
 - [ ] **P09-014 — Expose dashboard metrics APIs**\
   **Status:** `Not Started` · **Area:** Backend\
@@ -2099,7 +2110,7 @@ owners and includes additional cross-domain owners identified by that mapping.
 | FR-02           | `P03-004`, `P03-008`, `P03-010`, `P03-011`, `P03-013`, `P03-015`, `P03-016`, `P06-014`, `P05-004`, `P05-012`, `P08-012`, `P06-005`, `P08-013`                                                                                                                                     |
 | FR-03           | `P04-012`, `P04-015`, `P09-008`, `P11-006`, `P02-006`, `P09-005`                                                                                                                                                                                                                  |
 | FR-04           | `P04-001`, `P04-009`, `P04-011`, `P04-013`, `P04-015`, `P10-009`, `P04-002`                                                                                                                                                                                                       |
-| FR-05           | `P04-002`, `P04-003`, `P04-010`, `P04-011`, `P04-014`, `P04-015`, `P10-009`, `P05-001`, `P05-004`, `P05-010`, `P06-004`                                                                                                                                                           |
+| FR-05           | `P04-002`, `P04-003`, `P04-020`, `P04-010`, `P04-011`, `P04-014`, `P04-015`, `P10-009`, `P05-001`, `P05-004`, `P05-010`, `P06-004`                                                                                                                                                           |
 | FR-06           | `P04-002`, `P04-005`, `P04-010`, `P04-014`, `P04-015`, `P04-006`, `P06-005`                                                                                                                                                                                                       |
 | FR-07           | `P05-001`, `P05-002`, `P05-003`, `P05-011`, `P05-013`, `P06-004`                                                                                                                                                                                                                  |
 | FR-08           | `P05-004`, `P05-012`, `P05-013`                                                                                                                                                                                                                                                   |
@@ -2117,7 +2128,7 @@ owners and includes additional cross-domain owners identified by that mapping.
 | FR-20           | `P03-009`, `P03-010`, `P06-016`, `P06-020`, `P07-016`, `P08-011`, `P10-010`, `P11-004`                                                                                                                                                                                            |
 | FR-21           | `P03-004`, `P03-005`, `P03-012`, `P03-013`, `P03-014`, `P03-015`, `P03-016`, `P09-010`, `P10-005`, `P11-003`, `P11-008`                                                                                                                                                           |
 | FR-22           | `P09-001`, `P09-002`, `P09-009`, `P09-010`                                                                                                                                                                                                                                        |
-| FR-23           | `P04-002`, `P04-003`, `P04-005`, `P04-015`, `P09-010`, `P11-006`                                                                                                                                                                                                                  |
+| FR-23           | `P04-002`, `P04-003`, `P04-020`, `P04-005`, `P04-015`, `P09-010`, `P11-006`                                                                                                                                                                                                                  |
 | FR-24           | `P04-001`, `P04-004`, `P04-015`, `P09-010`, `P04-003`                                                                                                                                                                                                                             |
 | FR-25           | `P04-006`, `P04-007`, `P04-015`, `P09-007`, `P09-010`, `P08-004`                                                                                                                                                                                                                  |
 | FR-26           | `P06-003`, `P06-011`, `P06-012`, `P06-013`, `P06-017`, `P06-019`, `P06-020`, `P09-004`, `P09-007`, `P09-010`, `P11-008`, `P12-004`, `P07-015`, `P08-015`                                                                                                                          |
@@ -2433,3 +2444,68 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **25 October 2026 — P05-015:** Not Started → In Progress → In Review. Implemented protected coupon configuration/CAS and bounded usage history with transactional audit; [verification and rollout](./evidence/P05-015-coupon-administration.md). Overall: 75 Done, 132 Not Started, 1 Blocked and 1 In Review. Independent acceptance pending; checkout, clients and external/product gates remain separate.
 
 **25 October 2026 — P05-015 acceptance:** In Review → Done after explicit project-owner popup review: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P05-015-coupon-administration.md#recovery-and-independent-review). Overall: 76 Done, 132 Not Started, 1 Blocked and zero In Review. Reviewed persistence rollout, checkout, clients and external/product gates remain separate.
+
+**25 October 2026 — P04-018:** Not Started → In Progress → In Review. Implemented protected inventory list/threshold/adjustment/history with transactional replay and audit; [verification and readiness limits](./evidence/P04-018-inventory-administration.md). Overall: 76 Done, 131 Not Started, 1 Blocked and 1 In Review. Approved default-settings provisioning remains P09-013; full variant management remains P04-017. Independent acceptance pending.
+
+**25 October 2026 — P04-018 acceptance:** In Review → Done after explicit project-owner popup review: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P04-018-inventory-administration.md#recovery-and-independent-review). Overall: 77 Done, 131 Not Started, 1 Blocked and zero In Review. Approved default-settings provisioning remains P09-013; full variant management, clients and external/product gates remain separate.
+
+**25 October 2026 — P09-011:** Not Started → In Progress → Blocked. Prepared backend-only container recipe/probe and verified isolated host build/dependencies; actual image build is denied by Docker socket access, and approved staging resource/configuration references remain unsupplied after owner acknowledgment. [Evidence and resume checks](./evidence/P09-011-staging-runtime.md). Overall: 77 Done, 130 Not Started, 2 Blocked and zero In Review. Platform/resource owners must supply prerequisites; no image/deployment acceptance inferred.
+
+**25 October 2026 — Approved media work-package split / P04-020:** Owner instructed “Local backend কাজ আলাদা করে queue ঠিক করো”. Added P04-020 for independently reviewed local capability; only category/settings technical dependencies now use it. P04-003 retains real provider/policy acceptance and is explicit in P03-022/P04-015; P09-011 remains mandatory for backend closeout. Local verification → In Review; no external/stage gate accepted. [Scope, checks and dependency audit](./evidence/P04-020-local-media-capability.md). Overall: 210 tasks, 77 Done, 130 Not Started, 2 Blocked and 1 In Review. Next after P04-020 acceptance: P04-016 and P09-013 become eligible; prioritize P04-016 → P04-017, then settings/delivery.
+
+**25 October 2026 — P04-020 acceptance:** In Review → Done after explicit owner popup review: “Local verification ও queue গ্রহণ করছি—Done করো”. [Acceptance record](./evidence/P04-020-local-media-capability.md#recovery-and-independent-review). All prerequisites now accepted for P04-016 and P09-013: Not Started → Ready. Overall: 210 tasks, 78 Done, 128 Not Started, 2 Ready, 2 Blocked and zero In Review. Next: P04-016 category API. P04-003/P09-011 and backend/product gates remain unaccepted.
+
+**25 October 2026 — P04-016:** Ready → In Progress → In Review. Added protected category APIs, hierarchy/CAS and transactional media references/audit; [observed verification and recovery](./evidence/P04-016-category-administration.md). A build/test overlap caused two compiled-entry failures; focused reruns after build completion passed, with original reports retained. Overall: 210 tasks, 78 Done, 128 Not Started, 1 Ready, 2 Blocked and 1 In Review. Independent acceptance pending; provider/staging and client/product gates remain separate.
+
+**25 October 2026 — P04-016 acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P04-016-category-administration.md#recovery-and-independent-review). Overall: 210 tasks, 79 Done, 128 Not Started, 1 Ready, 2 Blocked and zero In Review. P04-017 prerequisites are now accepted; P09-013 remains Ready. Real media/staging, clients and product gates remain separate.
+
+**25 October 2026 — P04-017:** Not Started → In Progress → In Review. Owner approved required atomic variants[] create and admin detail variants[] contracts; implemented full product/variant APIs and migrated threshold PATCH to its canonical owner. Parent stock/variant fences preserve detail ETags and last-active-SKU safety. [Verification, original failures and focused follow-ups](./evidence/P04-017-product-variant-administration.md). Overall: 210 tasks, 79 Done, 127 Not Started, 1 Ready, 2 Blocked and 1 In Review. Independent acceptance pending; external/stage/product gates remain separate.
+
+**25 October 2026 — P04-017 acceptance:** In Review → Done after explicit owner popup review: “Review করেছি—accept করছি, Done করো”. [Acceptance record](./evidence/P04-017-product-variant-administration.md#independent-review). Overall: 210 tasks, 80 Done, 127 Not Started, 1 Ready, 2 Blocked and zero In Review. Next ready backend task: P09-013 settings/public content APIs. Real media/staging, client stages and product gates remain separate.
+
+
+**26 October 2026 — P09-013:** Ready → In Progress → In Review. Delivered one settings/public-content backend feature: canonical bootstrap, protected settings/media/CAS, public contact, evidence-bound policy approval/publication/replay and scheduled activation. Owner delegated contact/evidence contract clarifications; no legal content approval inferred. [Observed verification and recovery](./evidence/P09-013-settings-public-content.md). Overall: 210 tasks, 80 Done, 127 Not Started, 2 Blocked and 1 In Review. Independent acceptance pending; real provider/staging, clients and milestone gates remain separate.
+
+**26 October 2026 — P09-013 acceptance:** In Review → Done after explicit project-owner instruction: “done koro”. [Acceptance record](./evidence/P09-013-settings-public-content.md#independent-acceptance). Overall: 210 tasks, 81 Done, 127 Not Started, 2 Blocked and zero In Review. Real legal/provider/staging, client-stage and milestone gates remain separate.
+
+**26 October 2026 — P06-001:** Not Started → In Progress → In Review. Implemented one delivery configuration backend feature: canonical zone/charge APIs, store-wide serialization, globally versioned nonoverlapping windows, transactional supersession/replay and bounded activation/expiry. [Observed verification and recovery](./evidence/P06-001-delivery-management.md). Overall: 210 tasks, 81 Done, 126 Not Started, 2 Blocked and 1 In Review. Independent acceptance pending; actual orders/checkout, clients, legal/operator/provider/staging and milestone gates remain separate.
+
+**26 October 2026 — P06-001 acceptance:** In Review → Done after explicit project-owner instruction: “done koro”. [Acceptance record](./evidence/P06-001-delivery-management.md#independent-acceptance). Overall: 210 tasks, 82 Done, 126 Not Started, 2 Blocked and zero In Review. Actual checkout/order integration, client stages, legal/operator/provider/staging and milestone gates remain separate.
+
+**26 October 2026 — P06-003:** Not Started → In Progress → Blocked. Implemented and verified the local deadline/estimate policy boundary and protected technical preflight; no legal duration or approval was fabricated. Owner delegated implementation but supplied no qualified rule/sign-off. [Technical results and required EXT-07/EXT-08 evidence](./evidence/P06-003-delivery-deadline-boundary.md). Overall: 210 tasks, 82 Done, 125 Not Started, 3 Blocked and zero In Review. Actual order/checkout integration and qualified compliance acceptance remain separate; no milestone or external gate accepted.
+
+**26 October 2026 — P06-003 local implementation acceptance:** Owner instructed “done koro” after the blocked technical handoff. [Local implementation accepted](./evidence/P06-003-delivery-deadline-boundary.md#owner-review-of-local-implementation); task remains Blocked because no approved rule/qualified compliance sign-off was supplied. Totals unchanged: 82 Done, 125 Not Started and 3 Blocked. No legal approval or milestone acceptance inferred.
+
+**26 October 2026 — P06-004:** Not Started → In Progress → In Review. Implemented authoritative guest/customer quote creation, current delivery-area discovery, immutable consent and internal revalidation without reservations/orders/providers. Owner approved AND semantics for simultaneous coupon scope restrictions. [Observed verification, scope and recovery](./evidence/P06-004-checkout-quotes.md). Overall: 210 tasks, 82 Done, 124 Not Started, 3 Blocked and 1 In Review. Independent acceptance pending; actual order consumption, P06-003 legal review, providers/staging, clients and milestones remain separate.
+
+**26 October 2026 — P06-004 acceptance:** In Review → Done after explicit project-owner instruction: “done koro”. [Acceptance record](./evidence/P06-004-checkout-quotes.md#independent-acceptance). Overall: 210 tasks, 83 Done, 124 Not Started, 3 Blocked and zero In Review. P06-003 qualified compliance sign-off, actual order/financial consumption, clients, providers/staging and milestone gates remain separate.
+
+**26 October 2026 — P06-005:** Not Started → In Progress → In Review. Canonical immutable order snapshots, unit merchandise entitlements, independent fulfillment graph, transactional creation/audit and additive persistence setup implemented. [Observed verification and integration limits](./evidence/P06-005-order-foundation.md). Overall: 210 tasks, 83 Done, 123 Not Started, 3 Blocked and 1 In Review. Executor: Codex; independent acceptance pending. No submission/payment/operational transition or milestone acceptance claimed.
+
+**26 October 2026 — P06-005 acceptance:** In Review → Done after explicit project-owner instruction: “done koro”. [Acceptance record](./evidence/P06-005-order-foundation.md#independent-acceptance). Overall: 210 tasks, 84 Done, 123 Not Started, 3 Blocked and zero In Review. Submission/intent/allocation/payment and operational transition integration, P06-003 qualified sign-off and milestone gates remain separate.
+
+**27 October 2026 — P06-006:** Not Started → In Progress → In Review. Durable hashed intent registry, canonical command fingerprints, atomic consent/completion and current authorized replay implemented. [Observed verification and recovery limits](./evidence/P06-006-checkout-intents.md). Overall: 210 tasks, 84 Done, 122 Not Started, 3 Blocked and 1 In Review. Executor: Codex; independent acceptance pending. P06-007–P06-009 production coordination, P06-003 qualified sign-off and all milestone/provider/staging gates remain separate.
+
+**27 October 2026 — P06-007/008/009 combined batch:** Each Not Started → In Progress → In Review under owner-requested combined execution. Stock/coupon coordinator, opt-in COD submission with atomic Pending payment/order_received and private online 15-minute hold foundation implemented. [Independent per-task assertions, observed verification and rollout limits](./evidence/P06-007-009-checkout-batch.md). Overall: 210 tasks, 84 Done, 119 Not Started, 3 Blocked and 4 In Review (including P06-006). Executor: Codex; each task still needs independent acceptance. No milestone or external compliance/provider gate accepted.
+
+**27 October 2026 — P06-010/015 combined batch:** Each Not Started → In Progress → In Review. Added durable leased reservation expiry and secure email-proof guest sessions/delivery/CSRF; corrected initial hold clock binding to actual placement. [Independent per-task assertions, observed verification and rollout limits](./evidence/P06-010-015-expiry-guest-access.md). Overall: 210 tasks, 84 Done, 117 Not Started, 3 Blocked and 6 In Review. Executor: Codex; each task and prior P06-006–009 remain pending independent acceptance. No milestone, legal/provider or deployed-image gate accepted.
+
+**29 October 2026 — P04-019:** Not Started → In Progress → In Review. Added safe bounded homepage merchandising, current configured metadata, exact-slot public media and effective approved policy links. [Observed verification and operational limits](./evidence/P04-019-storefront-home.md). Overall: 210 tasks, 84 Done, 116 Not Started, 3 Blocked and 7 In Review. Executor: Codex; independent acceptance pending. P06-003 sign-off and review API return-eligibility dependencies remain separate; no milestone/provider/frontend acceptance claimed.
+
+**29 October 2026 — P04-019 acceptance:** In Review → Done after explicit project-owner instruction: “done koro”. [Acceptance record](./evidence/P04-019-storefront-home.md#independent-acceptance). Overall: 210 tasks, 85 Done, 116 Not Started, 3 Blocked and 6 In Review. Prior checkout/guest task reviews, frontend/live-provider/staging and milestone gates remain separate.
+
+**29 October 2026 — P07-002:** Not Started → In Progress → In Review. Added private payment attempt preparation and durable receipt/collection schemas with guarded histories, unique identities and additive local/test provisioning. [Observed verification and integration limits](./evidence/P07-002-payment-records.md). Executor: Codex; independent acceptance pending. Overall: 210 tasks, 85 Done, 115 Not Started, 3 Blocked and 7 In Review. No provider, financial-ingestion, HTTP initiation or milestone acceptance implied.
+
+**29 October 2026 — P07-002 acceptance:** In Review → Done following explicit project-owner instruction “done koro”. [Acceptance record](./evidence/P07-002-payment-records.md#independent-acceptance). Overall: 210 tasks, 86 Done, 115 Not Started, 3 Blocked and 6 In Review. Acceptance covers the submitted persistence foundation; provider initiation/verification, merchant qualification and milestone gates remain separate.
+
+**29 October 2026 — P07-001:** Not Started → In Progress → In Review. Added private server-only v4 initiation/validation/status adapter with fixed origins, environment-safe configuration, exact money and safe uncertainty. [Observed unit/local HTTP and transaction exclusion evidence](./evidence/P07-001-sslcommerz-adapter.md). Executor: Codex; independent acceptance pending. P06-009 remains In Review; this isolated adapter does not enable checkout/provider effects or waive that prerequisite. Overall: 210 tasks, 86 Done, 114 Not Started, 3 Blocked and 7 In Review. No live merchant/channel/funding or milestone acceptance implied.
+
+**29 October 2026 — P07-001 acceptance:** In Review → Done following explicit project-owner instruction “done koro”. Corrected the stale per-task Not Started label to match the previously submitted evidence/execution log, then recorded acceptance. [Acceptance record](./evidence/P07-001-sslcommerz-adapter.md#independent-acceptance). Overall: 210 tasks, 87 Done, 114 Not Started, 3 Blocked and 6 In Review. Acceptance covers the private adapter and observed local verification; P06-009 acceptance, live merchant/channel qualification, payment integration and milestones remain separate.
+
+**29 October 2026 — P07-003:** Not Started → In Progress → In Review. Added active-only payment-method API and shared quote capabilities with current store flags, digest-checked operator qualification and exact owned-order remaining-funding eligibility. [Observed evidence, authorization checks and operational limits](./evidence/P07-003-payment-methods.md). Executor: Codex; independent acceptance pending. Overall: 210 tasks, 87 Done, 113 Not Started, 3 Blocked and 7 In Review. No hosted initiation, merchant/channel launch or milestone acceptance implied.
+
+**29 October 2026 — P07-003 acceptance:** In Review → Done following explicit project-owner instruction “done koro”. [Acceptance record](./evidence/P07-003-payment-methods.md#independent-acceptance). Overall: 210 tasks, 88 Done, 113 Not Started, 3 Blocked and 6 In Review. Acceptance covers the availability API and recorded verification; actual merchant/channel qualification, hosted initiation and milestone gates remain separate.
+
+**29 October 2026 — P07-004:** Not Started → In Progress → In Review. Added gated local/test hosted initiation/status with durable one-shot dispatch, current owner/CSRF checks, merchant binding, uncertainty recovery, atomic stock/coupon reacquisition and durable shortfall. Project owner explicitly approved optional postalCode in address/quote/order with mandatory online-initiation validation; exact-predecessor additive migration preserves historical facts. [Observed verification, approval and rollout limits](./evidence/P07-004-hosted-initiation.md). Executor: Codex; independent task acceptance pending. Overall: 210 tasks, 88 Done, 112 Not Started, 3 Blocked and 7 In Review. P06 checkout reviews, P07-005/006/009/012/013, live merchant/legal and milestone gates remain separate.
+
+**29 October 2026 — P07-004 acceptance:** In Review → Done following explicit project-owner instruction “done koro”. [Acceptance record](./evidence/P07-004-hosted-initiation.md#independent-acceptance). Overall: 210 tasks, 89 Done, 112 Not Started, 3 Blocked and 6 In Review. Acceptance covers the submitted local/test initiation feature and recorded verification; staging/live remains disabled, and checkout, callback/verification, merchant/legal and milestone gates remain separate.

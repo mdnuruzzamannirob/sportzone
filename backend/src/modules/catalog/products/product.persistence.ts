@@ -176,3 +176,20 @@ export async function initializeProductPersistence(connection: Connection) {
     await verifyDeclaredIndexes(model)
   }
 }
+
+export async function verifyProductPersistence(connection: Connection) {
+  if (!connection.db) throw new Error('Product database unavailable.')
+  for (const [name, validator] of Object.entries(productCollectionValidators)) {
+    const row = await connection.db.listCollections({ name }, { nameOnly: false }).next()
+    if (
+      !row ||
+      !isDeepStrictEqual(row.options?.validator, validator) ||
+      row.options?.validationLevel !== 'strict' ||
+      row.options?.validationAction !== 'error'
+    )
+      throw new Error('Product persistence requires reviewed bootstrap/migration.')
+  }
+  const models = productModels(connection)
+  await verifyDeclaredIndexes(models.products)
+  await verifyDeclaredIndexes(models.variants)
+}

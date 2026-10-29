@@ -336,7 +336,7 @@ flowchart TD
 | `role`! | enum(`customer`,`admin`) | Default `customer`; admin privately provisioned only |
 | `status`! | enum(`active`,`suspended`,`deletion_pending`,`deactivated`) | Suspended/deactivated identities cannot authenticate |
 | `emailVerifiedAt`? | Date | Set only after challenge verification |
-| `addresses[]` | embedded[] | `{id,recipient,phone,districtKey,areaKey,street,addressLine2?,isDefault}`; bounded per customer |
+| `addresses[]` | embedded[] | `{id,recipient,phone,districtKey,areaKey,street,addressLine2?,postalCode?,isDefault}`; bounded per customer |
 | `securityRevision`! | int | Increment when passwords, privileges, suspension, or security posture changes |
 | `challengeRevisions`! | embedded | Per-purpose nonnegative counters for email verification/change/reset; issuance/reissue and consumption serialize on the same principal/purpose counter |
 | `deletionRequest`? | embedded | `{id,requestedAt,verifiedAt,status,reason?,decisionAt?,decisionReason?}`; approval/retention-controlled (§5.5) |
@@ -418,6 +418,14 @@ failure fail closed. Resend/reissue must increment `users.challengeRevisions[pur
 create a fresh proof/intent; do not extend an existing proof's expiry. Delivery retry reuses that challenge and event key;
 see API §16.3 for uncertain-send handling. No new session is granted by delivery. The chosen proof transport is a high-entropy secure link; supporting short numeric codes later requires a separately reviewed guessing/attempt-limit design. Security tests cover key access, nonce management, concurrency, redaction and restore invalidation.
 
+Guest access uses purpose-separated `guest_order_access` proof hashes and AEAD binding to challenge ID,
+order ID, normalized destination, expiry, guestAccessChallengeRevision and key version. Issuance and
+single-use exchange serialize on the order guest challenge revision; supersession invalidates old
+challenges and removes their envelopes. Exchange verifies the hash without requiring decryption keys.
+The guest session stores HMAC domain `guest_order` verifiers, orderId only, no user/securityRevision
+principal fields, fixed expiry and its own CSRF verifier. New exchanges revoke the browser's previous
+guest token; lookup alone never mints a session. Order snapshots remain immutable.
+
 #### Password-reset implementation
 
 Existing identity fields/indexes remain authoritative. Issuance conditionally increments `users.challengeRevisions.password_reset` in a transaction, invalidates previous reset challenges and removes their envelopes, then inserts a fresh challenge and reference-only `password_reset` notification (`password-reset-v1`). Notification `payload` contains only `challengeId:ObjectId`. `deliveryNotificationId` binds the outbox row to the challenge. AES-256-GCM uses fresh 12-byte nonces and 16-byte tags; AAD binds challenge ID, purpose, customer ID, destination, expiry, scope revision and key version. The externally held key ring is never persisted. Reset consumption and authenticated password change update the user security revision and revoke sessions atomically; password change also invalidates pending reset proofs. Cleanup removes expired/inactive envelopes even if TTL deletion is delayed. A reviewed additive notification validator migration accepts registration-v1 and password-reset-v1 records; old notification validators are known predecessors, and older exact-validator binaries require a compatible rollback build.
@@ -471,7 +479,7 @@ saved addresses and deletion requests instead use the explicit stable `id` Objec
 | `users.role`, `users.status` | Required closed enums from §5.1; public registration supplies neither and writes `customer`/`active`; private provisioning owns admin creation |
 | `users.securityRevision` | Required, initial `0`; security changes increment atomically; clients cannot choose/reset it |
 | `users.challengeRevisions` | Required exact object `{email_verify,email_change,password_reset}`, each initial `0`; the keys deliberately match challenge purposes, not notification event names |
-| `users.addresses` | Required array, initial `[]`, maximum 10; distinct ObjectId `id`; required recipient/phone/districtKey/areaKey/street/isDefault; street and optional addressLine2 at most 300 characters; keys validated against supported coverage; zero or one default |
+| `users.addresses` | Required array, initial `[]`, maximum 10; distinct ObjectId `id`; required recipient/phone/districtKey/areaKey/street/isDefault; street and optional addressLine2 at most 300 characters; optional postalCode at most 30; keys validated against supported coverage; zero or one default |
 | `users.deletionRequest` | Optional exact object; required `id:ObjectId`, UTC requestedAt/verifiedAt, status enum(`requested`,`under_review`,`approved`,`rejected`,`completed`); optional nonempty reason/decisionReason at most 2,000 characters and UTC decisionAt; terminal decisions require decisionAt; review approval alone does not erase data |
 | Token/CSRF/context digests | Required nonempty one-way verifier strings, backend-only and excluded from default projections; token generation/digest encoding follows API §§4.4–4.5 and must be consistent between issuer and verifier; schema acceptance alone cannot prove a string is a hash |
 | `sessions.kind` and references | Customer/admin: userId and securityRevisionAtIssue required, orderId absent; guest_order: orderId required, userId and securityRevisionAtIssue absent; no dual-principal record |
@@ -598,7 +606,11 @@ Deletion checks children and a required products-owned reference reader in the s
 there is no permissive default reader. Image-bearing deletion remains rejected until the media-owned
 reference detachment operation is integrated. Reassignment uses guarded parent updates; no cascade
 or destructive HTTP endpoint is introduced. Index creation is explicit and additive through the
-existing database index helper, never automatic startup synchronization.
+existing database index helper, never automatic startup synchronization. HTTP administration reuses this
+hierarchy protocol inside its auth/audit transaction. Category image replacement/removal uses the media-owned
+reference capability in that same transaction; persist only the resolved public identity/URL and bounded alt.
+Omission preserves the image; explicit null detaches only its image-slot reference before unsetting it.
+Deactivation is non-destructive and does not rewrite referenced products or historical orders.
 
 ### 6.2 `products` — `catalog`
 
@@ -651,17 +663,22 @@ contain up to 30 keys (64 characters) with values up to 120 characters, NFKC/low
 normalized. Ambiguous normalized keys and MongoDB/prototype-reserved map keys are rejected.
 `attributeSignature` is JSON of sorted key/value tuples (bounded 40,000 characters), or `default`.
 Each option variant in one aggregate uses the same keys; a default SKU cannot coexist with option
-variants or another default. These are internal creation batch/validation bounds, not new HTTP DTOs.
+variants or another default. HTTP create/detail use the approved API contracts with a bounded 100-SKU
+aggregate; subsequent variant creation validates the entire aggregate under the same product fence.
 
 Creation commits product and variants in one transaction using categories' ancestry guard; active
 products require active ancestry and at least one active SKU. Draft/inactive products still require
 existing categories and at least one configured SKU. Duplicate slug/SKU/combination aborts the entire
 aggregate. The products-owned category-reference reader protects all statuses from category deletion.
-Media reference attachment remains closed until the media ledger integration; images are modeled
-(up to 12 ordered HTTPS references) but the current creation capability accepts an empty list only.
-Initial counters are all zero; an active SKU is configured for sale but cannot be purchased without
-available inventory. Stock changes and inventory capabilities remain P04-006/P04-008; generic product
-inputs cannot set counters, revision, rating projections or low-stock overrides.
+Media reference changes use the media-owned ledger capability in the same target/auth/audit transaction;
+images are at most 12 ordered public references, with position/slot derived from array order. No provider
+call occurs inside it. Default-disabled media composition does not fabricate account or policy approval.
+Parent product revisions fence concurrent variant master changes and canonical stock writes; these
+conservative bumps invalidate stale product detail/edit tokens. Active products cannot lose their final
+active SKU, including across concurrent variant edits. SKU/attribute identity is immutable after creation.
+Initial counters are zero; an active SKU is configured for sale but cannot be purchased without available
+inventory. Product inputs cannot set counters, revisions, rating projections or low-stock overrides;
+only the declared VariantPatch owns its optional low-stock threshold override.
 
 `initializeProductPersistence` explicitly creates new collections with strict/error validators and
 additive declared indexes; it is not called by HTTP startup. Existing validator drift requires a
@@ -782,6 +799,19 @@ coordinate additional retention/legal-hold decisions through this same asset fen
 | `status`! | enum(`open`,`consumed`) | Consumption commits with exactly one checkout intent/order |
 | `checkoutIntentId`? / `orderId`? / `consumedAt`? / `revision`! | ObjectId / ObjectId / Date / int | Write-once outcome pointers and conditional consume guard |
 
+**Quote snapshot representation:** `commercialSnapshot` contains `{draft,items,pricing,delivery,
+deadlineBasis,deliveryDeadline,availableMethods,policyVersions,coupon?}`. The resolved private draft is
+`{items,recipient,customer:{name,email,phone},couponCode?,method}`; never use email as principal scope.
+Items use API §11.1's QuoteItem allowlist and pricing uses its six integer-poisha totals plus BDT.
+Delivery is `{zoneId,chargeRuleId,coverageKey,amountPoisha,ruleVersion}`; retain canonical identity and
+version, not a client amount. Optional coupon is `{couponId,code,type,value,termsVersion,
+eligibleSubtotalPoisha,discountPoisha}`. Deadline basis uses §7.2; capture time is retained as evidence
+but excluded from the commercial digest, while rule/review/version remain included. Do not include
+advisory available stock counts in that digest. Policies and method eligibility are snapshotted from
+current authoritative sources. Canonical resolved draft hashing and stored-snapshot integrity checks
+precede reuse; only lifecycle outcome/status/revision fields may change in later consumption services.
+Recipient/buyer data is private consent evidence, not a public quote lookup surface.
+
 **Indexes:** `{scopeType:1,scopeKeyHash:1,expiresAt:1}`; partial unique `{checkoutIntentId:1}` and `{orderId:1}` when
 ObjectId. No TTL until approved retention permits deleting unused quotes; consumed consent evidence is retained with the
 order or an equivalent immutable snapshot/digest. Quote creation reserves neither stock nor coupon capacity. Final submit
@@ -802,7 +832,7 @@ buyer confirmation, never automatic resubmission. Stock/coupon capacity is check
 | `quoteId`! | ObjectId | Consumed server-issued quote; unique, bound to identical scope and commercial consent |
 | `orderId`? | ObjectId | Exactly one order once committed |
 | `status`! | enum(`preparing`,`order_created`,`resolved`) | Recover interrupted submission safely |
-| `resultSnapshot`? | embedded | Minimal durable result pointer/status, not sensitive response secrets |
+| `resultSnapshot`? | embedded | Minimal durable `{orderId:ObjectId}` pointer, matching `orderId`; no response secrets or cached financial authority |
 | `replayUntil`? | Date | Optional client replay-response availability deadline; **not** a deletion deadline |
 
 **Indexes:** unique `{quoteId:1}`; unique `{scopeType:1,scopeKeyHash:1,idempotencyKeyHash:1}`; `{orderId:1}` (partial unique when present); **No TTL** on the unique key registry; retain a minimal key/fingerprint/order tombstone while its order can be replayed, reconciled, or referenced.
@@ -811,6 +841,14 @@ buyer confirmation, never automatic resubmission. Stock/coupon capacity is check
 before reporting success. After `replayUntil`, an old key must return existing-order status or a `key_retired` conflict,
 **never** create a new order. Any future purge requires a durable equivalent uniqueness/tombstone mechanism first; the
 actual legal retention horizon remains an approved operations decision.
+Identity hashing uses the validated submitted command, including quote/consent, method, optional notes
+and saved-address selection; item and policy-set ordering is canonical. Resolve an existing key before
+loading mutable profile/address/commercial data. New keys still require authoritative resolved draft
+and commercial revalidation through their quote. `preparing` has no order/result pointer; committed
+`order_created`/`resolved` records require matching order/result pointers. Creation and completion commit
+in one transaction. A stranded preparing record or missing linked order fails closed for investigation;
+never silently replace its key or assume external/financial completion. Replay returns an authorized
+current order projection even after `replayUntil`; that field cannot expire the durable registry.
 
 ### 7.2 `orders` — `checkout` / `orders`
 
@@ -821,7 +859,7 @@ actual legal retention horizon remains an approved operations decision.
 | `checkoutIntentId`! | ObjectId | Unique; one order per intent |
 | `items[]`! | embedded[] | Nonempty immutable item snapshots (below) |
 | `customerSnapshot`! | embedded | `{name,emailNormalized,phone}` captured at checkout |
-| `deliverySnapshot`! | embedded | **Immutable checkout facts:** `{recipient,phone,districtKey,areaKey,street,addressLine2?,zoneId,chargeRuleId,chargePoisha,estimateAtCheckout?,deadlineRuleVersion,deadlineBasis}`. `deadlineBasis` captures the approved target duration (normally 14 calendar days), start-event type, and applicable legal-cap rule reference/start event; it does **not** contain a fabricated confirmation-relative absolute deadline. |
+| `deliverySnapshot`! | embedded | **Immutable checkout facts:** `{recipient,phone,districtKey,areaKey,street,addressLine2?,postalCode?,zoneId,chargeRuleId,chargePoisha,estimateAtCheckout?,deadlineRuleVersion,deadlineBasis}`. `deadlineBasis` captures the approved target duration (normally 14 calendar days), start-event type, and applicable legal-cap rule reference/start event; it does **not** contain a fabricated confirmation-relative absolute deadline. |
 | `deliveryCommitment`! | embedded | **Operational projection:** `{status:'awaiting_start'\|'calculated'\|'under_review',startEventAt?,targetDeadlineAt?,legalDeadlineAt?,effectiveDeadlineAt?,calculatedAt?,revision}`; omit absolute dates where the governing start event has not occurred. Changes require controlled transition/audit and never overwrite `deliverySnapshot`. |
 | `pricingSnapshot`! | embedded | `{regularSubtotalPoisha,productDiscountPoisha,saleSubtotalPoisha,couponDiscountPoisha,deliveryChargePoisha,finalTotalPoisha,currency:'BDT'}` |
 | `couponSnapshot`? | embedded | `{couponId,code,type,value,eligibleSubtotalPoisha,discountPoisha,termsVersion}` |
@@ -857,6 +895,21 @@ current product prices. Line identifiers and unit ordinals are stable across cla
 
 **Indexes:** unique `{orderNumber:1}`, unique `{checkoutIntentId:1}`; `{userId:1,placedAt:-1}`, `{fulfillmentStatus:1,placedAt:-1}`, `{customerSnapshot.emailNormalized:1,orderNumber:1}` (internal lookup only).
 
+**Deadline basis representation:** the immutable `deliverySnapshot.deadlineBasis` is
+`{rule,review,capturedAt}`. `rule` contains `{version,timezone:'Asia/Dhaka',effectiveFrom,effectiveTo?,
+target:{startEvent:'confirmedAt',calendarDays},estimate?:{startEvent,calendarDays},legalCaps[]}`;
+each cap is `{ruleRef,startEvent:'placedAt'|'confirmedAt',calendarDays}`. Require an explicit reviewed
+cap list (maximum 10 distinct references); an empty list means an independently reviewed no-additional-cap
+determination, never a default inferred from missing legal review. Durations are bounded integers
+1–3,660 calendar days (a technical bound, not a legal rule); references at most 2,000 characters and
+versions at most 100. `review:{evidenceRef,approvedAt,approvedBy,ruleDigest}` binds SHA-256 of canonical
+normalized rule JSON in validator field order. Require a nonfuture review and a rule effective at the
+server's capturedAt. Digest matching provides integrity, not proof of legal applicability or approval.
+The operator retains underlying qualified review evidence separately. Keep review metadata private.
+Calendar arithmetic preserves Asia/Dhaka wall-clock time using runtime timezone data; ambiguous or
+nonexistent local times fail closed rather than guessing. If review requires a non-calendar-day basis,
+change and verify the owning contract before enabling it; do not approximate it in this format.
+
 **Rules — delivery timing:** capture the approved delivery **rule basis** and charge at checkout, not a guessed 14-day
 absolute deadline. Upon the actual `confirmedAt` transition, set `targetDeadlineAt = confirmedAt + 14 calendar days`
 (unless the approved rule differs). A verified legal cap may start at a distinct documented event (including placement):
@@ -867,6 +920,11 @@ confirmation/acceptance until resolved. Later operational ETA notices do not rew
 confirmed legal commitments. Changes to `deliveryCommitment` require order CAS, a reason, audit, and customer notification
 when the estimate changes. Test a delayed COD confirmation, checkout-relative statutory cap, unconfirmed order and
 exception handling (PRD FR-16).
+
+Optional postalCode (maximum 30 characters) is retained in saved addresses, quote recipients and
+immutable order delivery snapshots. Online initiation requires it; old snapshots are not backfilled.
+Explicit additive migration accepts only the exact previous/current users and orders validators,
+preserves all records, and refuses unknown drift. Runtime admission never auto-migrates these schemas.
 
 ### 7.3 `orderItemBalances` — cross-claim quantity guard
 
@@ -937,9 +995,10 @@ restock. Claim completion and payout confirmation are independent facts.
 | `deliveryCharges.ruleVersion`! | int | Explicit immutable commercial version used by order snapshot |
 | `deliveryCharges.revision`! / `supersedesChargeId`? | int / ObjectId | CAS for activation/end/supersession; predecessor lineage remains queryable |
 | `deliveryCharges.endedAt`? / `endedReason`? | Date / string | Audited effective-window closure; never change historical charge amount/coverage |
+| `deliveryCharges.operations[]` | embedded[] | At most three server-only replay records (activate/deactivate/supersede), each with action, key/request digests and original allowlisted rule response; supersession also retains previous-rule response. Never expose replay metadata |
 
 **Indexes:** partial unique `deliveryCharges {coverageKey:1}` for `status:'active'`; unique
-`{coverageKey:1,ruleVersion:1}`; `{zoneId:1,status:1,effectiveFrom:1}`. Use `storeSettings.deliveryCoverageRevision:int` (initialized to 0 on the unique `primary` singleton) as the **store-wide write-serialization guard**; retain `deliveryZones.coverageRevision` only as a per-zone change sequence.
+`{coverageKey:1,ruleVersion:1}`; `{zoneId:1,status:1,effectiveFrom:1}`; `{status:1,effectiveFrom:1}`, `{status:1,effectiveTo:1}` for bounded due work; `{createdAt:-1,_id:-1}` on zones/charges for admin lists. Use `storeSettings.deliveryCoverageRevision:int` (initialized to 0 on the unique `primary` singleton) as the **store-wide write-serialization guard**; retain `deliveryZones.coverageRevision` only as a per-zone change sequence.
 
 **Rules:** `effectiveFrom <= checkoutAt < effectiveTo` (or no upper bound) for selected active rule. Resolve exact area
 coverage before its district wildcard; never combine two rules. In every charge insert/schedule/activate/end/supersede or zone-status transaction, first conditionally increment the **same singleton** `storeSettings.deliveryCoverageRevision`, then update affected zones in stable ID order and reject any **overlapping** effective windows globally for that
@@ -957,7 +1016,7 @@ windows and legal deadlines are operator-approved, not invented.
 The delivery-owned read-only coverage boundary checks saved-address eligibility against these existing
 collections. It neither seeds delivery data nor creates/changes delivery indexes or master records. Its transaction reads
 exact eligible coverage before an eligible district wildcard; multiple active exact candidates or an inactive selected
-zone fail closed. P06-001 still owns validated delivery masters, index rollout, global revision serialization and admin
+zone fail closed. The same delivery module owns validated delivery masters, additive index rollout, global revision serialization and admin
 changes. A saved address is not a quote or permission to reuse a historic charge at checkout.
 
 ### 7.7 `inventoryReservations` — `inventory`
@@ -977,6 +1036,14 @@ changes. A saved address is not a quote or permission to reuse a historic charge
 **Indexes:** unique `{orderId:1,variantId:1,generation:1}`; partial unique `{orderId:1,variantId:1,activeKey:1}` **only where `activeKey` is a string**; `{status:1,expiresAt:1}`. **Do not TTL these records:** they are financial/stock history.
 
 **Rules:** expiry job performs a status-guarded release transaction; TTL time passing does nothing by itself. A payment retry after expired holds acquires a new generation; never overwrite/extend the expired one. The same transaction captures one `heldAt` and expiry for all stock lines and the coupon generation. Idempotent replay returns that generation without resetting its clock. Reacquisition directly after verified full funding may commit immediately without creating a fresh unpaid hold; it cannot reopen a cancelled order.
+
+The expiry coordinator fences the Pending online order and zero-funds, clear-risk Pending payment
+aggregate in the release transaction. Verified receipt application must serialize on the same payment
+aggregate revision. Every canonical item and optional coupon must be present with consistent generation,
+quantity and hold clocks; malformed or protected state fails closed without partial release. Expiry
+releases capacity only: order/payment history and possible late provider outcomes remain for reconciliation,
+never silently becoming cancelled/failed. Initial generation heldAt equals actual order placedAt; later
+generations capture a fresh successful reacquisition event, never a replay-relative extension.
 
 ### 7.8 `inventoryMovements` — `inventory` (append-only)
 
@@ -1011,6 +1078,11 @@ changes. A saved address is not a quote or permission to reuse a historic charge
 | `termsVersion`! / `revision`! | int | Each meaningful edit increments terms version |
 
 **Indexes:** unique `{codeNormalized:1}`; `{status:1,startsAt:1,expiresAt:1}`; `{createdAt:-1,_id:-1}`; `{status:1,createdAt:-1,_id:-1}`.
+
+**Scope matching:** coupon scope arrays impose independent restrictions; when both are nonempty,
+a line must match an eligible product ID and one listed category ID (AND). Empty arrays impose no
+restriction. Resolve scope from current catalog-owned product/category facts; do not accept client
+couponEligible flags or use delivery charges as eligible merchandise. API §14.3 owns the exact contract.
 
 **Rules:** configuration edits use the canonical revision CAS and serialize with allocation writes; reject limit reductions below global or any affected customer held-plus-redeemed counts. Append an admin audit digest in the same transaction; never reset counters or rewrite redemptions. Normalized no-op edits preserve terms version and revision. Existing live holds keep their snapshotted terms until expiry; a new/reacquired hold checks *current* coupon state. Guest checkout cannot use any coupon with a per-customer limit (PRD FR-09). Coupon quotas are authoritative in conditional writes, not `countDocuments` alone.
 
@@ -1094,6 +1166,15 @@ progress indicator.
 
 **Indexes:** unique `{provider:1,tranId:1}`; `{state:1,lastCheckedAt:1}`. `providerValidationId`/`bankTranId` lookup indexes are **nonunique** unless the merchant provider contract confirms uniqueness across distinct independently verifiable charges.
 
+Attempt history also uses `{orderId:1,createdAt:-1,_id:-1}` and a nonunique
+`{retryOfAttemptId:1}` lineage lookup. Transactional preparation serializes on the canonical payment
+revision; a new attempt requires the last childless terminal attempt as its parent. The server reserves
+an attempt identity and unique provider reference; HTTP idempotency and provider initiation are separate
+contracts. Request amount, outstanding snapshot, channel, expiry and parent remain immutable.
+Technical input bounds are 30 characters for tranId, 128 for merchantAccountKey, 256 for provider
+references, 200 for riskTitle and 64 for verifiedStatus; evidence digests are 64 lowercase hex characters.
+References exclude control characters. These bounds do not establish provider channel qualification.
+
 **Rules:** select `expectedAmountPoisha` from authoritative **unfunded merchandise entitlement** after independently
 verified prior allocations (never from client total). Uncertain earlier attempts block new initiation until reconciled.
 Compare provider verified amount to the immutable requested amount and persist both. Mismatched amounts remain in
@@ -1103,6 +1184,23 @@ reconciliation may allocate the verified smaller receipt, leaving an exact remai
 attempt; overpayments are correction/unassigned, not duplicate merchandise funding. No collection is discarded merely for
 an amount mismatch. Never discard a validated paid receipt due to an older failed/cancelled message. Provider-specific
 behavior needs sandbox sign-off.
+
+**Hosted-initiation operation identity (`paymentInitiations`, owner: payments):** persist
+`orderId`, `scopeKeyHash`, `idempotencyKeyHash`, `requestFingerprint`, `status`, optional `attemptId`,
+optional `redirectUrl`, immutable merchantAccountKey/gatewayKey dispatch snapshots, plus timestamps. Hash fields are SHA-256; raw browser keys and provider payloads
+are not retained. Status is dispatching/accepted/uncertain/rejected/allocation_shortfall; dispatching
+requires an attempt and merchant/gateway binding, allocation_shortfall has neither, and accepted additionally requires an approved
+hosted URL. Unique `{orderId:1,scopeKeyHash:1,idempotencyKeyHash:1}` preserves the request tombstone;
+partial unique `{attemptId:1}` binds exactly one operation to an attempt. No TTL or financial-history
+delete. An accepted URL is private and returned only while its attempt is initiated and unexpired.
+
+Preparation and attempt creation commit together, marking the attempt uncertain before any provider
+call. Only the transaction winner dispatches once; replays and crashes never resend automatically.
+A provider result updates only the same dispatching operation and still-uncertain attempt; a later
+independently verified attempt outcome cannot be downgraded. Rejection of session creation is not
+proof of payment failure and does not create verified financial evidence. Uncertain/rejected dispatch
+requires reconciliation before another attempt. Durable allocation shortfall records no attempt and
+performs no provider call. New keys never resolve an existing uncertain attempt by themselves.
 
 ### 8.6 `providerReceiptIntake` and `paymentCollections` — verified receipts
 
@@ -1328,7 +1426,18 @@ fields, closed delivery statuses and safe nonnegative attempt counter. The physi
 `notifications_event_key_unique` (`{eventKey:1}`, unique) and `notifications_retry_queue` (`{status:1,nextAttemptAt:1}`).
 Delivery retry updates do not repeat account creation or reset existing delivery status. Registration stores no challenge,
 proof URL, session credential or password in this collection; initial email-verification challenge/delivery remains with its owning feature. Password-reset and email-change delivery reference their bound challenges.
-Later notification event types require an explicit backward-compatible validator/model expansion before activation.
+The additive checkout validator permits `order_received`/`order-received-v1` with required orderId,
+optional userId for registered buyers, and an empty payload; guest orders need no account reference.
+Existing account/proof events still require userId, forbid orderId and retain their exact challenge
+constraints. The previous admin-reset validator is an immutable known migration predecessor. Order
+receipt delivery remains queued until its owning commerce template/worker integration; it is never
+mistaken for registration or confirmation.
+The additive guest validator permits `guest_order_access`/`guest-order-access-v1` with required orderId,
+no userId and required payload.challengeId. Its preceding order-received validator remains an exact
+known migration source. Existing account/proof and order-received branches retain their constraints.
+Guest delivery decrypts only in memory after challenge/order/destination/revision checks; ordinary
+order receipt events are never claimed as guest proofs.
+Other notification event types require an explicit backward-compatible validator/model expansion before activation.
 Existing validators are checked, never silently replaced by startup or local bootstrap.
 
 Dispatch claims use optional `claimId:string`, `claimExpiresAt:Date` and `lastAttemptAt:Date` fields on notification intents,
@@ -1340,7 +1449,7 @@ acceptance with providerMessageId, not recipient inbox delivery. Account/busines
 by the worker.
 
 The validator expansion is additive for existing registration records. Startup still verifies the exact expected
-validator/indexes. A separate reviewed migration upgrades only the known P03-007/009/010/011 validators; it does not drop data/indexes,
+validator/indexes. A separate reviewed migration upgrades only the known identity-proof and order-received validators; it does not drop data/indexes,
 reset delivery state or silently accept another schema. Local/test bootstrap can invoke this explicit migration; production
 rollout remains operator-controlled. Old binaries with exact prior-validator readiness checks require a compatible rollback
 build; never remove new lease/receipt data to make a prior validator pass. Other event payloads and secret-bearing proof
@@ -1381,9 +1490,9 @@ renderers remain disabled until their owning tasks expand the contracts safely.
 | --- | --- | --- |
 | `key`! | enum(`primary`) | Unique singleton identity |
 | `storeName`? / `branding`? | string / embedded | Operator-approved store name and logo media reference |
-| `homepageBanner`? | embedded | `{assetId,title,alt,href?}`; validated public `mediaAssets` reference, bounded operator-approved copy and internal relative destination only |
+| `homepageBanner`? | embedded | `{assetId,title,alt,href?,image}`; validated public `mediaAssets` reference plus server-resolved canonical MediaRef attachment snapshot for replacement/removal, bounded operator-approved copy and internal relative destination only; public banner projection rechecks clean attached public media, exact settings target/slot and ledger asset identity |
 | `deliveryCoverageRevision`! | int | Server-only store-wide guard for every delivery-rule/zone-status transaction; independent of settings edit ETag |
-| `contact`? / `address`? | embedded | Public operator-supplied data only when approved |
+| `contact`? / `complaintContact`? / `address`? | embedded | Public operator-supplied allowlisted contact/complaint channels and store address; exact fields in API §14.3 |
 | `lowStockThreshold`! | int | Nonnegative default stock alert threshold |
 | `paymentChannels`! | embedded | `{bkashEnabled,nagadEnabled,rocketEnabled,codEnabled}`; operational eligibility subject to verified merchant activation |
 | `activePolicyVersions`! | embedded | Map with optional `shipping,cancellation,returns,refunds,privacy,terms,complaints` version IDs; absent keys mean unpublished, never empty-string/null references |
@@ -1407,10 +1516,11 @@ unknown confirmation-relative absolute deadline; later policy updates do not rew
 | `type`! / `version`! | enum(`shipping`,`cancellation`,`returns`,`refunds`,`privacy`,`terms`,`complaints`) / string | Immutable identity unique per policy type and version; no client-selected duplicate version |
 | `status`! | enum(`draft`,`approved`,`scheduled`,`published`,`superseded`,`withdrawn`) | Approval distinct from publication; withdrawn published history remains auditable |
 | `content`! / `contentDigest`! | sanitized bounded text / string | Full canonical versioned content; immutable from approval onward (new revision for correction) |
-| `effectiveAt`? / `publishedAt`? | Date | Never publish without reviewed approved effective time |
+| `proposedEffectiveAt`? / `effectiveAt`? / `publishedAt`? | Date | Draft proposal is separate from the approved effective time; never publish without reviewed approved effective time |
 | `approvalEvidenceRef`? / `approvedAt`? / `approvedBy`? | string / Date / ObjectId | Durable operator/legal approval proof; publication requires verified reference |
 | `supersedesId`? / `supersededAt`? | ObjectId / Date | Publication lineage; never physically replace older accepted versions |
 | `revision`! / `createdBy`! | int / ObjectId | CAS for draft edits; audit all publish/withdraw actions |
+| `approvalOperation`? / `publicationOperation`? | embedded | One durable replay identity per transition: `{keyDigest,requestDigest,revision,status}`; request digest binds actor, action, policy ID, payload and original If-Match; never public |
 
 **Indexes:** unique `{type:1,version:1}`; `{type:1,status:1,effectiveAt:-1}`; `{type:1,publishedAt:-1}`. A single
 `storeSettings.activePolicyVersions[type]` is the authoritative public lookup; immediate publication changes it atomically,
@@ -1436,6 +1546,14 @@ approved retention policy.
 **Indexes:** unique `{jobKey:1}`; `{leaseUntil:1}`.
 
 **Rules:** process reservation expiry, payment uncertainty, refund verification and notification retries through idempotent domain services. A lease alone does not make a job's financial side effects idempotent.
+
+The reservation-expiry partition uses jobKey `reservation-expiry`, a random owner per acquisition and
+a bounded reservation-ID cursor. A live lease cannot be stolen; every business transaction checks the
+same owner/expiry before and after domain writes. Stale owners cannot commit effects or checkpoint
+success. Checkpoints advance past protected candidates so they cannot starve later orders; the scan
+wraps after its end. Failure records retain a static error code/count. This registry has no TTL; missing
+indexes, unexpected validators or TTL indexes fail readiness rather than rewriting durable progress.
+lastSucceededAt means the bounded scan completed, not that every protected hold was releasable.
 
 ## 11. Indexes and query contracts
 
@@ -1466,6 +1584,7 @@ Collection-level tables define the exact intended fields. This list contains min
 | `couponCustomerCounters` | `{couponId:1,userId:1}` | Unique |
 | `payments` | `{orderId:1}` | Unique |
 | `paymentAttempts` | `{provider:1,tranId:1}` | Unique attempt reference; **not** unique per receipt |
+| `paymentInitiations` | `{orderId:1,scopeKeyHash:1,idempotencyKeyHash:1}`; partial `{attemptId:1}` | Unique durable operation and attempt binding; no TTL |
 | `providerReceiptIntake` | `{provider:1,merchantAccountKey:1,providerCollectionRef:1}` | Unique independently verified online money identity |
 | `providerReceiptIntake` | `{linkedCollectionId:1}` | Unique only where linked ID is ObjectId |
 | `paymentCollections` | `{provider:1,merchantAccountKey:1,providerCollectionRef:1}` | Unique linked provider/COD receipt |

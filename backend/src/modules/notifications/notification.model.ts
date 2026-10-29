@@ -8,11 +8,18 @@ const recipient = new Schema(
 const schema = new Schema(
   {
     eventKey: { type: String, required: true },
-    userId: { type: Schema.Types.ObjectId, required: true },
+    userId: { type: Schema.Types.ObjectId, default: undefined },
+    orderId: { type: Schema.Types.ObjectId, default: undefined },
     recipient: { type: recipient, required: true, select: false },
     eventType: {
       type: String,
-      enum: ['registration', 'password_reset', 'email_change'],
+      enum: [
+        'registration',
+        'password_reset',
+        'email_change',
+        'order_received',
+        'guest_order_access',
+      ],
       required: true,
     },
     templateVersion: { type: String, required: true },

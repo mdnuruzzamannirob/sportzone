@@ -1,4 +1,4 @@
-import type { Connection } from 'mongoose'
+import type { Connection, ClientSession } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { inTransaction } from '../../shared/database/transaction.js'
 import type { variantStockAccess } from '../catalog/variants/variant.service.js'
@@ -6,7 +6,7 @@ import { adjustmentInput, objectId, stockSnapshot } from './inventory.schema.js'
 import { inventoryMovementModel } from './inventory.model.js'
 import { verifyInventoryPersistence } from './inventory.persistence.js'
 
-// Internal domain commands only. P04-007 owns HTTP authorization, CSRF and adjustment UI.
+// Domain commands; inventory-admin.service owns transactional admin authorization and audit.
 export function inventoryService(
   connection: Connection,
   stock: ReturnType<typeof variantStockAccess>,
@@ -14,19 +14,20 @@ export function inventoryService(
 ) {
   const movements = inventoryMovementModel(connection)
   return {
-    async read(variantId: string) {
+    async read(variantId: string, session?: ClientSession) {
       const id = objectId.safeParse(variantId)
       if (!id.success) throw new ApiError('VALIDATION_FAILED')
-      const counters = await stock.read(id.data)
+      const counters = await stock.read(id.data, session)
       if (!counters) throw new ApiError('NOT_FOUND')
       return stockSnapshot(counters)
     },
-    async adjustPhysical(input: unknown) {
+    async adjustPhysical(input: unknown, transaction?: ClientSession) {
       const parsed = adjustmentInput.safeParse(input)
       if (!parsed.success) throw new ApiError('VALIDATION_FAILED')
       const { variantId, actorId, deltaPhysical, operationKey, reason } = parsed.data
       await verifyInventoryPersistence(connection)
-      return inTransaction(connection, async (session) => {
+      const apply = async (session: ClientSession) => {
+        if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
         const previous = await movements
           .findOne({ variantId, type: 'adjustment', operationKey })
           .session(session)
@@ -73,7 +74,8 @@ export function inventoryService(
         )
         if (!movement) throw new Error('Inventory movement unavailable.')
         return { movementId: movement._id.toHexString() }
-      })
+      }
+      return transaction ? apply(transaction) : inTransaction(connection, apply)
     },
   }
 }
