@@ -210,3 +210,24 @@ The workflow was consolidated into a direct staging job in the registered Contai
 workflow, preserving explicit three-secret access and loopback-only scanner binding. No broad
 `secrets: inherit`, repository-wide secrets, upload, delete or runtime activation was introduced.
 The CLI now writes a sanitized failure stage to its artifact rather than leaving it empty.
+
+## Hosted read-only preflight result — 30 October 2026
+
+The direct environment job passed on commit `2aab9e702fc75052ab29e2268532aa41193c7626`:
+[run 41081351601](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/41081351601).
+The actual sanitized artifact reports:
+
+```json
+{"cloudinary":"verified","policy":"configured_not_approved","scanner":"probe_passed_not_freshness_qualified","uploadQualification":"not_run"}
+```
+
+This verifies actual credentials and real ClamAV clean/EICAR responses on the isolated runner. The
+job completed in 43 seconds, including backend build and scanner lifecycle. The unrelated backend
+image job was intentionally not selected in this media-only mode; it is not counted as an image pass.
+The three secrets remain in the GitHub staging environment with a single exact branch rule for
+`chore/staging-catalog-media-preflight`. No other secrets were copied; no provider object, database
+record or Render setting was changed. Private env files remain ignored.
+
+P04-003 is still Blocked: signature-freshness qualification, policy acceptance, actual authorized
+upload/private original-and-derived access/expiry/retention/delete and ongoing backend scanner/runtime
+composition remain unverified. A green preflight is not task or production acceptance.

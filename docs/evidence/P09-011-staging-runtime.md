@@ -239,3 +239,10 @@ The owner subsequently created the GitHub environment manually. Exact feature-br
 was added and verified before storing the three authorized Cloudinary values. The first manual
 media run failed at empty reusable-workflow secret resolution; it did not access Atlas or mutate
 records. The direct staging-job correction remains within the authorized read-only preflight scope.
+
+Hosted read-only media preflight subsequently passed on branch commit `2aab9e7`:
+[run 41081351601](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/41081351601).
+The exact branch restriction and only three authorized Cloudinary environment secrets were verified.
+No Atlas secret was transferred and no schema/index/record rollout was performed. This removes the
+read-only Cloudinary/scanner-connectivity preparation gap but does not clear the Atlas TLS inventory,
+transaction, job, same-site/proxy, scanner-runtime or full P09-011 acceptance requirements.
