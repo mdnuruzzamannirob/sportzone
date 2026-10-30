@@ -1,4 +1,10 @@
 import {
+  orderReadQuery,
+  orderReadSummary,
+  customerOrderDetail,
+  orderStatusView,
+} from '../src/modules/orders/order-read.schema.js'
+import {
   paymentMonitorQuery,
   paymentMonitorPage,
   paymentMonitorList,
@@ -396,6 +402,47 @@ export const operations: readonly Operation[] = [
       'Durable admin scheduling only; same key does not reset progress, changed reason conflicts. Worker independently verifies; no financial status assertion.',
     activation:
       'ADMIN_AUTH_ENABLED; local/test only; existing merchant reconciliation worker required',
+  },
+  {
+    method: 'GET',
+    path: '/orders',
+    namespace: 'storefront',
+    access: 'customer',
+    params: empty,
+    query: orderReadQuery,
+    response: z.array(orderReadSummary),
+    status: 200,
+    csrf: false,
+    replay: 'Read-only stable own-order history; totals use immutable snapshots',
+    activation: 'CUSTOMER_ORDER_READ_ENABLED plus customer auth; local/test only',
+  },
+  {
+    method: 'GET',
+    path: '/orders/{orderId}',
+    namespace: 'storefront',
+    access: 'customer_or_guest',
+    params: paymentInitiationParams,
+    query: empty,
+    response: customerOrderDetail,
+    status: 200,
+    csrf: false,
+    replay: 'Current customer or exact verified guest scope; no cross-order fallback',
+    activation:
+      'CUSTOMER_ORDER_READ_ENABLED plus customer auth; guest proof requires GUEST_ACCESS_ENABLED; local/test only',
+  },
+  {
+    method: 'GET',
+    path: '/orders/{orderId}/status',
+    namespace: 'storefront',
+    access: 'customer_or_guest',
+    params: paymentInitiationParams,
+    query: empty,
+    response: orderStatusView,
+    status: 200,
+    csrf: false,
+    replay: 'Backend-authoritative payment and fulfillment are independent; no provider query',
+    activation:
+      'CUSTOMER_ORDER_READ_ENABLED plus customer auth; exact guest proof when enabled; local/test only',
   },
   {
     method: 'POST',

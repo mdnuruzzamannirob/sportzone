@@ -1,3 +1,19 @@
+import { orderScopeAccess } from '../../src/modules/auth/checkout-access.service.js'
+import { orderReadService } from '../../src/modules/orders/order-read.service.js'
+import { orderReadRoutes } from '../../src/modules/orders/order-read.routes.js'
+import {
+  customerPaymentSummaryAccess,
+  cancellationPaymentAccess,
+} from '../../src/modules/payments/payment.service.js'
+import { orderPolicySnapshotAccess } from '../../src/modules/checkout/checkout-quote.service.js'
+import { cancellationService } from '../../src/modules/orders/cancellation.service.js'
+import {
+  initializeCancellationPersistence,
+  verifyCancellationPersistence,
+  cancellationValidator,
+} from '../../src/modules/orders/cancellation.persistence.js'
+import { cancellationModel } from '../../src/modules/orders/cancellation.model.js'
+import { cancellationAllocationService } from '../../src/modules/checkout/cancellation-allocation.service.js'
 import { orderLifecycleService } from '../../src/modules/orders/order-lifecycle.service.js'
 import { fulfillmentAllocationService } from '../../src/modules/checkout/fulfillment-allocation.service.js'
 import { fulfillmentPaymentAccess } from '../../src/modules/payments/payment.service.js'
@@ -332,6 +348,7 @@ beforeEach(async () => {
     'authRateLimits',
     'checkoutIntents',
     'orders',
+    'cancellationRequests',
     'orderItemBalances',
     'payments',
     'paymentAttempts',
@@ -1870,12 +1887,14 @@ async function initiationApp(
   >,
   adminEnabled = false,
   retryGateway?: Pick<ReturnType<typeof createSslcommerzAdapter>, 'validate' | 'queryTransaction'>,
+  orderReadEnabled = false,
 ) {
   await initializePaymentRecordPersistence(db.connection)
   await initializePaymentInitiationPersistence(db.connection)
   const config = loadEnvironment({
     ...identityEnvironment(),
     ADMIN_AUTH_ENABLED: adminEnabled ? 'true' : 'false',
+    CUSTOMER_ORDER_READ_ENABLED: orderReadEnabled ? 'true' : 'false',
     SESSION_SECRET: authSecret,
     GUEST_ACCESS_ENABLED: 'true',
     GUEST_ORDER_ACCESS_TTL_SECONDS: '300',
@@ -4375,4 +4394,555 @@ it('lifecycle/COD local: risk review retains verified cash while continuing to b
   await expect(f.move('processing')).rejects.toThrow()
   expect((await paymentModel(db.connection).findById(f.payment._id))?.paymentStatus).toBe('paid')
   expect((await paymentModel(db.connection).findById(f.payment._id))?.riskStatus).toBe('review')
+})
+
+async function cancellationReadFixture(online = false) {
+  await initializeCancellationPersistence(db.connection)
+  await initializePaymentRecordPersistence(db.connection)
+  const who = await customer(),
+    selected = await variant(),
+    input = { ...body([selected.item]), ...(online ? { method: 'bkash' } : {}) }
+  const quotes = online
+    ? makeService({
+        methods: paymentEligibility(async () => [
+          { channel: 'bkash', active: true, minPoisha: 1000, maxPoisha: 50000 },
+        ]),
+      })
+    : service
+  const quote = await quotes.create(who.credentials, input)
+  const placed = await submissionService(quotes).submit(
+      who.credentials,
+      submit(input, quote),
+      'cancel-read-order',
+    ),
+    id = placed.id
+  const customers = createCustomerAccountAccess(db.connection, identities, sessions),
+    scope = orderScopeAccess(customers, sessions),
+    admin = await customer('admin'),
+    adminAccess = createAdminAccountAccess(db.connection, identities, sessions)
+  const cancellation = cancellationService(
+    db.connection,
+    scope,
+    adminAccess,
+    cancellationAllocationService(db.connection, () => now),
+    cancellationPaymentAccess(db.connection),
+    undefined,
+    () => now,
+  )
+  const creds = { ...who.credentials, csrfToken: who.csrf }
+  const reading = orderReadService(
+    db.connection,
+    customers,
+    scope,
+    customerPaymentSummaryAccess(db.connection),
+    orderPolicySnapshotAccess(db.connection),
+    () => now,
+  )
+  const readApp = createApp({ apiRouter: orderReadRoutes(reading, security) })
+  const ask = (reason = 'Please cancel', key = 'cancellation-request') =>
+    cancellation.request(creds, id, { reason }, key)
+  const decide = (
+    requestId: string,
+    decision: 'approve' | 'reject' = 'approve',
+    extra: object = {},
+    key = 'cancel-decision',
+  ) =>
+    cancellation.decide(
+      admin.credentials.customerToken,
+      requestId,
+      { decision, reason: 'Synthetic administrator review', ...extra },
+      key,
+    )
+  return { who, selected, id, admin, cancellation, creds, reading, readApp, ask, decide }
+}
+it('cancellation/read local: submission only requests review and concurrent duplicates protect one pending identity', async () => {
+  const f = await cancellationReadFixture(),
+    rows = await Promise.all([f.ask(), f.ask(), f.ask()])
+  expect(new Set(rows.map((r) => r.id)).size).toBe(1)
+  expect(await cancellationModel(db.connection).countDocuments()).toBe(1)
+  expect((await orderModels(db.connection).orders.findById(f.id))?.fulfillmentStatus).toBe(
+    'pending',
+  )
+  expect(
+    (await productModels(db.connection).variants.findById(f.selected.row._id))?.stock.committed,
+  ).toBe(2)
+  await expect(f.ask('Different pending explanation')).rejects.toThrow()
+})
+it('cancellation/read local: authorized unpaid COD approval releases once without a monetary refund', async () => {
+  const f = await cancellationReadFixture(),
+    asked = await f.ask()
+  await f.decide(asked.id)
+  await f.decide(asked.id)
+  expect((await orderModels(db.connection).orders.findById(f.id))?.fulfillmentStatus).toBe(
+    'cancelled',
+  )
+  expect(
+    (await productModels(db.connection).variants.findById(f.selected.row._id))?.stock,
+  ).toMatchObject({ physical: 10, reserved: 0, committed: 0 })
+  expect(
+    await inventoryMovementModel(db.connection).countDocuments({ type: 'release_commit' }),
+  ).toBe(1)
+  expect(await db.connection.collection('refunds').countDocuments()).toBe(0)
+  await expect(f.decide(asked.id, 'reject')).rejects.toThrow()
+})
+it('cancellation/read local: rejecting a request preserves fulfillment and allocation; only admins decide', async () => {
+  const f = await cancellationReadFixture(),
+    asked = await f.ask()
+  await expect(
+    f.cancellation.decide(
+      f.who.credentials.customerToken,
+      asked.id,
+      { decision: 'approve', reason: 'Forbidden' },
+      'customer-decision',
+    ),
+  ).rejects.toThrow()
+  await f.decide(asked.id, 'reject')
+  expect((await orderModels(db.connection).orders.findById(f.id))?.fulfillmentStatus).toBe(
+    'pending',
+  )
+  expect(
+    (await productModels(db.connection).variants.findById(f.selected.row._id))?.stock.committed,
+  ).toBe(2)
+  expect(
+    await inventoryMovementModel(db.connection).countDocuments({ type: 'release_commit' }),
+  ).toBe(0)
+})
+it('cancellation/read local: request ownership and mutation CSRF cannot be supplied by an order ID', async () => {
+  const f = await cancellationReadFixture(),
+    other = await customer()
+  await expect(
+    f.cancellation.request(
+      { ...other.credentials, csrfToken: other.csrf },
+      f.id,
+      {
+        reason: 'Wrong account',
+      },
+      'wrong-owner-request',
+    ),
+  ).rejects.toThrow()
+  await expect(
+    f.cancellation.request(
+      { ...f.creds, csrfToken: undefined },
+      f.id,
+      { reason: 'No CSRF' },
+      'no-csrf-request',
+    ),
+  ).rejects.toThrow()
+  expect(await cancellationModel(db.connection).countDocuments()).toBe(0)
+})
+it('cancellation/read local: Processing needs explicit no-dispatch verification and Shipped cannot cancel', async () => {
+  const f = await cancellationReadFixture(),
+    lifecycle = orderLifecycleService(
+      db.connection,
+      createAdminAccountAccess(db.connection, identities, sessions),
+      fulfillmentPaymentAccess(db.connection),
+      fulfillmentAllocationService(db.connection, () => now),
+      async () => {},
+      () => now,
+    )
+  for (const to of ['confirmed', 'processing'])
+    await lifecycle.transition(
+      f.admin.credentials.customerToken,
+      f.id,
+      { to, reason: 'Synthetic prior state' },
+      `prepare-${to}`,
+    )
+  const asked = await f.ask()
+  await expect(f.decide(asked.id)).rejects.toThrow()
+  await lifecycle.transition(
+    f.admin.credentials.customerToken,
+    f.id,
+    { to: 'shipped', dispatchReference: 'already-dispatched', reason: 'Actual local dispatch' },
+    'actual-dispatch',
+  )
+  await expect(
+    f.decide(asked.id, 'approve', { dispatchNotStartedConfirmed: true }),
+  ).rejects.toThrow()
+  expect((await orderModels(db.connection).orders.findById(f.id))?.fulfillmentStatus).toBe(
+    'shipped',
+  )
+})
+it('cancellation/read local: collected cash blocks approval until a real refund obligation capability exists', async () => {
+  const f = await cancellationReadFixture(),
+    lifecycle = orderLifecycleService(
+      db.connection,
+      createAdminAccountAccess(db.connection, identities, sessions),
+      fulfillmentPaymentAccess(db.connection),
+      fulfillmentAllocationService(db.connection, () => now),
+      async () => {},
+      () => now,
+    )
+  await lifecycle.transition(
+    f.admin.credentials.customerToken,
+    f.id,
+    { to: 'confirmed', reason: 'Synthetic confirmation' },
+    'confirmed-cancel',
+  )
+  const payment = await paymentModel(db.connection).findOne({ orderId: f.id }).orFail()
+  const receipt = codCollectionService(
+    db.connection,
+    createAdminAccountAccess(db.connection, identities, sessions),
+    codCollectionOrderAccess(db.connection),
+    async (data) => ({
+      paymentId: data.paymentId,
+      amountPoisha: data.amountPoisha,
+      collectionReference: data.collectionReference,
+      evidenceRef: data.evidenceRef,
+      collectedAt: now,
+      digest: 'a'.repeat(64),
+    }),
+    () => now,
+  )
+  await receipt.collect(
+    f.admin.credentials.customerToken,
+    payment._id.toHexString(),
+    {
+      amountPoisha: payment.expectedPoisha,
+      collectionReference: 'protected-paid-cancel',
+      evidenceRef: 'synthetic:cash-proof',
+      reason: 'Fixture',
+    },
+    'paid-cancel-proof',
+  )
+  const asked = await f.ask()
+  await expect(f.decide(asked.id)).rejects.toThrow()
+  expect((await cancellationModel(db.connection).findById(asked.id))?.status).toBe('requested')
+  expect((await orderModels(db.connection).orders.findById(f.id))?.fulfillmentStatus).toBe(
+    'confirmed',
+  )
+  expect((await paymentModel(db.connection).findById(payment._id))?.paymentStatus).toBe('paid')
+  expect(
+    (await productModels(db.connection).variants.findById(f.selected.row._id))?.stock.committed,
+  ).toBe(2)
+})
+it('cancellation/read local: audit readiness failure leaves request/order/stock recoverable with the same decision key', async () => {
+  const f = await cancellationReadFixture(),
+    asked = await f.ask()
+  await db.connection.collection('auditLogs').dropIndex('audit_cause_unique')
+  try {
+    await expect(f.decide(asked.id)).rejects.toThrow()
+  } finally {
+    await initializeAuditPersistence(db.connection)
+  }
+  expect((await orderModels(db.connection).orders.findById(f.id))?.fulfillmentStatus).toBe(
+    'pending',
+  )
+  await f.decide(asked.id)
+})
+it('cancellation/read local: customer history is scoped, paginated, no-store and independent from private payment evidence', async () => {
+  const f = await cancellationReadFixture(),
+    other = await customer()
+  const list = await request(f.readApp)
+    .get('/api/v1/orders?pageSize=1')
+    .set('Cookie', f.who.cookie)
+    .expect(200)
+  expect(list.body.data).toHaveLength(1)
+  expect(list.body.meta).toMatchObject({ page: 1, pageSize: 1, totalItems: 1 })
+  expect(list.headers['cache-control']).toBe('no-store')
+  expect(
+    (await request(f.readApp).get('/api/v1/orders').set('Cookie', other.cookie).expect(200)).body
+      .data,
+  ).toEqual([])
+  await request(f.readApp)
+    .get('/api/v1/orders?pageSize=101')
+    .set('Cookie', f.who.cookie)
+    .expect(400)
+  await request(f.readApp)
+    .get('/api/v1/orders?userId=anything')
+    .set('Cookie', f.who.cookie)
+    .expect(400)
+  await request(f.readApp).get(`/api/v1/orders/${f.id}`).set('Cookie', other.cookie).expect(404)
+})
+it('cancellation/read local: detail uses historical snapshots and consumed policy references after catalog/config changes', async () => {
+  const f = await cancellationReadFixture(),
+    path = `/api/v1/orders/${f.id}`
+  const before = await request(f.readApp).get(path).set('Cookie', f.who.cookie).expect(200)
+  await productModels(db.connection).variants.updateOne(
+    { _id: f.selected.row._id },
+    { $set: { regularPricePoisha: 99999, status: 'inactive' } },
+  )
+  await productModels(db.connection).products.updateOne(
+    { _id: f.selected.product._id },
+    { $set: { name: 'Changed current product' } },
+  )
+  await settingsModel(db.connection).updateOne({}, { $set: { activePolicyVersions: {} } })
+  const after = await request(f.readApp).get(path).set('Cookie', f.who.cookie).expect(200)
+  expect(after.body.data).toEqual(before.body.data)
+  const raw = JSON.stringify(after.body.data)
+  for (const key of [
+    'approvedBy',
+    'ruleDigest',
+    'evidenceRef',
+    'commercialDigest',
+    'operationKey',
+    'passwordHash',
+    'providerSessionId',
+    'customerSnapshot',
+  ])
+    expect(raw).not.toContain(key)
+  expect(after.body.data.paymentSummary.status).toBe('pending')
+  expect(after.body.data.claimEligibility).toEqual({ status: 'under_review' })
+})
+it('cancellation/read local: current account suspension denies reads and missing policy history fails closed', async () => {
+  const f = await cancellationReadFixture()
+  await checkoutQuoteModel(db.connection).deleteMany({ orderId: f.id })
+  await request(f.readApp).get(`/api/v1/orders/${f.id}`).set('Cookie', f.who.cookie).expect(503)
+  await request(f.readApp)
+    .get(`/api/v1/orders/${f.id}/status`)
+    .set('Cookie', f.who.cookie)
+    .expect(200)
+  await identities.users.updateOne({ _id: f.who.user._id }, { $set: { status: 'suspended' } })
+  await request(f.readApp).get('/api/v1/orders').set('Cookie', f.who.cookie).expect(401)
+})
+it('cancellation/read local: actual root read activation defaults off and only enables explicitly', async () => {
+  const f = await cancellationReadFixture(),
+    disabled = await initiationApp(),
+    enabled = await initiationApp(true, undefined, false, undefined, true)
+  await request(disabled.root).get(`/api/v1/orders/${f.id}`).set('Cookie', f.who.cookie).expect(404)
+  await request(enabled.root).get(`/api/v1/orders/${f.id}`).set('Cookie', f.who.cookie).expect(200)
+})
+it('cancellation/read local: a historical submission key returns the reviewed request and a changed reason conflicts', async () => {
+  const f = await cancellationReadFixture(),
+    asked = await f.ask()
+  await f.decide(asked.id, 'reject')
+  expect((await f.ask()).status).toBe('rejected')
+  expect((await f.ask()).id).toBe(asked.id)
+  await expect(f.ask('Changed key body')).rejects.toThrow()
+  await expect(
+    f.cancellation.request(f.creds, f.id, { reason: 'Missing key' }, undefined),
+  ).rejects.toThrow()
+  const second = await f.ask('New reviewed request', 'new-submission-key')
+  expect(second.id).not.toBe(asked.id)
+  expect(await cancellationModel(db.connection).countDocuments()).toBe(2)
+})
+it('cancellation/read local: exact guest proof reads only its order, cannot enumerate, and invalid customer cookies never fall back', async () => {
+  const held = await heldOrder(),
+    customers = createCustomerAccountAccess(db.connection, identities, sessions)
+  const guests = guestSessionService(
+    db.connection,
+    identities,
+    {
+      secret: authSecret,
+      customerTtlSeconds: 600,
+      adminTtlSeconds: 300,
+      sameSite: 'lax',
+      appEnvironment: 'test',
+      apiOrigin: 'https://api.example.test',
+    },
+    600,
+    guestOrderAccess(db.connection).verify,
+    () => now,
+  )
+  const proof = await inTransaction(db.connection, (session) =>
+    guests.issueAfterProof(session, held.result.id),
+  )
+  const scope = orderScopeAccess(customers, sessions, guests),
+    reading = orderReadService(
+      db.connection,
+      customers,
+      scope,
+      customerPaymentSummaryAccess(db.connection),
+      orderPolicySnapshotAccess(db.connection),
+      () => now,
+    ),
+    root = createApp({ apiRouter: orderReadRoutes(reading, security) }),
+    cookie = `sz_guest_order_sid=${proof.token}`
+  await request(root).get(`/api/v1/orders/${held.result.id}`).set('Cookie', cookie).expect(200)
+  await request(root).get('/api/v1/orders').set('Cookie', cookie).expect(401)
+  const other = await heldOrder()
+  await request(root).get(`/api/v1/orders/${other.result.id}`).set('Cookie', cookie).expect(401)
+  await request(root)
+    .get(`/api/v1/orders/${held.result.id}`)
+    .set('Cookie', `${cookie}; sz_customer_sid=invalid`)
+    .expect(401)
+  await initializeCancellationPersistence(db.connection)
+  const cancel = cancellationService(
+    db.connection,
+    scope,
+    createAdminAccountAccess(db.connection, identities, sessions),
+    cancellationAllocationService(db.connection, () => now),
+    cancellationPaymentAccess(db.connection),
+    undefined,
+    () => now,
+  )
+  const asked = await cancel.request(
+    { customerPresent: false, guestToken: proof.token, csrfToken: proof.csrfToken },
+    held.result.id,
+    { reason: 'Verified guest request' },
+    'guest-key',
+  )
+  expect((await cancellationModel(db.connection).findById(asked.id))?.requestedBy.kind).toBe(
+    'guest_order',
+  )
+  now = new Date(now.getTime() + 600001)
+  await request(root).get(`/api/v1/orders/${held.result.id}`).set('Cookie', cookie).expect(401)
+})
+it('cancellation/read local: pending online attempts keep reconciliation and late collections become correction only', async () => {
+  await initializeCancellationPersistence(db.connection)
+  await initializeCorrectionPersistence(db.connection)
+  const f = await processingFixture(true),
+    customers = createCustomerAccountAccess(db.connection, identities, sessions),
+    admin = await customer('admin')
+  const cancel = cancellationService(
+    db.connection,
+    orderScopeAccess(customers, sessions),
+    createAdminAccountAccess(db.connection, identities, sessions),
+    cancellationAllocationService(db.connection, () => now),
+    cancellationPaymentAccess(db.connection),
+    undefined,
+    () => now,
+  )
+  const asked = await cancel.request(
+    { ...f.who.credentials, csrfToken: f.who.csrf },
+    f.result.id,
+    { reason: 'Cancel pending online order' },
+    'online-cancel-key',
+  )
+  await cancel.decide(
+    admin.credentials.customerToken,
+    asked.id,
+    { decision: 'approve', reason: 'Synthetic reviewed cancellation' },
+    'online-decision',
+  )
+  expect((await paymentRecordModels(db.connection).attempts.findById(f.attempt._id))?.state).toBe(
+    'initiated',
+  )
+  expect(
+    (await couponModels(db.connection).redemptions.findOne({ orderId: f.result.id }))?.status,
+  ).toBe('released')
+  expect(await f.processor().process(f.claim)).toBe('committed')
+  expect((await orderModels(db.connection).orders.findById(f.result.id))?.fulfillmentStatus).toBe(
+    'cancelled',
+  )
+  expect(
+    (await paymentModel(db.connection).findById(f.attempt.paymentId))?.merchandiseFundedPoisha,
+  ).toBe(0)
+  expect(
+    (await paymentModel(db.connection).findById(f.attempt.paymentId))?.correctionCollectedPoisha,
+  ).toBe(f.attempt.expectedAmountPoisha)
+  expect(
+    (await productModels(db.connection).variants.findById(f.selected.row._id))?.stock,
+  ).toMatchObject({ physical: 10, committed: 0, reserved: 0 })
+  const reading = orderReadService(
+    db.connection,
+    customers,
+    orderScopeAccess(customers, sessions),
+    customerPaymentSummaryAccess(db.connection),
+    orderPolicySnapshotAccess(db.connection),
+    () => now,
+  )
+  expect(await reading.read(f.who.credentials, f.result.id, true)).toMatchObject({
+    fulfillmentStatus: 'cancelled',
+    paymentSummary: { status: 'paid', fundingContext: 'correction_only' },
+  })
+})
+it('cancellation/read local: failure after actual release rolls back stock, request and order before safe retry', async () => {
+  const f = await cancellationReadFixture(),
+    asked = await f.ask(),
+    release = cancellationAllocationService(db.connection, () => now)
+  const cancel = cancellationService(
+    db.connection,
+    orderScopeAccess(createCustomerAccountAccess(db.connection, identities, sessions), sessions),
+    createAdminAccountAccess(db.connection, identities, sessions),
+    async (session, binding) => {
+      await release(session, binding)
+      throw new Error('Synthetic downstream failure')
+    },
+    cancellationPaymentAccess(db.connection),
+    undefined,
+    () => now,
+  )
+  await expect(
+    cancel.decide(
+      f.admin.credentials.customerToken,
+      asked.id,
+      { decision: 'approve', reason: 'Rollback test' },
+      'rollback-decision',
+    ),
+  ).rejects.toThrow()
+  expect((await orderModels(db.connection).orders.findById(f.id))?.fulfillmentStatus).toBe(
+    'pending',
+  )
+  expect((await cancellationModel(db.connection).findById(asked.id))?.status).toBe('requested')
+  expect(
+    (await productModels(db.connection).variants.findById(f.selected.row._id))?.stock.committed,
+  ).toBe(2)
+  expect(
+    await inventoryMovementModel(db.connection).countDocuments({ type: 'release_commit' }),
+  ).toBe(0)
+  await f.decide(asked.id)
+})
+it('cancellation/read local: different-admin dispatch and cancellation race cannot release shipped quantities', async () => {
+  const f = await cancellationReadFixture(),
+    other = await customer('admin'),
+    lifecycle = orderLifecycleService(
+      db.connection,
+      createAdminAccountAccess(db.connection, identities, sessions),
+      fulfillmentPaymentAccess(db.connection),
+      fulfillmentAllocationService(db.connection, () => now),
+      async () => {},
+      () => now,
+    )
+  for (const to of ['confirmed', 'processing'])
+    await lifecycle.transition(
+      f.admin.credentials.customerToken,
+      f.id,
+      { to, reason: 'Synthetic preparation' },
+      `race-${to}`,
+    )
+  const asked = await f.ask()
+  const outcomes = await Promise.allSettled([
+    f.decide(asked.id, 'approve', { dispatchNotStartedConfirmed: true }),
+    lifecycle.transition(
+      other.credentials.customerToken,
+      f.id,
+      { to: 'shipped', dispatchReference: 'race-dispatch', reason: 'Synthetic physical dispatch' },
+      'race-dispatch',
+    ),
+  ])
+  expect(outcomes.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
+  const order = await orderModels(db.connection).orders.findById(f.id),
+    stock = (await productModels(db.connection).variants.findById(f.selected.row._id))?.stock
+  expect(['shipped', 'cancelled']).toContain(order?.fulfillmentStatus)
+  expect(stock).toMatchObject({
+    physical: order?.fulfillmentStatus === 'shipped' ? 8 : 10,
+    committed: 0,
+    reserved: 0,
+  })
+  expect((await cancellationModel(db.connection).findById(asked.id))?.status).toBe(
+    order?.fulfillmentStatus === 'cancelled' ? 'approved' : 'requested',
+  )
+})
+it('cancellation/read local: cancellation bootstrap is additive and unknown validator drift is refused', async () => {
+  const f = await cancellationReadFixture(),
+    asked = await f.ask(),
+    env = {
+      ...identityEnvironment(),
+      MONGODB_URI: db.replica.getUri(),
+      MONGODB_DB_NAME: db.connection.name,
+    }
+  for (let i = 0; i < 2; i++) {
+    const result = spawnSync(process.execPath, ['scripts/bootstrap-cancellations.mjs'], {
+      env,
+      encoding: 'utf8',
+      timeout: 10000,
+    })
+    expect(result.status, result.stderr).toBe(0)
+  }
+  expect((await cancellationModel(db.connection).findById(asked.id))?.status).toBe('requested')
+  await db.connection.db?.command({ collMod: 'cancellationRequests', validator: {} })
+  try {
+    await expect(verifyCancellationPersistence(db.connection)).rejects.toThrow()
+  } finally {
+    await db.connection.db?.command({
+      collMod: 'cancellationRequests',
+      validator: cancellationValidator,
+    })
+  }
+  const deployed = spawnSync(process.execPath, ['scripts/bootstrap-cancellations.mjs'], {
+    env: { ...env, NODE_ENV: 'production', APP_ENV: 'production' },
+    encoding: 'utf8',
+    timeout: 10000,
+  })
+  expect(deployed.status).not.toBe(0)
 })

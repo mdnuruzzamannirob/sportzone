@@ -1595,6 +1595,26 @@ HTTP authorization/CSRF contracts and deployment verification must precede task 
 Preserve orders/commitments, stock movements, source collections, corrections and audit together on
 restore. Never retry uncertain cash recording with a fresh identity or erase a dispatch movement.
 
+#### Local cancellation and owned order reads
+
+After build, `node --env-file=.env backend/scripts/bootstrap-cancellations.mjs` explicitly provisions
+only the strict local/test cancellation collection and indexes. It refuses deployed environments and
+unknown drift, preserves existing requests, and enables no cancellation HTTP route or decision.
+Requests, immutable submission identity, admin audit and stock/coupon history must be restored together.
+Do not clear a key or pending request to retry a possibly committed decision.
+
+`CUSTOMER_ORDER_READ_ENABLED=false` is the default. Explicit true requires customer authentication in
+local/test and provisioned order/payment/consumed-quote history; guest detail additionally requires
+GUEST_ACCESS_ENABLED and exact proof. The existing HTTP process serves GET /orders, /orders/{id}
+and /orders/{id}/status only when enabled. All are no-store; no browser mutation is enabled by this
+flag. Missing/contradictory historical PolicyRefs in consumed quotes fail detail closed, never fall
+back to current policy; assess retained history before cleanup/restore or enabling reads.
+
+Cancellation mutation services remain private until accepted P06-011 and their browser/admin Origin,
+CSRF, rate/access and DTO integration. Missing real source-backed merchandise refund capability blocks
+paid approvals; the correction-only refund model is not a substitute. Unpaid online cancellation does
+not remove attempts or disable merchant reconciliation; later verified funds remain correction-only.
+
 ### 12.2 Gateway receipt reconciliation (OP-FIN-01)
 
 ```mermaid

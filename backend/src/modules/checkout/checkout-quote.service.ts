@@ -261,3 +261,28 @@ export function checkoutQuoteService(
     },
   }
 }
+
+export function orderPolicySnapshotAccess(connection: Connection) {
+  return async (
+    session: ClientSession,
+    input: { orderId: string; quoteId: string; commercialDigest: string },
+  ) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyCheckoutQuotePersistence(connection)
+    const row = await checkoutQuoteModel(connection)
+      .findOne({
+        _id: input.quoteId,
+        orderId: input.orderId,
+        status: 'consumed',
+        commercialDigest: input.commercialDigest,
+      })
+      .session(session)
+      .lean()
+    if (!row) throw new ApiError('SERVICE_UNAVAILABLE')
+    return row.commercialSnapshot.policyVersions.map((p) => ({
+      type: p.type,
+      version: p.version,
+      effectiveAt: p.effectiveAt,
+    }))
+  }
+}

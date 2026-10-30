@@ -974,11 +974,23 @@ restock. Claim completion and payout confirmation are independent facts.
 | `reason`! | string | Customer explanation |
 | `status`! | enum(`requested`,`approved`,`rejected`) | Submission alone never cancels order |
 | `reviewedBy`? / `reviewedAt`? / `decisionReason`? | ObjectId / Date / string | Administrator review |
-| `operationKey`! | string | Idempotent decision reference |
+| `operationKey`! | string | Hash of order, customer/verified-guest-order scope and submission Idempotency-Key; raw keys never stored |
+| `revision`! / `createdAt`! / `updatedAt`! | int / Date / Date | Request CAS and durable request chronology |
 
-**Indexes:** unique `{orderId:1,operationKey:1}`; partial unique `{orderId:1}` for status `requested`.
+**Indexes:** unique `{orderId:1,operationKey:1}`; partial unique `{orderId:1}` for status `requested`; `{orderId:1,createdAt:-1,_id:-1}` history.
 
 **Rules:** acceptance requires current order-status/dispatch recheck in the same transaction as allocation release and cancellation; paid cancellations produce an eligible refund obligation.
+
+Same submission key/reason replays the original request, including approved/rejected outcomes; changed
+reason conflicts. A different key cannot replace a pending request. Submission fences order revision
+against dispatch before creating the request and audit in one transaction. Reviewer writes require
+`requested` status plus matching revision, preserve requester/reason/key and record immutable audit.
+Processing approval requires explicit no-dispatch verification. Canonical payment/order identity and
+amount must agree; every eligible stock/coupon generation releases once in the cancellation transaction.
+Existing attempts and independent source evidence are retained for late reconciliation. Collected funds
+require real source-backed refund obligations before approval; the local default has no such adapter
+and therefore denies paid cancellation without changing order, allocation or financial balances.
+No unreserved fake merchandise refund is fabricated from the correction-only model.
 
 ### 7.5 `deliveryExceptions` — `orders`
 

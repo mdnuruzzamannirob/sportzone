@@ -1,3 +1,8 @@
+import { orderReadRoutes } from './modules/orders/order-read.routes.js'
+import { orderReadService } from './modules/orders/order-read.service.js'
+import { orderScopeAccess } from './modules/auth/checkout-access.service.js'
+import { customerPaymentSummaryAccess } from './modules/payments/payment.service.js'
+import { orderPolicySnapshotAccess } from './modules/checkout/checkout-quote.service.js'
 import { paymentMonitorRoutes } from './modules/payments/payment-monitor.routes.js'
 import { paymentMonitorService } from './modules/payments/payment-monitor.service.js'
 import { paymentMessageService } from './modules/notifications/payment-message.service.js'
@@ -136,6 +141,19 @@ export async function composeIdentityRoutes(
 ) {
   const notifications = createRegistrationNotifications(connection)
   const auth = await createAuthRuntime(connection, config, notifications)
+  if (config.CUSTOMER_ORDER_READ_ENABLED)
+    auth.router.use(
+      orderReadRoutes(
+        orderReadService(
+          connection,
+          auth.customerAccounts,
+          orderScopeAccess(auth.customerAccounts, auth.sessions, auth.guestAccounts),
+          customerPaymentSummaryAccess(connection),
+          orderPolicySnapshotAccess(connection),
+        ),
+        auth.security,
+      ),
+    )
   if (config.CUSTOMER_AUTH_ENABLED)
     auth.router.use(
       profileRoutes(

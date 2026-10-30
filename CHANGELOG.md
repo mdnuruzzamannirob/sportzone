@@ -8,6 +8,15 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 30 October 2026 — Cancellation foundation and owned order reads
+
+- Added private cancellation request/admin-review/unpaid release with transaction fences, historical
+  key replay and paid-order denial when source-backed refund obligations cannot be created.
+- Added explicitly enabled local/test customer order list/detail/status APIs with exact guest scope,
+  batched payment summaries, immutable snapshot/policy reads and public allowlists.
+- Owner approved mandatory cancellation submission Idempotency-Key. Regenerated API artifacts;
+  P06-013/P06-014 retain disclosed prerequisites and are not accepted as Done.
+
 ## 30 October 2026 — Private lifecycle and COD collection capabilities
 
 - Added locally verified admin transition/deadline, atomic dispatch and immutable history guards,

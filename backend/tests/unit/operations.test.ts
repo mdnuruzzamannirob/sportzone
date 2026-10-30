@@ -5,7 +5,7 @@ import { createApp } from '../../src/app.js'
 import { ConfigurationError, loadEnvironment } from '../../src/config/env.js'
 import { createLogger, logConfigurationFailure } from '../../src/shared/logger.js'
 import { respond } from '../../src/shared/responses.js'
-import { testEnvironment } from '../helpers/environment.js'
+import { testEnvironment, identityEnvironment } from '../helpers/environment.js'
 import { DatabaseError } from '../../src/shared/errors/database-error.js'
 
 describe('startup configuration', () => {
@@ -287,4 +287,23 @@ describe('P03-013 safe sensitive-action records', () => {
       .expect(404)
     expect(JSON.parse(lines[0] ?? '{}')).not.toHaveProperty('securityAction')
   })
+})
+
+it('customer order reads require explicit authenticated local/test activation', () => {
+  expect(loadEnvironment(testEnvironment()).CUSTOMER_ORDER_READ_ENABLED).toBe(false)
+  expect(() =>
+    loadEnvironment({ ...testEnvironment(), CUSTOMER_ORDER_READ_ENABLED: 'true' }),
+  ).toThrow(ConfigurationError)
+  expect(
+    loadEnvironment({ ...identityEnvironment(), CUSTOMER_ORDER_READ_ENABLED: 'true' })
+      .CUSTOMER_ORDER_READ_ENABLED,
+  ).toBe(true)
+  expect(() =>
+    loadEnvironment({
+      ...identityEnvironment(),
+      NODE_ENV: 'production',
+      APP_ENV: 'staging',
+      CUSTOMER_ORDER_READ_ENABLED: 'true',
+    }),
+  ).toThrow(ConfigurationError)
 })

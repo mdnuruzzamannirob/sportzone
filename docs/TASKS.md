@@ -130,14 +130,14 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |     21 |        0 |
 | 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       1 |         0 |     12 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
-| 06 — Checkout, Orders, and Delivery Rules     |      22 |          10 |     0 |           0 |       3 |         0 |      9 |        0 |
+| 06 — Checkout, Orders, and Delivery Rules     |      22 |           8 |     0 |           0 |       5 |         0 |      9 |        0 |
 | 07 — Payment Integration and Verification     |      18 |           3 |     0 |           0 |       0 |         0 |     15 |        0 |
 | 08 — Returns and Refunds                      |      19 |          18 |     0 |           0 |       0 |         0 |      1 |        0 |
 | 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       1 |         0 |      1 |        0 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **98** | **0** | **0** | **5** | **0** | **107** | **0** |
+| **Total** | **210** | **96** | **0** | **0** | **7** | **0** | **107** | **0** |
 
 ## 4. Milestone tracker
 
@@ -1152,22 +1152,24 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Blocked:** P06-011 remains unaccepted; a real protected original-cash evidence verifier/source and HTTP/root authorization/CSRF integration are not supplied or activated.
 
 - [ ] **P06-013 — Implement pre-shipment cancellation and exactly-once release**\
-  **Status:** `Not Started` · **Area:** Backend/orders\
+  **Status:** `Blocked` · **Area:** Backend/orders\
   **Stage:** `Backend`\
   **Sources:** FR-15; FR-26\
   **Depends on:** `P06-011`\
   **Deliverable:** Require administrator approval/rejection of every customer cancellation request; atomically recheck eligibility and dispatch status, retain reasons, release eligible allocation once, and create collected-payment refund obligations. Unpaid online cancellations keep provider reconciliation active for any later collection.\
   **Acceptance:** Shipped orders cannot use ordinary cancellation; uncollected COD has no monetary refund.\
-  **Evidence to attach:** Cancellation race/state tests.
+  **Evidence:** [Local request/review/release, replay/race checks and remaining gates](./evidence/P06-013-014-cancellation-owned-reads.md). Local safe implementation verified; no full task acceptance.\
+  **Blocked:** P06-011 remains unaccepted; paid cancellation requires a real source-backed merchandise refund-obligation implementation and cancellation HTTP/admin transport remains unactivated. Missing planner denies approval without changing funds or allocation.
 
 - [ ] **P06-014 — Implement authenticated customer order history/detail API**\
-  **Status:** `Not Started` · **Area:** Backend/storefront\
+  **Status:** `Blocked` · **Area:** Backend/storefront\
   **Stage:** `Backend`\
   **Sources:** FR-14\
   **Depends on:** `P06-011`\
   **Deliverable:** Expose own orders and independent fulfillment/payment history with pending/returned states where available.\
   **Acceptance:** Cross-account access denied; order totals use historical snapshots.\
-  **Evidence to attach:** Order ownership tests.
+  **Evidence:** [Implemented scoped read APIs, historical snapshot checks and verification](./evidence/P06-013-014-cancellation-owned-reads.md). Explicit local/test read-only activation, default off.\
+  **Blocked:** Declared P06-011 prerequisite remains unaccepted. No legal/staging/backend-stage acceptance inferred from local read APIs; independent full task acceptance pending.
 
 - [x] **P06-015 — Implement secure guest order lookup and scoped proof**\
   **Status:** `Done` · **Area:** Backend/guest-access · **Owner:** Codex\
@@ -2552,3 +2554,5 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **30 October 2026 — P07-018/P08-001 acceptance:** Each In Review → Done after explicit project-owner independent acceptance: “দুটোই গ্রহণ করছি—Done করুন”. [Separate acceptance record](./evidence/P07-018-P08-001-monitoring-claim-foundation.md#independent-acceptance). Overall: 210 tasks, 107 Done, 100 Not Started, 3 Blocked, 0 In Review. Acceptance covers submitted local/test monitoring/reconciliation and private claim quantity foundation; later claim eligibility/lifecycle/media and external provider/legal/staging/milestone gates remain separate.
 
 **30 October 2026 — P06-011/012 local work:** Owner explicitly selected “Local implementation/tests এগিয়ে নাও” after disclosure that P06-003 prevents full acceptance. Each Not Started → In Progress → Blocked after the authorized private technical work and checks. [Separate local scope, 17 new cases, 232 integration/50 unit/108 contract results and remaining gates](./evidence/P06-011-012-local-lifecycle-cod.md). Overall: 210 tasks, 107 Done, 98 Not Started, 5 Blocked, 0 In Review. No real approval/evidence source or ordinary runtime activation was invented; no task/milestone self-acceptance.
+
+**30 October 2026 — P06-013/014 safe local work:** Each Not Started → In Progress → Blocked after local cancellation request/review/unpaid release and scoped historical order read APIs. Owner explicitly approved mandatory submission Idempotency-Key: “Idempotency-Key বাধ্যতামূলক করুন”. [Separate implementation/checks/remaining gates](./evidence/P06-013-014-cancellation-owned-reads.md). Passed 268 integration, 68 unit and 111 contract tests; 98 implemented/66 planned operations. Overall: 210 tasks, 107 Done, 96 Not Started, 7 Blocked, 0 In Review. Paid cancellation without real refund obligations remains denied; P06-011 and external acceptance are not waived.

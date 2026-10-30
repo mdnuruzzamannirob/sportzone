@@ -680,6 +680,15 @@ revoked identity during evidence reads, future/pre-order collection dates, corre
 and different-admin dispatch/cash concurrency. Local success does not prove policy approval, private
 source verification in deployment, HTTP activation or complete task acceptance.
 
+Cancellation and owned-order read checks cover current customer/admin/guest scope and CSRF, exact
+submission-key replay after approval/rejection, changed-body conflicts, one pending request, explicit
+Processing no-dispatch verification, dispatch/cancellation races and post-release rollback. Verify paid
+approval denial without a real refund planner and retained late online reconciliation/correction.
+Read tests verify scoped stable pagination, no-store, current-account revocation, invalid customer
+cookie no-fallback, immutable catalog/terms/address snapshots and absent historical-policy failure.
+Guest proof cannot list orders or read another order. Compile and exercise additive cancellation
+bootstrap; compare all canonical order/stock/coupon/payment histories after failures and retries.
+
 ### 11.1 Payment provider and COD scenarios
 
 Safe-retry checks use replica-set transactions and actual initiation routes: fresh terminal

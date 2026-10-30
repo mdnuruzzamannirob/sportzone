@@ -890,7 +890,7 @@ The cart example is not a final payable quote. Catalog and public reviews use `2
 | `GET`  | `/orders`                                 | C                   | `page?,pageSize?,status? → OrderSummary[]` for own user only                                 | 14         |
 | `GET`  | `/orders/{orderId}`                       | C owner or G-scoped | `— → OrderDetail`                                                                            | 14, 19     |
 | `GET`  | `/orders/{orderId}/status`                | C owner or G-scoped | `— → {fulfillmentStatus,fulfillmentHold?,paymentSummary,deliveryEstimate?,deliveryDeadline}` | 14, 19     |
-| `POST` | `/orders/{orderId}/cancellation-requests` | C owner or G-scoped | `{reason} → CancellationRequest`                                                             | 15, 19     |
+| `POST` | `/orders/{orderId}/cancellation-requests` | C owner or G-scoped | `{reason} + Idempotency-Key → CancellationRequest`                                                             | 15, 19     |
 | `GET`  | `/orders/{orderId}/cancellation-requests` | C owner or G-scoped | `— → CancellationRequest[]`                                                                  | 15, 19     |
 | `GET`  | `/orders/{orderId}/delivery-events`       | C owner or G-scoped | `— → {status,estimate,deadline,exceptionSummary?,events[]}`                                  | 16, 19     |
 
@@ -990,6 +990,33 @@ hosted payment session.
 ```
 
 Send the `CheckoutSubmitInput` body with a separate `Idempotency-Key` header. Example identifiers, contact details, coupon and policy versions are illustrative; resolve actual values from the configured environment.
+
+`CUSTOMER_ORDER_READ_ENABLED` defaults false and requires customer auth in local/test. The three
+read routes do not activate cancellation mutations, legal approval or an order lifecycle writer.
+OrderSummary matches Appendix D.2; detail omits internal review basis, identifiers/hashes and actor
+identities/reasons while retaining owned recipient/address, line amounts, public timing and consent.
+`termsSnapshot` exposes acceptedAt/policyVersionIds/termsVersion; statusHistory exposes from/to/at.
+`cancellationEligibility={eligible,reasonCode:PRE_DISPATCH|TERMINAL_OR_DISPATCHED}` means eligibility
+to request review, not cancellation approval. `claimEligibility={status:'under_review'}` is an unknown
+policy result, not a blanket denial of rights. Payment summaries are fetched in one bounded batch
+for a history page; canonical aggregate expected amount must match the immutable order total.
+
+Local customer order reads use current customer sessions for `/orders` and current customer or
+exact verified guest scope for detail/status. Invalid customer cookies never fall back to guests.
+Lists use placedAt plus stable ID pagination and immutable order totals; detail returns historical
+lines/pricing/address/terms and public delivery timing, omitting internal approval/provider data.
+Historical PolicyRef values come from the consumed quote bound to that order/consent; missing or
+contradictory history fails closed instead of substituting current policy. Claim eligibility remains
+under review until its owning policy workflow exists; returned/refunded facts are never invented.
+
+Cancellation submission requires a bounded Idempotency-Key scoped to the current customer or verified guest order. Same key/reason returns the original request even after review; changed reason conflicts, and a different key cannot replace a pending request.
+
+Private cancellation submission records one pending request per order and never changes fulfillment.
+Admin approve/reject rechecks canonical status and dispatch in a transaction; Processing approval
+requires explicit dispatch-not-started verification. Unpaid stock/coupon release, status/history and
+audit commit once. Collected orders require a real transaction-bound refund-obligation capability;
+without one approval is blocked and all changes roll back. Payment attempts/reconciliation history
+remain intact after cancellation. These local capabilities do not waive P06-011 acceptance.
 
 ### 11.2 Price, hold and order response rules
 
