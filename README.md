@@ -202,3 +202,6 @@ from historical task reports. Keep local, CI, staging and production resources s
 
 Use each document for its stated subject. Keep related contracts synchronized when behavior changes and preserve the
 PRD's initial-release boundaries.
+
+Deployment preparation and the owner checklist for Render API, Vercel frontends, GitHub branches and
+post-deploy checks: [Operations §5.8](docs/OPERATIONS.md#58-render-and-vercel-staging-deployment).

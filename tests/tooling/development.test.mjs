@@ -516,3 +516,59 @@ test('CATALOG-SERVER-01: public browser barrels cannot import catalog server tra
   put('storefront/src/app/page.tsx', 'import "../features/catalog"')
   assert.deepEqual(checkBoundaries(root).errors, [])
 })
+
+test('DEPLOY-01: Render scaffold keeps hosted features disabled and requires private runtime inputs', () => {
+  const config = JSON.parse(readFileSync(new URL('../../render.yaml', import.meta.url), 'utf8'))
+  assert.equal(config.services.length, 1)
+  const service = config.services[0]
+  assert.equal(service.runtime, 'docker')
+  assert.equal(service.plan, 'free')
+  assert.equal(service.dockerContext, '.')
+  assert.equal(service.dockerfilePath, './backend/Dockerfile')
+  assert.equal(service.autoDeployTrigger, 'off')
+  assert.equal(service.healthCheckPath, '/api/v1/health/live')
+  const env = new Map(service.envVars.map((entry) => [entry.key, entry]))
+  assert.equal(env.size, service.envVars.length)
+  assert.equal(env.get('APP_ENV').value, 'staging')
+  assert.equal(env.get('NODE_ENV').value, 'production')
+  assert.equal(env.get('API_BIND_HOST').value, '0.0.0.0')
+  for (const [key, entry] of env) {
+    if (key.endsWith('_ENABLED')) assert.equal(entry.value, 'false', key)
+    if (/SECRET|TOKEN|MONGODB_URI/.test(key)) {
+      assert.equal(entry.sync, false, key)
+      assert.equal(Object.hasOwn(entry, 'value'), false, key)
+    }
+  }
+  for (const key of [
+    'API_PUBLIC_ORIGIN',
+    'STOREFRONT_ORIGIN',
+    'ADMIN_ORIGIN',
+    'CORS_ALLOWED_ORIGINS',
+  ])
+    assert.equal(env.get(key).sync, false, key)
+})
+
+test('DEPLOY-02: Vercel separates app builds, uses the locked workspace and exposes no backend secrets', () => {
+  for (const [app, framework] of [
+    ['admin', 'vite'],
+    ['storefront', 'nextjs'],
+  ]) {
+    const source = readFileSync(new URL(`../../${app}/vercel.json`, import.meta.url), 'utf8')
+    const config = JSON.parse(source)
+    assert.equal(config.framework, framework)
+    assert.equal(config.buildCommand, 'npm run build')
+    assert.match(config.installCommand, /^cd \.\. && npx --yes npm@11\.19\.0 ci /)
+    assert.match(config.installCommand, /--include=dev/)
+    assert.match(config.installCommand, /--ignore-scripts/)
+    assert.equal(Object.hasOwn(config, 'env'), false)
+    assert.equal(Object.hasOwn(config, 'build'), false)
+    assert.doesNotMatch(source, /MONGODB|SECRET|TOKEN|RESEND|SSLCOMMERZ|CLOUDINARY/)
+    if (app === 'admin') {
+      assert.equal(config.outputDirectory, 'dist')
+      assert.deepEqual(config.rewrites, [{ source: '/(.*)', destination: '/index.html' }])
+    } else {
+      assert.equal(Object.hasOwn(config, 'rewrites'), false)
+      assert.equal(Object.hasOwn(config, 'outputDirectory'), false)
+    }
+  }
+})

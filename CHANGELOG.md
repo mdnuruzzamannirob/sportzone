@@ -8,6 +8,15 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 30 October 2026 — Render and Vercel deployment preparation
+
+- Added a manual-deploy, disabled-feature Render staging Blueprint and per-app Vercel build
+  configuration, including admin SPA deep links and locked root-workspace installation.
+- Documented GitHub branch/protection setup, account provisioning, secret separation, hosted
+  checks, cookie/domain prerequisites, free-plan constraints and rollback in Operations §5.8.
+- Removed the duplicate quote lifetime entry and clarified plain sender-email syntax in the
+  sanitized environment template. No provider, legal, application-stage or hosted acceptance implied.
+
 ## 30 October 2026 — Commerce notifications and delivery/support foundation
 
 - Added atomic order-confirmation/cancellation/shipment/delivery intents and canonical commerce

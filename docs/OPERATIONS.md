@@ -950,6 +950,205 @@ command paths when deploying this layout; use the matching complete artifact for
 safe diagnostics, readiness verification and connection/worker cleanup. Module ownership and target paths
 belong to Architecture §§4–6, not a second operational source tree.
 
+### 5.8 Render and Vercel staging deployment
+
+**Owner-selected topology:** Render Docker API, two Vercel frontend projects and isolated MongoDB
+Atlas. The tracked [Render Blueprint](../render.yaml) uses JSON syntax (valid YAML) so repository tests
+can validate it without another parser. [Admin configuration](../admin/vercel.json) and
+[storefront configuration](../storefront/vercel.json) contain no secrets or provider activation.
+These are deployment inputs, not proof of a successful hosted build or complete application readiness.
+The owner requested combined deployment preparation; verify backend → admin → storefront in sequence,
+then retain independent application/task acceptance. Provisioning costs and platform terms still apply.
+
+#### 5.8.1 GitHub setup and branch roles
+
+1. Keep one private GitHub repository for all three workspaces. Never upload `.env`, database dumps,
+   customer data or provider credentials. Configure two-factor authentication and least-privilege access.
+2. Keep **`main`** as the reviewed integration branch. No permanent `develop`, `frontend`, `backend` or
+   separate production branch is required. Actual environment/project/configuration identifies staging
+   versus production; a branch name does not authorize launch.
+3. Create short branches such as `feat/P08-002-return-eligibility`, `fix/payment-replay` and
+   `chore/render-vercel-deployment`. Open a PR to `main`, record tests and obtain independent review;
+   squash-merge after required checks pass, then delete the merged branch. Do not self-approve milestones.
+4. GitHub Settings → Rules → Rulesets / Branch protection: target `main`, require PRs, an independent
+   approval where the plan supports enforcement, resolved conversations and the actual **CI required result**
+   check from `.github/workflows/ci.yml`; block force pushes/deletion. Select the observed check after CI
+   has run. If private-repository plan features are unavailable, record the limitation and use the explicit
+   review/release approval record; do not claim enforcement exists. No passing placeholder is allowed.
+5. Actions → CI: inspect the actual run and artifacts. The current workflow installs Node/npm from
+   `.nvmrc` and the recorded package-manager version and selects affected checks. No application secrets
+   belong in PR test jobs. Repository/hosting permissions and protection settings require actual inspection.
+The manual **Container verification** workflow (`.github/workflows/container.yml`) provides a
+GitHub-hosted Docker builder: after the workflow is present on the default branch, Actions → Container
+verification → Run workflow on the reviewed ref. It builds without secrets, checks non-root execution
+and a limited runtime file inventory, and preserves an image-ID record. It neither pushes an image nor
+deploys resources; full layer/OS scanning, HTTP/DB/draining/worker checks remain required. Render builds
+from source directly, so this topology does not require a separate image registry account.
+
+6. Initially deploy **manually** from an identified reviewed commit on `main` to isolated staging.
+   Keep Render auto-deploy and Blueprint auto-sync off until the release procedure is accepted. Vercel's
+   label “Production” means its stable project deployment, not SportZone production acceptance: the
+   initial projects below are staging resources even when their stable branch is `main`.
+7. Never attach sensitive staging secrets to arbitrary PR/fork previews. Preview domains are not approved
+   cookie/CORS origins. Leave commerce/auth disabled for previews, or provision a separately reviewed
+   isolated preview environment. Production later uses distinct projects, secrets, data and approvals.
+
+Example after reviewing this branch locally (publishing is an explicit owner action):
+
+```bash
+git push -u origin chore/render-vercel-deployment
+```
+
+Create the PR on GitHub, wait for CI and review, then squash-merge. For the next task, update `main`
+with a fast-forward pull and create a new short branch. Do not force-push shared branches. A real
+release tag is created only after release acceptance, not for this configuration preparation.
+
+#### 5.8.2 Free-tier boundary and accounts
+
+- Render Free supports a sleeping Docker web service. It sleeps after 15 idle minutes, has a shared
+  workspace allowance of 750 instance hours/month and lacks free cron/background worker, shell and
+  one-off job support. Track bandwidth/build usage and spending controls. This is a demo/staging
+  compromise, not accepted production infrastructure. No keep-alive pings or hidden polling scheduler.
+- Vercel Hobby is restricted to personal non-commercial use. SportZone commercial deployment requires
+  an appropriate commercial plan or another approved host. Do not promise a fully free commercial
+  Render/Vercel shop. Confirm account eligibility before importing the frontend projects.
+- Atlas Free has capacity/operational limits; use only isolated synthetic staging data. Select a supported
+  region and verify actual transactions and backup/recovery limitations rather than assuming acceptance.
+- Cloudinary, Resend and merchant sandbox access are separate accounts with their own limits. Credentials
+  do not establish scanner availability, sender verification or bKash/Nagad/Rocket merchant activation.
+
+Official provider references: [Render Free](https://render.com/docs/free),
+[Vercel Hobby](https://vercel.com/docs/plans/hobby),
+[Atlas Free](https://www.mongodb.com/docs/atlas/reference/free-shared-limitations/).
+
+#### 5.8.3 Account and domain preparation — owner checklist
+
+1. Connect the GitHub repository to Render and Vercel using provider GitHub Apps, with access only to
+   this repository. Select region/resources deliberately; provisioning is not performed by these files.
+2. Atlas: create an isolated project/Free cluster and a least-privilege staging database user. Reserve
+   `sportzone_staging`. Connect → Drivers gives the private URI; percent-encode credentials as required.
+   Allow the operator's IP for approved maintenance and Render's displayed outbound IP ranges. Avoid
+   unrestricted internet access. Never point local/CI at this staging URI implicitly.
+3. Reserve the stable API/shop/admin addresses. Prefer `api.<owned-domain>`, `shop.<owned-domain>` and
+   `admin.<owned-domain>`, with TLS on all three. Follow each provider's current DNS verification UI;
+   do not guess CNAME/A targets. Provider-assigned URLs may serve public previews initially.
+4. Separate `vercel.app` and `onrender.com` sites do not satisfy the current Lax/Strict session-cookie
+   arrangement for cross-site fetches. Full login/CSRF acceptance requires approved same-site custom
+   subdomains or an implemented and independently verified same-origin proxy. This package adds no
+   proxy or SameSite=None exception. CORS alone does not repair cookie scope. Do not enable auth to
+   present a broken cross-site deployment as ready.
+5. Record nonsecret project IDs/links, owners, intended commit, origins, secret-store references and
+   deployment/rollback approver in the protected inventory. Provider passwords/secrets stay out of chat,
+   issues, screenshots and Git. Keep local `.env` separate from staging configuration.
+
+#### 5.8.4 Render API — exact setup
+
+1. New → Blueprint → connect this repository and select `main` after merge. Review `render.yaml` before
+   provisioning: one Free Docker API only, no paid workers/databases, auto-deploy off. Disable Blueprint
+   auto-sync in its settings. The Blueprint may trigger the first deploy on creation; fill all required
+   values before confirming. Missing inputs or platform access can still block that deploy.
+2. Equivalent manual Web Service fields: root directory **empty**, runtime Docker, Dockerfile
+   `backend/Dockerfile`, build context `.`, plan Free, health path `/api/v1/health/live`. Leave Docker
+   Command empty to preserve `ENTRYPOINT node` / `CMD dist/server.js`. No npm start/build override.
+3. Supply each `sync: false` value from the UI. Use the actual approved origins with no trailing slash;
+   `CORS_ALLOWED_ORIGINS` is exactly `STOREFRONT_ORIGIN,ADMIN_ORIGIN`. Set `RELEASE_ID` to the deployed
+   commit's short SHA (bounded release metadata), not a fabricated release tag. `APP_ENV=staging` pairs
+   with `NODE_ENV=production`; bind `0.0.0.0:4000` behind Render TLS.
+4. Provision independent staging `SESSION_SECRET` and `HEALTH_MONITOR_TOKEN`. Generate each privately
+   with `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`. Do not rotate an
+   existing environment's keys casually. Proof key rings are provisioned separately before proof activation.
+   Never configure these as Docker build arguments or add ARG/RUN references to them; the image recipe
+   consumes no runtime secrets. Inspect the actual hosted image/build logs for accidental secret exposure.
+5. Keep all Blueprint activation flags false. No merchant keys are needed for the initial disabled
+   deployment. Later provider secrets use the exact names in `.env.example`; `EMAIL_FROM` is a plain
+   verified email address. The Blueprint does not invent approval-file contents or operational policy.
+6. Deploy the reviewed commit. Check logs for `ready` and public `/api/v1/health/live`. Monitor authenticated
+   `/api/v1/health/ready` privately with the approved monitor-token transport from API §16.4; never expose
+   readiness credentials in a public health-check URL. Liveness is not financial/provider readiness.
+7. `sync: false` values are initial prompts, not ongoing secret updates: change existing service secrets
+   in the provider UI/approved secret mechanism. Do not expect Blueprint re-sync to rotate them.
+
+The Render recipe is deliberately a disabled-feature staging scaffold. Reviewed schema/index rollout,
+actual image inspection, non-root runtime, draining, transactions and worker execution remain P09-011
+acceptance prerequisites. Existing `bootstrap-*.mjs` tools refuse staging/production: do not set
+`APP_ENV=local` against a hosted database or run them as a deploy command. Prepare the owning additive
+operator rollout and reviewed administrator provisioning before enabling auth/commerce.
+
+#### 5.8.5 Vercel admin — after backend verification
+
+Import the same GitHub repository as a separate project named `sportzone-admin-staging`:
+
+| Setting | Value |
+| --- | --- |
+| Root Directory | `admin` |
+| Framework | Vite |
+| Node.js | 24.x, at least the repository engine minimum |
+| Include source files outside Root Directory | Enabled for workspace/shared inputs |
+| Install / Build commands | Use tracked `admin/vercel.json`; do not override in dashboard |
+| Output | `dist` |
+| Stable deployment branch | `main` in this isolated staging project |
+| Environment | `VITE_API_ORIGIN=https://<approved-staging-api-origin>` |
+
+The install command runs from repository root using npm 11.19.0, the shared lockfile and explicit dev
+build dependencies. Build executes in `admin`. The SPA rewrite preserves direct React Router navigation.
+No backend/provider keys belong in Vercel's admin environment. Rebuild when the compiled API origin changes.
+Importing the project starts a deployment; choose eligible plan and correct environment before confirming.
+
+#### 5.8.6 Vercel storefront — after admin verification
+
+Import the same repository again as `sportzone-shop-staging`:
+
+| Setting | Value |
+| --- | --- |
+| Root Directory | `storefront` |
+| Framework | Next.js |
+| Node.js | 24.x, at least the repository engine minimum |
+| Include source files outside Root Directory | Enabled for workspace/shared inputs |
+| Install / Build commands | Use tracked `storefront/vercel.json` |
+| Output / Start command | Next.js platform defaults; no Render start command |
+| Stable deployment branch | `main` in this isolated staging project |
+
+Set `NEXT_PUBLIC_API_ORIGIN` and server-side `API_PUBLIC_ORIGIN` to the approved API origin, and
+`STOREFRONT_ORIGIN` to this project's stable approved shop origin. These are origins, not `/api/v1` URLs.
+The install uses the root lockfile and pinned npm. No storefront provider/MongoDB/session secrets.
+Retain existing private cache headers, server/client ownership and dynamic catalog error behavior.
+
+Vercel's supported Node 24 minor may change independently of local `.nvmrc`; inspect the actual version
+and honor package engines. Do not bypass engine failures. Official references:
+[Vercel monorepos](https://vercel.com/docs/monorepos),
+[Vite deployment](https://vercel.com/docs/frameworks/frontend/vite),
+[Render Blueprints](https://render.com/docs/blueprint-spec).
+
+#### 5.8.7 Post-deploy checks, activation and recovery
+
+1. Record all three actual stable URLs and commit/build IDs. Match Render origins/CORS and Vercel API
+   origins; rebuild frontends after public env changes. Restrict preview access where the selected plan
+   allows it; if access controls are unavailable, keep private capabilities disabled.
+2. Check API liveness and protected readiness, TLS and redirects; public catalog success, unavailable API
+   and missing-product behavior; admin deep-link refresh; frontend network calls and error states. Record
+   cold-start failures honestly. Do not treat an HTTP 200 home page as end-to-end acceptance.
+3. Complete the reviewed staging schema/index rollout and transaction test. Verify the same-site/proxy
+   arrangement before customer/admin/guest login, session-cookie, CSRF, logout and ownership tests. Enable
+   only features with accepted prerequisites; keep qualified delivery/policy/provider gates intact.
+4. Configure media plus reachable private scanner and approved retention policy, test-only Resend sender/
+   recipient, and merchant sandbox qualifications in their owning work packages. Current runtime still
+   refuses several staging payment/commerce activations: no environment workaround is authorized.
+5. Free Render has no cron/background worker or shell. This package provisions no scheduler and no
+   scanner. Prepare an authorized external runner/local operator machine and approved job schedule only
+   after runtime/persistence qualification. A sleeping API is not a reliable scheduler. Never expose an
+   unauthenticated “run jobs” endpoint; never run financial retries blindly. Notification and expiry image
+   commands are in §5.6; other source workers need their owning packaging/qualification before scheduling.
+6. On deploy failure inspect safe configuration-field errors and provider logs. Check Atlas access list,
+   database name, Node/npm versions, lockfile, origins and feature flags. Do not print credentials or
+   weaken validation. If free memory/build quota is insufficient, report Blocked rather than claiming a
+   successful free deployment; select a reviewed resource plan or continue local testing.
+7. Roll back code with Render/Vercel's previous identified compatible deployment, verify config compatibility
+   and repeat affected smoke/security checks. Preserve MongoDB orders, receipts, outbox and audit records;
+   never delete/restore a database just to fix a frontend build. Reconcile external effects under §6.
+8. Attach actual URLs, build/image identity, observed checks, limitations and independent acceptance to
+   [P09-011 evidence](./evidence/P09-011-staging-runtime.md). P09-012 integrated staging, P03-022 backend
+   closeout and production milestones stay separate. Configuration preparation does not mark them Done.
+
 ## 6. Release management & rollback
 
 ### 6.1 Release record

@@ -1,0 +1,149 @@
+{
+  "services": [
+    {
+      "type": "web",
+      "name": "sportzone-api-staging",
+      "runtime": "docker",
+      "plan": "free",
+      "branch": "main",
+      "dockerfilePath": "./backend/Dockerfile",
+      "dockerContext": ".",
+      "healthCheckPath": "/api/v1/health/live",
+      "autoDeployTrigger": "off",
+      "envVars": [
+        {
+          "key": "NODE_ENV",
+          "value": "production"
+        },
+        {
+          "key": "APP_ENV",
+          "value": "staging"
+        },
+        {
+          "key": "API_BIND_HOST",
+          "value": "0.0.0.0"
+        },
+        {
+          "key": "PORT",
+          "value": "4000"
+        },
+        {
+          "key": "MONGODB_DB_NAME",
+          "value": "sportzone_staging"
+        },
+        {
+          "key": "CUSTOMER_AUTH_ENABLED",
+          "value": "false"
+        },
+        {
+          "key": "ADMIN_AUTH_ENABLED",
+          "value": "false"
+        },
+        {
+          "key": "PASSWORD_RECOVERY_ENABLED",
+          "value": "false"
+        },
+        {
+          "key": "EMAIL_CHANGE_ENABLED",
+          "value": "false"
+        },
+        {
+          "key": "GUEST_ACCESS_ENABLED",
+          "value": "false"
+        },
+        {
+          "key": "CUSTOMER_ORDER_READ_ENABLED",
+          "value": "false"
+        },
+        {
+          "key": "CHECKOUT_QUOTES_ENABLED",
+          "value": "false"
+        },
+        {
+          "key": "CHECKOUT_COD_ENABLED",
+          "value": "false"
+        },
+        {
+          "key": "MEDIA_ENABLED",
+          "value": "false"
+        },
+        {
+          "key": "SSLCOMMERZ_ADAPTER_ENABLED",
+          "value": "false"
+        },
+        {
+          "key": "SSLCOMMERZ_MODE",
+          "value": "sandbox"
+        },
+        {
+          "key": "PAYMENT_INITIATION_ENABLED",
+          "value": "false"
+        },
+        {
+          "key": "PAYMENT_CALLBACKS_ENABLED",
+          "value": "false"
+        },
+        {
+          "key": "PAYMENT_PROCESSING_ENABLED",
+          "value": "false"
+        },
+        {
+          "key": "PAYMENT_RECONCILIATION_ENABLED",
+          "value": "false"
+        },
+        {
+          "key": "EMAIL_DELIVERY_ENABLED",
+          "value": "false"
+        },
+        {
+          "key": "EMAIL_MODE",
+          "value": "test"
+        },
+        {
+          "key": "EMAIL_PROVIDER",
+          "value": "resend"
+        },
+        {
+          "key": "PAYMENT_NOTIFICATIONS_ENABLED",
+          "value": "false"
+        },
+        {
+          "key": "ORDER_NOTIFICATIONS_ENABLED",
+          "value": "false"
+        },
+        {
+          "key": "RELEASE_ID",
+          "sync": false
+        },
+        {
+          "key": "MONGODB_URI",
+          "sync": false
+        },
+        {
+          "key": "SESSION_SECRET",
+          "sync": false
+        },
+        {
+          "key": "HEALTH_MONITOR_TOKEN",
+          "sync": false
+        },
+        {
+          "key": "API_PUBLIC_ORIGIN",
+          "sync": false
+        },
+        {
+          "key": "STOREFRONT_ORIGIN",
+          "sync": false
+        },
+        {
+          "key": "ADMIN_ORIGIN",
+          "sync": false
+        },
+        {
+          "key": "CORS_ALLOWED_ORIGINS",
+          "sync": false
+        }
+      ]
+    }
+  ]
+}
