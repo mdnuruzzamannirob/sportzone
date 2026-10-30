@@ -144,10 +144,18 @@ try {
     port: Number(process.env.MEDIA_SCANNER_PORT),
     timeoutMs: 15000,
   }
-  const version = await inspectClamAvVersion(scannerOptions)
-  const match = /^ClamAV ([0-9.]+)\/([0-9]+)\/(.+)$/.exec(version || '')
+  let match, updated
+  // RELOAD acknowledges a request before clamd finishes swapping its database.
+  // Wait at most 60 seconds for a fresh loaded version; never relax the freshness gate.
+  for (let attempt = 0; attempt < 31; attempt++) {
+    const version = await inspectClamAvVersion(scannerOptions)
+    match = /^ClamAV ([0-9.]+)\/([0-9]+)\/(.+)$/.exec(version || '')
+    updated = match ? Date.parse(`${match[3]} UTC`) : NaN
+    if (Number.isFinite(updated) && updated <= Date.now() && Date.now() - updated <= 48 * 3600000)
+      break
+    if (attempt < 30) await new Promise((resolve) => setTimeout(resolve, 2000))
+  }
   assert(process.env.MEDIA_SCANNER_TIMEZONE === 'UTC' && Boolean(match), 'scanner_version_format')
-  const updated = Date.parse(`${match[3]} UTC`)
   plan.scanner = {
     engine: match[1],
     signatureVersion: match[2],
