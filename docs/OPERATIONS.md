@@ -1301,8 +1301,9 @@ mkdir -p test-results
 node --env-file=.env.staging backend/scripts/staging-catalog.mjs test-results/catalog-preflight.json
 ```
 
-This operator source tool is not part of HTTP startup or the runtime image. Run it from an authorized
-machine/runner with Atlas network access and the matching complete source/build. Do not turn on a
+The operator CLI is included in the runtime image but is never called by normal HTTP startup. Run it
+from an authorized machine/runner with Atlas network access and matching source/build, or select the
+explicit guarded preload in §16.3 on a reviewed staging image. Do not turn on a
 local/test bootstrap against the staging database. A connection failure writes a sanitized failed
 report and exits nonzero; it does not authorize an empty-state assumption or an apply operation.
 
@@ -2450,10 +2451,15 @@ Where free hosting has no operator shell, `scripts/staging-inventory.mjs` can be
 as a Node preload (`NODE_OPTIONS=--import=./scripts/staging-inventory.mjs`) on the existing reviewed
 staging image. It requires APP_ENV staging, an isolated `_staging` database, every feature flag off,
 and REPORT_PUBLIC_KEY as a base64 DER RSA public key of at least 2048 bits. Before HTTP startup it
-performs only canonical read-only catalog inspection and emits an encrypted envelope in protected
-logs. It never creates records, indexes or collections. Keep the private key only in the operator's
-protected local store. Remove the preload/public-key settings and redeploy after collecting the
-report. Any catalog apply still requires the target-specific review and recovery procedure in §7.2.
+defaults to canonical read-only catalog inspection and emits an encrypted envelope in protected
+logs. For the separately authorized additive operation, STAGING_CATALOG_APPLY=true plus
+STAGING_CATALOG_APPROVAL containing the exact §7.2 reviewer manifest delegates to the guarded
+`staging-catalog.mjs --apply` CLI; missing/partial authority and stale digest fail closed. The CLI
+runs without inherited NODE_OPTIONS to avoid recursive preload. Container healthcheck processes
+skip the operator preload. Apply creates only reviewed missing canonical persistence; no record
+seeding/edit/delete or destructive rollback is supplied. Keep the private key only in the operator's
+protected local store. Remove all temporary preload/public-key/apply/approval settings and redeploy after collecting the
+report. Never leave a one-time approval attached to subsequent boots. Any catalog apply still requires the target-specific review and recovery procedure in §7.2.
 A failed preload blocks that candidate startup; the operator retains the previous healthy deployment.
 
 #### Synthetic provider qualification and private catalog inventory

@@ -8,6 +8,12 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 30 October 2026 — Guarded staging catalog operation
+
+- Added explicit reviewer-manifest transport for the independently approved additive catalog rollout
+  on the existing free staging image, reusing canonical CLI/digest safeguards and encrypted results.
+- Healthcheck processes skip operator actions; normal HTTP startup remains free of schema repair.
+
 ## 30 October 2026 — Free-demo staging inventory
 
 - Added an explicitly selected staging-only encrypted read-only inventory preload for free Render

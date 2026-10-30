@@ -68,3 +68,48 @@ it('refuses production, active features and missing encryption key before startu
     expect(result.stderr).not.toContain(fixture.replica.getUri())
   }
 })
+
+it('uses the reviewed CLI for additive apply and refuses a stale review on replay', async () => {
+  const { openDatabase } = await import('../../src/config/database.js')
+  const { inspectCatalogRollout } = await import(
+    '../../src/modules/catalog/catalog-rollout.service.js'
+  )
+  const database = `${fixture.connection.name}_staging`
+  const connection = await openDatabase(fixture.replica.getUri(), database)
+  try {
+    const plan = await inspectCatalogRollout(connection)
+    const approval = {
+      environment: 'staging',
+      databaseName: database,
+      planDigest: plan.digest,
+      approvedBy: 'synthetic isolated-test reviewer',
+      approvedAt: new Date(Date.now() - 1000).toISOString(),
+      validUntil: new Date(Date.now() + 60000).toISOString(),
+      backupReference: 'synthetic verified-absent catalog baseline',
+      maintenanceReference: 'isolated fixture, no writers',
+    }
+    const environment = {
+      STAGING_CATALOG_APPLY: 'true',
+      STAGING_CATALOG_APPROVAL: JSON.stringify(approval),
+    }
+    const result = run(environment)
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('application_started')
+    expect(JSON.parse(result.stdout.split('\n')[0] || '{}').operation).toBe('apply')
+    const applied = await inspectCatalogRollout(connection)
+    expect(applied.collections.every((row) => row.exists && !row.missingIndexes.length)).toBe(true)
+    const replay = run(environment)
+    expect(replay.status).not.toBe(0)
+    expect(replay.stdout).not.toContain('application_started')
+    expect(await inspectCatalogRollout(connection)).toEqual(applied)
+    for (const env of [
+      { STAGING_CATALOG_APPLY: 'true' },
+      { STAGING_CATALOG_APPROVAL: JSON.stringify(approval) },
+    ]) {
+      expect(run(env).status).not.toBe(0)
+      expect(await inspectCatalogRollout(connection)).toEqual(applied)
+    }
+  } finally {
+    await connection.close()
+  }
+})

@@ -373,3 +373,16 @@ requested as `dep-dbid14e1egvs73e8p8i0`, subsequently verified live with public 
 and authenticated readiness both 200. Actual catalog apply has **not** run. Operations §7.2 requires independent target-plan
 review; executor-generated approval is not substituted for it. Full hosted worker/scanner acceptance
 is Deferred for the free demo, with the initial-release gates unchanged.
+
+### Independent authorization of the exact initial plan
+
+The project owner explicitly accepted the interactive target-plan review: “এই নির্দিষ্ট setup
+অনুমোদন করছি”. This authorizes only the previously recorded digest, three absent catalog collections
+and eleven canonical indexes, with no existing-data edits/deletes and all feature admission off.
+The retained verified-empty catalog report is the reviewed target recovery baseline; partial DDL
+requires stopping, preserving state and a fresh plan. It is not a full Atlas backup claim.
+
+The free Render transport now supports an explicit apply flag plus the exact private reviewer
+manifest, delegating to the existing guarded CLI rather than startup auto-DDL. Normal mode remains
+read-only; production/active features/missing authority/stale plans fail closed. One-time operator
+settings must be removed after the result is retained. Full task/milestone acceptance remains separate.
