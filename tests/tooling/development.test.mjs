@@ -555,6 +555,14 @@ test('DEPLOY-02: Vercel separates app builds, uses the locked workspace and expo
   ]) {
     const source = readFileSync(new URL(`../../${app}/vercel.json`, import.meta.url), 'utf8')
     const config = JSON.parse(source)
+    const manifest = JSON.parse(
+      readFileSync(new URL(`../../${app}/package.json`, import.meta.url), 'utf8'),
+    )
+    const lock = JSON.parse(
+      readFileSync(new URL('../../package-lock.json', import.meta.url), 'utf8'),
+    )
+    assert.equal(manifest.engines.node, '24.x')
+    assert.deepEqual(lock.packages[app].engines, manifest.engines)
     assert.equal(config.framework, framework)
     assert.equal(config.buildCommand, 'npm run build')
     assert.match(config.installCommand, /^cd \.\. && npx --yes npm@11\.19\.0 ci /)
