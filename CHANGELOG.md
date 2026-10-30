@@ -8,6 +8,12 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 30 October 2026 — Environment templates
+
+- Organized the root local example and added sanitized staging and frontend examples. Documented
+  which environment files are loaded and which are operator references; no credentials are tracked.
+- Set an explicit valid SameSite example while keeping authentication and provider activation disabled.
+
 ## 30 October 2026 — Vercel Node runtime selection
 
 - Declared Node 24.x and the existing npm requirement in both frontend manifests and lockfile

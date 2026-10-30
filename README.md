@@ -127,6 +127,11 @@ Frontend builds read public `NEXT_PUBLIC_API_ORIGIN` and `VITE_API_ORIGIN` from 
 `.env.local`. Root `.env` does not configure them. Align exact API Origin/CORS allowlists and HTTPS cookie
 topology with [identity rollout](docs/OPERATIONS.md#browser-identity-rollout).
 Never expose backend secrets through public frontend variables.
+For local UI configuration, copy [admin/.env.example](admin/.env.example) to `admin/.env.local`
+and [storefront/.env.example](storefront/.env.example) to `storefront/.env.local`, then adjust origins.
+[.env.staging.example](.env.staging.example) is a sanitized staging reference; actual staging settings
+and secrets belong in the hosting service environment, not in Git. Files named `.env.staging` or
+`.env.vercel` are private references and are not automatically loaded by the documented dev command.
 The server-rendered catalog also needs runtime `API_PUBLIC_ORIGIN` and `STOREFRONT_ORIGIN`; see
 [catalog runtime](docs/OPERATIONS.md#storefront-catalog-runtime). Unconfigured catalog pages remain noindex.
 

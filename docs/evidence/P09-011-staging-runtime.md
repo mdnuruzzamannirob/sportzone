@@ -164,3 +164,18 @@ for deployment metadata/documentation; those suites remain required at their own
 is not recorded. P09-011 remains Blocked; no external, backend/application or production milestone is Done.
 Free Render cannot supply required durable scheduled runtime alone, Vercel Hobby is non-commercial only,
 and default cross-site domains need the documented same-site/proxy solution before auth activation.
+
+## Public staging observations — 30 October 2026
+
+The owner supplied staging origins and reported provider setup. Public HTTP checks from this workspace
+observed: Render `/api/v1/health/live` **200**, shop home **200**, admin home **200**. A GET of
+`/api/v1/products` with the shop Origin returned **503** while allowing that Origin in CORS. The public
+catalog service deliberately returns this status when required persistence/index verification fails;
+the sanitized response does not establish the exact cause. Inspect protected staging diagnostics and
+actual collection/index inventory before an approved additive rollout. Do not run local/test bootstrap
+against staging or bypass verification. Liveness and public HTML responses do not establish protected
+readiness, successful commerce, data seeding, transaction support, provider qualification or acceptance.
+
+Private staging reference configuration was updated locally; Render/Vercel environment settings were
+not inspected or changed. The owner reported credentials present there. Actual provider and operator
+qualification, job runner, same-site authentication topology and independent acceptance remain open.
