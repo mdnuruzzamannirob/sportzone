@@ -8,6 +8,12 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 30 October 2026 — Local container runtime verification
+
+- Added a reproducible isolated Linux/Docker runtime verifier for health authorization, transactions,
+  catalog initialization, graceful shutdown/restart and reservation-expiry CLI process restart.
+- Verified the real local image without staging credentials or mutations; hosted acceptance remains separate.
+
 ## 30 October 2026 — Hosted media qualification
 
 - Real public/private upload, delivery authorization, expiry/tamper denial and test-asset cleanup

@@ -306,3 +306,30 @@ standalone worker qualification using this existing Render service alone. Offici
 [ClamAV container memory requirements](https://docs.clamav.net/manual/Installing/Docker.html).
 No paid workaround or weakened scanner/authentication gate was applied. The full task remains
 Blocked pending suitable runtime capacity and actual remaining inventory/transaction/worker evidence.
+
+## User-enabled local Docker runtime qualification — 30 October 2026
+
+The owner enabled local Docker socket access; Docker 29.8.0 is reachable. The existing image was
+built successfully with `docker build -f backend/Dockerfile -t sportzone-backend:staging-check .`.
+New reproducible operator verifier:
+`node backend/scripts/verify-container-runtime.mjs sportzone-backend:staging-check` — **Passed**.
+It created only a generated local MongoDB 8.0.16 replica set/database and test container, without
+loading private env files or using any real provider. Its retained artifact
+`test-results/container-runtime.json` reports all eleven checks Passed:
+
+- Transaction commit and abort; container database readiness and readiness authentication.
+- Catalog read returns 200 after canonical local test initialization; non-root container identity.
+- Actual SIGTERM graceful shutdown and secret redaction; container restart readiness.
+- Two distinct reservation-expiry worker processes complete against the same durable lease state.
+- The committed synthetic transaction survives container restart.
+
+Both worker runs scanned/released zero reservations. This is an actual CLI/process restart check,
+not proof of nonempty expiry correctness or a deployed scheduler. Existing transaction/concurrency
+integration tests retain their separate scope. The verifier removed its test container, temporary
+env file and generated replica-set data. The built image remains available for further local use.
+No live API, Atlas collection/index/record, provider object or credential was changed.
+
+A separate previously authorized read-only staging inventory attempt through Docker host networking
+still returned TLS_HANDSHAKE_FAILED before inventory. No apply was attempted. Thus the local Docker
+builder/runtime gap is cleared; actual target inventory, hosted jobs/scanner and independent
+acceptance remain outstanding. No full task or milestone Done is inferred from this local pass.

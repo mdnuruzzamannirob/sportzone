@@ -344,6 +344,17 @@ Authenticated cart and wishlist persistence use an explicit local/test bootstrap
 `node --env-file=.env backend/scripts/bootstrap-cart.mjs` from the repository root. This creates only
 missing `carts`/`wishlists` collections with their strict validators and unique user indexes; matching reruns are
 additive. Existing incompatible validators require a reviewed migration and are never overwritten.
+For an isolated Linux container runtime qualification, first build the backend image, then run
+`node backend/scripts/verify-container-runtime.mjs <local-image-tag>` from the repository root.
+The verifier requires local Docker access and installed backend development tools. It generates its
+own loopback MongoDB 8.0.16 replica set, database, credentials and temporary env file; it never loads
+`.env` or `.env.staging`. Linux host networking lets only this local test reach that loopback fixture.
+It verifies transactions, protected readiness, initialized catalog reads, non-root identity, SIGTERM
+shutdown, restart persistence and two empty reservation-expiry worker processes. Cleanup removes
+only its named test container and temporary fixture. Retain `test-results/container-runtime.json`.
+This qualifies the local artifact, not Atlas collections, a deployed scheduler, nonempty financial
+job recovery or hosted scanner availability.
+
 HTTP startup does not create collections; cart/wishlist requests fail closed with 503 when required persistence
 is absent or incompatible. Staging/production rollout must use the reviewed owning initializer with
 approved configuration and migration review; the local/test entry script refuses those environments.
