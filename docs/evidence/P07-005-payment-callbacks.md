@@ -28,8 +28,8 @@ pass; controllers do not import financial models, shared code does not depend on
 provider protocol stays separate. No package, collection or CI inventory change was needed.
 
 A separately composed independent processor can acknowledge plain-text `OK` only after its awaited
-`committed` result. Missing, pending, thrown or failed processing returns retryable 503. Server wiring
-currently supplies no financial processor, so all well-formed IPNs remain 503. Tests inject synthetic
+`committed` result. Missing, pending, thrown or failed processing returns retryable 503. At the original transport-only revision, server wiring
+supplied no financial processor, so all well-formed IPNs remained 503. Tests inject synthetic
 processing outcomes, including a committed audit fact and a delayed promise; these prove transport
 ordering, not independent provider verification or financial ingestion. P07-006/007/012 retain those
 responsibilities. Transaction exclusion is enforced before processing.
@@ -85,3 +85,51 @@ Disable callback composition to roll back local transport; preserve audit/quota 
 financial history. Do not treat lack of callbacks or browser failure as noncollection and do not blindly
 retry charges. Deployed activation remains refused until financial verification, durable replay/recovery
 and provider qualification are reviewed. Independent project-owner acceptance is pending.
+
+## Current review — 30 October 2026
+
+The original scope/results above remain historical. Accepted P07-006–013/016 now provide the
+local/test independent verification, durable receipt processing, allocation and notification path.
+Root composition selects the real verifier/processor when the verification gateway is supplied;
+missing processing or unresolved Pending still returns retryable 503. Browser returns never invoke
+that processor. Current checkout receipt/race tests and callback isolation tests are included in the
+combined pending-review regression. Staging/provider qualification remains separate.
+
+## Combined review verification — 30 October 2026
+
+Re-reviewed current implementation at `df3b602` for the pending P06-006/007/008/009/010/015 and
+P07-005 acceptance. Dependencies implemented in later accepted payment tasks are now present;
+original revision-specific limitations above remain historical, not current integration claims.
+No runtime mutation, dependency change, external provider call or secret read was needed.
+
+| Current command | Result |
+| --- | --- |
+| `npm run build --workspace=backend` | Passed before compiled-entry integration tests |
+| `npm run typecheck --workspace=backend` | Passed |
+| `npm run lint:boundaries` | Passed: 332 files, zero errors |
+| `npm run test:unit --workspace=backend -- checkout-intent.test.ts checkout-quote.test.ts inventory-allocation.test.ts coupon-allocation.test.ts guest-access.test.ts payment-callback.test.ts delivery-deadline.test.ts media.test.ts container-health.test.ts` | Passed: 96 tests across nine files |
+| `cd backend && ../node_modules/.bin/vitest run --config vitest.integration.config.ts --reporter=default --reporter=json --outputFile=../test-results/pending-review-closeout.json checkout-intent.test.ts checkout-quote.test.ts inventory-allocation.test.ts coupon-allocation.test.ts guest-access.test.ts payment-callback.test.ts delivery-deadline.test.ts media.test.ts` | Passed: 242 tests across eight files |
+
+Environment: local Node/npm, isolated transaction-capable MongoDB replica sets, controlled gateway/
+email/media doubles and local HTTP/compiled child-process fixtures. The ignored JSON report is local
+execution output. Integration counts: checkout 124, guest 19, intent 14, coupon 28, callbacks 19,
+media 19, inventory 16, deadline 3. Relevant cases cover concurrent same-key replay and allocation,
+COD Pending/no fabricated collection, immutable shared online holds, expiry/payment races and fencing,
+single-use scoped guest proof, browser/IPN isolation, actual receipt-processing integration, migration
+and compiled entries. Existing valid contract/lint/format results from the preceding unchanged-code
+batch are reused under Testing §15.5; frontend/full-release checks were not rerun.
+
+Independent acceptance of each pending task is still required. Live provider/email, qualified
+compliance and staging evidence remain separate; this regression does not clear blocked tasks.
+
+## Independent acceptance — 30 October 2026
+
+Current status: **Done** for P07-005. The project owner independently accepted
+the submitted current implementation and review evidence: “সাতটিই গ্রহণ করছি—Done করুন”.
+Earlier In Review statements describe their historical revision.
+
+- **P07-005: Done** — individually included in the explicit seven-task acceptance.
+
+Acceptance covers recorded local technical behavior and verification, including the current combined
+96-unit/242-integration review. It does not approve external provider/email qualification, legal
+applicability, staging deployment or milestones.

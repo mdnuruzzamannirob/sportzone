@@ -8,6 +8,13 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 30 October 2026 — Pending backend review and blocker audit
+
+- Revalidated seven pending checkout/guest/callback task reviews with 96 focused unit and 242
+  transaction-capable integration cases; recorded current results in the existing evidence records.
+- Corrected historical callback transport status to reflect accepted independent durable processing.
+  The owner independently accepted all seven tasks; media/compliance/staging prerequisites remain Blocked.
+
 ## 30 October 2026 — Safe retries and verified payment notifications
 
 - Added fresh independent reconciliation of prior attempts before a new charge, transactionally

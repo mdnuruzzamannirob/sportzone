@@ -98,3 +98,16 @@ These sources inform the recipe; they do not prove that this image built or depl
 Image run/health/draining/restart, image-layer secret/OS scans, hosted deployment, staging transactions,
 TLS/session/provider/email tests: **Not Run / Blocked** for the prerequisites above. Product milestones
 and provider/legal/production gates remain unaccepted. No acceptance popup is appropriate yet.
+
+## Blocker recheck — 30 October 2026
+
+Rechecked Docker daemon access with `docker version --format` (server-version field): permission denied on `/var/run/docker.sock`. No approved hosting/registry/origins, isolated secret references or authorized builder was supplied. No build, push or deployment was attempted; the host access limitation persists.
+
+The owner requested resolution of pending/blocked tasks. Protected evidence references were requested;
+no secret values were requested or inspected. P09-011 remains **Blocked** because task-specific
+external acceptance cannot be established by technical regression or generic completion instructions.
+
+Owner response on 30 October 2026: “ami currently dite parchina tumi kono ekta use kore naw”.
+Source selection is delegated, but no account/resource access, approved policy or qualified sign-off
+is supplied. No synthetic substitute can establish the missing external acceptance; status remains
+Blocked. Existing local test fixtures remain available without activating deployed integrations.

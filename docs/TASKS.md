@@ -130,14 +130,14 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |     21 |        0 |
 | 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       1 |         0 |     12 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
-| 06 — Checkout, Orders, and Delivery Rules     |      22 |          12 |     0 |           0 |       1 |         6 |      3 |        0 |
-| 07 — Payment Integration and Verification     |      18 |           4 |     0 |           0 |       0 |         1 |     13 |        0 |
+| 06 — Checkout, Orders, and Delivery Rules     |      22 |          12 |     0 |           0 |       1 |         0 |      9 |        0 |
+| 07 — Payment Integration and Verification     |      18 |           4 |     0 |           0 |       0 |         0 |     14 |        0 |
 | 08 — Returns and Refunds                      |      19 |          19 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       1 |         0 |      1 |        0 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **102** | **0** | **0** | **3** | **7** | **98** | **0** |
+| **Total** | **210** | **102** | **0** | **0** | **3** | **0** | **105** | **0** |
 
 ## 4. Milestone tracker
 
@@ -1086,50 +1086,50 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Historical changes do not rewrite snapshots; invalid transitions rejected.\
   **Evidence:** [Order snapshots, persistence and verification](./evidence/P06-005-order-foundation.md). Immutable history, unit entitlements, lifecycle graph and transaction rollback verified; project owner accepted on 26 October 2026: “done koro”. [Acceptance record](./evidence/P06-005-order-foundation.md#independent-acceptance). Submission/allocation/payment integration and P06-003 qualified sign-off remain separate.
 
-- [ ] **P06-006 — Implement persistent checkout intent and idempotency keys**\
-  **Status:** `In Review` · **Area:** Backend/checkout · **Owner:** Codex\
+- [x] **P06-006 — Implement persistent checkout intent and idempotency keys**\
+  **Status:** `Done` · **Area:** Backend/checkout · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-11; Architecture §§8,10\
   **Depends on:** `P06-005`\
   **Deliverable:** Deduplicate repeated user/guest submissions and persist operation outcome.\
   **Acceptance:** Concurrent identical intent creates one order and returns/safely resumes existing outcome.\
-  **Evidence:** [Durable intent, replay and observed verification](./evidence/P06-006-checkout-intents.md). Same-key concurrency, quote exclusion, rollback, expiry/current-state replay and authorization verified; independent acceptance pending. Production allocation/payment/submission integration remains separate.
+  **Evidence:** [Durable intent, replay and observed verification](./evidence/P06-006-checkout-intents.md). Same-key concurrency, quote exclusion, rollback, expiry/current-state replay and authorization verified; project-owner independent acceptance recorded on 30 October 2026. Production allocation/payment/submission integration remains separate.
 
-- [ ] **P06-007 — Coordinate stock and coupon changes transactionally**\
-  **Status:** `In Review` · **Area:** Backend/checkout\
+- [x] **P06-007 — Coordinate stock and coupon changes transactionally**\
+  **Status:** `Done` · **Area:** Backend/checkout\
   **Stage:** `Backend`\
   **Sources:** FR-09; FR-13\
   **Depends on:** `P06-006`, `P05-007`\
   **Deliverable:** Atomically create/commit/release inventory and coupon allocations and movements with guarded transitions.\
   **Acceptance:** No negative available stock or breached coupon capacity under concurrent checkouts.\
-  **Evidence:** [Combined implementation, independent per-task checks and limits](./evidence/P06-007-009-checkout-batch.md). Verified locally; independent acceptance pending. Provider/expiry/compliance/commerce-delivery gates remain separate.
+  **Evidence:** [Combined implementation, independent per-task checks and limits](./evidence/P06-007-009-checkout-batch.md). Verified locally; project-owner independent acceptance recorded on 30 October 2026. Provider/expiry/compliance/commerce-delivery gates remain separate.
 
-- [ ] **P06-008 — Implement COD placement and stock/coupon commitment**\
-  **Status:** `In Review` · **Area:** Backend/orders\
+- [x] **P06-008 — Implement COD placement and stock/coupon commitment**\
+  **Status:** `Done` · **Area:** Backend/orders\
   **Stage:** `Backend`\
   **Sources:** FR-11; FR-12; FR-13\
   **Depends on:** `P06-007`\
   **Deliverable:** Accept COD order once as Pending, commit allocations, create a pending payment aggregate (no unverified paymentCollections receipt), and order_received notification. Administrator confirmation separately moves eligible fulfillment to Confirmed.\
   **Acceptance:** COD Paid status requires later collection evidence; no provider payment falsely created.\
-  **Evidence:** [Combined implementation, independent per-task checks and limits](./evidence/P06-007-009-checkout-batch.md). Verified locally; independent acceptance pending. Provider/expiry/compliance/commerce-delivery gates remain separate.
+  **Evidence:** [Combined implementation, independent per-task checks and limits](./evidence/P06-007-009-checkout-batch.md). Verified locally; project-owner independent acceptance recorded on 30 October 2026. Provider/expiry/compliance/commerce-delivery gates remain separate.
 
-- [ ] **P06-009 — Implement online order and 15-minute hold foundation**\
-  **Status:** `In Review` · **Area:** Backend/checkout\
+- [x] **P06-009 — Implement online order and 15-minute hold foundation**\
+  **Status:** `Done` · **Area:** Backend/checkout\
   **Stage:** `Backend`\
   **Sources:** FR-11; FR-13; FR-09\
   **Depends on:** `P06-007`\
   **Deliverable:** Create order and temporary stock/coupon reservations for a future online payment attempt.\
   **Acceptance:** Each held generation expires 15 minutes after its own server heldAt; all stock/coupon clocks agree, replay never extends them. Provider calls remain disabled until Phase 07 integration.\
-  **Evidence:** [Combined implementation, independent per-task checks and limits](./evidence/P06-007-009-checkout-batch.md). Verified locally; independent acceptance pending. Provider/expiry/compliance/commerce-delivery gates remain separate.
+  **Evidence:** [Combined implementation, independent per-task checks and limits](./evidence/P06-007-009-checkout-batch.md). Verified locally; project-owner independent acceptance recorded on 30 October 2026. Provider/expiry/compliance/commerce-delivery gates remain separate.
 
-- [ ] **P06-010 — Implement reservation expiry, durable lease and release**\
-  **Status:** `In Review` · **Area:** Backend/jobs · **Owner:** Codex\
+- [x] **P06-010 — Implement reservation expiry, durable lease and release**\
+  **Status:** `Done` · **Area:** Backend/jobs · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-13; FR-09\
   **Depends on:** `P06-009`\
   **Deliverable:** Expire only eligible unpaid holds using idempotent scheduled service and durable claims when needed.\
   **Acceptance:** TTL document deletion does not release business capacity; attempts preserve audit history.\
-  **Evidence:** [Expiry/guest implementation, per-task checks and operational limits](./evidence/P06-010-015-expiry-guest-access.md). Verified locally; independent acceptance pending. Live provider/email/staging, frontend and qualified compliance gates remain separate.
+  **Evidence:** [Expiry/guest implementation, per-task checks and operational limits](./evidence/P06-010-015-expiry-guest-access.md). Verified locally; project-owner independent acceptance recorded on 30 October 2026. Live provider/email/staging, frontend and qualified compliance gates remain separate.
 
 - [ ] **P06-011 — Implement order transitions, shipping and movement logic**\
   **Status:** `Not Started` · **Area:** Backend/orders\
@@ -1167,14 +1167,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Cross-account access denied; order totals use historical snapshots.\
   **Evidence to attach:** Order ownership tests.
 
-- [ ] **P06-015 — Implement secure guest order lookup and scoped proof**\
-  **Status:** `In Review` · **Area:** Backend/guest-access · **Owner:** Codex\
+- [x] **P06-015 — Implement secure guest order lookup and scoped proof**\
+  **Status:** `Done` · **Area:** Backend/guest-access · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-19\
   **Depends on:** `P06-005`\
   **Deliverable:** Require order number+email followed by expiring single-use email verification proof.\
   **Acceptance:** Non-enumerating rate-limited lookup and order-scoped eligible actions; no access by lookup text alone.\
-  **Evidence:** [Expiry/guest implementation, per-task checks and operational limits](./evidence/P06-010-015-expiry-guest-access.md). Verified locally; independent acceptance pending. Live provider/email/staging, frontend and qualified compliance gates remain separate.
+  **Evidence:** [Expiry/guest implementation, per-task checks and operational limits](./evidence/P06-010-015-expiry-guest-access.md). Verified locally; project-owner independent acceptance recorded on 30 October 2026. Live provider/email/staging, frontend and qualified compliance gates remain separate.
 
 - [ ] **P06-016 — Implement order, cancellation, shipment and delivery email intents**\
   **Status:** `Not Started` · **Area:** Backend/notifications\
@@ -1279,14 +1279,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Retry cannot silently create another order; expired holds require safe reallocation.\
   **Evidence:** [Hosted initiation, owned HTTP, allocation and migration verification](./evidence/P07-004-hosted-initiation.md). Project owner accepted 29 October 2026: [acceptance record](./evidence/P07-004-hosted-initiation.md#independent-acceptance). Local/test scope; deployed merchant/callback qualification remains separate.
 
-- [ ] **P07-005 — Separate browser return and provider IPN endpoints**\
-  **Status:** `In Review` · **Area:** Backend/payments · **Owner:** Codex\
+- [x] **P07-005 — Separate browser return and provider IPN endpoints**\
+  **Status:** `Done` · **Area:** Backend/payments · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-12\
   **Depends on:** `P07-004`\
   **Deliverable:** Accept return as UI signal and IPN as untrusted provider input pending independent validation.\
   **Acceptance:** Browser success never marks Paid; CSRF exemption applies only to the documented provider IPN/return endpoints; they grant no customer/admin access, and any financial transition requires independent provider verification. Normal browser initiation/retry APIs remain CSRF-protected.\
-  **Evidence:** [Callback transport, isolation, verification and recovery](./evidence/P07-005-payment-callbacks.md). Local/test only; independent acceptance pending. Runtime IPN remains 503 until a separately verified durable processor is composed; no provider/financial gate accepted.
+  **Evidence:** [Callback transport, isolation, verification and recovery](./evidence/P07-005-payment-callbacks.md). Local/test only; project-owner independent acceptance recorded on 30 October 2026. Current local/test composition independently verifies and durably processes receipts before ACK; absent, pending or unsuccessful processing remains 503. No deployed provider gate is accepted.
 
 - [x] **P07-006 — Implement independent provider payment validation**\
   **Status:** `Done` · **Area:** Backend/payments · **Owner:** Codex\
@@ -2540,3 +2540,7 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **30 October 2026 — P07-013/016 combined backend batch:** Each Not Started → In Progress → In Review. Added independently reconciled retry admission and verified payment notification intents/delivery. [Separate task checklists and actual verification](./evidence/P07-013-016-retries-payment-notifications.md). Overall: 210 tasks, 96 Done, 102 Not Started, 3 Blocked and 9 In Review. Independent acceptance pending; P07-014/015 remain in their later application stages.
 
 **30 October 2026 — P07-013/016 acceptance:** Each In Review → Done following project-owner independent acceptance: “দুটোই গ্রহণ করছি—Done করুন”. [Separate acceptance record](./evidence/P07-013-016-retries-payment-notifications.md#independent-acceptance). Overall: 210 tasks, 98 Done, 102 Not Started, 3 Blocked and 7 In Review. Acceptance covers submitted local/test safe retries and verified notification behavior; deployed provider/email qualification, other reviews and milestone gates remain separate.
+
+**30 October 2026 — Pending-review/blocker audit:** Re-reviewed P06-006/007/008/009/010/015 and P07-005 against current accepted payment integrations; 96 focused unit and 242 real replica-set/local integration cases Passed. Current evidence is recorded in their existing linked task records. Corrected the historical callback-only 503 description to reflect independently verified durable processing. Independent acceptance of these seven tasks remains pending. Rechecked P04-003/P06-003/P09-011 external prerequisites; required evidence remains absent and Docker daemon access remains denied. Protected references requested; no secrets read or external resources modified. Counts unchanged: 98 Done, 102 Not Started, 3 Blocked, 7 In Review.
+
+**30 October 2026 — Seven pending reviews accepted:** P06-006/007/008/009/010/015 and P07-005 each In Review → Done after explicit project-owner independent acceptance: “সাতটিই গ্রহণ করছি—Done করুন”. Separate acceptance records are in their existing linked evidence. Overall: 210 tasks, 105 Done, 102 Not Started, 3 Blocked, 0 In Review. Owner currently cannot supply external references and delegated source selection; this does not supply approved account access, a qualified compliance sign-off or actual staging verification. P04-003/P06-003/P09-011 remain Blocked; no milestone or deployed provider/legal gate is accepted.
