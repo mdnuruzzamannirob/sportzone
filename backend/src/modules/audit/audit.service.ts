@@ -85,3 +85,44 @@ export function auditOperationReader(connection: Connection) {
     return row ? { afterDigest: row.afterDigest } : undefined
   }
 }
+
+// Payment monitors receive only event identity/status facts, never free-form reasons or request data.
+export function paymentAuditAccess(connection: Connection) {
+  return async (session: ClientSession, paymentId: string, offset: number, limit: number) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyAuditPersistence(connection)
+    const model = auditModel(connection),
+      filter = { targetType: 'payment', targetId: new Types.ObjectId(paymentId) }
+    const rows = await model
+      .find(filter)
+      .sort({ occurredAt: -1, _id: -1 })
+      .skip(offset)
+      .limit(limit)
+      .session(session)
+      .lean()
+    return {
+      total: await model.countDocuments(filter).session(session),
+      items: rows.map((r) => ({
+        id: r._id.toHexString(),
+        action: r.action,
+        occurredAt: r.occurredAt.toISOString(),
+        actorType: r.actorType,
+      })),
+    }
+  }
+}
+
+export function paymentReconciliationScheduleAccess(connection: Connection) {
+  return async () => {
+    await verifyAuditPersistence(connection)
+    const rows = await auditModel(connection).aggregate<{ _id: Types.ObjectId; requestedAt: Date }>(
+      [
+        { $match: { action: 'payment.reconcile.request', targetType: 'payment' } },
+        { $group: { _id: '$targetId', requestedAt: { $max: '$occurredAt' } } },
+        { $sort: { requestedAt: -1, _id: -1 } },
+        { $limit: 100 },
+      ],
+    )
+    return rows.map((r) => ({ paymentId: r._id, requestedAt: r.requestedAt }))
+  }
+}

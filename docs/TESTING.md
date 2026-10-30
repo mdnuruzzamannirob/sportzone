@@ -663,6 +663,15 @@ operations; retain those acceptance gates separately.
 
 ## 11. Payments, returns & refunds test cases
 
+Payment monitoring must verify current admin/role checks, strict pagination/filter rejection,
+opaque allowlisted receipt/correction/audit projections, CSRF/reason/idempotency on reconcile,
+concurrent same-key convergence, audit failure rollback and worker discovery without rewriting proof
+timestamps. Verify root activation and no provider/financial effect from scheduling alone.
+Claim foundation tests must race physical/shortage requests over the same canonical unit pool, exclude
+resolved/refunded/held units, reject caller-selected ordinals/duplicate lines, enforce transaction and
+current-authority boundaries, and roll back every line/request when audit or persistence fails.
+No synthetic authorization/eligibility fixture proves real return-window or private-media acceptance.
+
 ### 11.1 Payment provider and COD scenarios
 
 Safe-retry checks use replica-set transactions and actual initiation routes: fresh terminal

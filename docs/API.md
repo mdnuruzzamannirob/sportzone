@@ -1087,6 +1087,33 @@ A caller may suggest a channel; the server validates live merchant permissions a
 `PaymentAttemptPublic` contains no provider validation secrets or card/bank data.
 `GET /orders/{id}/payments` does not expose **unmatched** provider intake as belonging to that customer.
 
+### 12.1.1 Administrator payment monitoring
+
+Local/test admin composition provides `GET /admin/payments`, `GET /admin/payments/{paymentId}`
+and `POST /admin/payments/{paymentId}/reconcile`. All reauthorize a current active administrator;
+reconcile requires exact admin Origin, CSRF, a nonempty bounded reason and Idempotency-Key.
+List filters: `page`, `pageSize` (1–100), `orderId`, `method`, `paymentStatus`, `riskStatus`,
+`attemptId`, `collectionId`, `view=payments|unmatched|quarantined` (default payments). Intake views reject payment-only filters.
+The list data is `{items:PaymentMonitorSummary[],intake:ReceiptInvestigationSummary[]}` with canonical
+pagination in response meta; exactly one array is populated. Dates and stable IDs determine sorting.
+Detail accepts page/pageSize and returns `{payment,attempts,collections,corrections,audit,pagination}`;
+each history has its own total/pagination using the requested page. No unbounded embedded history.
+
+Allowlisted payment fields: IDs, method, currency, expected/verified/merchandise/correction/unassigned
+amounts, payment/risk status and revision. Attempts expose ID/state/amount disposition/expected amount,
+optional lastCheckedAt/expiry. Collections expose opaque linked IDs, amount/allocation splits and
+collectedAt. Intake exposes opaque ID, amount/currency, matching status, verified/collected timestamps
+and optional linked collection ID. Correction rows expose ID/source ID/amount/status/capacity status;
+audit rows expose ID/action/time/actor type only. No recipient/contact, gateway session, merchant
+credential, raw provider payload, bank/validation reference or arbitrary audit reason is returned.
+Investigation is read-only; no arbitrary receipt relinking, discard or forced financial status route.
+
+Reconcile returns `202 {state:'pending'}`: a durable audited scheduling request, never a collection
+confirmation. The existing merchant worker independently verifies provider outcomes; latest checked
+proof timestamps are not rewritten to manufacture eligibility. Same key/body replays without another
+intent, changed body conflicts; concurrent equal commands converge. Risk decisions remain the existing
+audited API and cannot bypass funding/capacity. Staging/production activation remains separately gated.
+
 ### 12.2 Hosted initiation, retries and uncertain state
 
 Address/quote/order retain optional postalCode (at most 30 characters). Online initiation requires a

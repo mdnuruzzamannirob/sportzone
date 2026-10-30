@@ -3,7 +3,11 @@ import { Types, type ClientSession, type Connection } from 'mongoose'
 import { z } from 'zod'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { inTransaction } from '../../shared/database/transaction.js'
-import { createAuditWriter, auditOperationReader } from '../audit/audit.service.js'
+import {
+  createAuditWriter,
+  auditOperationReader,
+  paymentReconciliationScheduleAccess,
+} from '../audit/audit.service.js'
 import { paymentRecordModels } from './payment-record.model.js'
 import { paymentInitiationModel } from './payment-initiation.model.js'
 import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
@@ -55,10 +59,18 @@ export function paymentReconciliationService(
           { lastCheckedAt: { $lte: new Date(now.getTime() - interval) } },
         ],
       })
+      const requested = await paymentReconciliationScheduleAccess(connection)()
       const rows = await attempts
         .find({
           ...(cursor ? { _id: { $gt: new Types.ObjectId(cursor) } } : {}),
           $or: [
+            ...requested.map((r) => ({
+              paymentId: r.paymentId,
+              $or: [
+                { lastCheckedAt: { $exists: false } },
+                { lastCheckedAt: { $lt: r.requestedAt } },
+              ],
+            })),
             { state: { $in: [...unresolved] }, ...due(options.pollIntervalMs) },
             {
               state: { $in: ['verified_paid', 'verified_failed', 'verified_cancelled'] },

@@ -1568,6 +1568,21 @@ pending request is **not** completed payout.
 | Refund initiation/timeout/unknown                       | Keep source balance reserved, verify payout outcome; no new blindly generated payout ID |
 | Confirmed refund payout                                 | Mark completed only with trusted evidence; separately report merchandise vs correction  |
 
+#### Claim foundation bootstrap
+
+After backend build, run `node --env-file=.env backend/scripts/bootstrap-returns.mjs` only against an
+owned local/test database. It creates the strict requested-claim validator and declared indexes,
+refuses unknown drift and deployed environments, and enables no HTTP route. Preserve return requests,
+order-item ordinal coverage and audit together during restore. Do not delete a claim to release
+capacity; release/approval/refund/restock require their later owning workflows. No real policy,
+media evidence or customer submission is seeded.
+
+Administrator payment reconcile requests are durable audit intents, not synchronous provider calls.
+Run the existing merchant-partitioned reconciliation worker to process them. Inspect canonical payment
+state after processing; a 202 response does not establish Paid. Existing lease/retry/escalation and
+provider qualification requirements remain mandatory. Replays do not refresh timestamps or resend
+charges; unmatched/quarantined monitoring is read-only pending authorized investigation.
+
 ### 12.2 Gateway receipt reconciliation (OP-FIN-01)
 
 ```mermaid

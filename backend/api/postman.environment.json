@@ -62,6 +62,12 @@
       "type": "default"
     },
     {
+      "key": "collectionId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "couponId",
       "value": "",
       "enabled": true,
@@ -117,6 +123,12 @@
     },
     {
       "key": "maxPricePoisha",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "method",
       "value": "",
       "enabled": true,
       "type": "default"
@@ -218,6 +230,12 @@
       "type": "default"
     },
     {
+      "key": "paymentStatus",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "policyId",
       "value": "",
       "enabled": true,
@@ -303,6 +321,12 @@
     },
     {
       "key": "post_admin_inventory_variantId_adjustmentsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_payments_paymentId_reconcileBody",
       "value": "",
       "enabled": true,
       "type": "secret"
@@ -656,6 +680,12 @@
       "type": "default"
     },
     {
+      "key": "riskStatus",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "sessionKind",
       "value": "",
       "enabled": true,
@@ -699,6 +729,12 @@
     },
     {
       "key": "variantId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "view",
       "value": "",
       "enabled": true,
       "type": "default"

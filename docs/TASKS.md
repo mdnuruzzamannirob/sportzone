@@ -131,13 +131,13 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       1 |         0 |     12 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |          12 |     0 |           0 |       1 |         0 |      9 |        0 |
-| 07 — Payment Integration and Verification     |      18 |           4 |     0 |           0 |       0 |         0 |     14 |        0 |
-| 08 — Returns and Refunds                      |      19 |          19 |     0 |           0 |       0 |         0 |      0 |        0 |
+| 07 — Payment Integration and Verification     |      18 |           3 |     0 |           0 |       0 |         0 |     15 |        0 |
+| 08 — Returns and Refunds                      |      19 |          18 |     0 |           0 |       0 |         0 |      1 |        0 |
 | 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       1 |         0 |      1 |        0 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **102** | **0** | **0** | **3** | **0** | **105** | **0** |
+| **Total** | **210** | **100** | **0** | **0** | **3** | **0** | **107** | **0** |
 
 ## 4. Milestone tracker
 
@@ -1396,27 +1396,27 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** M4 requires provider-backed sandbox evidence; unsupported live channels remain disabled.\
   **Evidence to attach:** M4 sandbox and fault-injection report.
 
-- [ ] **P07-018 — Expose payment monitoring and risk resolution APIs**\
-  **Status:** `Not Started` · **Area:** Backend\
+- [x] **P07-018 — Expose payment monitoring and risk resolution APIs**\
+  **Status:** `Done` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-12; FR-29; API §§12,14\
   **Depends on:** `P07-010`, `P07-011`, `P07-013`\
   **Deliverable:** Expose authorized attempt/collection searches, risk decisions, unmatched/excess investigation and reconciliation status through allowlisted DTOs.\
   **Acceptance:** Sensitive mutations enforce authorization, CSRF, audit and replay guards; resolved risk alone never bypasses stock/funding gates; raw provider credentials/payloads stay private.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Separate acceptance checklist, admin API/worker tests and review](./evidence/P07-018-P08-001-monitoring-claim-foundation.md). Local/test implementation verified; project-owner independent acceptance recorded on 30 October 2026.
 
 ### Phase 08 — Returns and refunds
 
 **Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 08. **Associated gate:** M5. **Tasks:** 19.
 
-- [ ] **P08-001 — Model item-level return claims and unclaimed quantities**\
-  **Status:** `Not Started` · **Area:** Backend/returns\
+- [x] **P08-001 — Model item-level return claims and unclaimed quantities**\
+  **Status:** `Done` · **Area:** Backend/returns\
   **Stage:** `Backend`\
   **Sources:** FR-17; FR-32\
   **Depends on:** `P06-005`\
   **Deliverable:** Track order items, quantities, reasons, access-controlled evidence metadata/references and independent claim history.\
   **Acceptance:** Parallel physical-return and shortage claims together cannot exceed eligible unclaimed item quantity, including previously resolved/refunded merchandise.\
-  **Evidence to attach:** Return-quantity race tests.
+  **Evidence:** [Separate acceptance checklist, ordinal races, rollback and bootstrap checks](./evidence/P07-018-P08-001-monitoring-claim-foundation.md). Private requested-claim foundation only; eligibility/lifecycle/media activation remain owning later tasks. Project-owner independent acceptance recorded on 30 October 2026.
 
 - [ ] **P08-002 — Validate delivered-order return eligibility and policy windows**\
   **Status:** `Not Started` · **Area:** Backend/returns\
@@ -2544,3 +2544,7 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **30 October 2026 — Pending-review/blocker audit:** Re-reviewed P06-006/007/008/009/010/015 and P07-005 against current accepted payment integrations; 96 focused unit and 242 real replica-set/local integration cases Passed. Current evidence is recorded in their existing linked task records. Corrected the historical callback-only 503 description to reflect independently verified durable processing. Independent acceptance of these seven tasks remains pending. Rechecked P04-003/P06-003/P09-011 external prerequisites; required evidence remains absent and Docker daemon access remains denied. Protected references requested; no secrets read or external resources modified. Counts unchanged: 98 Done, 102 Not Started, 3 Blocked, 7 In Review.
 
 **30 October 2026 — Seven pending reviews accepted:** P06-006/007/008/009/010/015 and P07-005 each In Review → Done after explicit project-owner independent acceptance: “সাতটিই গ্রহণ করছি—Done করুন”. Separate acceptance records are in their existing linked evidence. Overall: 210 tasks, 105 Done, 102 Not Started, 3 Blocked, 0 In Review. Owner currently cannot supply external references and delegated source selection; this does not supply approved account access, a qualified compliance sign-off or actual staging verification. P04-003/P06-003/P09-011 remain Blocked; no milestone or deployed provider/legal gate is accepted.
+
+**30 October 2026 — P07-018/P08-001 combined backend batch:** Each Not Started → In Progress → In Review. These are the two backend tasks with accepted prerequisites; P06-011 and dependent order/return lifecycle tasks retain the P06-003 sign-off gate. Added allowlisted current-admin payment monitoring, audited manual reconciliation scheduling and strict requested-claim/ordinal protection foundation. [Separate task checks and review evidence](./evidence/P07-018-P08-001-monitoring-claim-foundation.md). Overall: 210 tasks, 105 Done, 100 Not Started, 3 Blocked, 2 In Review. Independent acceptance pending; no provider/legal/staging/milestone gate cleared.
+
+**30 October 2026 — P07-018/P08-001 acceptance:** Each In Review → Done after explicit project-owner independent acceptance: “দুটোই গ্রহণ করছি—Done করুন”. [Separate acceptance record](./evidence/P07-018-P08-001-monitoring-claim-foundation.md#independent-acceptance). Overall: 210 tasks, 107 Done, 100 Not Started, 3 Blocked, 0 In Review. Acceptance covers submitted local/test monitoring/reconciliation and private claim quantity foundation; later claim eligibility/lifecycle/media and external provider/legal/staging/milestone gates remain separate.

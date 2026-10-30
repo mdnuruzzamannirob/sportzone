@@ -1361,6 +1361,22 @@ either route, acquire **specific** `orderItemBalances.unitCoverage[].ordinal` cl
 nonapproved ordinals are released only when refund capacity is zero. Both physical and shortage claims share this exact
 ordinal namespace. A completed claim does not mean the payout has completed.
 
+The P08-001 foundation persists only `requested` claims; later eligibility/lifecycle/media tasks
+own additive state expansion and public activation. No public submission or policy approval is implied.
+`requestedBy` is `{type:'customer'|'guest',id:ObjectId}` from a trusted current authorization capability;
+`id` identifies the customer or verified guest session. Item IDs are server-generated. No evidence may
+be attached until the separately authorized private-media capability exists; both evidence arrays are
+empty in this foundation. Private ledger references, rather than arbitrary client URLs, will govern
+attachment. Request identity is server-assigned and duplicate IDs cannot protect capacity twice.
+
+The coordinator requires an existing outer transaction and a current eligibility/ownership capability;
+Orders selects available exact ordinals and updates its private balance by revision CAS. Request,
+ordinal protections and audit commit together, including multi-line rollback. Resolved, refunded,
+refund-held or restocked ordinals are excluded. Historical unit entitlement is never recalculated.
+Requested claim records reject mutation/deletion until an owning lifecycle implementation is reviewed.
+Explicit local/test bootstrap creates strict validators and indexes; runtime never provisions or
+repairs unknown drift. Existing order balances need no migration.
+
 ### 9.2 `refunds` — `refunds`
 
 | Field | Type | Constraints / notes |
@@ -1572,6 +1588,15 @@ effective → superseded by another approved version. Published content/digest a
 immutable. Draft edits require a strong revision; no client may self-assert legal approval. Rollback **publishes a new
 version** carrying reviewed content rather than rewriting history. Retention of legally relevant published versions follows
 approved retention policy.
+
+Manual payment reconciliation uses existing append-only audit operation identities:
+`action=payment.reconcile.request`, `targetType=payment`, target payment ID and a hash of payment/key.
+The digest binds reason; actor/date are retained privately. No new queue or alternative payment
+collection is created. The worker considers up to 100 latest distinct requested payments per scan,
+selecting attempts checked before their request, alongside normal durable periodic reconciliation.
+Requests beyond this priority window still use the ordinary bounded scan/cursor. Merchant binding,
+leases and receipt-processing fences are unchanged; scheduling never overwrites lastCheckedAt or
+financial state and repeated command replay never refreshes its request time.
 
 ### 10.6 `jobLeases` — backend maintenance
 

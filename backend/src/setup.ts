@@ -1,3 +1,5 @@
+import { paymentMonitorRoutes } from './modules/payments/payment-monitor.routes.js'
+import { paymentMonitorService } from './modules/payments/payment-monitor.service.js'
 import { paymentMessageService } from './modules/notifications/payment-message.service.js'
 import { paymentNotificationAccess } from './modules/payments/payment-notification.service.js'
 import { paymentRetryService } from './modules/payments/payment-retry.service.js'
@@ -190,6 +192,13 @@ export async function composeIdentityRoutes(
       ),
     )
   if (config.ADMIN_AUTH_ENABLED && ['local', 'test'].includes(config.APP_ENV)) {
+    auth.router.use(
+      paymentMonitorRoutes(
+        paymentMonitorService(connection, auth.adminAccounts),
+        auth.security,
+        auth.sessions,
+      ),
+    )
     const orderAccess = verifiedFundingOrderAccess(connection)
     const settlement = paymentSettlementService(
       connection,

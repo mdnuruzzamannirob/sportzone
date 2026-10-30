@@ -461,21 +461,21 @@
       "path": "/admin/payments",
       "success": "200",
       "operationId": "get_admin_payments",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/payments/{paymentId}",
       "success": "200",
       "operationId": "get_admin_payments_paymentId",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/payments/{paymentId}/reconcile",
       "success": "200 / 202",
       "operationId": "post_admin_payments_paymentId_reconcile",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
