@@ -2439,6 +2439,23 @@ Primary references: [ClamAV Docker requirements](https://docs.clamav.net/manual/
 [GitHub service containers](https://docs.github.com/en/actions/tutorials/use-containerized-services/use-docker-service-containers),
 [GitHub Actions allowance](https://docs.github.com/en/billing/concepts/product-billing/github-actions).
 
+#### Free demo profile and Render inventory
+
+For the owner-selected free demo, keep scanner-dependent media, checkout/payment admission and
+notification delivery disabled until their separate runtime prerequisites pass. Hosted scanner and
+scheduled worker acceptance may be Deferred for this demo; no initial-release or milestone gate is
+waived and no incomplete task becomes Done.
+
+Where free hosting has no operator shell, `scripts/staging-inventory.mjs` can be selected explicitly
+as a Node preload (`NODE_OPTIONS=--import=./scripts/staging-inventory.mjs`) on the existing reviewed
+staging image. It requires APP_ENV staging, an isolated `_staging` database, every feature flag off,
+and REPORT_PUBLIC_KEY as a base64 DER RSA public key of at least 2048 bits. Before HTTP startup it
+performs only canonical read-only catalog inspection and emits an encrypted envelope in protected
+logs. It never creates records, indexes or collections. Keep the private key only in the operator's
+protected local store. Remove the preload/public-key settings and redeploy after collecting the
+report. Any catalog apply still requires the target-specific review and recovery procedure in §7.2.
+A failed preload blocks that candidate startup; the operator retains the previous healthy deployment.
+
 #### Synthetic provider qualification and private catalog inventory
 
 The same registered workflow accepts explicit `media_qualification=true`. This mode first runs the

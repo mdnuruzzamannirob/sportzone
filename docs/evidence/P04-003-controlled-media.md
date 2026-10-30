@@ -302,3 +302,11 @@ results were reused; no full suite or duplicate hosted qualification was run.
 The complete P04-003 task remains Blocked by persistent scanner/runtime composition and outstanding
 policy/retention and independent acceptance evidence. An ephemeral runner's successful provider
 fixture does not enable the actual API runtime or prove scheduled orphan retention behavior.
+
+## Owner-selected free demo scope — 30 October 2026
+
+After the explicit free-demo versus full hosted acceptance explanation, the owner instructed
+“free te jeta kore kaj chalano jabe setau koro”. Remaining hosted scanner/runtime acceptance is
+Deferred for the demo. Prior local/provider evidence is preserved, MEDIA_ENABLED remains false,
+and no scanner/security/retention requirement or initial-release gate is removed. Full P04-003
+is Deferred, not Done. No paid host or always-on CI scanner is provisioned as a workaround.

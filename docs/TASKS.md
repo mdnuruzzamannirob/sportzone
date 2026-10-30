@@ -722,14 +722,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence:** [Canonical models, indexes, transaction/race verification](./evidence/P04-002-product-variants.md). [Owner acceptance](./evidence/P04-002-product-variants.md#owner-acceptance), 21 October 2026.
 
 - [ ] **P04-003 — Implement controlled Cloudinary media adapter**\
-  **Status:** `Blocked` · **Area:** Backend/media · **Owner:** Codex\
+  **Status:** `Deferred` · **Area:** Backend/media · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-05; FR-23; Architecture §11\
   **Depends on:** `P04-020`\
   **Deliverable:** Retain the complete media outcome, with independently verified local capability in P04-020 and real provider/scanner/policy acceptance here. Implement the mediaAssets ownership/upload-intent ledger, validation/quarantine, transactionally attached references, private evidence authorization and CAS-protected orphan cleanup; upload/delete provider calls stay outside DB transactions (Database §6.7).\
   **Acceptance:** Only authorized admin uploads; credentials never reach browser bundles.\
   **Evidence:** [Local adapter/ledger/auth verification and EXT-04 blocker](./evidence/P04-003-controlled-media.md).\
-  **Blocked:** EXT-04 — Cloudinary permission correction cleared HTTP 403. Full synthetic provider qualification run 41091490222 Passed: fresh real scanner clean/EICAR, public/authenticated upload and lookup, private original/derived denial, signed delivery, expiry/tamper denial and confirmed cleanup of both test identities. Remaining: persistent scanner/runtime composition, scheduled retention/orphan lifecycle and policy/independent acceptance evidence. MEDIA_ENABLED stays false; ephemeral provider success does not activate the staging API.
+  **Deferred:** Owner selected the free-demo path on 30 October 2026 (“free te jeta kore kaj chalano jabe setau koro”); hosted scanner/worker acceptance is postponed, not waived. EXT-04 — Cloudinary permission correction cleared HTTP 403. Full synthetic provider qualification run 41091490222 Passed: fresh real scanner clean/EICAR, public/authenticated upload and lookup, private original/derived denial, signed delivery, expiry/tamper denial and confirmed cleanup of both test identities. Remaining: persistent scanner/runtime composition, scheduled retention/orphan lifecycle and policy/independent acceptance evidence. MEDIA_ENABLED stays false; ephemeral provider success does not activate the staging API.
 
 - [ ] **P04-004 — Implement admin category management**\
   **Status:** `Not Started` · **Area:** Admin/catalog\
