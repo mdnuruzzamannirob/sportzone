@@ -138,7 +138,28 @@ try {
     apiSecret: process.env.CLOUDINARY_API_SECRET,
     timeoutMs: 15000,
   })
-  provider = createCloudinaryAdapter(options)
+  const observedTransport = async (url, init) => {
+    const response = await fetch(url, init)
+    if (new URL(url).pathname.endsWith('/image/upload')) {
+      plan.uploadHttpStatus = response.status
+      if (response.status !== 200) {
+        const payload = await response
+          .clone()
+          .json()
+          .catch(() => ({}))
+        const message = typeof payload?.error?.message === 'string' ? payload.error.message : ''
+        plan.uploadFailureCategory = /signature|api.key|auth|permission/i.test(message)
+          ? 'authentication_or_permission'
+          : /image|png|file|decode/i.test(message)
+            ? 'image_validation'
+            : /timestamp/i.test(message)
+              ? 'timestamp'
+              : 'provider_rejection'
+      }
+    }
+    return response
+  }
+  provider = createCloudinaryAdapter(options, observedTransport)
   const scannerOptions = {
     host: process.env.MEDIA_SCANNER_HOST,
     port: Number(process.env.MEDIA_SCANNER_PORT),
@@ -192,6 +213,17 @@ try {
       format: 'png',
       digest,
     })
+    asset.uploadResult = {
+      kind: uploaded.kind,
+      ...(uploaded.kind === 'found'
+        ? {
+            size: uploaded.asset.size,
+            width: uploaded.asset.width,
+            height: uploaded.asset.height,
+            digestMatches: uploaded.asset.digest === digest,
+          }
+        : {}),
+    }
     assert(
       uploaded.kind === 'found' &&
         uploaded.asset.digest === digest &&
