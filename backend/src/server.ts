@@ -34,6 +34,9 @@ export async function startServer(
   let app: Awaited<ReturnType<typeof composeApplication>>
   try {
     const initiationOptions = loadPaymentInitiationOptions(process.env)
+    const initiationGateway = initiationOptions
+      ? createSslcommerzAdapter(initiationOptions)
+      : undefined
     const callbackOptions = loadPaymentCallbackOptions(process.env)
     const processingOptions = loadPaymentProcessingOptions(process.env)
     app = await composeApplication(
@@ -45,9 +48,10 @@ export async function startServer(
       await loadPolicyApprovals(process.env),
       await loadCheckoutOptions(process.env),
       await loadPaymentChannelApprovals(process.env),
-      initiationOptions
+      initiationGateway
         ? {
-            gateway: createSslcommerzAdapter(initiationOptions),
+            gateway: initiationGateway,
+            reconciliationGateway: initiationGateway,
             validateRequest: (input) => initiationInput.safeParse(input).success,
           }
         : undefined,

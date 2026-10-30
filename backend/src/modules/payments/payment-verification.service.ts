@@ -147,13 +147,13 @@ export function paymentVerificationService(
         if (
           queried.records.length !== 1 ||
           !record ||
-          !['FAILED', 'CANCELLED', 'EXPIRED'].includes(record.status)
+          !['FAILED', 'CANCELLED', 'EXPIRED', 'PENDING'].includes(record.status)
         )
           return uncertain
         const linked = await mapping(record.tranId)
         if (!linked) return uncertain
         return {
-          kind: 'nonpayment' as const,
+          kind: record.status === 'PENDING' ? ('pending' as const) : ('nonpayment' as const),
           status: record.status,
           mapping: linked,
           merchantAccountKey,

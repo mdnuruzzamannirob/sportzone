@@ -1438,7 +1438,7 @@ authorization and applicable consent; a 7-business-day target is a policy target
 | `eventKey`! | string | Unique event + recipient + template purpose; prevents duplicate intent |
 | `orderId`? / `userId`? | ObjectId | Optional source reference |
 | `recipient`! | embedded | `{emailNormalized,displayName?}`; restricted |
-| `eventType`! | enum | `registration`, `email_verification`, `email_change`, `password_reset`, `guest_order_access`, `order_received`, `order_confirmation`, `payment_success`, `payment_failure`, `order_cancellation`, `shipment_update`, `delivery_completion`, `return_update`, `refund_approval`, `refund_rejection`, `refund_completion` (PRD FR-20) |
+| `eventType`! | enum | `registration`, `email_verification`, `email_change`, `password_reset`, `guest_order_access`, `order_received`, `order_confirmation`, `payment_success`, `payment_failure`, `payment_pending`, `order_cancellation`, `shipment_update`, `delivery_completion`, `return_update`, `refund_approval`, `refund_rejection`, `refund_completion` (PRD FR-20) |
 | `templateVersion`! / `payload`! | string / embedded | Minimal redacted template data; no secrets |
 | `status`! | enum(`queued`,`sending`,`delivery_uncertain`,`sent`,`retry_wait`,`failed`) | Delivery state independent of business success |
 | `attemptCount`! / `nextAttemptAt`? | int / Date | Bounded backoff |
@@ -1452,6 +1452,14 @@ Confirmed transition; proof events reference a challenge ID, with no rendered se
 `delivery_uncertain` means a send may have succeeded; reconcile provider identity or explicitly reissue an invalidating
 proof, never blindly send an unrelated new token. Event uniqueness prevents duplicate intents, not a claim of exactly-once
 transport; use verified provider idempotency where available. Do not store credentials or full payment details in payloads.
+
+Payment notification payloads are closed objects with required `paymentId`, `attemptId`, bounded
+`orderNumber` and positive integer `amountPoisha`; success additionally requires `intakeId`.
+They require `orderId`, allow registered `userId`, and forbid challenge data. Templates are
+`payment-success-v1`, `payment-failure-v1`, `payment-pending-v1`. Deduplication is per intake for
+success and per attempt/event for failure/pending (API §16.3). Known guest/order predecessor
+validators migrate additively and idempotently without rewriting records; unknown drift fails
+readiness. Existing account/proof branches retain their original payload restrictions.
 
 The notifications-owned registration intent uses a strict BSON validator permitting `registration`/`registration-v1` with an empty payload, required user reference/recipient/base
 fields, closed delivery statuses and safe nonnegative attempt counter. The physical indexes are

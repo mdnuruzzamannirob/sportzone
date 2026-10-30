@@ -1,3 +1,4 @@
+import { createRegistrationNotifications } from '../dist/modules/notifications/notification.service.js'
 import { initializeJobLeases } from '../dist/shared/jobs/job-lease.model.js'
 import { initializeCorrectionPersistence } from '../dist/modules/refunds/refund.persistence.js'
 import { migrateIdentityPostalCode } from '../dist/modules/auth/identity.persistence.js'
@@ -19,6 +20,7 @@ try {
   await initializePaymentInitiationPersistence(connection)
   await initializeAuditPersistence(connection)
   await initializeJobLeases(connection)
+  await createRegistrationNotifications(connection).migrateFoundation()
   console.log('Payment initiation persistence ready; no HTTP/provider activation enabled.')
 } catch {
   console.error(

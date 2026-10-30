@@ -1102,6 +1102,13 @@ remains uncertain, including crash-before-call; a new key cannot bypass reconcil
 shortfall returns `{state:'allocation_shortfall'}` without an attempt/provider call; a fresh explicit
 request can retry capacity after resolution, while the original key retains its shortfall outcome.
 
+A new key independently queries every prior attempt against its canonical merchant binding before
+admission. Only freshly verified terminal nonpayment permits a new charge; Pending, timeout,
+uncertain, Paid or quarantined collections block it. Provider reads occur outside transactions;
+admission rechecks ownership, exact attempt lineage, evidence digests, funding and capacity inside
+the transaction. Concurrent new keys admit at most one fresh dispatch. More than 100 historical
+attempts requires operational review; existing-key replay remains available without provider I/O.
+
 An accepted session URL is returned only while the attempt, original amount, order lifecycle,
 funding/risk state, current channel qualification and fixed hold expiry still permit it. Revocation
 or cancellation does not erase the historical session or imply provider noncollection. Session
@@ -1944,6 +1951,14 @@ Notification intents are persisted in `notifications` and delivered by Resend or
 Events include registration/verification, email change, password reset, guest order proof, order receipt/confirmation/cancellation, payment success/failure, shipment/delivery, return update and refund approval/rejection/completion. Placement and fulfillment confirmation use distinct event types.
 Deduplicate by durable `eventKey`, record retries/attempts and safe provider delivery status; repeat IPNs must not send duplicate payment-success emails.
 Email failure **does not roll back** paid order or refund.
+
+Payment success, failure and pending intents require independent provider verification, never a
+browser redirect or raw callback assertion. Success keys are `payment_success:{intakeId}:v1`;
+failure/pending keys are `payment_{failure|pending}:{attemptId}:v1`. Intent and corresponding
+verified business effects commit atomically. Delivery rechecks canonical order recipient, attempt,
+amount and receipt references; stale negative messages after collection are suppressed. Success
+means verified collection and explicitly does not promise fulfillment or refund completion. Emails
+contain opaque order/attempt/receipt references, not bank credentials or raw provider payloads.
 
 **Proof delivery:** Database §5.3 specifies a
 CSPRNG proof, verification hash and short-lived AES-256-GCM delivery envelope restricted to `authChallenges`. Atomically

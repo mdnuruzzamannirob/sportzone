@@ -9,6 +9,7 @@ import { createRegistrationNotifications } from '../../src/modules/notifications
 import {
   legacyRegistrationNotificationValidator,
   adminResetNotificationValidator,
+  guestNotificationValidator,
   registrationNotificationValidator,
 } from '../../src/modules/notifications/notification.persistence.js'
 import { createResendAdapter } from '../../src/providers/email/resend.client.js'
@@ -434,5 +435,19 @@ it('explicitly migrates the prior admin-reset validator while preserving existin
   await expect(store.initialize()).rejects.toThrow('reviewed migration')
   await store.migrateFoundation()
   expect((await row(user._id))._id).toEqual(prior._id)
+  await store.verifyIndexes()
+})
+
+it('migrates the exact guest/order notification predecessor without rewriting its evidence', async () => {
+  const user = await enqueue(),
+    prior = await row(user._id)
+  await fixture.connection.db?.command({
+    collMod: 'notifications',
+    validator: guestNotificationValidator,
+  })
+  await expect(store.verifyIndexes()).rejects.toThrow('validator')
+  await store.migrateFoundation()
+  await store.migrateFoundation()
+  expect(await row(user._id)).toEqual(prior)
   await store.verifyIndexes()
 })

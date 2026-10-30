@@ -1,3 +1,4 @@
+import type { paymentMessageService } from './payment-message.service.js'
 import type { GuestProofDelivery } from '../auth/guest-access/guest-proof-delivery.service.js'
 import { createHash } from 'node:crypto'
 import { assertOutsideTransaction } from '../../shared/database/transaction.js'
@@ -15,6 +16,7 @@ export function createNotificationDeliveryService(
   emailChangeDelivery?: ResetDelivery,
   adminResetDelivery?: ResetDelivery,
   guestDelivery?: GuestProofDelivery,
+  paymentDelivery?: ReturnType<typeof paymentMessageService>,
 ) {
   const settings = validateRetryPolicy(input)
   return {
@@ -37,6 +39,7 @@ export function createNotificationDeliveryService(
           Boolean(emailChangeDelivery),
           Boolean(adminResetDelivery),
           Boolean(guestDelivery),
+          Boolean(paymentDelivery),
         )
         if (!claim) break
         if (!(await store.currentClaim(claim.id, claim.claimId, clock()))) {
@@ -47,8 +50,9 @@ export function createNotificationDeliveryService(
         let message: Omit<EmailMessage, 'idempotencyKey'> | undefined
         try {
           const userClaim = claim.userId ? { ...claim, userId: claim.userId } : undefined
-          message =
-            claim.eventType === 'guest_order_access'
+          message = claim.eventType.startsWith('payment_')
+            ? await paymentDelivery?.message(claim)
+            : claim.eventType === 'guest_order_access'
               ? await guestDelivery?.message(claim)
               : !userClaim
                 ? undefined

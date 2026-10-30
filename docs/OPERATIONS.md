@@ -1204,6 +1204,16 @@ in protected config. Templates and original recipient addresses are not logged; 
 failure. The outbox contains no plaintext proof/session/password or arbitrary email HTML. Enabled identity proof renderers supply authenticated
 envelope/challenge checks for explicitly activated customer-reset/email-change/admin-reset/guest-access templates; other proof templates remain disabled.
 
+Payment templates additionally require `PAYMENT_NOTIFICATIONS_ENABLED=true`, restricted to
+local/test. Default workers skip these events and never substitute a registration template.
+After backend build, the explicit local/test `bootstrap-payment-initiation.mjs` also migrates the
+known notification predecessor; `migrate-notifications.mjs` remains available. Preserve queued,
+sent and uncertain evidence on rollback; use a compatible binary rather than reverting validators.
+Queue persistence is distinct from delivery and verified collection. Keep deployed payment delivery
+blocked pending provider/template qualification; the existing test-recipient override is mandatory.
+Retry admission queries all prior attempts independently; unknown outcomes require reconciliation,
+not a fresh charge. Histories over 100 attempts require operational investigation.
+
 Policy bounds: 1–10 attempts; 1–100 claims per batch; base delay 100–3600000 ms; maximum delay at least the base and at most
 86400000 ms; lease 1000–3600000 ms; HTTP timeout 1–60000 ms. Require lease strictly greater than timeout plus 1000 ms.
 All values are explicit; the sanitized template leaves them blank. Run cadence and concurrency must respect provider

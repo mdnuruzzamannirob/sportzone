@@ -1,3 +1,4 @@
+import { createRegistrationNotifications } from '../notifications/notification.service.js'
 import { createHash } from 'node:crypto'
 import { correctionObligationService } from '../refunds/correction-obligation.service.js'
 import { paymentSettlementService } from './payment-settlement.service.js'
@@ -45,6 +46,7 @@ export function paymentProcessingService(
     payments = paymentModel(connection),
     initiations = paymentInitiationModel(connection),
     audit = createAuditWriter(connection, true),
+    notifications = createRegistrationNotifications(connection, clock),
     corrections = correctionObligationService(connection),
     settlement = paymentSettlementService(connection, orders, allocation, clock)
   async function applyReceipt(session: ClientSession, receipt: Receipt, now: Date) {
@@ -303,6 +305,18 @@ export function paymentProcessingService(
       committed = await allocation.commitLive(session, order.binding)
     if (risk || (order.eligible && merchandise > 0))
       await orders.finish(session, mapping.orderId, committed, risk)
+    await notifications.enqueuePayment(
+      {
+        ...(await orders.notificationTarget(session, mapping.orderId)),
+        event: 'success',
+        cause: row._id.toHexString(),
+        paymentId: payment._id,
+        attemptId: attempt._id,
+        intakeId: row._id,
+        amountPoisha: receipt.amountPoisha,
+      },
+      session,
+    )
     await audit(session, {
       actorType: 'system',
       action: 'payment.receipt.link',
@@ -361,11 +375,26 @@ export function paymentProcessingService(
                 { $inc: { revision: 1 } },
                 { session },
               )
-              if (
-                attempt.state === 'verified_paid' ||
-                ['verified_failed', 'verified_cancelled'].includes(attempt.state)
-              )
+              if (attempt.state === 'verified_paid') return
+              if (verified.kind === 'pending') {
+                await attempts.updateOne(
+                  { _id: attempt._id, state: attempt.state },
+                  { $set: { state: 'pending', lastCheckedAt: now } },
+                  { session },
+                )
+                await notifications.enqueuePayment(
+                  {
+                    ...(await orders.notificationTarget(session, attempt.orderId.toHexString())),
+                    event: 'pending',
+                    cause: attempt._id.toHexString(),
+                    paymentId: attempt.paymentId,
+                    attemptId: attempt._id,
+                    amountPoisha: attempt.expectedAmountPoisha,
+                  },
+                  session,
+                )
                 return
+              }
               await attempts.updateOne(
                 { _id: attempt._id, state: attempt.state },
                 {
@@ -386,12 +415,23 @@ export function paymentProcessingService(
                 },
                 { session },
               )
+              await notifications.enqueuePayment(
+                {
+                  ...(await orders.notificationTarget(session, attempt.orderId.toHexString())),
+                  event: 'failure',
+                  cause: attempt._id.toHexString(),
+                  paymentId: attempt.paymentId,
+                  attemptId: attempt._id,
+                  amountPoisha: attempt.expectedAmountPoisha,
+                },
+                session,
+              )
               await audit(session, {
                 actorType: 'system',
                 action: 'payment.attempt.nonpayment',
                 targetType: 'payment_attempt',
                 targetId: attempt._id.toHexString(),
-                operationKey: `nonpayment:${attempt._id}`,
+                operationKey: `nonpayment:${attempt._id}:${verified.evidenceDigest}`,
                 afterDigest: verified.evidenceDigest,
                 occurredAt: now,
               })
@@ -412,7 +452,7 @@ export function paymentProcessingService(
               }
             }
           }
-          return 'committed'
+          return verified.kind === 'pending' ? 'retry' : 'committed'
         } catch (error) {
           if (!(error && typeof error === 'object' && 'code' in error && error.code === 11000))
             return 'retry'

@@ -450,6 +450,18 @@ export function paymentInitiationOrderData(connection: Connection) {
 export function verifiedFundingOrderAccess(connection: Connection) {
   const { orders } = orderModels(connection)
   return {
+    async notificationTarget(session: ClientSession, orderId: string) {
+      if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+      const row = await orders.findById(orderId).session(session)
+      if (!row) throw new ApiError('STATE_CONFLICT')
+      return {
+        orderId: row._id,
+        ...(row.userId ? { userId: row.userId } : {}),
+        orderNumber: row.orderNumber,
+        email: row.customerSnapshot.emailNormalized,
+        name: row.customerSnapshot.name,
+      }
+    },
     async riskState(session: ClientSession, orderId: string) {
       if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
       await verifyOrderPersistence(connection)

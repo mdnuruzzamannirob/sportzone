@@ -1,3 +1,6 @@
+import { paymentMessageService } from './modules/notifications/payment-message.service.js'
+import { paymentNotificationAccess } from './modules/payments/payment-notification.service.js'
+import { paymentRetryService } from './modules/payments/payment-retry.service.js'
 import { paymentRiskRoutes } from './modules/payments/payment-risk.routes.js'
 import { paymentRiskService } from './modules/payments/payment-risk.service.js'
 import { paymentSettlementService } from './modules/payments/payment-settlement.service.js'
@@ -37,6 +40,10 @@ import {
 import { paymentInitiationEligibilityAccess } from './modules/payments/payment.service.js'
 import type { createSslcommerzAdapter } from './providers/sslcommerz/sslcommerz.client.js'
 export type PaymentInitiationDependencies = {
+  reconciliationGateway?: Pick<
+    ReturnType<typeof createSslcommerzAdapter>,
+    'validate' | 'queryTransaction'
+  >
   gateway: Pick<ReturnType<typeof createSslcommerzAdapter>, 'initiate'>
   validateRequest(request: unknown): boolean
   clock?: () => Date
@@ -337,6 +344,15 @@ export async function composeIdentityRoutes(
       paymentGateway.gateway,
       paymentGateway.validateRequest,
       clock,
+      paymentGateway.reconciliationGateway
+        ? paymentRetryService(
+            connection,
+            paymentGateway.reconciliationGateway,
+            verifiedFundingOrderAccess(connection),
+            verifiedAllocationService(connection, clock),
+            clock,
+          )
+        : undefined,
     )
     auth.router.use(
       paymentInitiationRoutes(
@@ -486,9 +502,12 @@ export async function composeNotificationWorker(
   config: RuntimeConfig,
   options:
     | ReturnType<typeof loadNotificationWorker>
-    | { adapter: EmailAdapter; settings: RetryPolicy },
+    | { adapter: EmailAdapter; settings: RetryPolicy; paymentsEnabled?: boolean },
 ) {
   const { settings } = options
+  const paymentsEnabled = 'paymentsEnabled' in options && options.paymentsEnabled === true
+  if (paymentsEnabled && !['local', 'test'].includes(config.APP_ENV))
+    throw new Error('Payment notification delivery requires reviewed local/test activation')
   const adapter = 'adapter' in options ? options.adapter : createResendAdapter(options.email)
   const store = createRegistrationNotifications(connection)
   await store.verifyIndexes()
@@ -502,5 +521,13 @@ export async function composeNotificationWorker(
     delivery.emailChange,
     delivery.adminReset,
     delivery.guest,
+    paymentsEnabled
+      ? paymentMessageService(
+          paymentNotificationAccess(
+            connection,
+            verifiedFundingOrderAccess(connection).notificationTarget,
+          ),
+        )
+      : undefined,
   )
 }

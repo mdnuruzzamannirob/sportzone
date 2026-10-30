@@ -256,8 +256,8 @@ it.each(['PENDING', 'UNATTEMPTED'])('does not convert %s into verified failure',
       element: [{ status, tran_id: claim.tranId }],
     }),
   )
-  expect(await service().verify(statusClaim)).toEqual({
-    kind: 'uncertain',
+  expect(await service().verify(statusClaim)).toMatchObject({
+    kind: status === 'PENDING' ? 'pending' : 'uncertain',
   })
 })
 it('validates every status-query paid receipt and prefers paid evidence over an older failed status', async () => {

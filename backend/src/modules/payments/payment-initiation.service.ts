@@ -1,3 +1,4 @@
+import type { paymentRetryService } from './payment-retry.service.js'
 import { paymentModel } from './payment.model.js'
 import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
 import { createHash } from 'node:crypto'
@@ -58,6 +59,7 @@ export function paymentInitiationService<Credentials>(
   gateway: Gateway,
   validateRequest: (request: unknown) => boolean,
   clock: () => Date = () => new Date(),
+  retryGate?: ReturnType<typeof paymentRetryService>,
 ) {
   const operations = paymentInitiationModel(connection),
     { attempts } = paymentRecordModels(connection),
@@ -191,6 +193,40 @@ export function paymentInitiationService<Credentials>(
         input = parseInput(paymentInitiationInput, raw),
         keyHash = hash(parseInput(paymentInitiationKey, key)),
         fingerprint = hash(JSON.stringify(input))
+      const prior = await access.owned(credentials, orderId, async (scopeKeyHash, session) => {
+        await readiness()
+        const existing = await operations
+          .findOne({ orderId, scopeKeyHash, idempotencyKeyHash: keyHash })
+          .session(session)
+        if (existing) {
+          if (existing.requestFingerprint !== fingerprint)
+            throw new ApiError('IDEMPOTENCY_CONFLICT')
+          return { replay: true as const, attempts: [] }
+        }
+        const rows = await attempts.find({ orderId }).sort({ _id: 1 }).limit(101).session(session)
+        if (rows.length > 100) throw new ApiError('STATE_CONFLICT')
+        const facts = []
+        for (const row of rows) {
+          const operation = await operations
+            .findOne({ attemptId: row._id, orderId: row.orderId })
+            .session(session)
+          if (!operation?.merchantAccountKey) throw new ApiError('STATE_CONFLICT')
+          facts.push({
+            attemptId: row._id.toHexString(),
+            tranId: row.tranId,
+            merchantAccountKey: operation.merchantAccountKey,
+          })
+        }
+        return { replay: false as const, attempts: facts }
+      })
+      if (prior.replay) return resolve(credentials, orderId, keyHash, fingerprint)
+      const proofs = new Map<string, string>()
+      if (prior.attempts.length && !retryGate) throw new ApiError('STATE_CONFLICT')
+      for (const row of prior.attempts) {
+        const proof = await retryGate?.check(row)
+        if (!proof) throw new ApiError('STATE_CONFLICT')
+        proofs.set(row.attemptId, proof)
+      }
       let dispatch:
         | {
             operationId: Types.ObjectId
@@ -220,7 +256,30 @@ export function paymentInitiationService<Credentials>(
                   throw new ApiError('IDEMPOTENCY_CONFLICT')
                 return { result: await view(existing, session) }
               }
-              const history = await attempts.find({ orderId }).session(session)
+              const history = await attempts.find({ orderId }).limit(101).session(session)
+              if (
+                history.length !== prior.attempts.length ||
+                history.some(
+                  (row) =>
+                    !proofs.has(row._id.toHexString()) ||
+                    !['verified_failed', 'verified_cancelled'].includes(row.state) ||
+                    row.verification?.rawRecordDigest !== proofs.get(row._id.toHexString()),
+                )
+              )
+                throw new ApiError('STATE_CONFLICT')
+              if (
+                history.length &&
+                (await paymentRecordModels(connection)
+                  .intake.exists({
+                    $or: prior.attempts.map((row) => ({
+                      reportedTranId: row.tranId,
+                      merchantAccountKey: row.merchantAccountKey,
+                    })),
+                    matchingStatus: { $in: ['unmatched', 'quarantined'] },
+                  })
+                  .session(session))
+              )
+                throw new ApiError('STATE_CONFLICT')
               const parents = new Set(
                   history.flatMap((row) =>
                     row.retryOfAttemptId ? [row.retryOfAttemptId.toHexString()] : [],

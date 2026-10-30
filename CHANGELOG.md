@@ -8,6 +8,15 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 30 October 2026 — Safe retries and verified payment notifications
+
+- Added fresh independent reconciliation of prior attempts before a new charge, transactionally
+  fenced lineage/ownership and capacity checks, and concurrent retry protection.
+- Added atomic verified success/failure/pending outbox events, canonical recipient/receipt checks,
+  stale negative suppression and explicit local/test payment-template activation.
+- Added additive notification migration and focused transaction/race/delivery checks. The project owner independently accepted
+  P07-013/P07-016; deployed provider/email and milestone gates remain separate.
+
 ## 29 October 2026 — Multiple paid attempts and durable reconciliation
 
 - Classed new exactly verified excess/duplicate collections as correction with source-specific

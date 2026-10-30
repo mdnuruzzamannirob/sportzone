@@ -665,6 +665,16 @@ operations; retain those acceptance gates separately.
 
 ### 11.1 Payment provider and COD scenarios
 
+Safe-retry checks use replica-set transactions and actual initiation routes: fresh terminal
+nonpayment, Pending/timeout/Paid denial, identity revocation during provider reads, competing new
+keys, late Paid races, immutable coupon shortfalls and renewed shared stock/coupon clocks. Payment
+notification checks cover atomic intent rollback, duplicate receipts, verified Pending, stale
+negative suppression including quarantined funds, recipient binding, exact predecessor migration,
+explicit worker activation, stable delivery keys and uncertain delivery without replaying money.
+Provider/email doubles establish local behavior only; sandbox/channel and inbox qualification are
+separate release evidence.
+
+
 Callback transport tests must prove browser GET/POST hints never call financial processing, issue
 credentials or forward provider query/form values. Check fixed canonical same-storefront 303 targets,
 no-store/referrer/CORS behavior and all approved result values. IPN tests use untrusted form claims:

@@ -131,13 +131,13 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       1 |         0 |     12 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |          12 |     0 |           0 |       1 |         6 |      3 |        0 |
-| 07 — Payment Integration and Verification     |      18 |           6 |     0 |           0 |       0 |         1 |     11 |        0 |
+| 07 — Payment Integration and Verification     |      18 |           4 |     0 |           0 |       0 |         1 |     13 |        0 |
 | 08 — Returns and Refunds                      |      19 |          19 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       1 |         0 |      1 |        0 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **104** | **0** | **0** | **3** | **7** | **96** | **0** |
+| **Total** | **210** | **102** | **0** | **0** | **3** | **7** | **98** | **0** |
 
 ## 4. Milestone tracker
 
@@ -1351,14 +1351,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Timeouts never prove Failed; restart and duplicate job runs do not double-apply collection.\
   **Evidence:** [P07-012 durable scheduling, leases, timeout/escalation/restart assertions and verification](./evidence/P07-011-012-multiple-payments-reconciliation.md). Explicit local/test worker only; project-owner acceptance recorded [here](./evidence/P07-011-012-multiple-payments-reconciliation.md#independent-acceptance); deployed cadence/provider qualification remains separate.
 
-- [ ] **P07-013 — Implement safe payment retries and attempt ownership checks**\
-  **Status:** `Not Started` · **Area:** Backend/payments\
+- [x] **P07-013 — Implement safe payment retries and attempt ownership checks**\
+  **Status:** `Done` · **Area:** Backend/payments\
   **Stage:** `Backend`\
   **Sources:** FR-12\
   **Depends on:** `P07-012`, `P07-009`\
   **Deliverable:** Reconcile prior outcome and atomically reacquire expired stock/coupon capacity with a new shared heldAt/expiry before issuing fresh tran_id for the same order; preserve immutable order pricing or return a reviewed conflict if current coupon terms cannot honor it.\
   **Acceptance:** No double paid order, stale hold reuse or premature release across overlapping attempts.\
-  **Evidence to attach:** Retry/race tests.
+  **Evidence:** [Separate acceptance checklist, retry/race checks and review](./evidence/P07-013-016-retries-payment-notifications.md). Project-owner independent acceptance recorded in the linked evidence; local/test scope only.
 
 - [ ] **P07-014 — Implement payment method, redirect, pending/result/retry UI**\
   **Status:** `Not Started` · **Area:** Storefront/payments\
@@ -1378,14 +1378,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Sensitive actions are authorized, confirmed and audited; no optimistic financial completion.\
   **Evidence to attach:** Admin payment exception E2E.
 
-- [ ] **P07-016 — Implement provider-verified payment notification events**\
-  **Status:** `Not Started` · **Area:** Backend/notifications\
+- [x] **P07-016 — Implement provider-verified payment notification events**\
+  **Status:** `Done` · **Area:** Backend/notifications\
   **Stage:** `Backend`\
   **Sources:** FR-20\
   **Depends on:** `P07-007`\
   **Deliverable:** Send verified success/failure/pending changes with accurate references, retry and deduplication.\
   **Acceptance:** Repeated callbacks cannot produce duplicate event emails.\
-  **Evidence to attach:** Payment notification tests.
+  **Evidence:** [Separate acceptance checklist, outbox/delivery checks and review](./evidence/P07-013-016-retries-payment-notifications.md). Project-owner independent acceptance recorded in the linked evidence; deployed delivery qualification remains separate.
 
 - [ ] **P07-017 — Verify sandbox payments and financial safety milestone**\
   **Status:** `Not Started` · **Area:** Quality/payments\
@@ -2536,3 +2536,7 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 
 
 **29 October 2026 — P07-011/012 acceptance:** Each In Review → Done following explicit project-owner review acceptance: “দুটোই গ্রহণ করছি—Done করুন”. [Separate acceptance record](./evidence/P07-011-012-multiple-payments-reconciliation.md#independent-acceptance). Overall: 210 tasks, 96 Done, 104 Not Started, 3 Blocked and 7 In Review. Acceptance covers submitted local/test multiple-paid correction handling and durable reconciliation with recorded verification. Deployed scheduler/provider/timezone qualification, prior reviews, safe retry admission, actual refunds/legal and milestone gates remain separate.
+
+**30 October 2026 — P07-013/016 combined backend batch:** Each Not Started → In Progress → In Review. Added independently reconciled retry admission and verified payment notification intents/delivery. [Separate task checklists and actual verification](./evidence/P07-013-016-retries-payment-notifications.md). Overall: 210 tasks, 96 Done, 102 Not Started, 3 Blocked and 9 In Review. Independent acceptance pending; P07-014/015 remain in their later application stages.
+
+**30 October 2026 — P07-013/016 acceptance:** Each In Review → Done following project-owner independent acceptance: “দুটোই গ্রহণ করছি—Done করুন”. [Separate acceptance record](./evidence/P07-013-016-retries-payment-notifications.md#independent-acceptance). Overall: 210 tasks, 98 Done, 102 Not Started, 3 Blocked and 7 In Review. Acceptance covers submitted local/test safe retries and verified notification behavior; deployed provider/email qualification, other reviews and milestone gates remain separate.
