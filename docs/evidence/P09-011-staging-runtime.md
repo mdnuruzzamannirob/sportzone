@@ -279,3 +279,30 @@ The retained `backend-container-verification` artifact contains image identity a
 This clears the earlier unavailable Docker-builder check, not hosted DB/health/draining, worker
 restart, OS vulnerability scan, provider activation or deployment acceptance. Other jobs were
 intentionally skipped in image-only mode and are not counted as passes.
+
+## Render account verification and origin correction — 30 October 2026
+
+The owner supplied a protected Render API key in the ignored staging environment file. Read-only
+API access succeeded for the existing `sportzone-api-staging` service: free web service in Oregon,
+connected to `main`, not suspended. Existing secret values were compared in memory only; no raw
+remote secret inventory was retained or printed. An initial proposal to persist the raw env response
+was rejected by automatic approval review before execution; the safe comparison-only alternative
+succeeded without writing any credential dump.
+
+The actual Render `API_PUBLIC_ORIGIN` was `https://sportzone-api.onrender.com`, differing from the
+service URL and private staging reference. Only that public variable was corrected to
+`https://sportzone-api-staging.onrender.com`. Deploy-only operation `dep-dbicka6tlv9c739g3g20`
+reused the existing artifact at `a4afd75b8e976efc39f5ae4bc30c214158f5a2c2`; status **live**.
+No feature branch merge, new service, paid resource, secret rotation or database mutation occurred.
+Post-deploy actual probes: live **200**, authenticated ready **200**, products **503**. Server readiness
+checks a real database ping, so Render-to-Atlas connectivity is verified for that runtime; it does not
+prove target collection/index inventory, transaction execution or catalog initialization.
+
+The current free-only budget conflicts with completing the planned hosted private scanner and
+standalone worker qualification using this existing Render service alone. Official references:
+[free service limitations](https://render.com/docs/free),
+[shell availability](https://render.com/docs/ssh),
+[billed one-off jobs](https://render.com/docs/one-off-jobs), and
+[ClamAV container memory requirements](https://docs.clamav.net/manual/Installing/Docker.html).
+No paid workaround or weakened scanner/authentication gate was applied. The full task remains
+Blocked pending suitable runtime capacity and actual remaining inventory/transaction/worker evidence.
