@@ -231,3 +231,50 @@ record or Render setting was changed. Private env files remain ignored.
 P04-003 is still Blocked: signature-freshness qualification, policy acceptance, actual authorized
 upload/private original-and-derived access/expiry/retention/delete and ongoing backend scanner/runtime
 composition remain unverified. A green preflight is not task or production acceptance.
+
+## Synthetic qualification attempts — 30 October 2026
+
+The synthetic qualification prepares exactly two new one-pixel images, persists their intent before
+any provider creation, and permits cleanup only for its own attempted identities with matching
+metadata. No existing store/customer media is selected.
+
+[Run 41085936511](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/41085936511) failed at
+the scanner freshness gate before any upload. [Run 41087527109](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/41087527109)
+added explicit signature update/reload and retained loaded-version metadata: engine 1.5.4,
+signature 28164, timestamp 25 October 2026 06:24:12 UTC, older than the 48-hour staging ceiling.
+Freshclam reported on-disk version 28169; clamd had not finished its asynchronous reload. Both
+assets remained `attempted=false`, `cleanup=not_needed`. No upload/delete occurred in either run.
+
+A bounded wait for a fresh loaded scanner version was added without relaxing the freshness gate.
+The new qualification run is [41088189691](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/41088189691)
+on `bafebb5`. Freshness passed with loaded signature 28169 dated 30 October 2026 06:26:48 UTC;
+clean-image/EICAR passed. Public upload assertion then failed, with its attempted identity confirmed
+absent during cleanup; the authenticated asset was not attempted. Local CRC inspection identified
+a corrupt IDAT checksum in the synthetic PNG (not a policy/provider rejection diagnosis). The
+fixture checksum was repaired and its compressed pixel data and all chunk CRCs validated. A fresh
+run, [41088590421](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/41088590421),
+uses `864ed93`; prior asset identities are not reused. Local
+backend checks and 38 affected integration tests Passed; see P09-011's current verification record.
+
+### Current provider blocker
+
+[Run 41088590421](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/41088590421) still
+failed its upload assertion after the fixture correction; own-identity cleanup was confirmed.
+To distinguish transport rejection from response parsing, bounded qualification diagnostics were
+added without raw provider messages, credentials or signed URLs. The subsequent
+[run 41088933156](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/41088933156)
+on `25ae140` reports **HTTP 403**, fixed category `authentication_or_permission`, and
+`uploadResult.kind=uncertain`. It confirms loaded signature 28169 freshness and clean/EICAR checks.
+The attempted public test identity is confirmed absent; the private test identity was never attempted.
+No unresolved test-asset cleanup remains. The exact account permission/configuration reason is not
+known from this intentionally sanitized report. The API key must permit the required server-side
+Upload API operation before another controlled qualification is useful. Credential ping success
+proves neither upload permission nor private delivery. The adapter's Basic authentication protocol
+is supported by the [official Upload API reference](https://cloudinary.com/documentation/image_upload_api_reference);
+no alternate authentication bypass or weakened permission gate was introduced.
+
+Private original/derived access, signed expiry/tamper and full lifecycle checks were not reached.
+Persistent staging scanner composition and policy/independent acceptance also remain open.
+P04-003 remains **Blocked**, not Done. The two local qualification tests were rerun and Passed
+following the script diagnostic changes; prior unchanged 38-test/build/typecheck results remain
+recorded in the linked P09-011 evidence.

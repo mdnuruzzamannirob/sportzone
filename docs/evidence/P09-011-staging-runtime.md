@@ -246,3 +246,36 @@ The exact branch restriction and only three authorized Cloudinary environment se
 No Atlas secret was transferred and no schema/index/record rollout was performed. This removes the
 read-only Cloudinary/scanner-connectivity preparation gap but does not clear the Atlas TLS inventory,
 transaction, job, same-site/proxy, scanner-runtime or full P09-011 acceptance requirements.
+
+## Authorized hosted inventory — 30 October 2026
+
+The owner explicitly authorized storing the existing staging URI as `STAGING_MONGODB_URI` in the
+branch-restricted GitHub staging environment and running read-only inventory. No apply mode,
+record/index/schema mutation or additional credential transfer was authorized by this approval.
+
+[Run 41086234040](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/41086234040) failed
+before inventory. A fixed-vocabulary private diagnostic was added and verified locally. The rerun
+on `f747105`, [41087532710](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/41087532710),
+confirmed `phase=connection`, `reason=TLS_HANDSHAKE_FAILED`. Only an RSA-OAEP/AES-GCM encrypted
+report was uploaded; its private key remains local and ignored. No raw URI/driver diagnostics
+were logged, and no database mutation occurred. TLS verification remains enabled. The actual
+network/access/trust cause is unconfirmed; no repeated mutation or speculative rollout is justified.
+
+Local verification for the diagnostic/reload fixes: backend build, typecheck, lint, boundaries,
+format and repository documentation checks Passed. The affected integration command
+`npm run test:integration --workspace=backend -- database.test.ts media-qualification.test.ts operator-report.test.ts catalog-rollout.test.ts`
+Passed **38 tests** on an isolated local MongoDB replica set with network-enabled execution.
+The initial sandbox attempt was Blocked by local port-binding EPERM and is not counted as a pass.
+These tests do not qualify the inaccessible staging database. P09-011 remains Blocked pending actual
+staging inventory/transaction/runtime evidence and independent acceptance.
+
+### Hosted backend image check
+
+[Run 41088818340](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/41088818340)
+on `864ed9362e313a04a001c56096036f2febe51e77` Passed the backend-only Docker build and limited
+runtime inventory. Actual container checks verified non-root execution, compiled server presence,
+and absence of root/backend `.env*`, Git metadata, backend source, admin and storefront directories.
+The retained `backend-container-verification` artifact contains image identity and limited scope.
+This clears the earlier unavailable Docker-builder check, not hosted DB/health/draining, worker
+restart, OS vulnerability scan, provider activation or deployment acceptance. Other jobs were
+intentionally skipped in image-only mode and are not counted as passes.

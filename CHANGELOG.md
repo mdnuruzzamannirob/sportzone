@@ -12,6 +12,8 @@ environment limits and independent acceptance. Historical UI or source layouts m
 
 - Added scanner-version/freshness checks and a scoped synthetic provider lifecycle fixture with
   persisted intent, bounded delivery checks and confirmed cleanup of only its own test assets.
+- Added bounded loaded-signature probes after asynchronous scanner reload and fixed the synthetic
+  PNG checksum. Hosted inventory now retains a fixed private connection-failure category.
 - Added read-only catalog inventory mode with encrypted operator reports; existing staging apply
   approval and provider/policy acceptance gates remain intact.
 

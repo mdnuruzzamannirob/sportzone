@@ -167,7 +167,7 @@ try {
   }
   let match, updated
   // RELOAD acknowledges a request before clamd finishes swapping its database.
-  // Wait at most 60 seconds for a fresh loaded version; never relax the freshness gate.
+  // Make at most 31 bounded probes, two seconds apart; never relax the freshness gate.
   for (let attempt = 0; attempt < 31; attempt++) {
     const version = await inspectClamAvVersion(scannerOptions)
     match = /^ClamAV ([0-9.]+)\/([0-9]+)\/(.+)$/.exec(version || '')

@@ -2445,6 +2445,8 @@ The result artifact records no credentials or signed URLs. Initial intent and fi
 be retained together. A green provider fixture does not approve customer-data retention, claim access,
 persistent scanner/runtime composition or task/production acceptance. The 48-hour freshness ceiling is
 part of the selected staging test profile; a stale/missing/unparseable signature version blocks the run.
+Qualification explicitly updates definitions and requests clamd reload, then makes bounded version
+probes while that asynchronous reload completes; on-disk freshness alone is insufficient.
 
 `catalog_preflight=true` is a separate read-only staging inventory mode. It requires only the approved
 `STAGING_MONGODB_URI` environment secret, plus a base64 DER RSA public key in `report_public_key`.
