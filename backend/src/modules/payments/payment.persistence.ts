@@ -8,94 +8,128 @@ const integer = {
   maximum: Number.MAX_SAFE_INTEGER,
   multipleOf: 1,
 }
-export const paymentValidator = {
-  $and: [
-    {
-      $jsonSchema: {
-        bsonType: 'object',
-        additionalProperties: false,
-        required: [
-          '_id',
-          'orderId',
-          'method',
-          'expectedPoisha',
-          'currency',
-          'paymentStatus',
-          'riskStatus',
-          'revision',
-          'createdAt',
-          'updatedAt',
-          ...paymentAmounts,
-        ],
-        properties: {
-          _id: { bsonType: 'objectId' },
-          orderId: { bsonType: 'objectId' },
-          method: { enum: ['cod', 'online'] },
-          expectedPoisha: integer,
-          currency: { enum: ['BDT'] },
-          paymentStatus: { enum: [...paymentStates] },
-          riskStatus: { enum: ['clear', 'review', 'rejected'] },
-          revision: integer,
-          ...Object.fromEntries(paymentAmounts.map((name) => [name, integer])),
-          createdAt: { bsonType: 'date' },
-          updatedAt: { bsonType: 'date' },
-          lastReconciledAt: { bsonType: 'date' },
+function definePaymentValidator(correctionOnly: boolean) {
+  return {
+    $and: [
+      {
+        $jsonSchema: {
+          bsonType: 'object',
+          additionalProperties: false,
+          required: [
+            '_id',
+            'orderId',
+            'method',
+            'expectedPoisha',
+            'currency',
+            'paymentStatus',
+            'riskStatus',
+            'revision',
+            'createdAt',
+            'updatedAt',
+            ...paymentAmounts,
+          ],
+          properties: {
+            _id: { bsonType: 'objectId' },
+            orderId: { bsonType: 'objectId' },
+            method: { enum: ['cod', 'online'] },
+            expectedPoisha: integer,
+            currency: { enum: ['BDT'] },
+            paymentStatus: { enum: [...paymentStates] },
+            riskStatus: { enum: ['clear', 'review', 'rejected'] },
+            revision: integer,
+            ...Object.fromEntries(paymentAmounts.map((name) => [name, integer])),
+            createdAt: { bsonType: 'date' },
+            updatedAt: { bsonType: 'date' },
+            lastReconciledAt: { bsonType: 'date' },
+          },
         },
       },
-    },
-    {
-      $expr: {
-        $and: [
-          {
-            $or: [
-              { $ne: ['$paymentStatus', 'paid'] },
-              {
-                $and: [
-                  { $eq: ['$merchandiseFundedPoisha', '$expectedPoisha'] },
-                  { $gt: ['$verifiedCollectedPoisha', 0] },
-                ],
-              },
-            ],
-          },
-          {
-            $eq: [
-              '$verifiedCollectedPoisha',
-              {
-                $add: [
-                  '$merchandiseFundedPoisha',
-                  '$correctionCollectedPoisha',
-                  '$unassignedCollectedPoisha',
-                ],
-              },
-            ],
-          },
-          { $lte: ['$merchandiseFundedPoisha', '$expectedPoisha'] },
-          {
-            $lte: [
-              {
-                $add: ['$merchandiseRefundHeldPoisha', '$merchandiseRefundCompletedPoisha'],
-              },
-              '$merchandiseFundedPoisha',
-            ],
-          },
-          {
-            $lte: [
-              {
-                $add: ['$correctionRefundHeldPoisha', '$correctionRefundCompletedPoisha'],
-              },
-              '$correctionCollectedPoisha',
-            ],
-          },
-          {
-            $lte: ['$deliveryRefundHeldPoisha', '$merchandiseRefundHeldPoisha'],
-          },
-          {
-            $lte: ['$deliveryRefundCompletedPoisha', '$merchandiseRefundCompletedPoisha'],
-          },
-        ],
+      {
+        $expr: {
+          $and: [
+            {
+              $or: [
+                { $ne: ['$paymentStatus', 'paid'] },
+                ...(correctionOnly
+                  ? [
+                      {
+                        $and: [
+                          { $eq: ['$merchandiseFundedPoisha', 0] },
+                          { $gt: ['$correctionCollectedPoisha', 0] },
+                          { $gt: ['$verifiedCollectedPoisha', 0] },
+                        ],
+                      },
+                    ]
+                  : []),
+                {
+                  $and: [
+                    { $eq: ['$merchandiseFundedPoisha', '$expectedPoisha'] },
+                    { $gt: ['$verifiedCollectedPoisha', 0] },
+                  ],
+                },
+              ],
+            },
+            {
+              $eq: [
+                '$verifiedCollectedPoisha',
+                {
+                  $add: [
+                    '$merchandiseFundedPoisha',
+                    '$correctionCollectedPoisha',
+                    '$unassignedCollectedPoisha',
+                  ],
+                },
+              ],
+            },
+            { $lte: ['$merchandiseFundedPoisha', '$expectedPoisha'] },
+            {
+              $lte: [
+                {
+                  $add: ['$merchandiseRefundHeldPoisha', '$merchandiseRefundCompletedPoisha'],
+                },
+                '$merchandiseFundedPoisha',
+              ],
+            },
+            {
+              $lte: [
+                {
+                  $add: ['$correctionRefundHeldPoisha', '$correctionRefundCompletedPoisha'],
+                },
+                '$correctionCollectedPoisha',
+              ],
+            },
+            {
+              $lte: ['$deliveryRefundHeldPoisha', '$merchandiseRefundHeldPoisha'],
+            },
+            {
+              $lte: ['$deliveryRefundCompletedPoisha', '$merchandiseRefundCompletedPoisha'],
+            },
+          ],
+        },
       },
-    },
-  ],
+    ],
+  }
+}
+export const paymentValidator = definePaymentValidator(true)
+export const precedingPaymentValidator = definePaymentValidator(false)
+export async function migratePaymentCorrectionProjection(connection: Connection) {
+  const row = await connection.db?.listCollections({ name: 'payments' }, { nameOnly: false }).next()
+  if (
+    !row ||
+    !connection.db ||
+    row.options?.validationLevel !== 'strict' ||
+    row.options?.validationAction !== 'error'
+  )
+    throw new Error('Reviewed payment provisioning required')
+  if (isDeepStrictEqual(row.options.validator, paymentValidator)) return
+  if (!isDeepStrictEqual(row.options.validator, precedingPaymentValidator))
+    throw new Error('Unknown payment validator')
+  await connection.db.command({
+    collMod: 'payments',
+    validator: paymentValidator,
+    validationLevel: 'strict',
+    validationAction: 'error',
+  })
 }
 async function verify(connection: Connection) {
   const row = await connection.db?.listCollections({ name: 'payments' }, { nameOnly: false }).next()
@@ -115,6 +149,7 @@ export async function initializePaymentPersistence(connection: Connection) {
       validationLevel: 'strict',
       validationAction: 'error',
     })
+  await migratePaymentCorrectionProjection(connection)
   await verify(connection)
   await createDeclaredIndexes(paymentModel(connection))
 }

@@ -1,3 +1,7 @@
+import { orderReadRoutes } from '../../src/modules/orders/order-read.routes.js'
+import { paymentMonitorRoutes } from '../../src/modules/payments/payment-monitor.routes.js'
+import { paymentRiskRoutes } from '../../src/modules/payments/payment-risk.routes.js'
+import { paymentCallbackRoutes } from '../../src/modules/payments/payment-callback.routes.js'
 import { paymentInitiationRoutes } from '../../src/modules/payments/payment-initiation.routes.js'
 import { paymentMethodsRoutes } from '../../src/modules/payments/payment-methods.routes.js'
 import { guestAccessRoutes } from '../../src/modules/auth/guest-access/guest-access.routes.js'
@@ -82,6 +86,10 @@ const media = {
 }
 export function registeredRouter() {
   return createApiRouter({ isReady: async () => true }, [
+    paymentCallbackRoutes(
+      { malformed: unused, receive: unused, redirect: () => 'https://shop.example.test/result' },
+      guard,
+    ),
     paymentInitiationRoutes(
       { initiate: unused, read: unused },
       security,
@@ -159,6 +167,9 @@ export function registeredRouter() {
     ),
     settingsPublicRoutes({ contact: unused }, { publicPolicy: unused }, []),
     inventoryAdminRoutes({ list: unused, history: unused, adjust: unused }, security, sessions),
+    paymentMonitorRoutes({ list: unused, detail: unused, reconcile: unused }, security, sessions),
+    orderReadRoutes({ list: unused, read: unused }, security),
+    paymentRiskRoutes({ decide: unused }, security, sessions),
     couponAdminRoutes(
       { create: unused, update: unused, deactivate: unused, list: unused, history: unused },
       security,

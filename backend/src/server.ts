@@ -1,3 +1,4 @@
+import { loadPaymentCallbackOptions, loadPaymentProcessingOptions } from './config/payments.js'
 import { createSslcommerzAdapter } from './providers/sslcommerz/sslcommerz.client.js'
 import { initiationInput } from './providers/sslcommerz/sslcommerz.schema.js'
 import { loadPaymentChannelApprovals, loadPaymentInitiationOptions } from './config/payments.js'
@@ -33,6 +34,11 @@ export async function startServer(
   let app: Awaited<ReturnType<typeof composeApplication>>
   try {
     const initiationOptions = loadPaymentInitiationOptions(process.env)
+    const initiationGateway = initiationOptions
+      ? createSslcommerzAdapter(initiationOptions)
+      : undefined
+    const callbackOptions = loadPaymentCallbackOptions(process.env)
+    const processingOptions = loadPaymentProcessingOptions(process.env)
     app = await composeApplication(
       connection,
       config,
@@ -42,10 +48,19 @@ export async function startServer(
       await loadPolicyApprovals(process.env),
       await loadCheckoutOptions(process.env),
       await loadPaymentChannelApprovals(process.env),
-      initiationOptions
+      initiationGateway
         ? {
-            gateway: createSslcommerzAdapter(initiationOptions),
+            gateway: initiationGateway,
+            reconciliationGateway: initiationGateway,
             validateRequest: (input) => initiationInput.safeParse(input).success,
+          }
+        : undefined,
+      callbackOptions
+        ? {
+            options: callbackOptions,
+            ...(processingOptions
+              ? { verificationGateway: createSslcommerzAdapter(processingOptions) }
+              : {}),
           }
         : undefined,
     )

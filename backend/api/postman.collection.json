@@ -976,6 +976,171 @@
       "response": []
     },
     {
+      "name": "get_admin_payments",
+      "description": "Activation: ADMIN_AUTH_ENABLED; local/test only pending deployed qualification. Replay: Read only current authorized monitoring projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/payments",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "attemptId",
+              "value": "{{attemptId}}",
+              "disabled": true
+            },
+            {
+              "key": "collectionId",
+              "value": "{{collectionId}}",
+              "disabled": true
+            },
+            {
+              "key": "orderId",
+              "value": "{{orderId}}",
+              "disabled": true
+            },
+            {
+              "key": "paymentStatus",
+              "value": "{{paymentStatus}}",
+              "disabled": true
+            },
+            {
+              "key": "riskStatus",
+              "value": "{{riskStatus}}",
+              "disabled": true
+            },
+            {
+              "key": "method",
+              "value": "{{method}}",
+              "disabled": true
+            },
+            {
+              "key": "view",
+              "value": "{{view}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; local/test only pending deployed qualification. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_payments. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_payments_paymentId",
+      "description": "Activation: ADMIN_AUTH_ENABLED; local/test only pending deployed qualification. Replay: Read only current authorized monitoring projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/payments/{{paymentId}}",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; local/test only pending deployed qualification. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_payments_paymentId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_payments_paymentId_reconcile",
+      "description": "Activation: ADMIN_AUTH_ENABLED; local/test only; existing merchant reconciliation worker required. Replay: Durable admin scheduling only; same key does not reset progress, changed reason conflicts. Worker independently verifies; no financial status assertion.. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/payments/{{paymentId}}/reconcile",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; local/test only; existing merchant reconciliation worker required. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_payments_paymentId_reconcile. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_payments_paymentId_reconcileBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_payments_paymentId_risk_decisions",
+      "description": "Activation: ADMIN_AUTH_ENABLED in local/test only; independent risk decision, current admin/CSRF, durable idempotency and funded allocation gates; no payout or confirmation. Replay: Current authorized replay returns current risk/hold without reapplying a historical approval. Changed body conflicts; every new decision is audited in the payment transaction.. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/payments/{{paymentId}}/risk-decisions",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED in local/test only; independent risk decision, current admin/CSRF, durable idempotency and funded allocation gates; no payout or confirmation. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_payments_paymentId_risk_decisions. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_payments_paymentId_risk_decisionsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
       "name": "get_admin_products",
       "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category/product/variant indexes and audit persistence; image writes require explicit verified media composition.. Replay: Strong revision CAS for edits; parent aggregate fence prevents invalid concurrent variants; immutable SKU/attribute identities and transactional media/audit. No automatic mutation retry.",
       "request": {
@@ -2524,6 +2689,50 @@
       "response": []
     },
     {
+      "name": "get_orders",
+      "description": "Activation: CUSTOMER_ORDER_READ_ENABLED plus customer auth; local/test only. Replay: Read-only stable own-order history; totals use immutable snapshots. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/orders",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "status",
+              "value": "{{status}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: CUSTOMER_ORDER_READ_ENABLED plus customer auth; local/test only. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_orders. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_orders_orderId",
+      "description": "Activation: CUSTOMER_ORDER_READ_ENABLED plus customer auth; guest proof requires GUEST_ACCESS_ENABLED; local/test only. Replay: Current customer or exact verified guest scope; no cross-order fallback. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/orders/{{orderId}}",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: CUSTOMER_ORDER_READ_ENABLED plus customer auth; guest proof requires GUEST_ACCESS_ENABLED; local/test only. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_orders_orderId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
       "name": "post_orders_orderId_payment_attempts",
       "description": "Activation: PAYMENT_INITIATION_ENABLED local/test only, customer auth and reviewed merchant evidence, payment/operation/order/stock/coupon/audit persistence, immutable gateway-compatible address including postalCode. No deployed/live collection qualification implied.. Replay: Durable per-owner/order/key tombstone before one provider call. Identical replay never resends or extends holds; uncertain results block new attempts. Allocation shortfall records no attempt.. No automatic mutation retry.",
       "request": {
@@ -2574,6 +2783,57 @@
         },
         "header": [],
         "description": "Implemented conditionally: Same reviewed local/test initiation composition; authenticated order owner or proven guest order scope on every read.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_orders_orderId_payment_attempts_attemptId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_orders_orderId_status",
+      "description": "Activation: CUSTOMER_ORDER_READ_ENABLED plus customer auth; exact guest proof when enabled; local/test only. Replay: Backend-authoritative payment and fulfillment are independent; no provider query. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/orders/{{orderId}}/status",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: CUSTOMER_ORDER_READ_ENABLED plus customer auth; exact guest proof when enabled; local/test only. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_orders_orderId_status. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_payment_returns_sslcommerz_result",
+      "description": "Activation: PAYMENT_CALLBACKS_ENABLED with explicit fixed HTTPS URLs on the configured storefront origin; local/test only pending deployed provider transport qualification.. Replay: Display hint only. Empty-body 303 strips all provider query/form values; no session/cookie/access or financial state transition. Untrusted success never establishes Paid.. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/payment-returns/sslcommerz/{{result}}",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: PAYMENT_CALLBACKS_ENABLED with explicit fixed HTTPS URLs on the configured storefront origin; local/test only pending deployed provider transport qualification.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_payment_returns_sslcommerz_result. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_payment_returns_sslcommerz_result",
+      "description": "Activation: PAYMENT_CALLBACKS_ENABLED with explicit fixed HTTPS URLs on the configured storefront origin; local/test only pending deployed provider transport qualification.. Replay: Display hint only. Empty-body 303 strips all provider query/form values; no session/cookie/access or financial state transition. Untrusted success never establishes Paid.. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/payment-returns/sslcommerz/{{result}}",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "description": "Implemented conditionally: PAYMENT_CALLBACKS_ENABLED with explicit fixed HTTPS URLs on the configured storefront origin; local/test only pending deployed provider transport qualification.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_payment_returns_sslcommerz_result. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": []
+        }
       },
       "response": []
     },
@@ -2685,6 +2945,170 @@
         },
         "header": [],
         "description": "Implemented conditionally: Reviewed settings/policy persistence; only approved effective published pointers become public. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_storefront_policies_type. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_webhooks_sslcommerz_ipn",
+      "description": "Activation: PAYMENT_CALLBACKS_ENABLED local/test only, explicit same-storefront return URLs and reviewed audit/quota persistence. Runtime returns 503 until an independent durable processor is composed; no raw notification proves funds.. Replay: Bounded URL-encoded untrusted claims; only normalized references cross the verifier boundary. 200 text OK only after durable verified outcome/recoverable reconciliation commit. Replays never imply new money; default is retryable 503.. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/webhooks/sslcommerz/ipn",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "description": "Implemented conditionally: PAYMENT_CALLBACKS_ENABLED local/test only, explicit same-storefront return URLs and reviewed audit/quota persistence. Runtime returns 503 until an independent durable processor is composed; no raw notification proves funds.. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_webhooks_sslcommerz_ipn. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "status",
+              "value": "{{post_webhooks_sslcommerz_ipn_status}}",
+              "disabled": false
+            },
+            {
+              "key": "tran_id",
+              "value": "{{post_webhooks_sslcommerz_ipn_tran_id}}",
+              "disabled": false
+            },
+            {
+              "key": "val_id",
+              "value": "{{post_webhooks_sslcommerz_ipn_val_id}}",
+              "disabled": true
+            },
+            {
+              "key": "store_id",
+              "value": "{{post_webhooks_sslcommerz_ipn_store_id}}",
+              "disabled": true
+            },
+            {
+              "key": "bank_tran_id",
+              "value": "{{post_webhooks_sslcommerz_ipn_bank_tran_id}}",
+              "disabled": true
+            },
+            {
+              "key": "amount",
+              "value": "{{post_webhooks_sslcommerz_ipn_amount}}",
+              "disabled": true
+            },
+            {
+              "key": "currency",
+              "value": "{{post_webhooks_sslcommerz_ipn_currency}}",
+              "disabled": true
+            },
+            {
+              "key": "tran_date",
+              "value": "{{post_webhooks_sslcommerz_ipn_tran_date}}",
+              "disabled": true
+            },
+            {
+              "key": "store_amount",
+              "value": "{{post_webhooks_sslcommerz_ipn_store_amount}}",
+              "disabled": true
+            },
+            {
+              "key": "currency_type",
+              "value": "{{post_webhooks_sslcommerz_ipn_currency_type}}",
+              "disabled": true
+            },
+            {
+              "key": "currency_amount",
+              "value": "{{post_webhooks_sslcommerz_ipn_currency_amount}}",
+              "disabled": true
+            },
+            {
+              "key": "currency_rate",
+              "value": "{{post_webhooks_sslcommerz_ipn_currency_rate}}",
+              "disabled": true
+            },
+            {
+              "key": "base_fair",
+              "value": "{{post_webhooks_sslcommerz_ipn_base_fair}}",
+              "disabled": true
+            },
+            {
+              "key": "card_type",
+              "value": "{{post_webhooks_sslcommerz_ipn_card_type}}",
+              "disabled": true
+            },
+            {
+              "key": "card_no",
+              "value": "{{post_webhooks_sslcommerz_ipn_card_no}}",
+              "disabled": true
+            },
+            {
+              "key": "card_issuer",
+              "value": "{{post_webhooks_sslcommerz_ipn_card_issuer}}",
+              "disabled": true
+            },
+            {
+              "key": "card_brand",
+              "value": "{{post_webhooks_sslcommerz_ipn_card_brand}}",
+              "disabled": true
+            },
+            {
+              "key": "card_issuer_country",
+              "value": "{{post_webhooks_sslcommerz_ipn_card_issuer_country}}",
+              "disabled": true
+            },
+            {
+              "key": "card_issuer_country_code",
+              "value": "{{post_webhooks_sslcommerz_ipn_card_issuer_country_code}}",
+              "disabled": true
+            },
+            {
+              "key": "value_a",
+              "value": "{{post_webhooks_sslcommerz_ipn_value_a}}",
+              "disabled": true
+            },
+            {
+              "key": "value_b",
+              "value": "{{post_webhooks_sslcommerz_ipn_value_b}}",
+              "disabled": true
+            },
+            {
+              "key": "value_c",
+              "value": "{{post_webhooks_sslcommerz_ipn_value_c}}",
+              "disabled": true
+            },
+            {
+              "key": "value_d",
+              "value": "{{post_webhooks_sslcommerz_ipn_value_d}}",
+              "disabled": true
+            },
+            {
+              "key": "verify_sign",
+              "value": "{{post_webhooks_sslcommerz_ipn_verify_sign}}",
+              "disabled": true
+            },
+            {
+              "key": "verify_key",
+              "value": "{{post_webhooks_sslcommerz_ipn_verify_key}}",
+              "disabled": true
+            },
+            {
+              "key": "cus_fax",
+              "value": "{{post_webhooks_sslcommerz_ipn_cus_fax}}",
+              "disabled": true
+            },
+            {
+              "key": "risk_level",
+              "value": "{{post_webhooks_sslcommerz_ipn_risk_level}}",
+              "disabled": true
+            },
+            {
+              "key": "risk_title",
+              "value": "{{post_webhooks_sslcommerz_ipn_risk_title}}",
+              "disabled": true
+            }
+          ]
+        }
       },
       "response": []
     },

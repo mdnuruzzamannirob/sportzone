@@ -370,21 +370,21 @@
       "path": "/orders",
       "success": "200",
       "operationId": "get_orders",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/orders/{orderId}",
       "success": "200",
       "operationId": "get_orders_orderId",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/orders/{orderId}/status",
       "success": "200",
       "operationId": "get_orders_orderId_status",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
@@ -440,49 +440,49 @@
       "path": "/webhooks/sslcommerz/ipn",
       "success": "200 / 4xx / 5xx",
       "operationId": "post_webhooks_sslcommerz_ipn",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/payment-returns/sslcommerz/{result}",
       "success": "303",
       "operationId": "get_payment_returns_sslcommerz_result",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/payment-returns/sslcommerz/{result}",
       "success": "303",
       "operationId": "post_payment_returns_sslcommerz_result",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/payments",
       "success": "200",
       "operationId": "get_admin_payments",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/payments/{paymentId}",
       "success": "200",
       "operationId": "get_admin_payments_paymentId",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/payments/{paymentId}/reconcile",
       "success": "200 / 202",
       "operationId": "post_admin_payments_paymentId_reconcile",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/payments/{paymentId}/risk-decisions",
       "success": "200",
       "operationId": "post_admin_payments_paymentId_risk_decisions",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",

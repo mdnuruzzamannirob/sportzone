@@ -663,7 +663,104 @@ operations; retain those acceptance gates separately.
 
 ## 11. Payments, returns & refunds test cases
 
+Payment monitoring must verify current admin/role checks, strict pagination/filter rejection,
+opaque allowlisted receipt/correction/audit projections, CSRF/reason/idempotency on reconcile,
+concurrent same-key convergence, audit failure rollback and worker discovery without rewriting proof
+timestamps. Verify root activation and no provider/financial effect from scheduling alone.
+Claim foundation tests must race physical/shortage requests over the same canonical unit pool, exclude
+resolved/refunded/held units, reject caller-selected ordinals/duplicate lines, enforce transaction and
+current-authority boundaries, and roll back every line/request when audit or persistence fails.
+No synthetic authorization/eligibility fixture proves real return-window or private-media acceptance.
+
+Local lifecycle/COD tests use synthetic qualified-approval and protected evidence capabilities only.
+Check missing approval denial, exact graph/shipment/coupon fencing, actual deadline projection from
+persisted plain basis, historical-key replay, shipment rollback after downstream validation failure,
+independent payment/delivery, partial/excess cash source accounting, duplicate/cross-order references,
+revoked identity during evidence reads, future/pre-order collection dates, correction failure rollback
+and different-admin dispatch/cash concurrency. Local success does not prove policy approval, private
+source verification in deployment, HTTP activation or complete task acceptance.
+
+Cancellation and owned-order read checks cover current customer/admin/guest scope and CSRF, exact
+submission-key replay after approval/rejection, changed-body conflicts, one pending request, explicit
+Processing no-dispatch verification, dispatch/cancellation races and post-release rollback. Verify paid
+approval denial without a real refund planner and retained late online reconciliation/correction.
+Read tests verify scoped stable pagination, no-store, current-account revocation, invalid customer
+cookie no-fallback, immutable catalog/terms/address snapshots and absent historical-policy failure.
+Guest proof cannot list orders or read another order. Compile and exercise additive cancellation
+bootstrap; compare all canonical order/stock/coupon/payment histories after failures and retries.
+
+Commerce notification checks verify one actual event per transition/cause, canonical recipient and
+history proof, no welcome fallback, explicit worker activation, fixed provider identity for known
+rejection retry, no uncertain resend, exact known predecessor migration and atomic order/stock/outbox
+rollback. Historical emails retain identical event content across retries after status changes; Delivered never proves COD Paid.
+Delivery/support tests cover retained Shipped retry/contact/deadline history, complete mixed custody,
+protected inspection, no restock of lost/damaged units, final-close races, stable recovery receipts,
+paid refund-planner denial and post-recovery rollback. Complaint tests require exact customer/guest
+scope, no ownership from contact input, private contact projections, recorded response before resolution,
+first-response preservation and no invented legal SLA. Synthetic proof fixtures do not qualify deployment.
+
 ### 11.1 Payment provider and COD scenarios
+
+Safe-retry checks use replica-set transactions and actual initiation routes: fresh terminal
+nonpayment, Pending/timeout/Paid denial, identity revocation during provider reads, competing new
+keys, late Paid races, immutable coupon shortfalls and renewed shared stock/coupon clocks. Payment
+notification checks cover atomic intent rollback, duplicate receipts, verified Pending, stale
+negative suppression including quarantined funds, recipient binding, exact predecessor migration,
+explicit worker activation, stable delivery keys and uncertain delivery without replaying money.
+Provider/email doubles establish local behavior only; sandbox/channel and inbox qualification are
+separate release evidence.
+
+
+Callback transport tests must prove browser GET/POST hints never call financial processing, issue
+credentials or forward provider query/form values. Check fixed canonical same-storefront 303 targets,
+no-store/referrer/CORS behavior and all approved result values. IPN tests use untrusted form claims:
+without independent durable processing return 503 even for VALID; a delayed processor cannot cause an
+early 200. Reject unknown merchants, invalid references/statuses, duplicates, excessive bytes/parameters,
+compression and JSON; discard known sensitive provider fields before the processor/audit boundary.
+Verify HMAC-only security persistence, real-peer quota/forwarding-header isolation, missing-protection
+failure, duplicate notifications and processor failure/pending behavior. With callback routing enabled,
+actual normal initiation must still require JSON, Origin/CSRF and exact customer/guest ownership.
+Exercise transaction exclusion, additive local bootstrap and deployed activation refusal. Mock durable
+processor outcomes do not prove independent provider validation, receipt allocation or live retry SLA.
+
+Independent verification tests must use the actual version-aware adapter with synthetic server responses
+and canonical replica-set-backed attempt/initiation/payment mapping. Callback status/amount/currency
+are not evidence. Assert credential-bound merchant identity, validation/transaction/collection reference
+matching, exact BDT conversion, immutable expected amount, unknown mapping, partial/excess quarantine
+classification and high-risk review. Query-discovered paid receipts require individual validation;
+keep multiple collections and prefer verified paid evidence over stale nonpayment. Missing/pending
+records are uncertain. Verify no financial mutation, no early callback acknowledgment, sanitized digest
+stability, missing-index failure and provider I/O exclusion inside transactions. These verification
+results require transactional receipt processing and replay/recovery qualification before runtime use.
+
+Durable receipt/allocation tests must exercise concurrent duplicate and distinct collections, replay
+across service instances, stale failure after Paid, Paid after terminal failure, and simultaneous paid/
+failure. Verify one merchant-scoped intake identity, no double merchandise funding, preserved history,
+and exactly one live stock/coupon commitment. Include high-risk replay escalation, expired/cancelled
+orders, partial/excess/unmatched quarantine, refund-projection preservation, missing timezone/invalid
+calendar dates, actual coupon failure after stock processing, full rollback and recovery, competing
+expiry and committed-transaction acknowledgment through composed IPN. Confirmation is separately
+owned; no automatic legal/deadline clearance, late reacquisition or reliable pending worker is implied.
+Repeat conflicting receipt audit evidence must acknowledge without duplicate audit facts; a different
+digest under one audit operation identity must fail without overwriting the first event.
+
+Late/risk payment tests must separately commit verified funds before failure-prone expired allocation
+recovery; check last-stock and last-coupon races, fully rolled-back losers with Paid preserved, cancelled
+orders never reopened, source-specific correction intents, zero invented method/policy/payout, and exact
+known-predecessor schema rollout preserving financial history. Risk decisions require current admin,
+Origin/CSRF, strict input and durable idempotency; test concurrent approve/reject, changed-command
+conflict, historical approval after a fresh risk signal, already reviewed flag replay, confirmed-order
+hold/clear, and approval without capacity leaving a hold. Review/rejection never implicitly releases
+another attempt or pays. Public DTOs and actual root router must agree with generated artifacts.
+
+Multiple-paid/reconciliation tests must preserve each independently verified attempt/source, cap
+merchandise funding once and class additional exact collections as correction with separate source
+obligations/counters. Retry/restart never repeats fulfillment, coupon use or merchandise refund capacity.
+For the worker, test missing IPN, concurrent job/IPN, provider timeout and later recovery, stable escalation/
+resolution audits, Paid proof retention on later uncertainty, quarantined funds on Paid remaining unresolved,
+merchant rotation isolation, cursor fairness, crash after commit before checkpoint, lease takeover during
+provider reads and lease expiry after financial/allocation writes. Check monotonic real lease fences,
+compiled command opt-in/bounds/deployed refusal, aggregate-only output and no real provider calls in fixtures.
 
 Hosted-initiation verification uses real replica-set transactions, actual stock/coupon APIs and
 synthetic provider transport. Assert committed durable dispatch before I/O, one call across concurrent

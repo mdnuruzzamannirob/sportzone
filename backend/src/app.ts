@@ -1,11 +1,11 @@
-import { securityAction } from './shared/security-actions.js'
 import express, { type Router } from 'express'
 import { randomUUID } from 'node:crypto'
-import { handleError } from './shared/middleware/handle-error.js'
 import type { HealthDependencies } from './modules/health/health.service.js'
-import type { Logger } from './shared/logger.js'
 import { createApiRouter } from './routes.js'
 import { ApiError } from './shared/errors/app-error.js'
+import type { Logger } from './shared/logger.js'
+import { handleError } from './shared/middleware/handle-error.js'
+import { securityAction } from './shared/security-actions.js'
 
 export function createApp({
   apiRouter,
@@ -13,7 +13,9 @@ export function createApp({
   logger,
   jsonBodyLimitBytes = 102400,
   mediaUploadsEnabled = false,
+  providerCallbacks,
 }: {
+  providerCallbacks?: Router
   apiRouter?: Router
   health?: HealthDependencies
   logger?: Logger
@@ -62,6 +64,9 @@ export function createApp({
       res.once('close', record)
       next()
     })
+  // Only the explicitly composed provider router owns form parsing. It registers exact callback
+  // paths; all other routes still pass through the standard JSON/security boundaries below.
+  if (providerCallbacks) app.use('/api/v1', providerCallbacks)
   const json = express.json({
     limit: jsonBodyLimitBytes,
     strict: true,

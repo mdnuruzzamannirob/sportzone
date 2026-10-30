@@ -1,3 +1,10 @@
+import { returnService } from '../../src/modules/returns/return.service.js'
+import {
+  initializeReturnPersistence,
+  verifyReturnPersistence,
+} from '../../src/modules/returns/return.persistence.js'
+import { returnModel } from '../../src/modules/returns/return.model.js'
+import { claimQuantityAccess } from '../../src/modules/orders/order.service.js'
 import { spawnSync } from 'node:child_process'
 import { Types } from 'mongoose'
 import { afterAll, beforeAll, beforeEach, expect, it } from 'vitest'
@@ -123,12 +130,14 @@ function place(
 }
 beforeAll(async () => {
   db = await isolatedDatabase()
+  await initializeReturnPersistence(db.connection)
   await initializeOrderPersistence(db.connection)
   await initializeCheckoutQuotePersistence(db.connection)
   await initializeAuditPersistence(db.connection)
 })
 beforeEach(async () => {
   for (const name of [
+    'returnRequests',
     'orders',
     'orderItemBalances',
     'checkoutQuotes',
@@ -463,4 +472,225 @@ it('preserves valid Unicode name/address bounds accepted by the quote contract',
   expect(row.customerSnapshot.name).toBe(name)
   expect(row.items[0]?.productName).toBe(name)
   expect(row.deliverySnapshot.addressLine2).toBe('😀'.repeat(300))
+})
+
+async function claimFixture() {
+  const proof = await stage()
+  await place(proof)
+  const balance = await orderModels(db.connection).balances.findOne({ orderId: proof.orderId })
+  if (!balance) throw new Error('Missing balance')
+  const authority = {
+    requestedBy: { type: 'guest', id: new Types.ObjectId().toHexString() },
+    eligibilitySnapshot: { policyVersion: 'synthetic-not-approved' },
+  }
+  const service = returnService(
+    db.connection,
+    claimQuantityAccess(db.connection),
+    async () => authority,
+    () => orderTestTime,
+  )
+  const command = (
+    claimType: 'physical_return' | 'shortage' = 'physical_return',
+    quantity = 1,
+  ) => ({
+    claimId: new Types.ObjectId().toHexString(),
+    orderId: proof.orderId,
+    claimType,
+    items: [
+      { orderItemId: balance.orderItemId.toHexString(), quantity, reason: 'Synthetic fixture' },
+    ],
+  })
+  return { proof, balance, service, command }
+}
+it('claim foundation: parallel physical and shortage requests share one exact ordinal capacity', async () => {
+  const f = await claimFixture()
+  const outcomes = await Promise.allSettled(
+    Array.from({ length: f.balance.purchasedQty + 2 }, (_, i) =>
+      inTransaction(db.connection, (session) =>
+        f.service.create(session, f.command(i % 2 ? 'shortage' : 'physical_return')),
+      ),
+    ),
+  )
+  expect(outcomes.filter((r) => r.status === 'fulfilled')).toHaveLength(f.balance.purchasedQty)
+  const current = await orderModels(db.connection).balances.findById(f.balance._id)
+  expect(current?.activeClaimQty).toBe(f.balance.purchasedQty)
+  expect(new Set(current?.unitCoverage.map((u) => u.claimId?.toHexString())).size).toBe(
+    f.balance.purchasedQty,
+  )
+  expect(await returnModel(db.connection).countDocuments()).toBe(f.balance.purchasedQty)
+})
+it('claim foundation: resolved and partially refunded units cannot be reclaimed', async () => {
+  const f = await claimFixture(),
+    balances = orderModels(db.connection).balances
+  await balances.updateOne(
+    { _id: f.balance._id, revision: 0 },
+    {
+      $set: {
+        'unitCoverage.0.claimState': 'resolved',
+        'unitCoverage.0.claimId': new Types.ObjectId(),
+        resolvedClaimQty: 1,
+      },
+      $inc: { revision: 1 },
+    },
+  )
+  const current = await balances.findById(f.balance._id)
+  if (!current) throw new Error('Missing balance')
+  // Ask for the original quantity: resolved ordinal must never become available again.
+  await expect(
+    inTransaction(db.connection, (session) =>
+      f.service.create(session, f.command('shortage', current.purchasedQty)),
+    ),
+  ).rejects.toThrow()
+  expect(await returnModel(db.connection).countDocuments()).toBe(0)
+  expect((await balances.findById(current._id))?.revision).toBe(1)
+})
+it('claim foundation: duplicate lines, caller ordinals and unauthorized scope leave balances unchanged', async () => {
+  const f = await claimFixture(),
+    body = f.command()
+  await expect(
+    inTransaction(db.connection, (session) =>
+      f.service.create(session, { ...body, items: [...body.items, ...body.items] }),
+    ),
+  ).rejects.toThrow()
+  await expect(
+    inTransaction(db.connection, (session) =>
+      f.service.create(session, { ...body, ordinals: [1] }),
+    ),
+  ).rejects.toThrow()
+  const denied = returnService(db.connection, claimQuantityAccess(db.connection), async () => {
+    throw new ApiError('FORBIDDEN')
+  })
+  await expect(
+    inTransaction(db.connection, (session) => denied.create(session, body)),
+  ).rejects.toThrow()
+  expect((await orderModels(db.connection).balances.findById(f.balance._id))?.revision).toBe(0)
+})
+it('claim foundation: failed claim audit rolls back protected ordinals and request; recovery creates once', async () => {
+  const f = await claimFixture(),
+    body = f.command()
+  await db.connection.db?.collection('auditLogs').dropIndex('audit_cause_unique')
+  try {
+    await expect(
+      inTransaction(db.connection, (session) => f.service.create(session, body)),
+    ).rejects.toThrow()
+  } finally {
+    await initializeAuditPersistence(db.connection)
+  }
+  expect((await orderModels(db.connection).balances.findById(f.balance._id))?.activeClaimQty).toBe(
+    0,
+  )
+  await inTransaction(db.connection, (session) => f.service.create(session, body))
+  await expect(
+    inTransaction(db.connection, (session) => f.service.create(session, body)),
+  ).rejects.toThrow()
+  expect(await returnModel(db.connection).countDocuments()).toBe(1)
+})
+it('claim foundation: outside transaction, unsupported lifecycle and validator drift fail closed', async () => {
+  const f = await claimFixture(),
+    session = await db.connection.startSession()
+  try {
+    await expect(f.service.create(session, f.command())).rejects.toThrow()
+  } finally {
+    await session.endSession()
+  }
+  await inTransaction(db.connection, (session) => f.service.create(session, f.command()))
+  await expect(
+    returnModel(db.connection).updateOne({}, { $set: { status: 'completed' } }),
+  ).rejects.toThrow()
+  await db.connection.db?.command({ collMod: 'returnRequests', validator: {} })
+  try {
+    await expect(verifyReturnPersistence(db.connection)).rejects.toThrow()
+  } finally {
+    const { returnValidator } = await import('../../src/modules/returns/return.persistence.js')
+    await db.connection.db?.command({ collMod: 'returnRequests', validator: returnValidator })
+  }
+})
+
+it('claim foundation: partial refund holds stay protected and later-line failure rolls back earlier selection', async () => {
+  const f = await claimFixture(),
+    balances = orderModels(db.connection).balances
+  await balances.updateOne(
+    { _id: f.balance._id, revision: 0 },
+    {
+      $set: {
+        'unitCoverage.0.claimState': 'protected',
+        'unitCoverage.0.claimId': new Types.ObjectId(),
+        'unitCoverage.0.refundHeldPoisha': 1,
+        activeClaimQty: 1,
+      },
+      $inc: { revision: 1 },
+    },
+  )
+  await expect(
+    inTransaction(db.connection, (session) =>
+      f.service.create(session, f.command('shortage', f.balance.purchasedQty)),
+    ),
+  ).rejects.toThrow()
+  expect(await returnModel(db.connection).countDocuments()).toBe(0)
+  const fresh = await claimFixture(),
+    body = fresh.command()
+  await expect(
+    inTransaction(db.connection, (session) =>
+      fresh.service.create(session, {
+        ...body,
+        items: [
+          ...body.items,
+          { orderItemId: new Types.ObjectId().toHexString(), quantity: 1, reason: 'Missing line' },
+        ],
+      }),
+    ),
+  ).rejects.toThrow()
+  expect((await balances.findById(fresh.balance._id))?.activeClaimQty).toBe(0)
+})
+it('claim foundation: BSON validation rejects duplicate lines and mismatched protected quantities', async () => {
+  const f = await claimFixture()
+  await inTransaction(db.connection, (session) => f.service.create(session, f.command()))
+  const row = await db.connection.collection('returnRequests').findOne({})
+  if (!row) throw new Error('Missing claim')
+  const items = row.items
+  await expect(
+    db.connection
+      .collection('returnRequests')
+      .insertOne({ ...row, _id: new Types.ObjectId(), items: [...items, ...items] }),
+  ).rejects.toThrow()
+  await expect(
+    db.connection.collection('returnRequests').insertOne({
+      ...row,
+      _id: new Types.ObjectId(),
+      items: items.map((i: { requestedQty: number }) => ({
+        ...i,
+        requestedQty: i.requestedQty + 1,
+      })),
+    }),
+  ).rejects.toThrow()
+})
+it('claim foundation: compiled bootstrap preserves requests and refuses deployed environment', async () => {
+  const f = await claimFixture()
+  await inTransaction(db.connection, (session) => f.service.create(session, f.command()))
+  const command = () =>
+    spawnSync(process.execPath, ['scripts/bootstrap-returns.mjs'], {
+      cwd: process.cwd(),
+      env: {
+        ...testEnvironment(),
+        MONGODB_URI: db.replica.getUri(),
+        MONGODB_DB_NAME: db.connection.name,
+      },
+      encoding: 'utf8',
+      timeout: 10000,
+    })
+  expect(command().status).toBe(0)
+  expect(command().status).toBe(0)
+  expect(await returnModel(db.connection).countDocuments()).toBe(1)
+  const deployed = spawnSync(process.execPath, ['scripts/bootstrap-returns.mjs'], {
+    cwd: process.cwd(),
+    env: {
+      ...testEnvironment(),
+      MONGODB_URI: db.replica.getUri(),
+      MONGODB_DB_NAME: db.connection.name,
+      APP_ENV: 'production',
+    },
+    encoding: 'utf8',
+    timeout: 10000,
+  })
+  expect(deployed.status).not.toBe(0)
 })

@@ -47,10 +47,10 @@ export function jobLeaseService(
       const now = clock()
       const result = await model.updateOne(
         { jobKey, leaseOwner: owner, leaseUntil: { $gt: now } },
-        { $set: { updatedAt: now } },
-        { session, timestamps: false },
+        [{ $set: { updatedAt: { $max: [now, { $add: ['$updatedAt', 1] }] } } }],
+        { session, timestamps: false, updatePipeline: true },
       )
-      if (result.matchedCount !== 1) throw new ApiError('STATE_CONFLICT')
+      if (result.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
     },
     async finish(owner: string, cursor?: string) {
       const now = clock()

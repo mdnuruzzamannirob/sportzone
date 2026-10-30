@@ -101,6 +101,7 @@ export function createSslcommerzAdapter(
       : {}),
     ...(record.tran_date ? { providerCollectedAt: record.tran_date } : {}),
     ...(record.risk_level !== undefined ? { riskLevel: record.risk_level } : {}),
+    ...(record.risk_title ? { riskTitle: record.risk_title } : {}),
   })
   return {
     async initiate(raw: unknown) {

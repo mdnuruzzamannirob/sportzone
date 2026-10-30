@@ -56,6 +56,10 @@ const schema = z
       .enum(['true', 'false'])
       .default('false')
       .transform((value) => value === 'true'),
+    CUSTOMER_ORDER_READ_ENABLED: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((value) => value === 'true'),
     ADMIN_AUTH_ENABLED: z
       .enum(['true', 'false'])
       .default('false')
@@ -98,6 +102,15 @@ const schema = z
       .pipe(z.array(origin).length(2)),
   })
   .superRefine((value, ctx) => {
+    if (
+      value.CUSTOMER_ORDER_READ_ENABLED &&
+      (!value.CUSTOMER_AUTH_ENABLED || !['local', 'test'].includes(value.APP_ENV))
+    )
+      ctx.addIssue({
+        code: 'custom',
+        path: ['CUSTOMER_ORDER_READ_ENABLED'],
+        message: 'Reviewed local/test customer authentication required',
+      })
     if (value.GUEST_ACCESS_ENABLED && !value.CUSTOMER_AUTH_ENABLED)
       ctx.addIssue({
         code: 'custom',

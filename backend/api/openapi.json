@@ -9970,6 +9970,1750 @@
         }
       }
     },
+    "/admin/payments": {
+      "get": {
+        "operationId": "get_admin_payments",
+        "tags": [
+          "admin"
+        ],
+        "summary": "GET /admin/payments",
+        "description": "Runtime Zod validation, Unicode/phone/password policies, ownership, coverage and cross-field refinements remain mandatory. JSON Schema describes the wire shape and representable constraints; it does not replace domain validation.",
+        "x-implementation-status": "implemented",
+        "x-activation": "ADMIN_AUTH_ENABLED; local/test only pending deployed qualification",
+        "x-replay-policy": "Read only current authorized monitoring projection",
+        "x-runtime-validation": true,
+        "x-unknown-query-fields": "rejected except health probes",
+        "x-transport": "Exact approved-origin CORS; OPTIONS preflight, implicit HEAD on GET",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9]\\d*$"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9]\\d*$"
+            }
+          },
+          {
+            "name": "attemptId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{24}$"
+            }
+          },
+          {
+            "name": "collectionId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{24}$"
+            }
+          },
+          {
+            "name": "orderId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{24}$"
+            }
+          },
+          {
+            "name": "paymentStatus",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "paid",
+                "failed",
+                "cancelled",
+                "partially_refunded",
+                "refunded"
+              ]
+            }
+          },
+          {
+            "name": "riskStatus",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "clear",
+                "review",
+                "rejected"
+              ]
+            }
+          },
+          {
+            "name": "method",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "online",
+                "cod"
+              ]
+            }
+          },
+          {
+            "name": "view",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": "payments",
+              "type": "string",
+              "enum": [
+                "payments",
+                "unmatched",
+                "quarantined"
+              ]
+            }
+          }
+        ],
+        "security": [
+          {
+            "AdminSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Server-generated request UUID",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "const": "nosniff"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{24}$"
+                              },
+                              "orderId": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{24}$"
+                              },
+                              "method": {
+                                "type": "string",
+                                "enum": [
+                                  "online",
+                                  "cod"
+                                ]
+                              },
+                              "paymentStatus": {
+                                "type": "string",
+                                "enum": [
+                                  "pending",
+                                  "paid",
+                                  "failed",
+                                  "cancelled",
+                                  "partially_refunded",
+                                  "refunded"
+                                ]
+                              },
+                              "riskStatus": {
+                                "type": "string",
+                                "enum": [
+                                  "clear",
+                                  "review",
+                                  "rejected"
+                                ]
+                              },
+                              "expectedPoisha": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "verifiedCollectedPoisha": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "merchandiseFundedPoisha": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "correctionCollectedPoisha": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "unassignedCollectedPoisha": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "currency": {
+                                "type": "string",
+                                "const": "BDT"
+                              },
+                              "revision": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "orderId",
+                              "method",
+                              "paymentStatus",
+                              "riskStatus",
+                              "expectedPoisha",
+                              "verifiedCollectedPoisha",
+                              "merchandiseFundedPoisha",
+                              "correctionCollectedPoisha",
+                              "unassignedCollectedPoisha",
+                              "currency",
+                              "revision"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "intake": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{24}$"
+                              },
+                              "amountPoisha": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "currency": {
+                                "type": "string",
+                                "const": "BDT"
+                              },
+                              "matchingStatus": {
+                                "type": "string",
+                                "enum": [
+                                  "linked",
+                                  "unmatched",
+                                  "quarantined"
+                                ]
+                              },
+                              "collectedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                              },
+                              "verifiedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                              },
+                              "linkedCollectionId": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{24}$"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "amountPoisha",
+                              "currency",
+                              "matchingStatus",
+                              "collectedAt",
+                              "verifiedAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "items",
+                        "intake"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      "required": [
+                        "requestId"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error family 400; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error400"
+                }
+              }
+            },
+            "x-error-codes": [
+              "UNSUPPORTED_DELIVERY_AREA",
+              "INVALID_REQUEST",
+              "VALIDATION_FAILED"
+            ]
+          },
+          "401": {
+            "description": "Error family 401; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error401"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INVALID_CREDENTIALS",
+              "GUEST_PROOF_REQUIRED",
+              "AUTH_REQUIRED"
+            ]
+          },
+          "403": {
+            "description": "Error family 403; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error403"
+                }
+              }
+            },
+            "x-error-codes": [
+              "FORBIDDEN",
+              "CSRF_INVALID"
+            ]
+          },
+          "404": {
+            "description": "Error family 404; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error404"
+                }
+              }
+            },
+            "x-error-codes": [
+              "NOT_FOUND"
+            ]
+          },
+          "409": {
+            "description": "Error family 409; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error409"
+                }
+              }
+            },
+            "x-error-codes": [
+              "OUT_OF_STOCK",
+              "QUOTE_CHANGED",
+              "QUOTE_EXPIRED",
+              "IDEMPOTENCY_CONFLICT",
+              "COUPON_UNAVAILABLE",
+              "STATE_CONFLICT"
+            ]
+          },
+          "412": {
+            "description": "Error family 412; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error412"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_FAILED"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PAYMENT_AMOUNT_UNSUPPORTED",
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
+          "428": {
+            "description": "Error family 428; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error428"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_REQUIRED"
+            ]
+          },
+          "429": {
+            "description": "Error family 429; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error429"
+                }
+              }
+            },
+            "x-error-codes": [
+              "RATE_LIMITED"
+            ]
+          },
+          "500": {
+            "description": "Error family 500; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error500"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INTERNAL_ERROR"
+            ]
+          },
+          "503": {
+            "description": "Error family 503; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error503"
+                }
+              }
+            },
+            "x-error-codes": [
+              "SERVICE_UNAVAILABLE"
+            ]
+          }
+        }
+      }
+    },
+    "/admin/payments/{paymentId}": {
+      "get": {
+        "operationId": "get_admin_payments_paymentId",
+        "tags": [
+          "admin"
+        ],
+        "summary": "GET /admin/payments/{paymentId}",
+        "description": "Runtime Zod validation, Unicode/phone/password policies, ownership, coverage and cross-field refinements remain mandatory. JSON Schema describes the wire shape and representable constraints; it does not replace domain validation.",
+        "x-implementation-status": "implemented",
+        "x-activation": "ADMIN_AUTH_ENABLED; local/test only pending deployed qualification",
+        "x-replay-policy": "Read only current authorized monitoring projection",
+        "x-runtime-validation": true,
+        "x-unknown-query-fields": "rejected except health probes",
+        "x-transport": "Exact approved-origin CORS; OPTIONS preflight, implicit HEAD on GET",
+        "parameters": [
+          {
+            "name": "paymentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{24}$"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9]\\d*$"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9]\\d*$"
+            }
+          }
+        ],
+        "security": [
+          {
+            "AdminSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Server-generated request UUID",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "const": "nosniff"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "payment": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{24}$"
+                            },
+                            "orderId": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{24}$"
+                            },
+                            "method": {
+                              "type": "string",
+                              "enum": [
+                                "online",
+                                "cod"
+                              ]
+                            },
+                            "paymentStatus": {
+                              "type": "string",
+                              "enum": [
+                                "pending",
+                                "paid",
+                                "failed",
+                                "cancelled",
+                                "partially_refunded",
+                                "refunded"
+                              ]
+                            },
+                            "riskStatus": {
+                              "type": "string",
+                              "enum": [
+                                "clear",
+                                "review",
+                                "rejected"
+                              ]
+                            },
+                            "expectedPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "verifiedCollectedPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "merchandiseFundedPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "correctionCollectedPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "unassignedCollectedPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "currency": {
+                              "type": "string",
+                              "const": "BDT"
+                            },
+                            "revision": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "orderId",
+                            "method",
+                            "paymentStatus",
+                            "riskStatus",
+                            "expectedPoisha",
+                            "verifiedCollectedPoisha",
+                            "merchandiseFundedPoisha",
+                            "correctionCollectedPoisha",
+                            "unassignedCollectedPoisha",
+                            "currency",
+                            "revision"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "attempts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{24}$"
+                              },
+                              "state": {
+                                "type": "string"
+                              },
+                              "amountDisposition": {
+                                "type": "string"
+                              },
+                              "expectedAmountPoisha": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "lastCheckedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                              },
+                              "expiresAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "state",
+                              "amountDisposition",
+                              "expectedAmountPoisha"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "collections": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{24}$"
+                              },
+                              "attemptId": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{24}$"
+                              },
+                              "intakeId": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{24}$"
+                              },
+                              "amountPoisha": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "merchandiseAllocatedPoisha": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "correctionAllocatedPoisha": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "unassignedAllocatedPoisha": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "collectedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "amountPoisha",
+                              "merchandiseAllocatedPoisha",
+                              "correctionAllocatedPoisha",
+                              "unassignedAllocatedPoisha",
+                              "collectedAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "corrections": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{24}$"
+                              },
+                              "sourceCollectionId": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{24}$"
+                              },
+                              "amountPoisha": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "status": {
+                                "type": "string"
+                              },
+                              "capacityStatus": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "sourceCollectionId",
+                              "amountPoisha",
+                              "status",
+                              "capacityStatus"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "audit": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{24}$"
+                              },
+                              "action": {
+                                "type": "string"
+                              },
+                              "occurredAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                              },
+                              "actorType": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "action",
+                              "occurredAt",
+                              "actorType"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "pagination": {
+                          "type": "object",
+                          "properties": {
+                            "attempts": {
+                              "type": "object",
+                              "properties": {
+                                "page": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "pageSize": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "totalItems": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "totalPages": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "page",
+                                "pageSize",
+                                "totalItems",
+                                "totalPages"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "collections": {
+                              "type": "object",
+                              "properties": {
+                                "page": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "pageSize": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "totalItems": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "totalPages": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "page",
+                                "pageSize",
+                                "totalItems",
+                                "totalPages"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "corrections": {
+                              "type": "object",
+                              "properties": {
+                                "page": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "pageSize": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "totalItems": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "totalPages": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "page",
+                                "pageSize",
+                                "totalItems",
+                                "totalPages"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "audit": {
+                              "type": "object",
+                              "properties": {
+                                "page": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "pageSize": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "totalItems": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "totalPages": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "page",
+                                "pageSize",
+                                "totalItems",
+                                "totalPages"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "attempts",
+                            "collections",
+                            "corrections",
+                            "audit"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "payment",
+                        "attempts",
+                        "collections",
+                        "corrections",
+                        "audit",
+                        "pagination"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      "required": [
+                        "requestId"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error family 400; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error400"
+                }
+              }
+            },
+            "x-error-codes": [
+              "UNSUPPORTED_DELIVERY_AREA",
+              "INVALID_REQUEST",
+              "VALIDATION_FAILED"
+            ]
+          },
+          "401": {
+            "description": "Error family 401; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error401"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INVALID_CREDENTIALS",
+              "GUEST_PROOF_REQUIRED",
+              "AUTH_REQUIRED"
+            ]
+          },
+          "403": {
+            "description": "Error family 403; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error403"
+                }
+              }
+            },
+            "x-error-codes": [
+              "FORBIDDEN",
+              "CSRF_INVALID"
+            ]
+          },
+          "404": {
+            "description": "Error family 404; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error404"
+                }
+              }
+            },
+            "x-error-codes": [
+              "NOT_FOUND"
+            ]
+          },
+          "409": {
+            "description": "Error family 409; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error409"
+                }
+              }
+            },
+            "x-error-codes": [
+              "OUT_OF_STOCK",
+              "QUOTE_CHANGED",
+              "QUOTE_EXPIRED",
+              "IDEMPOTENCY_CONFLICT",
+              "COUPON_UNAVAILABLE",
+              "STATE_CONFLICT"
+            ]
+          },
+          "412": {
+            "description": "Error family 412; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error412"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_FAILED"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PAYMENT_AMOUNT_UNSUPPORTED",
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
+          "428": {
+            "description": "Error family 428; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error428"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_REQUIRED"
+            ]
+          },
+          "429": {
+            "description": "Error family 429; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error429"
+                }
+              }
+            },
+            "x-error-codes": [
+              "RATE_LIMITED"
+            ]
+          },
+          "500": {
+            "description": "Error family 500; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error500"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INTERNAL_ERROR"
+            ]
+          },
+          "503": {
+            "description": "Error family 503; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error503"
+                }
+              }
+            },
+            "x-error-codes": [
+              "SERVICE_UNAVAILABLE"
+            ]
+          }
+        }
+      }
+    },
+    "/admin/payments/{paymentId}/reconcile": {
+      "post": {
+        "operationId": "post_admin_payments_paymentId_reconcile",
+        "tags": [
+          "admin"
+        ],
+        "summary": "POST /admin/payments/{paymentId}/reconcile",
+        "description": "Runtime Zod validation, Unicode/phone/password policies, ownership, coverage and cross-field refinements remain mandatory. JSON Schema describes the wire shape and representable constraints; it does not replace domain validation.",
+        "x-implementation-status": "implemented",
+        "x-activation": "ADMIN_AUTH_ENABLED; local/test only; existing merchant reconciliation worker required",
+        "x-replay-policy": "Durable admin scheduling only; same key does not reset progress, changed reason conflicts. Worker independently verifies; no financial status assertion.",
+        "x-runtime-validation": true,
+        "x-unknown-query-fields": "rejected except health probes",
+        "x-transport": "Exact approved-origin CORS; OPTIONS preflight, implicit HEAD on GET",
+        "parameters": [
+          {
+            "name": "paymentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{24}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri",
+              "description": "Exact approved frontend origin for this namespace"
+            }
+          }
+        ],
+        "security": [
+          {
+            "AdminSession": [],
+            "CsrfHeader": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful operation",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Server-generated request UUID",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "const": "nosniff"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "state": {
+                          "type": "string",
+                          "const": "pending"
+                        }
+                      },
+                      "required": [
+                        "state"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      "required": [
+                        "requestId"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error family 400; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error400"
+                }
+              }
+            },
+            "x-error-codes": [
+              "UNSUPPORTED_DELIVERY_AREA",
+              "INVALID_REQUEST",
+              "VALIDATION_FAILED"
+            ]
+          },
+          "401": {
+            "description": "Error family 401; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error401"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INVALID_CREDENTIALS",
+              "GUEST_PROOF_REQUIRED",
+              "AUTH_REQUIRED"
+            ]
+          },
+          "403": {
+            "description": "Error family 403; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error403"
+                }
+              }
+            },
+            "x-error-codes": [
+              "FORBIDDEN",
+              "CSRF_INVALID"
+            ]
+          },
+          "404": {
+            "description": "Error family 404; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error404"
+                }
+              }
+            },
+            "x-error-codes": [
+              "NOT_FOUND"
+            ]
+          },
+          "409": {
+            "description": "Error family 409; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error409"
+                }
+              }
+            },
+            "x-error-codes": [
+              "OUT_OF_STOCK",
+              "QUOTE_CHANGED",
+              "QUOTE_EXPIRED",
+              "IDEMPOTENCY_CONFLICT",
+              "COUPON_UNAVAILABLE",
+              "STATE_CONFLICT"
+            ]
+          },
+          "412": {
+            "description": "Error family 412; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error412"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_FAILED"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PAYMENT_AMOUNT_UNSUPPORTED",
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
+          "428": {
+            "description": "Error family 428; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error428"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_REQUIRED"
+            ]
+          },
+          "429": {
+            "description": "Error family 429; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error429"
+                }
+              }
+            },
+            "x-error-codes": [
+              "RATE_LIMITED"
+            ]
+          },
+          "500": {
+            "description": "Error family 500; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error500"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INTERNAL_ERROR"
+            ]
+          },
+          "503": {
+            "description": "Error family 503; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error503"
+                }
+              }
+            },
+            "x-error-codes": [
+              "SERVICE_UNAVAILABLE"
+            ]
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/payments/{paymentId}/risk-decisions": {
+      "post": {
+        "operationId": "post_admin_payments_paymentId_risk_decisions",
+        "tags": [
+          "admin"
+        ],
+        "summary": "POST /admin/payments/{paymentId}/risk-decisions",
+        "description": "Runtime Zod validation, Unicode/phone/password policies, ownership, coverage and cross-field refinements remain mandatory. JSON Schema describes the wire shape and representable constraints; it does not replace domain validation.",
+        "x-implementation-status": "implemented",
+        "x-activation": "ADMIN_AUTH_ENABLED in local/test only; independent risk decision, current admin/CSRF, durable idempotency and funded allocation gates; no payout or confirmation",
+        "x-replay-policy": "Current authorized replay returns current risk/hold without reapplying a historical approval. Changed body conflicts; every new decision is audited in the payment transaction.",
+        "x-runtime-validation": true,
+        "x-unknown-query-fields": "rejected except health probes",
+        "x-transport": "Exact approved-origin CORS; OPTIONS preflight, implicit HEAD on GET",
+        "parameters": [
+          {
+            "name": "paymentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{24}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri",
+              "description": "Exact approved frontend origin for this namespace"
+            }
+          }
+        ],
+        "security": [
+          {
+            "AdminSession": [],
+            "CsrfHeader": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Server-generated request UUID",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "const": "nosniff"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "riskStatus": {
+                          "type": "string",
+                          "enum": [
+                            "clear",
+                            "review",
+                            "rejected"
+                          ]
+                        },
+                        "fulfillmentHold": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "payment_pending",
+                            "risk_review",
+                            "allocation_shortfall",
+                            "admin_review"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "riskStatus",
+                        "fulfillmentHold"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      "required": [
+                        "requestId"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error family 400; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error400"
+                }
+              }
+            },
+            "x-error-codes": [
+              "UNSUPPORTED_DELIVERY_AREA",
+              "INVALID_REQUEST",
+              "VALIDATION_FAILED"
+            ]
+          },
+          "401": {
+            "description": "Error family 401; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error401"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INVALID_CREDENTIALS",
+              "GUEST_PROOF_REQUIRED",
+              "AUTH_REQUIRED"
+            ]
+          },
+          "403": {
+            "description": "Error family 403; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error403"
+                }
+              }
+            },
+            "x-error-codes": [
+              "FORBIDDEN",
+              "CSRF_INVALID"
+            ]
+          },
+          "404": {
+            "description": "Error family 404; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error404"
+                }
+              }
+            },
+            "x-error-codes": [
+              "NOT_FOUND"
+            ]
+          },
+          "409": {
+            "description": "Error family 409; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error409"
+                }
+              }
+            },
+            "x-error-codes": [
+              "OUT_OF_STOCK",
+              "QUOTE_CHANGED",
+              "QUOTE_EXPIRED",
+              "IDEMPOTENCY_CONFLICT",
+              "COUPON_UNAVAILABLE",
+              "STATE_CONFLICT"
+            ]
+          },
+          "412": {
+            "description": "Error family 412; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error412"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_FAILED"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PAYMENT_AMOUNT_UNSUPPORTED",
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
+          "428": {
+            "description": "Error family 428; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error428"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_REQUIRED"
+            ]
+          },
+          "429": {
+            "description": "Error family 429; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error429"
+                }
+              }
+            },
+            "x-error-codes": [
+              "RATE_LIMITED"
+            ]
+          },
+          "500": {
+            "description": "Error family 500; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error500"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INTERNAL_ERROR"
+            ]
+          },
+          "503": {
+            "description": "Error family 503; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error503"
+                }
+              }
+            },
+            "x-error-codes": [
+              "SERVICE_UNAVAILABLE"
+            ]
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "approve",
+                      "reject"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "decision",
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/products": {
       "get": {
         "operationId": "get_admin_products",
@@ -27817,6 +29561,1155 @@
         }
       }
     },
+    "/orders": {
+      "get": {
+        "operationId": "get_orders",
+        "tags": [
+          "orders"
+        ],
+        "summary": "GET /orders",
+        "description": "Runtime Zod validation, Unicode/phone/password policies, ownership, coverage and cross-field refinements remain mandatory. JSON Schema describes the wire shape and representable constraints; it does not replace domain validation.",
+        "x-implementation-status": "implemented",
+        "x-activation": "CUSTOMER_ORDER_READ_ENABLED plus customer auth; local/test only",
+        "x-replay-policy": "Read-only stable own-order history; totals use immutable snapshots",
+        "x-runtime-validation": true,
+        "x-unknown-query-fields": "rejected except health probes",
+        "x-transport": "Exact approved-origin CORS; OPTIONS preflight, implicit HEAD on GET",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9]\\d*$"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9]\\d*$"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "confirmed",
+                "processing",
+                "shipped",
+                "delivered",
+                "cancelled"
+              ]
+            }
+          }
+        ],
+        "security": [
+          {
+            "CustomerSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Server-generated request UUID",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "const": "nosniff"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{24}$"
+                          },
+                          "orderNumber": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 64
+                          },
+                          "fulfillmentStatus": {
+                            "type": "string",
+                            "enum": [
+                              "pending",
+                              "confirmed",
+                              "processing",
+                              "shipped",
+                              "delivered",
+                              "cancelled"
+                            ]
+                          },
+                          "paymentStatus": {
+                            "type": "string",
+                            "enum": [
+                              "pending",
+                              "paid",
+                              "failed",
+                              "cancelled",
+                              "partially_refunded",
+                              "refunded"
+                            ]
+                          },
+                          "finalTotalPoisha": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "currency": {
+                            "type": "string",
+                            "const": "BDT"
+                          },
+                          "placedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "fulfillmentHold": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "payment_pending",
+                              "risk_review",
+                              "allocation_shortfall",
+                              "admin_review"
+                            ]
+                          },
+                          "deliveryEstimate": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "orderNumber",
+                          "fulfillmentStatus",
+                          "paymentStatus",
+                          "finalTotalPoisha",
+                          "currency",
+                          "placedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      "required": [
+                        "requestId"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error family 400; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error400"
+                }
+              }
+            },
+            "x-error-codes": [
+              "UNSUPPORTED_DELIVERY_AREA",
+              "INVALID_REQUEST",
+              "VALIDATION_FAILED"
+            ]
+          },
+          "401": {
+            "description": "Error family 401; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error401"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INVALID_CREDENTIALS",
+              "GUEST_PROOF_REQUIRED",
+              "AUTH_REQUIRED"
+            ]
+          },
+          "403": {
+            "description": "Error family 403; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error403"
+                }
+              }
+            },
+            "x-error-codes": [
+              "FORBIDDEN",
+              "CSRF_INVALID"
+            ]
+          },
+          "404": {
+            "description": "Error family 404; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error404"
+                }
+              }
+            },
+            "x-error-codes": [
+              "NOT_FOUND"
+            ]
+          },
+          "409": {
+            "description": "Error family 409; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error409"
+                }
+              }
+            },
+            "x-error-codes": [
+              "OUT_OF_STOCK",
+              "QUOTE_CHANGED",
+              "QUOTE_EXPIRED",
+              "IDEMPOTENCY_CONFLICT",
+              "COUPON_UNAVAILABLE",
+              "STATE_CONFLICT"
+            ]
+          },
+          "412": {
+            "description": "Error family 412; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error412"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_FAILED"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PAYMENT_AMOUNT_UNSUPPORTED",
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
+          "428": {
+            "description": "Error family 428; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error428"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_REQUIRED"
+            ]
+          },
+          "429": {
+            "description": "Error family 429; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error429"
+                }
+              }
+            },
+            "x-error-codes": [
+              "RATE_LIMITED"
+            ]
+          },
+          "500": {
+            "description": "Error family 500; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error500"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INTERNAL_ERROR"
+            ]
+          },
+          "503": {
+            "description": "Error family 503; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error503"
+                }
+              }
+            },
+            "x-error-codes": [
+              "SERVICE_UNAVAILABLE"
+            ]
+          }
+        }
+      }
+    },
+    "/orders/{orderId}": {
+      "get": {
+        "operationId": "get_orders_orderId",
+        "tags": [
+          "orders"
+        ],
+        "summary": "GET /orders/{orderId}",
+        "description": "Runtime Zod validation, Unicode/phone/password policies, ownership, coverage and cross-field refinements remain mandatory. JSON Schema describes the wire shape and representable constraints; it does not replace domain validation.",
+        "x-implementation-status": "implemented",
+        "x-activation": "CUSTOMER_ORDER_READ_ENABLED plus customer auth; guest proof requires GUEST_ACCESS_ENABLED; local/test only",
+        "x-replay-policy": "Current customer or exact verified guest scope; no cross-order fallback",
+        "x-runtime-validation": true,
+        "x-unknown-query-fields": "rejected except health probes",
+        "x-transport": "Exact approved-origin CORS; OPTIONS preflight, implicit HEAD on GET",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{24}$"
+            }
+          }
+        ],
+        "security": [
+          {
+            "CustomerSession": []
+          },
+          {
+            "GuestOrderSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Server-generated request UUID",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "const": "nosniff"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{24}$"
+                        },
+                        "orderNumber": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        },
+                        "fulfillmentStatus": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "confirmed",
+                            "processing",
+                            "shipped",
+                            "delivered",
+                            "cancelled"
+                          ]
+                        },
+                        "paymentStatus": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "paid",
+                            "failed",
+                            "cancelled",
+                            "partially_refunded",
+                            "refunded"
+                          ]
+                        },
+                        "finalTotalPoisha": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "currency": {
+                          "type": "string",
+                          "const": "BDT"
+                        },
+                        "placedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "fulfillmentHold": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "payment_pending",
+                            "risk_review",
+                            "allocation_shortfall",
+                            "admin_review"
+                          ]
+                        },
+                        "deliveryEstimate": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "items": {
+                          "minItems": 1,
+                          "maxItems": 50,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{24}$"
+                              },
+                              "productId": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{24}$"
+                              },
+                              "variantId": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{24}$"
+                              },
+                              "productName": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 120
+                              },
+                              "sku": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 64
+                              },
+                              "variantAttributes": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "type": "string"
+                                },
+                                "maxProperties": 30
+                              },
+                              "quantity": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 50
+                              },
+                              "regularUnitPoisha": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "effectiveUnitPoisha": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "regularLinePoisha": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "productDiscountPoisha": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "couponAllocatedPoisha": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "netMerchandisePoisha": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "couponEligible": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "productId",
+                              "variantId",
+                              "productName",
+                              "sku",
+                              "variantAttributes",
+                              "quantity",
+                              "regularUnitPoisha",
+                              "effectiveUnitPoisha",
+                              "regularLinePoisha",
+                              "productDiscountPoisha",
+                              "couponAllocatedPoisha",
+                              "netMerchandisePoisha",
+                              "couponEligible"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "pricingSnapshot": {
+                          "type": "object",
+                          "properties": {
+                            "regularSubtotalPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "productDiscountPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "saleSubtotalPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "couponDiscountPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "deliveryChargePoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "finalTotalPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "currency": {
+                              "type": "string",
+                              "const": "BDT"
+                            }
+                          },
+                          "required": [
+                            "regularSubtotalPoisha",
+                            "productDiscountPoisha",
+                            "saleSubtotalPoisha",
+                            "couponDiscountPoisha",
+                            "deliveryChargePoisha",
+                            "finalTotalPoisha",
+                            "currency"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "deliverySnapshot": {
+                          "type": "object",
+                          "properties": {
+                            "recipient": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 2000
+                            },
+                            "phone": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 2000
+                            },
+                            "districtKey": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 2000
+                            },
+                            "areaKey": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 2000
+                            },
+                            "street": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 2000
+                            },
+                            "addressLine2": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 2000
+                            },
+                            "postalCode": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 2000
+                            },
+                            "chargePoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "deadlineRuleVersion": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 2000
+                            }
+                          },
+                          "required": [
+                            "recipient",
+                            "phone",
+                            "districtKey",
+                            "areaKey",
+                            "street",
+                            "chargePoisha",
+                            "deadlineRuleVersion"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "termsSnapshot": {
+                          "type": "object",
+                          "properties": {
+                            "acceptedAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "policyVersionIds": {
+                              "maxItems": 7,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 2000
+                              }
+                            },
+                            "termsVersion": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 2000
+                            }
+                          },
+                          "required": [
+                            "acceptedAt",
+                            "policyVersionIds",
+                            "termsVersion"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "policyVersions": {
+                          "maxItems": 7,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "shipping",
+                                  "cancellation",
+                                  "returns",
+                                  "refunds",
+                                  "privacy",
+                                  "terms",
+                                  "complaints"
+                                ]
+                              },
+                              "version": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 100
+                              },
+                              "effectiveAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "version",
+                              "effectiveAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "statusHistory": {
+                          "maxItems": 40,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "from": {
+                                "type": "string",
+                                "enum": [
+                                  "pending",
+                                  "confirmed",
+                                  "processing",
+                                  "shipped",
+                                  "delivered",
+                                  "cancelled"
+                                ]
+                              },
+                              "to": {
+                                "type": "string",
+                                "enum": [
+                                  "pending",
+                                  "confirmed",
+                                  "processing",
+                                  "shipped",
+                                  "delivered",
+                                  "cancelled"
+                                ]
+                              },
+                              "at": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              }
+                            },
+                            "required": [
+                              "from",
+                              "to",
+                              "at"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "paymentSummary": {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "pending",
+                                "paid",
+                                "failed",
+                                "cancelled",
+                                "partially_refunded",
+                                "refunded"
+                              ]
+                            },
+                            "fundingContext": {
+                              "type": "string",
+                              "enum": [
+                                "normal",
+                                "correction_only"
+                              ]
+                            },
+                            "expectedPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "verifiedCollectedPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "merchandiseFundedPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "correctionCollectedPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "unassignedCollectedPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "riskStatus": {
+                              "type": "string",
+                              "enum": [
+                                "clear",
+                                "review",
+                                "rejected"
+                              ]
+                            },
+                            "merchandiseRefundHeldPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "merchandiseRefundCompletedPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "correctionRefundHeldPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "correctionRefundCompletedPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "fundingContext",
+                            "expectedPoisha",
+                            "verifiedCollectedPoisha",
+                            "merchandiseFundedPoisha",
+                            "correctionCollectedPoisha",
+                            "unassignedCollectedPoisha",
+                            "riskStatus",
+                            "merchandiseRefundHeldPoisha",
+                            "merchandiseRefundCompletedPoisha",
+                            "correctionRefundHeldPoisha",
+                            "correctionRefundCompletedPoisha"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "deliveryDeadline": {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "awaiting_start",
+                                "calculated",
+                                "under_review"
+                              ]
+                            },
+                            "startEvent": {
+                              "type": "string",
+                              "const": "confirmedAt"
+                            },
+                            "ruleVersion": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 100
+                            },
+                            "startEventAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "targetDeadlineAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "legalCapAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "effectiveAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "startEvent",
+                            "ruleVersion"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "cancellationEligibility": {
+                          "type": "object",
+                          "properties": {
+                            "eligible": {
+                              "type": "boolean"
+                            },
+                            "reasonCode": {
+                              "type": "string",
+                              "enum": [
+                                "PRE_DISPATCH",
+                                "TERMINAL_OR_DISPATCHED"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "eligible",
+                            "reasonCode"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "claimEligibility": {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "const": "under_review"
+                            }
+                          },
+                          "required": [
+                            "status"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "orderNumber",
+                        "fulfillmentStatus",
+                        "paymentStatus",
+                        "finalTotalPoisha",
+                        "currency",
+                        "placedAt",
+                        "items",
+                        "pricingSnapshot",
+                        "deliverySnapshot",
+                        "termsSnapshot",
+                        "policyVersions",
+                        "statusHistory",
+                        "paymentSummary",
+                        "deliveryDeadline",
+                        "cancellationEligibility",
+                        "claimEligibility"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      "required": [
+                        "requestId"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error family 400; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error400"
+                }
+              }
+            },
+            "x-error-codes": [
+              "UNSUPPORTED_DELIVERY_AREA",
+              "INVALID_REQUEST",
+              "VALIDATION_FAILED"
+            ]
+          },
+          "401": {
+            "description": "Error family 401; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error401"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INVALID_CREDENTIALS",
+              "GUEST_PROOF_REQUIRED",
+              "AUTH_REQUIRED"
+            ]
+          },
+          "403": {
+            "description": "Error family 403; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error403"
+                }
+              }
+            },
+            "x-error-codes": [
+              "FORBIDDEN",
+              "CSRF_INVALID"
+            ]
+          },
+          "404": {
+            "description": "Error family 404; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error404"
+                }
+              }
+            },
+            "x-error-codes": [
+              "NOT_FOUND"
+            ]
+          },
+          "409": {
+            "description": "Error family 409; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error409"
+                }
+              }
+            },
+            "x-error-codes": [
+              "OUT_OF_STOCK",
+              "QUOTE_CHANGED",
+              "QUOTE_EXPIRED",
+              "IDEMPOTENCY_CONFLICT",
+              "COUPON_UNAVAILABLE",
+              "STATE_CONFLICT"
+            ]
+          },
+          "412": {
+            "description": "Error family 412; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error412"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_FAILED"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PAYMENT_AMOUNT_UNSUPPORTED",
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
+          "428": {
+            "description": "Error family 428; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error428"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_REQUIRED"
+            ]
+          },
+          "429": {
+            "description": "Error family 429; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error429"
+                }
+              }
+            },
+            "x-error-codes": [
+              "RATE_LIMITED"
+            ]
+          },
+          "500": {
+            "description": "Error family 500; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error500"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INTERNAL_ERROR"
+            ]
+          },
+          "503": {
+            "description": "Error family 503; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error503"
+                }
+              }
+            },
+            "x-error-codes": [
+              "SERVICE_UNAVAILABLE"
+            ]
+          }
+        }
+      }
+    },
     "/orders/{orderId}/payment-attempts": {
       "post": {
         "operationId": "post_orders_orderId_payment_attempts",
@@ -28427,6 +31320,868 @@
             "x-error-codes": [
               "SERVICE_UNAVAILABLE"
             ]
+          }
+        }
+      }
+    },
+    "/orders/{orderId}/status": {
+      "get": {
+        "operationId": "get_orders_orderId_status",
+        "tags": [
+          "orders"
+        ],
+        "summary": "GET /orders/{orderId}/status",
+        "description": "Runtime Zod validation, Unicode/phone/password policies, ownership, coverage and cross-field refinements remain mandatory. JSON Schema describes the wire shape and representable constraints; it does not replace domain validation.",
+        "x-implementation-status": "implemented",
+        "x-activation": "CUSTOMER_ORDER_READ_ENABLED plus customer auth; exact guest proof when enabled; local/test only",
+        "x-replay-policy": "Backend-authoritative payment and fulfillment are independent; no provider query",
+        "x-runtime-validation": true,
+        "x-unknown-query-fields": "rejected except health probes",
+        "x-transport": "Exact approved-origin CORS; OPTIONS preflight, implicit HEAD on GET",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{24}$"
+            }
+          }
+        ],
+        "security": [
+          {
+            "CustomerSession": []
+          },
+          {
+            "GuestOrderSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Server-generated request UUID",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "const": "nosniff"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "fulfillmentStatus": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "confirmed",
+                            "processing",
+                            "shipped",
+                            "delivered",
+                            "cancelled"
+                          ]
+                        },
+                        "fulfillmentHold": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "payment_pending",
+                            "risk_review",
+                            "allocation_shortfall",
+                            "admin_review"
+                          ]
+                        },
+                        "paymentSummary": {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "pending",
+                                "paid",
+                                "failed",
+                                "cancelled",
+                                "partially_refunded",
+                                "refunded"
+                              ]
+                            },
+                            "fundingContext": {
+                              "type": "string",
+                              "enum": [
+                                "normal",
+                                "correction_only"
+                              ]
+                            },
+                            "expectedPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "verifiedCollectedPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "merchandiseFundedPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "correctionCollectedPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "unassignedCollectedPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "riskStatus": {
+                              "type": "string",
+                              "enum": [
+                                "clear",
+                                "review",
+                                "rejected"
+                              ]
+                            },
+                            "merchandiseRefundHeldPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "merchandiseRefundCompletedPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "correctionRefundHeldPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "correctionRefundCompletedPoisha": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "fundingContext",
+                            "expectedPoisha",
+                            "verifiedCollectedPoisha",
+                            "merchandiseFundedPoisha",
+                            "correctionCollectedPoisha",
+                            "unassignedCollectedPoisha",
+                            "riskStatus",
+                            "merchandiseRefundHeldPoisha",
+                            "merchandiseRefundCompletedPoisha",
+                            "correctionRefundHeldPoisha",
+                            "correctionRefundCompletedPoisha"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "deliveryEstimate": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "deliveryDeadline": {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "awaiting_start",
+                                "calculated",
+                                "under_review"
+                              ]
+                            },
+                            "startEvent": {
+                              "type": "string",
+                              "const": "confirmedAt"
+                            },
+                            "ruleVersion": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 100
+                            },
+                            "startEventAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "targetDeadlineAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "legalCapAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "effectiveAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "startEvent",
+                            "ruleVersion"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "fulfillmentStatus",
+                        "paymentSummary",
+                        "deliveryDeadline"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      "required": [
+                        "requestId"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error family 400; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error400"
+                }
+              }
+            },
+            "x-error-codes": [
+              "UNSUPPORTED_DELIVERY_AREA",
+              "INVALID_REQUEST",
+              "VALIDATION_FAILED"
+            ]
+          },
+          "401": {
+            "description": "Error family 401; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error401"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INVALID_CREDENTIALS",
+              "GUEST_PROOF_REQUIRED",
+              "AUTH_REQUIRED"
+            ]
+          },
+          "403": {
+            "description": "Error family 403; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error403"
+                }
+              }
+            },
+            "x-error-codes": [
+              "FORBIDDEN",
+              "CSRF_INVALID"
+            ]
+          },
+          "404": {
+            "description": "Error family 404; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error404"
+                }
+              }
+            },
+            "x-error-codes": [
+              "NOT_FOUND"
+            ]
+          },
+          "409": {
+            "description": "Error family 409; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error409"
+                }
+              }
+            },
+            "x-error-codes": [
+              "OUT_OF_STOCK",
+              "QUOTE_CHANGED",
+              "QUOTE_EXPIRED",
+              "IDEMPOTENCY_CONFLICT",
+              "COUPON_UNAVAILABLE",
+              "STATE_CONFLICT"
+            ]
+          },
+          "412": {
+            "description": "Error family 412; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error412"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_FAILED"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PAYMENT_AMOUNT_UNSUPPORTED",
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
+          "428": {
+            "description": "Error family 428; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error428"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_REQUIRED"
+            ]
+          },
+          "429": {
+            "description": "Error family 429; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error429"
+                }
+              }
+            },
+            "x-error-codes": [
+              "RATE_LIMITED"
+            ]
+          },
+          "500": {
+            "description": "Error family 500; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error500"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INTERNAL_ERROR"
+            ]
+          },
+          "503": {
+            "description": "Error family 503; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error503"
+                }
+              }
+            },
+            "x-error-codes": [
+              "SERVICE_UNAVAILABLE"
+            ]
+          }
+        }
+      }
+    },
+    "/payment-returns/sslcommerz/{result}": {
+      "get": {
+        "operationId": "get_payment_returns_sslcommerz_result",
+        "tags": [
+          "payment-returns"
+        ],
+        "summary": "GET /payment-returns/sslcommerz/{result}",
+        "description": "Runtime Zod validation, Unicode/phone/password policies, ownership, coverage and cross-field refinements remain mandatory. JSON Schema describes the wire shape and representable constraints; it does not replace domain validation.",
+        "x-implementation-status": "implemented",
+        "x-activation": "PAYMENT_CALLBACKS_ENABLED with explicit fixed HTTPS URLs on the configured storefront origin; local/test only pending deployed provider transport qualification.",
+        "x-replay-policy": "Display hint only. Empty-body 303 strips all provider query/form values; no session/cookie/access or financial state transition. Untrusted success never establishes Paid.",
+        "x-runtime-validation": true,
+        "x-unknown-query-fields": "rejected except health probes",
+        "x-transport": "Exact approved-origin CORS; OPTIONS preflight, implicit HEAD on GET",
+        "parameters": [
+          {
+            "name": "result",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "success",
+                "fail",
+                "cancel"
+              ]
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "303": {
+            "description": "Successful operation",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Server-generated request UUID",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Location": {
+                "description": "Fixed configured HTTPS storefront URL; no provider parameters forwarded",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "const": "nosniff"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error family 400; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error400"
+                }
+              }
+            },
+            "x-error-codes": [
+              "UNSUPPORTED_DELIVERY_AREA",
+              "INVALID_REQUEST",
+              "VALIDATION_FAILED"
+            ]
+          },
+          "401": {
+            "description": "Error family 401; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error401"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INVALID_CREDENTIALS",
+              "GUEST_PROOF_REQUIRED",
+              "AUTH_REQUIRED"
+            ]
+          },
+          "403": {
+            "description": "Error family 403; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error403"
+                }
+              }
+            },
+            "x-error-codes": [
+              "FORBIDDEN",
+              "CSRF_INVALID"
+            ]
+          },
+          "404": {
+            "description": "Error family 404; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error404"
+                }
+              }
+            },
+            "x-error-codes": [
+              "NOT_FOUND"
+            ]
+          },
+          "409": {
+            "description": "Error family 409; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error409"
+                }
+              }
+            },
+            "x-error-codes": [
+              "OUT_OF_STOCK",
+              "QUOTE_CHANGED",
+              "QUOTE_EXPIRED",
+              "IDEMPOTENCY_CONFLICT",
+              "COUPON_UNAVAILABLE",
+              "STATE_CONFLICT"
+            ]
+          },
+          "412": {
+            "description": "Error family 412; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error412"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_FAILED"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PAYMENT_AMOUNT_UNSUPPORTED",
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
+          "428": {
+            "description": "Error family 428; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error428"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_REQUIRED"
+            ]
+          },
+          "429": {
+            "description": "Error family 429; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error429"
+                }
+              }
+            },
+            "x-error-codes": [
+              "RATE_LIMITED"
+            ]
+          },
+          "500": {
+            "description": "Error family 500; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error500"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INTERNAL_ERROR"
+            ]
+          },
+          "503": {
+            "description": "Error family 503; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error503"
+                }
+              }
+            },
+            "x-error-codes": [
+              "SERVICE_UNAVAILABLE"
+            ]
+          }
+        }
+      },
+      "post": {
+        "operationId": "post_payment_returns_sslcommerz_result",
+        "tags": [
+          "payment-returns"
+        ],
+        "summary": "POST /payment-returns/sslcommerz/{result}",
+        "description": "Runtime Zod validation, Unicode/phone/password policies, ownership, coverage and cross-field refinements remain mandatory. JSON Schema describes the wire shape and representable constraints; it does not replace domain validation.",
+        "x-implementation-status": "implemented",
+        "x-activation": "PAYMENT_CALLBACKS_ENABLED with explicit fixed HTTPS URLs on the configured storefront origin; local/test only pending deployed provider transport qualification.",
+        "x-replay-policy": "Display hint only. Empty-body 303 strips all provider query/form values; no session/cookie/access or financial state transition. Untrusted success never establishes Paid.",
+        "x-runtime-validation": true,
+        "x-unknown-query-fields": "rejected except health probes",
+        "x-transport": "Exact approved-origin CORS; OPTIONS preflight, implicit HEAD on GET",
+        "parameters": [
+          {
+            "name": "result",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "success",
+                "fail",
+                "cancel"
+              ]
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "303": {
+            "description": "Successful operation",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Server-generated request UUID",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Location": {
+                "description": "Fixed configured HTTPS storefront URL; no provider parameters forwarded",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "const": "nosniff"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error family 400; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error400"
+                }
+              }
+            },
+            "x-error-codes": [
+              "UNSUPPORTED_DELIVERY_AREA",
+              "INVALID_REQUEST",
+              "VALIDATION_FAILED"
+            ]
+          },
+          "401": {
+            "description": "Error family 401; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error401"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INVALID_CREDENTIALS",
+              "GUEST_PROOF_REQUIRED",
+              "AUTH_REQUIRED"
+            ]
+          },
+          "403": {
+            "description": "Error family 403; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error403"
+                }
+              }
+            },
+            "x-error-codes": [
+              "FORBIDDEN",
+              "CSRF_INVALID"
+            ]
+          },
+          "404": {
+            "description": "Error family 404; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error404"
+                }
+              }
+            },
+            "x-error-codes": [
+              "NOT_FOUND"
+            ]
+          },
+          "409": {
+            "description": "Error family 409; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error409"
+                }
+              }
+            },
+            "x-error-codes": [
+              "OUT_OF_STOCK",
+              "QUOTE_CHANGED",
+              "QUOTE_EXPIRED",
+              "IDEMPOTENCY_CONFLICT",
+              "COUPON_UNAVAILABLE",
+              "STATE_CONFLICT"
+            ]
+          },
+          "412": {
+            "description": "Error family 412; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error412"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_FAILED"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PAYMENT_AMOUNT_UNSUPPORTED",
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
+          "428": {
+            "description": "Error family 428; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error428"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_REQUIRED"
+            ]
+          },
+          "429": {
+            "description": "Error family 429; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error429"
+                }
+              }
+            },
+            "x-error-codes": [
+              "RATE_LIMITED"
+            ]
+          },
+          "500": {
+            "description": "Error family 500; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error500"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INTERNAL_ERROR"
+            ]
+          },
+          "503": {
+            "description": "Error family 503; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error503"
+                }
+              }
+            },
+            "x-error-codes": [
+              "SERVICE_UNAVAILABLE"
+            ]
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "additionalProperties": {
+                  "type": "string",
+                  "maxLength": 2048
+                }
+              }
+            }
           }
         }
       }
@@ -30588,6 +34343,410 @@
             "x-error-codes": [
               "SERVICE_UNAVAILABLE"
             ]
+          }
+        }
+      }
+    },
+    "/webhooks/sslcommerz/ipn": {
+      "post": {
+        "operationId": "post_webhooks_sslcommerz_ipn",
+        "tags": [
+          "webhooks"
+        ],
+        "summary": "POST /webhooks/sslcommerz/ipn",
+        "description": "Runtime Zod validation, Unicode/phone/password policies, ownership, coverage and cross-field refinements remain mandatory. JSON Schema describes the wire shape and representable constraints; it does not replace domain validation.",
+        "x-implementation-status": "implemented",
+        "x-activation": "PAYMENT_CALLBACKS_ENABLED local/test only, explicit same-storefront return URLs and reviewed audit/quota persistence. Runtime returns 503 until an independent durable processor is composed; no raw notification proves funds.",
+        "x-replay-policy": "Bounded URL-encoded untrusted claims; only normalized references cross the verifier boundary. 200 text OK only after durable verified outcome/recoverable reconciliation commit. Replays never imply new money; default is retryable 503.",
+        "x-runtime-validation": true,
+        "x-unknown-query-fields": "rejected except health probes",
+        "x-transport": "Exact approved-origin CORS; OPTIONS preflight, implicit HEAD on GET",
+        "parameters": [],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Server-generated request UUID",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "const": "nosniff"
+                }
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "const": "OK"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error family 400; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error400"
+                }
+              }
+            },
+            "x-error-codes": [
+              "UNSUPPORTED_DELIVERY_AREA",
+              "INVALID_REQUEST",
+              "VALIDATION_FAILED"
+            ]
+          },
+          "401": {
+            "description": "Error family 401; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error401"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INVALID_CREDENTIALS",
+              "GUEST_PROOF_REQUIRED",
+              "AUTH_REQUIRED"
+            ]
+          },
+          "403": {
+            "description": "Error family 403; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error403"
+                }
+              }
+            },
+            "x-error-codes": [
+              "FORBIDDEN",
+              "CSRF_INVALID"
+            ]
+          },
+          "404": {
+            "description": "Error family 404; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error404"
+                }
+              }
+            },
+            "x-error-codes": [
+              "NOT_FOUND"
+            ]
+          },
+          "409": {
+            "description": "Error family 409; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error409"
+                }
+              }
+            },
+            "x-error-codes": [
+              "OUT_OF_STOCK",
+              "QUOTE_CHANGED",
+              "QUOTE_EXPIRED",
+              "IDEMPOTENCY_CONFLICT",
+              "COUPON_UNAVAILABLE",
+              "STATE_CONFLICT"
+            ]
+          },
+          "412": {
+            "description": "Error family 412; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error412"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_FAILED"
+            ]
+          },
+          "422": {
+            "description": "Error family 422; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error422"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PAYMENT_AMOUNT_UNSUPPORTED",
+              "BUSINESS_RULE_VIOLATION"
+            ]
+          },
+          "428": {
+            "description": "Error family 428; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error428"
+                }
+              }
+            },
+            "x-error-codes": [
+              "PRECONDITION_REQUIRED"
+            ]
+          },
+          "429": {
+            "description": "Error family 429; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error429"
+                }
+              }
+            },
+            "x-error-codes": [
+              "RATE_LIMITED"
+            ]
+          },
+          "500": {
+            "description": "Error family 500; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error500"
+                }
+              }
+            },
+            "x-error-codes": [
+              "INTERNAL_ERROR"
+            ]
+          },
+          "503": {
+            "description": "Error family 503; applicable guards and service policies determine reachable codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error503"
+                }
+              }
+            },
+            "x-error-codes": [
+              "SERVICE_UNAVAILABLE"
+            ]
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "VALID",
+                      "VALIDATED",
+                      "FAILED",
+                      "CANCELLED",
+                      "EXPIRED",
+                      "UNATTEMPTED",
+                      "PENDING"
+                    ]
+                  },
+                  "tran_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 30
+                  },
+                  "val_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "const": ""
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 50
+                      }
+                    ]
+                  },
+                  "store_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 30
+                  },
+                  "bank_tran_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "const": ""
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 80
+                      }
+                    ]
+                  },
+                  "amount": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "const": ""
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^(0|[1-9]\\d{0,13})(\\.\\d{1,2})?$"
+                      }
+                    ]
+                  },
+                  "currency": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "const": ""
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^[A-Z]{3}$"
+                      }
+                    ]
+                  },
+                  "tran_date": {
+                    "type": "string",
+                    "maxLength": 32
+                  },
+                  "store_amount": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "const": ""
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^(0|[1-9]\\d{0,13})(\\.\\d{1,2})?$"
+                      }
+                    ]
+                  },
+                  "currency_type": {
+                    "type": "string",
+                    "maxLength": 3
+                  },
+                  "currency_amount": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "const": ""
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^(0|[1-9]\\d{0,13})(\\.\\d{1,2})?$"
+                      }
+                    ]
+                  },
+                  "currency_rate": {
+                    "type": "string",
+                    "maxLength": 30
+                  },
+                  "base_fair": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "const": ""
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^(0|[1-9]\\d{0,13})(\\.\\d{1,2})?$"
+                      }
+                    ]
+                  },
+                  "card_type": {
+                    "type": "string",
+                    "maxLength": 50
+                  },
+                  "card_no": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "card_issuer": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "card_brand": {
+                    "type": "string",
+                    "maxLength": 30
+                  },
+                  "card_issuer_country": {
+                    "type": "string",
+                    "maxLength": 50
+                  },
+                  "card_issuer_country_code": {
+                    "type": "string",
+                    "maxLength": 2
+                  },
+                  "value_a": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "value_b": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "value_c": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "value_d": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "verify_sign": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "verify_key": {
+                    "type": "string",
+                    "maxLength": 2048
+                  },
+                  "cus_fax": {
+                    "type": "string",
+                    "maxLength": 20
+                  },
+                  "risk_level": {
+                    "type": "string",
+                    "enum": [
+                      "0",
+                      "1",
+                      ""
+                    ]
+                  },
+                  "risk_title": {
+                    "type": "string",
+                    "maxLength": 50
+                  }
+                },
+                "required": [
+                  "status",
+                  "tran_id"
+                ],
+                "additionalProperties": false
+              }
+            }
           }
         }
       }

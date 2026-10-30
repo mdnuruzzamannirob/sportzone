@@ -144,3 +144,43 @@ order-detail/cancellation/claim/refund business routes or their financial eligib
 
 Both tasks remain In Review, alongside prior P06-006–009. No independent acceptance, milestone or
 external approval is inferred from this batch.
+
+## Combined review verification — 30 October 2026
+
+Re-reviewed current implementation at `df3b602` for the pending P06-006/007/008/009/010/015 and
+P07-005 acceptance. Dependencies implemented in later accepted payment tasks are now present;
+original revision-specific limitations above remain historical, not current integration claims.
+No runtime mutation, dependency change, external provider call or secret read was needed.
+
+| Current command | Result |
+| --- | --- |
+| `npm run build --workspace=backend` | Passed before compiled-entry integration tests |
+| `npm run typecheck --workspace=backend` | Passed |
+| `npm run lint:boundaries` | Passed: 332 files, zero errors |
+| `npm run test:unit --workspace=backend -- checkout-intent.test.ts checkout-quote.test.ts inventory-allocation.test.ts coupon-allocation.test.ts guest-access.test.ts payment-callback.test.ts delivery-deadline.test.ts media.test.ts container-health.test.ts` | Passed: 96 tests across nine files |
+| `cd backend && ../node_modules/.bin/vitest run --config vitest.integration.config.ts --reporter=default --reporter=json --outputFile=../test-results/pending-review-closeout.json checkout-intent.test.ts checkout-quote.test.ts inventory-allocation.test.ts coupon-allocation.test.ts guest-access.test.ts payment-callback.test.ts delivery-deadline.test.ts media.test.ts` | Passed: 242 tests across eight files |
+
+Environment: local Node/npm, isolated transaction-capable MongoDB replica sets, controlled gateway/
+email/media doubles and local HTTP/compiled child-process fixtures. The ignored JSON report is local
+execution output. Integration counts: checkout 124, guest 19, intent 14, coupon 28, callbacks 19,
+media 19, inventory 16, deadline 3. Relevant cases cover concurrent same-key replay and allocation,
+COD Pending/no fabricated collection, immutable shared online holds, expiry/payment races and fencing,
+single-use scoped guest proof, browser/IPN isolation, actual receipt-processing integration, migration
+and compiled entries. Existing valid contract/lint/format results from the preceding unchanged-code
+batch are reused under Testing §15.5; frontend/full-release checks were not rerun.
+
+Independent acceptance of each pending task is still required. Live provider/email, qualified
+compliance and staging evidence remain separate; this regression does not clear blocked tasks.
+
+## Independent acceptance — 30 October 2026
+
+Current status: **Done** for P06-010, P06-015. The project owner independently accepted
+the submitted current implementation and review evidence: “সাতটিই গ্রহণ করছি—Done করুন”.
+Earlier In Review statements describe their historical revision.
+
+- **P06-010: Done** — individually included in the explicit seven-task acceptance.
+- **P06-015: Done** — individually included in the explicit seven-task acceptance.
+
+Acceptance covers recorded local technical behavior and verification, including the current combined
+96-unit/242-integration review. It does not approve external provider/email qualification, legal
+applicability, staging deployment or milestones.

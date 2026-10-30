@@ -1,5 +1,9 @@
 // Registered route patterns only. Never classify or log raw paths, IDs or input.
 const actions = {
+  'POST /admin/payments/:paymentId/risk-decisions': 'admin.payment.risk_decision',
+  'POST /webhooks/sslcommerz/ipn': 'payment.callback.ipn',
+  'GET /payment-returns/sslcommerz/:result': 'payment.callback.return',
+  'POST /payment-returns/sslcommerz/:result': 'payment.callback.return',
   'POST /guest-access/challenges': 'guest.proof.request',
   'POST /guest-access/sessions': 'guest.proof.exchange',
   'GET /guest-access/session': 'guest.session.read',

@@ -91,14 +91,24 @@ export function guestSessionService(
     async owned<T>(
       token: string | undefined,
       orderId: string | undefined,
-      work: (scope: { orderId: string; expiresAt: Date }, session: ClientSession) => Promise<T>,
+      work: (
+        scope: { orderId: string; expiresAt: Date; sessionId: string },
+        session: ClientSession,
+      ) => Promise<T>,
       csrf?: string,
     ) {
       return inTransaction(connection, async (session) => {
         const row = await resolve(session, token, csrf)
         if (!row.orderId || (orderId !== undefined && row.orderId.toHexString() !== orderId))
           throw new ApiError('GUEST_PROOF_REQUIRED')
-        return work({ orderId: row.orderId.toHexString(), expiresAt: row.expiresAt }, session)
+        return work(
+          {
+            orderId: row.orderId.toHexString(),
+            expiresAt: row.expiresAt,
+            sessionId: row._id.toHexString(),
+          },
+          session,
+        )
       })
     },
     async refresh(token: string | undefined) {

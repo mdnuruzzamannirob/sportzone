@@ -98,3 +98,69 @@ These sources inform the recipe; they do not prove that this image built or depl
 Image run/health/draining/restart, image-layer secret/OS scans, hosted deployment, staging transactions,
 TLS/session/provider/email tests: **Not Run / Blocked** for the prerequisites above. Product milestones
 and provider/legal/production gates remain unaccepted. No acceptance popup is appropriate yet.
+
+## Blocker recheck — 30 October 2026
+
+Rechecked Docker daemon access with `docker version --format` (server-version field): permission denied on `/var/run/docker.sock`. No approved hosting/registry/origins, isolated secret references or authorized builder was supplied. No build, push or deployment was attempted; the host access limitation persists.
+
+The owner requested resolution of pending/blocked tasks. Protected evidence references were requested;
+no secret values were requested or inspected. P09-011 remains **Blocked** because task-specific
+external acceptance cannot be established by technical regression or generic completion instructions.
+
+Owner response on 30 October 2026: “ami currently dite parchina tumi kono ekta use kore naw”.
+Source selection is delegated, but no account/resource access, approved policy or qualified sign-off
+is supplied. No synthetic substitute can establish the missing external acceptance; status remains
+Blocked. Existing local test fixtures remain available without activating deployed integrations.
+
+
+## Render/Vercel preparation — 30 October 2026
+
+The owner explicitly selected Render for the API and Vercel for both frontends, requested combined
+application deployment preparation, a short branch/local commit and a complete GitHub/deployment guide.
+This authorizes local configuration and sequential application build verification; no account access,
+resource provisioning, Git push, task acceptance or commercial-plan entitlement was supplied.
+
+Delivered on `chore/render-vercel-deployment`:
+
+- Root `render.yaml`: JSON-form YAML Blueprint, one Free staging Docker API, manual deployment,
+  private required input prompts and all commerce/provider activation flags disabled. Source builds do
+  not require a separate registry; actual resource/origin/secret configuration remains external.
+- Per-app `vercel.json`: explicit root-workspace locked install with npm 11.19.0 and dev dependencies,
+  owning app builds, admin SPA fallback; no secret environment values or business proxy added.
+- Manual GitHub Container verification workflow: build backend only, verify non-root execution and
+  limited secret/source exclusion, preserve image-ID artifact. No image push/deploy or automatic job.
+- Operations §5.8 and README navigation: GitHub branches/protection/PRs, exact provider setup,
+  account limits, staged environment values, domain/cookie prerequisites, post-deploy checks and rollback.
+- Sanitized template: duplicate quote lifetime removed; plain verified EMAIL_FROM syntax clarified.
+  Private root `.env` is ignored and is not part of this commit.
+
+### Observed local verification
+
+| Command | Result / environment |
+| --- | --- |
+| `npm run build --workspace=backend` | Passed, local Node 24.20.0/npm 11.19.0 |
+| `npm run build --workspace=admin` | Passed; existing >500kB chunk advisory, no error |
+| `npm run build --workspace=storefront` | Passed with local child-process access; Next.js compiled/typechecked and generated 13 static pages |
+| `npm run test:unit` | Passed: 60 tooling cases, including 2 deployment configuration safety cases |
+| `npm run lint` | Passed: repository syntax, documentation links and configuration/secret controls |
+| `npm run format:check` | Passed: 549 files |
+| `npm run lint:boundaries` | Passed: 363 source files, zero boundary violations |
+| `git diff --check` | Passed |
+| `docker version --format '{{.Server.Version}}'` | Blocked: local Docker API socket permission denied |
+
+Initial sandboxed tooling execution passed 58/60; two child-process/watch fixtures could not run there.
+Rerun with required local process access passed all 60. Initial sandboxed Next build could not parse
+TypeScript child-process configuration output; the same unchanged build passed outside that constraint.
+An initial formatting check identified only the two new test loop layouts; formatted the touched test
+file and reran successfully. These failures are not relabelled as initial passes.
+
+Docker image build/run and hosted Container verification workflow, clean hosted Vercel install/build,
+Render Blueprint/provider validation, actual hosted services/TLS/sessions, staging DB schema/transactions,
+real scanner/email/payment, OS/image-layer scans, job schedules and recovery: **Not Run / Blocked**.
+No full application regression, UI visual/browser acceptance or financial integration rerun was needed
+for deployment metadata/documentation; those suites remain required at their owning task/stage gates.
+
+**Review:** Executor reviewed changed configuration/diff and secret exclusion. Independent acceptance
+is not recorded. P09-011 remains Blocked; no external, backend/application or production milestone is Done.
+Free Render cannot supply required durable scheduled runtime alone, Vercel Hobby is non-commercial only,
+and default cross-site domains need the documented same-site/proxy solution before auth activation.

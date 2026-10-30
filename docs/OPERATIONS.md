@@ -420,6 +420,86 @@ Without merchant evidence, online channels remain unavailable; bKash, Nagad, Roc
 require separate live launch acceptance. Availability does not enable the separately gated hosted initiation path or activate callbacks/receipt verification. Rollback can clear the evidence-file setting/restart or disable store
 flags while preserving attempt/receipt and approval history. No collection migration is introduced.
 
+Callback transport is independently gated by `PAYMENT_CALLBACKS_ENABLED=true` in local/test only;
+configuration and root composition refuse staging/production pending independent verification and
+provider qualification. Supply SSLCOMMERZ_MODE=sandbox, explicit SSLCOMMERZ_STORE_ID,
+PAYMENT_CALLBACK_RATE_LIMIT (1–60 requests per real peer per fixed minute), and
+PAYMENT_RETURN_SUCCESS_URL / PAYMENT_RETURN_FAIL_URL / PAYMENT_RETURN_CANCEL_URL. Return targets
+must be canonical absolute HTTPS URLs on STOREFRONT_ORIGIN, without credentials/query/fragment.
+Configure actual approved result routes; no route is guessed. All three may target one result page
+that reads authoritative scoped status. Default/false leaves callback routes unmounted.
+
+After build, `node --env-file=.env backend/scripts/bootstrap-payment-callbacks.mjs` additively
+provisions audit and the existing protected quota collection in an owned local/test database. It
+preserves audit facts, refuses unknown drift/deployed environments and never creates financial records
+or verifies merchant activation. HTTP startup never provisions this state. Missing audit/quota
+protection fails admission closed; quota hashing uses a distinct purpose with the backend secret.
+Register exact POST IPN and GET/POST return URLs only after provider transport qualification.
+
+Only the callback router accepts URL-encoded forms before the normal JSON parser (8 KiB, 64 fields,
+no compression/duplicate fields). It does not grant a wider parser/CSRF exception. Normal initiation,
+admin/customer and guest mutations retain their own JSON, Origin, CSRF, role and ownership checks.
+Callback responses grant no credentialed CORS access or sessions. Do not log request bodies, full
+callback URLs/queries, card fields, signatures, credentials or raw peer addresses in infrastructure.
+Browser success/fail/cancel is an untrusted display hint; empty-body 303 forwards none of those values.
+
+Runtime IPN returns retryable 503 until a separately composed independent processor verifies and
+commits its durable receipt/nonpayment/quarantine/reconciliation outcome. A security fingerprint alone
+never permits 200. A configured processor's 200 response is plain-text OK only after its durable result;
+confirm provider retry behavior/ACK transport and all merchant/channel gates independently. Do not
+interpret retry/no-IPN/browser navigation as noncollection or blindly create another charge.
+P07-006/007/012 own independent financial verification, replay protection and reliable reconciliation.
+
+For local/test durable intake, explicitly set PAYMENT_PROCESSING_ENABLED=true alongside callbacks
+and valid SSLCOMMERZ_ADAPTER_ENABLED sandbox configuration. Default false preserves retryable IPN.
+Staging/production is refused; this flag does not qualify merchant channels, legal rules or reconciliation.
+Provision existing payment/attempt/intake/collection/initiation and audit state with the reviewed
+`bootstrap-payment-initiation.mjs`, plus callback quota with `bootstrap-payment-callbacks.mjs`, after
+build in an owned local/test database. No new schema/index migration is introduced by processing.
+Existing inventory/coupon/order provisioning and immutable order snapshots remain required.
+
+Operator-approved safe behavior pending timezone evidence: accept only valid, explicit-offset collection
+timestamps and fail closed on timezone-free provider tran_date. Do not replace it with current time.
+A 503 means uncertain processing, not noncollection. Test doubles with explicit offsets are not provider
+qualification. Pending/unavailable validation and failed transactions remain retryable; polling is
+separately activated through the explicit worker procedure in §8.2 and never by API startup. Quarantined/mismatched intake, cancelled correction obligations and unassigned additional collections
+require the owning supervised reconciliation/correction workflow; do not manually convert them into merchandise funding.
+
+Initial linked funding and eligible live allocations commit together. Risk/expired holds retain funds
+without forced fulfillment; late recovery follows the separately fenced rules below. Committed orders remain pending/admin_review for the
+separate confirmation/deadline/notification workflow. A terminal nonpayment updates its attempt only,
+never releases another attempt's allocations. Inspect immutable intake, collection, guarded attempt and
+audit events for duplicate identity conflicts or risk escalation; preserve the original core proof.
+Disable PAYMENT_PROCESSING_ENABLED first to roll back local processing while retaining callbacks;
+IPN then returns 503. Preserve all receipt/payment/audit and allocation history. Disabling the flag
+cannot roll back verified money, and any deployed recovery still requires qualified reconciliation.
+
+Late allocation recovery follows the durable receipt transaction in a separate payment/order-fenced
+transaction. It honors current stock and coupon capacity together, reuses valid committed generation,
+and rolls back any partial reacquisition on shortfall. Verified Paid survives unavailable capacity.
+Cancelled late money remains cancelled, links entirely as correction, and creates an immutable
+under_review/not_reserved source obligation with no guessed method/policy or automatic payout.
+
+After build, rerun the local/test `bootstrap-payment-initiation.mjs`: it applies only the exact known
+payments-validator additive change and provisions the canonical refunds correction-intent slice and
+indexes. Repeats preserve data; unknown validator/index protection fails closed. HTTP never migrates.
+Existing full/unknown refunds schemas require separate reviewed migration rather than replacement.
+An old backend cannot safely restore its former validator over correction-only Paid data. Preserve
+all receipt/source/obligation/audit facts; rollback means disable writes, not delete verified money.
+
+Risk-decision API is mounted only with ADMIN_AUTH_ENABLED in local/test. Every mutation requires
+current admin session, Origin/CSRF and explicit Idempotency-Key/reason. Approval does not itself
+fulfill: retained/reacquired stock/coupon must pass the separate funded recovery transaction. Rejection
+holds funds and fulfillment without automatic refund. Replaying a historical approval cannot clear a
+new review. The same already reviewed provider flag is not reopened by ordinary duplicate IPN.
+Disable processing plus admin mutations for a local financial freeze; processing flag alone does
+not unmount risk decisions. Staging/production activation and provider/legal qualifications stay blocked.
+
+Rollback disables callback composition while preserving audit/quota and all financial histories.
+Keep canonical receipt, correction-obligation and audit history; no separate raw callback collection
+or API-started automatic worker is implied. A deployed rollback must reconcile provider retry
+queues and uncertain payment outcomes through its reviewed procedure; local tests are not provider acceptance.
+
 Hosted initiation requires `PAYMENT_INITIATION_ENABLED=true`, CUSTOMER_AUTH_ENABLED, valid explicit
 adapter options and current merchant evidence. It is local/test only: both configuration and root
 composition refuse staging/production until callback/independent verification tasks are qualified.
@@ -870,6 +950,205 @@ command paths when deploying this layout; use the matching complete artifact for
 safe diagnostics, readiness verification and connection/worker cleanup. Module ownership and target paths
 belong to Architecture §§4–6, not a second operational source tree.
 
+### 5.8 Render and Vercel staging deployment
+
+**Owner-selected topology:** Render Docker API, two Vercel frontend projects and isolated MongoDB
+Atlas. The tracked [Render Blueprint](../render.yaml) uses JSON syntax (valid YAML) so repository tests
+can validate it without another parser. [Admin configuration](../admin/vercel.json) and
+[storefront configuration](../storefront/vercel.json) contain no secrets or provider activation.
+These are deployment inputs, not proof of a successful hosted build or complete application readiness.
+The owner requested combined deployment preparation; verify backend → admin → storefront in sequence,
+then retain independent application/task acceptance. Provisioning costs and platform terms still apply.
+
+#### 5.8.1 GitHub setup and branch roles
+
+1. Keep one private GitHub repository for all three workspaces. Never upload `.env`, database dumps,
+   customer data or provider credentials. Configure two-factor authentication and least-privilege access.
+2. Keep **`main`** as the reviewed integration branch. No permanent `develop`, `frontend`, `backend` or
+   separate production branch is required. Actual environment/project/configuration identifies staging
+   versus production; a branch name does not authorize launch.
+3. Create short branches such as `feat/P08-002-return-eligibility`, `fix/payment-replay` and
+   `chore/render-vercel-deployment`. Open a PR to `main`, record tests and obtain independent review;
+   squash-merge after required checks pass, then delete the merged branch. Do not self-approve milestones.
+4. GitHub Settings → Rules → Rulesets / Branch protection: target `main`, require PRs, an independent
+   approval where the plan supports enforcement, resolved conversations and the actual **CI required result**
+   check from `.github/workflows/ci.yml`; block force pushes/deletion. Select the observed check after CI
+   has run. If private-repository plan features are unavailable, record the limitation and use the explicit
+   review/release approval record; do not claim enforcement exists. No passing placeholder is allowed.
+5. Actions → CI: inspect the actual run and artifacts. The current workflow installs Node/npm from
+   `.nvmrc` and the recorded package-manager version and selects affected checks. No application secrets
+   belong in PR test jobs. Repository/hosting permissions and protection settings require actual inspection.
+The manual **Container verification** workflow (`.github/workflows/container.yml`) provides a
+GitHub-hosted Docker builder: after the workflow is present on the default branch, Actions → Container
+verification → Run workflow on the reviewed ref. It builds without secrets, checks non-root execution
+and a limited runtime file inventory, and preserves an image-ID record. It neither pushes an image nor
+deploys resources; full layer/OS scanning, HTTP/DB/draining/worker checks remain required. Render builds
+from source directly, so this topology does not require a separate image registry account.
+
+6. Initially deploy **manually** from an identified reviewed commit on `main` to isolated staging.
+   Keep Render auto-deploy and Blueprint auto-sync off until the release procedure is accepted. Vercel's
+   label “Production” means its stable project deployment, not SportZone production acceptance: the
+   initial projects below are staging resources even when their stable branch is `main`.
+7. Never attach sensitive staging secrets to arbitrary PR/fork previews. Preview domains are not approved
+   cookie/CORS origins. Leave commerce/auth disabled for previews, or provision a separately reviewed
+   isolated preview environment. Production later uses distinct projects, secrets, data and approvals.
+
+Example after reviewing this branch locally (publishing is an explicit owner action):
+
+```bash
+git push -u origin chore/render-vercel-deployment
+```
+
+Create the PR on GitHub, wait for CI and review, then squash-merge. For the next task, update `main`
+with a fast-forward pull and create a new short branch. Do not force-push shared branches. A real
+release tag is created only after release acceptance, not for this configuration preparation.
+
+#### 5.8.2 Free-tier boundary and accounts
+
+- Render Free supports a sleeping Docker web service. It sleeps after 15 idle minutes, has a shared
+  workspace allowance of 750 instance hours/month and lacks free cron/background worker, shell and
+  one-off job support. Track bandwidth/build usage and spending controls. This is a demo/staging
+  compromise, not accepted production infrastructure. No keep-alive pings or hidden polling scheduler.
+- Vercel Hobby is restricted to personal non-commercial use. SportZone commercial deployment requires
+  an appropriate commercial plan or another approved host. Do not promise a fully free commercial
+  Render/Vercel shop. Confirm account eligibility before importing the frontend projects.
+- Atlas Free has capacity/operational limits; use only isolated synthetic staging data. Select a supported
+  region and verify actual transactions and backup/recovery limitations rather than assuming acceptance.
+- Cloudinary, Resend and merchant sandbox access are separate accounts with their own limits. Credentials
+  do not establish scanner availability, sender verification or bKash/Nagad/Rocket merchant activation.
+
+Official provider references: [Render Free](https://render.com/docs/free),
+[Vercel Hobby](https://vercel.com/docs/plans/hobby),
+[Atlas Free](https://www.mongodb.com/docs/atlas/reference/free-shared-limitations/).
+
+#### 5.8.3 Account and domain preparation — owner checklist
+
+1. Connect the GitHub repository to Render and Vercel using provider GitHub Apps, with access only to
+   this repository. Select region/resources deliberately; provisioning is not performed by these files.
+2. Atlas: create an isolated project/Free cluster and a least-privilege staging database user. Reserve
+   `sportzone_staging`. Connect → Drivers gives the private URI; percent-encode credentials as required.
+   Allow the operator's IP for approved maintenance and Render's displayed outbound IP ranges. Avoid
+   unrestricted internet access. Never point local/CI at this staging URI implicitly.
+3. Reserve the stable API/shop/admin addresses. Prefer `api.<owned-domain>`, `shop.<owned-domain>` and
+   `admin.<owned-domain>`, with TLS on all three. Follow each provider's current DNS verification UI;
+   do not guess CNAME/A targets. Provider-assigned URLs may serve public previews initially.
+4. Separate `vercel.app` and `onrender.com` sites do not satisfy the current Lax/Strict session-cookie
+   arrangement for cross-site fetches. Full login/CSRF acceptance requires approved same-site custom
+   subdomains or an implemented and independently verified same-origin proxy. This package adds no
+   proxy or SameSite=None exception. CORS alone does not repair cookie scope. Do not enable auth to
+   present a broken cross-site deployment as ready.
+5. Record nonsecret project IDs/links, owners, intended commit, origins, secret-store references and
+   deployment/rollback approver in the protected inventory. Provider passwords/secrets stay out of chat,
+   issues, screenshots and Git. Keep local `.env` separate from staging configuration.
+
+#### 5.8.4 Render API — exact setup
+
+1. New → Blueprint → connect this repository and select `main` after merge. Review `render.yaml` before
+   provisioning: one Free Docker API only, no paid workers/databases, auto-deploy off. Disable Blueprint
+   auto-sync in its settings. The Blueprint may trigger the first deploy on creation; fill all required
+   values before confirming. Missing inputs or platform access can still block that deploy.
+2. Equivalent manual Web Service fields: root directory **empty**, runtime Docker, Dockerfile
+   `backend/Dockerfile`, build context `.`, plan Free, health path `/api/v1/health/live`. Leave Docker
+   Command empty to preserve `ENTRYPOINT node` / `CMD dist/server.js`. No npm start/build override.
+3. Supply each `sync: false` value from the UI. Use the actual approved origins with no trailing slash;
+   `CORS_ALLOWED_ORIGINS` is exactly `STOREFRONT_ORIGIN,ADMIN_ORIGIN`. Set `RELEASE_ID` to the deployed
+   commit's short SHA (bounded release metadata), not a fabricated release tag. `APP_ENV=staging` pairs
+   with `NODE_ENV=production`; bind `0.0.0.0:4000` behind Render TLS.
+4. Provision independent staging `SESSION_SECRET` and `HEALTH_MONITOR_TOKEN`. Generate each privately
+   with `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`. Do not rotate an
+   existing environment's keys casually. Proof key rings are provisioned separately before proof activation.
+   Never configure these as Docker build arguments or add ARG/RUN references to them; the image recipe
+   consumes no runtime secrets. Inspect the actual hosted image/build logs for accidental secret exposure.
+5. Keep all Blueprint activation flags false. No merchant keys are needed for the initial disabled
+   deployment. Later provider secrets use the exact names in `.env.example`; `EMAIL_FROM` is a plain
+   verified email address. The Blueprint does not invent approval-file contents or operational policy.
+6. Deploy the reviewed commit. Check logs for `ready` and public `/api/v1/health/live`. Monitor authenticated
+   `/api/v1/health/ready` privately with the approved monitor-token transport from API §16.4; never expose
+   readiness credentials in a public health-check URL. Liveness is not financial/provider readiness.
+7. `sync: false` values are initial prompts, not ongoing secret updates: change existing service secrets
+   in the provider UI/approved secret mechanism. Do not expect Blueprint re-sync to rotate them.
+
+The Render recipe is deliberately a disabled-feature staging scaffold. Reviewed schema/index rollout,
+actual image inspection, non-root runtime, draining, transactions and worker execution remain P09-011
+acceptance prerequisites. Existing `bootstrap-*.mjs` tools refuse staging/production: do not set
+`APP_ENV=local` against a hosted database or run them as a deploy command. Prepare the owning additive
+operator rollout and reviewed administrator provisioning before enabling auth/commerce.
+
+#### 5.8.5 Vercel admin — after backend verification
+
+Import the same GitHub repository as a separate project named `sportzone-admin-staging`:
+
+| Setting | Value |
+| --- | --- |
+| Root Directory | `admin` |
+| Framework | Vite |
+| Node.js | 24.x, at least the repository engine minimum |
+| Include source files outside Root Directory | Enabled for workspace/shared inputs |
+| Install / Build commands | Use tracked `admin/vercel.json`; do not override in dashboard |
+| Output | `dist` |
+| Stable deployment branch | `main` in this isolated staging project |
+| Environment | `VITE_API_ORIGIN=https://<approved-staging-api-origin>` |
+
+The install command runs from repository root using npm 11.19.0, the shared lockfile and explicit dev
+build dependencies. Build executes in `admin`. The SPA rewrite preserves direct React Router navigation.
+No backend/provider keys belong in Vercel's admin environment. Rebuild when the compiled API origin changes.
+Importing the project starts a deployment; choose eligible plan and correct environment before confirming.
+
+#### 5.8.6 Vercel storefront — after admin verification
+
+Import the same repository again as `sportzone-shop-staging`:
+
+| Setting | Value |
+| --- | --- |
+| Root Directory | `storefront` |
+| Framework | Next.js |
+| Node.js | 24.x, at least the repository engine minimum |
+| Include source files outside Root Directory | Enabled for workspace/shared inputs |
+| Install / Build commands | Use tracked `storefront/vercel.json` |
+| Output / Start command | Next.js platform defaults; no Render start command |
+| Stable deployment branch | `main` in this isolated staging project |
+
+Set `NEXT_PUBLIC_API_ORIGIN` and server-side `API_PUBLIC_ORIGIN` to the approved API origin, and
+`STOREFRONT_ORIGIN` to this project's stable approved shop origin. These are origins, not `/api/v1` URLs.
+The install uses the root lockfile and pinned npm. No storefront provider/MongoDB/session secrets.
+Retain existing private cache headers, server/client ownership and dynamic catalog error behavior.
+
+Vercel's supported Node 24 minor may change independently of local `.nvmrc`; inspect the actual version
+and honor package engines. Do not bypass engine failures. Official references:
+[Vercel monorepos](https://vercel.com/docs/monorepos),
+[Vite deployment](https://vercel.com/docs/frameworks/frontend/vite),
+[Render Blueprints](https://render.com/docs/blueprint-spec).
+
+#### 5.8.7 Post-deploy checks, activation and recovery
+
+1. Record all three actual stable URLs and commit/build IDs. Match Render origins/CORS and Vercel API
+   origins; rebuild frontends after public env changes. Restrict preview access where the selected plan
+   allows it; if access controls are unavailable, keep private capabilities disabled.
+2. Check API liveness and protected readiness, TLS and redirects; public catalog success, unavailable API
+   and missing-product behavior; admin deep-link refresh; frontend network calls and error states. Record
+   cold-start failures honestly. Do not treat an HTTP 200 home page as end-to-end acceptance.
+3. Complete the reviewed staging schema/index rollout and transaction test. Verify the same-site/proxy
+   arrangement before customer/admin/guest login, session-cookie, CSRF, logout and ownership tests. Enable
+   only features with accepted prerequisites; keep qualified delivery/policy/provider gates intact.
+4. Configure media plus reachable private scanner and approved retention policy, test-only Resend sender/
+   recipient, and merchant sandbox qualifications in their owning work packages. Current runtime still
+   refuses several staging payment/commerce activations: no environment workaround is authorized.
+5. Free Render has no cron/background worker or shell. This package provisions no scheduler and no
+   scanner. Prepare an authorized external runner/local operator machine and approved job schedule only
+   after runtime/persistence qualification. A sleeping API is not a reliable scheduler. Never expose an
+   unauthenticated “run jobs” endpoint; never run financial retries blindly. Notification and expiry image
+   commands are in §5.6; other source workers need their owning packaging/qualification before scheduling.
+6. On deploy failure inspect safe configuration-field errors and provider logs. Check Atlas access list,
+   database name, Node/npm versions, lockfile, origins and feature flags. Do not print credentials or
+   weaken validation. If free memory/build quota is insufficient, report Blocked rather than claiming a
+   successful free deployment; select a reviewed resource plan or continue local testing.
+7. Roll back code with Render/Vercel's previous identified compatible deployment, verify config compatibility
+   and repeat affected smoke/security checks. Preserve MongoDB orders, receipts, outbox and audit records;
+   never delete/restore a database just to fix a frontend build. Reconcile external effects under §6.
+8. Attach actual URLs, build/image identity, observed checks, limitations and independent acceptance to
+   [P09-011 evidence](./evidence/P09-011-staging-runtime.md). P09-012 integrated staging, P03-022 backend
+   closeout and production milestones stay separate. Configuration preparation does not mark them Done.
+
 ## 6. Release management & rollback
 
 ### 6.1 Release record
@@ -1124,6 +1403,24 @@ in protected config. Templates and original recipient addresses are not logged; 
 failure. The outbox contains no plaintext proof/session/password or arbitrary email HTML. Enabled identity proof renderers supply authenticated
 envelope/challenge checks for explicitly activated customer-reset/email-change/admin-reset/guest-access templates; other proof templates remain disabled.
 
+Payment templates additionally require `PAYMENT_NOTIFICATIONS_ENABLED=true`, restricted to
+local/test. Default workers skip these events and never substitute a registration template.
+After backend build, the explicit local/test `bootstrap-payment-initiation.mjs` also migrates the
+known notification predecessor; `migrate-notifications.mjs` remains available. Preserve queued,
+sent and uncertain evidence on rollback; use a compatible binary rather than reverting validators.
+Queue persistence is distinct from delivery and verified collection. Keep deployed payment delivery
+blocked pending provider/template qualification; the existing test-recipient override is mandatory.
+Retry admission queries all prior attempts independently; unknown outcomes require reconciliation,
+not a fresh charge. Histories over 100 attempts require operational investigation.
+
+Commerce templates separately require `ORDER_NOTIFICATIONS_ENABLED=true` in local/test, default false.
+The existing approved test-recipient override and sender/provider protections remain mandatory.
+Default workers skip order events; they never send a welcome-email fallback. Before upgraded HTTP/
+worker readiness, build and explicitly run `migrate-notifications.mjs` or the local/test
+`bootstrap-delivery-support.mjs`; only exact known predecessor validators migrate, preserving rows,
+leases, accepted sends and uncertainty. Old binaries need a schema-compatible rollback build rather
+than deletion or a validator downgrade. Provider acceptance remains distinct from inbox delivery.
+
 Policy bounds: 1–10 attempts; 1–100 claims per batch; base delay 100–3600000 ms; maximum delay at least the base and at most
 86400000 ms; lease 1000–3600000 ms; HTTP timeout 1–60000 ms. Require lease strictly greater than timeout plus 1000 ms.
 All values are explicit; the sanitized template leaves them blank. Run cadence and concurrency must respect provider
@@ -1147,12 +1444,51 @@ schema expansion accepts prior registration data, but old binaries with exact ol
 restart. Use a compatible rollback build; do not erase new lease/receipt fields or downgrade validation destructively.
 Verify provider/recipient behavior, reconciliation exercises and operator approval separately in the target environment.
 
+**Payment reconciliation — local/test command:** build, then run the reviewed additive
+`node --env-file=.env backend/scripts/bootstrap-payment-initiation.mjs` against the owned local/test
+database. It now also provisions existing jobLeases protection, preserving all progress and financial
+history. The worker never provisions/migrates state. Run one bounded scan with
+`node --env-file=.env backend/scripts/reconcile-payments.mjs` only after explicit configuration.
+
+Required: PAYMENT_RECONCILIATION_ENABLED=true plus valid SSLCOMMERZ_ADAPTER_ENABLED sandbox settings;
+PAYMENT_RECONCILIATION_BATCH_SIZE (1–100), PAYMENT_RECONCILIATION_LEASE_MS (1,000–3,600,000),
+PAYMENT_RECONCILIATION_POLL_MS (1,000–86,400,000),
+PAYMENT_RECONCILIATION_TERMINAL_POLL_MS (at least poll interval, up to 604,800,000), and
+PAYMENT_RECONCILIATION_ESCALATE_AFTER_MS (at least poll interval, up to 2,592,000,000).
+These are technical bounds, not defaults, provider limits or legal deadlines. Agree cadence/budget with
+the merchant/backend owner and record the actual external scheduler, duty contact and environment.
+Allow the lease budget for configured provider timeouts and batch validation work; insufficient lease
+budget fails closed rather than extending ownership or acknowledging stale effects. Staging/production
+execution is refused until separate provider/scheduler qualification. No deployed schedule is claimed.
+
+The command is independent of callback availability and API processing activation: it only reads
+original merchant-scoped transaction identities and applies independently verified results through the
+same domain processor. Terminal attempts are revisited less frequently as explicitly configured to
+catch late/distinct collections. No timeout or missing result creates Failed or a new charge. A stale
+worker cannot commit receipt/stock/coupon effects, observation state or a checkpoint. On crash, replay
+may repeat safe provider queries but receipt/payment/allocation identities suppress financial duplication.
+
+Monitor payment_reconciliation counts (scanned/resolved/unresolved/escalated/skipped), jobLeases last
+success/failureCount and lease age, paymentAttempts.lastCheckedAt, quarantined intake and protected
+payment.reconcile.escalated/payment.reconcile.resolved audit facts. Escalated counts are newly recorded
+once-only investigations; unresolved can remain nonzero after a prior escalation. A Paid attempt with
+new quarantined money or unavailable current verification is not reported resolved. Inspect current
+protected payment/attempt/intake evidence through authorized operational access; do not log references,
+raw provider responses or secrets in public output. Escalation is a durable operator investigation fact,
+not a new customer email or permission to refund/retry. P07-013 owns safe user payment retry admission.
+
+To freeze local financial writes, stop/disable scheduled reconciliation too, alongside API processing
+and admin financial mutations. Preserve cursor, attempts, immutable receipts and correction obligations;
+do not clear leases/counters blindly or reset financial identities. Existing unassigned collections
+require supervised reclassification; new exactly matched excess goes to source-specific correction
+accounting and unreserved refund review, never duplicate fulfillment or merchandise refund totals.
+
 ### 8.3 Schedule and ownership record
 
 | Job key                           | Scheduling basis (UTC)                                                  | Retry/backoff                        | Responsible role         | Environment scope                                   |
 | --------------------------------- | ----------------------------------------------------------------------- | ------------------------------------ | ------------------------ | --------------------------------------------------- |
 | Reservation/coupon expiry         | Process eligible holds at their recorded expiry                         | Bounded and idempotent               | Backend owner            | Local/CI, staging and production                    |
-| Payment intake/verification       | Callback-driven intake plus provider-compatible reconciliation interval | Bounded; status-aware                | Backend / merchant owner | Isolated sandbox; activated live merchant           |
+| Payment intake/verification       | Callback plus explicitly scheduled status-aware reconciliation | Bounded fixed intervals; lease-fenced | Backend / merchant owner | Executable local/test; deployed qualification separate |
 | Refund status verification        | Provider-supported polling and uncertainty reconciliation               | Bounded; no duplicate payout         | Backend / finance owner  | Sandbox and authorized live service                 |
 | Notification dispatch             | Durable outbox availability and configured retry policy                 | Bounded; dedupe by `eventKey`        | Backend owner            | Separate provider resources per environment         |
 | Delivery-charge/policy activation | Recorded UTC effective instants                                         | CAS-protected, idempotent activation | Backend / store operator | Staging and production; synthetic local/CI triggers |
@@ -1438,6 +1774,70 @@ pending request is **not** completed payout.
 | COD order accepted, money not collected                 | Order may have committed stock; COD collection remains unconfirmed                      |
 | Refund initiation/timeout/unknown                       | Keep source balance reserved, verify payout outcome; no new blindly generated payout ID |
 | Confirmed refund payout                                 | Mark completed only with trusted evidence; separately report merchandise vs correction  |
+
+#### Claim foundation bootstrap
+
+After backend build, run `node --env-file=.env backend/scripts/bootstrap-returns.mjs` only against an
+owned local/test database. It creates the strict requested-claim validator and declared indexes,
+refuses unknown drift and deployed environments, and enables no HTTP route. Preserve return requests,
+order-item ordinal coverage and audit together during restore. Do not delete a claim to release
+capacity; release/approval/refund/restock require their later owning workflows. No real policy,
+media evidence or customer submission is seeded.
+
+Administrator payment reconcile requests are durable audit intents, not synchronous provider calls.
+Run the existing merchant-partitioned reconciliation worker to process them. Inspect canonical payment
+state after processing; a 202 response does not establish Paid. Existing lease/retry/escalation and
+provider qualification requirements remain mandatory. Replays do not refresh timestamps or resend
+charges; unmatched/quarantined monitoring is read-only pending authorized investigation.
+
+#### Local lifecycle and COD capabilities
+
+P06-011/P06-012 local domain services have no ordinary HTTP/root/worker activation. No environment
+flag or bootstrap enables them. Confirmation requires a qualified protected approval capability for
+the exact captured basis; the capability must use preverified/local transactional evidence and must
+not call providers inside the business transaction. Missing capability denies confirmation. COD
+recording separately requires a real protected evidence verifier; a user-supplied reference is not proof.
+Use synthetic adapters only in isolated tests. Qualified delivery sign-off, real evidence integration,
+HTTP authorization/CSRF contracts and deployment verification must precede task acceptance/activation.
+Preserve orders/commitments, stock movements, source collections, corrections and audit together on
+restore. Never retry uncertain cash recording with a fresh identity or erase a dispatch movement.
+
+#### Local cancellation and owned order reads
+
+After build, `node --env-file=.env backend/scripts/bootstrap-cancellations.mjs` explicitly provisions
+only the strict local/test cancellation collection and indexes. It refuses deployed environments and
+unknown drift, preserves existing requests, and enables no cancellation HTTP route or decision.
+Requests, immutable submission identity, admin audit and stock/coupon history must be restored together.
+Do not clear a key or pending request to retry a possibly committed decision.
+
+`CUSTOMER_ORDER_READ_ENABLED=false` is the default. Explicit true requires customer authentication in
+local/test and provisioned order/payment/consumed-quote history; guest detail additionally requires
+GUEST_ACCESS_ENABLED and exact proof. The existing HTTP process serves GET /orders, /orders/{id}
+and /orders/{id}/status only when enabled. All are no-store; no browser mutation is enabled by this
+flag. Missing/contradictory historical PolicyRefs in consumed quotes fail detail closed, never fall
+back to current policy; assess retained history before cleanup/restore or enabling reads.
+
+Cancellation mutation services remain private until accepted P06-011 and their browser/admin Origin,
+CSRF, rate/access and DTO integration. Missing real source-backed merchandise refund capability blocks
+paid approvals; the correction-only refund model is not a substitute. Unpaid online cancellation does
+not remove attempts or disable merchant reconciliation; later verified funds remain correction-only.
+
+#### Delivery exception and complaint foundation
+
+After build, explicit local/test `node --env-file=.env backend/scripts/bootstrap-delivery-support.mjs`
+creates strict exception/complaint persistence and applies the known notification migration. It does
+not open HTTP support/closure APIs, start workers or seed approvals/contacts/financial effects.
+Unknown drift and deployed configuration are refused. Keep order/exception/complaint/audit evidence,
+source collections, recovery movements and notification records together across restores.
+
+Final non-delivery requires a protected custody/inspection authority and per-shipped-item full
+accounting. No real verifier is installed by default. Missing source-backed refund obligations block
+paid closure; recovered resale stock changes only after verified inspection, with a globally stable
+receipt per original order item. Never rerun pre-shipment release or reset a recovery identity.
+Uncertain collection and payout outcomes remain subject to their independent reconciliation.
+Complaints/contact outcomes are restricted operational data; anonymous transport, public rate/spam
+controls, support HTTP security and legally qualified response windows require their owning acceptance.
+No hardcoded legal deadline or change to an existing order's deadline/estimate is implied by case resolution.
 
 ### 12.2 Gateway receipt reconciliation (OP-FIN-01)
 

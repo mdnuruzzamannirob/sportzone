@@ -580,6 +580,13 @@ Explicit identity bootstrap adds this collection/index without modifying existin
 
 ---
 
+Payment callbacks reuse this canonical collection only through Auth's purpose-specific service
+capability, not cross-module persistence imports. Callback keys HMAC a separate callback-rate namespace,
+real peer and fixed minute; explicit callback limits remain 1–60 to fit the existing saturated counter.
+X-Forwarded-For is not an authority. Callback security audit facts contain only reason/class and keyed
+fingerprints of selected untrusted references; raw forms/cards/credentials/network addresses are not
+retained. Such audit facts are not verified receipts, payment attempts or reliable reconciliation jobs.
+
 ## 6. Catalog and shopping collections
 
 ### 6.1 `categories` — `catalog`
@@ -921,6 +928,14 @@ confirmed legal commitments. Changes to `deliveryCommitment` require order CAS, 
 when the estimate changes. Test a delayed COD confirmation, checkout-relative statutory cap, unconfirmed order and
 exception handling (PRD FR-16).
 
+Private lifecycle mutation appends a bounded recent history (maximum 40) and an immutable audit
+cause in the same transaction. Current order revision/status, current admin account and payment
+revision fence every new transition; replay reads current state without another effect. Actual
+confirmation timestamps and calculated commitment derive from the captured basis only after a
+trusted approval capability succeeds. Shipping dispatches the exact committed stock generation and
+requires the original coupon's redeemed generation; delivery does not fabricate money. Generic
+cancellation/final non-delivery is denied pending its separate custody/release workflow.
+
 Optional postalCode (maximum 30 characters) is retained in saved addresses, quote recipients and
 immutable order delivery snapshots. Online initiation requires it; old snapshots are not backfilled.
 Explicit additive migration accepts only the exact previous/current users and orders validators,
@@ -959,11 +974,23 @@ restock. Claim completion and payout confirmation are independent facts.
 | `reason`! | string | Customer explanation |
 | `status`! | enum(`requested`,`approved`,`rejected`) | Submission alone never cancels order |
 | `reviewedBy`? / `reviewedAt`? / `decisionReason`? | ObjectId / Date / string | Administrator review |
-| `operationKey`! | string | Idempotent decision reference |
+| `operationKey`! | string | Hash of order, customer/verified-guest-order scope and submission Idempotency-Key; raw keys never stored |
+| `revision`! / `createdAt`! / `updatedAt`! | int / Date / Date | Request CAS and durable request chronology |
 
-**Indexes:** unique `{orderId:1,operationKey:1}`; partial unique `{orderId:1}` for status `requested`.
+**Indexes:** unique `{orderId:1,operationKey:1}`; partial unique `{orderId:1}` for status `requested`; `{orderId:1,createdAt:-1,_id:-1}` history.
 
 **Rules:** acceptance requires current order-status/dispatch recheck in the same transaction as allocation release and cancellation; paid cancellations produce an eligible refund obligation.
+
+Same submission key/reason replays the original request, including approved/rejected outcomes; changed
+reason conflicts. A different key cannot replace a pending request. Submission fences order revision
+against dispatch before creating the request and audit in one transaction. Reviewer writes require
+`requested` status plus matching revision, preserve requester/reason/key and record immutable audit.
+Processing approval requires explicit no-dispatch verification. Canonical payment/order identity and
+amount must agree; every eligible stock/coupon generation releases once in the cancellation transaction.
+Existing attempts and independent source evidence are retained for late reconciliation. Collected funds
+require real source-backed refund obligations before approval; the local default has no such adapter
+and therefore denies paid cancellation without changing order, allocation or financial balances.
+No unreserved fake merchandise refund is fabricated from the correction-only model.
 
 ### 7.5 `deliveryExceptions` — `orders`
 
@@ -977,6 +1004,24 @@ restock. Claim completion and payout confirmation are independent facts.
 | `resolution`? / `resolvedAt`? | string / Date | Admin decision; full shipped-quantity accounting before terminal closure |
 
 **Indexes:** `{orderId:1,status:1,createdAt:-1}`.
+
+Private exception operations add immutable `reason`, hashed `operationKey` and `requestDigest`,
+nonnegative `revision`, timestamps, and optional protected `dispositionDigest`. Declare unique
+`{orderId:1,operationKey:1}` for creation replay; resolution replay is an append-only audit identity.
+Contacts and recent outcomes are bounded to 40; disposition has at most 200 unique item/custody rows.
+Every row has positive quantity and `0 <= inspectedResellableQty <= quantity`; only recovered custody
+may have resale quantity. Exact coverage of all shipped order quantities is checked by the service.
+Open records have no resolution/disposition proof. A resolved final exception requires nonempty full
+disposition and verified digest; non-final resolution has no disposition. Unknown schema drift/TTL
+fails readiness. Delay/failed-attempt resolution never changes fulfillment or accepted deadline.
+
+Final closure requires a trusted protected custody/inspection verifier, current Shipped order and
+canonical payment fence. Collected money requires real refund obligations in the same transaction;
+missing verifier/planner blocks closure. Inspected recovery uses one stable `return_receipt` movement
+per original order item (`nondelivery-restock:<orderId>:<orderItemId>`), adding physical only; normal
+pre-shipment release/coupon reversal never runs. Audit, exception closure, order cancellation,
+recovery receipts and customer notification intent commit together. Raw ordinary Shipped cancellation
+remains forbidden; the private Orders exceptional path is used only after these guarded decisions.
 
 **Rules:** final non-delivery `Shipped → Cancelled` requires custody/disposition coverage of *every* shipped unit; recovered goods return to physical stock only after inspected resale approval and unique receipt movement.
 
@@ -1145,6 +1190,12 @@ creates a second receipt but **does not** create a second order, coupon redempti
 review may hold delivery while collected funds remain verified. Never fold correction refunds into the merchandise refund
 progress indicator.
 
+The payments validator permits Paid when merchandise is fully funded or when verified correction-only
+funds exist with zero merchandise funding. Service-level order fencing restricts new late correction
+classification to cancelled fulfillment. Bootstrap accepts only the exact prior/current strict validator
+and additively enables correction-only projection; unknown drift aborts. Existing receipts/counters are
+not rewritten. Runtime only verifies protection; never downgrade the validator over correction-only data.
+
 ### 8.5 `paymentAttempts` — `payments`
 
 | Field | Type | Constraints / notes |
@@ -1229,6 +1280,18 @@ ObjectId; `{matchingStatus:1,verifiedAt:1}`. A provider message **not independen
 unverified notification to reconcile, not a `providerReceiptIntake` entry. Reject conflicting verification digests/amounts
 for the same provider identity into a supervised security/reconciliation incident; never overwrite historical evidence.
 
+Receipt processing uses the canonical merchant-scoped bank collection reference as its unique money
+identity, verified validation/transaction references and valid explicit-offset collection time. Missing
+timezone evidence remains uncommitted/retryable rather than inventing collectedAt. Receipt creation,
+linking, payment projection, attempt proof and live stock/coupon commitment share a transaction.
+Duplicate core money facts do not rewrite evidence; contradictory core facts append a security audit
+and retain the original. Audit replay can explicitly reuse an identical operation identity/digest without
+inserting another event; conflicting digests are rejected and the first event remains immutable.
+Provider VALID → VALIDATED alone does not create a new collection. Fresh verified risk can escalate
+review without duplicating funding. New safely matched distinct collections allocate at most remaining
+merchandise entitlement and assign the rest to correction, with an unreserved source-specific obligation.
+Historical unassigned receipts are not automatically reclassified; supervised reconciliation owns them. Terminal nonpayment cannot overwrite a verified-paid attempt or release capacity.
+
 **`paymentCollections` — linked source receipts with immutable core and guarded accounting**
 
 | Field | Type | Constraints / notes |
@@ -1253,6 +1316,16 @@ for the same provider identity into a supervised security/reconciliation inciden
 `{orderId:1,collectedAt:-1}`. Every online linked receipt must reference one intake entry; link creation and intake status
 change occur atomically. If SSLCOMMERZ evidence cannot establish distinct collection identity, **quarantine and reconcile**
 rather than assert a second charge or block a genuinely distinct charge with attempt-level uniqueness.
+
+Local COD recording requires an independently verified protected evidence snapshot bound to payment,
+amount, original collection reference, evidence reference and actual collection time. The server derives
+`providerCollectionRef=cod:<SHA-256 of normalized original reference>` under account `internal`;
+this globally stable identity prevents a source being counted for another order or command key.
+No online intake/attempt is created for COD. Source duplication must match immutable payment/amount/
+digest/time facts. Partial receipts fund only outstanding merchandise; distinct excess/cancelled-order
+cash is correction. Request replay uses an existing hashed append-only audit identity. Receipt,
+aggregate counters, correction obligation and audit commit together; evidence verification occurs
+outside transactions with authorization before and after it. Missing verified evidence denies writing.
 
 **Immutability boundary:** IDs, provider identity, face amount, currency, receipt timestamps, proof digest, verified actor
 and reference are **write-once**. Only `*AllocatedPoisha`, `*RefundHeldPoisha`, `*RefundCompletedPoisha`, `revision` and
@@ -1336,6 +1409,22 @@ either route, acquire **specific** `orderItemBalances.unitCoverage[].ordinal` cl
 nonapproved ordinals are released only when refund capacity is zero. Both physical and shortage claims share this exact
 ordinal namespace. A completed claim does not mean the payout has completed.
 
+The P08-001 foundation persists only `requested` claims; later eligibility/lifecycle/media tasks
+own additive state expansion and public activation. No public submission or policy approval is implied.
+`requestedBy` is `{type:'customer'|'guest',id:ObjectId}` from a trusted current authorization capability;
+`id` identifies the customer or verified guest session. Item IDs are server-generated. No evidence may
+be attached until the separately authorized private-media capability exists; both evidence arrays are
+empty in this foundation. Private ledger references, rather than arbitrary client URLs, will govern
+attachment. Request identity is server-assigned and duplicate IDs cannot protect capacity twice.
+
+The coordinator requires an existing outer transaction and a current eligibility/ownership capability;
+Orders selects available exact ordinals and updates its private balance by revision CAS. Request,
+ordinal protections and audit commit together, including multi-line rollback. Resolved, refunded,
+refund-held or restocked ordinals are excluded. Historical unit entitlement is never recalculated.
+Requested claim records reject mutation/deletion until an owning lifecycle implementation is reviewed.
+Explicit local/test bootstrap creates strict validators and indexes; runtime never provisions or
+repairs unknown drift. Existing order balances need no migration.
+
 ### 9.2 `refunds` — `refunds`
 
 | Field | Type | Constraints / notes |
@@ -1347,14 +1436,21 @@ ordinal namespace. A completed claim does not mean the payout has completed.
 | `items[]` | embedded[] | For merchandise: `{orderItemId,unitAmounts:[{ordinal,amountPoisha}],amountPoisha}`; sum unit amounts equals line refund and each ordinal respects its unreimbursed net cap; empty for pure correction |
 | `merchandiseAmountPoisha`! / `deliveryAmountPoisha`! | int | Both nonnegative; correction uses explicit `correctionAmountPoisha` |
 | `correctionAmountPoisha`! / `amountPoisha`! | int | `amount = merchandise + delivery + correction`; positive total |
-| `method`! | enum(`gateway`,`manual_bkash`,`manual_nagad`,`manual_rocket`,`manual_bank`) | Original channel preferred if supported; fallback needs consent |
+| `method`? | enum(`gateway`,`manual_bkash`,`manual_nagad`,`manual_rocket`,`manual_bank`) | Required before approval/reservation/payout; may be absent only in under_review/not_reserved correction intent. Original channel preferred if supported; fallback needs consent |
 | `status`! | enum(`requested`,`under_review`,`approved`,`processing`,`completed`,`failed`,`rejected`) | Gateway initiation is not completion |
 | `capacityStatus`! | enum(`not_reserved`,`reserved`,`completed`,`released`) | Source-collection balance commitment stage |
 | `consentEvidenceRef`? | string | Required when switching from supported original channel to approved manual method |
 | `approvedBy`? / `approvedAt`? / `completedAt`? | ObjectId / Date / Date | Recorded approvals and verified payout |
 | `timingSnapshot`? | embedded | Set at approval: `{policyVersion,timezone:'Asia/Dhaka',targetBusinessDays:7,calendarVersion?,legalRuleRef?,targetAt?,status:calculated or under_review}`; approved shorter rule wins; no date without approved business calendar/start basis |
 | `decisionKey`! | string | Idempotency token for one approved refund obligation |
-| `policyVersion`! / `revision`! | string / int | Snapshot applicable approved rules; guarded updates |
+| `policyVersion`? / `revision`! | string / int | Approved policy required before approval/reservation/payout; may be absent only in under_review/not_reserved correction intent. Revision always required; guarded updates |
+
+Cancelled late collections create one correction obligation per verified linked source with
+basis/classification=payment_correction, empty items, zero merchandise/delivery, positive correction
+amount equal to the source correction entitlement and stable decisionKey. The initial writer creates
+only under_review/not_reserved intents, reserves no money and exposes no approval/payout operation.
+Missing method/policy is never replaced by a guessed default. Generic saves/updates/deletes cannot
+rewrite the intent; future refund approval needs its reviewed schema/capacity transition.
 
 `requestedAt` in the API maps to immutable refund `createdAt`. The public timeline is a bounded projection of durable status/audit events; retain approval/completion facts separately so history truncation cannot remove timing authority. Timing basis corrections require audited domain updates, preserve approvedAt, and must not delay an otherwise authorized payout.
 
@@ -1406,7 +1502,7 @@ authorization and applicable consent; a 7-business-day target is a policy target
 | `eventKey`! | string | Unique event + recipient + template purpose; prevents duplicate intent |
 | `orderId`? / `userId`? | ObjectId | Optional source reference |
 | `recipient`! | embedded | `{emailNormalized,displayName?}`; restricted |
-| `eventType`! | enum | `registration`, `email_verification`, `email_change`, `password_reset`, `guest_order_access`, `order_received`, `order_confirmation`, `payment_success`, `payment_failure`, `order_cancellation`, `shipment_update`, `delivery_completion`, `return_update`, `refund_approval`, `refund_rejection`, `refund_completion` (PRD FR-20) |
+| `eventType`! | enum | `registration`, `email_verification`, `email_change`, `password_reset`, `guest_order_access`, `order_received`, `order_confirmation`, `payment_success`, `payment_failure`, `payment_pending`, `order_cancellation`, `shipment_update`, `delivery_completion`, `return_update`, `refund_approval`, `refund_rejection`, `refund_completion` (PRD FR-20) |
 | `templateVersion`! / `payload`! | string / embedded | Minimal redacted template data; no secrets |
 | `status`! | enum(`queued`,`sending`,`delivery_uncertain`,`sent`,`retry_wait`,`failed`) | Delivery state independent of business success |
 | `attemptCount`! / `nextAttemptAt`? | int / Date | Bounded backoff |
@@ -1421,6 +1517,14 @@ Confirmed transition; proof events reference a challenge ID, with no rendered se
 proof, never blindly send an unrelated new token. Event uniqueness prevents duplicate intents, not a claim of exactly-once
 transport; use verified provider idempotency where available. Do not store credentials or full payment details in payloads.
 
+Payment notification payloads are closed objects with required `paymentId`, `attemptId`, bounded
+`orderNumber` and positive integer `amountPoisha`; success additionally requires `intakeId`.
+They require `orderId`, allow registered `userId`, and forbid challenge data. Templates are
+`payment-success-v1`, `payment-failure-v1`, `payment-pending-v1`. Deduplication is per intake for
+success and per attempt/event for failure/pending (API §16.3). Known guest/order predecessor
+validators migrate additively and idempotently without rewriting records; unknown drift fails
+readiness. Existing account/proof branches retain their original payload restrictions.
+
 The notifications-owned registration intent uses a strict BSON validator permitting `registration`/`registration-v1` with an empty payload, required user reference/recipient/base
 fields, closed delivery statuses and safe nonnegative attempt counter. The physical indexes are
 `notifications_event_key_unique` (`{eventKey:1}`, unique) and `notifications_retry_queue` (`{status:1,nextAttemptAt:1}`).
@@ -1430,13 +1534,21 @@ The additive checkout validator permits `order_received`/`order-received-v1` wit
 optional userId for registered buyers, and an empty payload; guest orders need no account reference.
 Existing account/proof events still require userId, forbid orderId and retain their exact challenge
 constraints. The previous admin-reset validator is an immutable known migration predecessor. Order
-receipt delivery remains queued until its owning commerce template/worker integration; it is never
-mistaken for registration or confirmation.
+receipt delivery requires explicit commerce-worker activation and canonical order verification; it is
+never mistaken for registration or confirmation.
 The additive guest validator permits `guest_order_access`/`guest-order-access-v1` with required orderId,
 no userId and required payload.challengeId. Its preceding order-received validator remains an exact
 known migration source. Existing account/proof and order-received branches retain their constraints.
 Guest delivery decrypts only in memory after challenge/order/destination/revision checks; ordinary
 order receipt events are never claimed as guest proofs.
+Commerce types `order_confirmation`, `order_cancellation`, `shipment_update`, `delivery_completion`
+use matching hyphenated `*-v1` templates and closed `{operationKey,occurredAt}` payload, required
+orderId and optional registered userId. Stable `eventType:orderId:operationKey:v1` keys deduplicate
+actual transition causes. Existing `order_received:orderId:v1` keeps empty payload. Proof/payment
+payload fields cannot appear in commerce records or vice versa. Order history, recipient and cause
+must match before sending. The exact payment-notification validator is a known additive migration
+predecessor; existing status/lease/provider evidence is preserved. Default workers skip commerce.
+
 Other notification event types require an explicit backward-compatible validator/model expansion before activation.
 Existing validators are checked, never silently replaced by startup or local bootstrap.
 
@@ -1467,6 +1579,18 @@ renderers remain disabled until their owning tasks expand the contracts safely.
 | `assignedTo`? | ObjectId | Authorized administrator |
 
 **Indexes:** `{status:1,createdAt:-1}`; `{orderId:1,createdAt:-1}`.
+
+The order-associated private foundation requires orderId, adds revision and bounded contactHistory
+`[{at,outcome}]` (maximum 40), and uses stable ID sorting within order history. Contact and issue are
+restricted fields; owner views omit contact/reporter identity. Omitted contact resolves from the
+verified order's immutable customer snapshot; supplied contact is never ownership proof. Names retain
+up to 120 Unicode code points. Current customer or exact guest scope is required on every submission
+and read. Anonymous/global support transport remains its separate API task.
+
+Administrator progression is Open → In Review/Resolved → Closed; resolving requires a recorded
+contact outcome. First respondedAt and original resolvedAt survive later closure. CAS/current admin
+and audited command replay protect mutations; old keys return current state without reopening.
+No statutory response duration is invented. Required legal/operator response policy remains a gate.
 
 **Rules:** enforce guest/customer ownership and complaint-response policy; legal response period is a tracked operator approval, not hardcoded here.
 
@@ -1533,6 +1657,15 @@ immutable. Draft edits require a strong revision; no client may self-assert lega
 version** carrying reviewed content rather than rewriting history. Retention of legally relevant published versions follows
 approved retention policy.
 
+Manual payment reconciliation uses existing append-only audit operation identities:
+`action=payment.reconcile.request`, `targetType=payment`, target payment ID and a hash of payment/key.
+The digest binds reason; actor/date are retained privately. No new queue or alternative payment
+collection is created. The worker considers up to 100 latest distinct requested payments per scan,
+selecting attempts checked before their request, alongside normal durable periodic reconciliation.
+Requests beyond this priority window still use the ordinary bounded scan/cursor. Merchant binding,
+leases and receipt-processing fences are unchanged; scheduling never overwrites lastCheckedAt or
+financial state and repeated command replay never refreshes its request time.
+
 ### 10.6 `jobLeases` — backend maintenance
 
 | Field | Type | Constraints / notes |
@@ -1554,6 +1687,22 @@ success. Checkpoints advance past protected candidates so they cannot starve lat
 wraps after its end. Failure records retain a static error code/count. This registry has no TTL; missing
 indexes, unexpected validators or TTL indexes fail readiness rather than rewriting durable progress.
 lastSucceededAt means the bounded scan completed, not that every protected hold was releasable.
+
+Payment reconciliation partitions jobKey by the configured merchant-account fingerprint. It scans
+canonical attempt IDs with unresolved/terminal state-aware lastCheckedAt cutoffs; the bounded cursor
+advances past skipped/foreign candidates and wraps. No alternate payment/job payload collection or TTL
+is introduced. Missing-IPN attempts remain durable through their canonical initiation/attempt records.
+Provider reads occur outside transactions. Before/after processing, recovery and observation writes,
+owner/expiry fences make real monotonic updatedAt writes even at one clock instant, preventing a no-op
+fence from admitting an old owner. The final cursor checkpoint also requires live ownership.
+
+Successful scan is not proof every payment resolved. lastCheckedAt records observation time, not proof
+of collection/noncollection. Unknown current provider results never become Failed; original verified
+proof is retained. Pending or quarantined money keeps an investigation unresolved even if earlier
+funding is Paid. Fixed status-aware retry intervals are explicit configuration, not financial deadlines.
+Protected escalation/resolution audit identities are stable per attempt; new escalation counts mean
+newly recorded investigations, not repeated identical notifications. Financial effects remain guarded
+by canonical receipt identity and payment/order revisions independently of the worker lease.
 
 ## 11. Indexes and query contracts
 

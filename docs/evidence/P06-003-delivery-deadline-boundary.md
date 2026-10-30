@@ -109,3 +109,16 @@ local implementation and its verification. No exact approved rule, qualified com
 sign-off reference accompanied the instruction. P06-003 therefore remains Blocked and unchecked under
 Tasks §2 and its required compliance evidence; no external approval or milestone is inferred. On resume,
 reuse the accepted local implementation and verify only the supplied rule/evidence and affected integration.
+
+## Blocker recheck — 30 October 2026
+
+No approved exact rule or qualified compliance sign-off reference was supplied during this review. Existing accepted fail-closed implementation is retained; no legal duration, approval or statutory applicability was invented.
+
+The owner requested resolution of pending/blocked tasks. Protected evidence references were requested;
+no secret values were requested or inspected. P06-003 remains **Blocked** because task-specific
+external acceptance cannot be established by technical regression or generic completion instructions.
+
+Owner response on 30 October 2026: “ami currently dite parchina tumi kono ekta use kore naw”.
+Source selection is delegated, but no account/resource access, approved policy or qualified sign-off
+is supplied. No synthetic substitute can establish the missing external acceptance; status remains
+Blocked. Existing local test fixtures remain available without activating deployed integrations.

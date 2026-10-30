@@ -8,6 +8,115 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 30 October 2026 — Render and Vercel deployment preparation
+
+- Added a manual-deploy, disabled-feature Render staging Blueprint and per-app Vercel build
+  configuration, including admin SPA deep links and locked root-workspace installation.
+- Documented GitHub branch/protection setup, account provisioning, secret separation, hosted
+  checks, cookie/domain prerequisites, free-plan constraints and rollback in Operations §5.8.
+- Removed the duplicate quote lifetime entry and clarified plain sender-email syntax in the
+  sanitized environment template. No provider, legal, application-stage or hosted acceptance implied.
+
+## 30 October 2026 — Commerce notifications and delivery/support foundation
+
+- Added atomic order-confirmation/cancellation/shipment/delivery intents and canonical commerce
+  templates, exact predecessor migration and explicit local/test worker activation. Immutable event
+  content remains stable across provider retries after later order changes.
+- Added private delivery concerns, full-custody exceptional closure, inspected recovery receipts and
+  scoped complaint/contact/resolution history. Missing protected proof or paid-refund planning denies
+  unsafe closure; pre-shipment release is never reused for shipped goods.
+- Recorded verification and remaining prerequisites for P06-016/P06-017; neither task or external gate
+  is accepted as Done from local synthetic fixtures.
+
+## 30 October 2026 — Cancellation foundation and owned order reads
+
+- Added private cancellation request/admin-review/unpaid release with transaction fences, historical
+  key replay and paid-order denial when source-backed refund obligations cannot be created.
+- Added explicitly enabled local/test customer order list/detail/status APIs with exact guest scope,
+  batched payment summaries, immutable snapshot/policy reads and public allowlists.
+- Owner approved mandatory cancellation submission Idempotency-Key. Regenerated API artifacts;
+  P06-013/P06-014 retain disclosed prerequisites and are not accepted as Done.
+
+## 30 October 2026 — Private lifecycle and COD collection capabilities
+
+- Added locally verified admin transition/deadline, atomic dispatch and immutable history guards,
+  plus evidence-bound COD receipts with partial/excess accounting, replay and audit protections.
+- Added cross-admin shipment/cash races and transaction rollback tests. Ordinary runtime activation
+  remains absent; P06-011/P06-012 stay Blocked on disclosed prerequisites after owner-authorized
+  local implementation. No qualified delivery approval, real cash evidence or task acceptance implied.
+
+## 30 October 2026 — Payment monitoring and claim quantity foundation
+
+- Added local/test current-admin payment list/detail, opaque unmatched/quarantined receipt views,
+  and audited idempotent manual reconciliation requests consumed by the existing merchant worker.
+- Added strict requested-claim persistence and transaction-bound exact unit protection shared by
+  physical returns and shortages, with audit rollback and an explicit local/test bootstrap.
+- Updated owning contracts and generated API artifacts; the owner independently accepted P07-018/P08-001.
+  Return eligibility/lifecycle/media activation and provider/compliance/staging gates remain separate.
+
+## 30 October 2026 — Pending backend review and blocker audit
+
+- Revalidated seven pending checkout/guest/callback task reviews with 96 focused unit and 242
+  transaction-capable integration cases; recorded current results in the existing evidence records.
+- Corrected historical callback transport status to reflect accepted independent durable processing.
+  The owner independently accepted all seven tasks; media/compliance/staging prerequisites remain Blocked.
+
+## 30 October 2026 — Safe retries and verified payment notifications
+
+- Added fresh independent reconciliation of prior attempts before a new charge, transactionally
+  fenced lineage/ownership and capacity checks, and concurrent retry protection.
+- Added atomic verified success/failure/pending outbox events, canonical recipient/receipt checks,
+  stale negative suppression and explicit local/test payment-template activation.
+- Added additive notification migration and focused transaction/race/delivery checks. The project owner independently accepted
+  P07-013/P07-016; deployed provider/email and milestone gates remain separate.
+
+## 29 October 2026 — Multiple paid attempts and durable reconciliation
+
+- Classed new exactly verified excess/duplicate collections as correction with source-specific
+  unreserved obligations, one capped merchandise funding/allocation and separate refund accounting.
+- Added merchant-partitioned leased status reconciliation, durable scan/retry state, once-only
+  investigation/resolution audits and guarded local/test worker entry. Timeout never proves Failed.
+- Strengthened real lease fences around financial/recovery writes; verified duplicate, crash/restart,
+  takeover, quarantine and compiled-entry paths. The project owner accepted P07-011/P07-012; deployed
+  schedules, provider/timezone qualification, actual refunds and milestone gates remain separate.
+
+## 29 October 2026 — Late-payment recovery and authorized risk decisions
+
+- Added independently fenced late stock/coupon recovery preserving Paid on capacity failure, and
+  cancelled-order correction-only receipts with immutable unreserved refund review intents.
+- Added local/test admin risk decisions with current auth/CSRF, durable command replay and audited
+  approve/reject. Allocation remains mandatory; duplicate provider flags do not replay an approval.
+- Owner approved omitting unknown refund method/policy only before approval in an unreserved review
+  intent. Added exact-predecessor payment validator rollout and canonical correction-intent bootstrap.
+  The project owner accepted P07-009/P07-010; no live provider, payout, legal or milestone gate accepted.
+
+## 29 October 2026 — Durable payment receipts and live allocation commitment
+
+- Added local/test opt-in durable receipt processing with merchant-scoped deduplication, guarded
+  attempt history and atomic payment/stock/coupon effects. Preserved uncertain, mismatched, unmatched,
+  high-risk and expired outcomes without forced fulfillment or duplicate funding.
+- Added replay-safe immutable security audits, conflict/risk handling and composed IPN acknowledgment
+  after commit. Explicit-offset collection time is required pending approved provider timezone evidence.
+- Added concurrent/retry/rollback coverage for P07-007/P07-008; the project owner accepted both tasks.
+  External provider/legal/deployed gates remain separate.
+
+## 29 October 2026 — Independent payment verification capability
+
+- Added Payments-owned server verification using credential-bound validation/status queries and
+  canonical attempt/merchant/order mapping. Classifies exact, partial/excess, unmatched and high-risk
+  evidence without financial writes or callback acknowledgment.
+- Added real replica-set/adapter mismatch, fraud, uncertainty and transaction-exclusion checks.
+  P07-006 accepted by the project owner; durable receipt processing and live provider qualification remain separate.
+
+## 29 October 2026 — Untrusted payment callback transport
+
+- Added separate local/test IPN and GET/POST browser-return routes with narrowly scoped bounded form
+  parsing, fixed storefront redirects and no financial/session authority from browser/provider hints.
+- IPN acknowledges only an independently committed processing outcome; default remains retryable 503.
+  Added keyed security fingerprints and service-owned protected rate admission without raw payloads.
+- Updated form/plain-text/redirect API/Postman contracts and callback/CSRF isolation checks, plus an
+  additive local audit/quota bootstrap. P07-005 submitted for review; no live verification or gate accepted.
+
 ## 29 October 2026 — Local hosted payment initiation
 
 - Added durable owner/order request identities, one-shot hosted session dispatch and owned status

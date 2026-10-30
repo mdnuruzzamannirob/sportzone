@@ -14,6 +14,13 @@ const schema = new Schema(
     eventType: {
       type: String,
       enum: [
+        'order_confirmation',
+        'order_cancellation',
+        'shipment_update',
+        'delivery_completion',
+        'payment_success',
+        'payment_failure',
+        'payment_pending',
         'registration',
         'password_reset',
         'email_change',
@@ -24,7 +31,19 @@ const schema = new Schema(
     },
     templateVersion: { type: String, required: true },
     payload: {
-      type: new Schema({ challengeId: Schema.Types.ObjectId }, { _id: false, strict: 'throw' }),
+      type: new Schema(
+        {
+          operationKey: String,
+          occurredAt: Date,
+          challengeId: Schema.Types.ObjectId,
+          paymentId: Schema.Types.ObjectId,
+          attemptId: Schema.Types.ObjectId,
+          intakeId: Schema.Types.ObjectId,
+          orderNumber: String,
+          amountPoisha: Number,
+        },
+        { _id: false, strict: 'throw' },
+      ),
       required: true,
     },
     status: {

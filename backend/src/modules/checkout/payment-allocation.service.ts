@@ -9,7 +9,8 @@ import {
   checkoutAllocationService,
   type CheckoutAllocationAccess,
 } from './checkout-allocation.service.js'
-// Unpaid preparation only. No reconciliation, fulfillment commitment or financial-success writer.
+// Payment capacity preparation. The caller must fence current order/payment eligibility in this
+// transaction. No financial-success writer; paid late recovery reuses this behind its own fence.
 export function paymentAllocationService(
   connection: Connection,
   access: CheckoutAllocationAccess,

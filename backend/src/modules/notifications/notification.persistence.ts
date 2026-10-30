@@ -49,7 +49,9 @@ export function createNotificationPersistence(connection: Connection, model: Not
           !isDeepStrictEqual(existing.options?.validator, passwordResetNotificationValidator) &&
           !isDeepStrictEqual(existing.options?.validator, emailChangeNotificationValidator) &&
           !isDeepStrictEqual(existing.options?.validator, adminResetNotificationValidator) &&
-          !isDeepStrictEqual(existing.options?.validator, orderReceivedNotificationValidator)
+          !isDeepStrictEqual(existing.options?.validator, orderReceivedNotificationValidator) &&
+          !isDeepStrictEqual(existing.options?.validator, guestNotificationValidator) &&
+          !isDeepStrictEqual(existing.options?.validator, paymentNotificationValidator)
         )
           throw new Error('Notification collection requires reviewed migration.')
         await connection.db.command({
@@ -325,7 +327,7 @@ export const orderReceivedNotificationValidator = {
 }
 
 // Guest proofs retain challenge-only payloads, with order scope instead of account scope.
-export const registrationNotificationValidator = {
+export const guestNotificationValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -364,6 +366,175 @@ export const registrationNotificationValidator = {
           userId: { $exists: false },
           'payload.challengeId': { $type: 'objectId' },
         },
+      ],
+    },
+  ],
+}
+
+const paymentPayload = {
+  bsonType: 'object',
+  additionalProperties: false,
+  properties: {
+    challengeId: { bsonType: 'objectId' },
+    paymentId: { bsonType: 'objectId' },
+    attemptId: { bsonType: 'objectId' },
+    intakeId: { bsonType: 'objectId' },
+    orderNumber: { bsonType: 'string', minLength: 1, maxLength: 64 },
+    amountPoisha: {
+      bsonType: ['int', 'long', 'double'],
+      minimum: 0,
+      maximum: Number.MAX_SAFE_INTEGER,
+      multipleOf: 1,
+    },
+  },
+}
+export const paymentNotificationValidator = {
+  $and: [
+    {
+      $jsonSchema: {
+        ...guestNotificationValidator.$and[0]?.$jsonSchema,
+        properties: {
+          ...guestNotificationValidator.$and[0]?.$jsonSchema?.properties,
+          eventType: {
+            enum: [
+              'registration',
+              'password_reset',
+              'email_change',
+              'order_received',
+              'guest_order_access',
+              'payment_success',
+              'payment_failure',
+              'payment_pending',
+            ],
+          },
+          templateVersion: {
+            enum: [
+              'registration-v1',
+              'password-reset-v1',
+              'email-change-v1',
+              'admin-password-reset-v1',
+              'order-received-v1',
+              'guest-order-access-v1',
+              'payment-success-v1',
+              'payment-failure-v1',
+              'payment-pending-v1',
+            ],
+          },
+          payload: paymentPayload,
+        },
+      },
+    },
+    {
+      $or: [
+        {
+          $and: [
+            guestNotificationValidator.$and[1],
+            {
+              'payload.paymentId': { $exists: false },
+              'payload.attemptId': { $exists: false },
+              'payload.intakeId': { $exists: false },
+              'payload.orderNumber': { $exists: false },
+              'payload.amountPoisha': { $exists: false },
+            },
+          ],
+        },
+        ...['success', 'failure', 'pending'].map((kind) => ({
+          eventType: `payment_${kind}`,
+          templateVersion: `payment-${kind}-v1`,
+          orderId: { $type: 'objectId' },
+          'payload.paymentId': { $type: 'objectId' },
+          'payload.attemptId': { $type: 'objectId' },
+          'payload.orderNumber': { $type: 'string' },
+          'payload.amountPoisha': { $type: 'number' },
+          'payload.challengeId': { $exists: false },
+          ...(kind === 'success' ? { 'payload.intakeId': { $type: 'objectId' } } : {}),
+        })),
+      ],
+    },
+  ],
+}
+
+// Commerce expansion preserves the exact payment predecessor and all proof branch restrictions.
+export const registrationNotificationValidator = {
+  $and: [
+    {
+      $jsonSchema: {
+        ...paymentNotificationValidator.$and[0]?.$jsonSchema,
+        properties: {
+          ...paymentNotificationValidator.$and[0]?.$jsonSchema?.properties,
+          eventType: {
+            enum: [
+              'registration',
+              'password_reset',
+              'email_change',
+              'order_received',
+              'guest_order_access',
+              'payment_success',
+              'payment_failure',
+              'payment_pending',
+              'order_confirmation',
+              'order_cancellation',
+              'shipment_update',
+              'delivery_completion',
+            ],
+          },
+          templateVersion: {
+            enum: [
+              'registration-v1',
+              'password-reset-v1',
+              'email-change-v1',
+              'admin-password-reset-v1',
+              'order-received-v1',
+              'guest-order-access-v1',
+              'payment-success-v1',
+              'payment-failure-v1',
+              'payment-pending-v1',
+              'order-confirmation-v1',
+              'order-cancellation-v1',
+              'shipment-update-v1',
+              'delivery-completion-v1',
+            ],
+          },
+          payload: {
+            ...paymentPayload,
+            properties: {
+              ...paymentPayload.properties,
+              operationKey: { bsonType: 'string', pattern: '^[a-f0-9]{64}$' },
+              occurredAt: { bsonType: 'date' },
+            },
+          },
+        },
+      },
+    },
+    {
+      $or: [
+        {
+          $and: [
+            paymentNotificationValidator.$and[1],
+            {
+              'payload.operationKey': { $exists: false },
+              'payload.occurredAt': { $exists: false },
+            },
+          ],
+        },
+        ...[
+          'order_confirmation',
+          'order_cancellation',
+          'shipment_update',
+          'delivery_completion',
+        ].map((eventType) => ({
+          eventType,
+          templateVersion: `${eventType.replaceAll('_', '-')}-v1`,
+          orderId: { $type: 'objectId' },
+          'payload.operationKey': { $type: 'string' },
+          'payload.occurredAt': { $type: 'date' },
+          'payload.challengeId': { $exists: false },
+          'payload.paymentId': { $exists: false },
+          'payload.attemptId': { $exists: false },
+          'payload.intakeId': { $exists: false },
+          'payload.orderNumber': { $exists: false },
+          'payload.amountPoisha': { $exists: false },
+        })),
       ],
     },
   ],

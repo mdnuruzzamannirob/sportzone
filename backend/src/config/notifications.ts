@@ -31,5 +31,19 @@ export function loadNotificationWorker(environment: NodeJS.ProcessEnv) {
   })
   if (settings.claimTtlMs <= email.timeoutMs + 1000)
     throw new ConfigurationError(['EMAIL_CLAIM_TTL_MS'])
-  return { email, settings }
+  const paymentsEnabled = environment.PAYMENT_NOTIFICATIONS_ENABLED === 'true'
+  if (
+    (environment.PAYMENT_NOTIFICATIONS_ENABLED !== undefined &&
+      !['true', 'false'].includes(environment.PAYMENT_NOTIFICATIONS_ENABLED)) ||
+    (paymentsEnabled && !['local', 'test'].includes(environment.APP_ENV ?? ''))
+  )
+    throw new ConfigurationError(['payment_notification_activation'])
+  const commerceEnabled = environment.ORDER_NOTIFICATIONS_ENABLED === 'true'
+  if (
+    (environment.ORDER_NOTIFICATIONS_ENABLED !== undefined &&
+      !['true', 'false'].includes(environment.ORDER_NOTIFICATIONS_ENABLED)) ||
+    (commerceEnabled && !['local', 'test'].includes(environment.APP_ENV ?? ''))
+  )
+    throw new ConfigurationError(['order_notification_activation'])
+  return { email, settings, paymentsEnabled, commerceEnabled }
 }

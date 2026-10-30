@@ -1,4 +1,28 @@
 import {
+  orderReadQuery,
+  orderReadSummary,
+  customerOrderDetail,
+  orderStatusView,
+} from '../src/modules/orders/order-read.schema.js'
+import {
+  paymentMonitorQuery,
+  paymentMonitorPage,
+  paymentMonitorList,
+  paymentMonitorDetail,
+  paymentReconcileInput,
+  paymentReconcileResult,
+} from '../src/modules/payments/payment-monitor.schema.js'
+import {
+  paymentRiskParams,
+  paymentRiskInput,
+  paymentRiskResult,
+} from '../src/modules/payments/payment-risk.schema.js'
+import {
+  paymentIpnForm,
+  paymentReturnForm,
+  paymentReturnParams,
+} from '../src/modules/payments/payment-callback.schema.js'
+import {
   paymentInitiationInput,
   paymentInitiationResult,
   paymentInitiationParams,
@@ -163,6 +187,7 @@ export type Operation = {
     | 'monitor'
     | 'guest'
     | 'customer_or_guest'
+    | 'provider_callback'
   activation: string
   request?: z.ZodType
   response?: z.ZodType
@@ -177,6 +202,8 @@ export type Operation = {
   ifMatch?: boolean
   etag?: boolean
   multipart?: boolean
+  form?: boolean
+  responseFormat?: 'text' | 'redirect'
   replay: string
 }
 const empty = z.strictObject({})
@@ -296,6 +323,143 @@ export const operations: readonly Operation[] = [
       'Reviewed catalog/settings/policy persistence. Only active visible SKU/category data and exact attached clean public media references publish; missing configured metadata is omitted.',
     replay:
       'No-store bounded read; current operator settings and approved published policy pointers on each request. No fabricated merchandising fallback.',
+  },
+  {
+    method: 'POST',
+    path: '/webhooks/sslcommerz/ipn',
+    access: 'provider_callback',
+    namespace: 'storefront',
+    params: empty,
+    query: empty,
+    request: paymentIpnForm,
+    response: z.literal('OK'),
+    status: 200,
+    csrf: false,
+    form: true,
+    responseFormat: 'text',
+    activation:
+      'PAYMENT_CALLBACKS_ENABLED local/test only, explicit same-storefront return URLs and reviewed audit/quota persistence. Runtime returns 503 until an independent durable processor is composed; no raw notification proves funds.',
+    replay:
+      'Bounded URL-encoded untrusted claims; only normalized references cross the verifier boundary. 200 text OK only after durable verified outcome/recoverable reconciliation commit. Replays never imply new money; default is retryable 503.',
+  },
+  ...(['GET', 'POST'] as const).map(
+    (method): Operation => ({
+      method,
+      path: '/payment-returns/sslcommerz/{result}',
+      access: 'provider_callback',
+      namespace: 'storefront',
+      params: paymentReturnParams,
+      query: z.record(z.string(), z.string()),
+      ...(method === 'POST' ? { request: paymentReturnForm, form: true } : {}),
+      status: 303,
+      csrf: false,
+      responseFormat: 'redirect',
+      activation:
+        'PAYMENT_CALLBACKS_ENABLED with explicit fixed HTTPS URLs on the configured storefront origin; local/test only pending deployed provider transport qualification.',
+      replay:
+        'Display hint only. Empty-body 303 strips all provider query/form values; no session/cookie/access or financial state transition. Untrusted success never establishes Paid.',
+    }),
+  ),
+  {
+    params: empty,
+    csrf: false,
+    replay: 'Read only current authorized monitoring projection',
+    method: 'GET',
+    path: '/admin/payments',
+    namespace: 'admin',
+    access: 'admin',
+    query: paymentMonitorQuery,
+    response: paymentMonitorList.omit({ pagination: true }),
+    status: 200,
+    activation: 'ADMIN_AUTH_ENABLED; local/test only pending deployed qualification',
+  },
+  {
+    csrf: false,
+    replay: 'Read only current authorized monitoring projection',
+    method: 'GET',
+    path: '/admin/payments/{paymentId}',
+    namespace: 'admin',
+    access: 'admin',
+    params: paymentRiskParams,
+    query: paymentMonitorPage,
+    response: paymentMonitorDetail,
+    status: 200,
+    activation: 'ADMIN_AUTH_ENABLED; local/test only pending deployed qualification',
+  },
+  {
+    method: 'POST',
+    path: '/admin/payments/{paymentId}/reconcile',
+    namespace: 'admin',
+    access: 'admin',
+    params: paymentRiskParams,
+    query: empty,
+    request: paymentReconcileInput,
+    response: paymentReconcileResult,
+    status: 202,
+    csrf: true,
+    idempotency: true,
+    replay:
+      'Durable admin scheduling only; same key does not reset progress, changed reason conflicts. Worker independently verifies; no financial status assertion.',
+    activation:
+      'ADMIN_AUTH_ENABLED; local/test only; existing merchant reconciliation worker required',
+  },
+  {
+    method: 'GET',
+    path: '/orders',
+    namespace: 'storefront',
+    access: 'customer',
+    params: empty,
+    query: orderReadQuery,
+    response: z.array(orderReadSummary),
+    status: 200,
+    csrf: false,
+    replay: 'Read-only stable own-order history; totals use immutable snapshots',
+    activation: 'CUSTOMER_ORDER_READ_ENABLED plus customer auth; local/test only',
+  },
+  {
+    method: 'GET',
+    path: '/orders/{orderId}',
+    namespace: 'storefront',
+    access: 'customer_or_guest',
+    params: paymentInitiationParams,
+    query: empty,
+    response: customerOrderDetail,
+    status: 200,
+    csrf: false,
+    replay: 'Current customer or exact verified guest scope; no cross-order fallback',
+    activation:
+      'CUSTOMER_ORDER_READ_ENABLED plus customer auth; guest proof requires GUEST_ACCESS_ENABLED; local/test only',
+  },
+  {
+    method: 'GET',
+    path: '/orders/{orderId}/status',
+    namespace: 'storefront',
+    access: 'customer_or_guest',
+    params: paymentInitiationParams,
+    query: empty,
+    response: orderStatusView,
+    status: 200,
+    csrf: false,
+    replay: 'Backend-authoritative payment and fulfillment are independent; no provider query',
+    activation:
+      'CUSTOMER_ORDER_READ_ENABLED plus customer auth; exact guest proof when enabled; local/test only',
+  },
+  {
+    method: 'POST',
+    path: '/admin/payments/{paymentId}/risk-decisions',
+    namespace: 'admin',
+    query: empty,
+    replay:
+      'Current authorized replay returns current risk/hold without reapplying a historical approval. Changed body conflicts; every new decision is audited in the payment transaction.',
+    access: 'admin',
+    csrf: true,
+    idempotency: true,
+    params: paymentRiskParams,
+    request: paymentRiskInput,
+    response: paymentRiskResult,
+    status: 200,
+    activation:
+      'ADMIN_AUTH_ENABLED in local/test only; independent risk decision, current admin/CSRF, durable idempotency and funded allocation gates; no payout or confirmation',
   },
   {
     method: 'POST',

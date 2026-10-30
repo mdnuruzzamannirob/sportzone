@@ -1,3 +1,42 @@
+import { orderMessageService } from './modules/notifications/order-message.service.js'
+import { orderNotificationAccess } from './modules/orders/order-notification.service.js'
+import { orderReadRoutes } from './modules/orders/order-read.routes.js'
+import { orderReadService } from './modules/orders/order-read.service.js'
+import { orderScopeAccess } from './modules/auth/checkout-access.service.js'
+import { customerPaymentSummaryAccess } from './modules/payments/payment.service.js'
+import { orderPolicySnapshotAccess } from './modules/checkout/checkout-quote.service.js'
+import { paymentMonitorRoutes } from './modules/payments/payment-monitor.routes.js'
+import { paymentMonitorService } from './modules/payments/payment-monitor.service.js'
+import { paymentMessageService } from './modules/notifications/payment-message.service.js'
+import { paymentNotificationAccess } from './modules/payments/payment-notification.service.js'
+import { paymentRetryService } from './modules/payments/payment-retry.service.js'
+import { paymentRiskRoutes } from './modules/payments/payment-risk.routes.js'
+import { paymentRiskService } from './modules/payments/payment-risk.service.js'
+import { paymentSettlementService } from './modules/payments/payment-settlement.service.js'
+import { createHash } from 'node:crypto'
+import { paymentProcessingService } from './modules/payments/payment-processing.service.js'
+import { paymentVerificationService } from './modules/payments/payment-verification.service.js'
+import { verifiedAllocationService } from './modules/checkout/verified-allocation.service.js'
+import { verifiedFundingOrderAccess } from './modules/orders/order.service.js'
+import { paymentCallbackRoutes } from './modules/payments/payment-callback.routes.js'
+import {
+  paymentCallbackService,
+  type PaymentCallbackProcessor,
+} from './modules/payments/payment-callback.service.js'
+import {
+  paymentCallbackOptions,
+  type PaymentCallbackOptions,
+} from './modules/payments/payment-callback.schema.js'
+import { createPaymentCallbackThrottle } from './modules/auth/sessions/auth-throttle.service.js'
+export type PaymentCallbackDependencies = {
+  options: PaymentCallbackOptions
+  process?: PaymentCallbackProcessor
+  verificationGateway?: Pick<
+    ReturnType<typeof createSslcommerzAdapter>,
+    'validate' | 'queryTransaction'
+  >
+  clock?: () => Date
+}
 import { paymentInitiationChannelAccess } from './modules/payments/payment-eligibility.service.js'
 import { paymentInitiationService } from './modules/payments/payment-initiation.service.js'
 import { paymentInitiationRoutes } from './modules/payments/payment-initiation.routes.js'
@@ -10,6 +49,10 @@ import {
 import { paymentInitiationEligibilityAccess } from './modules/payments/payment.service.js'
 import type { createSslcommerzAdapter } from './providers/sslcommerz/sslcommerz.client.js'
 export type PaymentInitiationDependencies = {
+  reconciliationGateway?: Pick<
+    ReturnType<typeof createSslcommerzAdapter>,
+    'validate' | 'queryTransaction'
+  >
   gateway: Pick<ReturnType<typeof createSslcommerzAdapter>, 'initiate'>
   validateRequest(request: unknown): boolean
   clock?: () => Date
@@ -100,6 +143,19 @@ export async function composeIdentityRoutes(
 ) {
   const notifications = createRegistrationNotifications(connection)
   const auth = await createAuthRuntime(connection, config, notifications)
+  if (config.CUSTOMER_ORDER_READ_ENABLED)
+    auth.router.use(
+      orderReadRoutes(
+        orderReadService(
+          connection,
+          auth.customerAccounts,
+          orderScopeAccess(auth.customerAccounts, auth.sessions, auth.guestAccounts),
+          customerPaymentSummaryAccess(connection),
+          orderPolicySnapshotAccess(connection),
+        ),
+        auth.security,
+      ),
+    )
   if (config.CUSTOMER_AUTH_ENABLED)
     auth.router.use(
       profileRoutes(
@@ -155,6 +211,28 @@ export async function composeIdentityRoutes(
         auth.sessions,
       ),
     )
+  if (config.ADMIN_AUTH_ENABLED && ['local', 'test'].includes(config.APP_ENV)) {
+    auth.router.use(
+      paymentMonitorRoutes(
+        paymentMonitorService(connection, auth.adminAccounts),
+        auth.security,
+        auth.sessions,
+      ),
+    )
+    const orderAccess = verifiedFundingOrderAccess(connection)
+    const settlement = paymentSettlementService(
+      connection,
+      orderAccess,
+      verifiedAllocationService(connection),
+    )
+    auth.router.use(
+      paymentRiskRoutes(
+        paymentRiskService(connection, auth.adminAccounts, orderAccess, settlement),
+        auth.security,
+        auth.sessions,
+      ),
+    )
+  }
   let mediaService: ReturnType<typeof createMediaService> | undefined
   if (media) {
     if (!config.ADMIN_AUTH_ENABLED) throw new Error('Admin authentication required for media.')
@@ -295,6 +373,15 @@ export async function composeIdentityRoutes(
       paymentGateway.gateway,
       paymentGateway.validateRequest,
       clock,
+      paymentGateway.reconciliationGateway
+        ? paymentRetryService(
+            connection,
+            paymentGateway.reconciliationGateway,
+            verifiedFundingOrderAccess(connection),
+            verifiedAllocationService(connection, clock),
+            clock,
+          )
+        : undefined,
     )
     auth.router.use(
       paymentInitiationRoutes(
@@ -349,6 +436,7 @@ export async function composeApplication(
   checkout?: CheckoutOptions,
   channelApprovals: readonly PaymentChannelApproval[] = [],
   paymentGateway?: PaymentInitiationDependencies,
+  callbacks?: PaymentCallbackDependencies,
 ) {
   if (paymentGateway && !config.CUSTOMER_AUTH_ENABLED)
     throw new Error('Customer auth required for payment initiation')
@@ -402,7 +490,40 @@ export async function composeApplication(
   ])
   if (media && !config.ADMIN_AUTH_ENABLED)
     throw new Error('Admin authentication required for media.')
-  return createApp({ logger, apiRouter, mediaUploadsEnabled: Boolean(media) })
+  let providerCallbacks: import('express').Router | undefined
+  if (callbacks) {
+    if (!['local', 'test'].includes(config.APP_ENV))
+      throw new Error('Payment callbacks require reviewed local/test composition')
+    const options = paymentCallbackOptions.parse(callbacks.options)
+    if (options.storefrontOrigin !== config.STOREFRONT_ORIGIN)
+      throw new Error('Callback storefront mismatch')
+    if (callbacks.process && callbacks.verificationGateway)
+      throw new Error('Ambiguous callback processor')
+    const clock = callbacks.clock ?? (() => new Date())
+    const process = callbacks.verificationGateway
+      ? paymentProcessingService(
+          connection,
+          paymentVerificationService(
+            connection,
+            callbacks.verificationGateway,
+            createHash('sha256').update(`${options.mode}\0${options.storeId}`).digest('hex'),
+          ),
+          verifiedFundingOrderAccess(connection),
+          verifiedAllocationService(connection, clock),
+          clock,
+        ).process
+      : callbacks.process
+    providerCallbacks = paymentCallbackRoutes(
+      paymentCallbackService(connection, options, config.SESSION_SECRET, process),
+      createPaymentCallbackThrottle(connection, config.SESSION_SECRET, options.rateLimit),
+    )
+  }
+  return createApp({
+    logger,
+    apiRouter,
+    mediaUploadsEnabled: Boolean(media),
+    ...(providerCallbacks ? { providerCallbacks } : {}),
+  })
 }
 
 export async function composeNotificationWorker(
@@ -410,9 +531,20 @@ export async function composeNotificationWorker(
   config: RuntimeConfig,
   options:
     | ReturnType<typeof loadNotificationWorker>
-    | { adapter: EmailAdapter; settings: RetryPolicy },
+    | {
+        adapter: EmailAdapter
+        settings: RetryPolicy
+        paymentsEnabled?: boolean
+        commerceEnabled?: boolean
+      },
 ) {
   const { settings } = options
+  const paymentsEnabled = 'paymentsEnabled' in options && options.paymentsEnabled === true
+  const commerceEnabled = 'commerceEnabled' in options && options.commerceEnabled === true
+  if (commerceEnabled && !['local', 'test'].includes(config.APP_ENV))
+    throw new Error('Order delivery requires reviewed local/test activation')
+  if (paymentsEnabled && !['local', 'test'].includes(config.APP_ENV))
+    throw new Error('Payment notification delivery requires reviewed local/test activation')
   const adapter = 'adapter' in options ? options.adapter : createResendAdapter(options.email)
   const store = createRegistrationNotifications(connection)
   await store.verifyIndexes()
@@ -426,5 +558,14 @@ export async function composeNotificationWorker(
     delivery.emailChange,
     delivery.adminReset,
     delivery.guest,
+    paymentsEnabled
+      ? paymentMessageService(
+          paymentNotificationAccess(
+            connection,
+            verifiedFundingOrderAccess(connection).notificationTarget,
+          ),
+        )
+      : undefined,
+    commerceEnabled ? orderMessageService(orderNotificationAccess(connection)) : undefined,
   )
 }

@@ -62,6 +62,85 @@ export function createRegistrationNotifications(
         { upsert: true, session, runValidators: true },
       )
     },
+    async enqueueCommerce(
+      input: {
+        orderId: Types.ObjectId
+        userId?: Types.ObjectId
+        email: string
+        name: string
+        eventType:
+          | 'order_confirmation'
+          | 'order_cancellation'
+          | 'shipment_update'
+          | 'delivery_completion'
+        operationKey: string
+        occurredAt: Date
+      },
+      session: ClientSession,
+    ) {
+      if (!session.inTransaction()) throw new Error('Commerce intent requires business transaction')
+      await createNotificationPersistence(connection, model).verifyIndexes()
+      await model.updateOne(
+        { eventKey: `${input.eventType}:${input.orderId.toHexString()}:${input.operationKey}:v1` },
+        {
+          $setOnInsert: {
+            orderId: input.orderId,
+            ...(input.userId ? { userId: input.userId } : {}),
+            recipient: { emailNormalized: input.email, displayName: input.name },
+            eventType: input.eventType,
+            templateVersion: `${input.eventType.replaceAll('_', '-')}-v1`,
+            payload: { operationKey: input.operationKey, occurredAt: input.occurredAt },
+            status: 'queued',
+            attemptCount: 0,
+            nextAttemptAt: clock(),
+          },
+        },
+        { upsert: true, session, runValidators: true },
+      )
+    },
+    async enqueuePayment(
+      input: {
+        event: 'success' | 'failure' | 'pending'
+        cause: string
+        orderId: Types.ObjectId
+        userId?: Types.ObjectId
+        email: string
+        name: string
+        paymentId: Types.ObjectId
+        attemptId: Types.ObjectId
+        intakeId?: Types.ObjectId
+        orderNumber: string
+        amountPoisha: number
+      },
+      session: ClientSession,
+    ) {
+      if (!session.inTransaction())
+        throw new Error('Payment notification requires business transaction')
+      await createNotificationPersistence(connection, model).verifyIndexes()
+      await model.updateOne(
+        { eventKey: `payment_${input.event}:${input.cause}:v1` },
+        {
+          $setOnInsert: {
+            orderId: input.orderId,
+            ...(input.userId ? { userId: input.userId } : {}),
+            recipient: { emailNormalized: input.email, displayName: input.name },
+            eventType: `payment_${input.event}`,
+            templateVersion: `payment-${input.event}-v1`,
+            payload: {
+              paymentId: input.paymentId,
+              attemptId: input.attemptId,
+              ...(input.intakeId ? { intakeId: input.intakeId } : {}),
+              orderNumber: input.orderNumber,
+              amountPoisha: input.amountPoisha,
+            },
+            status: 'queued',
+            attemptCount: 0,
+            nextAttemptAt: clock(),
+          },
+        },
+        { upsert: true, session, runValidators: true },
+      )
+    },
     async enqueueGuestAccess(
       input: {
         id: Types.ObjectId
@@ -143,6 +222,8 @@ export function createRegistrationNotifications(
       includeEmailChanges = false,
       includeAdminResets = false,
       includeGuestProofs = false,
+      includePayments = false,
+      includeCommerce = false,
     ) {
       const claimId = randomUUID()
       const row = await model
@@ -150,6 +231,43 @@ export function createRegistrationNotifications(
           {
             $or: [
               { eventType: 'registration', templateVersion: 'registration-v1' },
+              ...(includeCommerce
+                ? [
+                    { eventType: 'order_received' as const, templateVersion: 'order-received-v1' },
+                    {
+                      eventType: 'order_confirmation' as const,
+                      templateVersion: 'order-confirmation-v1',
+                    },
+                    {
+                      eventType: 'order_cancellation' as const,
+                      templateVersion: 'order-cancellation-v1',
+                    },
+                    {
+                      eventType: 'shipment_update' as const,
+                      templateVersion: 'shipment-update-v1',
+                    },
+                    {
+                      eventType: 'delivery_completion' as const,
+                      templateVersion: 'delivery-completion-v1',
+                    },
+                  ]
+                : []),
+              ...(includePayments
+                ? [
+                    {
+                      eventType: 'payment_success' as const,
+                      templateVersion: 'payment-success-v1',
+                    },
+                    {
+                      eventType: 'payment_failure' as const,
+                      templateVersion: 'payment-failure-v1',
+                    },
+                    {
+                      eventType: 'payment_pending' as const,
+                      templateVersion: 'payment-pending-v1',
+                    },
+                  ]
+                : []),
               ...(includeProofs
                 ? [
                     {
@@ -214,6 +332,7 @@ export function createRegistrationNotifications(
             eventType: row.eventType,
             templateVersion: row.templateVersion,
             challengeId: row.payload.challengeId,
+            payload: row.payload,
             eventKey: row.eventKey,
             recipient: row.recipient.emailNormalized,
             attemptCount: row.attemptCount,

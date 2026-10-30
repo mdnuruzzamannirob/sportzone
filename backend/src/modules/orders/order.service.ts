@@ -167,7 +167,7 @@ export function initialOrderAllocationAccess(connection: Connection) {
   }
 }
 
-function orderAllocationBinding(
+export function orderAllocationBinding(
   row: import('mongoose').HydratedDocument<import('./order.model.js').Order>,
   generation: number,
 ) {
@@ -243,7 +243,11 @@ export function guestOrderAccess(connection: Connection) {
     async lookup(session: ClientSession, orderNumber: string, email: string) {
       if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
       const row = await orders
-        .findOne({ orderNumber, userId: null, 'customerSnapshot.emailNormalized': email })
+        .findOne({
+          orderNumber,
+          userId: null,
+          'customerSnapshot.emailNormalized': email,
+        })
         .session(session)
       return row
         ? {
@@ -260,7 +264,9 @@ export function guestOrderAccess(connection: Connection) {
           _id: orderId,
           userId: null,
           guestAccessChallengeRevision: expectedRevision,
-          $expr: { $lt: ['$guestAccessChallengeRevision', Number.MAX_SAFE_INTEGER] },
+          $expr: {
+            $lt: ['$guestAccessChallengeRevision', Number.MAX_SAFE_INTEGER],
+          },
         },
         { $inc: { guestAccessChallengeRevision: 1 } },
         { session, returnDocument: 'after' },
@@ -291,7 +297,9 @@ export function guestOrderAccess(connection: Connection) {
           userId: null,
           'customerSnapshot.emailNormalized': email,
           guestAccessChallengeRevision: revision,
-          $expr: { $lt: ['$guestAccessChallengeRevision', Number.MAX_SAFE_INTEGER] },
+          $expr: {
+            $lt: ['$guestAccessChallengeRevision', Number.MAX_SAFE_INTEGER],
+          },
         },
         { $inc: { guestAccessChallengeRevision: 1 } },
         { session },
@@ -320,7 +328,10 @@ export function paymentMethodOrderAccess(connection: Connection) {
       .findOne({ _id: orderId, userId: scope.customerId ?? null })
       .session(session)
     if (!row) throw new ApiError('NOT_FOUND')
-    return { method: row.paymentMethod, cancelled: row.fulfillmentStatus === 'cancelled' }
+    return {
+      method: row.paymentMethod,
+      cancelled: row.fulfillmentStatus === 'cancelled',
+    }
   }
 }
 
@@ -369,7 +380,10 @@ export function paymentAllocationOrderAccess(
           fulfillmentHold: { $in: ['payment_pending', 'allocation_shortfall'] },
           revision: { $lt: Number.MAX_SAFE_INTEGER },
         },
-        { $inc: { revision: 1 }, $set: { fulfillmentHold: 'allocation_shortfall' } },
+        {
+          $inc: { revision: 1 },
+          $set: { fulfillmentHold: 'allocation_shortfall' },
+        },
         { session },
       )
       if (row.matchedCount !== 1) throw new ApiError('STATE_CONFLICT')
@@ -442,5 +456,190 @@ export function paymentInitiationOrderData(connection: Connection) {
         productCategory: 'Sports',
       }
     },
+  }
+}
+
+// Internal verified-funding capability. The caller must fence the canonical payment and durable
+// receipt in the SAME transaction. This is not a browser mutation or a fulfillment authorization API.
+export function verifiedFundingOrderAccess(connection: Connection) {
+  const { orders } = orderModels(connection)
+  return {
+    async notificationTarget(session: ClientSession, orderId: string) {
+      if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+      const row = await orders.findById(orderId).session(session)
+      if (!row) throw new ApiError('STATE_CONFLICT')
+      return {
+        orderId: row._id,
+        ...(row.userId ? { userId: row.userId } : {}),
+        orderNumber: row.orderNumber,
+        email: row.customerSnapshot.emailNormalized,
+        name: row.customerSnapshot.name,
+      }
+    },
+    async riskState(session: ClientSession, orderId: string) {
+      if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+      await verifyOrderPersistence(connection)
+      const row = await orders.findById(orderId).session(session)
+      if (!row) throw new ApiError('NOT_FOUND')
+      return row.fulfillmentHold ?? 'none'
+    },
+    async inspect(session: ClientSession, orderId: string) {
+      if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+      await verifyOrderPersistence(connection)
+      const row = await orders.findOneAndUpdate(
+        {
+          _id: orderId,
+          paymentMethod: 'online',
+          revision: { $lt: Number.MAX_SAFE_INTEGER },
+        },
+        { $inc: { revision: 1 } },
+        { session, returnDocument: 'after' },
+      )
+      if (!row) return undefined
+      return {
+        binding: orderAllocationBinding(row, 1),
+        expectedPoisha: row.pricingSnapshot.finalTotalPoisha,
+        eligible:
+          row.fulfillmentStatus === 'pending' &&
+          !row.cancelledAt &&
+          !row.shippedAt &&
+          !row.confirmedAt,
+        recoverable:
+          ['pending', 'confirmed', 'processing'].includes(row.fulfillmentStatus) &&
+          !row.cancelledAt &&
+          !row.shippedAt,
+        cancelled: row.fulfillmentStatus === 'cancelled',
+      }
+    },
+    async finish(session: ClientSession, orderId: string, committed: boolean, risk: boolean) {
+      if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+      const row = await orders.findById(orderId).session(session)
+      if (!row || row.fulfillmentStatus === 'cancelled' || row.cancelledAt) return
+      if (!risk && !['pending', 'confirmed', 'processing'].includes(row.fulfillmentStatus)) return
+      // Confirmation/deadline and outbound notifications retain their owning workflow. Committing
+      // capacity is distinct from confirming fulfillment; never invent compliance clearance here.
+      await orders.updateOne(
+        {
+          _id: row._id,
+          fulfillmentStatus: row.fulfillmentStatus,
+          revision: row.revision,
+        },
+        {
+          $inc: { revision: 1 },
+          $set: {
+            fulfillmentHold: risk
+              ? 'risk_review'
+              : committed
+                ? row.fulfillmentStatus === 'pending'
+                  ? 'admin_review'
+                  : 'none'
+                : 'allocation_shortfall',
+          },
+        },
+        { session },
+      )
+    },
+  }
+}
+
+// Returns receives only ordinal-selection authority, never the private balance model. Eligibility
+// and current principal scope must be established by the owning coordinator in this transaction.
+export function claimQuantityAccess(connection: Connection) {
+  const { balances } = orderModels(connection)
+  return async (
+    session: ClientSession,
+    input: {
+      orderId: string
+      claimId: string
+      items: { orderItemId: string; quantity: number }[]
+    },
+  ) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyOrderPersistence(connection)
+    const selected: { orderItemId: string; ordinals: number[] }[] = []
+    for (const item of input.items) {
+      const row = await balances
+        .findOne({ orderId: input.orderId, orderItemId: item.orderItemId })
+        .session(session)
+      if (!row || row.revision >= Number.MAX_SAFE_INTEGER) throw new ApiError('STATE_CONFLICT')
+      const available = row.unitCoverage
+        .filter(
+          (u) =>
+            u.claimState === 'available' &&
+            !u.claimId &&
+            u.refundHeldPoisha === 0 &&
+            u.refundCompletedPoisha === 0 &&
+            !u.restockOperationKey,
+        )
+        .slice(0, item.quantity)
+      if (available.length !== item.quantity) throw new ApiError('BUSINESS_RULE_VIOLATION')
+      const set: Record<string, unknown> = {}
+      for (const unit of available) {
+        set[`unitCoverage.${unit.ordinal - 1}.claimState`] = 'protected'
+        set[`unitCoverage.${unit.ordinal - 1}.claimId`] = new Types.ObjectId(input.claimId)
+      }
+      const result = await balances.updateOne(
+        { _id: row._id, revision: row.revision },
+        { $set: set, $inc: { revision: 1, activeClaimQty: item.quantity } },
+        { session },
+      )
+      if (result.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
+      selected.push({
+        orderItemId: item.orderItemId,
+        ordinals: available.map((u) => u.ordinal),
+      })
+    }
+    return selected
+  }
+}
+
+export function codCollectionOrderAccess(connection: Connection) {
+  const { orders } = orderModels(connection)
+  return async (session: ClientSession, orderId: string) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyOrderPersistence(connection)
+    const row = await orders.findOneAndUpdate(
+      {
+        _id: orderId,
+        paymentMethod: 'cod',
+        confirmedAt: { $exists: true },
+        revision: { $lt: Number.MAX_SAFE_INTEGER },
+      },
+      { $inc: { revision: 1 } },
+      { session, returnDocument: 'after' },
+    )
+    if (!row || row.fulfillmentStatus === 'pending') throw new ApiError('STATE_CONFLICT')
+    return {
+      cancelled: row.fulfillmentStatus === 'cancelled',
+      placedAt: row.placedAt,
+      expectedPoisha: row.pricingSnapshot.finalTotalPoisha,
+    }
+  }
+}
+
+export function complaintOrderAccess(connection: Connection) {
+  const { orders } = orderModels(connection)
+  return async (
+    session: ClientSession,
+    id: string,
+    principal: import('../auth/checkout-access.service.js').OrderPrincipal,
+  ) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyOrderPersistence(connection)
+    if (principal.kind === 'guest_order' && principal.orderId !== id)
+      throw new ApiError('NOT_FOUND')
+    const row = await orders
+      .findOne({ _id: id, userId: principal.kind === 'customer' ? principal.userId : null })
+      .session(session)
+    if (!row) throw new ApiError('NOT_FOUND')
+    return {
+      orderId: row._id,
+      ...(row.userId ? { userId: row.userId } : {}),
+      contact: {
+        name: row.customerSnapshot.name,
+        emailNormalized: row.customerSnapshot.emailNormalized,
+        phone: row.customerSnapshot.phone,
+      },
+    }
   }
 }

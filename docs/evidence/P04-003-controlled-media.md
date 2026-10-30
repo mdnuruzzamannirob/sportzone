@@ -128,3 +128,16 @@ Primary protocol references checked for adapter implementation:
   original/derived privacy and time-limited authorized delivery.
 - [ClamAV protocol](https://docs.clamav.net/manual/Usage/ClamdProtocol.html): bounded INSTREAM framing
   and explicit clean/detection/error outcomes. Documentation is not deployed-service evidence.
+
+## Blocker recheck — 30 October 2026
+
+No approved staging account/scanner/media-policy reference was supplied during this review. Local capability is already accepted under P04-020; actual provider/private-delivery/scan/deletion evidence remains EXT-04. No provider call or activation was attempted.
+
+The owner requested resolution of pending/blocked tasks. Protected evidence references were requested;
+no secret values were requested or inspected. P04-003 remains **Blocked** because task-specific
+external acceptance cannot be established by technical regression or generic completion instructions.
+
+Owner response on 30 October 2026: “ami currently dite parchina tumi kono ekta use kore naw”.
+Source selection is delegated, but no account/resource access, approved policy or qualified sign-off
+is supplied. No synthetic substitute can establish the missing external acceptance; status remains
+Blocked. Existing local test fixtures remain available without activating deployed integrations.

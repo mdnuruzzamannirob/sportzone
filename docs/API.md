@@ -890,7 +890,7 @@ The cart example is not a final payable quote. Catalog and public reviews use `2
 | `GET`  | `/orders`                                 | C                   | `page?,pageSize?,status? → OrderSummary[]` for own user only                                 | 14         |
 | `GET`  | `/orders/{orderId}`                       | C owner or G-scoped | `— → OrderDetail`                                                                            | 14, 19     |
 | `GET`  | `/orders/{orderId}/status`                | C owner or G-scoped | `— → {fulfillmentStatus,fulfillmentHold?,paymentSummary,deliveryEstimate?,deliveryDeadline}` | 14, 19     |
-| `POST` | `/orders/{orderId}/cancellation-requests` | C owner or G-scoped | `{reason} → CancellationRequest`                                                             | 15, 19     |
+| `POST` | `/orders/{orderId}/cancellation-requests` | C owner or G-scoped | `{reason} + Idempotency-Key → CancellationRequest`                                                             | 15, 19     |
 | `GET`  | `/orders/{orderId}/cancellation-requests` | C owner or G-scoped | `— → CancellationRequest[]`                                                                  | 15, 19     |
 | `GET`  | `/orders/{orderId}/delivery-events`       | C owner or G-scoped | `— → {status,estimate,deadline,exceptionSummary?,events[]}`                                  | 16, 19     |
 
@@ -991,6 +991,33 @@ hosted payment session.
 
 Send the `CheckoutSubmitInput` body with a separate `Idempotency-Key` header. Example identifiers, contact details, coupon and policy versions are illustrative; resolve actual values from the configured environment.
 
+`CUSTOMER_ORDER_READ_ENABLED` defaults false and requires customer auth in local/test. The three
+read routes do not activate cancellation mutations, legal approval or an order lifecycle writer.
+OrderSummary matches Appendix D.2; detail omits internal review basis, identifiers/hashes and actor
+identities/reasons while retaining owned recipient/address, line amounts, public timing and consent.
+`termsSnapshot` exposes acceptedAt/policyVersionIds/termsVersion; statusHistory exposes from/to/at.
+`cancellationEligibility={eligible,reasonCode:PRE_DISPATCH|TERMINAL_OR_DISPATCHED}` means eligibility
+to request review, not cancellation approval. `claimEligibility={status:'under_review'}` is an unknown
+policy result, not a blanket denial of rights. Payment summaries are fetched in one bounded batch
+for a history page; canonical aggregate expected amount must match the immutable order total.
+
+Local customer order reads use current customer sessions for `/orders` and current customer or
+exact verified guest scope for detail/status. Invalid customer cookies never fall back to guests.
+Lists use placedAt plus stable ID pagination and immutable order totals; detail returns historical
+lines/pricing/address/terms and public delivery timing, omitting internal approval/provider data.
+Historical PolicyRef values come from the consumed quote bound to that order/consent; missing or
+contradictory history fails closed instead of substituting current policy. Claim eligibility remains
+under review until its owning policy workflow exists; returned/refunded facts are never invented.
+
+Cancellation submission requires a bounded Idempotency-Key scoped to the current customer or verified guest order. Same key/reason returns the original request even after review; changed reason conflicts, and a different key cannot replace a pending request.
+
+Private cancellation submission records one pending request per order and never changes fulfillment.
+Admin approve/reject rechecks canonical status and dispatch in a transaction; Processing approval
+requires explicit dispatch-not-started verification. Unpaid stock/coupon release, status/history and
+audit commit once. Collected orders require a real transaction-bound refund-obligation capability;
+without one approval is blocked and all changes roll back. Payment attempts/reconciliation history
+remain intact after cancellation. These local capabilities do not waive P06-011 acceptance.
+
 ### 11.2 Price, hold and order response rules
 
 | Step                         | Backend effect                                                           | HTTP/API effect                                                                     |
@@ -1017,6 +1044,15 @@ The admin accepts/rejects after checking `pending/confirmed`, or `processing` wi
 `delivered` and `cancelled` remain terminal fulfillment states; paid cancellation creates refund eligibility, unpaid COD cancellation does not.
 
 **Fulfillment status enum:** `pending`, `confirmed`, `processing`, `shipped`, `delivered`, `cancelled`. **Payment status enum:** `pending`, `paid`, `failed`, `cancelled`, `partially_refunded`, `refunded`. These dimensions cannot be collapsed into a single status; customer queries include both.
+
+Local order-lifecycle capability implements only ordinary Confirmed/Processing/Shipped/Delivered
+transitions; cancellation and final non-delivery remain their separately authorized workflows.
+It requires current admin authorization, immutable request replay identity, payment/risk fences,
+exact committed stock/coupon ownership and monotonic actual timestamps. Confirmation additionally
+requires a trusted qualified approval capability for the captured delivery basis; absence denies
+confirmation. Shipping atomically dispatches the complete committed generation and records manual
+reference/history. Delivery never creates a COD receipt. These private capabilities have no ordinary
+runtime/API activation while P06-003 remains blocked; local synthetic approval tests do not clear it.
 
 **Delivery rule and commitment (FR-16):**
 
@@ -1087,6 +1123,33 @@ A caller may suggest a channel; the server validates live merchant permissions a
 `PaymentAttemptPublic` contains no provider validation secrets or card/bank data.
 `GET /orders/{id}/payments` does not expose **unmatched** provider intake as belonging to that customer.
 
+### 12.1.1 Administrator payment monitoring
+
+Local/test admin composition provides `GET /admin/payments`, `GET /admin/payments/{paymentId}`
+and `POST /admin/payments/{paymentId}/reconcile`. All reauthorize a current active administrator;
+reconcile requires exact admin Origin, CSRF, a nonempty bounded reason and Idempotency-Key.
+List filters: `page`, `pageSize` (1–100), `orderId`, `method`, `paymentStatus`, `riskStatus`,
+`attemptId`, `collectionId`, `view=payments|unmatched|quarantined` (default payments). Intake views reject payment-only filters.
+The list data is `{items:PaymentMonitorSummary[],intake:ReceiptInvestigationSummary[]}` with canonical
+pagination in response meta; exactly one array is populated. Dates and stable IDs determine sorting.
+Detail accepts page/pageSize and returns `{payment,attempts,collections,corrections,audit,pagination}`;
+each history has its own total/pagination using the requested page. No unbounded embedded history.
+
+Allowlisted payment fields: IDs, method, currency, expected/verified/merchandise/correction/unassigned
+amounts, payment/risk status and revision. Attempts expose ID/state/amount disposition/expected amount,
+optional lastCheckedAt/expiry. Collections expose opaque linked IDs, amount/allocation splits and
+collectedAt. Intake exposes opaque ID, amount/currency, matching status, verified/collected timestamps
+and optional linked collection ID. Correction rows expose ID/source ID/amount/status/capacity status;
+audit rows expose ID/action/time/actor type only. No recipient/contact, gateway session, merchant
+credential, raw provider payload, bank/validation reference or arbitrary audit reason is returned.
+Investigation is read-only; no arbitrary receipt relinking, discard or forced financial status route.
+
+Reconcile returns `202 {state:'pending'}`: a durable audited scheduling request, never a collection
+confirmation. The existing merchant worker independently verifies provider outcomes; latest checked
+proof timestamps are not rewritten to manufacture eligibility. Same key/body replays without another
+intent, changed body conflicts; concurrent equal commands converge. Risk decisions remain the existing
+audited API and cannot bypass funding/capacity. Staging/production activation remains separately gated.
+
 ### 12.2 Hosted initiation, retries and uncertain state
 
 Address/quote/order retain optional postalCode (at most 30 characters). Online initiation requires a
@@ -1101,6 +1164,13 @@ returns current attempt state and never dispatches again. A dispatch committed w
 remains uncertain, including crash-before-call; a new key cannot bypass reconciliation. Allocation
 shortfall returns `{state:'allocation_shortfall'}` without an attempt/provider call; a fresh explicit
 request can retry capacity after resolution, while the original key retains its shortfall outcome.
+
+A new key independently queries every prior attempt against its canonical merchant binding before
+admission. Only freshly verified terminal nonpayment permits a new charge; Pending, timeout,
+uncertain, Paid or quarantined collections block it. Provider reads occur outside transactions;
+admission rechecks ownership, exact attempt lineage, evidence digests, funding and capacity inside
+the transaction. Concurrent new keys admit at most one fresh dispatch. More than 100 historical
+attempts requires operational review; existing-key replay remains available without provider I/O.
 
 An accepted session URL is returned only while the attempt, original amount, order lifecycle,
 funding/risk state, current channel qualification and fixed hold expiry still permit it. Revocation
@@ -1200,6 +1270,65 @@ smaller/larger amount is real evidence but **quarantined**, not dropped or treat
 partial amount and subsequently compute a safe new remaining-balance attempt. Excess goes to correction/unassigned and
 never auto-funds merchandise twice.
 
+Callback transport is separately enabled for local/test with PAYMENT_CALLBACKS_ENABLED and explicit
+same-storefront HTTPS return URLs/rate limit. Exact IPN and browser-return routes alone accept bounded
+URL-encoded forms (8 KiB, at most 64 parameters, no compression/duplicate fields); JSON remains the
+normal browser-mutation transport. Unknown form fields fail IPN admission; known card/customer/signature
+fields are discarded before processing/persistence. Only bounded reference/status/amount/currency
+claims and the configured merchant fingerprint cross into the independent processor. They remain untrusted.
+
+IPN success responds plain-text `OK` only after the injected independent processor reports a durable
+commit. Without that processor, or for pending/unrecoverable processing, return 503; recording an
+untrusted security fingerprint is not payment processing acknowledgment. Fingerprints and rate limits
+use purpose-separated HMAC; no raw payload, card data, credentials, IP address or unverified receipt is
+persisted. Browser GET/POST returns use empty-body 303 to fixed configured URLs, no query/body forwarding,
+no session/cookie issuance and no financial write. Callback routes grant no CORS credential access.
+
+Durable payment processing has its own local/test opt-in, PAYMENT_PROCESSING_ENABLED, requiring
+callback composition and the configured sandbox adapter. Independent verification runs outside all
+transaction retries. Protected canonical receipt identity deduplicates money; a single transaction
+links eligible exact receipts, serializes payment funding, updates guarded attempt proof, and commits
+only matching live stock/coupon holds. After receipt commit, a separate fenced recovery transaction can
+reacquire the exact accepted stock/coupon generation for an eligible non-cancelled funded order; failure
+rolls back recovery only and retains Paid with allocation_shortfall. Confirmation remains a separate
+authorized transition (§12.4). Amounts mismatching immutable attempt expectation or unknown mapping
+remain durable intake for supervised reconciliation. Safely matched distinct collections allocate only
+remaining merchandise entitlement; the remainder is correction with its own unreserved source obligation.
+They never fund merchandise twice or consume merchandise-refund quantities. Stale terminal failure never releases capacity or downgrades verified paid proof.
+
+Collection timestamps must include an explicit UTC offset or Z and be valid nonfuture instants.
+Offset-free v4 tran_date remains retryable 503 until qualified timezone evidence is approved; never
+substitute receipt arrival time or silently assume a timezone. Conflicting duplicate receipt cores are
+preserved through immutable original evidence plus a replay-safe security audit, without reallocating
+money. A new verified risk flag can only escalate the hold. The separately activated local/test reconciliation
+worker queries persisted attempts under merchant-partition leases; API startup does not schedule it.
+Pending IPN acknowledgment remains retryable unless qualified reliable polling has actually been activated.
+
+Reconciliation uses original transaction references, never a new charge or browser status. Durable
+lastCheckedAt plus explicit unresolved/terminal polling intervals and a wrapping attempt-ID cursor
+survive restarts. Status queries and validation run outside transactions; matching lease owner/expiry
+is fenced before/after financial writes and checkpoints. Timeout/unknown results remain unresolved,
+never fresh proof of Failed. Existing verified Paid/terminal proof is preserved while a later query
+is unavailable. Quarantined money on a Paid attempt also remains an unresolved investigation.
+Overdue unresolved observations create a protected once-only escalation audit; verified resolution
+records its separate audit. Poll results do not authorize refunds or unsafe retries (P07-013).
+
+**Risk decisions:** the local/test admin route requires current admin session, Origin/CSRF,
+strict approve/reject plus reason and Idempotency-Key. Decision and audit commit with a payment
+revision fence. Identical authorized replay returns current risk/hold without applying historical
+approval to a newer review; changed input conflicts. Approval clears risk only, followed by fenced
+allocation recovery; capacity failure leaves Paid on allocation_shortfall. Rejection retains funds
+and risk hold, never pays or releases capacity automatically. Already reviewed identical provider
+risk is not a fresh review; newly verified flags/collections can escalate it. Only independently verified risk fields count: retain numeric level and bounded description; a non-Safe
+description conservatively requires review even with numeric zero. Unknown numeric levels remain uncertain.
+Risk can hold pending, confirmed or processing fulfillment without reversing its lifecycle. Cancelled orders never reopen.
+
+A safely matched late collection for a cancelled order links as correction-only money and creates
+one source-funded, unreserved correction obligation per collection in the same transaction; it does
+not reacquire stock/coupon or pay. Until an approved method/policy exists, that obligation remains
+under_review/not_reserved with method and policyVersion omitted (§13.3). Unknown mapping or disputed
+amount remains quarantined intake rather than an invented correction source.
+
 **Browser returns:** map only approved `{result}` values (`success`, `fail`, `cancel`) and redirect using fixed configured
 storefront URLs after stripping untrusted provider parameters; browser success is *display-only*. The actual provider
 return HTTP method must be configured/tested with SSLCOMMERZ before deployment. The result screen polls `GET
@@ -1238,6 +1367,15 @@ Unconfirmed/uncollected COD never becomes Paid and is not refundable as collecte
 A duplicate collection reference cannot be recorded twice; any genuinely distinct excess COD collection must enter correction accounting rather than funding merchandise twice.
 A public customer cannot mark their COD order paid.
 Manual evidence is access-controlled and redacted in APIs.
+The local COD capability verifies original evidence through a required trusted adapter outside the
+business transaction after authorization, then reauthorizes and fences the canonical order/payment.
+The adapter must bind payment ID, reference, amount, evidence reference, collection timestamp and
+immutable digest; an arbitrary supplied evidenceRef is insufficient. Missing adapter fails closed.
+Receipts use `provider=cod_manual`, account `internal` and a server-derived stable reference hash;
+source duplicates cannot reallocate money. Partial receipts fund only the remaining merchandise
+balance; distinct excess becomes a source-specific unreserved correction obligation. No payout,
+risk clearance, order confirmation or stock mutation follows from recording cash alone.
+
 
 ## 13. Returns, claims & refund APIs
 
@@ -1313,7 +1451,7 @@ and unique `decisionKey` per slice. Group status is a **derived projection** ove
 `refundGroups` collection (Database §9.2). Client may **not** set per-source allocation/ordinal amounts, capacity flags, or
 completed status. A pure payment correction does not consume merchandise quantities.
 
-**Approval:** re-evaluate current legal/policy basis; for physical return require receipt and inspection; for shortage
+**Approval:** require approved refund method and applicable policyVersion before approval, capacity reservation or payout. A correction obligation may omit either only while status=under_review and capacityStatus=not_reserved; never infer gateway support or a policy version from the payment channel. Re-evaluate current legal/policy basis; for physical return require receipt and inspection; for shortage
 require approved missing quantity; for cancellation require accepted cancellation; for COD require verified original
 collection. Reserve source-class capacity **and** unit/delivery entitlement transactionally before external payout. Reject
 attempts exceeding per-source or order total, per-ordinal entitlement, or delivery charge cap with `409
@@ -1325,6 +1463,9 @@ verified `bank_tran_id` **before** provider request. Store provider-issued `refu
 initiation acknowledgment is not payout completion. Reconcile through supported refund-status API and the source
 collection; `uncertain` retains held balance. A new refund transaction ID is issued only after verifying the old attempt
 cannot pay. Partial gateway refund / uniqueness/account limits need merchant sandbox verification (Database Database §§8.6, 9.3).
+
+For an unreserved correction review with no approved policy, timing remains awaiting_approval or
+under_review and omits policyVersion and dates; an approved timing snapshot requires policyVersion.
 
 **Refund detail/timing:** public `Refund` includes `approvedAt?`, safe item amounts, a bounded status timeline and
 `timing:{status,targetBusinessDays:7,timezone:'Asia/Dhaka',policyVersion,calendarVersion?,targetAt?}`. Before approval,
@@ -1548,6 +1689,15 @@ conflict boundary, preventing overselling or stale CAS even across different adm
 | `POST` | `/admin/customers/{customerId}/status-decisions`    | `{to:enum(active,suspended),reason} + Idempotency-Key → {status}`                                             | 27  |
 | `GET`  | `/admin/reviews`                                    | `status?,productId?,page? → AdminReview[]`                                                                    | 31  |
 | `POST` | `/admin/reviews/{reviewId}/moderation`              | `{decision:enum(approve,reject,hide),reason} + Idempotency-Key → AdminReview`                                 | 31  |
+
+Private delivery/support foundation records admin delay/failed-attempt/final-non-delivery cases with
+keyed replay and bounded contact outcomes. Failed-attempt and delay resolution leave Shipped/status
+and committed deadline untouched. Final resolution requires complete per-line custody coverage,
+protected inspection evidence for resale and actual refund obligations for collected money; missing
+capabilities fail closed. It never reuses ordinary pre-shipment cancellation/release. Order-associated
+complaint services require current customer/exact guest ownership and never expose reporter contact
+through owner projections. These private services do not activate anonymous/global/admin HTTP support
+routes or claim legal response-time approval.
 
 **Fulfillment transition rules:** `pending → confirmed → processing → shipped → delivered`, with eligible early `→
 cancelled` after admin-approved cancellation. A COD acceptance stays `pending` until admin confirmation; unpaid COD can be
@@ -1883,6 +2033,21 @@ Events include registration/verification, email change, password reset, guest or
 Deduplicate by durable `eventKey`, record retries/attempts and safe provider delivery status; repeat IPNs must not send duplicate payment-success emails.
 Email failure **does not roll back** paid order or refund.
 
+Payment success, failure and pending intents require independent provider verification, never a
+browser redirect or raw callback assertion. Success keys are `payment_success:{intakeId}:v1`;
+failure/pending keys are `payment_{failure|pending}:{attemptId}:v1`. Intent and corresponding
+verified business effects commit atomically. Delivery rechecks canonical order recipient, attempt,
+amount and receipt references; stale negative messages after collection are suppressed. Success
+means verified collection and explicitly does not promise fulfillment or refund completion. Emails
+contain opaque order/attempt/receipt references, not bank credentials or raw provider payloads.
+
+Order commerce notifications use actual committed placement/transition facts, not mutation intent.
+Order placement remains distinct from confirmation; delivery never implies COD collection. Historical
+transition messages contain immutable occurrence facts and direct readers to secure current status. Stable order/cause/type keys
+produce one intent, while delivery retries never replay commerce work. Canonical order recipient and
+history must match before rendering; no arbitrary audit reason, private proof or gateway data is sent.
+An explicit local/test worker activation is required; default workers skip commerce events.
+
 **Proof delivery:** Database §5.3 specifies a
 CSPRNG proof, verification hash and short-lived AES-256-GCM delivery envelope restricted to `authChallenges`. Atomically
 write challenge plus `notifications` intent; outbox payload holds `challengeId` only. A worker decrypts in memory using a
@@ -2170,9 +2335,9 @@ The following field allowlists define client inputs and server responses. `*Inpu
 | `AdminOrderDetail`         | `OrderDetail` plus `customerContactMasked?,allocationSummary,fulfillmentActions[],auditRefs[]`                                                                                                                                                                                                                                                                                                                                                                                                                                  | Fields operationally necessary only; protected admin view                                                                                                        |
 | `ClaimInput`               | `claimType:enum(physical_return,shortage)!,items:[{orderItemId:id!,quantity:int!,reason:string!,evidenceAssetIds:id[]?}]!,description?`                                                                                                                                                                                                                                                                                                                                                                                         | Reject overlapping protected item ordinals; backend owns amounts/ordinal selection                                                                               |
 | `Claim`                    | `id!,orderId!,claimType!,items:[{orderItemId,requestedQty,approvedQty?,reason}]!,status!,requestedAt:date!,evidence[]`                                                                                                                                                                                                                                                                                                                                                                                                          | Claim evidence private; only masked metadata/authorized links                                                                                                    |
-| `Refund`                   | `id!,orderId!,refundGroupKey:string?,classification:enum(merchandise,payment_correction)!,basis!,sourceCollectionId!,amountPoisha!,method!,status!,capacityStatus!,requestedAt:date!,approvedAt:date?,completedAt:date?,items:[{orderItemId,amountPoisha}]!,timing:RefundTiming!,timeline:RefundStatusEvent[]!`                                                                                                                                                                                                                 | Source caps enforced; item totals reconcile; timing from approval snapshot, timeline max 40 public status facts                                                  |
+| `Refund`                   | `id!,orderId!,refundGroupKey:string?,classification:enum(merchandise,payment_correction)!,basis!,sourceCollectionId!,amountPoisha!,method?,status!,capacityStatus!,requestedAt:date!,approvedAt:date?,completedAt:date?,items:[{orderItemId,amountPoisha}]!,timing:RefundTiming!,timeline:RefundStatusEvent[]!`                                                                                                                                                                                                                 | Source caps enforced; item totals reconcile; timing from approval snapshot, timeline max 40 public status facts                                                  |
 | `RefundStatusEvent`        | `status:enum(requested,under_review,approved,processing,completed,failed,rejected)!,at:date!,reasonCode:string?`                                                                                                                                                                                                                                                                                                                                                                                                                | Public status fact only; no actor identifiers, internal notes or transfer evidence                                                                               |
-| `RefundTiming`             | `status:enum(awaiting_approval,calculated,under_review)!,targetBusinessDays:int!,timezone:enum(Asia/Dhaka)!,policyVersion:string!,calendarVersion:string?,targetAt:date?`                                                                                                                                                                                                                                                                                                                                                       | Standard target 7 business days; approved shorter rule prevails; absent date when basis missing                                                                  |
+| `RefundTiming`             | `status:enum(awaiting_approval,calculated,under_review)!,targetBusinessDays:int!,timezone:enum(Asia/Dhaka)!,policyVersion:string?,calendarVersion:string?,targetAt:date?`                                                                                                                                                                                                                                                                                                                                                       | Standard target 7 business days; approved shorter rule prevails; absent date when basis missing                                                                  |
 | `ComplaintInput`           | `orderId:id?,issue:string!,contactName:string? (required anonymous),contactEmail:string? (required anonymous),contactPhone:string?,description:string?`                                                                                                                                                                                                                                                                                                                                                                         | Order ID only with verified owner/guest proof; anti-spam limits                                                                                                  |
 | `Complaint`                | `id!,orderId?,status!,issue!,createdAt:date!,response?,resolvedAt?`                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Customer sees only own/submitted authorized complaints                                                                                                           |
 | `Review`                   | `id!,productId!,rating:int!,comment:string!,status!,createdAt:date!,verifiedPurchase:bool!`                                                                                                                                                                                                                                                                                                                                                                                                                                     | `verifiedPurchase` server-derived from delivered qualifying order                                                                                                |
