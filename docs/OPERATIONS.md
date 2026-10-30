@@ -1113,6 +1113,12 @@ Set `NEXT_PUBLIC_API_ORIGIN` and server-side `API_PUBLIC_ORIGIN` to the approved
 The install uses the root lockfile and pinned npm. No storefront provider/MongoDB/session secrets.
 Retain existing private cache headers, server/client ownership and dynamic catalog error behavior.
 
+Both frontend manifests declare `engines.node=24.x` because Vercel selects the runtime for each
+configured project root. The root workspace still enforces its minimum Node 24.20.0/npm 11.19.0.
+If a build reports `EBADENGINE` with actual Node 26, set Settings → Build and Deployment → Node.js
+Version to **24.x** in both Vercel projects and redeploy the commit containing these app manifests.
+The npm `cache-dir` warning is not that failure. Do not disable `engine-strict` or broaden to Node 26.
+
 Vercel's supported Node 24 minor may change independently of local `.nvmrc`; inspect the actual version
 and honor package engines. Do not bypass engine failures. Official references:
 [Vercel monorepos](https://vercel.com/docs/monorepos),

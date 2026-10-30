@@ -8,6 +8,12 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 30 October 2026 — Vercel Node runtime selection
+
+- Declared Node 24.x and the existing npm requirement in both frontend manifests and lockfile
+  workspace metadata so app-root deployments select the supported major before installing.
+- Documented recovery from hosted Node 26 EBADENGINE failures while retaining root engine enforcement.
+
 ## 30 October 2026 — Render and Vercel deployment preparation
 
 - Added a manual-deploy, disabled-feature Render staging Blueprint and per-app Vercel build
