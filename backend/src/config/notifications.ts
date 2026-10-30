@@ -38,5 +38,12 @@ export function loadNotificationWorker(environment: NodeJS.ProcessEnv) {
     (paymentsEnabled && !['local', 'test'].includes(environment.APP_ENV ?? ''))
   )
     throw new ConfigurationError(['payment_notification_activation'])
-  return { email, settings, paymentsEnabled }
+  const commerceEnabled = environment.ORDER_NOTIFICATIONS_ENABLED === 'true'
+  if (
+    (environment.ORDER_NOTIFICATIONS_ENABLED !== undefined &&
+      !['true', 'false'].includes(environment.ORDER_NOTIFICATIONS_ENABLED)) ||
+    (commerceEnabled && !['local', 'test'].includes(environment.APP_ENV ?? ''))
+  )
+    throw new ConfigurationError(['order_notification_activation'])
+  return { email, settings, paymentsEnabled, commerceEnabled }
 }

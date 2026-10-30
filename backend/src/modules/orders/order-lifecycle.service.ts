@@ -1,3 +1,4 @@
+import { createRegistrationNotifications } from '../notifications/notification.service.js'
 import { createDeliveryDeadlineService } from './delivery-deadline.service.js'
 import { createHash } from 'node:crypto'
 import { Types, type ClientSession, type Connection } from 'mongoose'
@@ -150,6 +151,27 @@ export function orderLifecycleService(
           { session, returnDocument: 'after' },
         )
         if (!changed) throw new ApiError('STATE_CONFLICT')
+        const eventType =
+          input.to === 'confirmed'
+            ? 'order_confirmation'
+            : input.to === 'shipped'
+              ? 'shipment_update'
+              : input.to === 'delivered'
+                ? 'delivery_completion'
+                : undefined
+        if (eventType)
+          await createRegistrationNotifications(connection, clock).enqueueCommerce(
+            {
+              orderId: row._id,
+              ...(row.userId ? { userId: row.userId } : {}),
+              email: row.customerSnapshot.emailNormalized,
+              name: row.customerSnapshot.name,
+              eventType,
+              operationKey,
+              occurredAt: now,
+            },
+            session,
+          )
         await audit(session, {
           ...cause,
           actorType: 'admin',

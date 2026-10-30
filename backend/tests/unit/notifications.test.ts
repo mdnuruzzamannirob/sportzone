@@ -165,6 +165,16 @@ describe('server-only email adapter and policy', () => {
       EMAIL_BATCH_SIZE: '5',
     }
     expect(loadNotificationWorker(env).settings.maxAttempts).toBe(3)
+    expect(loadNotificationWorker(env).commerceEnabled).toBe(false)
+    expect(
+      loadNotificationWorker({ ...env, ORDER_NOTIFICATIONS_ENABLED: 'true' }).commerceEnabled,
+    ).toBe(true)
+    expect(() =>
+      loadNotificationWorker({ ...env, ORDER_NOTIFICATIONS_ENABLED: 'true', APP_ENV: 'staging' }),
+    ).toThrow()
+    expect(() =>
+      loadNotificationWorker({ ...env, ORDER_NOTIFICATIONS_ENABLED: 'invalid' }),
+    ).toThrow()
     for (const change of [
       { EMAIL_DELIVERY_ENABLED: 'false' },
       { EMAIL_MODE: 'live' },

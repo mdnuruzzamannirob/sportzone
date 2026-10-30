@@ -1690,6 +1690,15 @@ conflict boundary, preventing overselling or stale CAS even across different adm
 | `GET`  | `/admin/reviews`                                    | `status?,productId?,page? → AdminReview[]`                                                                    | 31  |
 | `POST` | `/admin/reviews/{reviewId}/moderation`              | `{decision:enum(approve,reject,hide),reason} + Idempotency-Key → AdminReview`                                 | 31  |
 
+Private delivery/support foundation records admin delay/failed-attempt/final-non-delivery cases with
+keyed replay and bounded contact outcomes. Failed-attempt and delay resolution leave Shipped/status
+and committed deadline untouched. Final resolution requires complete per-line custody coverage,
+protected inspection evidence for resale and actual refund obligations for collected money; missing
+capabilities fail closed. It never reuses ordinary pre-shipment cancellation/release. Order-associated
+complaint services require current customer/exact guest ownership and never expose reporter contact
+through owner projections. These private services do not activate anonymous/global/admin HTTP support
+routes or claim legal response-time approval.
+
 **Fulfillment transition rules:** `pending → confirmed → processing → shipped → delivered`, with eligible early `→
 cancelled` after admin-approved cancellation. A COD acceptance stays `pending` until admin confirmation; unpaid COD can be
 confirmed, but never marked **Paid** by order confirmation alone. `processing → cancelled` requires contemporaneous
@@ -2031,6 +2040,13 @@ verified business effects commit atomically. Delivery rechecks canonical order r
 amount and receipt references; stale negative messages after collection are suppressed. Success
 means verified collection and explicitly does not promise fulfillment or refund completion. Emails
 contain opaque order/attempt/receipt references, not bank credentials or raw provider payloads.
+
+Order commerce notifications use actual committed placement/transition facts, not mutation intent.
+Order placement remains distinct from confirmation; delivery never implies COD collection. Historical
+transition messages contain immutable occurrence facts and direct readers to secure current status. Stable order/cause/type keys
+produce one intent, while delivery retries never replay commerce work. Canonical order recipient and
+history must match before rendering; no arbitrary audit reason, private proof or gateway data is sent.
+An explicit local/test worker activation is required; default workers skip commerce events.
 
 **Proof delivery:** Database §5.3 specifies a
 CSPRNG proof, verification hash and short-lived AES-256-GCM delivery envelope restricted to `authChallenges`. Atomically

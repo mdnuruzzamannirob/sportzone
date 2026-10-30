@@ -62,6 +62,42 @@ export function createRegistrationNotifications(
         { upsert: true, session, runValidators: true },
       )
     },
+    async enqueueCommerce(
+      input: {
+        orderId: Types.ObjectId
+        userId?: Types.ObjectId
+        email: string
+        name: string
+        eventType:
+          | 'order_confirmation'
+          | 'order_cancellation'
+          | 'shipment_update'
+          | 'delivery_completion'
+        operationKey: string
+        occurredAt: Date
+      },
+      session: ClientSession,
+    ) {
+      if (!session.inTransaction()) throw new Error('Commerce intent requires business transaction')
+      await createNotificationPersistence(connection, model).verifyIndexes()
+      await model.updateOne(
+        { eventKey: `${input.eventType}:${input.orderId.toHexString()}:${input.operationKey}:v1` },
+        {
+          $setOnInsert: {
+            orderId: input.orderId,
+            ...(input.userId ? { userId: input.userId } : {}),
+            recipient: { emailNormalized: input.email, displayName: input.name },
+            eventType: input.eventType,
+            templateVersion: `${input.eventType.replaceAll('_', '-')}-v1`,
+            payload: { operationKey: input.operationKey, occurredAt: input.occurredAt },
+            status: 'queued',
+            attemptCount: 0,
+            nextAttemptAt: clock(),
+          },
+        },
+        { upsert: true, session, runValidators: true },
+      )
+    },
     async enqueuePayment(
       input: {
         event: 'success' | 'failure' | 'pending'
@@ -187,6 +223,7 @@ export function createRegistrationNotifications(
       includeAdminResets = false,
       includeGuestProofs = false,
       includePayments = false,
+      includeCommerce = false,
     ) {
       const claimId = randomUUID()
       const row = await model
@@ -194,6 +231,27 @@ export function createRegistrationNotifications(
           {
             $or: [
               { eventType: 'registration', templateVersion: 'registration-v1' },
+              ...(includeCommerce
+                ? [
+                    { eventType: 'order_received' as const, templateVersion: 'order-received-v1' },
+                    {
+                      eventType: 'order_confirmation' as const,
+                      templateVersion: 'order-confirmation-v1',
+                    },
+                    {
+                      eventType: 'order_cancellation' as const,
+                      templateVersion: 'order-cancellation-v1',
+                    },
+                    {
+                      eventType: 'shipment_update' as const,
+                      templateVersion: 'shipment-update-v1',
+                    },
+                    {
+                      eventType: 'delivery_completion' as const,
+                      templateVersion: 'delivery-completion-v1',
+                    },
+                  ]
+                : []),
               ...(includePayments
                 ? [
                     {

@@ -420,7 +420,14 @@ orderSchema.pre(['updateOne', 'updateMany', 'findOneAndUpdate'], function () {
         const from = fulfillmentStatus.safeParse(this.getFilter().fulfillmentStatus)
         const to = fulfillmentStatus.safeParse(Reflect.get(fields, path))
         if (!from.success || !to.success) throw new ApiError('STATE_CONFLICT')
-        assertFulfillmentTransition({ from: from.data, to: to.data })
+        assertFulfillmentTransition({
+          from: from.data,
+          to: to.data,
+          path:
+            this.getOptions().transitionPath === 'final_non_delivery'
+              ? 'final_non_delivery'
+              : 'ordinary',
+        })
       }
     }
   }

@@ -1214,6 +1214,14 @@ blocked pending provider/template qualification; the existing test-recipient ove
 Retry admission queries all prior attempts independently; unknown outcomes require reconciliation,
 not a fresh charge. Histories over 100 attempts require operational investigation.
 
+Commerce templates separately require `ORDER_NOTIFICATIONS_ENABLED=true` in local/test, default false.
+The existing approved test-recipient override and sender/provider protections remain mandatory.
+Default workers skip order events; they never send a welcome-email fallback. Before upgraded HTTP/
+worker readiness, build and explicitly run `migrate-notifications.mjs` or the local/test
+`bootstrap-delivery-support.mjs`; only exact known predecessor validators migrate, preserving rows,
+leases, accepted sends and uncertainty. Old binaries need a schema-compatible rollback build rather
+than deletion or a validator downgrade. Provider acceptance remains distinct from inbox delivery.
+
 Policy bounds: 1–10 attempts; 1–100 claims per batch; base delay 100–3600000 ms; maximum delay at least the base and at most
 86400000 ms; lease 1000–3600000 ms; HTTP timeout 1–60000 ms. Require lease strictly greater than timeout plus 1000 ms.
 All values are explicit; the sanitized template leaves them blank. Run cadence and concurrency must respect provider
@@ -1614,6 +1622,23 @@ Cancellation mutation services remain private until accepted P06-011 and their b
 CSRF, rate/access and DTO integration. Missing real source-backed merchandise refund capability blocks
 paid approvals; the correction-only refund model is not a substitute. Unpaid online cancellation does
 not remove attempts or disable merchant reconciliation; later verified funds remain correction-only.
+
+#### Delivery exception and complaint foundation
+
+After build, explicit local/test `node --env-file=.env backend/scripts/bootstrap-delivery-support.mjs`
+creates strict exception/complaint persistence and applies the known notification migration. It does
+not open HTTP support/closure APIs, start workers or seed approvals/contacts/financial effects.
+Unknown drift and deployed configuration are refused. Keep order/exception/complaint/audit evidence,
+source collections, recovery movements and notification records together across restores.
+
+Final non-delivery requires a protected custody/inspection authority and per-shipped-item full
+accounting. No real verifier is installed by default. Missing source-backed refund obligations block
+paid closure; recovered resale stock changes only after verified inspection, with a globally stable
+receipt per original order item. Never rerun pre-shipment release or reset a recovery identity.
+Uncertain collection and payout outcomes remain subject to their independent reconciliation.
+Complaints/contact outcomes are restricted operational data; anonymous transport, public rate/spam
+controls, support HTTP security and legally qualified response windows require their owning acceptance.
+No hardcoded legal deadline or change to an existing order's deadline/estimate is implied by case resolution.
 
 ### 12.2 Gateway receipt reconciliation (OP-FIN-01)
 

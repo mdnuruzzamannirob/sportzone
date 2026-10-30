@@ -130,14 +130,14 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |     21 |        0 |
 | 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       1 |         0 |     12 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
-| 06 — Checkout, Orders, and Delivery Rules     |      22 |           8 |     0 |           0 |       5 |         0 |      9 |        0 |
+| 06 — Checkout, Orders, and Delivery Rules     |      22 |           6 |     0 |           0 |       7 |         0 |      9 |        0 |
 | 07 — Payment Integration and Verification     |      18 |           3 |     0 |           0 |       0 |         0 |     15 |        0 |
 | 08 — Returns and Refunds                      |      19 |          18 |     0 |           0 |       0 |         0 |      1 |        0 |
 | 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       1 |         0 |      1 |        0 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **96** | **0** | **0** | **7** | **0** | **107** | **0** |
+| **Total** | **210** | **94** | **0** | **0** | **9** | **0** | **107** | **0** |
 
 ## 4. Milestone tracker
 
@@ -1181,22 +1181,24 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence:** [Expiry/guest implementation, per-task checks and operational limits](./evidence/P06-010-015-expiry-guest-access.md). Verified locally; project-owner independent acceptance recorded on 30 October 2026. Live provider/email/staging, frontend and qualified compliance gates remain separate.
 
 - [ ] **P06-016 — Implement order, cancellation, shipment and delivery email intents**\
-  **Status:** `Not Started` · **Area:** Backend/notifications\
+  **Status:** `Blocked` · **Area:** Backend/notifications\
   **Stage:** `Backend`\
   **Sources:** FR-20\
   **Depends on:** `P06-013`\
   **Deliverable:** Persist accurate order reference/status events with reliable independent delivery and retry.\
   **Acceptance:** Repeated transitions do not email duplicate customer updates; mail failure cannot reverse orders.\
-  **Evidence to attach:** Notification event/dedup suite.
+  **Evidence:** [Local commerce outbox/template/dedup/retry verification and remaining gates](./evidence/P06-016-017-commerce-delivery-support.md). Actual placement/transition causes, canonical recipient/history verification and explicit local/test worker activation.\
+  **Blocked:** P06-013 remains unaccepted; deployed sender/inbox/template qualification and independent full acceptance are not supplied by local provider doubles.
 
 - [ ] **P06-017 — Implement failed delivery, delay and complaints foundations**\
-  **Status:** `Not Started` · **Area:** Backend/admin\
+  **Status:** `Blocked` · **Area:** Backend/admin\
   **Stage:** `Backend`\
   **Sources:** FR-16; FR-26; FR-34\
   **Depends on:** `P06-011`\
   **Deliverable:** Track failed attempts and retry while Shipped; final non-delivery closure requires authorized custody/disposition for all shipped quantities. Close exceptionally as Cancelled, resolve eligible collected refunds, and restock only physically recovered inspected resellable units without re-running pre-shipment release. Track contacts, complaints, and resolution with scoped access.\
   **Acceptance:** Failure leads to documented retry/resolution; deadlines and customer updates remain accurate.\
-  **Evidence to attach:** Delivery-exception and complaint test.
+  **Evidence:** [Local exception/custody/recovery/complaint checks and remaining gates](./evidence/P06-016-017-commerce-delivery-support.md). Private order-associated capabilities; no public/admin exception or anonymous complaint HTTP activation.\
+  **Blocked:** P06-011 remains unaccepted; real protected disposition/inspection authority, paid-refund integration, support HTTP security/public abuse controls and qualified response policy remain unavailable. Missing capabilities deny unsafe closure.
 
 - [ ] **P06-018 — Implement accessible checkout and order confirmation UI**\
   **Status:** `Not Started` · **Area:** Storefront/checkout\
@@ -2556,3 +2558,5 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **30 October 2026 — P06-011/012 local work:** Owner explicitly selected “Local implementation/tests এগিয়ে নাও” after disclosure that P06-003 prevents full acceptance. Each Not Started → In Progress → Blocked after the authorized private technical work and checks. [Separate local scope, 17 new cases, 232 integration/50 unit/108 contract results and remaining gates](./evidence/P06-011-012-local-lifecycle-cod.md). Overall: 210 tasks, 107 Done, 98 Not Started, 5 Blocked, 0 In Review. No real approval/evidence source or ordinary runtime activation was invented; no task/milestone self-acceptance.
 
 **30 October 2026 — P06-013/014 safe local work:** Each Not Started → In Progress → Blocked after local cancellation request/review/unpaid release and scoped historical order read APIs. Owner explicitly approved mandatory submission Idempotency-Key: “Idempotency-Key বাধ্যতামূলক করুন”. [Separate implementation/checks/remaining gates](./evidence/P06-013-014-cancellation-owned-reads.md). Passed 268 integration, 68 unit and 111 contract tests; 98 implemented/66 planned operations. Overall: 210 tasks, 107 Done, 96 Not Started, 7 Blocked, 0 In Review. Paid cancellation without real refund obligations remains denied; P06-011 and external acceptance are not waived.
+
+**30 October 2026 — P06-016/017 safe local work:** Not Started → Blocked after locally verified commerce outbox/templates and private delivery-exception/recovery/complaint capabilities. [Separate task scope, checks and remaining gates](./evidence/P06-016-017-commerce-delivery-support.md). Prerequisites P06-013/P06-011, real disposition/refund/support integration and qualified external acceptance remain unresolved; no task/milestone is self-approved. Overall: 210 tasks, 107 Done, 94 Not Started, 9 Blocked, 0 In Review.

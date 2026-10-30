@@ -14,6 +14,10 @@ const schema = new Schema(
     eventType: {
       type: String,
       enum: [
+        'order_confirmation',
+        'order_cancellation',
+        'shipment_update',
+        'delivery_completion',
         'payment_success',
         'payment_failure',
         'payment_pending',
@@ -29,6 +33,8 @@ const schema = new Schema(
     payload: {
       type: new Schema(
         {
+          operationKey: String,
+          occurredAt: Date,
           challengeId: Schema.Types.ObjectId,
           paymentId: Schema.Types.ObjectId,
           attemptId: Schema.Types.ObjectId,

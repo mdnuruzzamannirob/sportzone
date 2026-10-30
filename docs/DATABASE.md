@@ -1005,6 +1005,24 @@ No unreserved fake merchandise refund is fabricated from the correction-only mod
 
 **Indexes:** `{orderId:1,status:1,createdAt:-1}`.
 
+Private exception operations add immutable `reason`, hashed `operationKey` and `requestDigest`,
+nonnegative `revision`, timestamps, and optional protected `dispositionDigest`. Declare unique
+`{orderId:1,operationKey:1}` for creation replay; resolution replay is an append-only audit identity.
+Contacts and recent outcomes are bounded to 40; disposition has at most 200 unique item/custody rows.
+Every row has positive quantity and `0 <= inspectedResellableQty <= quantity`; only recovered custody
+may have resale quantity. Exact coverage of all shipped order quantities is checked by the service.
+Open records have no resolution/disposition proof. A resolved final exception requires nonempty full
+disposition and verified digest; non-final resolution has no disposition. Unknown schema drift/TTL
+fails readiness. Delay/failed-attempt resolution never changes fulfillment or accepted deadline.
+
+Final closure requires a trusted protected custody/inspection verifier, current Shipped order and
+canonical payment fence. Collected money requires real refund obligations in the same transaction;
+missing verifier/planner blocks closure. Inspected recovery uses one stable `return_receipt` movement
+per original order item (`nondelivery-restock:<orderId>:<orderItemId>`), adding physical only; normal
+pre-shipment release/coupon reversal never runs. Audit, exception closure, order cancellation,
+recovery receipts and customer notification intent commit together. Raw ordinary Shipped cancellation
+remains forbidden; the private Orders exceptional path is used only after these guarded decisions.
+
 **Rules:** final non-delivery `Shipped → Cancelled` requires custody/disposition coverage of *every* shipped unit; recovered goods return to physical stock only after inspected resale approval and unique receipt movement.
 
 ### 7.6 `deliveryZones` and `deliveryCharges` — `delivery`
@@ -1516,13 +1534,21 @@ The additive checkout validator permits `order_received`/`order-received-v1` wit
 optional userId for registered buyers, and an empty payload; guest orders need no account reference.
 Existing account/proof events still require userId, forbid orderId and retain their exact challenge
 constraints. The previous admin-reset validator is an immutable known migration predecessor. Order
-receipt delivery remains queued until its owning commerce template/worker integration; it is never
-mistaken for registration or confirmation.
+receipt delivery requires explicit commerce-worker activation and canonical order verification; it is
+never mistaken for registration or confirmation.
 The additive guest validator permits `guest_order_access`/`guest-order-access-v1` with required orderId,
 no userId and required payload.challengeId. Its preceding order-received validator remains an exact
 known migration source. Existing account/proof and order-received branches retain their constraints.
 Guest delivery decrypts only in memory after challenge/order/destination/revision checks; ordinary
 order receipt events are never claimed as guest proofs.
+Commerce types `order_confirmation`, `order_cancellation`, `shipment_update`, `delivery_completion`
+use matching hyphenated `*-v1` templates and closed `{operationKey,occurredAt}` payload, required
+orderId and optional registered userId. Stable `eventType:orderId:operationKey:v1` keys deduplicate
+actual transition causes. Existing `order_received:orderId:v1` keeps empty payload. Proof/payment
+payload fields cannot appear in commerce records or vice versa. Order history, recipient and cause
+must match before sending. The exact payment-notification validator is a known additive migration
+predecessor; existing status/lease/provider evidence is preserved. Default workers skip commerce.
+
 Other notification event types require an explicit backward-compatible validator/model expansion before activation.
 Existing validators are checked, never silently replaced by startup or local bootstrap.
 
@@ -1553,6 +1579,18 @@ renderers remain disabled until their owning tasks expand the contracts safely.
 | `assignedTo`? | ObjectId | Authorized administrator |
 
 **Indexes:** `{status:1,createdAt:-1}`; `{orderId:1,createdAt:-1}`.
+
+The order-associated private foundation requires orderId, adds revision and bounded contactHistory
+`[{at,outcome}]` (maximum 40), and uses stable ID sorting within order history. Contact and issue are
+restricted fields; owner views omit contact/reporter identity. Omitted contact resolves from the
+verified order's immutable customer snapshot; supplied contact is never ownership proof. Names retain
+up to 120 Unicode code points. Current customer or exact guest scope is required on every submission
+and read. Anonymous/global support transport remains its separate API task.
+
+Administrator progression is Open → In Review/Resolved → Closed; resolving requires a recorded
+contact outcome. First respondedAt and original resolvedAt survive later closure. CAS/current admin
+and audited command replay protect mutations; old keys return current state without reopening.
+No statutory response duration is invented. Required legal/operator response policy remains a gate.
 
 **Rules:** enforce guest/customer ownership and complaint-response policy; legal response period is a tracked operator approval, not hardcoded here.
 

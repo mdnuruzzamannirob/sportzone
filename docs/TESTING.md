@@ -689,6 +689,16 @@ cookie no-fallback, immutable catalog/terms/address snapshots and absent histori
 Guest proof cannot list orders or read another order. Compile and exercise additive cancellation
 bootstrap; compare all canonical order/stock/coupon/payment histories after failures and retries.
 
+Commerce notification checks verify one actual event per transition/cause, canonical recipient and
+history proof, no welcome fallback, explicit worker activation, fixed provider identity for known
+rejection retry, no uncertain resend, exact known predecessor migration and atomic order/stock/outbox
+rollback. Historical emails retain identical event content across retries after status changes; Delivered never proves COD Paid.
+Delivery/support tests cover retained Shipped retry/contact/deadline history, complete mixed custody,
+protected inspection, no restock of lost/damaged units, final-close races, stable recovery receipts,
+paid refund-planner denial and post-recovery rollback. Complaint tests require exact customer/guest
+scope, no ownership from contact input, private contact projections, recorded response before resolution,
+first-response preservation and no invented legal SLA. Synthetic proof fixtures do not qualify deployment.
+
 ### 11.1 Payment provider and COD scenarios
 
 Safe-retry checks use replica-set transactions and actual initiation routes: fresh terminal

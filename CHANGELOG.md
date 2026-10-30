@@ -8,6 +8,17 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 30 October 2026 — Commerce notifications and delivery/support foundation
+
+- Added atomic order-confirmation/cancellation/shipment/delivery intents and canonical commerce
+  templates, exact predecessor migration and explicit local/test worker activation. Immutable event
+  content remains stable across provider retries after later order changes.
+- Added private delivery concerns, full-custody exceptional closure, inspected recovery receipts and
+  scoped complaint/contact/resolution history. Missing protected proof or paid-refund planning denies
+  unsafe closure; pre-shipment release is never reused for shipped goods.
+- Recorded verification and remaining prerequisites for P06-016/P06-017; neither task or external gate
+  is accepted as Done from local synthetic fixtures.
+
 ## 30 October 2026 — Cancellation foundation and owned order reads
 
 - Added private cancellation request/admin-review/unpaid release with transaction fences, historical

@@ -616,3 +616,30 @@ export function codCollectionOrderAccess(connection: Connection) {
     }
   }
 }
+
+export function complaintOrderAccess(connection: Connection) {
+  const { orders } = orderModels(connection)
+  return async (
+    session: ClientSession,
+    id: string,
+    principal: import('../auth/checkout-access.service.js').OrderPrincipal,
+  ) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyOrderPersistence(connection)
+    if (principal.kind === 'guest_order' && principal.orderId !== id)
+      throw new ApiError('NOT_FOUND')
+    const row = await orders
+      .findOne({ _id: id, userId: principal.kind === 'customer' ? principal.userId : null })
+      .session(session)
+    if (!row) throw new ApiError('NOT_FOUND')
+    return {
+      orderId: row._id,
+      ...(row.userId ? { userId: row.userId } : {}),
+      contact: {
+        name: row.customerSnapshot.name,
+        emailNormalized: row.customerSnapshot.emailNormalized,
+        phone: row.customerSnapshot.phone,
+      },
+    }
+  }
+}

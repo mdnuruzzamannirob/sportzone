@@ -1,3 +1,5 @@
+import { orderMessageService } from './modules/notifications/order-message.service.js'
+import { orderNotificationAccess } from './modules/orders/order-notification.service.js'
 import { orderReadRoutes } from './modules/orders/order-read.routes.js'
 import { orderReadService } from './modules/orders/order-read.service.js'
 import { orderScopeAccess } from './modules/auth/checkout-access.service.js'
@@ -529,10 +531,18 @@ export async function composeNotificationWorker(
   config: RuntimeConfig,
   options:
     | ReturnType<typeof loadNotificationWorker>
-    | { adapter: EmailAdapter; settings: RetryPolicy; paymentsEnabled?: boolean },
+    | {
+        adapter: EmailAdapter
+        settings: RetryPolicy
+        paymentsEnabled?: boolean
+        commerceEnabled?: boolean
+      },
 ) {
   const { settings } = options
   const paymentsEnabled = 'paymentsEnabled' in options && options.paymentsEnabled === true
+  const commerceEnabled = 'commerceEnabled' in options && options.commerceEnabled === true
+  if (commerceEnabled && !['local', 'test'].includes(config.APP_ENV))
+    throw new Error('Order delivery requires reviewed local/test activation')
   if (paymentsEnabled && !['local', 'test'].includes(config.APP_ENV))
     throw new Error('Payment notification delivery requires reviewed local/test activation')
   const adapter = 'adapter' in options ? options.adapter : createResendAdapter(options.email)
@@ -556,5 +566,6 @@ export async function composeNotificationWorker(
           ),
         )
       : undefined,
+    commerceEnabled ? orderMessageService(orderNotificationAccess(connection)) : undefined,
   )
 }

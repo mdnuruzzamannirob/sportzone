@@ -1,3 +1,4 @@
+import { createRegistrationNotifications } from '../notifications/notification.service.js'
 import { createHash } from 'node:crypto'
 import { Types, type Connection, type ClientSession } from 'mongoose'
 import type { AdminAccountAccess } from '../auth/admin-account.service.js'
@@ -226,6 +227,18 @@ export function cancellationService(
             { session },
           )
           if (changed.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
+          await createRegistrationNotifications(connection, clock).enqueueCommerce(
+            {
+              orderId: order._id,
+              ...(order.userId ? { userId: order.userId } : {}),
+              email: order.customerSnapshot.emailNormalized,
+              name: order.customerSnapshot.name,
+              eventType: 'order_cancellation',
+              operationKey,
+              occurredAt: now,
+            },
+            session,
+          )
         }
         const changed = await requests.findOneAndUpdate(
           { _id: request._id, status: 'requested', revision: request.revision },
