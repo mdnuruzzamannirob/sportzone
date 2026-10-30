@@ -386,3 +386,44 @@ The free Render transport now supports an explicit apply flag plus the exact pri
 manifest, delegating to the existing guarded CLI rather than startup auto-DDL. Normal mode remains
 read-only; production/active features/missing authority/stale plans fail closed. One-time operator
 settings must be removed after the result is retained. Full task/milestone acceptance remains separate.
+
+## Authorized catalog rollout completed — 30 October 2026
+
+The owner-approved exact plan was executed once through reviewed image commit
+`84403afe833ee082512ba0d4bc695807030eb14f`, deployment `dep-dbid3s7b9u1s73dor380`.
+The canonical CLI rechecked the approved digest immediately before mutation. Its encrypted result,
+retrieved from protected Render logs and decrypted only locally, confirms:
+
+| Collection | Exists | Records | Missing indexes | Conflicts |
+| --- | --- | --- | --- | --- |
+| categories | Yes | 0 | 0 | None |
+| products | Yes | 0 | 0 | None |
+| productVariants | Yes | 0 | 0 | None |
+
+All eleven declared indexes and canonical product/variant validators verified. No existing records,
+indexes or collections were dropped or edited; no seed data or external provider operation ran.
+Applied inventory digest: `5d68e67ab483b3a1ef35512c7d8e48dd893a4a846aded180c4723ae823eaf309`.
+Private approval, encrypted envelope and decrypted result remain in the ignored protected operator
+store; these are not public application artifacts or a full Atlas backup.
+
+The one-time NODE_OPTIONS, REPORT_PUBLIC_KEY, STAGING_CATALOG_APPLY and STAGING_CATALOG_APPROVAL
+variables were removed and normal startup restored with deploy-only `dep-dbid4l142hec73d3sngg`,
+verified **live** at the same commit. Actual post-cleanup checks:
+
+- Public liveness 200; token-protected readiness 200.
+- `GET /api/v1/products` 200 and empty data array, previously 503.
+- `GET /api/v1/categories` 200 and empty data array.
+- Both catalog endpoints allow the exact deployed storefront origin through CORS.
+- All four temporary operator variables are absent; every feature-admission flag remains false.
+
+Thirteen affected integration tests Passed (`staging-inventory.test.ts`, `catalog-rollout.test.ts`),
+including read-only behavior, wrong environment/active features/key rejection, reviewed additive
+apply, stale approval replay and incomplete authority. Backend typecheck/lint, source boundaries,
+format/repository checks and local Docker build Passed. Prior unchanged local runtime and real
+Cloudinary evidence was reused; no unrelated frontend build or full regression was repeated.
+The private staging RELEASE_ID reference was aligned with the actual deployed image revision.
+
+The authorized free-demo catalog work is complete. P09-011 remains Deferred only for its outstanding
+full hosted scheduler/runtime/transaction/session/recovery acceptance; this result does not self-approve
+M1–M8 or remove initial-release prerequisites. P04-003 retains the owner-approved free-demo deferral
+for persistent scanner/media lifecycle/policy acceptance, with media disabled.

@@ -13,6 +13,8 @@ environment limits and independent acceptance. Historical UI or source layouts m
 - Added explicit reviewer-manifest transport for the independently approved additive catalog rollout
   on the existing free staging image, reusing canonical CLI/digest safeguards and encrypted results.
 - Healthcheck processes skip operator actions; normal HTTP startup remains free of schema repair.
+- Applied the owner-approved initial catalog schema/index plan on free staging; products/categories
+  now return 200. Removed the temporary operator settings and retained encrypted verification evidence.
 
 ## 30 October 2026 — Free-demo staging inventory
 
