@@ -1681,14 +1681,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence to attach:** Admin sitemap/accessibility review.
 
 - [ ] **P09-011 — Provision isolated staging runtime and transaction-capable DB**\
-  **Status:** `Blocked` · **Area:** Backend/staging · **Owner:** Codex\
+  **Status:** `Deferred` · **Area:** Backend/staging · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** Architecture §13; Implementation Plan §§4.1,12\
   **Depends on:** `P01-024`\
   **Deliverable:** Configure isolated API, MongoDB, workers, secret management, sandbox providers and test email for backend acceptance. Build a reviewed Docker image from locked backend dependencies with separate HTTP/worker entry commands and runtime-injected secrets; prepare storefront/admin hosting and origins without requiring their builds or deployment. P09-012 deploys the complete integrated applications.\
   **Acceptance:** Staging uses no production credentials; database connectivity and transaction capability, image health/draining, worker restart and absence of embedded secrets are verified; HTTPS/origin/session plans are testable.\
   **Evidence:** [Local preparation, observed checks and missing staging prerequisites](./evidence/P09-011-staging-runtime.md).
-  **Blocked:** Render origin typo was corrected and the existing artifact redeployed (dep-dbicka6tlv9c739g3g20): live and authenticated database readiness 200, catalog 503. Render-to-Atlas ping is verified; target inventory/transactions remain unverified. Owner-authorized encrypted read-only inventory run 41087532710 fails during connection with TLS_HANDSHAKE_FAILED; no record/index/schema mutation occurred. Hosted backend-only Docker build and non-root/secret-exclusion inventory Passed in run 41088818340. Local Docker runtime verification also Passed eleven checks (transaction commit/abort, restricted readiness, catalog read, non-root, SIGTERM/restart, worker process restart and preserved state); these used only an isolated generated test database. Resolve target Atlas connection, review actual inventory before any apply, then verify staging transactions, HTTP health/draining, worker restart and same-site/proxy behavior. Image/provider probes do not substitute for full runtime verification or independent acceptance.
+  **Deferred:** Owner selected the free-demo path; hosted scanner/scheduler acceptance is postponed without waiving release gates. Existing free Render service is live; authenticated DB ping and local container/worker restart checks Passed. Render-side encrypted read-only inventory now succeeds (dep-dbicvdgn74is73b3bilg): three catalog collections are absent, zero existing catalog records, eleven missing indexes, no blockers. The concrete additive plan is recorded in evidence and awaits independent authorization under Operations §7.2; no schema/index/record apply has occurred. Catalog 503 is not yet cleared.
 
 - [ ] **P09-012 — Deploy integrated feature-complete build to staging**\
   **Status:** `Not Started` · **Area:** DevOps/staging\

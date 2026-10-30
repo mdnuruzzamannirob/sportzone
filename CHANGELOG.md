@@ -8,6 +8,12 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 30 October 2026 — Free-demo staging inventory
+
+- Added an explicitly selected staging-only encrypted read-only inventory preload for free Render
+  environments without shell access. Verified actual missing catalog collections before proposing any DDL.
+- Recorded the owner's free-demo deferral of hosted scanner/worker acceptance; launch gates remain intact.
+
 ## 30 October 2026 — Local container runtime verification
 
 - Added a reproducible isolated Linux/Docker runtime verifier for health authorization, transactions,

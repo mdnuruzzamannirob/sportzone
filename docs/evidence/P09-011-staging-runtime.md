@@ -333,3 +333,43 @@ A separate previously authorized read-only staging inventory attempt through Doc
 still returned TLS_HANDSHAKE_FAILED before inventory. No apply was attempted. Thus the local Docker
 builder/runtime gap is cleared; actual target inventory, hosted jobs/scanner and independent
 acceptance remain outstanding. No full task or milestone Done is inferred from this local pass.
+
+## Free Render inventory succeeded — 30 October 2026
+
+Owner instruction: “free te jeta kore kaj chalano jabe setau koro”. No paid service was provisioned.
+Added `staging-inventory.mjs` as an explicit staging-only, all-features-off Node preload. It requires
+an operator RSA public key and emits only an encrypted catalog inventory envelope. Two real replica-set
+integration tests Passed for read-only encrypted reporting and production/feature/missing-key guards.
+Backend typecheck/lint, boundaries, formatting, documentation checks and local Docker build Passed.
+No prior provider or full unrelated application suites were repeated.
+
+Existing free Render service deployed reviewed commit `a526e4c7641febdd303cbdfa239c3650772bebcf`
+in deployment `dep-dbicvdgn74is73b3bilg`, status live. The encrypted inventory was retrieved from
+protected Render logs and decrypted only in the local protected report store. This resolves the
+operator TLS/network inventory obstacle without opening Atlas to all IPs or provisioning another host.
+Private report: `.cache/staging-report/render-catalog-plan.json` (ignored, mode 0600).
+
+### Concrete initial catalog plan awaiting independent authorization
+
+Target `sportzone_staging`, digest
+`03fdaaa936a11245e225f52451d86b61c6b546c3e8c7a8c690388ed0e4f7e240`:
+
+| Collection | Current state | Planned additive indexes |
+| --- | --- | --- |
+| categories | Absent; no records | 3 |
+| products | Absent; no records | 5 |
+| productVariants | Absent; no records | 3 |
+
+All blockers are empty; canonical inspection reports safeToApply=true. The planned operation creates
+only these three missing canonical collections, their declared validators and eleven indexes. No
+seed data, record mutation, existing-index drop or collMod is proposed. Current absent collections
+are the retained verified-empty recovery baseline, not a claim of a full Atlas backup. Other database
+collections are outside the plan. All service feature-admission flags remain false; no worker was
+provisioned. Recheck the exact digest immediately before apply. If partial DDL occurs, retain it,
+keep admission off and review a new plan; never destructively roll back or blindly retry.
+
+The report preload/public-key variables were removed after capture; deploy-only normal startup was
+requested as `dep-dbid14e1egvs73e8p8i0`, subsequently verified live with public liveness
+and authenticated readiness both 200. Actual catalog apply has **not** run. Operations §7.2 requires independent target-plan
+review; executor-generated approval is not substituted for it. Full hosted worker/scanner acceptance
+is Deferred for the free demo, with the initial-release gates unchanged.
