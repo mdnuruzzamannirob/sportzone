@@ -148,15 +148,16 @@ try {
   const match = /^ClamAV ([0-9.]+)\/([0-9]+)\/(.+)$/.exec(version || '')
   assert(process.env.MEDIA_SCANNER_TIMEZONE === 'UTC' && Boolean(match), 'scanner_version_format')
   const updated = Date.parse(`${match[3]} UTC`)
+  plan.scanner = {
+    engine: match[1],
+    signatureVersion: match[2],
+    updatedAt: Number.isFinite(updated) ? new Date(updated).toISOString() : 'unparseable',
+  }
+  await save()
   assert(
     Number.isFinite(updated) && updated <= Date.now() && Date.now() - updated <= 48 * 3600000,
     'scanner_signatures_fresh',
   )
-  plan.scanner = {
-    engine: match[1],
-    signatureVersion: match[2],
-    updatedAt: new Date(updated).toISOString(),
-  }
   const scan = createClamAvScanner(scannerOptions)
   assert((await scan(png)) === 'clean', 'clean_image_scan')
   assert(

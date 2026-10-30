@@ -74,6 +74,11 @@ jobs:
         run: |
           mkdir -p test-results
           node backend/scripts/check-media-provider.mjs > test-results/media-preflight.json
+      - name: Refresh and reload qualification signatures
+        if: ${{ inputs.media_qualification }}
+        run: |
+          docker exec "${{ job.services.clamav.id }}" freshclam --stdout --log=/tmp/qualification-freshclam.log
+          docker exec "${{ job.services.clamav.id }}" clamdscan --reload
       - name: Prepare synthetic qualification intent
         if: ${{ inputs.media_qualification }}
         env:

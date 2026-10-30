@@ -51,8 +51,10 @@ try {
     throw new Error('Approval does not cover the target/current review window.')
   // Reserve an unused report path before any possible database mutation.
   const reportFile = await open(report, 'wx', 0o600)
+  let phase = 'connection'
   try {
     connection = await openDatabase(config.MONGODB_URI, config.MONGODB_DB_NAME)
+    phase = approval ? 'apply' : 'inventory'
     const result = approval
       ? await applyCatalogRollout(connection, approval.planDigest)
       : await inspectCatalogRollout(connection)
@@ -63,10 +65,18 @@ try {
         : 'Read-only catalog report written.',
     )
     if (!result.safeToApply) process.exitCode = 1
-  } catch {
-    await reportFile.writeFile(
-      '{"status":"failed","reason":"protected_preflight_or_rollout_failed"}\n',
-    )
+  } catch (error) {
+    const reasons = [
+      'AUTHENTICATION_FAILED',
+      'TLS_HANDSHAKE_FAILED',
+      'DNS_FAILED',
+      'NETWORK_UNREACHABLE',
+      'SERVER_SELECTION_FAILED',
+    ]
+    const reason = reasons.includes(error?.reason)
+      ? error.reason
+      : 'protected_preflight_or_rollout_failed'
+    await reportFile.writeFile(`${JSON.stringify({ status: 'failed', phase, reason })}\n`)
     throw new Error('Protected catalog operation failed.')
   } finally {
     await reportFile.close()
