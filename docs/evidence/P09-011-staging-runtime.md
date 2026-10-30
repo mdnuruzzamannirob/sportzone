@@ -234,3 +234,8 @@ The owner later authorized branch publication and read-only hosted media preflig
 creation was rejected by automatic approval review before execution because exact branch scope must
 exist in the initial security configuration. No GitHub environment/secrets/workflow side effects
 occurred; the authorized branch publication remains a separate action. See P04-003's current record.
+
+The owner subsequently created the GitHub environment manually. Exact feature-branch restriction
+was added and verified before storing the three authorized Cloudinary values. The first manual
+media run failed at empty reusable-workflow secret resolution; it did not access Atlas or mutate
+records. The direct staging-job correction remains within the authorized read-only preflight scope.

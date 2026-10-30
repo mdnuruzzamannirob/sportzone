@@ -200,3 +200,13 @@ was transmitted and no workflow was dispatched. The operator must create/configu
 with selected branch `chore/staging-catalog-media-preflight` before credential upload/run can continue.
 Publishing the authorized branch is unaffected. This is an approval-review block, not a GitHub API
 failure or a reason to broaden access/use repository-wide secrets.
+
+After the owner created the GitHub staging environment, the exact feature-branch restriction was
+added and verified, then only STAGING_CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET were stored under the
+owner's explicit authorization. Manual run 41080256194 initialized the real ClamAV container but
+failed because environment secrets resolved empty across the reusable-workflow boundary. Its JSON
+artifact was empty; raw job logs confirmed credential presence was false without printing values.
+The workflow was consolidated into a direct staging job in the registered Container verification
+workflow, preserving explicit three-secret access and loopback-only scanner binding. No broad
+`secrets: inherit`, repository-wide secrets, upload, delete or runtime activation was introduced.
+The CLI now writes a sanitized failure stage to its artifact rather than leaving it empty.

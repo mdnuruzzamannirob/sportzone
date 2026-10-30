@@ -2397,7 +2397,7 @@ For a staging-only technical profile selected under owner delegation, prepare 5 
 not a legal retention rule or approval to remove references/holds. Record the policy review before
 real upload qualification. Inactive technical configuration does not activate HTTP media composition.
 
-The manual `.github/workflows/media-preflight.yml` runs on an isolated GitHub-hosted Linux runner
+The explicit media-preflight mode in `.github/workflows/container.yml` runs on an isolated GitHub-hosted Linux runner
 with a digest-pinned official ClamAV service bound to runner loopback. The container's signature updater
 and `clamdcheck.sh` health gate must complete; scanner freshness/version still needs retained evidence.
 This consumes the account's included Actions allowance and may stop when quota is exhausted; inspect
@@ -2407,10 +2407,10 @@ Create the protected GitHub `staging` environment and configure only
 `STAGING_CLOUDINARY_CLOUD_NAME`, `STAGING_CLOUDINARY_API_KEY` and `STAGING_CLOUDINARY_API_SECRET` as
 its secrets, after reviewing the workflow/ref and access controls. Do not copy MongoDB/payment/email
 secrets into this job. Dispatch only the reviewed trusted ref; no pull_request/schedule trigger exists.
-Before this new workflow is present on the default branch, dispatch the existing registered Container
-verification workflow on the reviewed feature ref with `media_preflight=true`; its explicit mode calls
-this reusable workflow at the same ref and skips the unrelated image build. The default mode still
-builds the backend image. This does not merge or deploy the branch. Example:
+Dispatch the registered Container verification workflow on the reviewed feature ref with
+`media_preflight=true`; its direct staging job skips the unrelated image build. This job reads the
+three environment secrets without broad secret inheritance or a reusable-workflow boundary. Default
+mode still builds the backend image. This does not merge or deploy the branch. Example:
 
 ```sh
 gh workflow run container.yml --repo mdnuruzzamannirob/sportzone --ref chore/staging-catalog-media-preflight -f media_preflight=true
