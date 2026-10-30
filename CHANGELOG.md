@@ -8,6 +8,12 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 30 October 2026 — Hosted media qualification
+
+- Real public/private upload, delivery authorization, expiry/tamper denial and test-asset cleanup
+  Passed after the owner's Cloudinary permission correction. Persistent runtime and task acceptance
+  gates remain separate; no runtime feature flag was enabled.
+
 ## 30 October 2026 — Full synthetic media qualification preparation
 
 - Added scanner-version/freshness checks and a scoped synthetic provider lifecycle fixture with

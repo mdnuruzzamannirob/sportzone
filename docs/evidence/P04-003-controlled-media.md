@@ -278,3 +278,27 @@ Persistent staging scanner composition and policy/independent acceptance also re
 P04-003 remains **Blocked**, not Done. The two local qualification tests were rerun and Passed
 following the script diagnostic changes; prior unchanged 38-test/build/typecheck results remain
 recorded in the linked P09-011 evidence.
+
+## Permission correction and successful qualification — 30 October 2026
+
+The owner changed the existing `sportzone-staging` Cloudinary key role and requested continuation.
+No new key was created or secret changed by the agent. One qualification rerun,
+[41091490222](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/41091490222),
+on `774442f847da4a7a2212ba463a605ce11ddb5842` **Passed**. Its retained result reports:
+
+- Fresh loaded ClamAV 1.5.4 definitions, signature 28169, updated 30 October 2026 06:26:48 UTC;
+  actual clean-image and EICAR probes Passed.
+- Both fresh public and authenticated one-pixel PNG uploads returned matching digest, size and
+  dimensions; provider lookup and public delivery Passed. Upload HTTP status was 200.
+- Unsigned private original and transformed delivery were denied; valid signed delivery worked;
+  expired and tampered signatures were denied.
+- Both attempted test identities have `cleanup=confirmed`; no pending cleanup remains.
+
+This supersedes the previous HTTP 403 provider blocker. Intent and result artifacts are retained
+in the linked run; no credentials or signed delivery URLs are included. No existing store/customer
+media, Atlas data, Render settings or runtime feature flags were changed. Unchanged local test
+results were reused; no full suite or duplicate hosted qualification was run.
+
+The complete P04-003 task remains Blocked by persistent scanner/runtime composition and outstanding
+policy/retention and independent acceptance evidence. An ephemeral runner's successful provider
+fixture does not enable the actual API runtime or prove scheduled orphan retention behavior.
