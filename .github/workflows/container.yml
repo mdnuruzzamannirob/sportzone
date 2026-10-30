@@ -1,13 +1,23 @@
 name: Container verification
 on:
   workflow_dispatch:
+    inputs:
+      media_preflight:
+        description: Run read-only media checks instead of the backend image build
+        required: false
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
   group: container-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  media-preflight:
+    if: ${{ inputs.media_preflight }}
+    uses: ./.github/workflows/media-preflight.yml
   backend-image:
+    if: ${{ !inputs.media_preflight }}
     name: Build and inspect backend image
     runs-on: ubuntu-24.04
     timeout-minutes: 20

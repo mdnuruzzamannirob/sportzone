@@ -1,0 +1,62 @@
+name: Media preflight
+on:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+concurrency:
+  group: media-preflight-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  provider-and-scanner:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: staging
+    services:
+      clamav:
+        image: clamav/clamav:stable@sha256:bda39705e291105049c3936e2803ac90b955172af8030f94f05dce1252df6c6d
+        env:
+          TZ: UTC
+        options: >-
+          --publish 127.0.0.1:3310:3310
+          --health-cmd clamdcheck.sh
+          --health-start-period 6m
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 60
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Install recorded backend toolchain
+        run: |
+          npm install --global npm@11.19.0 --ignore-scripts --no-audit --no-fund
+          npm ci --workspace=backend --include-workspace-root=false --ignore-scripts --no-audit --no-fund
+          npm run build --workspace=backend
+      - name: Check provider credentials and actual scanner probes
+        env:
+          APP_ENV: staging
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.STAGING_CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.STAGING_CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.STAGING_CLOUDINARY_API_SECRET }}
+          MEDIA_PROVIDER_TIMEOUT_MS: '15000'
+          MEDIA_POLICY_JSON: '{"maxBytes":5242880,"maxPixels":24000000,"allowedFormats":["png","jpg","webp"],"privateUrlTtlSeconds":60}'
+          MEDIA_TEMP_TTL_SECONDS: '86400'
+          MEDIA_SCANNER: clamav
+          MEDIA_SCANNER_HOST: 127.0.0.1
+          MEDIA_SCANNER_PORT: '3310'
+          MEDIA_SCANNER_TIMEOUT_MS: '15000'
+        run: |
+          mkdir -p test-results
+          node backend/scripts/check-media-provider.mjs > test-results/media-preflight.json
+      - name: Preserve sanitized preflight result
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: media-preflight
+          path: test-results/media-preflight.json
+          if-no-files-found: warn

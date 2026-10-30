@@ -173,3 +173,34 @@ export function createCloudinaryAdapter(
     },
   }
 }
+
+// Read-only credential/reachability probe. This does not qualify upload or delivery security.
+export async function checkCloudinaryConnection(
+  input: CloudinaryOptions,
+  transport: typeof fetch = fetch,
+): Promise<'verified' | 'unauthorized' | 'unavailable'> {
+  assertOutsideTransaction()
+  const options = validateCloudinaryOptions(input)
+  try {
+    const response = await transport(`https://api.cloudinary.com/v1_1/${options.cloudName}/ping`, {
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${options.apiKey}:${options.apiSecret}`).toString('base64')}`,
+      },
+      signal: AbortSignal.timeout(options.timeoutMs),
+      redirect: 'error',
+    })
+    if (response.status !== 200) {
+      await response.body?.cancel()
+      return [401, 403].includes(response.status) ? 'unauthorized' : 'unavailable'
+    }
+    const result = await body(response)
+    return result !== null &&
+      typeof result === 'object' &&
+      'status' in result &&
+      result.status === 'ok'
+      ? 'verified'
+      : 'unavailable'
+  } catch {
+    return 'unavailable'
+  }
+}

@@ -141,3 +141,62 @@ Owner response on 30 October 2026: “ami currently dite parchina tumi kono ekta
 Source selection is delegated, but no account/resource access, approved policy or qualified sign-off
 is supplied. No synthetic substitute can establish the missing external acceptance; status remains
 Blocked. Existing local test fixtures remain available without activating deployed integrations.
+
+## Provider/scanner preflight work package — 30 October 2026
+
+Owner requested P09-011/P04-003 together and then delegated technical choices: “doc onujai decision
+tumi niye felo ... best somadhan ... research and analysis”. This permits a proposed nonproduction
+profile and operator tooling; it is not an independent task acceptance or qualified legal-retention
+sign-off. Selected staging profile: 5 MiB file, 24 million pixels, PNG/JPEG/WebP, 24-hour temporary
+lifetime, 60-second private URL. Private staging policy values were prepared with media activation off.
+Referenced/held assets and durable ledger retention keep their existing protections. Policy review
+must be recorded before the real upload qualification described in Operations §16.3.
+
+Added a bounded, non-redirecting, authenticated Cloudinary GET /ping probe in the provider owner and
+`backend/scripts/check-media-provider.mjs`. A real staging-account invocation returned **cloudinary:
+verified**. At that invocation the policy was missing and scanner not configured; after profile
+preparation, schema validity does not assert policy acceptance. No object was uploaded or deleted.
+The script retains `configured_not_approved` and `probe_passed_not_freshness_qualified` distinctions;
+missing gates exit nonzero. Scanner probes use synthetic clean text and the standard EICAR test file.
+
+Prepared manual `.github/workflows/media-preflight.yml`: backend-only build, protected staging
+Cloudinary secrets, official digest-pinned ClamAV service on runner loopback, clamdcheck health gate,
+no PR/schedule trigger, no uploads/deletes, sanitized artifact. Official image metadata was inspected:
+`clamav/clamav:stable` resolved to
+`sha256:bda39705e291105049c3936e2803ac90b955172af8030f94f05dce1252df6c6d`.
+This pins image identity, not signature freshness or scanner acceptance. The workflow has not run.
+An ephemeral GitHub scanner is not a persistent scanner accessible from the Render API; runtime media
+composition stays off. Actions allowance/resource feasibility must be checked on the owner's account.
+
+Checks: **8 media unit tests Passed**, including authenticated read-only endpoint/body handling,
+unauthorized/unavailable results, no redirect and exception redaction. Backend typecheck/build,
+boundaries, formatting and API artifact check passed alongside the catalog package. See P09-011's
+current work-package record for integration commands/results. No frontend or unrelated financial
+regression was rerun; there are no UI/HTTP contract changes.
+
+Automatic approval review rejected a proposed change from `configured_not_approved` to `configured`,
+because it could misrepresent policy approval. The rejected command did not execute. The distinction
+was preserved and unaffected tests continued; no workaround or weakening of approval gates occurred.
+
+GitHub authentication passed when checked with network access. No new workflow was published/run,
+credentials uploaded or external resources provisioned in this work package. Actual maintained scanner/freshness, upload/authenticated
+original-and-derived denial, URL expiry, retention/deletion/uncertainty and protected operator/runtime
+composition evidence remain **Not Run / Blocked**. Owner independent acceptance is not recorded;
+P04-003 remains **Blocked** and cannot be marked Done from ping or workflow configuration.
+
+
+## Authorized publication and GitHub environment handoff — 30 October 2026
+
+Owner explicitly authorized a separate published branch, storage of only the three Cloudinary values
+in repository `mdnuruzzamannirob/sportzone`'s GitHub `staging` environment, and manual media preflight.
+The existing registered Container verification workflow now has an explicit `media_preflight` mode
+that calls the new reusable workflow on the same reviewed branch, without merging main or building
+the unrelated image. Default image verification is unchanged.
+
+Environment GET returned 404. Automatic approval review rejected creation of the staging environment
+with custom branch policy because the first request did not include the exact branch-name rule; it
+also rejected the documented two-call sequence on re-evaluation. Neither request executed. No secret
+was transmitted and no workflow was dispatched. The operator must create/configure the environment
+with selected branch `chore/staging-catalog-media-preflight` before credential upload/run can continue.
+Publishing the authorized branch is unaffected. This is an approval-review block, not a GitHub API
+failure or a reason to broaden access/use repository-wide secrets.

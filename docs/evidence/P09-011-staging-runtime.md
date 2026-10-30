@@ -179,3 +179,58 @@ readiness, successful commerce, data seeding, transaction support, provider qual
 Private staging reference configuration was updated locally; Render/Vercel environment settings were
 not inspected or changed. The owner reported credentials present there. Actual provider and operator
 qualification, job runner, same-site authentication topology and independent acceptance remain open.
+
+## Guarded catalog rollout work package — 30 October 2026
+
+Owner requested the next two tasks together, with Done only after review. Scope selected: P09-011 and
+P04-003. Branch at start: `env-setup`; working tree was clean. This work does not accept either task.
+
+Added the catalog-owned `inspectCatalogRollout`/`applyCatalogRollout` service and
+`backend/scripts/staging-catalog.mjs`. Default invocation only inventories canonical collection
+existence/counts/validators/indexes and writes a private new report. Apply requires a current protected
+review record bound to target and plan digest, real backup/writer-pause references, disabled feature
+flags and a fresh unchanged inventory. Existing-data/index/validator conflicts block before mutation;
+extra indexes and all records are retained. Partial DDL is resumable after fresh review, never rolled
+back by deleting data. The tool refuses production and report overwrite. Operations §7.2 owns usage.
+
+### Observed verification
+
+- `npm run typecheck --workspace=backend`: Passed.
+- `npm run build --workspace=backend`: Passed.
+- `npm run test:integration --workspace=backend -- catalog-rollout.test.ts catalog.test.ts`:
+  **38 Passed** on an isolated generated MongoDB 8.0.16 replica set. Includes read-only absence,
+  validator/index conflicts, populated-state denial, stale-plan rejection, replay, extra-index/data
+  preservation, competing initial rollouts, production/expired-review denial and report protection.
+- `npm run test:unit --workspace=backend -- media.test.ts`: **8 Passed**.
+- `npm run api:check --workspace=backend`: Passed; four artifacts unchanged.
+- `npm run lint:boundaries`: Passed; 364 source files, zero violations.
+- `npm run format:check`: Passed; 553 files.
+
+An initial integration command supplied the script's outputFile option twice and failed before any
+suite ran. Removing the duplicate option ran the real suites successfully; no failing test was waived.
+A backend lint informational template-literal suggestion was fixed in the touched operator script.
+
+Actual staging read-only inventory using private `.env.staging` failed with CONNECTION_FAILED.
+The new default tool was also invoked, wrote a sanitized failed private report and exited nonzero;
+no staging validator/index/record changes or transaction writes occurred. The exact network/auth cause
+is not established by that high-level failure. Resolve authorized operator connectivity, then run the
+read-only report before requesting approval of a concrete target-specific apply plan.
+
+An initial network-restricted GitHub auth check failed; a network-enabled recheck succeeded using
+the existing keyring credential. Existing repository CI runs were readable, but they precede this
+work package and are not evidence for these changes. No new workflow was published/dispatched, no
+secret was transferred, and no deployment occurred. Local Docker engine access remains unqualified. Same-site/proxy, worker/runtime, transaction/recovery and independent acceptance
+still require their actual evidence. Status remains **Blocked**, not In Review/Done for the full task.
+
+A further read-only driver diagnostic categorized this workspace's staging connection failure as
+TLS handshake failure. The underlying network/access/trust cause remains unconfirmed; certificate
+validation was not disabled. Render can have different connectivity from this operator environment.
+Historical successful CI observed on GitHub does not substitute for the current rollout review or
+an actual target-specific inventory. The catalog preflight/apply tool is ready for review, not an
+approved migration or a claim that hosted collections were changed.
+
+
+The owner later authorized branch publication and read-only hosted media preflight. GitHub environment
+creation was rejected by automatic approval review before execution because exact branch scope must
+exist in the initial security configuration. No GitHub environment/secrets/workflow side effects
+occurred; the authorized branch publication remains a separate action. See P04-003's current record.

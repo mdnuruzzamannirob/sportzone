@@ -8,6 +8,13 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 30 October 2026 — Staging catalog rollout and media preflight
+
+- Added read-only catalog inventory and an explicit reviewed initial staging rollout with stale-plan,
+  existing-data, validator/index-conflict and report-overwrite protections; no HTTP auto-bootstrap.
+- Added bounded read-only Cloudinary credential checks and a manual isolated ClamAV preflight workflow.
+  Documented the selected nonproduction profile and preserved provider/policy/hosted acceptance gates.
+
 ## 30 October 2026 — Environment templates
 
 - Organized the root local example and added sanitized staging and frontend examples. Documented

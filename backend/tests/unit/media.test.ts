@@ -1,6 +1,9 @@
 import { createHash } from 'node:crypto'
 import { expect, it, vi } from 'vitest'
-import { createCloudinaryAdapter } from '../../src/providers/cloudinary/cloudinary.client.js'
+import {
+  createCloudinaryAdapter,
+  checkCloudinaryConnection,
+} from '../../src/providers/cloudinary/cloudinary.client.js'
 import { validateMediaPolicy, loadMediaConfiguration } from '../../src/config/media.js'
 import { inspectFile } from '../../src/modules/media/media.schema.js'
 import { imageFile, mediaPolicy } from '../helpers/media.js'
@@ -164,4 +167,20 @@ it('requires explicit scanner/account settings and uses the canonical temporary 
   expect(() => loadMediaConfiguration({ ...environment, MEDIA_TEMP_TTL_SECONDS: '' })).toThrow()
   expect(() => loadMediaConfiguration({ ...environment, CLOUDINARY_API_SECRET: '' })).toThrow()
   expect(() => loadMediaConfiguration({ ...environment, MEDIA_SCANNER_HOST: '' })).toThrow()
+})
+
+it('Cloudinary preflight is read-only, refuses redirects and verifies the response body', async () => {
+  const transport = vi.fn<typeof fetch>().mockResolvedValue(new Response('{"status":"ok"}'))
+  expect(await checkCloudinaryConnection(options, transport)).toBe('verified')
+  expect(transport.mock.calls[0]?.[0]).toBe('https://api.cloudinary.com/v1_1/synthetic/ping')
+  expect(transport.mock.calls[0]?.[1]).toMatchObject({ redirect: 'error' })
+  expect(transport.mock.calls[0]?.[1]?.method).toBeUndefined()
+  transport.mockResolvedValue(new Response('{"status":"unknown"}'))
+  expect(await checkCloudinaryConnection(options, transport)).toBe('unavailable')
+  transport.mockResolvedValue(new Response('private diagnostic', { status: 401 }))
+  expect(await checkCloudinaryConnection(options, transport)).toBe('unauthorized')
+  transport.mockResolvedValue(new Response('private diagnostic', { status: 503 }))
+  expect(await checkCloudinaryConnection(options, transport)).toBe('unavailable')
+  transport.mockRejectedValue(new Error('private network detail'))
+  expect(await checkCloudinaryConnection(options, transport)).toBe('unavailable')
 })
