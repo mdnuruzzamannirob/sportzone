@@ -1,6 +1,5 @@
 import { readFile, open } from 'node:fs/promises'
 import { z } from 'zod'
-import { loadEnvironment } from '../dist/config/env.js'
 import { openDatabase } from '../dist/config/database.js'
 import {
   inspectCatalogRollout,
@@ -25,7 +24,13 @@ try {
   if ((!apply && args.length !== 1) || (apply && args.length !== 3))
     throw new Error('Use <report-path> or --apply <approval-path> <report-path>.')
   const report = args[apply ? 2 : 0]
-  const config = loadEnvironment(process.env)
+  const config = z
+    .object({
+      APP_ENV: z.literal('staging'),
+      MONGODB_URI: z.string().regex(/^mongodb(?:\+srv)?:\/\/[^\s]+$/),
+      MONGODB_DB_NAME: z.string().regex(/^[a-z][a-z0-9_]{0,62}$/),
+    })
+    .parse(process.env)
   if (config.APP_ENV !== 'staging' || !config.MONGODB_DB_NAME.endsWith('_staging'))
     throw new Error('Explicit isolated staging target required.')
   if (

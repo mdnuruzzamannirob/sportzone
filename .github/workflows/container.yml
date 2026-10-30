@@ -7,15 +7,29 @@ on:
         required: false
         type: boolean
         default: false
+      media_qualification:
+        description: Qualify two synthetic Cloudinary assets and clean up only those assets
+        required: false
+        type: boolean
+        default: false
+      catalog_preflight:
+        description: Read-only staging catalog inventory; encrypted report only
+        required: false
+        type: boolean
+        default: false
+      report_public_key:
+        description: Base64 DER public key for the private catalog report
+        required: false
+        type: string
 permissions:
   contents: read
 concurrency:
   group: container-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   media-preflight:
     name: Read-only media provider and scanner preflight
-    if: ${{ inputs.media_preflight }}
+    if: ${{ inputs.media_preflight || inputs.media_qualification }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     environment: staging
@@ -60,6 +74,39 @@ jobs:
         run: |
           mkdir -p test-results
           node backend/scripts/check-media-provider.mjs > test-results/media-preflight.json
+      - name: Prepare synthetic qualification intent
+        if: ${{ inputs.media_qualification }}
+        env:
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.STAGING_CLOUDINARY_CLOUD_NAME }}
+        run: node backend/scripts/qualify-media.mjs --prepare test-results/media-qualification.json
+      - name: Persist intent before external asset creation
+        if: ${{ inputs.media_qualification }}
+        id: qualification-intent
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: media-qualification-intent
+          path: test-results/media-qualification.json
+          if-no-files-found: error
+      - name: Qualify synthetic media and clean up its assets
+        if: ${{ inputs.media_qualification }}
+        env:
+          APP_ENV: staging
+          MEDIA_QUALIFICATION_AUTHORIZED: 'true'
+          MEDIA_QUALIFICATION_INTENT_REFERENCE: ${{ steps.qualification-intent.outputs.artifact-url }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.STAGING_CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.STAGING_CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.STAGING_CLOUDINARY_API_SECRET }}
+          MEDIA_SCANNER_HOST: 127.0.0.1
+          MEDIA_SCANNER_PORT: '3310'
+          MEDIA_SCANNER_TIMEZONE: UTC
+        run: node backend/scripts/qualify-media.mjs --run test-results/media-qualification.json
+      - name: Preserve qualification and cleanup result
+        if: ${{ always() && inputs.media_qualification }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: media-qualification-result
+          path: test-results/media-qualification.json
+          if-no-files-found: error
       - name: Preserve sanitized preflight result
         if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -67,8 +114,47 @@ jobs:
           name: media-preflight
           path: test-results/media-preflight.json
           if-no-files-found: warn
+  catalog-preflight:
+    name: Read-only staging catalog inventory
+    if: ${{ inputs.catalog_preflight }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: staging
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Install recorded backend toolchain
+        run: |
+          npm install --global npm@11.19.0 --ignore-scripts --no-audit --no-fund
+          npm ci --workspace=backend --include-workspace-root=false --ignore-scripts --no-audit --no-fund
+          npm run build --workspace=backend
+      - name: Read catalog inventory
+        env:
+          APP_ENV: staging
+          MONGODB_URI: ${{ secrets.STAGING_MONGODB_URI }}
+          MONGODB_DB_NAME: sportzone_staging
+        run: |
+          mkdir -p test-results
+          node backend/scripts/staging-catalog.mjs test-results/catalog-private.json
+      - name: Encrypt operator report
+        if: ${{ always() }}
+        env:
+          REPORT_PUBLIC_KEY: ${{ inputs.report_public_key }}
+        run: node backend/scripts/encrypt-operator-report.mjs test-results/catalog-private.json test-results/catalog-encrypted.json
+      - name: Preserve encrypted operator report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: catalog-encrypted-report
+          path: test-results/catalog-encrypted.json
+          if-no-files-found: error
   backend-image:
-    if: ${{ !inputs.media_preflight }}
+    if: ${{ !inputs.media_preflight && !inputs.media_qualification && !inputs.catalog_preflight }}
     name: Build and inspect backend image
     runs-on: ubuntu-24.04
     timeout-minutes: 20

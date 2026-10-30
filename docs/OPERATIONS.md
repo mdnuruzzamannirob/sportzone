@@ -2428,6 +2428,33 @@ Primary references: [ClamAV Docker requirements](https://docs.clamav.net/manual/
 [GitHub service containers](https://docs.github.com/en/actions/tutorials/use-containerized-services/use-docker-service-containers),
 [GitHub Actions allowance](https://docs.github.com/en/billing/concepts/product-billing/github-actions).
 
+#### Synthetic provider qualification and private catalog inventory
+
+The same registered workflow accepts explicit `media_qualification=true`. This mode first runs the
+read-only preflight, prepares exactly two fresh one-pixel PNG identities (public/authenticated), and
+uploads the intent artifact **before** any Cloudinary object creation. The execution step is bound to
+the account hash, source revision, fresh intent and explicit nonproduction authority. It verifies UTC
+ClamAV VERSION metadata with signatures no older than 48 hours, clean-image/EICAR outcomes, actual
+upload/lookup/public delivery, private original/derived denial, valid signed delivery, backdated-expired
+signed delivery and signature tamper denial. Only identities in the fresh intent that this run attempted
+may be cleaned up, with matching source digest/type and a confirmed missing provider lookup afterward.
+Unknown upload/delete outcomes remain in the retained result for reconciliation; no blind reupload or
+delete retry is supplied. No existing customer/store asset is selected or mutated by this fixture.
+
+The result artifact records no credentials or signed URLs. Initial intent and final cleanup result must
+be retained together. A green provider fixture does not approve customer-data retention, claim access,
+persistent scanner/runtime composition or task/production acceptance. The 48-hour freshness ceiling is
+part of the selected staging test profile; a stale/missing/unparseable signature version blocks the run.
+
+`catalog_preflight=true` is a separate read-only staging inventory mode. It requires only the approved
+`STAGING_MONGODB_URI` environment secret, plus a base64 DER RSA public key in `report_public_key`.
+Do not copy session/monitor/payment/email credentials into this mode. The staging-catalog operator tool
+uses narrow database configuration validation; it does not start identity/HTTP services. Raw reports
+are never uploaded from the public repository: `encrypt-operator-report.mjs` uses a random AES-256-GCM
+key wrapped with RSA-OAEP-SHA256. Only the operator holding the private key can read the uploaded report.
+Missing/invalid encryption inputs fail closed. No apply operation or schema/data mutation exists in
+this workflow mode. A target-specific reviewed plan and protected approval remain required for §7.2.
+
 ### 16.4 Operator walkthrough procedure (OP-STORE-01)
 
 **Trigger:** Staging handover rehearsal or approved operator training. **Owner:** Assigned store operator, observed

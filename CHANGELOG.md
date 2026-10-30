@@ -8,6 +8,13 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 30 October 2026 — Full synthetic media qualification preparation
+
+- Added scanner-version/freshness checks and a scoped synthetic provider lifecycle fixture with
+  persisted intent, bounded delivery checks and confirmed cleanup of only its own test assets.
+- Added read-only catalog inventory mode with encrypted operator reports; existing staging apply
+  approval and provider/policy acceptance gates remain intact.
+
 ## 30 October 2026 — Staging catalog rollout and media preflight
 
 - Added read-only catalog inventory and an explicit reviewed initial staging rollout with stale-plan,
