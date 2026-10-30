@@ -928,6 +928,14 @@ confirmed legal commitments. Changes to `deliveryCommitment` require order CAS, 
 when the estimate changes. Test a delayed COD confirmation, checkout-relative statutory cap, unconfirmed order and
 exception handling (PRD FR-16).
 
+Private lifecycle mutation appends a bounded recent history (maximum 40) and an immutable audit
+cause in the same transaction. Current order revision/status, current admin account and payment
+revision fence every new transition; replay reads current state without another effect. Actual
+confirmation timestamps and calculated commitment derive from the captured basis only after a
+trusted approval capability succeeds. Shipping dispatches the exact committed stock generation and
+requires the original coupon's redeemed generation; delivery does not fabricate money. Generic
+cancellation/final non-delivery is denied pending its separate custody/release workflow.
+
 Optional postalCode (maximum 30 characters) is retained in saved addresses, quote recipients and
 immutable order delivery snapshots. Online initiation requires it; old snapshots are not backfilled.
 Explicit additive migration accepts only the exact previous/current users and orders validators,
@@ -1278,6 +1286,16 @@ Historical unassigned receipts are not automatically reclassified; supervised re
 `{orderId:1,collectedAt:-1}`. Every online linked receipt must reference one intake entry; link creation and intake status
 change occur atomically. If SSLCOMMERZ evidence cannot establish distinct collection identity, **quarantine and reconcile**
 rather than assert a second charge or block a genuinely distinct charge with attempt-level uniqueness.
+
+Local COD recording requires an independently verified protected evidence snapshot bound to payment,
+amount, original collection reference, evidence reference and actual collection time. The server derives
+`providerCollectionRef=cod:<SHA-256 of normalized original reference>` under account `internal`;
+this globally stable identity prevents a source being counted for another order or command key.
+No online intake/attempt is created for COD. Source duplication must match immutable payment/amount/
+digest/time facts. Partial receipts fund only outstanding merchandise; distinct excess/cancelled-order
+cash is correction. Request replay uses an existing hashed append-only audit identity. Receipt,
+aggregate counters, correction obligation and audit commit together; evidence verification occurs
+outside transactions with authorization before and after it. Missing verified evidence denies writing.
 
 **Immutability boundary:** IDs, provider identity, face amount, currency, receipt timestamps, proof digest, verified actor
 and reference are **write-once**. Only `*AllocatedPoisha`, `*RefundHeldPoisha`, `*RefundCompletedPoisha`, `revision` and

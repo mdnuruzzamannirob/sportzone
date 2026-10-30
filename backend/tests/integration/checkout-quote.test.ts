@@ -1,3 +1,8 @@
+import { orderLifecycleService } from '../../src/modules/orders/order-lifecycle.service.js'
+import { fulfillmentAllocationService } from '../../src/modules/checkout/fulfillment-allocation.service.js'
+import { fulfillmentPaymentAccess } from '../../src/modules/payments/payment.service.js'
+import { codCollectionService } from '../../src/modules/payments/cod-collection.service.js'
+import { codCollectionOrderAccess } from '../../src/modules/orders/order.service.js'
 import { paymentMonitorRoutes } from '../../src/modules/payments/payment-monitor.routes.js'
 import { paymentMonitorService } from '../../src/modules/payments/payment-monitor.service.js'
 import { composeNotificationWorker } from '../../src/setup.js'
@@ -3928,4 +3933,446 @@ it('monitor/claim batch: attempt/collection identity filters intersect without d
     .get(`/api/v1/admin/payments/${new Types.ObjectId().toHexString()}`)
     .set('Cookie', f.admin.cookie)
     .expect(404)
+})
+
+async function lifecycleFixture(approved = true) {
+  await initializePaymentRecordPersistence(db.connection)
+  await initializeCorrectionPersistence(db.connection)
+  const who = await guest(),
+    selected = await variant(),
+    input = body([selected.item]),
+    quote = await service.create(who.credentials, input)
+  const placed = await placeCod(who, submit(input, quote)).expect(201),
+    id = placed.body.data.order.id
+  const payment = await paymentModel(db.connection).findOne({ orderId: id }).orFail(),
+    admin = await customer('admin'),
+    adminAccess = createAdminAccountAccess(db.connection, identities, sessions)
+  const lifecycle = orderLifecycleService(
+    db.connection,
+    adminAccess,
+    fulfillmentPaymentAccess(db.connection),
+    fulfillmentAllocationService(db.connection, () => now),
+    approved ? async () => {} : undefined,
+    () => now,
+  )
+  const token = admin.credentials.customerToken
+  const move = (to: string, key = to) =>
+    lifecycle.transition(
+      token,
+      id,
+      {
+        to,
+        reason: 'Synthetic lifecycle review',
+        ...(to === 'shipped'
+          ? { dispatchReference: 'synthetic-dispatch', carrierLabel: 'Store delivery' }
+          : {}),
+      },
+      key,
+    )
+  const collectedAt = new Date(now)
+  const proof = (data: {
+    paymentId: string
+    amountPoisha: number
+    collectionReference: string
+    evidenceRef: string
+  }) => ({
+    paymentId: data.paymentId,
+    amountPoisha: data.amountPoisha,
+    collectionReference: data.collectionReference,
+    evidenceRef: data.evidenceRef,
+    collectedAt,
+    digest: createHash('sha256')
+      .update(`${data.paymentId}:${data.collectionReference}:${data.amountPoisha}`)
+      .digest('hex'),
+  })
+  const receipt = codCollectionService(
+    db.connection,
+    adminAccess,
+    codCollectionOrderAccess(db.connection),
+    async (data) => proof(data),
+    () => now,
+  )
+  const cash = (amount = payment.expectedPoisha, ref = 'cash-receipt-1', key = ref) =>
+    receipt.collect(
+      token,
+      payment._id.toHexString(),
+      {
+        amountPoisha: amount,
+        collectionReference: ref,
+        evidenceRef: 'synthetic:private-cash-evidence',
+        reason: 'Synthetic verified cash',
+      },
+      key,
+    )
+  return {
+    who,
+    selected,
+    id,
+    payment,
+    admin,
+    adminAccess,
+    token,
+    lifecycle,
+    move,
+    receipt,
+    cash,
+    proof,
+  }
+}
+it('lifecycle/COD local: missing qualified approval blocks confirmation without stock/payment/order changes', async () => {
+  const f = await lifecycleFixture(false),
+    before = await orderModels(db.connection).orders.findById(f.id).lean()
+  await expect(f.move('confirmed')).rejects.toThrow()
+  expect(await orderModels(db.connection).orders.findById(f.id).lean()).toEqual(before)
+  expect((await paymentModel(db.connection).findById(f.payment._id))?.revision).toBe(0)
+  expect(
+    (await productModels(db.connection).variants.findById(f.selected.row._id))?.stock,
+  ).toMatchObject({ physical: 10, committed: 2 })
+})
+it('lifecycle/COD local: ordinary graph, exact shipping generation and delivery retain independent Pending cash', async () => {
+  const f = await lifecycleFixture()
+  await expect(f.move('shipped')).rejects.toThrow()
+  await f.move('confirmed')
+  await f.move('processing')
+  await f.move('shipped')
+  await f.move('delivered')
+  const row = await orderModels(db.connection).orders.findById(f.id)
+  expect(row?.fulfillmentStatus).toBe('delivered')
+  expect(row?.statusHistory).toHaveLength(4)
+  expect(row?.deliveryCommitment.status).toBe('calculated')
+  expect(
+    (await productModels(db.connection).variants.findById(f.selected.row._id))?.stock,
+  ).toMatchObject({ physical: 8, committed: 0, reserved: 0 })
+  expect(await inventoryMovementModel(db.connection).countDocuments({ type: 'dispatch' })).toBe(1)
+  expect((await paymentModel(db.connection).findById(f.payment._id))?.paymentStatus).toBe('pending')
+  expect(await paymentRecordModels(db.connection).collections.countDocuments()).toBe(0)
+  await expect(f.move('processing', 'terminal-skip')).rejects.toThrow()
+})
+it('lifecycle/COD local: repeated/concurrent shipping is exactly once, historical key cannot dispatch again', async () => {
+  const f = await lifecycleFixture()
+  await f.move('confirmed')
+  await f.move('processing')
+  await Promise.all([f.move('shipped', 'dispatch-key'), f.move('shipped', 'dispatch-key')])
+  await f.move('delivered')
+  expect((await f.move('shipped', 'dispatch-key')).fulfillmentStatus).toBe('delivered')
+  expect(await inventoryMovementModel(db.connection).countDocuments({ type: 'dispatch' })).toBe(1)
+  await expect(
+    f.lifecycle.transition(
+      f.token,
+      f.id,
+      { to: 'shipped', reason: 'Changed', dispatchReference: 'other' },
+      'dispatch-key',
+    ),
+  ).rejects.toThrow()
+})
+it('lifecycle/COD local: missing dispatch reference, stale generation and ordinary cancellation are denied', async () => {
+  const f = await lifecycleFixture()
+  await f.move('confirmed')
+  await f.move('processing')
+  await expect(
+    f.lifecycle.transition(f.token, f.id, { to: 'shipped', reason: 'No proof' }, 'no-reference'),
+  ).rejects.toThrow()
+  expect(
+    (await productModels(db.connection).variants.findById(f.selected.row._id))?.stock,
+  ).toMatchObject({ physical: 10, committed: 2 })
+  expect(await inventoryMovementModel(db.connection).countDocuments({ type: 'dispatch' })).toBe(0)
+  await expect(f.move('cancelled')).rejects.toThrow()
+  await inventoryReservationModel(db.connection).updateOne(
+    { orderId: f.id, status: 'committed' },
+    {
+      $set: { status: 'released', releasedAt: now, releaseReason: 'Synthetic stale generation' },
+      $unset: { activeKey: '' },
+    },
+  )
+  await expect(f.move('shipped')).rejects.toThrow()
+  expect((await orderModels(db.connection).orders.findById(f.id))?.fulfillmentStatus).toBe(
+    'processing',
+  )
+})
+it('lifecycle/COD local: missing audit readiness prevents physical stock/order changes and permits retry', async () => {
+  const f = await lifecycleFixture()
+  await f.move('confirmed')
+  await f.move('processing')
+  const stockBefore = (await productModels(db.connection).variants.findById(f.selected.row._id))
+    ?.stock
+  await db.connection.collection('auditLogs').dropIndex('audit_cause_unique')
+  try {
+    await expect(f.move('shipped')).rejects.toThrow()
+  } finally {
+    await initializeAuditPersistence(db.connection)
+  }
+  expect((await productModels(db.connection).variants.findById(f.selected.row._id))?.stock).toEqual(
+    stockBefore,
+  )
+  expect((await orderModels(db.connection).orders.findById(f.id))?.fulfillmentStatus).toBe(
+    'processing',
+  )
+  await f.move('shipped')
+})
+it('lifecycle/COD local: current admin authorization, risk and monotonic timestamps gate mutations', async () => {
+  const f = await lifecycleFixture()
+  await expect(
+    f.lifecycle.transition(
+      undefined,
+      f.id,
+      { to: 'confirmed', reason: 'No session' },
+      'no-session',
+    ),
+  ).rejects.toThrow()
+  await paymentModel(db.connection).updateOne(
+    { _id: f.payment._id },
+    { $set: { riskStatus: 'review' } },
+  )
+  await expect(f.move('confirmed')).rejects.toThrow()
+  await paymentModel(db.connection).updateOne(
+    { _id: f.payment._id },
+    { $set: { riskStatus: 'clear' } },
+  )
+  await f.move('confirmed')
+  now = new Date(now.getTime() - 1)
+  await expect(f.move('processing')).rejects.toThrow()
+  now = new Date(now.getTime() + 1)
+  await identities.users.updateOne({ _id: f.admin.user._id }, { $set: { status: 'suspended' } })
+  await expect(f.move('processing')).rejects.toThrow()
+})
+it('lifecycle/COD local: partial cash, final cash and distinct excess preserve source accounting without stock effects', async () => {
+  const f = await lifecycleFixture()
+  await f.move('confirmed')
+  const half = Math.floor(f.payment.expectedPoisha / 2)
+  await f.cash(half, 'cash-first')
+  expect((await paymentModel(db.connection).findById(f.payment._id))?.paymentStatus).toBe('pending')
+  await f.cash(f.payment.expectedPoisha - half, 'cash-second')
+  expect((await paymentModel(db.connection).findById(f.payment._id))?.paymentStatus).toBe('paid')
+  await f.cash(100, 'cash-excess')
+  expect(
+    await db.connection
+      .collection('refunds')
+      .countDocuments({ capacityStatus: 'not_reserved', amountPoisha: 100 }),
+  ).toBe(1)
+  expect(await paymentRecordModels(db.connection).collections.countDocuments()).toBe(3)
+  expect((await paymentModel(db.connection).findById(f.payment._id))?.merchandiseFundedPoisha).toBe(
+    f.payment.expectedPoisha,
+  )
+  expect(
+    (await productModels(db.connection).variants.findById(f.selected.row._id))?.stock,
+  ).toMatchObject({ physical: 10, committed: 2 })
+})
+it('lifecycle/COD local: duplicate cash reference and concurrent same-key retries collect once', async () => {
+  const f = await lifecycleFixture()
+  await f.move('confirmed')
+  const [one, two] = await Promise.all([f.cash(), f.cash()])
+  expect(one.id).toBe(two.id)
+  expect((await f.cash(f.payment.expectedPoisha, 'cash-receipt-1', 'different-key')).id).toBe(
+    one.id,
+  )
+  expect(await paymentRecordModels(db.connection).collections.countDocuments()).toBe(1)
+  expect((await paymentModel(db.connection).findById(f.payment._id))?.verifiedCollectedPoisha).toBe(
+    f.payment.expectedPoisha,
+  )
+  await expect(f.cash(1, 'cash-receipt-1', 'changed-body')).rejects.toThrow()
+})
+it('lifecycle/COD local: unconfirmed COD and missing/mismatched evidence cannot create Paid', async () => {
+  const f = await lifecycleFixture()
+  await expect(f.cash()).rejects.toThrow()
+  await f.move('confirmed')
+  const unavailable = codCollectionService(
+    db.connection,
+    f.adminAccess,
+    codCollectionOrderAccess(db.connection),
+    undefined,
+    () => now,
+  )
+  const body = {
+    amountPoisha: f.payment.expectedPoisha,
+    collectionReference: 'no-evidence',
+    evidenceRef: 'synthetic:unverified',
+    reason: 'Review',
+  }
+  await expect(
+    unavailable.collect(f.token, f.payment._id.toHexString(), body, 'no-evidence'),
+  ).rejects.toThrow()
+  const wrong = codCollectionService(
+    db.connection,
+    f.adminAccess,
+    codCollectionOrderAccess(db.connection),
+    async (data) => ({ ...f.proof(data), amountPoisha: data.amountPoisha + 1 }),
+    () => now,
+  )
+  await expect(
+    wrong.collect(f.token, f.payment._id.toHexString(), body, 'wrong-evidence'),
+  ).rejects.toThrow()
+  expect(await paymentRecordModels(db.connection).collections.countDocuments()).toBe(0)
+})
+it('lifecycle/COD local: identity revoked during evidence read cannot commit a collection', async () => {
+  const f = await lifecycleFixture()
+  await f.move('confirmed')
+  const receipt = codCollectionService(
+    db.connection,
+    f.adminAccess,
+    codCollectionOrderAccess(db.connection),
+    async (data) => {
+      await identities.users.updateOne({ _id: f.admin.user._id }, { $set: { status: 'suspended' } })
+      return f.proof(data)
+    },
+    () => now,
+  )
+  await expect(
+    receipt.collect(
+      f.token,
+      f.payment._id.toHexString(),
+      {
+        amountPoisha: f.payment.expectedPoisha,
+        collectionReference: 'revoked',
+        evidenceRef: 'synthetic:private',
+        reason: 'Review',
+      },
+      'revoked',
+    ),
+  ).rejects.toThrow()
+  expect(await paymentRecordModels(db.connection).collections.countDocuments()).toBe(0)
+})
+it('lifecycle/COD local: cash audit failure rolls back receipt and balances; same key recovers', async () => {
+  const f = await lifecycleFixture()
+  await f.move('confirmed')
+  await db.connection.collection('auditLogs').dropIndex('audit_cause_unique')
+  try {
+    await expect(f.cash()).rejects.toThrow()
+  } finally {
+    await initializeAuditPersistence(db.connection)
+  }
+  expect(await paymentRecordModels(db.connection).collections.countDocuments()).toBe(0)
+  expect((await paymentModel(db.connection).findById(f.payment._id))?.verifiedCollectedPoisha).toBe(
+    0,
+  )
+  await f.cash()
+})
+
+it('lifecycle/COD local: late correction failure rolls back the newly verified receipt and all payment amounts', async () => {
+  const f = await lifecycleFixture()
+  await f.move('confirmed')
+  await db.connection.collection('refunds').dropIndex('refund_decision_unique')
+  try {
+    await expect(f.cash(f.payment.expectedPoisha + 100, 'late-failure')).rejects.toThrow()
+  } finally {
+    await initializeCorrectionPersistence(db.connection)
+  }
+  expect(await paymentRecordModels(db.connection).collections.countDocuments()).toBe(0)
+  expect((await paymentModel(db.connection).findById(f.payment._id))?.verifiedCollectedPoisha).toBe(
+    0,
+  )
+  await f.cash(f.payment.expectedPoisha + 100, 'late-failure')
+  expect(
+    (await paymentModel(db.connection).findById(f.payment._id))?.correctionCollectedPoisha,
+  ).toBe(100)
+})
+it('lifecycle/COD local: unfunded online confirmation is denied, while verified fully funded stock ships once', async () => {
+  const f = await processingFixture(true),
+    admin = await customer('admin'),
+    access = createAdminAccountAccess(db.connection, identities, sessions)
+  const lifecycle = orderLifecycleService(
+    db.connection,
+    access,
+    fulfillmentPaymentAccess(db.connection),
+    fulfillmentAllocationService(db.connection, () => now),
+    async () => {},
+    () => now,
+  )
+  const move = (to: string) =>
+    lifecycle.transition(
+      admin.credentials.customerToken,
+      f.result.id,
+      {
+        to,
+        reason: 'Synthetic verified online fulfillment',
+        ...(to === 'shipped' ? { dispatchReference: 'online-dispatch' } : {}),
+      },
+      `online-${to}`,
+    )
+  await expect(move('confirmed')).rejects.toThrow()
+  expect(await f.processor().process(f.claim)).toBe('committed')
+  expect((await orderModels(db.connection).orders.findById(f.result.id))?.fulfillmentHold).toBe(
+    'admin_review',
+  )
+  await move('confirmed')
+  await move('processing')
+  await move('shipped')
+  expect((await orderModels(db.connection).orders.findById(f.result.id))?.fulfillmentStatus).toBe(
+    'shipped',
+  )
+  expect((await paymentModel(db.connection).findById(f.attempt.paymentId))?.paymentStatus).toBe(
+    'paid',
+  )
+  expect(await inventoryMovementModel(db.connection).countDocuments({ type: 'dispatch' })).toBe(1)
+})
+it('lifecycle/COD local: different admins can concurrently dispatch and record cash without losing either fact', async () => {
+  const f = await lifecycleFixture(),
+    other = await customer('admin')
+  await f.move('confirmed')
+  await f.move('processing')
+  await Promise.all([
+    f.lifecycle.transition(
+      other.credentials.customerToken,
+      f.id,
+      { to: 'shipped', reason: 'Independent dispatch', dispatchReference: 'concurrent-dispatch' },
+      'concurrent-dispatch',
+    ),
+    f.cash(),
+  ])
+  expect((await orderModels(db.connection).orders.findById(f.id))?.fulfillmentStatus).toBe(
+    'shipped',
+  )
+  expect((await paymentModel(db.connection).findById(f.payment._id))?.paymentStatus).toBe('paid')
+  expect(await inventoryMovementModel(db.connection).countDocuments({ type: 'dispatch' })).toBe(1)
+  expect(await paymentRecordModels(db.connection).collections.countDocuments()).toBe(1)
+})
+it('lifecycle/COD local: a globally repeated cash reference cannot credit another order', async () => {
+  const first = await lifecycleFixture()
+  await first.move('confirmed')
+  await first.cash()
+  const second = await lifecycleFixture()
+  await second.move('confirmed')
+  await expect(second.cash()).rejects.toThrow()
+  expect(
+    (await paymentModel(db.connection).findById(second.payment._id))?.verifiedCollectedPoisha,
+  ).toBe(0)
+  expect(await paymentRecordModels(db.connection).collections.countDocuments()).toBe(1)
+})
+it('lifecycle/COD local: cash evidence timestamps cannot predate the order or lie in the future', async () => {
+  const f = await lifecycleFixture()
+  await f.move('confirmed')
+  for (const delta of [-1, 1]) {
+    const receipt = codCollectionService(
+      db.connection,
+      f.adminAccess,
+      codCollectionOrderAccess(db.connection),
+      async (data) => ({ ...f.proof(data), collectedAt: new Date(now.getTime() + delta) }),
+      () => now,
+    )
+    await expect(
+      receipt.collect(
+        f.token,
+        f.payment._id.toHexString(),
+        {
+          amountPoisha: f.payment.expectedPoisha,
+          collectionReference: `bad-clock-${delta}`,
+          evidenceRef: 'synthetic:private',
+          reason: 'Review',
+        },
+        `bad-clock-${delta}`,
+      ),
+    ).rejects.toThrow()
+  }
+  expect(await paymentRecordModels(db.connection).collections.countDocuments()).toBe(0)
+})
+it('lifecycle/COD local: risk review retains verified cash while continuing to block fulfillment', async () => {
+  const f = await lifecycleFixture()
+  await f.move('confirmed')
+  await paymentModel(db.connection).updateOne(
+    { _id: f.payment._id },
+    { $set: { riskStatus: 'review' } },
+  )
+  await f.cash()
+  await expect(f.move('processing')).rejects.toThrow()
+  expect((await paymentModel(db.connection).findById(f.payment._id))?.paymentStatus).toBe('paid')
+  expect((await paymentModel(db.connection).findById(f.payment._id))?.riskStatus).toBe('review')
 })

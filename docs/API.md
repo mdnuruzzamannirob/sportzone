@@ -1018,6 +1018,15 @@ The admin accepts/rejects after checking `pending/confirmed`, or `processing` wi
 
 **Fulfillment status enum:** `pending`, `confirmed`, `processing`, `shipped`, `delivered`, `cancelled`. **Payment status enum:** `pending`, `paid`, `failed`, `cancelled`, `partially_refunded`, `refunded`. These dimensions cannot be collapsed into a single status; customer queries include both.
 
+Local order-lifecycle capability implements only ordinary Confirmed/Processing/Shipped/Delivered
+transitions; cancellation and final non-delivery remain their separately authorized workflows.
+It requires current admin authorization, immutable request replay identity, payment/risk fences,
+exact committed stock/coupon ownership and monotonic actual timestamps. Confirmation additionally
+requires a trusted qualified approval capability for the captured delivery basis; absence denies
+confirmation. Shipping atomically dispatches the complete committed generation and records manual
+reference/history. Delivery never creates a COD receipt. These private capabilities have no ordinary
+runtime/API activation while P06-003 remains blocked; local synthetic approval tests do not clear it.
+
 **Delivery rule and commitment (FR-16):**
 
 - **Checkout:** persist immutable `deliverySnapshot` charge, rule version, start-event type and legal rule reference; quote `status:'awaiting_start'` for an unconfirmed confirmation-based target. Never persist an assumed `confirmedAt`.
@@ -1331,6 +1340,15 @@ Unconfirmed/uncollected COD never becomes Paid and is not refundable as collecte
 A duplicate collection reference cannot be recorded twice; any genuinely distinct excess COD collection must enter correction accounting rather than funding merchandise twice.
 A public customer cannot mark their COD order paid.
 Manual evidence is access-controlled and redacted in APIs.
+The local COD capability verifies original evidence through a required trusted adapter outside the
+business transaction after authorization, then reauthorizes and fences the canonical order/payment.
+The adapter must bind payment ID, reference, amount, evidence reference, collection timestamp and
+immutable digest; an arbitrary supplied evidenceRef is insufficient. Missing adapter fails closed.
+Receipts use `provider=cod_manual`, account `internal` and a server-derived stable reference hash;
+source duplicates cannot reallocate money. Partial receipts fund only the remaining merchandise
+balance; distinct excess becomes a source-specific unreserved correction obligation. No payout,
+risk clearance, order confirmation or stock mutation follows from recording cash alone.
+
 
 ## 13. Returns, claims & refund APIs
 

@@ -8,6 +8,14 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 30 October 2026 — Private lifecycle and COD collection capabilities
+
+- Added locally verified admin transition/deadline, atomic dispatch and immutable history guards,
+  plus evidence-bound COD receipts with partial/excess accounting, replay and audit protections.
+- Added cross-admin shipment/cash races and transaction rollback tests. Ordinary runtime activation
+  remains absent; P06-011/P06-012 stay Blocked on disclosed prerequisites after owner-authorized
+  local implementation. No qualified delivery approval, real cash evidence or task acceptance implied.
+
 ## 30 October 2026 — Payment monitoring and claim quantity foundation
 
 - Added local/test current-admin payment list/detail, opaque unmatched/quarantined receipt views,

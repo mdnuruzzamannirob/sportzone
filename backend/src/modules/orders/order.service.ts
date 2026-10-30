@@ -167,7 +167,7 @@ export function initialOrderAllocationAccess(connection: Connection) {
   }
 }
 
-function orderAllocationBinding(
+export function orderAllocationBinding(
   row: import('mongoose').HydratedDocument<import('./order.model.js').Order>,
   generation: number,
 ) {
@@ -590,5 +590,29 @@ export function claimQuantityAccess(connection: Connection) {
       })
     }
     return selected
+  }
+}
+
+export function codCollectionOrderAccess(connection: Connection) {
+  const { orders } = orderModels(connection)
+  return async (session: ClientSession, orderId: string) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyOrderPersistence(connection)
+    const row = await orders.findOneAndUpdate(
+      {
+        _id: orderId,
+        paymentMethod: 'cod',
+        confirmedAt: { $exists: true },
+        revision: { $lt: Number.MAX_SAFE_INTEGER },
+      },
+      { $inc: { revision: 1 } },
+      { session, returnDocument: 'after' },
+    )
+    if (!row || row.fulfillmentStatus === 'pending') throw new ApiError('STATE_CONFLICT')
+    return {
+      cancelled: row.fulfillmentStatus === 'cancelled',
+      placedAt: row.placedAt,
+      expectedPoisha: row.pricingSnapshot.finalTotalPoisha,
+    }
   }
 }

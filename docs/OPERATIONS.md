@@ -1583,6 +1583,18 @@ state after processing; a 202 response does not establish Paid. Existing lease/r
 provider qualification requirements remain mandatory. Replays do not refresh timestamps or resend
 charges; unmatched/quarantined monitoring is read-only pending authorized investigation.
 
+#### Local lifecycle and COD capabilities
+
+P06-011/P06-012 local domain services have no ordinary HTTP/root/worker activation. No environment
+flag or bootstrap enables them. Confirmation requires a qualified protected approval capability for
+the exact captured basis; the capability must use preverified/local transactional evidence and must
+not call providers inside the business transaction. Missing capability denies confirmation. COD
+recording separately requires a real protected evidence verifier; a user-supplied reference is not proof.
+Use synthetic adapters only in isolated tests. Qualified delivery sign-off, real evidence integration,
+HTTP authorization/CSRF contracts and deployment verification must precede task acceptance/activation.
+Preserve orders/commitments, stock movements, source collections, corrections and audit together on
+restore. Never retry uncertain cash recording with a fresh identity or erase a dispatch movement.
+
 ### 12.2 Gateway receipt reconciliation (OP-FIN-01)
 
 ```mermaid

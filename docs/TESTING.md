@@ -672,6 +672,14 @@ resolved/refunded/held units, reject caller-selected ordinals/duplicate lines, e
 current-authority boundaries, and roll back every line/request when audit or persistence fails.
 No synthetic authorization/eligibility fixture proves real return-window or private-media acceptance.
 
+Local lifecycle/COD tests use synthetic qualified-approval and protected evidence capabilities only.
+Check missing approval denial, exact graph/shipment/coupon fencing, actual deadline projection from
+persisted plain basis, historical-key replay, shipment rollback after downstream validation failure,
+independent payment/delivery, partial/excess cash source accounting, duplicate/cross-order references,
+revoked identity during evidence reads, future/pre-order collection dates, correction failure rollback
+and different-admin dispatch/cash concurrency. Local success does not prove policy approval, private
+source verification in deployment, HTTP activation or complete task acceptance.
+
 ### 11.1 Payment provider and COD scenarios
 
 Safe-retry checks use replica-set transactions and actual initiation routes: fresh terminal

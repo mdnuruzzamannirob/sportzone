@@ -130,14 +130,14 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |     21 |        0 |
 | 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       1 |         0 |     12 |        0 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
-| 06 — Checkout, Orders, and Delivery Rules     |      22 |          12 |     0 |           0 |       1 |         0 |      9 |        0 |
+| 06 — Checkout, Orders, and Delivery Rules     |      22 |          10 |     0 |           0 |       3 |         0 |      9 |        0 |
 | 07 — Payment Integration and Verification     |      18 |           3 |     0 |           0 |       0 |         0 |     15 |        0 |
 | 08 — Returns and Refunds                      |      19 |          18 |     0 |           0 |       0 |         0 |      1 |        0 |
 | 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       1 |         0 |      1 |        0 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **100** | **0** | **0** | **3** | **0** | **107** | **0** |
+| **Total** | **210** | **98** | **0** | **0** | **5** | **0** | **107** | **0** |
 
 ## 4. Milestone tracker
 
@@ -1132,22 +1132,24 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence:** [Expiry/guest implementation, per-task checks and operational limits](./evidence/P06-010-015-expiry-guest-access.md). Verified locally; project-owner independent acceptance recorded on 30 October 2026. Live provider/email/staging, frontend and qualified compliance gates remain separate.
 
 - [ ] **P06-011 — Implement order transitions, shipping and movement logic**\
-  **Status:** `Not Started` · **Area:** Backend/orders\
+  **Status:** `Blocked` · **Area:** Backend/orders\
   **Stage:** `Backend`\
   **Sources:** FR-14; FR-16; FR-26\
   **Depends on:** `P06-008`, `P06-003`\
   **Deliverable:** Enforce Pending/Confirmed/Processing/Shipped/Delivered/Cancelled transitions and shipment decrement of physical+committed.\
   **Acceptance:** Admin cannot skip forbidden transitions; shipping/failed delivery retains event history.\
-  **Evidence to attach:** State-machine and shipment tests.
+  **Evidence:** [Local transition/stock tests, recorded checks and remaining acceptance](./evidence/P06-011-012-local-lifecycle-cod.md). Local implementation/tests explicitly authorized by owner; no full task acceptance.\
+  **Blocked:** P06-003 qualified rule/sign-off remains absent. Ordinary confirmation/runtime HTTP integration stays disabled; cancellation/final non-delivery and notifications remain their owning tasks.
 
 - [ ] **P06-012 — Implement authorized COD collection confirmation**\
-  **Status:** `Not Started` · **Area:** Backend/payments\
+  **Status:** `Blocked` · **Area:** Backend/payments\
   **Stage:** `Backend`\
   **Sources:** FR-12; FR-26; FR-29\
   **Depends on:** `P06-011`\
   **Deliverable:** Record collected COD only on authorized confirmation with ledger and audit reference.\
   **Acceptance:** Delivery alone never marks COD Paid; duplicate confirmation has single effect.\
-  **Evidence to attach:** COD collection audit test.
+  **Evidence:** [Local COD source/audit/concurrency tests and remaining acceptance](./evidence/P06-011-012-local-lifecycle-cod.md). Local implementation/tests explicitly authorized by owner; no full task acceptance.\
+  **Blocked:** P06-011 remains unaccepted; a real protected original-cash evidence verifier/source and HTTP/root authorization/CSRF integration are not supplied or activated.
 
 - [ ] **P06-013 — Implement pre-shipment cancellation and exactly-once release**\
   **Status:** `Not Started` · **Area:** Backend/orders\
@@ -2548,3 +2550,5 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **30 October 2026 — P07-018/P08-001 combined backend batch:** Each Not Started → In Progress → In Review. These are the two backend tasks with accepted prerequisites; P06-011 and dependent order/return lifecycle tasks retain the P06-003 sign-off gate. Added allowlisted current-admin payment monitoring, audited manual reconciliation scheduling and strict requested-claim/ordinal protection foundation. [Separate task checks and review evidence](./evidence/P07-018-P08-001-monitoring-claim-foundation.md). Overall: 210 tasks, 105 Done, 100 Not Started, 3 Blocked, 2 In Review. Independent acceptance pending; no provider/legal/staging/milestone gate cleared.
 
 **30 October 2026 — P07-018/P08-001 acceptance:** Each In Review → Done after explicit project-owner independent acceptance: “দুটোই গ্রহণ করছি—Done করুন”. [Separate acceptance record](./evidence/P07-018-P08-001-monitoring-claim-foundation.md#independent-acceptance). Overall: 210 tasks, 107 Done, 100 Not Started, 3 Blocked, 0 In Review. Acceptance covers submitted local/test monitoring/reconciliation and private claim quantity foundation; later claim eligibility/lifecycle/media and external provider/legal/staging/milestone gates remain separate.
+
+**30 October 2026 — P06-011/012 local work:** Owner explicitly selected “Local implementation/tests এগিয়ে নাও” after disclosure that P06-003 prevents full acceptance. Each Not Started → In Progress → Blocked after the authorized private technical work and checks. [Separate local scope, 17 new cases, 232 integration/50 unit/108 contract results and remaining gates](./evidence/P06-011-012-local-lifecycle-cod.md). Overall: 210 tasks, 107 Done, 98 Not Started, 5 Blocked, 0 In Review. No real approval/evidence source or ordinary runtime activation was invented; no task/milestone self-acceptance.

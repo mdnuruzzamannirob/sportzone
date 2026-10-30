@@ -341,6 +341,13 @@ export function couponGenerationAccess(connection: Connection) {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
     await verifyCouponPersistence(connection)
     const row = await models.redemptions.findOne({ orderId, generation }).session(session)
-    return row ? { status: row.status, heldAt: row.heldAt, expiresAt: row.expiresAt } : null
+    return row
+      ? {
+          couponId: row.couponId.toHexString(),
+          status: row.status,
+          heldAt: row.heldAt,
+          expiresAt: row.expiresAt,
+        }
+      : null
   }
 }

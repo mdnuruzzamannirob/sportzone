@@ -118,3 +118,33 @@ export function paymentInitiationEligibilityAccess(connection: Connection) {
       throw new ApiError('STATE_CONFLICT')
   }
 }
+
+export function fulfillmentPaymentAccess(connection: Connection) {
+  const payments = paymentModel(connection)
+  return async (
+    session: ClientSession,
+    input: { orderId: string; method: 'cod' | 'online'; expectedPoisha: number },
+  ) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyPaymentPersistence(connection)
+    const row = await payments.findOne({ orderId: input.orderId }).session(session)
+    if (
+      !row ||
+      row.method !== input.method ||
+      row.expectedPoisha !== input.expectedPoisha ||
+      row.riskStatus !== 'clear' ||
+      row.unassignedCollectedPoisha !== 0 ||
+      row.revision >= Number.MAX_SAFE_INTEGER ||
+      (row.method === 'online' &&
+        (row.paymentStatus !== 'paid' || row.merchandiseFundedPoisha !== row.expectedPoisha)) ||
+      (row.method === 'cod' && !['pending', 'paid'].includes(row.paymentStatus))
+    )
+      throw new ApiError('STATE_CONFLICT')
+    const changed = await payments.updateOne(
+      { _id: row._id, revision: row.revision },
+      { $inc: { revision: 1 } },
+      { session },
+    )
+    if (changed.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
+  }
+}
