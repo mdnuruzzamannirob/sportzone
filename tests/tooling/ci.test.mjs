@@ -642,3 +642,11 @@ test('feature PRs avoid duplicate push runs while main/tags retain full verifica
     )
   }
 })
+
+test('supply-chain failures are checked before expensive application and browser suites', (t) => {
+  const { root } = activeFixture(t)
+  const names = ciPlan(root).map((scope) => scope.name)
+  assert.equal(names[0], 'repository')
+  for (const name of ['storefront', 'admin', 'backend', 'browser'])
+    assert.ok(names.indexOf('supply-chain') < names.indexOf(name))
+})

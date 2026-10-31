@@ -91,7 +91,7 @@ accepted milestone/provider outcomes. Found and corrected:
   The required job now selects the shared scripts/ci/container.mjs image build/non-root/secret-exclusion
   gate. Manual image verification reuses it; provider jobs remain explicit and protected.
 
-Observed local verification: `npm run test:unit` Passed 66 cases outside constrained process/port
+Observed local verification: `npm run test:unit` Passed 67 cases outside constrained process/port
 sandboxing; `npm run lint`, `npm run lint:boundaries`, `npm run format:check`, JavaScript syntax,
 workflow YAML parsing and `git diff --check` Passed. The local Docker gate was Blocked by current
 socket permissions; no permission/host changes were requested as part of this CI fix. Actual hosted
@@ -110,3 +110,19 @@ dispatch force full verification. A branch without a PR can use a draft PR or ma
 passing/skipped placeholder is introduced, and required-check/main protection settings remain intact.
 The hosted PR run already Passed the shared Docker gate before continuing application/browser checks;
 final verification targets the subsequent deduplication revision, not an interrupted predecessor.
+
+### Hosted failure diagnosis and security patch
+
+The single PR run [41167260706](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/41167260706)
+completed all application builds/checks, 1,057 database tests and browser verification successfully,
+but correctly failed its final security command. Downloaded native ci.json/security.json reports
+showed no secret findings and one high advisory in transitive follow-redirects 1.16.1, used through
+mongodb-memory-server-core. The [reviewed advisory](https://github.com/advisories/GHSA-mrwp-f3q8-3g9p)
+identifies patched release 1.16.2, compatible with the parent's existing ^1.16.0 range.
+
+Updated only that package's version/resolved/integrity in the lockfile, preserving unrelated optional
+platform dependencies. No direct dependency versions, exceptions or lint/security rules changed.
+`npm run test:security` now Passed locally: zero secret findings and zero dependency advisories.
+The CI inventory now executes supply-chain checks after repository checks and before expensive
+application/database/browser suites. Its ordering regression is included in 67 Passed tooling tests.
+A new hosted run is required for the final patched revision; the failed predecessor is not relabeled.

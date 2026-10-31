@@ -1014,10 +1014,10 @@ Automated accessibility scan is **supplementary**; keyboard review and at least 
 ```mermaid
 flowchart LR
     Setup[One locked install] --> Repo[Repository checks]
-    Repo --> Apps[Workspace checks and builds]
+    Repo --> Security[Secret and dependency checks]
+    Security --> Apps[Workspace checks and builds]
     Apps --> Browser[Browser audit reuses UI builds]
-    Browser --> Security[Secret and dependency checks]
-    Security --> Review[Eligible for staging review]
+    Browser --> Review[Eligible for staging review]
 ```
 
 Operations §5.5 owns execution/caching/security and §5.6 owns promotion. Select scopes from changed paths and actual consumers, retaining a stable required aggregate result. Backend-private changes require backend and applicable repository/contract/security checks, without frontend builds, UI tests or browser engine installation. UI changes require their owning workspace and applicable browser checks; shared dependencies/configuration require affected consumers. Integrated staging/release candidates require the full inventory above.

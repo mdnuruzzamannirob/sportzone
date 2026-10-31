@@ -4,11 +4,11 @@ import { workspacePlan } from './check-repository.mjs'
 
 export const scopeNames = [
   'repository',
+  'supply-chain',
   'storefront',
   'admin',
   'backend',
   'browser',
-  'supply-chain',
 ]
 
 const required = {

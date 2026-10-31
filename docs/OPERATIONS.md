@@ -880,8 +880,8 @@ or affected feature; use OP-REL-02 and OP-FIN-* instead of ad hoc manual ledger 
 ### 5.5 CI execution and supply-chain controls
 
 GitHub Actions runs one job named `CI required result`. Feature-branch validation runs on pull requests, avoiding duplicate push/PR runs for the same source. Pushes to main or tags and manual dispatch run the full inventory. For a branch without a PR, open a draft PR or dispatch CI explicitly; no skipped placeholder claims validation. A single locked install serves all checks.
-`ci-workspaces.json` lists the commands; the local runner executes repository, storefront, admin, backend,
-browser and supply-chain groups in order. Each application builds once; browser checks reuse the two UI builds
+`ci-workspaces.json` lists the commands; the local runner executes repository, supply-chain, storefront, admin, backend
+and browser groups in order. Security findings fail before expensive application/database/browser suites. Each application builds once; browser checks reuse the two UI builds
 in the same job. No workflow generation, cross-job build transfer or report aggregation is required.
 
 The workflow selects affected scopes under Testing §15.1, retaining the stable required result. Prose-only changes retain repository/security checks without application builds; executable API documentation retains backend checks. Backend-only runs enforce import boundaries. PR merge-base diffs include both sides of cross-application moves, and unavailable diff revisions conservatively select full verification. Browser engines install only for browser scopes. Manual dispatch and conservative fallbacks run the full inventory; integrated/release verification remains mandatory. Tasks records actual hosted evidence and acceptance. During development follow Testing §15.5 rather
