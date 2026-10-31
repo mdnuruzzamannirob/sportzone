@@ -1,6 +1,8 @@
 name: CI
 on:
   push:
+    branches: [main]
+    tags: ['*']
   pull_request:
   workflow_dispatch:
 permissions:
@@ -35,6 +37,7 @@ jobs:
         id: affected
         env:
           CI_EVENT: ${{ github.event_name }}
+          CI_FORCE_ALL: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')) }}
           CI_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: node scripts/ci/affected.mjs

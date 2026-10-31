@@ -1022,7 +1022,7 @@ flowchart LR
 
 Operations §5.5 owns execution/caching/security and §5.6 owns promotion. Select scopes from changed paths and actual consumers, retaining a stable required aggregate result. Backend-private changes require backend and applicable repository/contract/security checks, without frontend builds, UI tests or browser engine installation. UI changes require their owning workspace and applicable browser checks; shared dependencies/configuration require affected consumers. Integrated staging/release candidates require the full inventory above.
 
-The workflow uses `scripts/ci/affected.mjs` with validated event base/head revisions. PR paths are
+Feature branches validate through PR events; main/tag pushes and manual dispatch force the full inventory, including the image gate. This avoids duplicate feature push/PR runs without skipping a required check. The workflow uses `scripts/ci/affected.mjs` with validated event base/head revisions. PR paths are
 compared from their merge base; push paths compare before/head. Rename detection is disabled so a
 move between applications checks both owners. Missing/unavailable revisions or a diff lookup failure
 select the full inventory with a static warning; they never turn into skipped verification.

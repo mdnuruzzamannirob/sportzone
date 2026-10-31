@@ -609,3 +609,36 @@ test('Docker inputs are blocking in the required CI job; manual provider checks 
   assert.ok(workflow.includes('cancel-in-progress: false'))
   assert.ok(workflow.includes('permissions:\n  contents: read'))
 })
+
+test('feature PRs avoid duplicate push runs while main/tags retain full verification', (t) => {
+  const workflow = readFileSync('.github/workflows/ci.yml', 'utf8')
+  assert.ok(workflow.includes('branches: [main]'))
+  assert.ok(workflow.includes("tags: ['*']"))
+  assert.ok(workflow.includes('  pull_request:'))
+  assert.ok(workflow.includes('CI_FORCE_ALL:'))
+  const { root, put } = fixture(t)
+  const base = gitFixtureCommit(root, 'baseline')
+  put('README.md', '# Documentation\n')
+  const head = gitFixtureCommit(root, 'documentation change')
+  for (const force of ['false', 'true']) {
+    const output = join(root, `output-${force}`)
+    const child = spawnSync(process.execPath, [resolve('scripts/ci/affected.mjs')], {
+      cwd: root,
+      encoding: 'utf8',
+      env: {
+        CI_EVENT: 'push',
+        CI_BASE_SHA: base,
+        CI_HEAD_SHA: head,
+        CI_FORCE_ALL: force,
+        GITHUB_OUTPUT: output,
+      },
+    })
+    assert.equal(child.status, 0, child.stderr)
+    assert.equal(
+      readFileSync(output, 'utf8'),
+      force === 'true'
+        ? 'scope=all\nbrowser=true\ncontainer=true\n'
+        : 'scope=repository,supply-chain\nbrowser=false\ncontainer=false\n',
+    )
+  }
+})

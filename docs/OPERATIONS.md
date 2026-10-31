@@ -879,7 +879,7 @@ or affected feature; use OP-REL-02 and OP-FIN-* instead of ad hoc manual ledger 
 
 ### 5.5 CI execution and supply-chain controls
 
-GitHub Actions runs one job named `CI required result`. A single locked install serves all checks.
+GitHub Actions runs one job named `CI required result`. Feature-branch validation runs on pull requests, avoiding duplicate push/PR runs for the same source. Pushes to main or tags and manual dispatch run the full inventory. For a branch without a PR, open a draft PR or dispatch CI explicitly; no skipped placeholder claims validation. A single locked install serves all checks.
 `ci-workspaces.json` lists the commands; the local runner executes repository, storefront, admin, backend,
 browser and supply-chain groups in order. Each application builds once; browser checks reuse the two UI builds
 in the same job. No workflow generation, cross-job build transfer or report aggregation is required.

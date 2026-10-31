@@ -68,7 +68,12 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   const valid = (sha) => /^[a-f0-9]{40}$/.test(sha ?? '') && !/^0+$/.test(sha)
   let result = { scope: 'all', browser: true }
   let container = true
-  if (process.env.CI_EVENT !== 'workflow_dispatch' && valid(base) && valid(head)) {
+  if (
+    process.env.CI_EVENT !== 'workflow_dispatch' &&
+    process.env.CI_FORCE_ALL !== 'true' &&
+    valid(base) &&
+    valid(head)
+  ) {
     try {
       const paths = changedPaths(base, head, process.env.CI_EVENT)
       result = affectedScopes(paths)

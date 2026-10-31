@@ -13,6 +13,7 @@ environment limits and independent acceptance. Historical UI or source layouts m
 - Prose-only changes now run repository/security checks without unnecessary application/browser builds;
   executable API documentation retains backend coverage.
 - PR scope uses merge-base diffs and includes both sides of moves; unavailable revisions fall back to full checks.
+- Removed duplicate feature push/PR validation; main/tag pushes and manual runs retain full checks.
 - Backend-only CI now enforces import boundaries. Affected image build/identity checks block the required CI job
   and share implementation with manual container verification.
 

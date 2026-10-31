@@ -91,7 +91,7 @@ accepted milestone/provider outcomes. Found and corrected:
   The required job now selects the shared scripts/ci/container.mjs image build/non-root/secret-exclusion
   gate. Manual image verification reuses it; provider jobs remain explicit and protected.
 
-Observed local verification: `npm run test:unit` Passed 65 cases outside constrained process/port
+Observed local verification: `npm run test:unit` Passed 66 cases outside constrained process/port
 sandboxing; `npm run lint`, `npm run lint:boundaries`, `npm run format:check`, JavaScript syntax,
 workflow YAML parsing and `git diff --check` Passed. The local Docker gate was Blocked by current
 socket permissions; no permission/host changes were requested as part of this CI fix. Actual hosted
@@ -103,3 +103,10 @@ Historical Dependabot run 41059288856 failed under a proposed Biome 2.6.3 update
 (schema drift/new component-hook-factory diagnostics); that is an upgrade compatibility failure,
 not grounds to bypass lint or silently upgrade the pinned current toolchain. No dependency versions,
 deployment flags, provider credentials, database state or production resources were changed here.
+
+Two real runs on the same revision (`41167031832` PR and `41167029937` push) confirmed duplicate
+feature validation. Automatic feature validation now runs on PR events; main/tag pushes and manual
+dispatch force full verification. A branch without a PR can use a draft PR or manual dispatch. No
+passing/skipped placeholder is introduced, and required-check/main protection settings remain intact.
+The hosted PR run already Passed the shared Docker gate before continuing application/browser checks;
+final verification targets the subsequent deduplication revision, not an interrupted predecessor.
