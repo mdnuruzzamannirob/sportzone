@@ -1477,6 +1477,13 @@ worker readiness, build and explicitly run `migrate-notifications.mjs` or the lo
 leases, accepted sends and uncertainty. Old binaries need a schema-compatible rollback build rather
 than deletion or a validator downgrade. Provider acceptance remains distinct from inbox delivery.
 
+Return-decision outbox events extend the known commerce validator; before upgraded readiness, use
+`migrate-notifications.mjs` in local/test to upgrade only an exact recognized predecessor. Preserve
+queued/sent/uncertain rows and audit/order/claim facts together; do not downgrade validators or delete
+outbox records to roll back. The local return sender requires explicit composition and is not enabled
+by ordinary worker configuration. Real sender/provider qualification and refund-completion delivery
+remain separate gates.
+
 Policy bounds: 1–10 attempts; 1–100 claims per batch; base delay 100–3600000 ms; maximum delay at least the base and at most
 86400000 ms; lease 1000–3600000 ms; HTTP timeout 1–60000 ms. Require lease strictly greater than timeout plus 1000 ms.
 All values are explicit; the sanitized template leaves them blank. Run cadence and concurrency must respect provider

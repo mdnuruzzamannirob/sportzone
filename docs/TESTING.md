@@ -683,6 +683,13 @@ partial receipt and nonresellable units, full-only completion, same-key replay, 
 shortage denial, plus atomic rollback of stock/ordinal/movement/claim on audit failure. No synthetic authorization/policy/provider fixture proves qualified
 policy, deployed private-media or public HTTP acceptance.
 
+Private return notification tests cover real approval/rejection/completion, outbox/audit atomicity,
+duplicate causes, additive predecessor migration, tampered recipient/time, retry identity and wording
+that never implies refund payout. Private review-eligibility checks cover exact owner/product/order,
+delivery, full return plus completed refund, incomplete/pending refund, another qualifying purchase,
+preservation/edit moderation of existing reviews and a stale-snapshot race. Synthetic refund facts do
+not prove verified deployed payout or public review authorization.
+
 Private refund advisory tests use immutable ordinal entitlements and separate held/completed source,
 order and delivery balances; cover source mismatch, no verified COD receipt, physical inspection and
 shortage eligibility, catalog price changes, delivery-policy authority, overflow and class separation.

@@ -854,7 +854,9 @@ Coupon preview **does not consume quota** or lock price/stock; final checkout ev
 `code` is normalized case-insensitively, percentage uses integer basis points and line allocation from Database §§2.3, 8.1–8.3.
 A per-customer-limited coupon cannot be used by a guest even if a checkout email matches an account.
 Reviews require a delivered qualifying purchase, exactly one active customer/product review, proper ownership and moderation; approved reviews alone affect public ratings.
-Do not accept a client-controlled `isVerifiedPurchase`, `status`, or `reviewedBy` field.
+Do not accept a client-controlled `isVerifiedPurchase`, `status`, or `reviewedBy` field. The private local
+qualification capability fences the selected delivered customer order/item against concurrent return
+and refund changes; it is not yet wired to public review operations.
 
 ### 10.4 Shopping DTO examples
 

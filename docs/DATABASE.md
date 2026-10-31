@@ -732,6 +732,15 @@ category/SKU eligibility is enforced by owning services, not by foreign model ac
 
 **Rules:** validate delivered qualifying purchase and exclusions (PRD FR-10); default to denied without authoritative eligibility evidence. Actual authored changes return the review to pending; unchanged content does not reset approval. Audit customer/moderator changes and preserve prior decisions when current moderation metadata is cleared. Administrators cannot rewrite authored ratings. Only active approved rows contribute to the canonical product rating summary; serialize review changes through the catalog-owned product fence and update the summary in the same transaction. Rating aggregates remain recalculable projections.
 
+Private local review qualification checks the selected order belongs to the customer, is Delivered,
+and contains the exact selected product/item. It fences the order and item-balance revisions in the
+review transaction, so a concurrent payout/return cannot be read from a stale snapshot. A purchase
+is excluded only when all units are both resolved and fully paid out; a return or pending refund
+alone is not a completed refund. For zero-value units without completed-quantity evidence the
+capability fails closed rather than inferring payout. Another separately selected delivered purchase
+may qualify. Existing reviews are not automatically deleted. This capability is not wired into the
+ordinary runtime until the prerequisite refund/payment and authorization work is accepted.
+
 ### 6.7 `mediaAssets` — `media`
 
 | Field | Type | Constraints / notes |
@@ -1580,6 +1589,15 @@ actual transition causes. Existing `order_received:orderId:v1` keeps empty paylo
 payload fields cannot appear in commerce records or vice versa. Order history, recipient and cause
 must match before sending. The exact payment-notification validator is a known additive migration
 predecessor; existing status/lease/provider evidence is preserved. Default workers skip commerce.
+
+Private return-decision events use `return_update`/`return-update-v1`, a unique claim/operation key,
+order and claim IDs, source/destination state and occurredAt; no free-form reason or payout evidence is
+stored in the outbox. Approval, rejection and completion intents commit in the same transaction as the
+claim change and audit. Delivery rechecks the immutable matching transition audit, order ownership and
+snapshotted recipient before rendering. A completion message explicitly does not claim refund payout.
+The exact commerce validator is an additive migration predecessor and its records/leases are preserved.
+The sender remains disabled unless explicitly composed in a controlled local/test worker; no ordinary
+runtime activation or refund-completion notification is implied.
 
 Other notification event types require an explicit backward-compatible validator/model expansion before activation.
 Existing validators are checked, never silently replaced by startup or local bootstrap.

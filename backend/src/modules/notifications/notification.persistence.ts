@@ -51,7 +51,8 @@ export function createNotificationPersistence(connection: Connection, model: Not
           !isDeepStrictEqual(existing.options?.validator, adminResetNotificationValidator) &&
           !isDeepStrictEqual(existing.options?.validator, orderReceivedNotificationValidator) &&
           !isDeepStrictEqual(existing.options?.validator, guestNotificationValidator) &&
-          !isDeepStrictEqual(existing.options?.validator, paymentNotificationValidator)
+          !isDeepStrictEqual(existing.options?.validator, paymentNotificationValidator) &&
+          !isDeepStrictEqual(existing.options?.validator, commerceNotificationValidator)
         )
           throw new Error('Notification collection requires reviewed migration.')
         await connection.db.command({
@@ -455,7 +456,7 @@ export const paymentNotificationValidator = {
 }
 
 // Commerce expansion preserves the exact payment predecessor and all proof branch restrictions.
-export const registrationNotificationValidator = {
+export const commerceNotificationValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -535,6 +536,106 @@ export const registrationNotificationValidator = {
           'payload.orderNumber': { $exists: false },
           'payload.amountPoisha': { $exists: false },
         })),
+      ],
+    },
+  ],
+}
+
+// Additive private return events retain the exact prior commerce validator as a predecessor.
+export const registrationNotificationValidator = {
+  $and: [
+    {
+      $jsonSchema: {
+        ...commerceNotificationValidator.$and[0]?.$jsonSchema,
+        properties: {
+          ...commerceNotificationValidator.$and[0]?.$jsonSchema?.properties,
+          eventType: {
+            enum: [
+              'registration',
+              'password_reset',
+              'email_change',
+              'order_received',
+              'guest_order_access',
+              'payment_success',
+              'payment_failure',
+              'payment_pending',
+              'order_confirmation',
+              'order_cancellation',
+              'shipment_update',
+              'delivery_completion',
+              'return_update',
+            ],
+          },
+          templateVersion: {
+            enum: [
+              'registration-v1',
+              'password-reset-v1',
+              'email-change-v1',
+              'admin-password-reset-v1',
+              'order-received-v1',
+              'guest-order-access-v1',
+              'payment-success-v1',
+              'payment-failure-v1',
+              'payment-pending-v1',
+              'order-confirmation-v1',
+              'order-cancellation-v1',
+              'shipment-update-v1',
+              'delivery-completion-v1',
+              'return-update-v1',
+            ],
+          },
+          payload: {
+            ...paymentPayload,
+            properties: {
+              ...paymentPayload.properties,
+              operationKey: { bsonType: 'string', pattern: '^[a-f0-9]{64}$' },
+              occurredAt: { bsonType: 'date' },
+              returnId: { bsonType: 'objectId' },
+              returnFrom: { enum: ['under_review', 'approved', 'inspected'] },
+              returnTo: { enum: ['approved', 'rejected', 'completed'] },
+            },
+          },
+        },
+      },
+    },
+    {
+      $or: [
+        {
+          $and: [
+            commerceNotificationValidator.$and[1],
+            {
+              'payload.returnId': { $exists: false },
+              'payload.returnFrom': { $exists: false },
+              'payload.returnTo': { $exists: false },
+            },
+          ],
+        },
+        {
+          eventType: 'return_update',
+          templateVersion: 'return-update-v1',
+          orderId: { $type: 'objectId' },
+          'payload.operationKey': { $type: 'string' },
+          'payload.occurredAt': { $type: 'date' },
+          'payload.returnId': { $type: 'objectId' },
+          'payload.returnFrom': { $type: 'string' },
+          'payload.returnTo': { $type: 'string' },
+          $or: [
+            {
+              'payload.returnFrom': 'under_review',
+              'payload.returnTo': { $in: ['approved', 'rejected'] },
+            },
+            {
+              'payload.returnFrom': { $in: ['approved', 'inspected'] },
+              'payload.returnTo': 'completed',
+            },
+          ],
+          'payload.challengeId': { $exists: false },
+          'payload.paymentId': { $exists: false },
+          'payload.attemptId': { $exists: false },
+          'payload.intakeId': { $exists: false },
+          'payload.orderNumber': { $exists: false },
+          'payload.amountPoisha': { $exists: false },
+        },
       ],
     },
   ],

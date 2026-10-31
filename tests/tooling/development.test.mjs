@@ -321,6 +321,20 @@ test('REFUND-BOUNDARY-02: provider transport cannot depend on refund decisions o
   assert.ok(checkBoundaries(root).errors.some((e) => e.includes('private persistence')))
 })
 
+test('AFTERSALES-BOUNDARY-01: notifications and review eligibility cannot import foreign models', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/modules/returns/return.model.ts', 'export const model = 1')
+  put(
+    'backend/src/modules/notifications/return-message.service.ts',
+    'import "../returns/return.model.js"',
+  )
+  assert.ok(checkBoundaries(root).errors.some((e) => e.includes('private persistence')))
+  put('backend/src/modules/notifications/return-message.service.ts', 'export const message = 1')
+  put('backend/src/modules/reviews/review.model.ts', 'export const model = 1')
+  put('backend/src/modules/orders/order.service.ts', 'import "../reviews/review.model.js"')
+  assert.ok(checkBoundaries(root).errors.some((e) => e.includes('private persistence')))
+})
+
 test('BACKEND-BOUNDARY-03: shared technical helpers cannot import domain/configuration via barrels', (t) => {
   const { root, put } = fixture(t)
   put('backend/src/modules/orders/order.service.ts', 'export const service = 1')

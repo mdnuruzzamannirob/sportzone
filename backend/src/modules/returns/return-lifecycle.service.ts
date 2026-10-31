@@ -30,6 +30,17 @@ export function returnLifecycleService(
   admin: AdminAccountAccess,
   quantities: ReturnType<typeof claimReviewQuantityAccess>,
   clock: () => Date = () => new Date(),
+  notify?: (
+    session: import('mongoose').ClientSession,
+    event: {
+      orderId: string
+      returnId: string
+      from: 'under_review' | 'approved' | 'inspected'
+      to: 'approved' | 'rejected' | 'completed'
+      operationKey: string
+      occurredAt: Date
+    },
+  ) => Promise<void>,
 ) {
   const model = returnModel(connection),
     audit = createAuditWriter(connection),
@@ -164,6 +175,25 @@ export function returnLifecycleService(
           reason: input.reason,
           occurredAt: now,
         })
+        if (
+          notify &&
+          (input.to === 'approved' || input.to === 'rejected' || input.to === 'completed')
+        ) {
+          if (
+            row.status !== 'under_review' &&
+            row.status !== 'approved' &&
+            row.status !== 'inspected'
+          )
+            throw new ApiError('STATE_CONFLICT')
+          await notify(session, {
+            orderId: row.orderId.toHexString(),
+            returnId: id,
+            from: row.status,
+            to: input.to,
+            operationKey,
+            occurredAt: now,
+          })
+        }
         return { id, status: input.to, revision: row.revision + 1 }
       })
     },

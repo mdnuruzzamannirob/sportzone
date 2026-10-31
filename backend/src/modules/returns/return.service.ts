@@ -3,6 +3,10 @@ import { createHash } from 'node:crypto'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { createAuditWriter } from '../audit/audit.service.js'
+import { auditOperationReader } from '../audit/audit.service.js'
+import { inTransaction } from '../../shared/database/transaction.js'
+import { z } from 'zod'
+import type { returnNotificationOrderAccess } from '../orders/order.service.js'
 import type { claimQuantityAccess } from '../orders/order.service.js'
 import type { MediaService } from '../media/media.service.js'
 import { verifyMediaPersistence } from '../media/media.service.js'
@@ -139,6 +143,46 @@ export function refundClaimSnapshotAccess(connection: Connection) {
       if (!ordinals || ordinals.length < line.quantity)
         throw new ApiError('BUSINESS_RULE_VIOLATION')
       return { ...line, ordinals: [...ordinals] }
+    })
+  }
+}
+
+// Existing transition audit is the immutable event proof, even after later claim changes.
+export function returnNotificationProofAccess(
+  connection: Connection,
+  order: ReturnType<typeof returnNotificationOrderAccess>,
+) {
+  const model = returnModel(connection),
+    lookup = auditOperationReader(connection)
+  const event = z.strictObject({
+    orderId: claimCommand.shape.orderId,
+    returnId: claimCommand.shape.claimId,
+    from: z.enum(['under_review', 'approved', 'inspected']),
+    to: z.enum(['approved', 'rejected', 'completed']),
+    operationKey: z.string().regex(/^[a-f0-9]{64}$/),
+    occurredAt: z.date(),
+    recipient: z.email(),
+  })
+  return async (raw: unknown) => {
+    const parsed = event.safeParse(raw)
+    if (!parsed.success) return undefined
+    const data = parsed.data
+    return inTransaction(connection, async (session) => {
+      await verifyReturnPersistence(connection)
+      const claim = await model
+        .findOne({ _id: data.returnId, orderId: data.orderId })
+        .session(session)
+      if (!claim) return undefined
+      const contact = await order(session, data.orderId)
+      if (contact.email !== data.recipient) return undefined
+      const audit = await lookup(session, {
+        action: `claim.lifecycle.${data.from}.${data.to}`,
+        targetType: 'return_request',
+        targetId: data.returnId,
+        operationKey: data.operationKey,
+      })
+      if (!audit || audit.occurredAt.getTime() !== data.occurredAt.getTime()) return undefined
+      return { orderNumber: contact.orderNumber, recipient: contact.email }
     })
   }
 }

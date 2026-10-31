@@ -132,12 +132,12 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |           6 |     0 |           0 |       7 |         0 |      9 |        0 |
 | 07 — Payment Integration and Verification     |      18 |           3 |     0 |           0 |       0 |         0 |     15 |        0 |
-| 08 — Returns and Refunds                      |      19 |           9 |     0 |           0 |       9 |         0 |      1 |        0 |
+| 08 — Returns and Refunds                      |      19 |           7 |     0 |           0 |      11 |         0 |      1 |        0 |
 | 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       0 |         0 |      1 |        1 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **85** | **0** | **0** | **16** | **0** | **107** | **2** |
+| **Total** | **210** | **83** | **0** | **0** | **18** | **0** | **107** | **2** |
 
 ## 4. Milestone tracker
 
@@ -1506,13 +1506,13 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence:** [Local status/retry assessment and manual evidence verification](./evidence/P08-009-010-local-refund-evidence.md). Durable attempts, real source/consent verification and transactional completion remain unavailable; prerequisites and independent acceptance remain pending.
 
 - [ ] **P08-011 — Persist return and refund decisions and notifications**\
-  **Status:** `Not Started` · **Area:** Backend/notifications\
+  **Status:** `Blocked` · **Area:** Backend/notifications\
   **Stage:** `Backend`\
   **Sources:** FR-20; FR-17; FR-18\
   **Depends on:** `P08-009`, `P08-010`\
   **Deliverable:** Record approvals, rejection reasons, retry/failure and accurate customer status email.\
   **Acceptance:** Return completion never sends unverified refund-completed claim; notifications deduplicate.\
-  **Evidence to attach:** Return/refund event tests.
+  **Evidence:** [Local return notifications, review qualification and actual checks](./evidence/P08-011-016-return-notifications-review.md). Required refund prerequisites, production composition and independent acceptance remain outstanding.
 
 - [ ] **P08-012 — Implement request/history and evidence UX**\
   **Status:** `Not Started` · **Area:** Storefront/returns\
@@ -1551,13 +1551,13 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence to attach:** Admin refund E2E.
 
 - [ ] **P08-016 — Complete delivered-purchase and full-return review eligibility**\
-  **Status:** `Not Started` · **Area:** Backend/reviews\
+  **Status:** `Blocked` · **Area:** Backend/reviews\
   **Stage:** `Backend`\
   **Sources:** FR-10; FR-31\
   **Depends on:** `P05-009`, `P08-005`\
   **Deliverable:** Require qualifying delivered purchase and block new verification after fully returned/refunded purchase unless another qualifies.\
   **Acceptance:** Legitimate prior reviews are not auto-deleted solely by refund; edited reviews return to moderation when required.\
-  **Evidence to attach:** Verified purchase/return review tests.
+  **Evidence:** [Local return notifications, review qualification and actual checks](./evidence/P08-011-016-return-notifications-review.md). Required refund prerequisites, production composition and independent acceptance remain outstanding.
 
 - [ ] **P08-017 — Enable verified customer review submission and editing UI**\
   **Status:** `Not Started` · **Area:** Storefront/reviews\
@@ -2570,3 +2570,5 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **31 October 2026 — P08-007/008 local planning and transport:** Each Not Started → In Progress → Blocked. Added nonbinding, deterministic multi-source claim/order/verified-collection allocation and narrowly validated SSLCOMMERZ refund-initiation transport. [Observed verification and remaining gates](./evidence/P08-007-008-local-refund-planning-provider.md). Atomic reservation/durable attempts, provider-backed sandbox, accepted prerequisites and independent reviews remain outstanding. Overall: 210 tasks, 107 Done, 87 Not Started, 14 Blocked, 2 Deferred.
 
 **31 October 2026 — P08-009/010 local evidence work:** Each Not Started → In Progress → Blocked. Added redacted matched gateway status reporting, non-authorizing retry assessment and a two-phase current-admin manual-evidence verification capability. [Actual verification and remaining work](./evidence/P08-009-010-local-refund-evidence.md). No durable refund attempt, payout, real consent/source adapter or task/milestone acceptance is inferred. Overall: 210 tasks, 107 Done, 85 Not Started, 16 Blocked, 2 Deferred.
+
+**31 October 2026 — P08-011/016 local after-sales batch:** Each Not Started → In Progress → Blocked. Added transactional return-decision outbox with independently verified local delivery, and transaction-fenced delivered-purchase review eligibility. [Separate local scope, actual checks and outstanding gates](./evidence/P08-011-016-return-notifications-review.md). Refund-state notifications, real refund-source acceptance, ordinary runtime/API composition and independent reviews remain outstanding. Overall: 210 tasks, 107 Done, 83 Not Started, 18 Blocked, 2 Deferred.
