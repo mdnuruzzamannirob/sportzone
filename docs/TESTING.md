@@ -686,7 +686,11 @@ policy, deployed private-media or public HTTP acceptance.
 Private refund advisory tests use immutable ordinal entitlements and separate held/completed source,
 order and delivery balances; cover source mismatch, no verified COD receipt, physical inspection and
 shortage eligibility, catalog price changes, delivery-policy authority, overflow and class separation.
-A quote is not a reservation; reservation races and provider/manual payout verification remain separate.
+Test deterministic multi-source unit splits, per-source/aggregate caps, duplicate and foreign sources,
+delivery distribution and read-only snapshot behavior. A quote is not a reservation; reservation
+races and provider/manual payout verification remain separate. Mock gateway initiation tests verify
+exact references/amount, malformed and uncertain responses, redaction, no retry, and no provider call
+inside a transaction; they do not prove merchant sandbox support or a verified payout.
 
 Local lifecycle/COD tests use synthetic qualified-approval and protected evidence capabilities only.
 Check missing approval denial, exact graph/shipment/coupon fencing, actual deadline projection from

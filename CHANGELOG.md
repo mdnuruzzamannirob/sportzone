@@ -8,6 +8,12 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 31 October 2026 — Local multi-source refund planning and provider transport
+
+- Added private, nonbinding multi-source unit/delivery refund plans with source and order capacity limits.
+- Added isolated SSLCOMMERZ initiation transport; acceptance remains unverified and no runtime payout executor is enabled.
+- P08-007/008 remain Blocked pending atomic reservations, durable attempts, prerequisites and provider-backed acceptance.
+
 ## 31 October 2026 — Private refund advisory
 
 - Added read-only, single-source claim/order/payment refund calculations with original unit amounts and held/completed capacity limits.

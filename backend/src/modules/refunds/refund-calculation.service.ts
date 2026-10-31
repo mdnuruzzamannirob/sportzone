@@ -146,3 +146,97 @@ export function calculateCorrectionRefund(raw: unknown) {
     orderAvailablePoisha,
   }
 }
+
+const sourceSlice = capacity.extend({ sourceCollectionId: id })
+const multiSourceSchema = inputSchema.omit({ source: true }).extend({
+  sources: z
+    .array(sourceSlice)
+    .min(1)
+    .max(50)
+    .refine((rows) => new Set(rows.map((r) => r.sourceCollectionId)).size === rows.length),
+})
+// Pure advisory only; no capacity is reserved. Inputs must be canonical facts obtained in one
+// snapshot; an atomic writer must re-authorize, re-read, fence and commit every slice and intent.
+export function planMultiSourceMerchandiseRefund(raw: unknown) {
+  const input = parseInput(multiSourceSchema, raw)
+  const sources = input.sources
+    .map((source) => ({
+      sourceCollectionId: source.sourceCollectionId,
+      availablePoisha: available(source.allocatedPoisha, source.heldPoisha, source.completedPoisha),
+    }))
+    .sort((a, b) =>
+      a.sourceCollectionId < b.sourceCollectionId
+        ? -1
+        : a.sourceCollectionId > b.sourceCollectionId
+          ? 1
+          : 0,
+    )
+  const sourceTotal = add(...sources.map((source) => source.availablePoisha))
+  const quote = calculateMerchandiseRefund({
+    lines: input.lines,
+    source: { allocatedPoisha: sourceTotal, heldPoisha: 0, completedPoisha: 0 },
+    order: input.order,
+    delivery: input.delivery,
+  })
+  if (quote.status !== 'advisory') return quote
+  const slices: {
+    sourceCollectionId: string
+    items: {
+      orderItemId: string
+      unitAmounts: { ordinal: number; amountPoisha: number }[]
+      amountPoisha: number
+    }[]
+    merchandiseAmountPoisha: number
+    deliveryAmountPoisha: number
+    amountPoisha: number
+  }[] = []
+  let sourceIndex = 0
+  function allocate(amount: number, orderItemId?: string, ordinal?: number) {
+    let remaining = amount
+    while (remaining > 0) {
+      const source = sources[sourceIndex]
+      if (!source) throw new ApiError('STATE_CONFLICT')
+      if (!source.availablePoisha) {
+        sourceIndex++
+        continue
+      }
+      const used = Math.min(remaining, source.availablePoisha)
+      let slice = slices.find((s) => s.sourceCollectionId === source.sourceCollectionId)
+      if (!slice) {
+        slice = {
+          sourceCollectionId: source.sourceCollectionId,
+          items: [],
+          merchandiseAmountPoisha: 0,
+          deliveryAmountPoisha: 0,
+          amountPoisha: 0,
+        }
+        slices.push(slice)
+      }
+      if (orderItemId !== undefined && ordinal !== undefined) {
+        let item = slice.items.find((entry) => entry.orderItemId === orderItemId)
+        if (!item) {
+          item = { orderItemId, unitAmounts: [], amountPoisha: 0 }
+          slice.items.push(item)
+        }
+        item.unitAmounts.push({ ordinal, amountPoisha: used })
+        item.amountPoisha = add(item.amountPoisha, used)
+        slice.merchandiseAmountPoisha = add(slice.merchandiseAmountPoisha, used)
+      } else slice.deliveryAmountPoisha = add(slice.deliveryAmountPoisha, used)
+      slice.amountPoisha = add(slice.amountPoisha, used)
+      source.availablePoisha -= used
+      remaining -= used
+    }
+  }
+  for (const item of [...quote.items].sort((a, b) =>
+    a.orderItemId < b.orderItemId ? -1 : a.orderItemId > b.orderItemId ? 1 : 0,
+  ))
+    for (const unit of item.unitAmounts) allocate(unit.amountPoisha, item.orderItemId, unit.ordinal)
+  allocate(quote.deliveryAmountPoisha)
+  return {
+    status: 'advisory' as const,
+    amountPoisha: quote.amountPoisha,
+    merchandiseAmountPoisha: quote.merchandiseAmountPoisha,
+    deliveryAmountPoisha: quote.deliveryAmountPoisha,
+    slices,
+  }
+}

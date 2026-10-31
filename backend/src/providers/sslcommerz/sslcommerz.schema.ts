@@ -141,6 +141,20 @@ export const sessionFailure = z.object({
 export const transactionQuery = z.strictObject({ tranId: reference(30) })
 export const sessionQuery = z.strictObject({ sessionKey: reference(50) })
 export const validationQuery = z.strictObject({ validationId: reference(50) })
+export const refundInitiationInput = z.strictObject({
+  bankTranId: reference(80),
+  refundTransId: reference(30),
+  amountPoisha: z.int().min(1).max(9999999999),
+  remarks: reference(255),
+  referenceId: reference(50).optional(),
+})
+// Provider fields beyond this allowlist never cross the transport boundary.
+export const refundInitiationResponse = z.object({
+  APIConnect: z.literal('DONE'),
+  status: z.enum(['success', 'processing']),
+  bank_tran_id: reference(80),
+  refund_ref_id: reference(50),
+})
 export const transactionResponse = z
   .object({
     APIConnect: z.literal('DONE'),

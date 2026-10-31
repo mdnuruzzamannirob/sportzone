@@ -1,4 +1,7 @@
-import { refundAdvisoryService } from '../../src/modules/refunds/refund-advisory.service.js'
+import {
+  refundAdvisoryService,
+  multiSourceRefundAdvisoryService,
+} from '../../src/modules/refunds/refund-advisory.service.js'
 import { refundOrderSnapshotAccess } from '../../src/modules/orders/order.service.js'
 import { refundClaimSnapshotAccess } from '../../src/modules/returns/return.service.js'
 import { refundPaymentSnapshotAccess } from '../../src/modules/payments/payment.service.js'
@@ -6199,4 +6202,110 @@ it('refund advisory local: delivery charge requires current trusted policy and s
       refundAdvisory(async () => true)(session, { ...input, deliveryRequestedPoisha: 101 }),
     ),
   ).rejects.toMatchObject({ code: 'BUSINESS_RULE_VIOLATION' })
+})
+
+it('multi-source refund local: linked partial COD collections split one original unit without writes', async () => {
+  const f = await physicalReturnFixture()
+  await f.receive()
+  await f.inspect()
+  await f.cash(300, 'source-first')
+  await f.cash(300, 'source-second')
+  const collection = paymentRecordModels(db.connection).collections
+  const sources = await collection.find({ orderId: f.id }).sort({ _id: 1 }).lean()
+  expect(sources).toHaveLength(2)
+  const before = await orderModels(db.connection)
+    .balances.findOne({ orderId: f.id })
+    .lean()
+    .orFail()
+  const planner = multiSourceRefundAdvisoryService(
+    refundClaimSnapshotAccess(db.connection),
+    refundOrderSnapshotAccess(db.connection),
+    refundPaymentSnapshotAccess(db.connection),
+  )
+  const input = {
+    orderId: f.id,
+    claimId: f.claimId,
+    sourceCollectionIds: sources.map((s) => s._id.toHexString()),
+    items: [{ orderItemId: f.itemId, quantity: 1 }],
+    deliveryRequestedPoisha: 0,
+  }
+  const plan = await inTransaction(db.connection, (session) => planner(session, input))
+  expect(plan.status).toBe('advisory')
+  if (plan.status !== 'advisory') throw new Error('Expected valid advisory')
+  expect(plan.amountPoisha).toBe(before.unitCoverage[0]?.netEntitlementPoisha)
+  expect(plan.slices).toHaveLength(2)
+  expect(plan.slices.reduce((sum, slice) => sum + slice.amountPoisha, 0)).toBe(plan.amountPoisha)
+  expect(
+    await inTransaction(db.connection, (session) =>
+      planner(session, { ...input, sourceCollectionIds: [...input.sourceCollectionIds].reverse() }),
+    ),
+  ).toEqual(plan)
+  expect(
+    await orderModels(db.connection).balances.findOne({ orderId: f.id }).lean().orFail(),
+  ).toEqual(before)
+  expect(await collection.find({ orderId: f.id }).sort({ _id: 1 }).lean()).toEqual(sources)
+  expect(
+    await db.connection.collection('refunds').countDocuments({ orderId: new Types.ObjectId(f.id) }),
+  ).toBe(0)
+})
+it('multi-source refund local: duplicate or foreign collection sources cannot create a plan', async () => {
+  const f = await physicalReturnFixture()
+  await f.receive()
+  await f.inspect()
+  await f.cash()
+  const other = await physicalReturnFixture()
+  await other.cash(undefined, 'foreign-source-unique')
+  const collection = paymentRecordModels(db.connection).collections
+  const own = await collection.findOne({ orderId: f.id }).orFail(),
+    foreign = await collection.findOne({ orderId: other.id }).orFail()
+  const planner = multiSourceRefundAdvisoryService(
+    refundClaimSnapshotAccess(db.connection),
+    refundOrderSnapshotAccess(db.connection),
+    refundPaymentSnapshotAccess(db.connection),
+  )
+  const input = {
+    orderId: f.id,
+    claimId: f.claimId,
+    sourceCollectionIds: [own._id.toHexString(), foreign._id.toHexString()],
+    items: [{ orderItemId: f.itemId, quantity: 1 }],
+    deliveryRequestedPoisha: 0,
+  }
+  await expect(
+    inTransaction(db.connection, (session) => planner(session, input)),
+  ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+  await expect(
+    inTransaction(db.connection, (session) =>
+      planner(session, {
+        ...input,
+        sourceCollectionIds: [own._id.toHexString(), own._id.toHexString()],
+      }),
+    ),
+  ).rejects.toThrow()
+})
+
+it('refund transport local: provider request is forbidden inside a MongoDB transaction', async () => {
+  const transport = vi.fn<typeof fetch>()
+  const provider = createSslcommerzAdapter(
+    {
+      appEnv: 'test',
+      mode: 'sandbox',
+      storeId: 'synthetic-store',
+      storePassword: 'synthetic-password',
+      callbackOrigin: 'https://api.example.test',
+      timeoutMs: 1000,
+    },
+    transport,
+  )
+  await expect(
+    inTransaction(db.connection, (session) => {
+      expect(session.inTransaction()).toBe(true)
+      return provider.initiateRefund({
+        bankTranId: 'bank',
+        refundTransId: 'refund',
+        amountPoisha: 100,
+        remarks: 'synthetic',
+      })
+    }),
+  ).rejects.toThrow()
+  expect(transport).not.toHaveBeenCalled()
 })

@@ -1475,10 +1475,12 @@ rewrite the intent; future refund approval needs its reviewed schema/capacity tr
 A private, transaction-scoped advisory can read approved shortage/inspected physical claim ordinals,
 original order-unit entitlement and verified linked source/order funding counters. It subtracts held
 and completed amounts, rejects invalid balances, and bounds any requested delivery amount by the
-purchase-time charge and an injected protected policy decision. Its single-source result is not a
-reservation, obligation, payout instruction or public API. If a source cannot cover the requested
-unit amounts, it reports insufficient source capacity; allocating a single unit across sources belongs
-to the later reservation/coordinator work. No delivery policy is assumed when the authority is absent.
+purchase-time charge and an injected protected policy decision. Private single- and multi-source
+advisories are not a reservation, obligation, payout instruction or public API. The multi-source
+planner orders verified sources and item ordinals deterministically, may split an original unit across
+sources and enforces aggregate source/order limits in its snapshot. Persisting all source slices,
+capacity fences and attempt intent remains the separate atomic reservation operation. No delivery
+policy is assumed when the authority is absent.
 Correction advisory arithmetic is isolated from merchandise ordinals. No new `refundAttempts` writer,
 status transition, collection or provider interaction is enabled by this advisory.
 

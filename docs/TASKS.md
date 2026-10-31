@@ -132,12 +132,12 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |           6 |     0 |           0 |       7 |         0 |      9 |        0 |
 | 07 — Payment Integration and Verification     |      18 |           3 |     0 |           0 |       0 |         0 |     15 |        0 |
-| 08 — Returns and Refunds                      |      19 |          13 |     0 |           0 |       5 |         0 |      1 |        0 |
+| 08 — Returns and Refunds                      |      19 |          11 |     0 |           0 |       7 |         0 |      1 |        0 |
 | 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       0 |         0 |      1 |        1 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **89** | **0** | **0** | **12** | **0** | **107** | **2** |
+| **Total** | **210** | **87** | **0** | **0** | **14** | **0** | **107** | **2** |
 
 ## 4. Milestone tracker
 
@@ -1470,22 +1470,22 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence:** [Local advisory/state validation, actual tests and remaining work](./evidence/P08-005-006-local-refund-advisory.md). Prerequisites and independent acceptance remain pending; no reservation, attempt writer or payout enabled.
 
 - [ ] **P08-007 — Atomically reserve eligible collected refund balance**\
-  **Status:** `Not Started` · **Area:** Backend/refunds\
+  **Status:** `Blocked` · **Area:** Backend/refunds\
   **Stage:** `Backend`\
   **Sources:** FR-18\
   **Depends on:** `P08-006`\
   **Deliverable:** Reserve refundable capacity before payout and guard against concurrent attempts.\
   **Acceptance:** Pending+completed commitments never exceed independently verified collections at either source-collection or order level; duplicate-collection refunds do not consume merchandise quantity entitlement.\
-  **Evidence to attach:** Parallel partial-refund tests.
+  **Evidence:** [Separate local planning/transport, tests and outstanding prerequisites](./evidence/P08-007-008-local-refund-planning-provider.md). No reservation, durable payout attempt, executor or sandbox acceptance is implied.
 
 - [ ] **P08-008 — Implement supported gateway payout requests and references**\
-  **Status:** `Not Started` · **Area:** Backend/refunds\
+  **Status:** `Blocked` · **Area:** Backend/refunds\
   **Stage:** `Backend`\
   **Sources:** FR-18; FR-33\
   **Depends on:** `P08-007`, `P07-001`\
   **Deliverable:** Use original bank_tran_id and supported provider API; record refund identifiers and attempt states.\
   **Acceptance:** Provider acceptance leaves refund Processing until independently verified payout.\
-  **Evidence to attach:** Sandbox refund-init contract tests.
+  **Evidence:** [Separate local planning/transport, tests and outstanding prerequisites](./evidence/P08-007-008-local-refund-planning-provider.md). No reservation, durable payout attempt, executor or sandbox acceptance is implied.
 
 - [ ] **P08-009 — Implement refund-status verification/retry/investigation**\
   **Status:** `Not Started` · **Area:** Backend/jobs\
@@ -2566,3 +2566,5 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **31 October 2026 — P08-003/004 local physical return work:** Continued P08-003 and moved P08-004 Not Started → In Progress → Blocked. Added single partial/full receipt, inspection and atomic resellable ordinal stock restoration with current-admin and replay guards. [Scope, observed verification and remaining work](./evidence/P08-003-004-local-return-inspection.md). Additional receipt batches, partial-case resolution, accepted prerequisites and real HTTP/policy integration remain outstanding. Overall: 210 tasks, 107 Done, 91 Not Started, 10 Blocked, 2 Deferred.
 
 **31 October 2026 — P08-005/006 local refund work:** Each Not Started → In Progress → Blocked under the owner-requested local batch. Added transient attempt-state validation and transaction-scoped, single-source refund advisory from claim/order/verified funding snapshots. [Separate local outcomes, tests and remaining work](./evidence/P08-005-006-local-refund-advisory.md). Full attempt persistence, multi-source allocation, reservation, payout, accepted prerequisites and independent reviews remain outstanding. Overall: 210 tasks, 107 Done, 89 Not Started, 12 Blocked, 2 Deferred.
+
+**31 October 2026 — P08-007/008 local planning and transport:** Each Not Started → In Progress → Blocked. Added nonbinding, deterministic multi-source claim/order/verified-collection allocation and narrowly validated SSLCOMMERZ refund-initiation transport. [Observed verification and remaining gates](./evidence/P08-007-008-local-refund-planning-provider.md). Atomic reservation/durable attempts, provider-backed sandbox, accepted prerequisites and independent reviews remain outstanding. Overall: 210 tasks, 107 Done, 87 Not Started, 14 Blocked, 2 Deferred.

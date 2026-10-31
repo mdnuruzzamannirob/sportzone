@@ -3,6 +3,7 @@ import { Types } from 'mongoose'
 import {
   calculateCorrectionRefund,
   calculateMerchandiseRefund,
+  planMultiSourceMerchandiseRefund,
 } from '../../src/modules/refunds/refund-calculation.service.js'
 import { refundAttemptFact } from '../../src/modules/refunds/refund-attempt.schema.js'
 const id = () => new Types.ObjectId().toHexString()
@@ -240,4 +241,115 @@ describe('transient payout attempt facts', () => {
     )
     expect(refundAttemptFact.safeParse({ ...gateway(), provider: 'manual' }).success).toBe(false)
   })
+})
+
+describe('private multi-source refund allocation plan', () => {
+  const sourceA = '000000000000000000000001',
+    sourceB = '000000000000000000000002'
+  function input() {
+    const fixture = make()
+    getLine(fixture).quantity = 3
+    const { source, ...value } = fixture
+    void source
+    return {
+      ...value,
+      sources: [
+        { sourceCollectionId: sourceB, ...capacity(80, 10, 0) },
+        { sourceCollectionId: sourceA, ...capacity(50, 10, 0) },
+      ],
+    }
+  }
+  it('splits a unit across sources in stable order with exact integer sums', () => {
+    const plan = planMultiSourceMerchandiseRefund(input())
+    expect(plan.status).toBe('advisory')
+    if (plan.status !== 'advisory') throw new Error('Expected plan')
+    expect(plan.amountPoisha).toBe(101)
+    expect(plan.slices.map((s) => [s.sourceCollectionId, s.amountPoisha])).toEqual([
+      [sourceA, 40],
+      [sourceB, 61],
+    ])
+    expect(plan.slices[0]?.items[0]?.unitAmounts).toEqual([
+      { ordinal: 1, amountPoisha: 34 },
+      { ordinal: 2, amountPoisha: 6 },
+    ])
+    expect(plan.slices[1]?.items[0]?.unitAmounts).toEqual([
+      { ordinal: 2, amountPoisha: 28 },
+      { ordinal: 3, amountPoisha: 33 },
+    ])
+    expect(
+      planMultiSourceMerchandiseRefund({ ...input(), sources: input().sources.reverse() }),
+    ).toEqual(plan)
+  })
+  it('separately allocates approved delivery and never exceeds a source', () => {
+    const value = input()
+    value.delivery.requestedPoisha = 9
+    value.delivery.approvedByPolicy = true
+    const plan = planMultiSourceMerchandiseRefund(value)
+    if (plan.status !== 'advisory') throw new Error('Expected plan')
+    expect(plan.amountPoisha).toBe(110)
+    expect(
+      plan.slices.map((s) => [s.merchandiseAmountPoisha, s.deliveryAmountPoisha, s.amountPoisha]),
+    ).toEqual([
+      [40, 0, 40],
+      [61, 9, 70],
+    ])
+  })
+  it('returns insufficient when total source or order capacity cannot fund the full request', () => {
+    const value = input()
+    value.sources[0] = { sourceCollectionId: sourceB, ...capacity(60, 10) }
+    expect(planMultiSourceMerchandiseRefund(value)).toMatchObject({
+      status: 'insufficient_collected_balance',
+      sourceAvailablePoisha: 90,
+    })
+    value.sources[0] = { sourceCollectionId: sourceB, ...capacity(80, 10) }
+    value.order = capacity(100)
+    expect(planMultiSourceMerchandiseRefund(value)).toMatchObject({
+      status: 'insufficient_collected_balance',
+      orderAvailablePoisha: 100,
+    })
+  })
+  it('rejects duplicate sources, inconsistent balances and overflow', () => {
+    const value = input()
+    value.sources[0] = { sourceCollectionId: sourceA, ...capacity(20) }
+    expect(() => planMultiSourceMerchandiseRefund(value)).toThrow()
+    value.sources[0] = { sourceCollectionId: sourceB, ...capacity(1, 2) }
+    expect(() => planMultiSourceMerchandiseRefund(value)).toThrow()
+    value.sources[0] = { sourceCollectionId: sourceB, ...capacity(Number.MAX_SAFE_INTEGER) }
+    expect(() => planMultiSourceMerchandiseRefund(value)).toThrow()
+  })
+})
+it('multi-source advisory conserves every original unit across many capacity splits', () => {
+  for (let split = 1; split <= 100; split++) {
+    const fixture = make()
+    getLine(fixture).quantity = 3
+    const { source, ...base } = fixture
+    void source
+    const first = '000000000000000000000001',
+      second = '000000000000000000000002'
+    const plan = planMultiSourceMerchandiseRefund({
+      ...base,
+      sources: [
+        { sourceCollectionId: first, ...capacity(split) },
+        { sourceCollectionId: second, ...capacity(101 - split) },
+      ],
+    })
+    if (plan.status !== 'advisory') throw new Error('Expected full capacity')
+    expect(plan.amountPoisha).toBe(101)
+    for (const [ordinal, expected] of [
+      [1, 34],
+      [2, 34],
+      [3, 33],
+    ]) {
+      const total = plan.slices
+        .flatMap((slice) => slice.items)
+        .flatMap((line) => line.unitAmounts)
+        .filter((unit) => unit.ordinal === ordinal)
+        .reduce((sum, unit) => sum + unit.amountPoisha, 0)
+      expect(total).toBe(expected)
+    }
+    for (const slice of plan.slices)
+      expect(slice.amountPoisha).toBeLessThanOrEqual(
+        slice.sourceCollectionId === first ? split : 101 - split,
+      )
+  }
 })
