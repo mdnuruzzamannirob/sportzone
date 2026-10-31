@@ -8,6 +8,14 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 31 October 2026 — CI scope and container-gate corrections
+
+- Prose-only changes now run repository/security checks without unnecessary application/browser builds;
+  executable API documentation retains backend coverage.
+- PR scope uses merge-base diffs and includes both sides of moves; unavailable revisions fall back to full checks.
+- Backend-only CI now enforces import boundaries. Affected image build/identity checks block the required CI job
+  and share implementation with manual container verification.
+
 ## 30 October 2026 — Guarded staging catalog operation
 
 - Added explicit reviewer-manifest transport for the independently approved additive catalog rollout

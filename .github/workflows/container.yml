@@ -167,28 +167,12 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-      - name: Build backend only
-        run: docker build --pull --file backend/Dockerfile --tag sportzone-backend:verify .
-      - name: Verify runtime identity and secret exclusion
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p test-results
-          image=sportzone-backend:verify
-          test "$(docker image inspect --format '{{.Config.User}}' "$image")" = node
-          docker run --rm --entrypoint node "$image" --input-type=module -e '
-            import { existsSync, readdirSync } from "node:fs";
-            for (const path of ["/app/.env", "/app/backend/.env", "/app/.git", "/app/admin", "/app/storefront", "/app/backend/src"]) {
-              if (existsSync(path)) process.exit(1);
-            }
-            for (const dir of ["/app", "/app/backend"]) {
-              if (readdirSync(dir).some(name => name.startsWith(".env"))) process.exit(1);
-            }
-            if (!existsSync("/app/backend/dist/server.js")) process.exit(1);
-            if (process.getuid() === 0) process.exit(1);
-          '
-          docker image inspect --format 'Image={{.Id}} User={{.Config.User}} Workdir={{.Config.WorkingDir}}' "$image" > test-results/container.txt
-          echo 'Build and limited runtime inventory verified; no hosted DB, health, provider, OS scan or deployment acceptance.' >> test-results/container.txt
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Build and inspect backend image
+        run: node scripts/ci/container.mjs
       - name: Preserve verification record
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:

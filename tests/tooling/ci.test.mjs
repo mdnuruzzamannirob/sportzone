@@ -13,7 +13,7 @@ import {
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import test from 'node:test'
-import { affectedScopes } from '../../scripts/ci/affected.mjs'
+import { affectedScopes, changedPaths, containerInputsChanged } from '../../scripts/ci/affected.mjs'
 import { baseChecks, inspectRepository, workspacePlan } from '../../scripts/ci/check-repository.mjs'
 import { ciPlan, scopeNames } from '../../scripts/ci/plan.mjs'
 import { auditResult, safeFindings } from '../../scripts/ci/security-policy.mjs'
@@ -56,7 +56,9 @@ function fixture(t) {
   for (const name of ['storefront', 'admin', 'backend']) {
     put(`${name}/package.json`, { name, private: true })
     config[name] = {
-      ...(name === 'backend' ? { rootChecks: ['test:unit', 'format:backend'] } : {}),
+      ...(name === 'backend'
+        ? { rootChecks: ['test:unit', 'lint:boundaries', 'format:backend'] }
+        : {}),
       state: 'manifest-only',
       ownerTask: 'P02-001',
       checks: baseChecks,
@@ -328,7 +330,7 @@ test('CI-20: unknown scope fails and preserves a failure report', (t) => {
 })
 test('affected checks isolate backend, including accompanying documentation', () => {
   assert.deepEqual(affectedScopes(['backend/src/server.ts', 'docs/API.md']), {
-    scope: 'backend,supply-chain',
+    scope: 'backend,repository,supply-chain',
     browser: false,
   })
   for (const paths of [
@@ -496,4 +498,114 @@ test('CI-28: smoke, backend integration and contract checks cannot disappear fro
     assert.throws(() => ciPlan(root), new RegExp(`Missing required ${name} check: ${check}`))
     config[name].checks = previous
   }
+})
+
+test('documentation-only checks exclude application builds and browsers; API contracts retain backend coverage', (t) => {
+  const { root } = activeFixture(t)
+  const result = affectedScopes(['docs/evidence/example.md', 'CHANGELOG.md'])
+  assert.deepEqual(result, { scope: 'repository,supply-chain', browser: false })
+  const commands = ciPlan(root, result.scope.split(',')).flatMap((scope) => scope.checks)
+  assert.ok(commands.every((args) => !args.some((arg) => arg.startsWith('--workspace='))))
+  assert.ok(!commands.some((args) => args.includes('test:ui')))
+  assert.deepEqual(affectedScopes(['docs/API.md']), {
+    scope: 'backend,repository,supply-chain',
+    browser: false,
+  })
+  const backend = ciPlan(root, ['backend']).flatMap((scope) => scope.checks)
+  assert.ok(backend.some((args) => args.join(' ') === 'run lint:boundaries'))
+})
+
+test('backend-only inventory cannot drop its mandatory import-boundary check', (t) => {
+  const { root, config, put } = activeFixture(t)
+  config.backend.rootChecks = ['test:unit', 'format:backend']
+  put('ci-workspaces.json', config)
+  assert.throws(() => ciPlan(root, ['backend']), /Missing backend root checks/)
+})
+
+function gitFixtureCommit(root, message) {
+  for (const args of [
+    ['add', '.'],
+    [
+      '-c',
+      'user.name=CI fixture',
+      '-c',
+      'user.email=fixture@example.invalid',
+      'commit',
+      '--quiet',
+      '-m',
+      message,
+    ],
+  ]) {
+    const child = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8' })
+    assert.equal(child.status, 0, child.stderr)
+  }
+  return spawnSync('git', ['-C', root, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).stdout.trim()
+}
+
+test('PR diff uses its merge base and cross-workspace renames check both owners', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/moved.ts', 'export const value = 1\n')
+  const base = gitFixtureCommit(root, 'baseline')
+  assert.equal(spawnSync('git', ['-C', root, 'checkout', '-qb', 'feature']).status, 0)
+  put('backend/src/feature.ts', 'export const feature = true\n')
+  const head = gitFixtureCommit(root, 'backend feature')
+  assert.equal(spawnSync('git', ['-C', root, 'checkout', '--detach', base]).status, 0)
+  put('admin/src/unrelated.ts', 'export const unrelated = true\n')
+  const advancedBase = gitFixtureCommit(root, 'unrelated base advance')
+  assert.deepEqual(changedPaths(advancedBase, head, 'pull_request', root), [
+    'backend/src/feature.ts',
+  ])
+  assert.ok(changedPaths(advancedBase, head, 'push', root).includes('admin/src/unrelated.ts'))
+  assert.equal(spawnSync('git', ['-C', root, 'checkout', '--detach', head]).status, 0)
+  put('admin/src/moved.ts', 'export const value = 1\n')
+  assert.equal(spawnSync('git', ['-C', root, 'rm', 'backend/src/moved.ts']).status, 0)
+  const moved = gitFixtureCommit(root, 'cross-workspace move')
+  assert.deepEqual(changedPaths(head, moved, 'push', root), [
+    'admin/src/moved.ts',
+    'backend/src/moved.ts',
+  ])
+  assert.ok(affectedScopes(changedPaths(head, moved, 'push', root)).scope.includes('backend'))
+  assert.equal(affectedScopes(changedPaths(head, moved, 'push', root)).browser, true)
+})
+
+test('missing diff revisions conservatively execute full checks instead of failing scope selection', (t) => {
+  const { root } = fixture(t)
+  const output = join(root, 'github-output')
+  const head = spawnSync('git', ['-C', root, 'rev-parse', 'HEAD'], {
+    encoding: 'utf8',
+  }).stdout.trim()
+  const result = spawnSync(process.execPath, [resolve('scripts/ci/affected.mjs')], {
+    cwd: root,
+    encoding: 'utf8',
+    env: {
+      CI_EVENT: 'push',
+      CI_BASE_SHA: 'f'.repeat(40),
+      CI_HEAD_SHA: head,
+      GITHUB_OUTPUT: output,
+    },
+  })
+  assert.equal(result.status, 0, result.stderr)
+  assert.equal(readFileSync(output, 'utf8'), 'scope=all\nbrowser=true\ncontainer=true\n')
+  assert.ok(result.stdout.includes('::warning::'))
+})
+
+test('Docker inputs are blocking in the required CI job; manual provider checks stay explicit', () => {
+  for (const path of [
+    'backend/Dockerfile',
+    'backend/Dockerfile.dockerignore',
+    'backend/scripts/staging-inventory.mjs',
+    'package-lock.json',
+  ])
+    assert.equal(containerInputsChanged([path]), true)
+  assert.equal(containerInputsChanged(['docs/OPERATIONS.md']), false)
+  assert.equal(containerInputsChanged(['backend/tests/unit/example.test.ts']), false)
+  const required = readFileSync('.github/workflows/ci.yml', 'utf8')
+  assert.ok(required.includes("if: steps.affected.outputs.container == 'true'"))
+  assert.ok(required.includes('run: node scripts/ci/container.mjs'))
+  const workflow = readFileSync('.github/workflows/container.yml', 'utf8')
+  assert.ok(workflow.includes('run: node scripts/ci/container.mjs'))
+  assert.ok(workflow.includes('if: ${{ inputs.media_preflight || inputs.media_qualification }}'))
+  assert.ok(workflow.includes('if: ${{ inputs.catalog_preflight }}'))
+  assert.ok(workflow.includes('cancel-in-progress: false'))
+  assert.ok(workflow.includes('permissions:\n  contents: read'))
 })

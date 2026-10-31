@@ -884,8 +884,8 @@ GitHub Actions runs one job named `CI required result`. A single locked install 
 browser and supply-chain groups in order. Each application builds once; browser checks reuse the two UI builds
 in the same job. No workflow generation, cross-job build transfer or report aggregation is required.
 
-The workflow selects affected scopes under Testing §15.1, retaining the stable required result. Browser engines install only for browser scopes. Manual dispatch and conservative fallbacks run the full inventory; integrated/release verification remains mandatory. Tasks records actual hosted evidence and acceptance. During development follow Testing §15.5 rather
-than repeatedly running the entire pipeline. A failed command stops the runner and fails the job; an interrupted
+The workflow selects affected scopes under Testing §15.1, retaining the stable required result. Prose-only changes retain repository/security checks without application builds; executable API documentation retains backend checks. Backend-only runs enforce import boundaries. PR merge-base diffs include both sides of cross-application moves, and unavailable diff revisions conservatively select full verification. Browser engines install only for browser scopes. Manual dispatch and conservative fallbacks run the full inventory; integrated/release verification remains mandatory. Tasks records actual hosted evidence and acceptance. During development follow Testing §15.5 rather
+than repeatedly running the entire pipeline. Affected Docker builds and runtime-image inventory run inside that same required job through `scripts/ci/container.mjs`; the manual image workflow reuses the check. No automatic provider/deployment activation is added. A failed command stops the runner and fails the job; an interrupted
 or cancelled job cannot satisfy the required successful check. Do not use `--if-present`, `continue-on-error`
 or passing placeholders. Preserve application/browser/replica-set coverage when simplifying tooling.
 

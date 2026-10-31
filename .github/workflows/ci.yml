@@ -38,6 +38,9 @@ jobs:
           CI_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: node scripts/ci/affected.mjs
+      - name: Verify affected backend image
+        if: steps.affected.outputs.container == 'true'
+        run: node scripts/ci/container.mjs
       - name: Install browser audit engines
         if: steps.affected.outputs.browser == 'true'
         run: npx --no-install playwright install --with-deps chromium firefox webkit
