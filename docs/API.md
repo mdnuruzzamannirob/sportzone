@@ -1416,7 +1416,10 @@ refund. Customers cannot select `sourceCollectionId`, refund amount, payout meth
 return must still be inspected before refund approval.
 
 Private local claim composition validates delivered ownership, the standard physical window and
-protected policy exceptions, and attaches scoped private Media ledger assets transactionally.
+protected policy exceptions, and attaches scoped private Media ledger assets transactionally. Private
+local receipt/inspection records a single partial or full receipt and atomically restores only inspected
+resellable units; full physical completion requires all approved units received and accepted. The API
+remains inactive, and partial-case follow-up is not yet implemented.
 These capabilities do not activate the planned HTTP operations above. Current session/guest proof,
 CSRF, canonical DTO/idempotency integration and prerequisite acceptance must precede public activation.
 

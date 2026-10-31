@@ -271,9 +271,9 @@ test('BACKEND-BOUNDARY-02: controllers and routes access models only through dom
   assert.deepEqual(checkBoundaries(root).errors, [])
 })
 
-test('RETURN-BOUNDARY-01: claims consume Orders and Media capabilities without persistence imports', (t) => {
+test('RETURN-BOUNDARY-01: claims consume Orders, Media and Inventory capabilities without persistence imports', (t) => {
   const { root, put } = fixture(t)
-  for (const owner of ['orders/order', 'media/media']) {
+  for (const owner of ['orders/order', 'media/media', 'inventory/inventory']) {
     put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
     put('backend/src/modules/returns/return.service.ts', `import "../${owner}.model.js"`)
     assert.ok(checkBoundaries(root).errors.some((e) => e.includes('private persistence')))

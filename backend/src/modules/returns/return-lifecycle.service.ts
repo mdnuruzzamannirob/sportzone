@@ -62,6 +62,9 @@ export function returnLifecycleService(
           (row.status === 'approved' &&
             row.claimType === 'physical_return' &&
             input.to === 'awaiting_return') ||
+          (row.status === 'inspected' &&
+            row.claimType === 'physical_return' &&
+            input.to === 'completed') ||
           (row.status === 'approved' && row.claimType === 'shortage' && input.to === 'completed')
         const now = clock()
         if (
@@ -74,6 +77,18 @@ export function returnLifecycleService(
           throw new ApiError('STATE_CONFLICT')
         if ((input.to === 'approved') !== Boolean(input.approvedItems))
           throw new ApiError('VALIDATION_FAILED')
+        if (
+          row.claimType === 'physical_return' &&
+          input.to === 'completed' &&
+          (!row.receivedAt ||
+            !row.inspectedAt ||
+            row.items.some(
+              (item) =>
+                !item.acceptedUnitOrdinals ||
+                item.acceptedUnitOrdinals.length !== item.approvedUnitOrdinals.length,
+            ))
+        )
+          throw new ApiError('BUSINESS_RULE_VIOLATION')
         if (
           input.approvedItems &&
           (input.approvedItems.length !== row.items.length ||

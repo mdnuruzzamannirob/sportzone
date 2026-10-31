@@ -8,6 +8,11 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 31 October 2026 — Private physical return inspection
+
+- Added local receipt/inspection and transactionally restocked only selected inspected resellable units, with ordinal fences and replay/race protection.
+- Extended explicit local/test validator upgrade; P08-003/004 remain Blocked on prerequisites, further receipt batches, partial-case resolution and integrated acceptance.
+
 ## 31 October 2026 — Private return eligibility and review
 
 - Added scoped delivered-order eligibility, inclusive seven-day physical window and protected policy exceptions.

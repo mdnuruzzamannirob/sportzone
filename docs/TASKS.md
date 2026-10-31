@@ -132,12 +132,12 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |           6 |     0 |           0 |       7 |         0 |      9 |        0 |
 | 07 — Payment Integration and Verification     |      18 |           3 |     0 |           0 |       0 |         0 |     15 |        0 |
-| 08 — Returns and Refunds                      |      19 |          16 |     0 |           0 |       2 |         0 |      1 |        0 |
+| 08 — Returns and Refunds                      |      19 |          15 |     0 |           0 |       3 |         0 |      1 |        0 |
 | 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       0 |         0 |      1 |        1 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **92** | **0** | **0** | **9** | **0** | **107** | **2** |
+| **Total** | **210** | **91** | **0** | **0** | **10** | **0** | **107** | **2** |
 
 ## 4. Milestone tracker
 
@@ -1443,13 +1443,13 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence:** [Separate local scope, actual checks and remaining gates](./evidence/P08-002-003-local-return-eligibility-lifecycle.md). Owner authorized local implementation/tests; full prerequisite, HTTP/policy and physical lifecycle integrations remain blocked. No task acceptance is inferred.
 
 - [ ] **P08-004 — Record receipt/inspection and resellable stock restoration**\
-  **Status:** `Not Started` · **Area:** Backend/inventory\
+  **Status:** `Blocked` · **Area:** Backend/inventory\
   **Stage:** `Backend`\
   **Sources:** FR-17; FR-13; FR-32\
   **Depends on:** `P08-003`\
   **Deliverable:** Require inspection to mark resellable quantities and atomically add physical stock.\
   **Acceptance:** Request/approval alone never restocks; duplicate receipt cannot double-add stock.\
-  **Evidence to attach:** Inspection/restock test.
+  **Evidence:** [Local receipt/inspection, stock and verification](./evidence/P08-003-004-local-return-inspection.md). Blocked on P08-003 acceptance, partial-receipt follow-up and integrated access; independent acceptance remains pending.
 
 - [ ] **P08-005 — Model refund obligations, attempts and commitments**\
   **Status:** `Not Started` · **Area:** Backend/refunds\
@@ -2562,3 +2562,5 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **30 October 2026 — P06-016/017 safe local work:** Not Started → Blocked after locally verified commerce outbox/templates and private delivery-exception/recovery/complaint capabilities. [Separate task scope, checks and remaining gates](./evidence/P06-016-017-commerce-delivery-support.md). Prerequisites P06-013/P06-011, real disposition/refund/support integration and qualified external acceptance remain unresolved; no task/milestone is self-approved. Overall: 210 tasks, 107 Done, 94 Not Started, 9 Blocked, 0 In Review.
 
 **31 October 2026 — P08-002/003 safe local work:** Each Not Started → In Progress → Blocked under explicit owner local-work selection. Added private delivered eligibility/window/exception authority, guarded review/partial release/shortage resolution and atomic scoped Media attachment. [Separate outcomes, actual verification and remaining work](./evidence/P08-002-003-local-return-eligibility-lifecycle.md). Full physical receipt/inspection/completion, ordinary HTTP/auth/CSRF integration and qualified policy/Media acceptance remain pending; no prerequisite or milestone waived. Overall: 210 tasks, 107 Done, 92 Not Started, 9 Blocked, 2 Deferred, 0 In Review. Current dashboard reconciled to existing P04-003/P09-011 Deferred statuses; their status and historical evidence were preserved.
+
+**31 October 2026 — P08-003/004 local physical return work:** Continued P08-003 and moved P08-004 Not Started → In Progress → Blocked. Added single partial/full receipt, inspection and atomic resellable ordinal stock restoration with current-admin and replay guards. [Scope, observed verification and remaining work](./evidence/P08-003-004-local-return-inspection.md). Additional receipt batches, partial-case resolution, accepted prerequisites and real HTTP/policy integration remain outstanding. Overall: 210 tasks, 107 Done, 91 Not Started, 10 Blocked, 2 Deferred.

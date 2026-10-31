@@ -1836,16 +1836,19 @@ pending request is **not** completed payout.
 After backend build, run `node --env-file=.env backend/scripts/bootstrap-returns.mjs` only against an
 owned local/test database. It creates the current private claim validator and declared indexes,
 refuses unknown drift and deployed environments, and enables no HTTP route. For an existing exact
-requested-only foundation validator, explicitly run the same command with `--lifecycle`; this additive
+requested-only foundation or review-only validator, explicitly run the same command with `--lifecycle`; this additive
 upgrade verifies indexes, preserves requests and can be repeated. Unknown drift requires investigation,
 not validator replacement. No command seeds policy sign-off or enables a public submission/approval route.
 
 Preserve return requests, order-item ordinal coverage, Media references and audit together during
 restore. Do not delete claims or reset ordinal coverage to release capacity. Review releases only
 unapproved units with zero refund commitments; shortages resolve without stock/payout effects.
-Physical receipt, inspection and completion remain disabled pending the owning integration. Keep
+Private receipt/inspection can atomically record a single partial/full receipt and resellable-only stock
+movement in local tests; complete a physical claim only when every approved unit has been received
+and accepted. Additional receipt batches, partial-case resolution and public activation remain disabled
+pending the owning integration. Reconcile claim ordinals, movement and variant stock together. Keep
 attached private evidence under existing Media retention/legal-hold rules; orphan maintenance must
-never delete referenced assets. An older requested-only binary cannot safely process upgraded
+never delete referenced assets. An older requested-only or review-only binary cannot safely process upgraded
 lifecycle records: retain the upgraded validator/data and restore a compatible binary, rather than
 downgrading history. Reconcile external effects separately after restore.
 

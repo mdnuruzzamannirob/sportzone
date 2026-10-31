@@ -678,7 +678,9 @@ shortage resolution without receipt/inspection/restock/payout, and physical comp
 Evidence attachment must bind private Media owner/order/type/item, reject duplicate/reused assets,
 and roll back claim/balance/ledger together. Reuse Media upload/type/size/scan, retrieval, retention
 and orphan-cleanup tests. Test exact-validator additive migration, preservation, repeated execution
-and unknown-drift refusal. No synthetic authorization/policy/provider fixture proves qualified
+and unknown-drift refusal. Physical receipt/inspection tests must check no restock before inspection,
+partial receipt and nonresellable units, full-only completion, same-key replay, competing inspections, wrong authority and
+shortage denial, plus atomic rollback of stock/ordinal/movement/claim on audit failure. No synthetic authorization/policy/provider fixture proves qualified
 policy, deployed private-media or public HTTP acceptance.
 
 Local lifecycle/COD tests use synthetic qualified-approval and protected evidence capabilities only.

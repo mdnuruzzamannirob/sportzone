@@ -1393,7 +1393,7 @@ no retry of an uncertain external transaction is presumed safe.
 | --- | --- | --- |
 | `orderId`! / `requestedBy`! | ObjectId / embedded | Authenticated user or verified scoped guest session |
 | `claimType`! | enum(`physical_return`,`shortage`) | Explicitly separate physical/non-physical processes |
-| `items[]`! | embedded[] | `{id,orderItemId,requestedQty,approvedQty?,protectedUnitOrdinals[],approvedUnitOrdinals[],reason,inspectionResult?,resellableQty?,evidenceRefs[]}`; approved ordinals subset of protected |
+| `items[]`! | embedded[] | `{id,orderItemId,requestedQty,approvedQty?,protectedUnitOrdinals[],approvedUnitOrdinals[],receivedUnitOrdinals?,inspectedUnitOrdinals?,acceptedUnitOrdinals?,resellableUnitOrdinals?,reason,inspectionReason?,inspectionResult?,resellableQty?,evidenceRefs[]}`; each successive ordinal set is a subset of its predecessor |
 | `status`! | enum(`requested`,`under_review`,`approved`,`awaiting_return`,`received`,`inspected`,`completed`,`rejected`) | Only valid paths allowed per claim type |
 | `requestedAt`! / `approvedAt`? / `receivedAt`? / `inspectedAt`? / `completedAt`? | Date | Stage proof, not derived from UI |
 | `eligibilitySnapshot`! | embedded | `{deliveredAt?,requestDeadlineAt?,policyVersion,exceptionBasis?}` |
@@ -1411,8 +1411,13 @@ ordinal namespace. A completed claim does not mean the payout has completed.
 
 The private local lifecycle persists `requested → under_review → approved → awaiting_return` for
 physical claims, and `requested → under_review → approved → completed` for shortages. Review may
-instead reject from `under_review`. Physical receipt, inspection, completion and restocking remain
-disabled until their owning inspected-stock workflow is integrated; no status shortcut is permitted.
+instead reject from `under_review`. Private local receipt and inspection extend the physical route through `received → inspected`.
+A single receipt records the received approved-unit subset and its reference; inspection records
+inspected, accepted and resellable subsets and a reason. Only resellable ordinals add physical
+stock, with one unique return movement per claim/item; ordinal restock fences, stock changes,
+claim CAS and audit commit atomically. Unreceived or nonaccepted units remain protected. Full physical completion is allowed only after every approved unit was received and accepted;
+partial or nonaccepted quantities remain protected. Additional receipt batches and partial-case
+resolution require their owning reviewed workflow. Public activation remains disabled.
 `approvedAt`, `completedAt`, `reviewedBy`, `decisionReason`, exact approved ordinals and revision CAS
 record decisions. Append-only audit identities record each from/to transition and the replay digest.
 Completion of a shortage resolves its approved ordinals without creating stock or a completed payout.
@@ -1436,7 +1441,7 @@ inside the transaction. Without that separately configured capability, evidence 
 
 Canonical models prohibit direct claim edits/deletion. Only the private lifecycle service writes
 through its guarded CAS and strict BSON validation. Explicit local/test bootstrap creates current
-validators/indexes; an explicit additive upgrade recognizes only the exact foundation validator,
+validators/indexes; an explicit additive upgrade recognizes only the exact foundation or review-only validator,
 checks indexes, preserves requests and refuses unknown drift. Runtime never provisions or repairs it.
 Restore claim requests, exact ordinal coverage, media references and audit consistently.
 

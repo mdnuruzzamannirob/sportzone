@@ -692,6 +692,55 @@ export function claimReviewQuantityAccess(connection: Connection) {
   }
 }
 
+// The caller must already hold the reviewed claim in this transaction. Only canonical
+// order snapshots and protected ordinals can authorize a physical return movement.
+export function claimRestockAccess(connection: Connection) {
+  const { orders, balances } = orderModels(connection)
+  return async (
+    session: ClientSession,
+    input: {
+      orderId: string
+      claimId: string
+      orderItemId: string
+      ordinals: number[]
+      operationKey: string
+    },
+  ) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyOrderPersistence(connection)
+    if (!input.ordinals.length || new Set(input.ordinals).size !== input.ordinals.length)
+      throw new ApiError('STATE_CONFLICT')
+    const order = await orders
+      .findOne({ _id: input.orderId, fulfillmentStatus: 'delivered' })
+      .session(session)
+    const item = order?.items.find((line) => line.id.toHexString() === input.orderItemId)
+    const row = await balances
+      .findOne({ orderId: input.orderId, orderItemId: input.orderItemId })
+      .session(session)
+    if (!item || !row || row.revision >= Number.MAX_SAFE_INTEGER)
+      throw new ApiError('STATE_CONFLICT')
+    const set: Record<string, unknown> = {}
+    for (const ordinal of input.ordinals) {
+      const unit = row.unitCoverage.find((u) => u.ordinal === ordinal)
+      if (
+        !unit ||
+        unit.claimId?.toHexString() !== input.claimId ||
+        unit.claimState !== 'protected' ||
+        unit.restockOperationKey
+      )
+        throw new ApiError('STATE_CONFLICT')
+      set[`unitCoverage.${ordinal - 1}.restockOperationKey`] = input.operationKey
+    }
+    const result = await balances.updateOne(
+      { _id: row._id, revision: row.revision },
+      { $set: set, $inc: { revision: 1 } },
+      { session },
+    )
+    if (result.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
+    return { variantId: item.variantId.toHexString() }
+  }
+}
+
 export function codCollectionOrderAccess(connection: Connection) {
   const { orders } = orderModels(connection)
   return async (session: ClientSession, orderId: string) => {

@@ -27,7 +27,7 @@ const ordinals = {
   uniqueItems: true,
   items: { ...integer, minimum: 1, maximum: 50 },
 }
-function validator(lifecycle: boolean) {
+function validator(lifecycle: boolean, physical = false) {
   return {
     $expr: {
       $and: [
@@ -46,13 +46,119 @@ function validator(lifecycle: boolean) {
                   },
                 ],
               },
-              { $or: [{ $ne: ['$status', 'completed'] }, { $eq: ['$claimType', 'shortage'] }] },
+              {
+                $or: [
+                  { $ne: ['$status', 'completed'] },
+                  { $eq: ['$claimType', 'shortage'] },
+                  ...(physical
+                    ? [
+                        {
+                          $and: [
+                            { $eq: ['$claimType', 'physical_return'] },
+                            { $eq: [{ $type: '$receivedAt' }, 'date'] },
+                            { $eq: [{ $type: '$inspectedAt' }, 'date'] },
+                            { $eq: [{ $type: '$receiptReference' }, 'string'] },
+                            { $gte: ['$inspectedAt', '$receivedAt'] },
+                            { $gte: ['$completedAt', '$inspectedAt'] },
+                            {
+                              $allElementsTrue: [
+                                {
+                                  $map: {
+                                    input: '$items',
+                                    as: 'i',
+                                    in: {
+                                      $setEquals: [
+                                        '$$i.approvedUnitOrdinals',
+                                        { $ifNull: ['$$i.acceptedUnitOrdinals', []] },
+                                      ],
+                                    },
+                                  },
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      ]
+                    : []),
+                ],
+              },
               {
                 $or: [
                   { $ne: ['$status', 'awaiting_return'] },
                   { $eq: ['$claimType', 'physical_return'] },
                 ],
               },
+              ...(physical
+                ? [
+                    {
+                      $or: [
+                        { $not: [{ $in: ['$status', ['received', 'inspected']] }] },
+                        { $eq: ['$claimType', 'physical_return'] },
+                      ],
+                    },
+                    {
+                      $or: [
+                        { $not: [{ $in: ['$status', ['received', 'inspected']] }] },
+                        {
+                          $and: [
+                            { $eq: [{ $type: '$receivedAt' }, 'date'] },
+                            { $gte: ['$receivedAt', '$approvedAt'] },
+                            { $eq: [{ $type: '$receiptReference' }, 'string'] },
+                          ],
+                        },
+                      ],
+                    },
+                    {
+                      $or: [
+                        { $ne: ['$status', 'inspected'] },
+                        {
+                          $and: [
+                            { $eq: [{ $type: '$inspectedAt' }, 'date'] },
+                            { $gte: ['$inspectedAt', '$receivedAt'] },
+                          ],
+                        },
+                      ],
+                    },
+                    {
+                      $allElementsTrue: [
+                        {
+                          $map: {
+                            input: '$items',
+                            as: 'i',
+                            in: {
+                              $and: [
+                                {
+                                  $setIsSubset: [
+                                    { $ifNull: ['$$i.receivedUnitOrdinals', []] },
+                                    '$$i.approvedUnitOrdinals',
+                                  ],
+                                },
+                                {
+                                  $setIsSubset: [
+                                    { $ifNull: ['$$i.inspectedUnitOrdinals', []] },
+                                    { $ifNull: ['$$i.receivedUnitOrdinals', []] },
+                                  ],
+                                },
+                                {
+                                  $setIsSubset: [
+                                    { $ifNull: ['$$i.acceptedUnitOrdinals', []] },
+                                    { $ifNull: ['$$i.inspectedUnitOrdinals', []] },
+                                  ],
+                                },
+                                {
+                                  $setIsSubset: [
+                                    { $ifNull: ['$$i.resellableUnitOrdinals', []] },
+                                    { $ifNull: ['$$i.acceptedUnitOrdinals', []] },
+                                  ],
+                                },
+                              ],
+                            },
+                          },
+                        },
+                      ],
+                    },
+                  ]
+                : []),
               {
                 $or: [
                   { $eq: ['$status', 'requested'] },
@@ -66,7 +172,18 @@ function validator(lifecycle: boolean) {
               },
               {
                 $or: [
-                  { $not: [{ $in: ['$status', ['approved', 'awaiting_return', 'completed']] }] },
+                  {
+                    $not: [
+                      {
+                        $in: [
+                          '$status',
+                          physical
+                            ? ['approved', 'awaiting_return', 'received', 'inspected', 'completed']
+                            : ['approved', 'awaiting_return', 'completed'],
+                        ],
+                      },
+                    ],
+                  },
                   {
                     $and: [
                       { $eq: [{ $type: '$approvedAt' }, 'date'] },
@@ -145,6 +262,15 @@ function validator(lifecycle: boolean) {
               requestedQty: { ...integer, minimum: 1, maximum: 50 },
               protectedUnitOrdinals: { ...ordinals, minItems: 1 },
               approvedUnitOrdinals: { ...ordinals, maxItems: lifecycle ? 50 : 0 },
+              ...(physical
+                ? {
+                    receivedUnitOrdinals: ordinals,
+                    inspectedUnitOrdinals: ordinals,
+                    acceptedUnitOrdinals: ordinals,
+                    resellableUnitOrdinals: ordinals,
+                    inspectionReason: text(2000),
+                  }
+                : {}),
               reason: text(2000),
               evidenceRefs: {
                 bsonType: 'array',
@@ -166,11 +292,37 @@ function validator(lifecycle: boolean) {
         },
         status: {
           enum: lifecycle
-            ? ['requested', 'under_review', 'approved', 'awaiting_return', 'completed', 'rejected']
+            ? physical
+              ? [
+                  'requested',
+                  'under_review',
+                  'approved',
+                  'awaiting_return',
+                  'received',
+                  'inspected',
+                  'completed',
+                  'rejected',
+                ]
+              : [
+                  'requested',
+                  'under_review',
+                  'approved',
+                  'awaiting_return',
+                  'completed',
+                  'rejected',
+                ]
             : ['requested'],
         },
         ...(lifecycle
-          ? { approvedAt: date, completedAt: date, reviewedBy: oid, decisionReason: text(2000) }
+          ? {
+              approvedAt: date,
+              completedAt: date,
+              reviewedBy: oid,
+              decisionReason: text(2000),
+              ...(physical
+                ? { receivedAt: date, inspectedAt: date, receiptReference: text(2000) }
+                : {}),
+            }
           : {}),
         requestedAt: date,
         eligibilitySnapshot: object(
@@ -203,7 +355,8 @@ function validator(lifecycle: boolean) {
   }
 }
 export const foundationReturnValidator = validator(false)
-export const returnValidator = validator(true)
+export const reviewReturnValidator = validator(true)
+export const returnValidator = validator(true, true)
 export async function verifyReturnPersistence(connection: Connection) {
   const row = await connection.db
     ?.listCollections({ name: 'returnRequests' }, { nameOnly: false })
@@ -250,7 +403,10 @@ export async function upgradeReturnLifecyclePersistence(connection: Connection) 
     await verifyReturnPersistence(connection)
     return
   }
-  if (!isDeepStrictEqual(row.options?.validator, foundationReturnValidator))
+  if (
+    !isDeepStrictEqual(row.options?.validator, foundationReturnValidator) &&
+    !isDeepStrictEqual(row.options?.validator, reviewReturnValidator)
+  )
     throw new Error('Unknown return validator')
   await verifyDeclaredIndexes(returnModel(connection))
   await connection.db.command({

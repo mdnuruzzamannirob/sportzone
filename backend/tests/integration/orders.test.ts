@@ -905,8 +905,12 @@ it('return lifecycle local: raw invalid approved ordinals and physical completio
   ).rejects.toThrow()
 })
 it('return lifecycle local: additive upgrade preserves requests, rejects drift and remains idempotent', async () => {
-  const { foundationReturnValidator, returnValidator, upgradeReturnLifecyclePersistence } =
-    await import('../../src/modules/returns/return.persistence.js')
+  const {
+    foundationReturnValidator,
+    reviewReturnValidator,
+    returnValidator,
+    upgradeReturnLifecyclePersistence,
+  } = await import('../../src/modules/returns/return.persistence.js')
   const f = await claimFixture(),
     body = f.command()
   await inTransaction(db.connection, (session) => f.service.create(session, body))
@@ -916,6 +920,9 @@ it('return lifecycle local: additive upgrade preserves requests, rejects drift a
   })
   await expect(verifyReturnPersistence(db.connection)).rejects.toThrow()
   await upgradeReturnLifecyclePersistence(db.connection)
+  await upgradeReturnLifecyclePersistence(db.connection)
+  expect((await returnModel(db.connection).findById(body.claimId))?.status).toBe('requested')
+  await db.connection.db?.command({ collMod: 'returnRequests', validator: reviewReturnValidator })
   await upgradeReturnLifecyclePersistence(db.connection)
   expect((await returnModel(db.connection).findById(body.claimId))?.status).toBe('requested')
   await db.connection.db?.command({ collMod: 'returnRequests', validator: {} })
