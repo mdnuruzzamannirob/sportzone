@@ -1455,7 +1455,10 @@ The private local refund advisory is not an HTTP operation or obligation. It rea
 verified collections and canonical claim/order snapshots in one transaction, and can deterministically
 plan unit amounts across sources. Public authorization, atomic reservation, durable attempt intent and
 execution remain separate work. The local SSLCOMMERZ initiation transport returns provider acceptance
-or uncertainty; neither establishes verified payout and no application executor is wired.
+or uncertainty; neither establishes verified payout and no application executor is wired. Its private
+status query emits only a matched, redacted provider report; `refunded` still needs qualified durable
+identity/amount/time verification, and `cancelled` remains under investigation. Manual evidence
+verification is likewise a private, read-only gate and does not record a completed payout.
 
 **RefundGroupInput (admin):**
 `{orderId,basis,basisRefId?,classification,requestedItems?:[{orderItemId,quantity}],deliveryChargeRequestedPoisha?,correctionCollectionId?,reason}`.

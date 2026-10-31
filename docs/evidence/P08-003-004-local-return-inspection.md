@@ -64,3 +64,9 @@ No test doubles establish real physical custody or deployed merchant/operator qu
 Initial repository lint found two Markdown table-column errors from unescaped command separators;
 corrected them and reran successfully. The missing-audit-index test fails before the mutation; a
 separate injected failure after stock and movement writes verified actual transaction rollback.
+
+**Boundary verification correction (31 October 2026):** The earlier focused `node --test` command
+reported the test file as passed without establishing that its matching fixture ran. On the later
+working revision, `node --test --test-isolation=none --test-name-pattern='RETURN-BOUNDARY|REFUND-BOUNDARY' tests/tooling/development.test.mjs`
+explicitly ran and passed the three named return/refund fixtures. This does not change the historical
+implementation or independent-acceptance status recorded above.

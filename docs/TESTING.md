@@ -690,7 +690,11 @@ Test deterministic multi-source unit splits, per-source/aggregate caps, duplicat
 delivery distribution and read-only snapshot behavior. A quote is not a reservation; reservation
 races and provider/manual payout verification remain separate. Mock gateway initiation tests verify
 exact references/amount, malformed and uncertain responses, redaction, no retry, and no provider call
-inside a transaction; they do not prove merchant sandbox support or a verified payout.
+inside a transaction; they do not prove merchant sandbox support or a verified payout. Status-report
+checks cover merchant/reference mismatch, missing/ambiguous reports, provider downtime, and no blind
+retry. Manual evidence checks cover current admin before and after verification, same-refund/source/
+attempt/amount binding, held source capacity, required consent, transfer time, redacted destinations,
+revocation and stale snapshots. These read-only checks do not establish a real source authority or payout.
 
 Local lifecycle/COD tests use synthetic qualified-approval and protected evidence capabilities only.
 Check missing approval denial, exact graph/shipment/coupon fencing, actual deadline projection from

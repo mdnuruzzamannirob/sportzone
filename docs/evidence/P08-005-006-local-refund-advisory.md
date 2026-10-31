@@ -69,3 +69,9 @@ the tested flat transient fact shape. Failed attempts are not counted as passing
 Not Run / Blocked: durable refund attempts, safe reservation/concurrency, actual payout/status proof,
 policy/legal approval, deployed payment/financial services, frontend, backend-stage or integrated
 release acceptance. Synthetic facts and a strict schema do not prove collection or payout by themselves.
+
+**Boundary verification correction (31 October 2026):** The earlier focused `node --test` command
+reported the test file as passed without establishing that its matching fixture ran. On the later
+working revision, `node --test --test-isolation=none --test-name-pattern='RETURN-BOUNDARY|REFUND-BOUNDARY' tests/tooling/development.test.mjs`
+explicitly ran and passed the three named return/refund fixtures. This does not change the historical
+implementation or independent-acceptance status recorded above.

@@ -304,6 +304,23 @@ test('REFUND-BOUNDARY-01: advisory uses claim, order and payment services, never
   }
 })
 
+test('REFUND-BOUNDARY-02: provider transport cannot depend on refund decisions or private auth', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/modules/refunds/refund-investigation.service.ts', 'export const investigate = 1')
+  put(
+    'backend/src/providers/sslcommerz/sslcommerz.client.ts',
+    'import "../../modules/refunds/refund-investigation.service.js"',
+  )
+  assert.ok(checkBoundaries(root).errors.some((e) => e.includes('provider transport')))
+  put('backend/src/providers/sslcommerz/sslcommerz.client.ts', 'export const transport = 1')
+  put('backend/src/modules/auth/auth.model.ts', 'export const privateModel = 1')
+  put(
+    'backend/src/modules/refunds/manual-payout-verification.service.ts',
+    'import "../auth/auth.model.js"',
+  )
+  assert.ok(checkBoundaries(root).errors.some((e) => e.includes('private persistence')))
+})
+
 test('BACKEND-BOUNDARY-03: shared technical helpers cannot import domain/configuration via barrels', (t) => {
   const { root, put } = fixture(t)
   put('backend/src/modules/orders/order.service.ts', 'export const service = 1')

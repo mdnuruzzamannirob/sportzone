@@ -86,3 +86,9 @@ Not Run / Blocked: qualified return-policy/legal sign-off, ordinary current-auth
 physical receipt/inspection/restoration/completion, external Media/scanner qualification, frontend,
 backend stage closeout and integrated acceptance. Existing Media fake-provider tests do not prove
 Cloudinary or antivirus deployment. No full task acceptance is requested while these gaps remain.
+
+**Boundary verification correction (31 October 2026):** The earlier focused `node --test` command
+reported the test file as passed without establishing that its matching fixture ran. On the later
+working revision, `node --test --test-isolation=none --test-name-pattern='RETURN-BOUNDARY|REFUND-BOUNDARY' tests/tooling/development.test.mjs`
+explicitly ran and passed the three named return/refund fixtures. This does not change the historical
+implementation or independent-acceptance status recorded above.

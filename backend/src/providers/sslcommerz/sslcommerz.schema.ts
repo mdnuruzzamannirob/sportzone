@@ -155,6 +155,18 @@ export const refundInitiationResponse = z.object({
   bank_tran_id: reference(80),
   refund_ref_id: reference(50),
 })
+export const refundStatusQuery = z.strictObject({
+  refundRefId: reference(50),
+  bankTranId: reference(80),
+})
+export const refundStatusResponse = z.object({
+  APIConnect: z.literal('DONE'),
+  store_id: reference(30).optional(),
+  status: z.enum(['refunded', 'processing', 'cancelled']),
+  bank_tran_id: reference(80),
+  refund_ref_id: reference(50),
+  refunded_on: reference(32).optional(),
+})
 export const transactionResponse = z
   .object({
     APIConnect: z.literal('DONE'),

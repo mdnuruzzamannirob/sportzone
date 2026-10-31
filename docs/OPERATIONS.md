@@ -1831,6 +1831,11 @@ pending request is **not** completed payout.
 | Refund initiation/timeout/unknown                       | Keep source balance reserved, verify payout outcome; no new blindly generated payout ID |
 | Confirmed refund payout                                 | Mark completed only with trusted evidence; separately report merchandise vs correction  |
 
+The private local refund status/evidence capabilities are not wired to an operational executor. A
+provider `refunded` report or syntactically valid manual evidence still requires the durable, qualified
+verification and transaction that binds the reserved obligation, source, attempt and payout evidence.
+A `cancelled` report or an unknown outcome remains under investigation; never retry on this report alone.
+
 #### Private claim persistence bootstrap
 
 After backend build, run `node --env-file=.env backend/scripts/bootstrap-returns.mjs` only against an
