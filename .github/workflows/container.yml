@@ -87,7 +87,7 @@ jobs:
       - name: Persist intent before external asset creation
         if: ${{ inputs.media_qualification }}
         id: qualification-intent
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: media-qualification-intent
           path: test-results/media-qualification.json
@@ -107,14 +107,14 @@ jobs:
         run: node backend/scripts/qualify-media.mjs --run test-results/media-qualification.json
       - name: Preserve qualification and cleanup result
         if: ${{ always() && inputs.media_qualification }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: media-qualification-result
           path: test-results/media-qualification.json
           if-no-files-found: error
       - name: Preserve sanitized preflight result
         if: ${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: media-preflight
           path: test-results/media-preflight.json
@@ -153,7 +153,7 @@ jobs:
         run: node backend/scripts/encrypt-operator-report.mjs test-results/catalog-private.json test-results/catalog-encrypted.json
       - name: Preserve encrypted operator report
         if: ${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: catalog-encrypted-report
           path: test-results/catalog-encrypted.json
@@ -174,7 +174,7 @@ jobs:
       - name: Build and inspect backend image
         run: node scripts/ci/container.mjs
       - name: Preserve verification record
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: backend-container-verification
           path: test-results/container.txt
