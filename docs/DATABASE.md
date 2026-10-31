@@ -1409,21 +1409,36 @@ either route, acquire **specific** `orderItemBalances.unitCoverage[].ordinal` cl
 nonapproved ordinals are released only when refund capacity is zero. Both physical and shortage claims share this exact
 ordinal namespace. A completed claim does not mean the payout has completed.
 
-The P08-001 foundation persists only `requested` claims; later eligibility/lifecycle/media tasks
-own additive state expansion and public activation. No public submission or policy approval is implied.
-`requestedBy` is `{type:'customer'|'guest',id:ObjectId}` from a trusted current authorization capability;
-`id` identifies the customer or verified guest session. Item IDs are server-generated. No evidence may
-be attached until the separately authorized private-media capability exists; both evidence arrays are
-empty in this foundation. Private ledger references, rather than arbitrary client URLs, will govern
-attachment. Request identity is server-assigned and duplicate IDs cannot protect capacity twice.
+The private local lifecycle persists `requested → under_review → approved → awaiting_return` for
+physical claims, and `requested → under_review → approved → completed` for shortages. Review may
+instead reject from `under_review`. Physical receipt, inspection, completion and restocking remain
+disabled until their owning inspected-stock workflow is integrated; no status shortcut is permitted.
+`approvedAt`, `completedAt`, `reviewedBy`, `decisionReason`, exact approved ordinals and revision CAS
+record decisions. Append-only audit identities record each from/to transition and the replay digest.
+Completion of a shortage resolves its approved ordinals without creating stock or a completed payout.
+Rejected and nonapproved ordinals are released only with zero refund commitments and no restock fact;
+resolved units stay unavailable. All request, balance, media-reference and audit effects share one transaction.
 
-The coordinator requires an existing outer transaction and a current eligibility/ownership capability;
-Orders selects available exact ordinals and updates its private balance by revision CAS. Request,
-ordinal protections and audit commit together, including multi-line rollback. Resolved, refunded,
-refund-held or restocked ordinals are excluded. Historical unit entitlement is never recalculated.
-Requested claim records reject mutation/deletion until an owning lifecycle implementation is reviewed.
-Explicit local/test bootstrap creates strict validators and indexes; runtime never provisions or
-repairs unknown drift. Existing order balances need no migration.
+`requestedBy` is `{type:'customer'|'guest',id:ObjectId}` from current trusted authorization;
+`id` identifies the customer or verified guest session. Orders supplies a scoped revision-fenced
+canonical delivered-state capability. Returns computes the inclusive seven-calendar-day physical
+window from delivery, preserving Bangladesh local time of day. A protected policy capability supplies
+policy version and qualifying exception basis; client overrides are forbidden. Shortage claims do
+not inherit an invented physical-return deadline. Public activation and qualified policy integration
+remain blocked on the owning prerequisites.
+
+Item IDs are server-generated. Each item may attach up to five distinct private Media ledger IDs;
+IDs cannot repeat across lines. Attachment binds owner, order, claim type and item, requires current
+Media authorization, clean nonexpired assets, and commits ledger references with the claim. Public
+URLs and caller-selected storage metadata are forbidden. Existing Media owns file validation,
+private retrieval, orphan cleanup and retention/legal holds; attachment performs no provider call
+inside the transaction. Without that separately configured capability, evidence submissions fail closed.
+
+Canonical models prohibit direct claim edits/deletion. Only the private lifecycle service writes
+through its guarded CAS and strict BSON validation. Explicit local/test bootstrap creates current
+validators/indexes; an explicit additive upgrade recognizes only the exact foundation validator,
+checks indexes, preserves requests and refuses unknown drift. Runtime never provisions or repairs it.
+Restore claim requests, exact ordinal coverage, media references and audit consistently.
 
 ### 9.2 `refunds` — `refunds`
 

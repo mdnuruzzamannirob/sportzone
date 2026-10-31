@@ -8,6 +8,13 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 31 October 2026 — Private return eligibility and review
+
+- Added scoped delivered-order eligibility, inclusive seven-day physical window and protected policy exceptions.
+- Added private partial approval/rejection, exact unit release, shortage resolution and atomic private Media evidence attachment.
+- Added strict lifecycle persistence, explicit additive local/test upgrade and race/replay/rollback/boundary checks.
+- P08-002/003 remain Blocked on prerequisites and remaining physical lifecycle, HTTP and qualified integration work; no release acceptance implied.
+
 ## 31 October 2026 — CI scope and container-gate corrections
 
 - Prose-only changes now run repository/security checks without unnecessary application/browser builds;

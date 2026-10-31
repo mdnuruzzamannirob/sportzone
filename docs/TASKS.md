@@ -128,16 +128,16 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 01 — Requirements Finalization and Planning | 24 | 0 | 0 | 0 | 0 | 0 | 24 | 0 |
 | 02 — UI/UX Design                             |      17 |           1 |     0 |           0 |       0 |         0 |     16 |        0 |
 | 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |     21 |        0 |
-| 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       1 |         0 |     12 |        0 |
+| 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       0 |         0 |     12 |        1 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |           6 |     0 |           0 |       7 |         0 |      9 |        0 |
 | 07 — Payment Integration and Verification     |      18 |           3 |     0 |           0 |       0 |         0 |     15 |        0 |
-| 08 — Returns and Refunds                      |      19 |          18 |     0 |           0 |       0 |         0 |      1 |        0 |
-| 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       1 |         0 |      1 |        0 |
+| 08 — Returns and Refunds                      |      19 |          16 |     0 |           0 |       2 |         0 |      1 |        0 |
+| 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       0 |         0 |      1 |        1 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **94** | **0** | **0** | **9** | **0** | **107** | **0** |
+| **Total** | **210** | **92** | **0** | **0** | **9** | **0** | **107** | **2** |
 
 ## 4. Milestone tracker
 
@@ -1425,22 +1425,22 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence:** [Separate acceptance checklist, ordinal races, rollback and bootstrap checks](./evidence/P07-018-P08-001-monitoring-claim-foundation.md). Private requested-claim foundation only; eligibility/lifecycle/media activation remain owning later tasks. Project-owner independent acceptance recorded on 30 October 2026.
 
 - [ ] **P08-002 — Validate delivered-order return eligibility and policy windows**\
-  **Status:** `Not Started` · **Area:** Backend/returns\
+  **Status:** `Blocked` · **Area:** Backend/returns\
   **Stage:** `Backend`\
   **Sources:** FR-17\
   **Depends on:** `P08-001`, `P06-011`\
   **Deliverable:** Enforce delivered status, development-baseline seven-day window and legally protected exceptions via approved policy.\
   **Acceptance:** Unsupported blanket rejection cannot override applicable rights; ineligible claims have clear reasons.\
-  **Evidence to attach:** Eligibility boundary tests.
+  **Evidence:** [Separate local scope, actual checks and remaining gates](./evidence/P08-002-003-local-return-eligibility-lifecycle.md). Owner authorized local implementation/tests; full prerequisite, HTTP/policy and physical lifecycle integrations remain blocked. No task acceptance is inferred.
 
 - [ ] **P08-003 — Implement separate return lifecycle with admin review**\
-  **Status:** `Not Started` · **Area:** Backend/returns\
+  **Status:** `Blocked` · **Area:** Backend/returns\
   **Stage:** `Backend`\
   **Sources:** FR-17; FR-32\
   **Depends on:** `P08-002`, `P06-015`\
   **Deliverable:** Implement Requested/Under Review/Approved/Awaiting Return/Received/Inspected/Completed, rejection history and customer-scoped supporting-image upload using a separately authorized media path.\
   **Acceptance:** Invalid transitions and unauthorized approval are blocked; physical returns cannot skip receipt/inspection; approved missing-item/shortage claims have a non-physical path without receipt/inspection/restock; optional evidence enforces type/size checks, verified customer or scoped guest authorization, private retrieval and safe orphan/retention cleanup.\
-  **Evidence to attach:** Return state/authorization and evidence-upload/access/cleanup tests.
+  **Evidence:** [Separate local scope, actual checks and remaining gates](./evidence/P08-002-003-local-return-eligibility-lifecycle.md). Owner authorized local implementation/tests; full prerequisite, HTTP/policy and physical lifecycle integrations remain blocked. No task acceptance is inferred.
 
 - [ ] **P08-004 — Record receipt/inspection and resellable stock restoration**\
   **Status:** `Not Started` · **Area:** Backend/inventory\
@@ -2560,3 +2560,5 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **30 October 2026 — P06-013/014 safe local work:** Each Not Started → In Progress → Blocked after local cancellation request/review/unpaid release and scoped historical order read APIs. Owner explicitly approved mandatory submission Idempotency-Key: “Idempotency-Key বাধ্যতামূলক করুন”. [Separate implementation/checks/remaining gates](./evidence/P06-013-014-cancellation-owned-reads.md). Passed 268 integration, 68 unit and 111 contract tests; 98 implemented/66 planned operations. Overall: 210 tasks, 107 Done, 96 Not Started, 7 Blocked, 0 In Review. Paid cancellation without real refund obligations remains denied; P06-011 and external acceptance are not waived.
 
 **30 October 2026 — P06-016/017 safe local work:** Not Started → Blocked after locally verified commerce outbox/templates and private delivery-exception/recovery/complaint capabilities. [Separate task scope, checks and remaining gates](./evidence/P06-016-017-commerce-delivery-support.md). Prerequisites P06-013/P06-011, real disposition/refund/support integration and qualified external acceptance remain unresolved; no task/milestone is self-approved. Overall: 210 tasks, 107 Done, 94 Not Started, 9 Blocked, 0 In Review.
+
+**31 October 2026 — P08-002/003 safe local work:** Each Not Started → In Progress → Blocked under explicit owner local-work selection. Added private delivered eligibility/window/exception authority, guarded review/partial release/shortage resolution and atomic scoped Media attachment. [Separate outcomes, actual verification and remaining work](./evidence/P08-002-003-local-return-eligibility-lifecycle.md). Full physical receipt/inspection/completion, ordinary HTTP/auth/CSRF integration and qualified policy/Media acceptance remain pending; no prerequisite or milestone waived. Overall: 210 tasks, 107 Done, 92 Not Started, 9 Blocked, 2 Deferred, 0 In Review. Current dashboard reconciled to existing P04-003/P09-011 Deferred statuses; their status and historical evidence were preserved.

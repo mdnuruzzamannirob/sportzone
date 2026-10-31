@@ -40,7 +40,15 @@ const schema = new Schema(
       ],
       required: true,
     },
-    status: { type: String, enum: ['requested'], required: true },
+    status: {
+      type: String,
+      enum: ['requested', 'under_review', 'approved', 'awaiting_return', 'completed', 'rejected'],
+      required: true,
+    },
+    approvedAt: Date,
+    completedAt: Date,
+    reviewedBy: Schema.Types.ObjectId,
+    decisionReason: { type: String, maxlength: 2000 },
     requestedAt: { type: Date, required: true, immutable: true },
     eligibilitySnapshot: {
       type: new Schema(

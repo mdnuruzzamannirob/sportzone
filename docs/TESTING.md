@@ -670,7 +670,16 @@ timestamps. Verify root activation and no provider/financial effect from schedul
 Claim foundation tests must race physical/shortage requests over the same canonical unit pool, exclude
 resolved/refunded/held units, reject caller-selected ordinals/duplicate lines, enforce transaction and
 current-authority boundaries, and roll back every line/request when audit or persistence fails.
-No synthetic authorization/eligibility fixture proves real return-window or private-media acceptance.
+Private return eligibility tests cover the exact inclusive seven-calendar-day boundary, expired and
+future delivery, protected exception basis, shortage without an invented physical deadline, wrong
+scope, invalid clocks, client overrides and transaction rollback. Review tests cover partial approval,
+rejection/release, held-balance denial, approve/reject races, idempotency conflicts, audit rollback,
+shortage resolution without receipt/inspection/restock/payout, and physical completion denial.
+Evidence attachment must bind private Media owner/order/type/item, reject duplicate/reused assets,
+and roll back claim/balance/ledger together. Reuse Media upload/type/size/scan, retrieval, retention
+and orphan-cleanup tests. Test exact-validator additive migration, preservation, repeated execution
+and unknown-drift refusal. No synthetic authorization/policy/provider fixture proves qualified
+policy, deployed private-media or public HTTP acceptance.
 
 Local lifecycle/COD tests use synthetic qualified-approval and protected evidence capabilities only.
 Check missing approval denial, exact graph/shipment/coupon fencing, actual deadline projection from

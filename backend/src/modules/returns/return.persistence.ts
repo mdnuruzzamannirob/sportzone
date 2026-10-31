@@ -27,99 +27,183 @@ const ordinals = {
   uniqueItems: true,
   items: { ...integer, minimum: 1, maximum: 50 },
 }
-export const returnValidator = {
-  $expr: {
-    $and: [
-      {
-        $eq: [
-          { $size: '$items' },
-          {
-            $size: {
-              $setUnion: [{ $map: { input: '$items', as: 'i', in: '$$i.orderItemId' } }, []],
-            },
-          },
-        ],
-      },
-      {
-        $eq: [
-          { $size: '$items' },
-          { $size: { $setUnion: [{ $map: { input: '$items', as: 'i', in: '$$i.id' } }, []] } },
-        ],
-      },
-      {
-        $allElementsTrue: [
-          {
-            $map: {
-              input: '$items',
-              as: 'i',
-              in: { $eq: ['$$i.requestedQty', { $size: '$$i.protectedUnitOrdinals' }] },
-            },
-          },
-        ],
-      },
-    ],
-  },
-  $jsonSchema: object(
-    {
-      _id: oid,
-      orderId: oid,
-      requestedBy: object({ type: { enum: ['customer', 'guest'] }, id: oid }, ['type', 'id']),
-      claimType: { enum: ['physical_return', 'shortage'] },
-      items: {
-        bsonType: 'array',
-        minItems: 1,
-        maxItems: 50,
-        items: object(
-          {
-            id: oid,
-            orderItemId: oid,
-            requestedQty: { ...integer, minimum: 1, maximum: 50 },
-            protectedUnitOrdinals: { ...ordinals, minItems: 1 },
-            approvedUnitOrdinals: { ...ordinals, maxItems: 0 },
-            reason: text(2000),
-            evidenceRefs: { bsonType: 'array', maxItems: 0 },
-          },
-          [
-            'id',
-            'orderItemId',
-            'requestedQty',
-            'protectedUnitOrdinals',
-            'approvedUnitOrdinals',
-            'reason',
-            'evidenceRefs',
-          ],
-        ),
-      },
-      status: { enum: ['requested'] },
-      requestedAt: date,
-      eligibilitySnapshot: object(
+function validator(lifecycle: boolean) {
+  return {
+    $expr: {
+      $and: [
+        ...(lifecycle
+          ? [
+              {
+                $allElementsTrue: [
+                  {
+                    $map: {
+                      input: '$items',
+                      as: 'i',
+                      in: {
+                        $setIsSubset: ['$$i.approvedUnitOrdinals', '$$i.protectedUnitOrdinals'],
+                      },
+                    },
+                  },
+                ],
+              },
+              { $or: [{ $ne: ['$status', 'completed'] }, { $eq: ['$claimType', 'shortage'] }] },
+              {
+                $or: [
+                  { $ne: ['$status', 'awaiting_return'] },
+                  { $eq: ['$claimType', 'physical_return'] },
+                ],
+              },
+              {
+                $or: [
+                  { $eq: ['$status', 'requested'] },
+                  {
+                    $and: [
+                      { $eq: [{ $type: '$reviewedBy' }, 'objectId'] },
+                      { $eq: [{ $type: '$decisionReason' }, 'string'] },
+                    ],
+                  },
+                ],
+              },
+              {
+                $or: [
+                  { $not: [{ $in: ['$status', ['approved', 'awaiting_return', 'completed']] }] },
+                  {
+                    $and: [
+                      { $eq: [{ $type: '$approvedAt' }, 'date'] },
+                      { $gte: ['$approvedAt', '$requestedAt'] },
+                      {
+                        $anyElementTrue: [
+                          {
+                            $map: {
+                              input: '$items',
+                              as: 'i',
+                              in: { $gt: [{ $size: '$$i.approvedUnitOrdinals' }, 0] },
+                            },
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+              {
+                $or: [
+                  { $ne: ['$status', 'completed'] },
+                  {
+                    $and: [
+                      { $eq: [{ $type: '$completedAt' }, 'date'] },
+                      { $gte: ['$completedAt', '$approvedAt'] },
+                    ],
+                  },
+                ],
+              },
+            ]
+          : []),
         {
-          policyVersion: text(100),
-          deliveredAt: date,
-          requestDeadlineAt: date,
-          exceptionBasis: text(2000),
+          $eq: [
+            { $size: '$items' },
+            {
+              $size: {
+                $setUnion: [{ $map: { input: '$items', as: 'i', in: '$$i.orderItemId' } }, []],
+              },
+            },
+          ],
         },
-        ['policyVersion'],
-      ),
-      revision: integer,
-      createdAt: date,
-      updatedAt: date,
+        {
+          $eq: [
+            { $size: '$items' },
+            { $size: { $setUnion: [{ $map: { input: '$items', as: 'i', in: '$$i.id' } }, []] } },
+          ],
+        },
+        {
+          $allElementsTrue: [
+            {
+              $map: {
+                input: '$items',
+                as: 'i',
+                in: { $eq: ['$$i.requestedQty', { $size: '$$i.protectedUnitOrdinals' }] },
+              },
+            },
+          ],
+        },
+      ],
     },
-    [
-      '_id',
-      'orderId',
-      'requestedBy',
-      'claimType',
-      'items',
-      'status',
-      'requestedAt',
-      'eligibilitySnapshot',
-      'revision',
-      'createdAt',
-      'updatedAt',
-    ],
-  ),
+    $jsonSchema: object(
+      {
+        _id: oid,
+        orderId: oid,
+        requestedBy: object({ type: { enum: ['customer', 'guest'] }, id: oid }, ['type', 'id']),
+        claimType: { enum: ['physical_return', 'shortage'] },
+        items: {
+          bsonType: 'array',
+          minItems: 1,
+          maxItems: 50,
+          items: object(
+            {
+              id: oid,
+              orderItemId: oid,
+              requestedQty: { ...integer, minimum: 1, maximum: 50 },
+              protectedUnitOrdinals: { ...ordinals, minItems: 1 },
+              approvedUnitOrdinals: { ...ordinals, maxItems: lifecycle ? 50 : 0 },
+              reason: text(2000),
+              evidenceRefs: {
+                bsonType: 'array',
+                maxItems: lifecycle ? 5 : 0,
+                uniqueItems: true,
+                items: oid,
+              },
+            },
+            [
+              'id',
+              'orderItemId',
+              'requestedQty',
+              'protectedUnitOrdinals',
+              'approvedUnitOrdinals',
+              'reason',
+              'evidenceRefs',
+            ],
+          ),
+        },
+        status: {
+          enum: lifecycle
+            ? ['requested', 'under_review', 'approved', 'awaiting_return', 'completed', 'rejected']
+            : ['requested'],
+        },
+        ...(lifecycle
+          ? { approvedAt: date, completedAt: date, reviewedBy: oid, decisionReason: text(2000) }
+          : {}),
+        requestedAt: date,
+        eligibilitySnapshot: object(
+          {
+            policyVersion: text(100),
+            deliveredAt: date,
+            requestDeadlineAt: date,
+            exceptionBasis: text(2000),
+          },
+          ['policyVersion'],
+        ),
+        revision: integer,
+        createdAt: date,
+        updatedAt: date,
+      },
+      [
+        '_id',
+        'orderId',
+        'requestedBy',
+        'claimType',
+        'items',
+        'status',
+        'requestedAt',
+        'eligibilitySnapshot',
+        'revision',
+        'createdAt',
+        'updatedAt',
+      ],
+    ),
+  }
 }
+export const foundationReturnValidator = validator(false)
+export const returnValidator = validator(true)
 export async function verifyReturnPersistence(connection: Connection) {
   const row = await connection.db
     ?.listCollections({ name: 'returnRequests' }, { nameOnly: false })
@@ -151,5 +235,29 @@ export async function initializeReturnPersistence(connection: Connection) {
   )
     throw new Error('Unknown return validator')
   await createDeclaredIndexes(returnModel(connection))
+  await verifyReturnPersistence(connection)
+}
+
+// Explicit local/test script owns this additive upgrade; ordinary startup never repairs drift.
+export async function upgradeReturnLifecyclePersistence(connection: Connection) {
+  if (!connection.db) throw new Error('Database unavailable')
+  const row = await connection.db
+    .listCollections({ name: 'returnRequests' }, { nameOnly: false })
+    .next()
+  if (row?.options?.validationLevel !== 'strict' || row.options?.validationAction !== 'error')
+    throw new Error('Unknown return validator')
+  if (isDeepStrictEqual(row.options?.validator, returnValidator)) {
+    await verifyReturnPersistence(connection)
+    return
+  }
+  if (!isDeepStrictEqual(row.options?.validator, foundationReturnValidator))
+    throw new Error('Unknown return validator')
+  await verifyDeclaredIndexes(returnModel(connection))
+  await connection.db.command({
+    collMod: 'returnRequests',
+    validator: returnValidator,
+    validationLevel: 'strict',
+    validationAction: 'error',
+  })
   await verifyReturnPersistence(connection)
 }

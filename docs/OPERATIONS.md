@@ -1831,14 +1831,23 @@ pending request is **not** completed payout.
 | Refund initiation/timeout/unknown                       | Keep source balance reserved, verify payout outcome; no new blindly generated payout ID |
 | Confirmed refund payout                                 | Mark completed only with trusted evidence; separately report merchandise vs correction  |
 
-#### Claim foundation bootstrap
+#### Private claim persistence bootstrap
 
 After backend build, run `node --env-file=.env backend/scripts/bootstrap-returns.mjs` only against an
-owned local/test database. It creates the strict requested-claim validator and declared indexes,
-refuses unknown drift and deployed environments, and enables no HTTP route. Preserve return requests,
-order-item ordinal coverage and audit together during restore. Do not delete a claim to release
-capacity; release/approval/refund/restock require their later owning workflows. No real policy,
-media evidence or customer submission is seeded.
+owned local/test database. It creates the current private claim validator and declared indexes,
+refuses unknown drift and deployed environments, and enables no HTTP route. For an existing exact
+requested-only foundation validator, explicitly run the same command with `--lifecycle`; this additive
+upgrade verifies indexes, preserves requests and can be repeated. Unknown drift requires investigation,
+not validator replacement. No command seeds policy sign-off or enables a public submission/approval route.
+
+Preserve return requests, order-item ordinal coverage, Media references and audit together during
+restore. Do not delete claims or reset ordinal coverage to release capacity. Review releases only
+unapproved units with zero refund commitments; shortages resolve without stock/payout effects.
+Physical receipt, inspection and completion remain disabled pending the owning integration. Keep
+attached private evidence under existing Media retention/legal-hold rules; orphan maintenance must
+never delete referenced assets. An older requested-only binary cannot safely process upgraded
+lifecycle records: retain the upgraded validator/data and restore a compatible binary, rather than
+downgrading history. Reconcile external effects separately after restore.
 
 Administrator payment reconcile requests are durable audit intents, not synchronous provider calls.
 Run the existing merchant-partitioned reconciliation worker to process them. Inspect canonical payment

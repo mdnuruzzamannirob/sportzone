@@ -4,6 +4,8 @@ import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { createAuditWriter } from '../audit/audit.service.js'
 import type { claimQuantityAccess } from '../orders/order.service.js'
+import type { MediaService } from '../media/media.service.js'
+import { verifyMediaPersistence } from '../media/media.service.js'
 import { returnModel } from './return.model.js'
 import { verifyReturnPersistence } from './return.persistence.js'
 import { claimAuthority, claimCommand } from './return.schema.js'
@@ -16,6 +18,7 @@ export function returnService(
     command: ReturnType<typeof claimCommand.parse>,
   ) => Promise<unknown>,
   clock: () => Date = () => new Date(),
+  evidence?: { attach: MediaService['attach']; credential?: string },
 ) {
   const model = returnModel(connection),
     audit = createAuditWriter(connection)
@@ -30,6 +33,49 @@ export function returnService(
       const selected = await quantities(session, input)
       const now = clock()
       if (!Number.isFinite(now.getTime())) throw new ApiError('STATE_CONFLICT')
+      const timing = authority.eligibilitySnapshot
+      if (timing.deliveredAt && now < timing.deliveredAt) throw new ApiError('STATE_CONFLICT')
+      if (timing.requestDeadlineAt && now > timing.requestDeadlineAt && !timing.exceptionBasis)
+        throw new ApiError('BUSINESS_RULE_VIOLATION', [
+          { field: 'orderId', code: 'RETURN_WINDOW_EXPIRED' },
+        ])
+      const evidenceIds: Types.ObjectId[][] = input.items.map(() => [])
+      const allAssets = input.items.flatMap((item) => item.evidenceAssetIds ?? [])
+      if (new Set(allAssets).size !== allAssets.length) throw new ApiError('VALIDATION_FAILED')
+      if (allAssets.length && !evidence) throw new ApiError('SERVICE_UNAVAILABLE')
+      if (allAssets.length) await verifyMediaPersistence(connection)
+      for (const [index, item] of input.items.entries()) {
+        for (const assetId of item.evidenceAssetIds ?? []) {
+          if (!evidence) throw new ApiError('SERVICE_UNAVAILABLE')
+          await evidence.attach(
+            evidence.credential,
+            assetId,
+            {
+              targetType: 'claim',
+              targetId: new Types.ObjectId(input.claimId),
+              slot: `item:${item.orderItemId}`,
+            },
+            session,
+            async (asset) => {
+              const ownerKind =
+                authority.requestedBy.type === 'customer' ? 'customer' : 'guest_order'
+              const ownerId =
+                authority.requestedBy.type === 'customer' ? authority.requestedBy.id : input.orderId
+              if (
+                asset.assetKind !== 'claim_evidence' ||
+                asset.access !== 'private' ||
+                asset.orderId?.toHexString() !== input.orderId ||
+                asset.claimType !== input.claimType ||
+                !asset.orderItemIds.some((id) => id.toHexString() === item.orderItemId) ||
+                asset.owner.kind !== ownerKind ||
+                asset.owner.principalId.toHexString() !== ownerId
+              )
+                throw new ApiError('FORBIDDEN')
+              evidenceIds[index]?.push(new Types.ObjectId(assetId))
+            },
+          )
+        }
+      }
       const row = new model({
         _id: new Types.ObjectId(input.claimId),
         orderId: new Types.ObjectId(input.orderId),
@@ -45,7 +91,7 @@ export function returnService(
           reason: item.reason,
           protectedUnitOrdinals: selected[index]?.ordinals,
           approvedUnitOrdinals: [],
-          evidenceRefs: [],
+          evidenceRefs: evidenceIds[index],
         })),
       })
       await row.save({ session })

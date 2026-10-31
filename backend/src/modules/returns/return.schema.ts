@@ -16,6 +16,11 @@ export const claimCommand = z.strictObject({
         orderItemId: claimId,
         quantity: z.int().min(1).max(50),
         reason: claimText,
+        evidenceAssetIds: z
+          .array(claimId)
+          .max(5)
+          .refine((ids) => new Set(ids).size === ids.length)
+          .optional(),
       }),
     )
     .min(1)

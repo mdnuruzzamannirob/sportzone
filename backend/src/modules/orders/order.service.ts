@@ -593,6 +593,105 @@ export function claimQuantityAccess(connection: Connection) {
   }
 }
 
+// Scope and revision fence belong to Orders; Returns never reads its private model.
+export function claimEligibilityOrderAccess(connection: Connection) {
+  const { orders } = orderModels(connection)
+  return async (
+    session: ClientSession,
+    orderId: string,
+    principal: import('../auth/checkout-access.service.js').OrderPrincipal,
+  ) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyOrderPersistence(connection)
+    if (principal.kind === 'guest_order' && principal.orderId !== orderId)
+      throw new ApiError('NOT_FOUND')
+    const row = await orders.findOneAndUpdate(
+      {
+        _id: orderId,
+        userId: principal.kind === 'customer' ? principal.userId : null,
+        revision: { $lt: Number.MAX_SAFE_INTEGER },
+      },
+      { $inc: { revision: 1 } },
+      { session, returnDocument: 'after' },
+    )
+    if (!row) throw new ApiError('NOT_FOUND')
+    return { status: row.fulfillmentStatus, deliveredAt: row.deliveredAt }
+  }
+}
+
+export function claimReviewQuantityAccess(connection: Connection) {
+  const { balances } = orderModels(connection)
+  return async (
+    session: ClientSession,
+    input: {
+      orderId: string
+      claimId: string
+      items: { orderItemId: string; protected: number[]; approved: number[] }[]
+      resolve: boolean
+    },
+  ) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyOrderPersistence(connection)
+    for (const item of input.items) {
+      const row = await balances
+        .findOne({ orderId: input.orderId, orderItemId: item.orderItemId })
+        .session(session)
+      if (
+        !row ||
+        row.revision >= Number.MAX_SAFE_INTEGER ||
+        new Set(item.protected).size !== item.protected.length ||
+        new Set(item.approved).size !== item.approved.length ||
+        item.approved.some((n) => !item.protected.includes(n))
+      )
+        throw new ApiError('STATE_CONFLICT')
+      const set: Record<string, unknown> = {}
+      let released = 0,
+        resolved = 0
+      for (const ordinal of item.protected) {
+        const unit = row.unitCoverage.find((u) => u.ordinal === ordinal)
+        if (
+          !unit ||
+          unit.claimId?.toHexString() !== input.claimId ||
+          unit.claimState !== 'protected'
+        )
+          throw new ApiError('STATE_CONFLICT')
+        const retained = item.approved.includes(ordinal)
+        if (
+          !retained &&
+          (unit.refundHeldPoisha || unit.refundCompletedPoisha || unit.restockOperationKey)
+        )
+          throw new ApiError('STATE_CONFLICT')
+        if (!retained) {
+          set[`unitCoverage.${ordinal - 1}.claimState`] = 'available'
+          released++
+        } else if (input.resolve) {
+          set[`unitCoverage.${ordinal - 1}.claimState`] = 'resolved'
+          resolved++
+        }
+      }
+      const unset = Object.fromEntries(
+        item.protected
+          .filter((n) => !item.approved.includes(n))
+          .map((n) => [`unitCoverage.${n - 1}.claimId`, '']),
+      )
+      const result = await balances.updateOne(
+        { _id: row._id, revision: row.revision },
+        {
+          $set: {
+            ...set,
+            activeClaimQty: row.activeClaimQty - released - resolved,
+            resolvedClaimQty: row.resolvedClaimQty + resolved,
+          },
+          ...(released ? { $unset: unset } : {}),
+          $inc: { revision: 1 },
+        },
+        { session },
+      )
+      if (result.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
+    }
+  }
+}
+
 export function codCollectionOrderAccess(connection: Connection) {
   const { orders } = orderModels(connection)
   return async (session: ClientSession, orderId: string) => {

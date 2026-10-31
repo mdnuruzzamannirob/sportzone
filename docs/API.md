@@ -1415,6 +1415,11 @@ the caller to the claim/cancellation workflow; **do not** invent a standalone `r
 refund. Customers cannot select `sourceCollectionId`, refund amount, payout method or internal unit ordinals. A physical
 return must still be inspected before refund approval.
 
+Private local claim composition validates delivered ownership, the standard physical window and
+protected policy exceptions, and attaches scoped private Media ledger assets transactionally.
+These capabilities do not activate the planned HTTP operations above. Current session/guest proof,
+CSRF, canonical DTO/idempotency integration and prerequisite acceptance must precede public activation.
+
 ### 13.2 Admin claim and return processing
 
 | Method | Path                                 | Access | Request → response                                                                          | FR  |

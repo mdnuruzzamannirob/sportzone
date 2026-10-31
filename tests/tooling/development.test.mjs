@@ -271,6 +271,24 @@ test('BACKEND-BOUNDARY-02: controllers and routes access models only through dom
   assert.deepEqual(checkBoundaries(root).errors, [])
 })
 
+test('RETURN-BOUNDARY-01: claims consume Orders and Media capabilities without persistence imports', (t) => {
+  const { root, put } = fixture(t)
+  for (const owner of ['orders/order', 'media/media']) {
+    put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
+    put('backend/src/modules/returns/return.service.ts', `import "../${owner}.model.js"`)
+    assert.ok(checkBoundaries(root).errors.some((e) => e.includes('private persistence')))
+    put(
+      `backend/src/modules/${owner}.service.ts`,
+      `import "./${owner.split('/')[1]}.model.js"; export const access = 1`,
+    )
+    put('backend/src/modules/returns/return.service.ts', `import "../${owner}.service.js"`)
+    assert.deepEqual(checkBoundaries(root).errors, [])
+  }
+  put('backend/src/modules/returns/return.model.ts', 'export const model = 1')
+  put('backend/src/modules/orders/order.service.ts', 'import "../returns/return.model.js"')
+  assert.ok(checkBoundaries(root).errors.some((e) => e.includes('private persistence')))
+})
+
 test('BACKEND-BOUNDARY-03: shared technical helpers cannot import domain/configuration via barrels', (t) => {
   const { root, put } = fixture(t)
   put('backend/src/modules/orders/order.service.ts', 'export const service = 1')
