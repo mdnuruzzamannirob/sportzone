@@ -4,11 +4,11 @@ import { workspacePlan } from './check-repository.mjs'
 
 export const scopeNames = [
   'repository',
+  'supply-chain',
   'storefront',
   'admin',
   'backend',
   'browser',
-  'supply-chain',
 ]
 
 const required = {
@@ -60,7 +60,9 @@ export function ciPlan(root, selected = scopeNames) {
         !Array.isArray(rootChecks) ||
         (name === 'backend' &&
           !selected.includes('repository') &&
-          !['test:unit', 'format:backend'].every((check) => rootChecks.includes(check)))
+          !['test:unit', 'lint:boundaries', 'format:backend'].every((check) =>
+            rootChecks.includes(check),
+          ))
       )
         throw new Error('Missing backend root checks')
       for (const check of rootChecks)

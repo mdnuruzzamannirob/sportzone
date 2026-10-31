@@ -8,6 +8,59 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 31 October 2026 — CI scope and container-gate corrections
+
+- Prose-only changes now run repository/security checks without unnecessary application/browser builds;
+  executable API documentation retains backend coverage.
+- PR scope uses merge-base diffs and includes both sides of moves; unavailable revisions fall back to full checks.
+- Patched transitive follow-redirects 1.16.1 → 1.16.2 for GHSA-mrwp-f3q8-3g9p; security gates now run
+  before expensive application suites and no advisory exception was added.
+- Removed duplicate feature push/PR validation; main/tag pushes and manual runs retain full checks.
+- Backend-only CI now enforces import boundaries. Affected image build/identity checks block the required CI job
+  and share implementation with manual container verification.
+
+## 30 October 2026 — Guarded staging catalog operation
+
+- Added explicit reviewer-manifest transport for the independently approved additive catalog rollout
+  on the existing free staging image, reusing canonical CLI/digest safeguards and encrypted results.
+- Healthcheck processes skip operator actions; normal HTTP startup remains free of schema repair.
+- Applied the owner-approved initial catalog schema/index plan on free staging; products/categories
+  now return 200. Removed the temporary operator settings and retained encrypted verification evidence.
+
+## 30 October 2026 — Free-demo staging inventory
+
+- Added an explicitly selected staging-only encrypted read-only inventory preload for free Render
+  environments without shell access. Verified actual missing catalog collections before proposing any DDL.
+- Recorded the owner's free-demo deferral of hosted scanner/worker acceptance; launch gates remain intact.
+
+## 30 October 2026 — Local container runtime verification
+
+- Added a reproducible isolated Linux/Docker runtime verifier for health authorization, transactions,
+  catalog initialization, graceful shutdown/restart and reservation-expiry CLI process restart.
+- Verified the real local image without staging credentials or mutations; hosted acceptance remains separate.
+
+## 30 October 2026 — Hosted media qualification
+
+- Real public/private upload, delivery authorization, expiry/tamper denial and test-asset cleanup
+  Passed after the owner's Cloudinary permission correction. Persistent runtime and task acceptance
+  gates remain separate; no runtime feature flag was enabled.
+
+## 30 October 2026 — Full synthetic media qualification preparation
+
+- Added scanner-version/freshness checks and a scoped synthetic provider lifecycle fixture with
+  persisted intent, bounded delivery checks and confirmed cleanup of only its own test assets.
+- Added bounded loaded-signature probes after asynchronous scanner reload and fixed the synthetic
+  PNG checksum. Hosted inventory now retains a fixed private connection-failure category.
+- Added read-only catalog inventory mode with encrypted operator reports; existing staging apply
+  approval and provider/policy acceptance gates remain intact.
+
+## 30 October 2026 — Staging catalog rollout and media preflight
+
+- Added read-only catalog inventory and an explicit reviewed initial staging rollout with stale-plan,
+  existing-data, validator/index-conflict and report-overwrite protections; no HTTP auto-bootstrap.
+- Added bounded read-only Cloudinary credential checks and a manual isolated ClamAV preflight workflow.
+  Documented the selected nonproduction profile and preserved provider/policy/hosted acceptance gates.
+
 ## 30 October 2026 — Environment templates
 
 - Organized the root local example and added sanitized staging and frontend examples. Documented

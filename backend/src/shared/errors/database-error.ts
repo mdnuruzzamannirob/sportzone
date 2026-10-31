@@ -1,3 +1,10 @@
+export type DatabaseFailureReason =
+  | 'AUTHENTICATION_FAILED'
+  | 'TLS_HANDSHAKE_FAILED'
+  | 'DNS_FAILED'
+  | 'NETWORK_UNREACHABLE'
+  | 'SERVER_SELECTION_FAILED'
+
 export class DatabaseError extends Error {
   constructor(
     readonly code:
@@ -7,6 +14,7 @@ export class DatabaseError extends Error {
       | 'INDEX_MISMATCH'
       | 'NESTED_TRANSACTION'
       | 'EXTERNAL_EFFECT_IN_TRANSACTION',
+    readonly reason?: DatabaseFailureReason,
   ) {
     super(`Database operation failed: ${code}.`)
   }

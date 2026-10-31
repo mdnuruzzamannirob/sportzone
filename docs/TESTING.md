@@ -1014,21 +1014,32 @@ Automated accessibility scan is **supplementary**; keyboard review and at least 
 ```mermaid
 flowchart LR
     Setup[One locked install] --> Repo[Repository checks]
-    Repo --> Apps[Workspace checks and builds]
+    Repo --> Security[Secret and dependency checks]
+    Security --> Apps[Workspace checks and builds]
     Apps --> Browser[Browser audit reuses UI builds]
-    Browser --> Security[Secret and dependency checks]
-    Security --> Review[Eligible for staging review]
+    Browser --> Review[Eligible for staging review]
 ```
 
 Operations §5.5 owns execution/caching/security and §5.6 owns promotion. Select scopes from changed paths and actual consumers, retaining a stable required aggregate result. Backend-private changes require backend and applicable repository/contract/security checks, without frontend builds, UI tests or browser engine installation. UI changes require their owning workspace and applicable browser checks; shared dependencies/configuration require affected consumers. Integrated staging/release candidates require the full inventory above.
 
-The workflow uses `scripts/ci/affected.mjs` with validated event base/head revisions. Backend-private
-changes, including accompanying documentation, select backend and supply-chain checks without browser
-installation. Backend scope includes root tooling tests and `format:backend` through inventory rootChecks.
-UI changes select both UI builds, backend and the shared browser audit. Shared/tooling changes, unknown
-paths, empty diffs, missing revisions and manual dispatch select the full inventory. Git diff errors fail
-the job. Comma-separated scopes use the same runner; unknown/duplicate scopes and selected failures fail
-closed. Integrated/release candidates retain full verification. Tasks records actual hosted evidence.
+Feature branches validate through PR events; main/tag pushes and manual dispatch force the full inventory, including the image gate. This avoids duplicate feature push/PR runs without skipping a required check. The workflow uses `scripts/ci/affected.mjs` with validated event base/head revisions. PR paths are
+compared from their merge base; push paths compare before/head. Rename detection is disabled so a
+move between applications checks both owners. Missing/unavailable revisions or a diff lookup failure
+select the full inventory with a static warning; they never turn into skipped verification.
+Backend-private changes select backend and supply-chain checks without browser installation. Backend
+scope includes root tooling tests, import boundaries and `format:backend` through inventory rootChecks.
+Accompanying documentation adds repository checks. Prose-only documentation selects repository and
+supply-chain checks without application builds/browser installation; docs/API.md also selects backend
+because it is executable contract-generation input. UI changes select both UI builds, backend and the
+shared browser audit. Shared/tooling changes, unknown paths, empty diffs and manual dispatch select all.
+Scopes have deterministic ordering; unknown/duplicate scopes and selected failures fail closed.
+
+Docker recipe/package/compiler/runtime-script inputs and full-inventory selection additionally run
+`scripts/ci/container.mjs` inside the same required job. Image build or runtime identity/secret-exclusion
+failure fails `CI required result`; it is not an optional parallel check. The manual Container verification
+image mode reuses this script. Provider/media/catalog jobs remain explicitly selected and use protected
+staging credentials; automatic CI receives no deployment credentials. Integrated/release candidates
+retain full verification. Tasks records actual hosted evidence.
 
 ### 15.2 Trigger and quality matrix
 

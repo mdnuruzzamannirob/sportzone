@@ -74,3 +74,55 @@ Revert the nine task tooling files together through a reviewed change; preserve 
 The prior full CI inventory and integrated dev command remain compatible. Reverting selection restores
 unconditional browser/full verification; it must not remove required checks or change the required job name.
 There is no schema, application-data or external-provider mutation to roll back.
+
+## 31 October 2026 — CI audit corrections
+
+This maintenance revision supersedes the historical affected-path behavior above without changing
+accepted milestone/provider outcomes. Found and corrected:
+
+- Prose-only changes selected all applications and browser engines. They now retain repository and
+  supply-chain checks; executable docs/API.md also retains backend contract checks.
+- Backend-only rootChecks omitted import-boundary enforcement. It is now mandatory, with a negative
+  inventory fixture proving it cannot be removed.
+- PR scope compared branch tips directly and rename detection could hide the old owner. It now uses
+  merge-base comparison and both old/new paths. Missing force-push revisions conservatively select
+  the full inventory, with a static warning and no skipped checks. Scope ordering is deterministic.
+- Dockerfile/runtime-build input changes did not block the required CI result on image failures.
+  The required job now selects the shared scripts/ci/container.mjs image build/non-root/secret-exclusion
+  gate. Manual image verification reuses it; provider jobs remain explicit and protected.
+
+Observed local verification: `npm run test:unit` Passed 67 cases outside constrained process/port
+sandboxing; `npm run lint`, `npm run lint:boundaries`, `npm run format:check`, JavaScript syntax,
+workflow YAML parsing and `git diff --check` Passed. The local Docker gate was Blocked by current
+socket permissions; no permission/host changes were requested as part of this CI fix. Actual hosted
+Docker verification remains required before claiming that new gate Passed.
+
+Read-only GitHub settings verification found main already requires the exact CI required result
+check, strict up-to-date status and administrator enforcement. These policies were not changed.
+Historical Dependabot run 41059288856 failed under a proposed Biome 2.6.3 update at storefront lint
+(schema drift/new component-hook-factory diagnostics); that is an upgrade compatibility failure,
+not grounds to bypass lint or silently upgrade the pinned current toolchain. No dependency versions,
+deployment flags, provider credentials, database state or production resources were changed here.
+
+Two real runs on the same revision (`41167031832` PR and `41167029937` push) confirmed duplicate
+feature validation. Automatic feature validation now runs on PR events; main/tag pushes and manual
+dispatch force full verification. A branch without a PR can use a draft PR or manual dispatch. No
+passing/skipped placeholder is introduced, and required-check/main protection settings remain intact.
+The hosted PR run already Passed the shared Docker gate before continuing application/browser checks;
+final verification targets the subsequent deduplication revision, not an interrupted predecessor.
+
+### Hosted failure diagnosis and security patch
+
+The single PR run [41167260706](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/41167260706)
+completed all application builds/checks, 1,057 database tests and browser verification successfully,
+but correctly failed its final security command. Downloaded native ci.json/security.json reports
+showed no secret findings and one high advisory in transitive follow-redirects 1.16.1, used through
+mongodb-memory-server-core. The [reviewed advisory](https://github.com/advisories/GHSA-mrwp-f3q8-3g9p)
+identifies patched release 1.16.2, compatible with the parent's existing ^1.16.0 range.
+
+Updated only that package's version/resolved/integrity in the lockfile, preserving unrelated optional
+platform dependencies. No direct dependency versions, exceptions or lint/security rules changed.
+`npm run test:security` now Passed locally: zero secret findings and zero dependency advisories.
+The CI inventory now executes supply-chain checks after repository checks and before expensive
+application/database/browser suites. Its ordering regression is included in 67 Passed tooling tests.
+A new hosted run is required for the final patched revision; the failed predecessor is not relabeled.

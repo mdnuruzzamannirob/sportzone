@@ -36,7 +36,7 @@
     "backend": {
       "state": "active",
       "ownerTask": "P03-021",
-      "rootChecks": ["test:unit", "format:backend"],
+      "rootChecks": ["test:unit", "lint:boundaries", "format:backend"],
       "checks": [
         "lint",
         "typecheck",

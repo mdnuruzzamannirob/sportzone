@@ -53,3 +53,31 @@ export function createClamAvScanner(input: z.infer<typeof optionsSchema>): Media
     })
   }
 }
+
+// Read-only operator probe; callers must know the scanner's timezone when interpreting its date.
+export async function inspectClamAvVersion(input: z.infer<typeof optionsSchema>) {
+  assertOutsideTransaction()
+  const settings = validateClamAvOptions(input)
+  return new Promise<string | undefined>((resolve) => {
+    let bytes = Buffer.alloc(0),
+      done = false
+    const socket = createConnection({ host: settings.host, port: settings.port })
+    const finish = (result?: string) => {
+      if (done) return
+      done = true
+      clearTimeout(deadline)
+      socket.destroy()
+      resolve(result)
+    }
+    const deadline = setTimeout(() => finish(), settings.timeoutMs)
+    socket.on('error', () => finish())
+    socket.on('end', () => finish())
+    socket.on('connect', () => socket.write('zVERSION\0'))
+    socket.on('data', (part) => {
+      bytes = Buffer.concat([bytes, part])
+      if (bytes.length > 4096) return finish()
+      const end = bytes.indexOf(0)
+      if (end !== -1) finish(bytes.subarray(0, end).toString('utf8'))
+    })
+  })
+}

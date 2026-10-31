@@ -179,3 +179,251 @@ readiness, successful commerce, data seeding, transaction support, provider qual
 Private staging reference configuration was updated locally; Render/Vercel environment settings were
 not inspected or changed. The owner reported credentials present there. Actual provider and operator
 qualification, job runner, same-site authentication topology and independent acceptance remain open.
+
+## Guarded catalog rollout work package — 30 October 2026
+
+Owner requested the next two tasks together, with Done only after review. Scope selected: P09-011 and
+P04-003. Branch at start: `env-setup`; working tree was clean. This work does not accept either task.
+
+Added the catalog-owned `inspectCatalogRollout`/`applyCatalogRollout` service and
+`backend/scripts/staging-catalog.mjs`. Default invocation only inventories canonical collection
+existence/counts/validators/indexes and writes a private new report. Apply requires a current protected
+review record bound to target and plan digest, real backup/writer-pause references, disabled feature
+flags and a fresh unchanged inventory. Existing-data/index/validator conflicts block before mutation;
+extra indexes and all records are retained. Partial DDL is resumable after fresh review, never rolled
+back by deleting data. The tool refuses production and report overwrite. Operations §7.2 owns usage.
+
+### Observed verification
+
+- `npm run typecheck --workspace=backend`: Passed.
+- `npm run build --workspace=backend`: Passed.
+- `npm run test:integration --workspace=backend -- catalog-rollout.test.ts catalog.test.ts`:
+  **38 Passed** on an isolated generated MongoDB 8.0.16 replica set. Includes read-only absence,
+  validator/index conflicts, populated-state denial, stale-plan rejection, replay, extra-index/data
+  preservation, competing initial rollouts, production/expired-review denial and report protection.
+- `npm run test:unit --workspace=backend -- media.test.ts`: **8 Passed**.
+- `npm run api:check --workspace=backend`: Passed; four artifacts unchanged.
+- `npm run lint:boundaries`: Passed; 364 source files, zero violations.
+- `npm run format:check`: Passed; 553 files.
+
+An initial integration command supplied the script's outputFile option twice and failed before any
+suite ran. Removing the duplicate option ran the real suites successfully; no failing test was waived.
+A backend lint informational template-literal suggestion was fixed in the touched operator script.
+
+Actual staging read-only inventory using private `.env.staging` failed with CONNECTION_FAILED.
+The new default tool was also invoked, wrote a sanitized failed private report and exited nonzero;
+no staging validator/index/record changes or transaction writes occurred. The exact network/auth cause
+is not established by that high-level failure. Resolve authorized operator connectivity, then run the
+read-only report before requesting approval of a concrete target-specific apply plan.
+
+An initial network-restricted GitHub auth check failed; a network-enabled recheck succeeded using
+the existing keyring credential. Existing repository CI runs were readable, but they precede this
+work package and are not evidence for these changes. No new workflow was published/dispatched, no
+secret was transferred, and no deployment occurred. Local Docker engine access remains unqualified. Same-site/proxy, worker/runtime, transaction/recovery and independent acceptance
+still require their actual evidence. Status remains **Blocked**, not In Review/Done for the full task.
+
+A further read-only driver diagnostic categorized this workspace's staging connection failure as
+TLS handshake failure. The underlying network/access/trust cause remains unconfirmed; certificate
+validation was not disabled. Render can have different connectivity from this operator environment.
+Historical successful CI observed on GitHub does not substitute for the current rollout review or
+an actual target-specific inventory. The catalog preflight/apply tool is ready for review, not an
+approved migration or a claim that hosted collections were changed.
+
+
+The owner later authorized branch publication and read-only hosted media preflight. GitHub environment
+creation was rejected by automatic approval review before execution because exact branch scope must
+exist in the initial security configuration. No GitHub environment/secrets/workflow side effects
+occurred; the authorized branch publication remains a separate action. See P04-003's current record.
+
+The owner subsequently created the GitHub environment manually. Exact feature-branch restriction
+was added and verified before storing the three authorized Cloudinary values. The first manual
+media run failed at empty reusable-workflow secret resolution; it did not access Atlas or mutate
+records. The direct staging-job correction remains within the authorized read-only preflight scope.
+
+Hosted read-only media preflight subsequently passed on branch commit `2aab9e7`:
+[run 41081351601](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/41081351601).
+The exact branch restriction and only three authorized Cloudinary environment secrets were verified.
+No Atlas secret was transferred and no schema/index/record rollout was performed. This removes the
+read-only Cloudinary/scanner-connectivity preparation gap but does not clear the Atlas TLS inventory,
+transaction, job, same-site/proxy, scanner-runtime or full P09-011 acceptance requirements.
+
+## Authorized hosted inventory — 30 October 2026
+
+The owner explicitly authorized storing the existing staging URI as `STAGING_MONGODB_URI` in the
+branch-restricted GitHub staging environment and running read-only inventory. No apply mode,
+record/index/schema mutation or additional credential transfer was authorized by this approval.
+
+[Run 41086234040](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/41086234040) failed
+before inventory. A fixed-vocabulary private diagnostic was added and verified locally. The rerun
+on `f747105`, [41087532710](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/41087532710),
+confirmed `phase=connection`, `reason=TLS_HANDSHAKE_FAILED`. Only an RSA-OAEP/AES-GCM encrypted
+report was uploaded; its private key remains local and ignored. No raw URI/driver diagnostics
+were logged, and no database mutation occurred. TLS verification remains enabled. The actual
+network/access/trust cause is unconfirmed; no repeated mutation or speculative rollout is justified.
+
+Local verification for the diagnostic/reload fixes: backend build, typecheck, lint, boundaries,
+format and repository documentation checks Passed. The affected integration command
+`npm run test:integration --workspace=backend -- database.test.ts media-qualification.test.ts operator-report.test.ts catalog-rollout.test.ts`
+Passed **38 tests** on an isolated local MongoDB replica set with network-enabled execution.
+The initial sandbox attempt was Blocked by local port-binding EPERM and is not counted as a pass.
+These tests do not qualify the inaccessible staging database. P09-011 remains Blocked pending actual
+staging inventory/transaction/runtime evidence and independent acceptance.
+
+### Hosted backend image check
+
+[Run 41088818340](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/41088818340)
+on `864ed9362e313a04a001c56096036f2febe51e77` Passed the backend-only Docker build and limited
+runtime inventory. Actual container checks verified non-root execution, compiled server presence,
+and absence of root/backend `.env*`, Git metadata, backend source, admin and storefront directories.
+The retained `backend-container-verification` artifact contains image identity and limited scope.
+This clears the earlier unavailable Docker-builder check, not hosted DB/health/draining, worker
+restart, OS vulnerability scan, provider activation or deployment acceptance. Other jobs were
+intentionally skipped in image-only mode and are not counted as passes.
+
+## Render account verification and origin correction — 30 October 2026
+
+The owner supplied a protected Render API key in the ignored staging environment file. Read-only
+API access succeeded for the existing `sportzone-api-staging` service: free web service in Oregon,
+connected to `main`, not suspended. Existing secret values were compared in memory only; no raw
+remote secret inventory was retained or printed. An initial proposal to persist the raw env response
+was rejected by automatic approval review before execution; the safe comparison-only alternative
+succeeded without writing any credential dump.
+
+The actual Render `API_PUBLIC_ORIGIN` was `https://sportzone-api.onrender.com`, differing from the
+service URL and private staging reference. Only that public variable was corrected to
+`https://sportzone-api-staging.onrender.com`. Deploy-only operation `dep-dbicka6tlv9c739g3g20`
+reused the existing artifact at `a4afd75b8e976efc39f5ae4bc30c214158f5a2c2`; status **live**.
+No feature branch merge, new service, paid resource, secret rotation or database mutation occurred.
+Post-deploy actual probes: live **200**, authenticated ready **200**, products **503**. Server readiness
+checks a real database ping, so Render-to-Atlas connectivity is verified for that runtime; it does not
+prove target collection/index inventory, transaction execution or catalog initialization.
+
+The current free-only budget conflicts with completing the planned hosted private scanner and
+standalone worker qualification using this existing Render service alone. Official references:
+[free service limitations](https://render.com/docs/free),
+[shell availability](https://render.com/docs/ssh),
+[billed one-off jobs](https://render.com/docs/one-off-jobs), and
+[ClamAV container memory requirements](https://docs.clamav.net/manual/Installing/Docker.html).
+No paid workaround or weakened scanner/authentication gate was applied. The full task remains
+Blocked pending suitable runtime capacity and actual remaining inventory/transaction/worker evidence.
+
+## User-enabled local Docker runtime qualification — 30 October 2026
+
+The owner enabled local Docker socket access; Docker 29.8.0 is reachable. The existing image was
+built successfully with `docker build -f backend/Dockerfile -t sportzone-backend:staging-check .`.
+New reproducible operator verifier:
+`node backend/scripts/verify-container-runtime.mjs sportzone-backend:staging-check` — **Passed**.
+It created only a generated local MongoDB 8.0.16 replica set/database and test container, without
+loading private env files or using any real provider. Its retained artifact
+`test-results/container-runtime.json` reports all eleven checks Passed:
+
+- Transaction commit and abort; container database readiness and readiness authentication.
+- Catalog read returns 200 after canonical local test initialization; non-root container identity.
+- Actual SIGTERM graceful shutdown and secret redaction; container restart readiness.
+- Two distinct reservation-expiry worker processes complete against the same durable lease state.
+- The committed synthetic transaction survives container restart.
+
+Both worker runs scanned/released zero reservations. This is an actual CLI/process restart check,
+not proof of nonempty expiry correctness or a deployed scheduler. Existing transaction/concurrency
+integration tests retain their separate scope. The verifier removed its test container, temporary
+env file and generated replica-set data. The built image remains available for further local use.
+No live API, Atlas collection/index/record, provider object or credential was changed.
+
+A separate previously authorized read-only staging inventory attempt through Docker host networking
+still returned TLS_HANDSHAKE_FAILED before inventory. No apply was attempted. Thus the local Docker
+builder/runtime gap is cleared; actual target inventory, hosted jobs/scanner and independent
+acceptance remain outstanding. No full task or milestone Done is inferred from this local pass.
+
+## Free Render inventory succeeded — 30 October 2026
+
+Owner instruction: “free te jeta kore kaj chalano jabe setau koro”. No paid service was provisioned.
+Added `staging-inventory.mjs` as an explicit staging-only, all-features-off Node preload. It requires
+an operator RSA public key and emits only an encrypted catalog inventory envelope. Two real replica-set
+integration tests Passed for read-only encrypted reporting and production/feature/missing-key guards.
+Backend typecheck/lint, boundaries, formatting, documentation checks and local Docker build Passed.
+No prior provider or full unrelated application suites were repeated.
+
+Existing free Render service deployed reviewed commit `a526e4c7641febdd303cbdfa239c3650772bebcf`
+in deployment `dep-dbicvdgn74is73b3bilg`, status live. The encrypted inventory was retrieved from
+protected Render logs and decrypted only in the local protected report store. This resolves the
+operator TLS/network inventory obstacle without opening Atlas to all IPs or provisioning another host.
+Private report: `.cache/staging-report/render-catalog-plan.json` (ignored, mode 0600).
+
+### Concrete initial catalog plan awaiting independent authorization
+
+Target `sportzone_staging`, digest
+`03fdaaa936a11245e225f52451d86b61c6b546c3e8c7a8c690388ed0e4f7e240`:
+
+| Collection | Current state | Planned additive indexes |
+| --- | --- | --- |
+| categories | Absent; no records | 3 |
+| products | Absent; no records | 5 |
+| productVariants | Absent; no records | 3 |
+
+All blockers are empty; canonical inspection reports safeToApply=true. The planned operation creates
+only these three missing canonical collections, their declared validators and eleven indexes. No
+seed data, record mutation, existing-index drop or collMod is proposed. Current absent collections
+are the retained verified-empty recovery baseline, not a claim of a full Atlas backup. Other database
+collections are outside the plan. All service feature-admission flags remain false; no worker was
+provisioned. Recheck the exact digest immediately before apply. If partial DDL occurs, retain it,
+keep admission off and review a new plan; never destructively roll back or blindly retry.
+
+The report preload/public-key variables were removed after capture; deploy-only normal startup was
+requested as `dep-dbid14e1egvs73e8p8i0`, subsequently verified live with public liveness
+and authenticated readiness both 200. Actual catalog apply has **not** run. Operations §7.2 requires independent target-plan
+review; executor-generated approval is not substituted for it. Full hosted worker/scanner acceptance
+is Deferred for the free demo, with the initial-release gates unchanged.
+
+### Independent authorization of the exact initial plan
+
+The project owner explicitly accepted the interactive target-plan review: “এই নির্দিষ্ট setup
+অনুমোদন করছি”. This authorizes only the previously recorded digest, three absent catalog collections
+and eleven canonical indexes, with no existing-data edits/deletes and all feature admission off.
+The retained verified-empty catalog report is the reviewed target recovery baseline; partial DDL
+requires stopping, preserving state and a fresh plan. It is not a full Atlas backup claim.
+
+The free Render transport now supports an explicit apply flag plus the exact private reviewer
+manifest, delegating to the existing guarded CLI rather than startup auto-DDL. Normal mode remains
+read-only; production/active features/missing authority/stale plans fail closed. One-time operator
+settings must be removed after the result is retained. Full task/milestone acceptance remains separate.
+
+## Authorized catalog rollout completed — 30 October 2026
+
+The owner-approved exact plan was executed once through reviewed image commit
+`84403afe833ee082512ba0d4bc695807030eb14f`, deployment `dep-dbid3s7b9u1s73dor380`.
+The canonical CLI rechecked the approved digest immediately before mutation. Its encrypted result,
+retrieved from protected Render logs and decrypted only locally, confirms:
+
+| Collection | Exists | Records | Missing indexes | Conflicts |
+| --- | --- | --- | --- | --- |
+| categories | Yes | 0 | 0 | None |
+| products | Yes | 0 | 0 | None |
+| productVariants | Yes | 0 | 0 | None |
+
+All eleven declared indexes and canonical product/variant validators verified. No existing records,
+indexes or collections were dropped or edited; no seed data or external provider operation ran.
+Applied inventory digest: `5d68e67ab483b3a1ef35512c7d8e48dd893a4a846aded180c4723ae823eaf309`.
+Private approval, encrypted envelope and decrypted result remain in the ignored protected operator
+store; these are not public application artifacts or a full Atlas backup.
+
+The one-time NODE_OPTIONS, REPORT_PUBLIC_KEY, STAGING_CATALOG_APPLY and STAGING_CATALOG_APPROVAL
+variables were removed and normal startup restored with deploy-only `dep-dbid4l142hec73d3sngg`,
+verified **live** at the same commit. Actual post-cleanup checks:
+
+- Public liveness 200; token-protected readiness 200.
+- `GET /api/v1/products` 200 and empty data array, previously 503.
+- `GET /api/v1/categories` 200 and empty data array.
+- Both catalog endpoints allow the exact deployed storefront origin through CORS.
+- All four temporary operator variables are absent; every feature-admission flag remains false.
+
+Thirteen affected integration tests Passed (`staging-inventory.test.ts`, `catalog-rollout.test.ts`),
+including read-only behavior, wrong environment/active features/key rejection, reviewed additive
+apply, stale approval replay and incomplete authority. Backend typecheck/lint, source boundaries,
+format/repository checks and local Docker build Passed. Prior unchanged local runtime and real
+Cloudinary evidence was reused; no unrelated frontend build or full regression was repeated.
+The private staging RELEASE_ID reference was aligned with the actual deployed image revision.
+
+The authorized free-demo catalog work is complete. P09-011 remains Deferred only for its outstanding
+full hosted scheduler/runtime/transaction/session/recovery acceptance; this result does not self-approve
+M1–M8 or remove initial-release prerequisites. P04-003 retains the owner-approved free-demo deferral
+for persistent scanner/media lifecycle/policy acceptance, with media disabled.

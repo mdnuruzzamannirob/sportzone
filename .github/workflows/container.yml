@@ -1,13 +1,165 @@
 name: Container verification
 on:
   workflow_dispatch:
+    inputs:
+      media_preflight:
+        description: Run read-only media checks instead of the backend image build
+        required: false
+        type: boolean
+        default: false
+      media_qualification:
+        description: Qualify two synthetic Cloudinary assets and clean up only those assets
+        required: false
+        type: boolean
+        default: false
+      catalog_preflight:
+        description: Read-only staging catalog inventory; encrypted report only
+        required: false
+        type: boolean
+        default: false
+      report_public_key:
+        description: Base64 DER public key for the private catalog report
+        required: false
+        type: string
 permissions:
   contents: read
 concurrency:
   group: container-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
+  media-preflight:
+    name: Read-only media provider and scanner preflight
+    if: ${{ inputs.media_preflight || inputs.media_qualification }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: staging
+    services:
+      clamav:
+        image: clamav/clamav:stable@sha256:bda39705e291105049c3936e2803ac90b955172af8030f94f05dce1252df6c6d
+        env:
+          TZ: UTC
+        options: >-
+          --publish 127.0.0.1:3310:3310
+          --health-cmd clamdcheck.sh
+          --health-start-period 6m
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 60
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Install recorded backend toolchain
+        run: |
+          npm install --global npm@11.19.0 --ignore-scripts --no-audit --no-fund
+          npm ci --workspace=backend --include-workspace-root=false --ignore-scripts --no-audit --no-fund
+          npm run build --workspace=backend
+      - name: Check provider credentials and actual scanner probes
+        env:
+          APP_ENV: staging
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.STAGING_CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.STAGING_CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.STAGING_CLOUDINARY_API_SECRET }}
+          MEDIA_PROVIDER_TIMEOUT_MS: '15000'
+          MEDIA_POLICY_JSON: '{"maxBytes":5242880,"maxPixels":24000000,"allowedFormats":["png","jpg","webp"],"privateUrlTtlSeconds":60}'
+          MEDIA_TEMP_TTL_SECONDS: '86400'
+          MEDIA_SCANNER: clamav
+          MEDIA_SCANNER_HOST: 127.0.0.1
+          MEDIA_SCANNER_PORT: '3310'
+          MEDIA_SCANNER_TIMEOUT_MS: '15000'
+        run: |
+          mkdir -p test-results
+          node backend/scripts/check-media-provider.mjs > test-results/media-preflight.json
+      - name: Refresh and reload qualification signatures
+        if: ${{ inputs.media_qualification }}
+        run: |
+          docker exec "${{ job.services.clamav.id }}" freshclam --stdout --log=/tmp/qualification-freshclam.log
+          docker exec "${{ job.services.clamav.id }}" clamdscan --reload
+      - name: Prepare synthetic qualification intent
+        if: ${{ inputs.media_qualification }}
+        env:
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.STAGING_CLOUDINARY_CLOUD_NAME }}
+        run: node backend/scripts/qualify-media.mjs --prepare test-results/media-qualification.json
+      - name: Persist intent before external asset creation
+        if: ${{ inputs.media_qualification }}
+        id: qualification-intent
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: media-qualification-intent
+          path: test-results/media-qualification.json
+          if-no-files-found: error
+      - name: Qualify synthetic media and clean up its assets
+        if: ${{ inputs.media_qualification }}
+        env:
+          APP_ENV: staging
+          MEDIA_QUALIFICATION_AUTHORIZED: 'true'
+          MEDIA_QUALIFICATION_INTENT_REFERENCE: ${{ steps.qualification-intent.outputs.artifact-url }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.STAGING_CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.STAGING_CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.STAGING_CLOUDINARY_API_SECRET }}
+          MEDIA_SCANNER_HOST: 127.0.0.1
+          MEDIA_SCANNER_PORT: '3310'
+          MEDIA_SCANNER_TIMEZONE: UTC
+        run: node backend/scripts/qualify-media.mjs --run test-results/media-qualification.json
+      - name: Preserve qualification and cleanup result
+        if: ${{ always() && inputs.media_qualification }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: media-qualification-result
+          path: test-results/media-qualification.json
+          if-no-files-found: error
+      - name: Preserve sanitized preflight result
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: media-preflight
+          path: test-results/media-preflight.json
+          if-no-files-found: warn
+  catalog-preflight:
+    name: Read-only staging catalog inventory
+    if: ${{ inputs.catalog_preflight }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: staging
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Install recorded backend toolchain
+        run: |
+          npm install --global npm@11.19.0 --ignore-scripts --no-audit --no-fund
+          npm ci --workspace=backend --include-workspace-root=false --ignore-scripts --no-audit --no-fund
+          npm run build --workspace=backend
+      - name: Read catalog inventory
+        env:
+          APP_ENV: staging
+          MONGODB_URI: ${{ secrets.STAGING_MONGODB_URI }}
+          MONGODB_DB_NAME: sportzone_staging
+        run: |
+          mkdir -p test-results
+          node backend/scripts/staging-catalog.mjs test-results/catalog-private.json
+      - name: Encrypt operator report
+        if: ${{ always() }}
+        env:
+          REPORT_PUBLIC_KEY: ${{ inputs.report_public_key }}
+        run: node backend/scripts/encrypt-operator-report.mjs test-results/catalog-private.json test-results/catalog-encrypted.json
+      - name: Preserve encrypted operator report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: catalog-encrypted-report
+          path: test-results/catalog-encrypted.json
+          if-no-files-found: error
   backend-image:
+    if: ${{ !inputs.media_preflight && !inputs.media_qualification && !inputs.catalog_preflight }}
     name: Build and inspect backend image
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -15,28 +167,12 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-      - name: Build backend only
-        run: docker build --pull --file backend/Dockerfile --tag sportzone-backend:verify .
-      - name: Verify runtime identity and secret exclusion
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p test-results
-          image=sportzone-backend:verify
-          test "$(docker image inspect --format '{{.Config.User}}' "$image")" = node
-          docker run --rm --entrypoint node "$image" --input-type=module -e '
-            import { existsSync, readdirSync } from "node:fs";
-            for (const path of ["/app/.env", "/app/backend/.env", "/app/.git", "/app/admin", "/app/storefront", "/app/backend/src"]) {
-              if (existsSync(path)) process.exit(1);
-            }
-            for (const dir of ["/app", "/app/backend"]) {
-              if (readdirSync(dir).some(name => name.startsWith(".env"))) process.exit(1);
-            }
-            if (!existsSync("/app/backend/dist/server.js")) process.exit(1);
-            if (process.getuid() === 0) process.exit(1);
-          '
-          docker image inspect --format 'Image={{.Id}} User={{.Config.User}} Workdir={{.Config.WorkingDir}}' "$image" > test-results/container.txt
-          echo 'Build and limited runtime inventory verified; no hosted DB, health, provider, OS scan or deployment acceptance.' >> test-results/container.txt
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Build and inspect backend image
+        run: node scripts/ci/container.mjs
       - name: Preserve verification record
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:

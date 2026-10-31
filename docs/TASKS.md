@@ -722,14 +722,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence:** [Canonical models, indexes, transaction/race verification](./evidence/P04-002-product-variants.md). [Owner acceptance](./evidence/P04-002-product-variants.md#owner-acceptance), 21 October 2026.
 
 - [ ] **P04-003 — Implement controlled Cloudinary media adapter**\
-  **Status:** `Blocked` · **Area:** Backend/media · **Owner:** Codex\
+  **Status:** `Deferred` · **Area:** Backend/media · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-05; FR-23; Architecture §11\
   **Depends on:** `P04-020`\
   **Deliverable:** Retain the complete media outcome, with independently verified local capability in P04-020 and real provider/scanner/policy acceptance here. Implement the mediaAssets ownership/upload-intent ledger, validation/quarantine, transactionally attached references, private evidence authorization and CAS-protected orphan cleanup; upload/delete provider calls stay outside DB transactions (Database §6.7).\
   **Acceptance:** Only authorized admin uploads; credentials never reach browser bundles.\
   **Evidence:** [Local adapter/ledger/auth verification and EXT-04 blocker](./evidence/P04-003-controlled-media.md).\
-  **Blocked:** EXT-04 — store administrator/project owner must supply approved staging account/configuration, media/scanner/retention policy and actual provider security evidence. Historical local implementation/checks remain in the evidence; P04-020 owns current local technical verification. Default runtime activation stays off. Next: protected input references, real staging upload/private-delivery/deletion validation and independent review.
+  **Deferred:** Owner selected the free-demo path on 30 October 2026 (“free te jeta kore kaj chalano jabe setau koro”); hosted scanner/worker acceptance is postponed, not waived. EXT-04 — Cloudinary permission correction cleared HTTP 403. Full synthetic provider qualification run 41091490222 Passed: fresh real scanner clean/EICAR, public/authenticated upload and lookup, private original/derived denial, signed delivery, expiry/tamper denial and confirmed cleanup of both test identities. Remaining: persistent scanner/runtime composition, scheduled retention/orphan lifecycle and policy/independent acceptance evidence. MEDIA_ENABLED stays false; ephemeral provider success does not activate the staging API.
 
 - [ ] **P04-004 — Implement admin category management**\
   **Status:** `Not Started` · **Area:** Admin/catalog\
@@ -1681,14 +1681,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence to attach:** Admin sitemap/accessibility review.
 
 - [ ] **P09-011 — Provision isolated staging runtime and transaction-capable DB**\
-  **Status:** `Blocked` · **Area:** Backend/staging · **Owner:** Codex\
+  **Status:** `Deferred` · **Area:** Backend/staging · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** Architecture §13; Implementation Plan §§4.1,12\
   **Depends on:** `P01-024`\
   **Deliverable:** Configure isolated API, MongoDB, workers, secret management, sandbox providers and test email for backend acceptance. Build a reviewed Docker image from locked backend dependencies with separate HTTP/worker entry commands and runtime-injected secrets; prepare storefront/admin hosting and origins without requiring their builds or deployment. P09-012 deploys the complete integrated applications.\
   **Acceptance:** Staging uses no production credentials; database connectivity and transaction capability, image health/draining, worker restart and absence of embedded secrets are verified; HTTPS/origin/session plans are testable.\
   **Evidence:** [Local preparation, observed checks and missing staging prerequisites](./evidence/P09-011-staging-runtime.md).
-  **Blocked:** Owner selected Render API / Vercel frontends; deployment configs, manual container-verification workflow and Operations §5.8 are prepared. Project owner/platform operator must still supply actual eligible account/resource/origin and isolated DB/provider/test-email secret references (EXT-03/04/05/09), qualified scheduled-job runtime and same-site/proxy plan. Render source builds need no separate registry. Local Docker socket access is denied; the GitHub builder workflow is not yet run. Resume with actual image and staging verification; no independent acceptance or deployment is claimed.
+  **Deferred:** Owner selected the free-demo path; outstanding full hosted scheduler/runtime/transaction/session/recovery acceptance is postponed without waiving release gates. The independently owner-approved catalog plan was applied once on the existing free Render service: three canonical collections and eleven declared indexes verified, zero records edited/deleted/seeded. Normal-start deployment dep-dbid4l142hec73d3sngg is live; products/categories now return 200 with empty lists, liveness/readiness 200, expected storefront CORS. All temporary operator settings were removed and all feature-admission flags remain false. Actual local Docker/runtime/worker restart and real Cloudinary checks retain their recorded Passed scope; no full task or milestone acceptance is inferred.
 
 - [ ] **P09-012 — Deploy integrated feature-complete build to staging**\
   **Status:** `Not Started` · **Area:** DevOps/staging\

@@ -1,7 +1,7 @@
 import { Schema, Types, type ClientSession } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server-core'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { DatabaseError, openDatabase } from '../../src/config/database.js'
+import { classifyDatabaseFailure, DatabaseError, openDatabase } from '../../src/config/database.js'
 import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../src/shared/database/indexes.js'
 import {
   integerField,
@@ -245,4 +245,24 @@ it('redacts actual connection failure diagnostics', async () => {
     code: 'CONNECTION_FAILED',
     message: 'Database operation failed: CONNECTION_FAILED.',
   })
+})
+
+it('reduces nested connection failures to fixed operator reasons without raw diagnostics', () => {
+  const failure = (code: string | number) => ({
+    reason: {
+      servers: new Map([
+        ['private-host', { error: { cause: { code, message: 'private-uri-secret' } } }],
+      ]),
+    },
+  })
+  expect(classifyDatabaseFailure(failure(18))).toBe('AUTHENTICATION_FAILED')
+  expect(classifyDatabaseFailure(failure('ERR_SSL_TLSV1_ALERT_INTERNAL_ERROR'))).toBe(
+    'TLS_HANDSHAKE_FAILED',
+  )
+  expect(classifyDatabaseFailure(failure('ENOTFOUND'))).toBe('DNS_FAILED')
+  expect(classifyDatabaseFailure(failure('ECONNREFUSED'))).toBe('NETWORK_UNREACHABLE')
+  expect(classifyDatabaseFailure(null)).toBe('SERVER_SELECTION_FAILED')
+  const error = new DatabaseError('CONNECTION_FAILED', classifyDatabaseFailure(failure(18)))
+  expect(error.code).toBe('CONNECTION_FAILED')
+  expect(JSON.stringify(error)).not.toContain('private-')
 })

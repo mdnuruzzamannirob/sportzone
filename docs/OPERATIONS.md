@@ -344,6 +344,17 @@ Authenticated cart and wishlist persistence use an explicit local/test bootstrap
 `node --env-file=.env backend/scripts/bootstrap-cart.mjs` from the repository root. This creates only
 missing `carts`/`wishlists` collections with their strict validators and unique user indexes; matching reruns are
 additive. Existing incompatible validators require a reviewed migration and are never overwritten.
+For an isolated Linux container runtime qualification, first build the backend image, then run
+`node backend/scripts/verify-container-runtime.mjs <local-image-tag>` from the repository root.
+The verifier requires local Docker access and installed backend development tools. It generates its
+own loopback MongoDB 8.0.16 replica set, database, credentials and temporary env file; it never loads
+`.env` or `.env.staging`. Linux host networking lets only this local test reach that loopback fixture.
+It verifies transactions, protected readiness, initialized catalog reads, non-root identity, SIGTERM
+shutdown, restart persistence and two empty reservation-expiry worker processes. Cleanup removes
+only its named test container and temporary fixture. Retain `test-results/container-runtime.json`.
+This qualifies the local artifact, not Atlas collections, a deployed scheduler, nonempty financial
+job recovery or hosted scanner availability.
+
 HTTP startup does not create collections; cart/wishlist requests fail closed with 503 when required persistence
 is absent or incompatible. Staging/production rollout must use the reviewed owning initializer with
 approved configuration and migration review; the local/test entry script refuses those environments.
@@ -868,13 +879,13 @@ or affected feature; use OP-REL-02 and OP-FIN-* instead of ad hoc manual ledger 
 
 ### 5.5 CI execution and supply-chain controls
 
-GitHub Actions runs one job named `CI required result`. A single locked install serves all checks.
-`ci-workspaces.json` lists the commands; the local runner executes repository, storefront, admin, backend,
-browser and supply-chain groups in order. Each application builds once; browser checks reuse the two UI builds
+GitHub Actions runs one job named `CI required result`. Feature-branch validation runs on pull requests, avoiding duplicate push/PR runs for the same source. Pushes to main or tags and manual dispatch run the full inventory. For a branch without a PR, open a draft PR or dispatch CI explicitly; no skipped placeholder claims validation. A single locked install serves all checks.
+`ci-workspaces.json` lists the commands; the local runner executes repository, supply-chain, storefront, admin, backend
+and browser groups in order. Security findings fail before expensive application/database/browser suites. Each application builds once; browser checks reuse the two UI builds
 in the same job. No workflow generation, cross-job build transfer or report aggregation is required.
 
-The workflow selects affected scopes under Testing §15.1, retaining the stable required result. Browser engines install only for browser scopes. Manual dispatch and conservative fallbacks run the full inventory; integrated/release verification remains mandatory. Tasks records actual hosted evidence and acceptance. During development follow Testing §15.5 rather
-than repeatedly running the entire pipeline. A failed command stops the runner and fails the job; an interrupted
+The workflow selects affected scopes under Testing §15.1, retaining the stable required result. Prose-only changes retain repository/security checks without application builds; executable API documentation retains backend checks. Backend-only runs enforce import boundaries. PR merge-base diffs include both sides of cross-application moves, and unavailable diff revisions conservatively select full verification. Browser engines install only for browser scopes. Manual dispatch and conservative fallbacks run the full inventory; integrated/release verification remains mandatory. Tasks records actual hosted evidence and acceptance. During development follow Testing §15.5 rather
+than repeatedly running the entire pipeline. Affected Docker builds and runtime-image inventory run inside that same required job through `scripts/ci/container.mjs`; the manual image workflow reuses the check. No automatic provider/deployment activation is added. A failed command stops the runner and fails the job; an interrupted
 or cancelled job cannot satisfy the required successful check. Do not use `--if-present`, `continue-on-error`
 or passing placeholders. Preserve application/browser/replica-set coverage when simplifying tooling.
 
@@ -1277,6 +1288,45 @@ HTTP adjustments and operator views require their own integration.
 Rollback must preserve variant counters, reservation generations and movement history. Restore them together from a
 consistent backup and reconcile subsequent effects before resuming writes; never reset counters or
 delete movements as a code rollback.
+
+#### Guarded initial staging catalog rollout
+
+After building the backend, `backend/scripts/staging-catalog.mjs <report-path>` performs only a
+read-only inventory of the canonical categories/products/productVariants collections, record counts,
+validators and indexes. It requires APP_ENV=staging and an explicit database name ending `_staging`.
+Use a new private report path; existing files are never overwritten. Example from repository root:
+
+```sh
+mkdir -p test-results
+node --env-file=.env.staging backend/scripts/staging-catalog.mjs test-results/catalog-preflight.json
+```
+
+The operator CLI is included in the runtime image but is never called by normal HTTP startup. Run it
+from an authorized machine/runner with Atlas network access and matching source/build, or select the
+explicit guarded preload in §16.3 on a reviewed staging image. Do not turn on a
+local/test bootstrap against the staging database. A connection failure writes a sanitized failed
+report and exits nonzero; it does not authorize an empty-state assumption or an apply operation.
+
+The plan contains a deterministic `digest`. Validator conflicts, conflicting declared/text indexes and
+nonempty collections requiring new indexes block this initial-rollout tool. Existing-data migrations
+still require §7.2's separate duplicate/invalid-data and recovery procedure. Extra compatible indexes
+are retained. No seeding, record edits, collMod, index drops or database deletion is supplied.
+
+For an independently reviewed safe plan, the authorized reviewer supplies a private JSON approval
+file with `environment` (`staging`), exact `databaseName`, `planDigest`, `approvedBy`, offset-qualified
+`approvedAt`/`validUntil`, `backupReference` and `maintenanceReference`. References must identify real
+review/recovery and writer-pause evidence; the tool cannot establish those facts from arbitrary text.
+It never generates an approval. Verify all writers are paused, then execute:
+
+```sh
+node --env-file=.env.staging backend/scripts/staging-catalog.mjs --apply /protected/catalog-approval.json test-results/catalog-applied.json
+```
+
+Apply requires all local capability flags disabled, validates target/review window, reserves a new
+report before connecting, rechecks the exact digest and adds only canonical initial persistence.
+DDL is not transactional: if a concurrent operator or infrastructure failure leaves a partial state,
+preserve it, take a fresh inventory and review a new digest. Do not rerun an obsolete approval or
+attempt a destructive rollback. Inspect deployed API/collection/index results before acceptance.
 
 ### 7.3 Health and reconciliation invariants
 
@@ -2344,6 +2394,102 @@ objects. Never drop the ledger or infer provider deletion from code rollback. Re
 uploading/deleting states against the same deterministic identity after recovery. Attaching real
 product/category/settings targets is owned by their integration tasks and must use the same session;
 private claim attachment is owned by P08-012. No new endpoint or cleanup schedule is silently enabled.
+
+#### Nonproduction media preflight runner
+
+`node --env-file=.env.staging backend/scripts/check-media-provider.mjs` makes a bounded authenticated
+Cloudinary `/ping` GET, validates configured policy shape and, when a scanner is configured, performs
+clean/EICAR scans. No uploads, deletions, database writes or feature activation occur. Output reports
+credential reachability, policy configuration and scanner probe status only. `configured_not_approved`
+means schema validity is not policy acceptance; a passing scanner probe is not signature-freshness
+qualification. Missing policy/scanner or failed probes exit nonzero even when Cloudinary ping passes.
+
+For a staging-only technical profile selected under owner delegation, prepare 5 MiB maximum file,
+24 million pixels, PNG/JPEG/WebP, 24-hour temporary lifetime and 60-second signed private URLs. This is
+not a legal retention rule or approval to remove references/holds. Record the policy review before
+real upload qualification. Inactive technical configuration does not activate HTTP media composition.
+
+The explicit media-preflight mode in `.github/workflows/container.yml` runs on an isolated GitHub-hosted Linux runner
+with a digest-pinned official ClamAV service bound to runner loopback. The container's signature updater
+and `clamdcheck.sh` health gate must complete; scanner freshness/version still needs retained evidence.
+This consumes the account's included Actions allowance and may stop when quota is exhausted; inspect
+billing/spending controls before use. It provisions no paid or persistent Render service.
+
+Create the protected GitHub `staging` environment and configure only
+`STAGING_CLOUDINARY_CLOUD_NAME`, `STAGING_CLOUDINARY_API_KEY` and `STAGING_CLOUDINARY_API_SECRET` as
+its secrets, after reviewing the workflow/ref and access controls. Do not copy MongoDB/payment/email
+secrets into this job. Dispatch only the reviewed trusted ref; no pull_request/schedule trigger exists.
+Dispatch the registered Container verification workflow on the reviewed feature ref with
+`media_preflight=true`; its direct staging job skips the unrelated image build. This job reads the
+three environment secrets without broad secret inheritance or a reusable-workflow boundary. Default
+mode still builds the backend image. This does not merge or deploy the branch. Example:
+
+```sh
+gh workflow run container.yml --repo mdnuruzzamannirob/sportzone --ref chore/staging-catalog-media-preflight -f media_preflight=true
+```
+
+The workflow installs/builds backend only and preserves sanitized preflight output. It does not upload,
+delete or grant customer access, and it is not a replacement for the complete staging gate above.
+
+Ephemeral CI scanner availability does not supply a persistent scanner to the Render API. Keep
+MEDIA_ENABLED=false until a reviewed private scanner/runtime composition is reachable by the actual
+backend. Free Render's web-service limit is not a reason to expose unauthenticated ClamAV TCP or replace
+scanning with a test double. Choose a qualified runner/private service within the resource budget and
+complete actual upload/private original/derived denial, expiry, retention and deletion checks.
+Primary references: [ClamAV Docker requirements](https://docs.clamav.net/manual/Installing/Docker.html),
+[GitHub service containers](https://docs.github.com/en/actions/tutorials/use-containerized-services/use-docker-service-containers),
+[GitHub Actions allowance](https://docs.github.com/en/billing/concepts/product-billing/github-actions).
+
+#### Free demo profile and Render inventory
+
+For the owner-selected free demo, keep scanner-dependent media, checkout/payment admission and
+notification delivery disabled until their separate runtime prerequisites pass. Hosted scanner and
+scheduled worker acceptance may be Deferred for this demo; no initial-release or milestone gate is
+waived and no incomplete task becomes Done.
+
+Where free hosting has no operator shell, `scripts/staging-inventory.mjs` can be selected explicitly
+as a Node preload (`NODE_OPTIONS=--import=./scripts/staging-inventory.mjs`) on the existing reviewed
+staging image. It requires APP_ENV staging, an isolated `_staging` database, every feature flag off,
+and REPORT_PUBLIC_KEY as a base64 DER RSA public key of at least 2048 bits. Before HTTP startup it
+defaults to canonical read-only catalog inspection and emits an encrypted envelope in protected
+logs. For the separately authorized additive operation, STAGING_CATALOG_APPLY=true plus
+STAGING_CATALOG_APPROVAL containing the exact §7.2 reviewer manifest delegates to the guarded
+`staging-catalog.mjs --apply` CLI; missing/partial authority and stale digest fail closed. The CLI
+runs without inherited NODE_OPTIONS to avoid recursive preload. Container healthcheck processes
+skip the operator preload. Apply creates only reviewed missing canonical persistence; no record
+seeding/edit/delete or destructive rollback is supplied. Keep the private key only in the operator's
+protected local store. Remove all temporary preload/public-key/apply/approval settings and redeploy after collecting the
+report. Never leave a one-time approval attached to subsequent boots. Any catalog apply still requires the target-specific review and recovery procedure in §7.2.
+A failed preload blocks that candidate startup; the operator retains the previous healthy deployment.
+
+#### Synthetic provider qualification and private catalog inventory
+
+The same registered workflow accepts explicit `media_qualification=true`. This mode first runs the
+read-only preflight, prepares exactly two fresh one-pixel PNG identities (public/authenticated), and
+uploads the intent artifact **before** any Cloudinary object creation. The execution step is bound to
+the account hash, source revision, fresh intent and explicit nonproduction authority. It verifies UTC
+ClamAV VERSION metadata with signatures no older than 48 hours, clean-image/EICAR outcomes, actual
+upload/lookup/public delivery, private original/derived denial, valid signed delivery, backdated-expired
+signed delivery and signature tamper denial. Only identities in the fresh intent that this run attempted
+may be cleaned up, with matching source digest/type and a confirmed missing provider lookup afterward.
+Unknown upload/delete outcomes remain in the retained result for reconciliation; no blind reupload or
+delete retry is supplied. No existing customer/store asset is selected or mutated by this fixture.
+
+The result artifact records no credentials or signed URLs. Initial intent and final cleanup result must
+be retained together. A green provider fixture does not approve customer-data retention, claim access,
+persistent scanner/runtime composition or task/production acceptance. The 48-hour freshness ceiling is
+part of the selected staging test profile; a stale/missing/unparseable signature version blocks the run.
+Qualification explicitly updates definitions and requests clamd reload, then makes bounded version
+probes while that asynchronous reload completes; on-disk freshness alone is insufficient.
+
+`catalog_preflight=true` is a separate read-only staging inventory mode. It requires only the approved
+`STAGING_MONGODB_URI` environment secret, plus a base64 DER RSA public key in `report_public_key`.
+Do not copy session/monitor/payment/email credentials into this mode. The staging-catalog operator tool
+uses narrow database configuration validation; it does not start identity/HTTP services. Raw reports
+are never uploaded from the public repository: `encrypt-operator-report.mjs` uses a random AES-256-GCM
+key wrapped with RSA-OAEP-SHA256. Only the operator holding the private key can read the uploaded report.
+Missing/invalid encryption inputs fail closed. No apply operation or schema/data mutation exists in
+this workflow mode. A target-specific reviewed plan and protected approval remain required for §7.2.
 
 ### 16.4 Operator walkthrough procedure (OP-STORE-01)
 
