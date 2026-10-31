@@ -741,6 +741,43 @@ export function claimRestockAccess(connection: Connection) {
   }
 }
 
+// Read-only, transaction-scoped source of historical unit entitlements and delivery charge.
+export function refundOrderSnapshotAccess(connection: Connection) {
+  const { orders, balances } = orderModels(connection)
+  return async (
+    session: ClientSession,
+    orderId: string,
+    claimId: string,
+    requested: { orderItemId: string; quantity: number; ordinals: number[] }[],
+  ) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyOrderPersistence(connection)
+    const order = await orders.findById(orderId).session(session)
+    if (!order) throw new ApiError('NOT_FOUND')
+    const lines = []
+    for (const selection of requested) {
+      if (!order.items.some((i) => i.id.toHexString() === selection.orderItemId))
+        throw new ApiError('STATE_CONFLICT')
+      const row = await balances
+        .findOne({ orderId, orderItemId: selection.orderItemId })
+        .session(session)
+      if (!row) throw new ApiError('STATE_CONFLICT')
+      const units = row.unitCoverage.map((unit) => ({
+        ordinal: unit.ordinal,
+        netEntitlementPoisha: unit.netEntitlementPoisha,
+        refundHeldPoisha: unit.refundHeldPoisha,
+        refundCompletedPoisha: unit.refundCompletedPoisha,
+        eligible:
+          selection.ordinals.includes(unit.ordinal) &&
+          unit.claimId?.toHexString() === claimId &&
+          ['protected', 'resolved'].includes(unit.claimState),
+      }))
+      lines.push({ orderItemId: selection.orderItemId, quantity: selection.quantity, units })
+    }
+    return { lines, deliveryChargePoisha: order.pricingSnapshot.deliveryChargePoisha }
+  }
+}
+
 export function codCollectionOrderAccess(connection: Connection) {
   const { orders } = orderModels(connection)
   return async (session: ClientSession, orderId: string) => {

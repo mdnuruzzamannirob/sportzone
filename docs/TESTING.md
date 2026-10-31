@@ -683,6 +683,11 @@ partial receipt and nonresellable units, full-only completion, same-key replay, 
 shortage denial, plus atomic rollback of stock/ordinal/movement/claim on audit failure. No synthetic authorization/policy/provider fixture proves qualified
 policy, deployed private-media or public HTTP acceptance.
 
+Private refund advisory tests use immutable ordinal entitlements and separate held/completed source,
+order and delivery balances; cover source mismatch, no verified COD receipt, physical inspection and
+shortage eligibility, catalog price changes, delivery-policy authority, overflow and class separation.
+A quote is not a reservation; reservation races and provider/manual payout verification remain separate.
+
 Local lifecycle/COD tests use synthetic qualified-approval and protected evidence capabilities only.
 Check missing approval denial, exact graph/shipment/coupon fencing, actual deadline projection from
 persisted plain basis, historical-key replay, shipment rollback after downstream validation failure,

@@ -112,3 +112,33 @@ export function returnService(
     },
   }
 }
+
+// Only an inspected physical claim or an approved shortage supplies refund ordinals.
+export function refundClaimSnapshotAccess(connection: Connection) {
+  const model = returnModel(connection)
+  return async (
+    session: ClientSession,
+    orderId: string,
+    claimId: string,
+    requested: { orderItemId: string; quantity: number }[],
+  ) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyReturnPersistence(connection)
+    const row = await model.findOne({ _id: claimId, orderId }).session(session)
+    if (!row) throw new ApiError('NOT_FOUND')
+    if (
+      (row.claimType === 'physical_return' && !['inspected', 'completed'].includes(row.status)) ||
+      (row.claimType === 'shortage' && !['approved', 'completed'].includes(row.status))
+    )
+      throw new ApiError('BUSINESS_RULE_VIOLATION')
+    return requested.map((line) => {
+      const item = row.items.find((i) => i.orderItemId.toHexString() === line.orderItemId)
+      if (!item) throw new ApiError('BUSINESS_RULE_VIOLATION')
+      const ordinals =
+        row.claimType === 'shortage' ? item.approvedUnitOrdinals : item.acceptedUnitOrdinals
+      if (!ordinals || ordinals.length < line.quantity)
+        throw new ApiError('BUSINESS_RULE_VIOLATION')
+      return { ...line, ordinals: [...ordinals] }
+    })
+  }
+}

@@ -11,6 +11,47 @@ const input = z.strictObject({
   method: z.enum(['cod', 'online']),
   expectedPoisha: z.int().nonnegative().max(Number.MAX_SAFE_INTEGER),
 })
+
+// Read-only snapshot: only an existing, linked, independently verified collection can fund a quote.
+export function refundPaymentSnapshotAccess(connection: Connection) {
+  const payments = paymentModel(connection),
+    { collections } = paymentRecordModels(connection)
+  return async (session: ClientSession, orderId: string, sourceCollectionId: string) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyPaymentPersistence(connection)
+    await verifyPaymentRecordPersistence(connection)
+    const payment = await payments.findOne({ orderId }).session(session)
+    if (!payment) throw new ApiError('NOT_FOUND')
+    const source = await collections
+      .findOne({ _id: sourceCollectionId, orderId, paymentId: payment._id })
+      .session(session)
+    if (!source) throw new ApiError('NOT_FOUND')
+    const amounts = parseInput(
+      z.strictObject({
+        allocatedPoisha: z.int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+        heldPoisha: z.int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+        completedPoisha: z.int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+      }),
+      {
+        allocatedPoisha: source.get('merchandiseAllocatedPoisha'),
+        heldPoisha: source.get('merchandiseRefundHeldPoisha'),
+        completedPoisha: source.get('merchandiseRefundCompletedPoisha'),
+      },
+    )
+    return {
+      source: amounts,
+      order: {
+        allocatedPoisha: payment.merchandiseFundedPoisha,
+        heldPoisha: payment.merchandiseRefundHeldPoisha,
+        completedPoisha: payment.merchandiseRefundCompletedPoisha,
+      },
+      delivery: {
+        heldPoisha: payment.deliveryRefundHeldPoisha,
+        completedPoisha: payment.deliveryRefundCompletedPoisha,
+      },
+    }
+  }
+}
 // Trusted checkout capability only; owning coordinator binds these facts to the canonical order.
 // No collection/attempt or Paid transition exists in this service.
 export function checkoutPaymentAccess(connection: Connection) {

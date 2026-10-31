@@ -1451,6 +1451,11 @@ a refund basis without return receipt. Completing a claim **never** asserts a pa
 | `POST` | `/admin/refunds/{refundId}/reconcile`            | A      | `{reason} + Idempotency-Key → {status,attemptState}`                                            | 33  |
 | `POST` | `/admin/refunds/{refundId}/manual-confirmations` | A      | `{transferReference,evidenceRef,reason} + Idempotency-Key → Refund`                             | 33  |
 
+The private local refund advisory is not an HTTP operation or obligation. It reads a selected linked
+verified collection and canonical claim/order snapshots in one transaction, and reports insufficient
+capacity if that single source cannot fund the requested units. Public authorization, multi-source
+allocation, reservation and execution remain separate work.
+
 **RefundGroupInput (admin):**
 `{orderId,basis,basisRefId?,classification,requestedItems?:[{orderItemId,quantity}],deliveryChargeRequestedPoisha?,correctionCollectionId?,reason}`.
 The server computes line-ordinal amounts from the immutable order snapshot and source capacities. A multi-receipt payout

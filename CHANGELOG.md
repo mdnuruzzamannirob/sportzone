@@ -8,6 +8,11 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 31 October 2026 — Private refund advisory
+
+- Added read-only, single-source claim/order/payment refund calculations with original unit amounts and held/completed capacity limits.
+- Added transient payout-attempt fact validation; full attempt persistence, multi-source allocation, reservation and payout remain blocked.
+
 ## 31 October 2026 — Private physical return inspection
 
 - Added local receipt/inspection and transactionally restocked only selected inspected resellable units, with ordinal fences and replay/race protection.

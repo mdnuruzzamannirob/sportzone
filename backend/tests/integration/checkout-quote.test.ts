@@ -1,3 +1,7 @@
+import { refundAdvisoryService } from '../../src/modules/refunds/refund-advisory.service.js'
+import { refundOrderSnapshotAccess } from '../../src/modules/orders/order.service.js'
+import { refundClaimSnapshotAccess } from '../../src/modules/returns/return.service.js'
+import { refundPaymentSnapshotAccess } from '../../src/modules/payments/payment.service.js'
 import { returnPhysicalService } from '../../src/modules/returns/return-physical.service.js'
 import { returnLifecycleService } from '../../src/modules/returns/return-lifecycle.service.js'
 import { returnService } from '../../src/modules/returns/return.service.js'
@@ -5967,4 +5971,232 @@ it('physical return local: partially received units cannot be marked completed',
     f.review.transition(f.token, f.claimId, { to: 'completed', reason: 'Too early' }, 'complete'),
   ).rejects.toMatchObject({ code: 'BUSINESS_RULE_VIOLATION' })
   expect((await returnModel(db.connection).findById(f.claimId).orFail()).status).toBe('inspected')
+})
+
+function refundAdvisory(policy?: Parameters<typeof refundAdvisoryService>[3]) {
+  return refundAdvisoryService(
+    refundClaimSnapshotAccess(db.connection),
+    refundOrderSnapshotAccess(db.connection),
+    refundPaymentSnapshotAccess(db.connection),
+    policy,
+  )
+}
+it('refund advisory local: uncollected COD has no verified source and cannot produce a quote', async () => {
+  const f = await physicalReturnFixture()
+  await f.receive()
+  await f.inspect()
+  await expect(
+    inTransaction(db.connection, (session) =>
+      refundAdvisory()(session, {
+        orderId: f.id,
+        claimId: f.claimId,
+        sourceCollectionId: new Types.ObjectId().toHexString(),
+        items: [{ orderItemId: f.itemId, quantity: 1 }],
+        deliveryRequestedPoisha: 0,
+      }),
+    ),
+  ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+  expect(
+    await paymentRecordModels(db.connection).collections.countDocuments({ orderId: f.id }),
+  ).toBe(0)
+})
+it('refund advisory local: verified COD and inspected claim use historical unit price without changing balances', async () => {
+  const f = await physicalReturnFixture()
+  await f.receive()
+  await f.inspect()
+  await f.cash()
+  const source = await paymentRecordModels(db.connection)
+    .collections.findOne({ orderId: f.id })
+    .orFail()
+  const beforeOrder = await orderModels(db.connection).orders.findById(f.id).lean().orFail()
+  const beforeBalance = await orderModels(db.connection)
+    .balances.findOne({ orderId: f.id })
+    .lean()
+    .orFail()
+  const beforeSource = await paymentRecordModels(db.connection)
+    .collections.findById(source._id)
+    .lean()
+    .orFail()
+  const input = {
+    orderId: f.id,
+    claimId: f.claimId,
+    sourceCollectionId: source._id.toHexString(),
+    items: [{ orderItemId: f.itemId, quantity: 1 }],
+    deliveryRequestedPoisha: 0,
+  }
+  const unit = beforeBalance.unitCoverage[0]
+  if (!unit) throw new Error('Missing historical unit')
+  await productModels(db.connection).variants.updateOne(
+    { _id: f.selected.row._id },
+    { $set: { regularPricePoisha: 3000, salePricePoisha: 2000 } },
+  )
+  const result = await inTransaction(db.connection, (session) => refundAdvisory()(session, input))
+  expect(result).toMatchObject({
+    status: 'advisory',
+    amountPoisha: unit.netEntitlementPoisha,
+    items: [{ unitAmounts: [{ ordinal: unit.ordinal, amountPoisha: unit.netEntitlementPoisha }] }],
+  })
+  expect(await orderModels(db.connection).orders.findById(f.id).lean().orFail()).toEqual(
+    beforeOrder,
+  )
+  expect(
+    await orderModels(db.connection).balances.findOne({ orderId: f.id }).lean().orFail(),
+  ).toEqual(beforeBalance)
+  expect(
+    await paymentRecordModels(db.connection).collections.findById(source._id).lean().orFail(),
+  ).toEqual(beforeSource)
+  expect(
+    await db.connection.collection('refunds').countDocuments({ orderId: new Types.ObjectId(f.id) }),
+  ).toBe(0)
+  await expect(
+    inTransaction(db.connection, (session) =>
+      refundAdvisory()(session, { ...input, items: [{ orderItemId: f.itemId, quantity: 3 }] }),
+    ),
+  ).rejects.toThrow()
+  await expect(
+    inTransaction(db.connection, (session) =>
+      refundAdvisory()(session, { ...input, orderId: new Types.ObjectId().toHexString() }),
+    ),
+  ).rejects.toThrow()
+  await expect(
+    inTransaction(db.connection, (session) =>
+      refundAdvisory()(session, { ...input, deliveryRequestedPoisha: 1 }),
+    ),
+  ).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' })
+})
+it('refund advisory local: physical receipt without inspection cannot authorize a refund', async () => {
+  const f = await physicalReturnFixture()
+  await f.receive()
+  await f.cash()
+  const source = await paymentRecordModels(db.connection)
+    .collections.findOne({ orderId: f.id })
+    .orFail()
+  await expect(
+    inTransaction(db.connection, (session) =>
+      refundAdvisory()(session, {
+        orderId: f.id,
+        claimId: f.claimId,
+        sourceCollectionId: source._id.toHexString(),
+        items: [{ orderItemId: f.itemId, quantity: 1 }],
+        deliveryRequestedPoisha: 0,
+      }),
+    ),
+  ).rejects.toMatchObject({ code: 'BUSINESS_RULE_VIOLATION' })
+})
+it('refund advisory local: approved shortage uses only approved ordinals with no physical restoration', async () => {
+  const f = await physicalReturnFixture('shortage')
+  await f.cash()
+  const source = await paymentRecordModels(db.connection)
+    .collections.findOne({ orderId: f.id })
+    .orFail()
+  const result = await inTransaction(db.connection, (session) =>
+    refundAdvisory()(session, {
+      orderId: f.id,
+      claimId: f.claimId,
+      sourceCollectionId: source._id.toHexString(),
+      items: [{ orderItemId: f.itemId, quantity: 1 }],
+      deliveryRequestedPoisha: 0,
+    }),
+  )
+  expect(result.status).toBe('advisory')
+  expect(
+    await db.connection
+      .collection('inventoryMovements')
+      .countDocuments({ type: 'return_receipt', orderId: new Types.ObjectId(f.id) }),
+  ).toBe(0)
+})
+it('refund advisory local: held amounts reduce historical unit and both verified funding balances', async () => {
+  const f = await physicalReturnFixture()
+  await f.receive()
+  await f.inspect()
+  await f.cash()
+  const collections = paymentRecordModels(db.connection).collections
+  const source = await collections.findOne({ orderId: f.id }).orFail()
+  const payment = await paymentModel(db.connection).findOne({ orderId: f.id }).orFail()
+  const balances = orderModels(db.connection).balances
+  const balance = await balances.findOne({ orderId: f.id }).orFail()
+  const unit = balance.unitCoverage[0]
+  if (!unit || unit.netEntitlementPoisha < 2) throw new Error('Unsuitable fixture entitlement')
+  // Isolated synthetic prior commitment; no refund writer is enabled in application runtime.
+  await inTransaction(db.connection, async (session) => {
+    await balances.updateOne(
+      { _id: balance._id, revision: balance.revision },
+      { $set: { 'unitCoverage.0.refundHeldPoisha': 1 }, $inc: { revision: 1 } },
+      { session },
+    )
+    await collections.updateOne(
+      { _id: source._id, revision: source.revision },
+      { $set: { merchandiseRefundHeldPoisha: 1 }, $inc: { revision: 1 } },
+      { session },
+    )
+    await paymentModel(db.connection).updateOne(
+      { _id: payment._id, revision: payment.revision },
+      { $set: { merchandiseRefundHeldPoisha: 1 }, $inc: { revision: 1 } },
+      { session },
+    )
+  })
+  const result = await inTransaction(db.connection, (session) =>
+    refundAdvisory()(session, {
+      orderId: f.id,
+      claimId: f.claimId,
+      sourceCollectionId: source._id.toHexString(),
+      items: [{ orderItemId: f.itemId, quantity: 1 }],
+      deliveryRequestedPoisha: 0,
+    }),
+  )
+  expect(result).toMatchObject({ status: 'advisory', amountPoisha: unit.netEntitlementPoisha - 1 })
+  if (result.status === 'advisory') {
+    expect(result.sourceAvailablePoisha).toBe(source.get('merchandiseAllocatedPoisha') - 1)
+    expect(result.orderAvailablePoisha).toBe(payment.merchandiseFundedPoisha - 1)
+  }
+})
+it('refund advisory local: a source collected for another order is never usable', async () => {
+  const f = await physicalReturnFixture()
+  await f.receive()
+  await f.inspect()
+  const other = await physicalReturnFixture()
+  await other.cash()
+  const source = await paymentRecordModels(db.connection)
+    .collections.findOne({ orderId: other.id })
+    .orFail()
+  await expect(
+    inTransaction(db.connection, (session) =>
+      refundAdvisory()(session, {
+        orderId: f.id,
+        claimId: f.claimId,
+        sourceCollectionId: source._id.toHexString(),
+        items: [{ orderItemId: f.itemId, quantity: 1 }],
+        deliveryRequestedPoisha: 0,
+      }),
+    ),
+  ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+})
+it('refund advisory local: delivery charge requires current trusted policy and stays within original snapshot', async () => {
+  const f = await physicalReturnFixture()
+  await f.receive()
+  await f.inspect()
+  await f.cash()
+  const source = await paymentRecordModels(db.connection)
+    .collections.findOne({ orderId: f.id })
+    .orFail()
+  const input = {
+    orderId: f.id,
+    claimId: f.claimId,
+    sourceCollectionId: source._id.toHexString(),
+    items: [{ orderItemId: f.itemId, quantity: 1 }],
+    deliveryRequestedPoisha: 1,
+  }
+  await expect(
+    inTransaction(db.connection, (session) => refundAdvisory(async () => false)(session, input)),
+  ).rejects.toMatchObject({ code: 'BUSINESS_RULE_VIOLATION' })
+  expect(
+    await inTransaction(db.connection, (session) =>
+      refundAdvisory(async () => true)(session, input),
+    ),
+  ).toMatchObject({ status: 'advisory', deliveryAmountPoisha: 1 })
+  await expect(
+    inTransaction(db.connection, (session) =>
+      refundAdvisory(async () => true)(session, { ...input, deliveryRequestedPoisha: 101 }),
+    ),
+  ).rejects.toMatchObject({ code: 'BUSINESS_RULE_VIOLATION' })
 })

@@ -1472,6 +1472,16 @@ only under_review/not_reserved intents, reserves no money and exposes no approva
 Missing method/policy is never replaced by a guessed default. Generic saves/updates/deletes cannot
 rewrite the intent; future refund approval needs its reviewed schema/capacity transition.
 
+A private, transaction-scoped advisory can read approved shortage/inspected physical claim ordinals,
+original order-unit entitlement and verified linked source/order funding counters. It subtracts held
+and completed amounts, rejects invalid balances, and bounds any requested delivery amount by the
+purchase-time charge and an injected protected policy decision. Its single-source result is not a
+reservation, obligation, payout instruction or public API. If a source cannot cover the requested
+unit amounts, it reports insufficient source capacity; allocating a single unit across sources belongs
+to the later reservation/coordinator work. No delivery policy is assumed when the authority is absent.
+Correction advisory arithmetic is isolated from merchandise ordinals. No new `refundAttempts` writer,
+status transition, collection or provider interaction is enabled by this advisory.
+
 `requestedAt` in the API maps to immutable refund `createdAt`. The public timeline is a bounded projection of durable status/audit events; retain approval/completion facts separately so history truncation cannot remove timing authority. Timing basis corrections require audited domain updates, preserve approvedAt, and must not delay an otherwise authorized payout.
 
 **Indexes:** unique `{orderId:1,decisionKey:1}`; `{sourceCollectionId:1,status:1}`; `{orderId:1,classification:1,createdAt:-1}`.
