@@ -1,8 +1,9 @@
 # P06-011 / P06-012 — Private lifecycle and COD capabilities
 
 Date: 30 October 2026 (Asia/Dhaka). Executor: Codex.
-Status: **Blocked** for full task acceptance; authorized local implementation/tests completed.
-No task checkbox or milestone is accepted by this record.
+Historical status at the 30 October execution: **Blocked**. Current development status:
+**Done**, under the [1 November owner-approved completion decision](#engineering-completion-and-release-gate-separation--1-november-2026).
+Earlier blocked findings/results below retain their original scope and date; no live qualification or milestone is claimed.
 
 ## Authorization and scope
 
@@ -289,3 +290,78 @@ cases Passed, with a final focused missing-proof rollback assertion. These resul
 implementation counts for the affected revision, not historical observations or acceptance decisions.
 Qualified applicability, actual original-cash qualification, deployed admission and independent full-task
 acceptance remain separate factual events; no checkbox or milestone is self-approved.
+
+
+## Engineering completion and release-gate separation — 1 November 2026
+
+### Owner decision and scope
+
+After the executor proposed separating verified feature implementation from live-release qualification,
+the project owner replied: **"ok so final. ja korte hoy kore done koro"**. This explicitly authorizes
+the completion-convention change and Package A development closeout. It is not reported as a legal
+finding, physical cash receipt, independent technical review or production launch approval.
+
+The owning Implementation Plan §3.3, Tasks §§2/8, Testing §15.5 and AGENTS §13 now distinguish
+ordinary engineering Done from explicit external/stage/milestone acceptance. Ordinary tasks require
+working behavior, relevant passing checks, executor review and recorded completion; no separate
+human ceremony per feature is required. Explicit qualification tasks and application closeouts keep
+their actual evidence/independent approval. No product, financial, security or required launch channel
+was removed. Existing accepted/history records remain valid for their recorded scope.
+
+### Completed development tasks
+
+| Task | Verified outcome | Development status |
+| --- | --- | --- |
+| P06-003 | Configured/immutable timing and policy authority, actual full-payment mapping, independent handover/delivery milestones, additive migration, fail-closed unknown facts | Done |
+| P06-011 | Admin HTTP/session/Origin/CSRF/DTO, guarded lifecycle, exact shipping stock/coupon effects, bounded history, race/replay/rollback and source-based confirmation | Done |
+| P06-012 | Concrete protected original-receipt verifier, authorized collection HTTP, canonical source/aggregate/audit and duplicate safety; delivery cannot mark Paid | Done |
+| P06-013 | Customer request/admin decision, atomic pre-dispatch recheck, funded/partial-COD obligations and exactly-once allocation release; later online collection remains reconcilable | Done |
+| P06-014 | Customer/exact guest order list/detail/status, ownership denial, historical totals/policies and separate fulfillment/payment projections | Done |
+
+Executor: Codex, 1 November 2026. Review performed: actual implementation/contract diff, task dependency
+and checkbox audit, no-default-authority/admission review, latest observed test artifacts and their
+source snapshot. No separate external reviewer identity is invented. Owner authorization applies to
+the development-completion convention and requested closeout as stated above.
+
+### Verification retained and rechecked
+
+The current code matches the previously verified 25-path source/test/script/API/tooling snapshot
+relative to `2158e05`: `10d2778a0f7e27dbe649ab7ac3020e8b60e9769ba4a6a0f5abdc9d2feb8016e8`.
+Current HEAD is `f47873b`; the implementation working tree, including existing staged edits, is
+preserved. Owner commits are not attributed to the executor. This closeout changes documentation
+and task metadata only; unchanged application suites are reused under Testing §15.5.
+
+- Backend unit artifact `test-results/package-a-timing-unit.json`: **795 Passed, 0 Failed**.
+- Replica-set affected integration artifact `test-results/package-a-timing-regression.json`:
+  **360 Passed, 0 Failed**, five files. Final strengthened missing-source rollback test also Passed
+  in `test-results/package-a-prepaid-final.json`.
+- Contract suite: **112 Passed**; four generated artifacts current.
+- Backend build/types/lint/boundaries/smoke and redacted security: **Passed** at the linked source
+  revision. Exact commands, attempts, environment and scope remain in the
+  [timing verification record](./P06-003-delivery-deadline-boundary.md#prepaid-timing-mapping-implementation--1-november-2026).
+- This closeout runs repository/documentation checks, source-snapshot/checkbox/dependency audits
+  and diff checks. No application rebuild, financial action, migration or deployment is repeated.
+
+### Explicit live-release checklist
+
+| Check | Existing owner task | State |
+| --- | --- | --- |
+| Current delivery applicability and event/zone mapping; qualified review; approved versioned publication and genuine protected manifest | P11-007 | Not performed / release check open |
+| Actual operator original cash/settlement qualification; protected verifier and safe COD/replay smoke with sanitized real proof | P11-008 | Not performed / release check open |
+| Deployed origins, runtime admission and staging/production verification | P09-011, P11-003, P11-008 | Their existing gates remain open |
+| Required channels, refund safeguards and production launch acceptance | P11-005/009/011 | Their existing gates remain open |
+
+These checks were moved out of Package A's engineering acceptance, not marked Passed. No env value,
+activation flag, cash record, provider result or reviewer approval was fabricated. Runtime continues
+to reject missing original evidence and unreviewed policy; a refund payout is never Completed merely
+because dispatch was accepted. Refund completion/reconciliation and final non-delivery remain their
+own implementation tasks, not implied by Package A Done.
+
+Transition: P06-003/011/012/013/014 **Blocked → Done**. Overall: **210 tasks, 112 Done,
+77 Not Started, 19 Blocked, 2 Deferred**. No other task or M1–M8 milestone is automatically accepted.
+
+Closeout checks actually executed: `npm run lint` **Passed** (773 repository files,
+1544 local links, zero errors); `git diff --check` and `git diff --cached --check` **Passed**.
+Inline task audit verified 210 unique IDs, checkbox/status parity, 112 Done / 19 Blocked / 77 Not
+Started / 2 Deferred, and Done immediate prerequisites for all five closed tasks. The implementation
+snapshot was rehashed and matched the retained passing run; no new application test run is claimed.

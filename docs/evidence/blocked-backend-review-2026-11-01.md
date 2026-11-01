@@ -1,5 +1,11 @@
 # Blocked backend task review — 1 November 2026
 
+**Subsequent development disposition:** P06-003/011/012/013/014 are now Done under the
+[owner-approved engineering/release separation](./P06-011-012-local-lifecycle-cod.md#engineering-completion-and-release-gate-separation--1-november-2026).
+The 24-task audit below retains its historical review scope; Tasks is authoritative for current status.
+No live qualification or milestone acceptance is inferred.
+
+
 Executor/reviewer of implementation: Codex. Independent acceptance: **not supplied**. Starting revision
 `ac50d5a`, clean branch `feat/review-claim-history`. This review covers all **24** Blocked tasks in
 the register. No external environment, policy approval, verified original cash proof, merchant sandbox

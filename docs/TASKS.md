@@ -93,7 +93,7 @@ identifies the owning application; original domain closeouts retain integrated a
 commands/results in its evidence record and acceptance in the review record. Specifications receive only changed
 requirements or procedures in their owning section; do not append a task-completion report to every specification.
 
-**Status changes:** Start each task as `Not Started`. Move to `Ready` only after dependencies and required external prerequisites are satisfied; `In Progress` indicates active work; `In Review` indicates submitted evidence awaiting verification. Mark `Done` and check the box only after independent acceptance. A blocked external provider or policy gate cannot be cleared by a mock. Task metadata may be updated as execution proceeds, while source-approved requirements stay unchanged.
+**Status changes:** Start each task as `Not Started`. Move to `Ready` only after dependencies and required external prerequisites are satisfied; `In Progress` indicates active work; `In Review` indicates submitted evidence awaiting verification. For ordinary development tasks, mark `Done` after applicable engineering verification, executor diff review and recorded completion under the owner-approved convention below. Explicit external qualification, application closeout and milestone tasks still require their real evidence and independent acceptance; a mock cannot clear those gates. Task metadata may be updated as execution proceeds, while source-approved requirements stay unchanged.
 
 | Status        | Required record / exit condition                                                                                                                                  |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -102,8 +102,17 @@ requirements or procedures in their owning section; do not append a task-complet
 | `In Progress` | Actual work has started; record the executor, scope and applicable verification needs                                                                             |
 | `Blocked`     | Record the failed prerequisite, accountable function, affected acceptance, evidence and next action; resume affected work only after its prerequisite is resolved |
 | `In Review`   | Deliverable and applicable observed verification results are attached; independent acceptance is pending                                                          |
-| `Done`        | Applicable Definition of Done is met; record actual independent reviewer, date, decision and evidence; check the box                                              |
+| `Done`        | Applicable engineering Definition of Done is met; record executor review, owner-authorized completion basis, date and evidence; explicit qualification/closeout gates retain independent acceptance; check the box                                              |
 | `Deferred`    | Record authorized scope/release disposition, rationale and impact; mandatory safety/launch gates cannot be waived by this status                                  |
+
+**Owner-approved development completion convention:** Ordinary code tasks complete on working
+implementation, relevant passing checks, executor review and traceable evidence. No separate human
+sign-off is required per implementation task. This convention was explicitly authorized by the owner
+on 1 November 2026 after reviewing the distinction between development completion and live-release
+qualification; [decision and Package A closeout](./evidence/P06-011-012-local-lifecycle-cod.md#engineering-completion-and-release-gate-separation--1-november-2026).
+It does not approve legal applicability, actual cash receipts, merchant channels, deployments or
+milestones. Explicit external-qualification tasks and application closeouts retain their own gates.
+Existing accepted history is preserved; other incomplete tasks are not automatically closed.
 
 **Evidence record:** Link the exact task/deliverable revision or commit, source references, verification command/procedure,
 environment and fixture, observed result, artifact, executor and actual reviewer decision. Use
@@ -130,14 +139,14 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |     21 |        0 |
 | 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       0 |         0 |     12 |        1 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           8 |     0 |           0 |       1 |         0 |      8 |        0 |
-| 06 — Checkout, Orders, and Delivery Rules     |      22 |           6 |     0 |           0 |       7 |         0 |      9 |        0 |
+| 06 — Checkout, Orders, and Delivery Rules | 22 | 6 | 0 | 0 | 2 | 0 | 14 | 0 |
 | 07 — Payment Integration and Verification     |      18 |           3 |     0 |           0 |       0 |         0 |     15 |        0 |
 | 08 — Returns and Refunds                      |      19 |           6 |     0 |           0 |      12 |         0 |      1 |        0 |
 | 09 — Admin Management and Reports             |      18 |          12 |     0 |           0 |       4 |         0 |      1 |        1 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **77** | **0** | **0** | **24** | **0** | **107** | **2** |
+| **Total** | **210** | **77** | **0** | **0** | **19** | **0** | **112** | **2** |
 
 ## 4. Milestone tracker
 
@@ -1059,18 +1068,16 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Only active zones are selectable; controls are accessible.\
   **Evidence to attach:** Delivery UI integration.
 
-- [ ] **P06-003 — Implement delivery estimates, deadlines and exceptions policy boundary**\
-  **Status:** `Blocked` · **Area:** Backend/orders · **Owner:** Codex\
+- [x] **P06-003 — Implement delivery estimates, deadlines and exceptions policy boundary**\
+  **Status:** `Done` · **Area:** Backend/orders · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-16; FR-26\
   **Depends on:** `P06-001`\
-  **Deliverable:** Display the applicable deadline rule/status and estimated date from approved configuration/verified law. Preserve the checkout rule basis; calculate a confirmation-based absolute deadline only after actual confirmation (Database §7.2; API §11.3).\
-  **Acceptance:** 14-day planning target cannot override shorter applicable requirements; uncertain policy blocks final publication.\
-  **Evidence:** [Verified local boundary, commands and missing sign-off](./evidence/P06-003-delivery-deadline-boundary.md). Project owner accepted the local implementation on 26 October 2026: “done koro”; [technical acceptance record](./evidence/P06-003-delivery-deadline-boundary.md#owner-review-of-local-implementation). Required qualified sign-off remains missing.
-  **Blocked:** Store owner/authorized policy approver must supply the exact approved deadline rule and qualified current compliance sign-off (EXT-07/EXT-08). Local synthetic checks do not establish legal applicability. Missing review blocks new basis capture and affected acceptance/confirmation; actual order/API integration remains with its owning tasks.\
-  **Policy preparation:** [Bangladesh primary sources, Bangla policy draft, COD verification procedure and timing-model mapping issue](./evidence/P06-003-delivery-deadline-boundary.md#bangladesh-source-research-and-prepared-operating-policy--1-november-2026). Owner delegated preparation; qualified applicability/full-payment trigger mapping and acceptance remain unresolved.\
-  **Timing implementation:** [Verified funding event, separate prepaid handover/delivery milestones, immutable commitment and additive migration](./evidence/P06-003-delivery-deadline-boundary.md#prepaid-timing-mapping-implementation--1-november-2026). Software mapping is implemented and regressed; no real cash/legal/independent acceptance is fabricated.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Deliverable:** Implement configured deadline/estimate projection, immutable rule basis, confirmation-based targets, applicable prepaid delivery/hand-over mapping and fail-closed policy authority.\
+  **Acceptance:** Unknown rules deny definitive deadlines; actual payment, confirmation and shipment events remain distinct; a shorter configured applicable cap wins. Qualified applicability and publication are release checks in P11-007.\
+  **Evidence:** [Owning implementation and verification](./evidence/P06-003-delivery-deadline-boundary.md#prepaid-timing-mapping-implementation--1-november-2026); [shared engineering completion record](./evidence/P06-011-012-local-lifecycle-cod.md#engineering-completion-and-release-gate-separation--1-november-2026). Verified backend snapshot: 795 unit, 360 affected integration and 112 contract cases; build/types/lint/boundaries/smoke/security Passed.\
+  **Review:** Codex executor diff/contract/evidence review, 1 November 2026; Done under the owner's explicitly approved engineering-completion convention. No independent legal/cash/provider or milestone acceptance is claimed.\
+  **Release checks:** Qualified policy/publication P11-007; actual protected cash-source qualification and approved COD smoke P11-008. Deployed setup retains its own staging/release gates and fail-closed activation.
 
 - [x] **P06-004 — Implement authoritative checkout quote and validation**\
   **Status:** `Done` · **Area:** Backend/checkout · **Owner:** Codex\
@@ -1135,61 +1142,49 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** TTL document deletion does not release business capacity; attempts preserve audit history.\
   **Evidence:** [Expiry/guest implementation, per-task checks and operational limits](./evidence/P06-010-015-expiry-guest-access.md). Verified locally; project-owner independent acceptance recorded on 30 October 2026. Live provider/email/staging, frontend and qualified compliance gates remain separate.
 
-- [ ] **P06-011 — Implement order transitions, shipping and movement logic**\
-  **Status:** `Blocked` · **Area:** Backend/orders\
+- [x] **P06-011 — Implement order transitions, shipping and movement logic**\
+  **Status:** `Done` · **Area:** Backend/orders · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-14; FR-16; FR-26\
   **Depends on:** `P06-008`, `P06-003`\
-  **Deliverable:** Enforce Pending/Confirmed/Processing/Shipped/Delivered/Cancelled transitions and shipment decrement of physical+committed.\
-  **Acceptance:** Admin cannot skip forbidden transitions; shipping/failed delivery retains event history.\
-  **Evidence:** [Local transition/stock tests, recorded checks and remaining acceptance](./evidence/P06-011-012-local-lifecycle-cod.md). Local implementation/tests explicitly authorized by owner; no full task acceptance.\
-  **Blocked:** P06-003 qualified rule/sign-off remains absent. Admin lifecycle/list/detail HTTP and explicit root composition are implemented and verified in Package A; ordinary deployment stays disabled pending approved authority. Final non-delivery and notifications remain their owning tasks.\
-  **Package A:** [Admin HTTP, shared root composition, funded cancellation/history regression and exact remaining gates](./evidence/P06-011-012-local-lifecycle-cod.md#package-a-http-and-root-composition--1-november-2026). Local integration is verified; no full task acceptance is recorded.\
-  **Configured authorities:** [Protected original receipts, deadline registry, request-bound cancellation policy and actual local server startup verification](./evidence/P06-011-012-local-lifecycle-cod.md#protected-authorities-and-configured-startup--1-november-2026). Real applicability/cash qualification and full-task acceptance remain pending.\
-  **Timing implementation:** [Verified funding event, separate prepaid handover/delivery milestones, immutable commitment and additive migration](./evidence/P06-003-delivery-deadline-boundary.md#prepaid-timing-mapping-implementation--1-november-2026). Software mapping is implemented and regressed; no real cash/legal/independent acceptance is fabricated.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Deliverable:** Enforce Pending/Confirmed/Processing/Shipped/Delivered/Cancelled ownership boundaries; authenticated admin HTTP and canonical detail projections; atomic shipment decrement of physical+committed.\
+  **Acceptance:** Forbidden skips are denied; shipping/replay/races have exactly-once effects and retain history; payment, stock/coupon and policy guards remain authoritative. Final non-delivery remains P06-017.\
+  **Evidence:** [Owning implementation and verification](./evidence/P06-011-012-local-lifecycle-cod.md#package-a-http-and-root-composition--1-november-2026); [shared engineering completion record](./evidence/P06-011-012-local-lifecycle-cod.md#engineering-completion-and-release-gate-separation--1-november-2026). Verified backend snapshot: 795 unit, 360 affected integration and 112 contract cases; build/types/lint/boundaries/smoke/security Passed.\
+  **Review:** Codex executor diff/contract/evidence review, 1 November 2026; Done under the owner's explicitly approved engineering-completion convention. No independent legal/cash/provider or milestone acceptance is claimed.\
+  **Release checks:** Qualified policy/publication P11-007; actual protected cash-source qualification and approved COD smoke P11-008. Deployed setup retains its own staging/release gates and fail-closed activation.
 
-- [ ] **P06-012 — Implement authorized COD collection confirmation**\
-  **Status:** `Blocked` · **Area:** Backend/payments\
+- [x] **P06-012 — Implement authorized COD collection confirmation**\
+  **Status:** `Done` · **Area:** Backend/payments · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-12; FR-26; FR-29\
   **Depends on:** `P06-011`\
-  **Deliverable:** Record collected COD only on authorized confirmation with ledger and audit reference.\
-  **Acceptance:** Delivery alone never marks COD Paid; duplicate confirmation has single effect.\
-  **Evidence:** [Local COD source/audit/concurrency tests and remaining acceptance](./evidence/P06-011-012-local-lifecycle-cod.md). Local implementation/tests explicitly authorized by owner; no full task acceptance.\
-  **Blocked:** P06-011 remains unaccepted; HTTP/root authorization/CSRF and canonical collection projections are verified in Package A; a concrete protected receipt-file verifier and configured local/test startup now exist; actual operator receipt qualification, deployed activation and independent acceptance remain absent.\
-  **Package A:** [Admin HTTP, shared root composition, funded cancellation/history regression and exact remaining gates](./evidence/P06-011-012-local-lifecycle-cod.md#package-a-http-and-root-composition--1-november-2026). Local integration is verified; no full task acceptance is recorded.\
-  **Configured authorities:** [Protected original receipts, deadline registry, request-bound cancellation policy and actual local server startup verification](./evidence/P06-011-012-local-lifecycle-cod.md#protected-authorities-and-configured-startup--1-november-2026). Real applicability/cash qualification and full-task acceptance remain pending.\
-  **Timing implementation:** [Verified funding event, separate prepaid handover/delivery milestones, immutable commitment and additive migration](./evidence/P06-003-delivery-deadline-boundary.md#prepaid-timing-mapping-implementation--1-november-2026). Software mapping is implemented and regressed; no real cash/legal/independent acceptance is fabricated.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Deliverable:** Record COD only through authenticated, CSRF-protected confirmation and a protected original-receipt verifier; commit source, aggregate and audit atomically.\
+  **Acceptance:** Delivery alone never marks Paid; duplicate original receipts/commands have one effect; missing/tampered evidence denies recording. Actual operational cash-source qualification remains P11-008.\
+  **Evidence:** [Owning implementation and verification](./evidence/P06-011-012-local-lifecycle-cod.md#protected-authorities-and-configured-startup--1-november-2026); [shared engineering completion record](./evidence/P06-011-012-local-lifecycle-cod.md#engineering-completion-and-release-gate-separation--1-november-2026). Verified backend snapshot: 795 unit, 360 affected integration and 112 contract cases; build/types/lint/boundaries/smoke/security Passed.\
+  **Review:** Codex executor diff/contract/evidence review, 1 November 2026; Done under the owner's explicitly approved engineering-completion convention. No independent legal/cash/provider or milestone acceptance is claimed.\
+  **Release checks:** Qualified policy/publication P11-007; actual protected cash-source qualification and approved COD smoke P11-008. Deployed setup retains its own staging/release gates and fail-closed activation.
 
-- [ ] **P06-013 — Implement pre-shipment cancellation and exactly-once release**\
-  **Status:** `Blocked` · **Area:** Backend/orders\
+- [x] **P06-013 — Implement pre-shipment cancellation and exactly-once release**\
+  **Status:** `Done` · **Area:** Backend/orders · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-15; FR-26\
   **Depends on:** `P06-011`\
-  **Deliverable:** Require administrator approval/rejection of every customer cancellation request; atomically recheck eligibility and dispatch status, retain reasons, release eligible allocation once, and create collected-payment refund obligations. Unpaid online cancellations keep provider reconciliation active for any later collection.\
-  **Acceptance:** Shipped orders cannot use ordinary cancellation; uncollected COD has no monetary refund.\
-  **Evidence:** [Durable funded cancellation and HTTP verification](./evidence/P06-013-P08-005-008-durable-reservations.md). Source-funded obligations/attempts and paid/partial-COD cancellation now commit atomically in explicit local composition; P06-011, qualified policy/cash evidence, ordinary activation and independent acceptance remain pending.\
-  **Blocked:** P06-011 and qualified cash/policy acceptance remain unresolved. The funded-cancellation capability now has shared explicit root composition and HTTP verification; ordinary deployment and independent full task acceptance remain pending.\
-  **Package A:** [Admin HTTP, shared root composition, funded cancellation/history regression and exact remaining gates](./evidence/P06-011-012-local-lifecycle-cod.md#package-a-http-and-root-composition--1-november-2026). Local integration is verified; no full task acceptance is recorded.\
-  **Configured authorities:** [Protected original receipts, deadline registry, request-bound cancellation policy and actual local server startup verification](./evidence/P06-011-012-local-lifecycle-cod.md#protected-authorities-and-configured-startup--1-november-2026). Real applicability/cash qualification and full-task acceptance remain pending.\
-  **Timing implementation:** [Verified funding event, separate prepaid handover/delivery milestones, immutable commitment and additive migration](./evidence/P06-003-delivery-deadline-boundary.md#prepaid-timing-mapping-implementation--1-november-2026). Software mapping is implemented and regressed; no real cash/legal/independent acceptance is fabricated.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Deliverable:** Administrator approval/rejection of customer cancellation requests rechecks dispatch, releases eligible stock/coupon allocation once and reserves actual collected-payment refund obligations atomically. Unpaid online cancellation retains later-collection reconciliation.\
+  **Acceptance:** Shipped orders cannot use ordinary cancellation; uncollected COD creates no monetary refund; paid/partial-COD obligations are source-funded and race/replay/rollback-safe. Payout completion remains the refund tasks.\
+  **Evidence:** [Owning implementation and verification](./evidence/P06-013-P08-005-008-durable-reservations.md); [shared engineering completion record](./evidence/P06-011-012-local-lifecycle-cod.md#engineering-completion-and-release-gate-separation--1-november-2026). Verified backend snapshot: 795 unit, 360 affected integration and 112 contract cases; build/types/lint/boundaries/smoke/security Passed.\
+  **Review:** Codex executor diff/contract/evidence review, 1 November 2026; Done under the owner's explicitly approved engineering-completion convention. No independent legal/cash/provider or milestone acceptance is claimed.\
+  **Release checks:** Qualified policy/publication P11-007; actual protected cash-source qualification and approved COD smoke P11-008. Deployed setup retains its own staging/release gates and fail-closed activation.
 
-- [ ] **P06-014 — Implement authenticated customer order history/detail API**\
-  **Status:** `Blocked` · **Area:** Backend/storefront\
+- [x] **P06-014 — Implement authenticated customer order history/detail API**\
+  **Status:** `Done` · **Area:** Backend/storefront · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** FR-14\
   **Depends on:** `P06-011`\
-  **Deliverable:** Expose own orders and independent fulfillment/payment history with pending/returned states where available.\
-  **Acceptance:** Cross-account access denied; order totals use historical snapshots.\
-  **Evidence:** [Implemented scoped read APIs, historical snapshot checks and verification](./evidence/P06-013-014-cancellation-owned-reads.md). Explicit local/test read-only activation, default off.\
-  **Blocked:** Declared P06-011 prerequisite remains unaccepted. No legal/staging/backend-stage acceptance inferred from local read APIs; independent full task acceptance pending.\
-  **Package A:** [Admin HTTP, shared root composition, funded cancellation/history regression and exact remaining gates](./evidence/P06-011-012-local-lifecycle-cod.md#package-a-http-and-root-composition--1-november-2026). Local integration is verified; no full task acceptance is recorded.\
-  **Configured authorities:** [Protected original receipts, deadline registry, request-bound cancellation policy and actual local server startup verification](./evidence/P06-011-012-local-lifecycle-cod.md#protected-authorities-and-configured-startup--1-november-2026). Real applicability/cash qualification and full-task acceptance remain pending.\
-  **Timing implementation:** [Verified funding event, separate prepaid handover/delivery milestones, immutable commitment and additive migration](./evidence/P06-003-delivery-deadline-boundary.md#prepaid-timing-mapping-implementation--1-november-2026). Software mapping is implemented and regressed; no real cash/legal/independent acceptance is fabricated.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Deliverable:** Expose own order list/detail/status and independent fulfillment/payment history through current customer or exact guest scope; preserve historical totals, policies and timing.\
+  **Acceptance:** Cross-account/cross-guest access is denied; allowlisted snapshots retain original totals and separate payment/fulfillment state. Client screens remain their owning frontend tasks.\
+  **Evidence:** [Owning implementation and verification](./evidence/P06-013-014-cancellation-owned-reads.md); [shared engineering completion record](./evidence/P06-011-012-local-lifecycle-cod.md#engineering-completion-and-release-gate-separation--1-november-2026). Verified backend snapshot: 795 unit, 360 affected integration and 112 contract cases; build/types/lint/boundaries/smoke/security Passed.\
+  **Review:** Codex executor diff/contract/evidence review, 1 November 2026; Done under the owner's explicitly approved engineering-completion convention. No independent legal/cash/provider or milestone acceptance is claimed.\
+  **Release checks:** Qualified policy/publication P11-007; actual protected cash-source qualification and approved COD smoke P11-008. Deployed setup retains its own staging/release gates and fail-closed activation.
 
 - [x] **P06-015 — Implement secure guest order lookup and scoped proof**\
   **Status:** `Done` · **Area:** Backend/guest-access · **Owner:** Codex\
@@ -1208,7 +1203,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Deliverable:** Persist accurate order reference/status events with reliable independent delivery and retry.\
   **Acceptance:** Repeated transitions do not email duplicate customer updates; mail failure cannot reverse orders.\
   **Evidence:** [Local commerce outbox/template/dedup/retry verification and remaining gates](./evidence/P06-016-017-commerce-delivery-support.md). Actual placement/transition causes, canonical recipient/history verification and explicit local/test worker activation.\
-  **Blocked:** P06-013 remains unaccepted; deployed sender/inbox/template qualification and independent full acceptance are not supplied by local provider doubles.\
+  **Blocked:** P06-013 development prerequisite is Done; this notification task still needs its own completion review and deployed sender/inbox/template qualification and independent full acceptance are not supplied by local provider doubles.\
   **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P06-017 — Implement failed delivery, delay and complaints foundations**\
@@ -1759,7 +1754,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P03-008`, `P06-014`, `P08-019`\
   **Deliverable:** Implement customer search, authorized history, suspension/reactivation and verified deletion-request review with retention/legal-hold-safe decisions.\
   **Acceptance:** Suspension revokes relevant sessions; foreign access and unsafe deletion fail; required order/financial/audit history remains and sensitive data is minimized.\
-  **Evidence:** [Local masked customer read and remaining scope](./evidence/P09-002-015-local-report-customer.md). P06-014/P08-019, full operations and independent acceptance remain pending.\
+  **Evidence:** [Local masked customer read and remaining scope](./evidence/P09-002-015-local-report-customer.md). P06-014 development prerequisite is Done; P08-019 and full customer operations remain pending.\
   **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P09-016 — Expose support and complaint operations APIs**\
@@ -1978,6 +1973,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P11-006`\
   **Deliverable:** Verify current Bangladesh delivery deadlines, the applicable complaint-response period, refund obligations and approved shipping, cancellation, return, refund, privacy and terms copy.\
   **Acceptance:** Policy baselines are not misrepresented as operative law; checkout terms reference approved version.\
+  **Package A release checklist:** Validate current delivery applicability, event/timezone and prepaid handover/delivery mapping; approve versioned publication and protected manifests before live use. P06-003/P06-011 development Done does not satisfy this check.\
   **Evidence to attach:** Dated authority/operator approval record.
 
 - [ ] **P11-008 — Run approved production storefront/COD/guest/admin smoke tests**\
@@ -1987,6 +1983,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P11-004`, `P11-007`\
   **Deliverable:** Check browsing, customer/admin login, guest verification, configured delivery, safe COD and order visibility through approved production scenarios.\
   **Acceptance:** Results are authoritative; testing does not create unapproved orders or charge customers.\
+  **Package A release checklist:** Qualify the protected cash verifier against an actual authorized original receipt/settlement, prove single source recording/replay and independent delivery/payment state, and retain sanitized proof. Review protected runtime configuration before admission. P06-012/P06-013 development Done supplies software verification, not this real-world qualification.\
   **Evidence to attach:** Production smoke log.
 
 - [ ] **P11-009 — Validate offered live channels and operational refund safeguards**\
@@ -2208,9 +2205,9 @@ For each critical user journey (guest COD, registered COD, hosted gateway, late/
 
 ## 8. Verification & completion rules
 
-Before checking a task, ensure its applicable code/configuration exists, builds and follows approved module boundaries; server-side validation, access control and failure states are covered; related UI states meet `DESIGN.md`; and tests plus reviewer evidence are recorded. Mark review/approval as distinct from implementation; use `In Review` until acceptance.
+Before checking a task, ensure its applicable code/configuration exists, builds and follows approved module boundaries; server-side validation, access control and failure states are covered; related UI states meet `DESIGN.md`; and tests plus reviewer evidence are recorded. Apply §2: executor engineering review is sufficient for ordinary development tasks under the approved convention; use `In Review` when an explicitly required separate acceptance is pending.
 
-**Required completion evidence, as applicable:** code/commit or PR reference, tests and their environment, concurrency/transaction test output, integration screenshots, provider sandbox/live validation, accessibility/browser report, approved policy or operator sign-off, and monitoring/restore runbook demonstration. Never invent results or mark unfinished provider and legal verification as done.
+**Required completion evidence, as applicable to the task scope:** code/commit or PR reference, tests and their environment, concurrency/transaction output, relevant UI/accessibility checks, and executor review. Explicit qualification/release tasks additionally require their real provider/policy/operator, deployment and recovery evidence. Never invent results or mark unfinished provider and legal verification as done.
 
 **Mandatory gate checks:**
 
@@ -2624,3 +2621,6 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **1 November 2026 — all blocked tasks reviewed:** Reviewed every Blocked task and linked its [individual finding, accountable owner and next action](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Fixed real review HTTP composition and extended local customer status/search operations with transaction, revocation, replay and rollback checks. Baseline regression and affected follow-ups are recorded in that review. No full deliverable with accepted prerequisites and independent acceptance was established; counts remain 107 Done, 77 Not Started, 24 Blocked and 2 Deferred.
 
 **1 November 2026 — funded cancellation/refund foundation:** Added durable obligations/attempts, atomic source/order/unit/delivery reservations, funded/partial-COD cancellation and one-shot gateway dispatch with uncertainty retention. [Actual migration, race, rollback, HTTP and regression evidence](./evidence/P06-013-P08-005-008-durable-reservations.md). Verified completion/reconciliation/manual/notification flows and qualified external acceptance remain unfinished. Statuses and counts unchanged; no full task or milestone acceptance inferred.
+
+
+**1 November 2026 — owner-approved engineering completion / Package A:** The owner approved separating ordinary development Done from live qualification. P06-003/011/012/013/014 move Blocked → Done after verified implementation, tests and executor review under that convention. [Decision, preserved evidence and release checklist mapping](./evidence/P06-011-012-local-lifecycle-cod.md#engineering-completion-and-release-gate-separation--1-november-2026). Policy applicability/publication and actual original-cash qualification remain explicitly in P11-007/P11-008; no external fact, application closeout or milestone is accepted. Overall: 210 tasks, 112 Done, 77 Not Started, 19 Blocked, 2 Deferred.

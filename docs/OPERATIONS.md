@@ -231,6 +231,13 @@ commitment. Handover is elapsed hours from that payment, while delivery cap is D
 from placement. COD ignores prepaid rules. Late handover remains visible as overdue rather than
 preventing recovery shipment or pretending the delivery was on time.
 
+Development completion is distinct from operational qualification. Package A software verification
+is retained with its development tasks; P11-007 owns current delivery-policy applicability, approved
+Bangla publication and genuine protected review manifests. P11-008 owns actual original-cash-source
+qualification and authorized COD smoke evidence. Keep both release checks open until performed.
+Neither a development Done checkbox nor a passing synthetic fixture enables flags, proves receipt
+of money, confirms payout or substitutes for an explicit release/milestone decision.
+
 ### 3.3 Change classes
 
 | Change                                                | Approval/review requirement                                | Release implication                                      |

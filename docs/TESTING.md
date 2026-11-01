@@ -1130,6 +1130,13 @@ recovery and phase-exit scenarios. Do not create placeholder suites for unimplem
 consolidated results from that task and the phase gate; task-level focused verification remains mandatory.
 A blocked prerequisite prevents the affected application-stage closeout even if executable local checks pass.
 
+Ordinary engineering-task Done follows Implementation Plan §3.3 and Tasks §2: complete affected
+behavior, relevant passing tests, executor diff review and traceable evidence. It does not require
+live customer cash, provider production access or a separate human sign-off for each feature.
+Real-policy/operator/provider qualification is recorded in its explicit qualification/release tasks;
+software must still deny unavailable evidence and preserve every financial/security invariant.
+This distinction does not accept application closeouts, milestones or an actual external effect.
+
 P01-024, P03-022, P09-010 and P02-017 are the foundation, backend, admin and storefront closeouts.
 Backend user journeys are exercised through HTTP/API and real persistence, including guest proof,
 admin mutations and provider callbacks; they do not require customer/admin screens. Admin and

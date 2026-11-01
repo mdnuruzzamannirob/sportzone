@@ -1,5 +1,11 @@
 # P06-003 — Delivery deadline policy boundary
 
+**Current development status: Done.** The
+[owner-approved engineering completion and explicit release checklist](./P06-011-012-local-lifecycle-cod.md#engineering-completion-and-release-gate-separation--1-november-2026)
+supersedes the historical Blocked disposition below. Real applicability/publication remains P11-007;
+no legal approval is claimed by the development checkbox.
+
+
 **Date:** 26 October 2026 (Asia/Dhaka)
 **Executor:** Codex
 **Status:** Blocked for required qualified policy/compliance sign-off; local technical implementation accepted by project owner on 26 October 2026
