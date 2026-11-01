@@ -142,6 +142,8 @@ describe('executable API contract registry', () => {
     const expected = [
       'GET /orders/{orderId}/claims',
       'GET /claims/{claimId}',
+      'GET /admin/claims',
+      'GET /admin/claims/{claimId}',
       'GET /products/{productId}/reviews',
       'GET /me/reviews',
       'POST /products/{productId}/reviews',

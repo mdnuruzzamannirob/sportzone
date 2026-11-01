@@ -8,6 +8,11 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 1 November 2026 — Local review visibility and administrator claim reads
+
+- Added Catalog-owned review visibility checks and locally composed, admin-protected claim queue and detail reads.
+- P05-016 and P08-019 remain Blocked pending accepted dependencies, full integration and independent review.
+
 ## 31 October 2026 — Local review and claim reads
 
 - Added locally composed review reading, submission and moderation routes and scoped claim reads with private evidence metadata.

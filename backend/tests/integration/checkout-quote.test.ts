@@ -5802,7 +5802,7 @@ it('claim history local: scoped guest sees only its own claim and invalid custom
     complaintOrderAccess(db.connection),
     claimEvidenceMetadataAccess(db.connection),
   )
-  const app = createApp({ apiRouter: returnHistoryRoutes(service, security) })
+  const app = createApp({ apiRouter: returnHistoryRoutes(service, security, sessions) })
   const cookie = `sz_guest_order_sid=${proof.token}`
   const list = await request(app)
     .get(`/api/v1/orders/${f.id}/claims`)
@@ -5820,6 +5820,41 @@ it('claim history local: scoped guest sees only its own claim and invalid custom
     .get(`/api/v1/claims/${f.claimId}`)
     .set('Cookie', `${cookie}; sz_customer_sid=invalid`)
     .expect(401)
+})
+it('claim history local: admin queue and detail require an active admin and redact internal evidence', async () => {
+  const f = await physicalReturnFixture('shortage')
+  const customers = createCustomerAccountAccess(db.connection, identities, sessions)
+  const history = returnHistoryService(
+    db.connection,
+    orderScopeAccess(customers, sessions),
+    complaintOrderAccess(db.connection),
+    claimEvidenceMetadataAccess(db.connection),
+    createAdminAccountAccess(db.connection, identities, sessions),
+  )
+  const app = createApp({ apiRouter: returnHistoryRoutes(history, security, sessions) })
+  const adminCookie = `sz_admin_sid=${f.token}`
+  const list = await request(app)
+    .get('/api/v1/admin/claims?claimType=shortage&status=approved&pageSize=1')
+    .set('Cookie', adminCookie)
+    .expect(200)
+  expect(list.body.data).toHaveLength(1)
+  expect(list.body.data[0]).toMatchObject({ id: f.claimId, status: 'approved' })
+  const detail = await request(app)
+    .get(`/api/v1/admin/claims/${f.claimId}`)
+    .set('Cookie', adminCookie)
+    .expect(200)
+  expect(detail.body.data.eligibility).toEqual({ policyVersion: 'synthetic' })
+  expect(detail.body.data).not.toHaveProperty('requestedBy')
+  expect(detail.body.data).not.toHaveProperty('eligibilitySnapshot')
+  const other = await customer()
+  await request(app).get('/api/v1/admin/claims').set('Cookie', other.cookie).expect(401)
+  await request(app).get(`/api/v1/admin/claims/${f.claimId}`).expect(401)
+  await request(app)
+    .get('/api/v1/admin/claims?status=unknown')
+    .set('Cookie', adminCookie)
+    .expect(400)
+  await identities.users.updateOne({ _id: f.admin.user._id }, { $set: { status: 'suspended' } })
+  await request(app).get('/api/v1/admin/claims').set('Cookie', adminCookie).expect(401)
 })
 it('physical return local: receipt never restores stock, inspected resellable units restore once under replay', async () => {
   const f = await physicalReturnFixture(),
@@ -6634,7 +6669,7 @@ it('claim history local: customer ownership is enforced on list and nested detai
     complaintOrderAccess(db.connection),
     claimEvidenceMetadataAccess(db.connection),
   )
-  const app = createApp({ apiRouter: returnHistoryRoutes(history, security) })
+  const app = createApp({ apiRouter: returnHistoryRoutes(history, security, sessions) })
   await request(app)
     .get(`/api/v1/orders/${f.orderId}/claims`)
     .set('Cookie', f.buyer.cookie)

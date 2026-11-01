@@ -89,7 +89,11 @@ const media = {
 // These routers are locally composed only and are deliberately excluded from live registry parity.
 export function localReadRouters() {
   return [
-    returnHistoryRoutes({ list: unused, detail: unused }, security),
+    returnHistoryRoutes(
+      { list: unused, detail: unused, adminList: unused, adminDetail: unused },
+      security,
+      sessions,
+    ),
     reviewRoutes(
       { publicList: unused, ownList: unused, adminList: unused },
       { create: unused, readOwn: unused, edit: unused, moderate: unused },

@@ -23,3 +23,11 @@ Local Node environment with isolated MongoDB replica set; HTTP exercised via Sup
 - **Not run:** full checkout integration suite, real provider or hosted integration, frontend/browser, independent acceptance and milestone checks.
 
 No API, database, operational or business policy contract was changed. Local router behavior is provisional and is not included in the implemented API registry. Rollback removes the uncomposed routes and readers; no migration or external effect is involved.
+
+## 1 November 2026 — additional local review and admin claim reads
+
+P05-016 now has a transaction-scoped Catalog-owned review visibility capability using the same active product, category ancestry and valid variant checks as public catalog browsing. Local tests inject this actual capability; normal root composition remains disabled and purchase eligibility in the review API tests remains synthetic.
+
+P08-019 now has locally composed paginated administrator claim queue and detail reads with current-admin session checks, strict filters and redacted evidence and eligibility metadata. These are read-only and do not enable decisions or refunds. Customer/guest access remains unchanged. The local queue is pending accepted prerequisites, full API composition and independent review; the existing task limitations above still apply.
+
+Checks on an isolated MongoDB replica set: `cd backend && ../node_modules/.bin/vitest run --config vitest.integration.config.ts checkout-quote.test.ts -t 'claim history local' --reporter=default` passed 3 tests (232 skipped); the corresponding command for `reviews.test.ts` passed all 30 tests. `npm run test:contract --workspace=backend` passed 112 tests. `npm run typecheck --workspace=backend`, `npm run build --workspace=backend`, `npm run lint --workspace=backend`, `npm run lint:boundaries`, and `npm run format:check` passed. No deployed integration or external provider check was run.
