@@ -335,6 +335,22 @@ test('AFTERSALES-BOUNDARY-01: notifications and review eligibility cannot import
   assert.ok(checkBoundaries(root).errors.some((e) => e.includes('private persistence')))
 })
 
+test('HISTORY-BOUNDARY-01: review and claim readers cannot import foreign private models', (t) => {
+  const { root, put } = fixture(t)
+  for (const [reader, owner] of [
+    ['reviews/review-query', 'orders/order'],
+    ['reviews/review-query', 'catalog/products/product'],
+    ['returns/return-history', 'orders/order'],
+    ['returns/return-history', 'media/media'],
+  ]) {
+    put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
+    const relative = `../${owner}.model.js`
+    put(`backend/src/modules/${reader}.service.ts`, `import "${relative}"`)
+    assert.ok(checkBoundaries(root).errors.some((e) => e.includes('private persistence')))
+    put(`backend/src/modules/${reader}.service.ts`, 'export const reader = 1')
+  }
+})
+
 test('BACKEND-BOUNDARY-03: shared technical helpers cannot import domain/configuration via barrels', (t) => {
   const { root, put } = fixture(t)
   put('backend/src/modules/orders/order.service.ts', 'export const service = 1')

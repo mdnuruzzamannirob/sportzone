@@ -20,6 +20,9 @@ import { refundPaymentSnapshotAccess } from '../../src/modules/payments/payment.
 import { returnPhysicalService } from '../../src/modules/returns/return-physical.service.js'
 import { returnLifecycleService } from '../../src/modules/returns/return-lifecycle.service.js'
 import { returnService } from '../../src/modules/returns/return.service.js'
+import { returnHistoryService } from '../../src/modules/returns/return-history.service.js'
+import { returnHistoryRoutes } from '../../src/modules/returns/return-history.routes.js'
+import { claimEvidenceMetadataAccess } from '../../src/modules/media/claim-evidence.service.js'
 import { initializeReturnPersistence } from '../../src/modules/returns/return.persistence.js'
 import { returnModel } from '../../src/modules/returns/return.model.js'
 import {
@@ -5771,6 +5774,53 @@ async function physicalReturnFixture(
     )
   return { ...f, claimId, itemId, review, physical, receive, inspect }
 }
+it('claim history local: scoped guest sees only its own claim and invalid customer credentials never downgrade', async () => {
+  const f = await physicalReturnFixture('shortage'),
+    other = await physicalReturnFixture('shortage')
+  const customers = createCustomerAccountAccess(db.connection, identities, sessions)
+  const guests = guestSessionService(
+    db.connection,
+    identities,
+    {
+      secret: authSecret,
+      customerTtlSeconds: 600,
+      adminTtlSeconds: 300,
+      sameSite: 'lax',
+      appEnvironment: 'test',
+      apiOrigin: 'https://api.example.test',
+    },
+    600,
+    guestOrderAccess(db.connection).verify,
+    () => now,
+  )
+  const proof = await inTransaction(db.connection, (session) =>
+    guests.issueAfterProof(session, f.id),
+  )
+  const service = returnHistoryService(
+    db.connection,
+    orderScopeAccess(customers, sessions, guests),
+    complaintOrderAccess(db.connection),
+    claimEvidenceMetadataAccess(db.connection),
+  )
+  const app = createApp({ apiRouter: returnHistoryRoutes(service, security) })
+  const cookie = `sz_guest_order_sid=${proof.token}`
+  const list = await request(app)
+    .get(`/api/v1/orders/${f.id}/claims`)
+    .set('Cookie', cookie)
+    .expect(200)
+  expect(list.body.data).toHaveLength(1)
+  expect(list.body.data[0]).toMatchObject({ id: f.claimId, orderId: f.id, evidence: [] })
+  for (const field of ['requestedBy', 'eligibilitySnapshot', 'protectedUnitOrdinals'])
+    expect(list.body.data[0]).not.toHaveProperty(field)
+  await request(app).get(`/api/v1/claims/${f.claimId}`).set('Cookie', cookie).expect(200)
+  await request(app).get(`/api/v1/orders/${f.id}/claims`).expect(401)
+  await request(app).get(`/api/v1/orders/${other.id}/claims`).set('Cookie', cookie).expect(401)
+  await request(app).get(`/api/v1/claims/${other.claimId}`).set('Cookie', cookie).expect(404)
+  await request(app)
+    .get(`/api/v1/claims/${f.claimId}`)
+    .set('Cookie', `${cookie}; sz_customer_sid=invalid`)
+    .expect(401)
+})
 it('physical return local: receipt never restores stock, inspected resellable units restore once under replay', async () => {
   const f = await physicalReturnFixture(),
     variants = productModels(db.connection).variants
@@ -6560,6 +6610,42 @@ async function deliveredReviewFixture(deliver = true) {
   })
   return { buyer, selected, orderId, selection, eligibility, reviews }
 }
+it('claim history local: customer ownership is enforced on list and nested detail', async () => {
+  await initializeReturnPersistence(db.connection)
+  const f = await deliveredReviewFixture(),
+    other = await customer()
+  const claimId = new Types.ObjectId().toHexString()
+  const create = returnService(db.connection, claimQuantityAccess(db.connection), async () => ({
+    requestedBy: { type: 'customer', id: f.buyer.user._id.toHexString() },
+    eligibilitySnapshot: { policyVersion: 'synthetic' },
+  }))
+  await inTransaction(db.connection, (session) =>
+    create.create(session, {
+      claimId,
+      orderId: f.orderId,
+      claimType: 'shortage',
+      items: [{ orderItemId: f.selection.qualifyingOrderItemId, quantity: 1, reason: 'Synthetic' }],
+    }),
+  )
+  const accounts = createCustomerAccountAccess(db.connection, identities, sessions)
+  const history = returnHistoryService(
+    db.connection,
+    orderScopeAccess(accounts, sessions),
+    complaintOrderAccess(db.connection),
+    claimEvidenceMetadataAccess(db.connection),
+  )
+  const app = createApp({ apiRouter: returnHistoryRoutes(history, security) })
+  await request(app)
+    .get(`/api/v1/orders/${f.orderId}/claims`)
+    .set('Cookie', f.buyer.cookie)
+    .expect(200)
+  await request(app).get(`/api/v1/claims/${claimId}`).set('Cookie', f.buyer.cookie).expect(200)
+  await request(app)
+    .get(`/api/v1/orders/${f.orderId}/claims`)
+    .set('Cookie', other.cookie)
+    .expect(404)
+  await request(app).get(`/api/v1/claims/${claimId}`).set('Cookie', other.cookie).expect(404)
+})
 async function markSyntheticFullReturnAndRefund(orderId: string) {
   const balances = orderModels(db.connection).balances,
     row = await balances.findOne({ orderId }).orFail()

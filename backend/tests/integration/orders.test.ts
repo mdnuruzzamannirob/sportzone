@@ -17,6 +17,7 @@ import { returnModel } from '../../src/modules/returns/return.model.js'
 import { claimQuantityAccess } from '../../src/modules/orders/order.service.js'
 import { spawnSync } from 'node:child_process'
 import { Types } from 'mongoose'
+import { claimEvidenceMetadataAccess } from '../../src/modules/media/claim-evidence.service.js'
 import { afterAll, beforeAll, beforeEach, expect, it } from 'vitest'
 import { isolatedDatabase } from '../helpers/database.js'
 import { testEnvironment } from '../helpers/environment.js'
@@ -971,6 +972,41 @@ async function evidenceClaimFixture() {
   )
   return { ...f, media, uploaded, evidenceCommand: command, evidenceService: service }
 }
+it('claim history local: evidence metadata requires exact private claim and item binding', async () => {
+  const f = await evidenceClaimFixture()
+  await inTransaction(db.connection, (session) =>
+    f.evidenceService.create(session, f.evidenceCommand),
+  )
+  const item = f.evidenceCommand.items[0]
+  if (!item) throw new Error('Missing fixture line')
+  const input = {
+    orderId: f.proof.orderId,
+    returnId: f.evidenceCommand.claimId,
+    claimType: 'physical_return' as const,
+    items: [{ orderItemId: item.orderItemId, assetIds: [f.uploaded.assetId] }],
+  }
+  const read = claimEvidenceMetadataAccess(db.connection)
+  const metadata = await inTransaction(db.connection, (session) => read(session, input))
+  expect(metadata).toEqual([
+    expect.objectContaining({ assetId: f.uploaded.assetId, orderItemId: item.orderItemId }),
+  ])
+  expect(Object.keys(metadata[0] ?? {}).sort()).toEqual([
+    'assetId',
+    'mimeType',
+    'orderItemId',
+    'size',
+  ])
+  await expect(
+    inTransaction(db.connection, (session) =>
+      read(session, { ...input, returnId: new Types.ObjectId().toHexString() }),
+    ),
+  ).rejects.toThrow()
+  await expect(
+    inTransaction(db.connection, (session) =>
+      read(session, { ...input, orderId: new Types.ObjectId().toHexString() }),
+    ),
+  ).rejects.toThrow()
+})
 it('return evidence local: scoped private attachment joins claim and ledger in one transaction', async () => {
   const f = await evidenceClaimFixture()
   await inTransaction(db.connection, (session) =>

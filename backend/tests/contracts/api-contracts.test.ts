@@ -31,7 +31,7 @@ import {
   transportOperations,
 } from '../../contracts/registry.js'
 import { createApp } from '../../src/app.js'
-import { registeredOperations, registeredRouter } from './routes.fixture.js'
+import { localReadRouters, registeredOperations, registeredRouter } from './routes.fixture.js'
 
 const markdown = readFileSync(resolve('../docs/API.md'), 'utf8')
 const artifacts = generateArtifacts(markdown)
@@ -129,9 +129,30 @@ describe('executable API contract registry', () => {
         'orders/order-read.routes.ts',
         'payments/payment-monitor.routes.ts',
         'promotions/coupon-admin.routes.ts',
+        'returns/return-history.routes.ts',
+        'reviews/review.routes.ts',
         'settings/settings.routes.ts',
       ].sort(),
     )
+  })
+  it('keeps local-only history and review routes aligned with planned API paths', () => {
+    const actual = localReadRouters()
+      .flatMap((router) => registeredOperations(router))
+      .filter((op) => !['HEAD', 'OPTIONS'].includes(op.method))
+    const expected = [
+      'GET /orders/{orderId}/claims',
+      'GET /claims/{claimId}',
+      'GET /products/{productId}/reviews',
+      'GET /me/reviews',
+      'POST /products/{productId}/reviews',
+      'PATCH /reviews/{reviewId}',
+      'GET /admin/reviews',
+      'POST /admin/reviews/{reviewId}/moderation',
+    ]
+    expect(actual.map((op) => `${op.method} ${op.path}`).sort()).toEqual(expected.sort())
+    const planned = artifacts['planned-operations.json'].operations
+    for (const op of actual)
+      expect(planned.some((item) => item.method === op.method && item.path === op.path)).toBe(true)
   })
   it('validates the whole OpenAPI and Postman documents against official offline schemas', () => {
     const official = JSON.parse(
