@@ -1,3 +1,11 @@
+import { startServer } from '../../src/server.js'
+import { mkdtemp, writeFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { configuredOrderOperations } from '../../src/setup.js'
+import { ApiError } from '../../src/shared/errors/app-error.js'
+import { composeOrderOperationsRoutes } from '../../src/setup.js'
+import { createApiRouter } from '../../src/routes.js'
 import {
   returnDecisionNotifier,
   returnMessageService,
@@ -13,10 +21,23 @@ import { manualPayoutVerificationService } from '../../src/modules/refunds/manua
 import {
   refundAdvisoryService,
   multiSourceRefundAdvisoryService,
+  correctionRefundAdvisoryService,
 } from '../../src/modules/refunds/refund-advisory.service.js'
 import { refundOrderSnapshotAccess } from '../../src/modules/orders/order.service.js'
 import { refundClaimSnapshotAccess } from '../../src/modules/returns/return.service.js'
-import { refundPaymentSnapshotAccess } from '../../src/modules/payments/payment.service.js'
+import { refundReservationService } from '../../src/modules/refunds/refund-reservation.service.js'
+import { refundDispatchService } from '../../src/modules/refunds/refund-dispatch.service.js'
+import { cancellationRefundService } from '../../src/modules/refunds/cancellation-refund.service.js'
+import { refundAttemptModel } from '../../src/modules/refunds/refund-attempt.model.js'
+import { initializeRefundAttemptPersistence } from '../../src/modules/refunds/refund-attempt.persistence.js'
+import { refundModel } from '../../src/modules/refunds/refund.model.js'
+import { refundUnitReservationAccess } from '../../src/modules/orders/order.service.js'
+import { cancellationRefundSnapshotAccess } from '../../src/modules/orders/order.service.js'
+import {
+  correctionPaymentSnapshotAccess,
+  refundFundingAccess,
+  refundPaymentSnapshotAccess,
+} from '../../src/modules/payments/payment.service.js'
 import { returnPhysicalService } from '../../src/modules/returns/return-physical.service.js'
 import { returnLifecycleService } from '../../src/modules/returns/return-lifecycle.service.js'
 import { returnService } from '../../src/modules/returns/return.service.js'
@@ -31,7 +52,7 @@ import {
   claimRestockAccess,
 } from '../../src/modules/orders/order.service.js'
 import { returnReceiptService } from '../../src/modules/inventory/return-receipt.service.js'
-import { inTransaction } from '../../src/shared/database/transaction.js'
+import { assertOutsideTransaction, inTransaction } from '../../src/shared/database/transaction.js'
 import { orderMessageService } from '../../src/modules/notifications/order-message.service.js'
 import { orderNotificationAccess } from '../../src/modules/orders/order-notification.service.js'
 import { paymentNotificationValidator } from '../../src/modules/notifications/notification.persistence.js'
@@ -40,6 +61,8 @@ import { initializeDeliveryExceptionPersistence } from '../../src/modules/orders
 import { deliveryExceptionModel } from '../../src/modules/orders/delivery-exception.model.js'
 import { recoveryReceiptService } from '../../src/modules/inventory/recovery-receipt.service.js'
 import { complaintService } from '../../src/modules/support/complaint.service.js'
+import { supportReadRoutes } from '../../src/modules/support/support-read.routes.js'
+import { auditQueryService } from '../../src/modules/audit/audit-query.service.js'
 import { initializeComplaintPersistence } from '../../src/modules/support/complaint.persistence.js'
 import { complaintModel } from '../../src/modules/support/complaint.model.js'
 import { complaintOrderAccess } from '../../src/modules/orders/order.service.js'
@@ -52,6 +75,7 @@ import {
 } from '../../src/modules/payments/payment.service.js'
 import { orderPolicySnapshotAccess } from '../../src/modules/checkout/checkout-quote.service.js'
 import { cancellationService } from '../../src/modules/orders/cancellation.service.js'
+import { cancellationRoutes } from '../../src/modules/orders/cancellation.routes.js'
 import {
   initializeCancellationPersistence,
   verifyCancellationPersistence,
@@ -67,6 +91,7 @@ import { codCollectionOrderAccess } from '../../src/modules/orders/order.service
 import { paymentMonitorRoutes } from '../../src/modules/payments/payment-monitor.routes.js'
 import { paymentMonitorService } from '../../src/modules/payments/payment-monitor.service.js'
 import { composeNotificationWorker } from '../../src/setup.js'
+import { composeLocalReviewRoutes } from '../../src/setup.js'
 import { paymentMessageService } from '../../src/modules/notifications/payment-message.service.js'
 import { paymentNotificationAccess } from '../../src/modules/payments/payment-notification.service.js'
 import { createNotificationDeliveryService } from '../../src/modules/notifications/notification-delivery.service.js'
@@ -76,7 +101,12 @@ import { paymentReconciliationJob } from '../../src/jobs/reconcile-payments.job.
 import { paymentRiskRoutes } from '../../src/modules/payments/payment-risk.routes.js'
 import { paymentRiskService } from '../../src/modules/payments/payment-risk.service.js'
 import { paymentSettlementService } from '../../src/modules/payments/payment-settlement.service.js'
-import { createAdminAccountAccess } from '../../src/modules/auth/admin-account.service.js'
+import {
+  adminTransactionAccess,
+  createAdminAccountAccess,
+} from '../../src/modules/auth/admin-account.service.js'
+import { customerAdminService } from '../../src/modules/auth/customer-admin.service.js'
+import { customerAdminRoutes } from '../../src/modules/customers/customer-admin.routes.js'
 import { initializeCorrectionPersistence } from '../../src/modules/refunds/refund.persistence.js'
 import { createAuditWriter } from '../../src/modules/audit/audit.service.js'
 import { paymentProcessingService } from '../../src/modules/payments/payment-processing.service.js'
@@ -196,13 +226,22 @@ const recipient = {
   street: 'Synthetic street',
   postalCode: '1000',
 }
-function deadline(version = 'synthetic-v1') {
+function deadline(version = 'synthetic-v1', prepaid = false) {
   const rule = deliveryDeadlineRule.parse({
     version,
     timezone: 'Asia/Dhaka',
     effectiveFrom: '2026-01-01T00:00:00Z',
     target: { startEvent: 'confirmedAt', calendarDays: 14 },
     legalCaps: [],
+    ...(prepaid
+      ? {
+          prepaid: {
+            ruleRef: 'synthetic:prepaid-scope',
+            handoverHours: 48,
+            deliveryCalendarDays: 5,
+          },
+        }
+      : {}),
   })
   return createDeliveryDeadlineService(
     {
@@ -404,6 +443,7 @@ beforeEach(async () => {
     'providerReceiptIntake',
     'paymentCollections',
     'refunds',
+    'refundAttempts',
     'inventoryReservations',
     'inventoryMovements',
     'notifications',
@@ -2027,6 +2067,7 @@ async function initiationApp(
 async function customerHeldOrder(
   withCoupon = false,
   existingVariant?: Awaited<ReturnType<typeof variant>>,
+  prepaid = false,
 ) {
   const who = await customer(),
     selected = existingVariant ?? (await variant(2000, 1500))
@@ -2035,6 +2076,7 @@ async function customerHeldOrder(
     { $set: { 'paymentChannels.bkashEnabled': true } },
   )
   const quotes = makeService({
+    ...(prepaid ? { deadline: deadline('synthetic-prepaid-v1', true) } : {}),
     methods: paymentEligibility(async () => [
       { channel: 'bkash', active: true, minPoisha: 1, maxPoisha: 1000000 },
     ]),
@@ -2309,8 +2351,9 @@ it('hosted-init replay withholds a historical URL after channel disablement, ris
 async function processingFixture(
   withCoupon = false,
   existingVariant?: Awaited<ReturnType<typeof variant>>,
+  prepaid = false,
 ) {
-  const held = await customerHeldOrder(withCoupon, existingVariant),
+  const held = await customerHeldOrder(withCoupon, existingVariant, prepaid),
     { root } = await initiationApp()
   await request(root)
     .post(`/api/v1/orders/${held.result.id}/payment-attempts`)
@@ -4665,6 +4708,340 @@ it('cancellation/read local: collected cash blocks approval until a real refund 
     (await productModels(db.connection).variants.findById(f.selected.row._id))?.stock.committed,
   ).toBe(2)
 })
+async function fundedCancellationFixture(partial = false) {
+  await initializeRefundAttemptPersistence(db.connection)
+  const f = await cancellationReadFixture(),
+    admins = createAdminAccountAccess(db.connection, identities, sessions)
+  const lifecycle = orderLifecycleService(
+    db.connection,
+    admins,
+    fulfillmentPaymentAccess(db.connection),
+    fulfillmentAllocationService(db.connection, () => now),
+    async () => {},
+    () => now,
+  )
+  await lifecycle.transition(
+    f.admin.credentials.customerToken,
+    f.id,
+    { to: 'confirmed', reason: 'Synthetic qualified confirmation' },
+    'confirmed',
+  )
+  const payment = await paymentModel(db.connection).findOne({ orderId: f.id }).orFail()
+  const receipt = codCollectionService(
+    db.connection,
+    admins,
+    codCollectionOrderAccess(db.connection),
+    async (data) => ({
+      paymentId: data.paymentId,
+      amountPoisha: data.amountPoisha,
+      collectionReference: data.collectionReference,
+      evidenceRef: data.evidenceRef,
+      collectedAt: now,
+      digest: 'a'.repeat(64),
+    }),
+    () => now,
+  )
+  const amount = partial ? 1 : payment.expectedPoisha
+  await receipt.collect(
+    f.admin.credentials.customerToken,
+    payment._id.toHexString(),
+    {
+      amountPoisha: amount,
+      collectionReference: 'funded-cancellation',
+      evidenceRef: 'synthetic:cash-evidence',
+      reason: 'Synthetic verified receipt',
+    },
+    'cash',
+  )
+  const refund = cancellationRefundService(
+    db.connection,
+    cancellationRefundSnapshotAccess(db.connection),
+    refundUnitReservationAccess(db.connection),
+    refundFundingAccess(db.connection),
+    async () => ({
+      policyVersion: 'synthetic-cancellation-policy',
+      method: 'manual_bank',
+      consentRequired: false,
+      deliveryApproved: true,
+    }),
+  )
+  const release = cancellationAllocationService(db.connection, () => now)
+  const scope = orderScopeAccess(
+    createCustomerAccountAccess(db.connection, identities, sessions),
+    sessions,
+  )
+  const cancellation = cancellationService(
+    db.connection,
+    scope,
+    admins,
+    release,
+    cancellationPaymentAccess(db.connection),
+    refund,
+    () => now,
+  )
+  return { ...f, admins, payment, amount, lifecycle, refund, release, scope, cancellation }
+}
+it('funded cancellation: approval reserves every collected poisha with durable intents and releases stock exactly once', async () => {
+  const f = await fundedCancellationFixture(),
+    asked = await f.ask()
+  const input = { decision: 'approve', reason: 'Synthetic approved cancellation' }
+  const first = await f.cancellation.decide(
+    f.admin.credentials.customerToken,
+    asked.id,
+    input,
+    'approve-funded',
+  )
+  expect(first.status).toBe('approved')
+  expect(
+    await f.cancellation.decide(
+      f.admin.credentials.customerToken,
+      asked.id,
+      input,
+      'approve-funded',
+    ),
+  ).toEqual(first)
+  const refunds = await refundModel(db.connection).find({ orderId: f.id })
+  expect(refunds.reduce((sum, r) => sum + r.amountPoisha, 0)).toBe(f.amount)
+  expect(refunds.every((r) => r.basis === 'cancellation' && r.capacityStatus === 'reserved')).toBe(
+    true,
+  )
+  expect(await refundAttemptModel(db.connection).countDocuments()).toBe(refunds.length)
+  expect((await orderModels(db.connection).orders.findById(f.id).orFail()).fulfillmentStatus).toBe(
+    'cancelled',
+  )
+  expect(
+    (await productModels(db.connection).variants.findById(f.selected.row._id).orFail()).stock
+      .committed,
+  ).toBe(0)
+  const payment = await paymentModel(db.connection).findById(f.payment._id).orFail()
+  expect(payment.merchandiseRefundHeldPoisha).toBe(f.amount)
+  expect(payment.merchandiseRefundCompletedPoisha).toBe(0)
+  expect(payment.paymentStatus).toBe('paid')
+  const monitoring = await paymentMonitorService(db.connection, f.admins).detail(
+    f.admin.credentials.customerToken,
+    f.payment._id.toHexString(),
+    {},
+  )
+  expect(monitoring.corrections).toEqual([])
+  expect(monitoring.pagination.corrections.totalItems).toBe(0)
+})
+it('funded cancellation: partially collected COD creates only the verified amount of refund liability', async () => {
+  const f = await fundedCancellationFixture(true),
+    asked = await f.ask()
+  await f.cancellation.decide(
+    f.admin.credentials.customerToken,
+    asked.id,
+    { decision: 'approve', reason: 'Synthetic partial cash cancellation' },
+    'partial-cancel',
+  )
+  const rows = await refundModel(db.connection).find({ orderId: f.id })
+  expect(rows.reduce((sum, r) => sum + r.amountPoisha, 0)).toBe(1)
+  expect(
+    (await paymentModel(db.connection).findById(f.payment._id).orFail()).verifiedCollectedPoisha,
+  ).toBe(1)
+  expect((await orderModels(db.connection).orders.findById(f.id).orFail()).fulfillmentStatus).toBe(
+    'cancelled',
+  )
+})
+it('funded cancellation: downstream allocation failure rolls back the refund holds, attempts and cancellation together', async () => {
+  const f = await fundedCancellationFixture(),
+    asked = await f.ask()
+  const failing = cancellationService(
+    db.connection,
+    f.scope,
+    f.admins,
+    async (session, binding) => {
+      await f.release(session, binding)
+      throw new Error('Synthetic release failure after durable refund writes')
+    },
+    cancellationPaymentAccess(db.connection),
+    f.refund,
+    () => now,
+  )
+  await expect(
+    failing.decide(
+      f.admin.credentials.customerToken,
+      asked.id,
+      { decision: 'approve', reason: 'Synthetic rollback' },
+      'rollback',
+    ),
+  ).rejects.toThrow()
+  expect(await refundModel(db.connection).countDocuments({ orderId: f.id })).toBe(0)
+  expect(await refundAttemptModel(db.connection).countDocuments()).toBe(0)
+  expect(
+    (await paymentModel(db.connection).findById(f.payment._id).orFail())
+      .merchandiseRefundHeldPoisha,
+  ).toBe(0)
+  expect((await cancellationModel(db.connection).findById(asked.id).orFail()).status).toBe(
+    'requested',
+  )
+  expect((await orderModels(db.connection).orders.findById(f.id).orFail()).fulfillmentStatus).toBe(
+    'confirmed',
+  )
+  expect(
+    (await productModels(db.connection).variants.findById(f.selected.row._id).orFail()).stock
+      .committed,
+  ).toBe(2)
+})
+it('funded cancellation: concurrent shipment and paid cancellation across admins have one whole-order winner', async () => {
+  const f = await fundedCancellationFixture(),
+    other = await customer('admin')
+  await f.lifecycle.transition(
+    f.admin.credentials.customerToken,
+    f.id,
+    { to: 'processing', reason: 'Synthetic processing' },
+    'process-funded',
+  )
+  const asked = await f.ask()
+  const outcomes = await Promise.allSettled([
+    f.cancellation.decide(
+      f.admin.credentials.customerToken,
+      asked.id,
+      {
+        decision: 'approve',
+        reason: 'Synthetic no-dispatch proof',
+        dispatchNotStartedConfirmed: true,
+      },
+      'race-cancel',
+    ),
+    f.lifecycle.transition(
+      other.credentials.customerToken,
+      f.id,
+      { to: 'shipped', reason: 'Synthetic shipment', dispatchReference: 'funded-race-dispatch' },
+      'race-ship',
+    ),
+  ])
+  expect(outcomes.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
+  const order = await orderModels(db.connection).orders.findById(f.id).orFail()
+  const payment = await paymentModel(db.connection).findById(f.payment._id).orFail()
+  expect(payment.merchandiseRefundHeldPoisha).toBe(
+    order.fulfillmentStatus === 'cancelled' ? f.amount : 0,
+  )
+  expect(await refundModel(db.connection).countDocuments({ orderId: f.id })).toBe(
+    order.fulfillmentStatus === 'cancelled' ? 1 : 0,
+  )
+})
+it('cancellation HTTP: scoped request and protected paid decision use real reservation and remain replay-safe', async () => {
+  const f = await fundedCancellationFixture(),
+    other = await customer()
+  const root = createApp({
+    apiRouter: cancellationRoutes(f.cancellation, security, sessions, origin),
+  })
+  const path = `/api/v1/orders/${f.id}/cancellation-requests`
+  await request(root)
+    .post(path)
+    .set('Origin', origin)
+    .set('Cookie', f.who.cookie)
+    .set('X-CSRF-Token', f.who.csrf)
+    .send({ reason: 'Request without key' })
+    .expect(400)
+  const created = await request(root)
+    .post(path)
+    .set('Origin', origin)
+    .set('Cookie', f.who.cookie)
+    .set('X-CSRF-Token', f.who.csrf)
+    .set('Idempotency-Key', 'http-request')
+    .send({ reason: 'Synthetic customer request' })
+    .expect(201)
+  await request(root).get(path).set('Cookie', other.cookie).expect(404)
+  expect(
+    (await request(root).get(path).set('Cookie', f.who.cookie).expect(200)).body.data,
+  ).toHaveLength(1)
+  const queue = await request(root)
+    .get('/api/v1/admin/cancellation-requests?status=requested&pageSize=1')
+    .set('Cookie', f.admin.cookie)
+    .expect(200)
+  expect(queue.body.data[0].id).toBe(created.body.data.id)
+  const decisionPath = `/api/v1/admin/cancellation-requests/${created.body.data.id}/decision`
+  await request(root)
+    .post(decisionPath)
+    .set('Origin', 'http://localhost:5173')
+    .set('Cookie', f.admin.cookie)
+    .send({ decision: 'approve', reason: 'Missing CSRF' })
+    .expect(403)
+  const approve = () =>
+    request(root)
+      .post(decisionPath)
+      .set('Origin', 'http://localhost:5173')
+      .set('Cookie', f.admin.cookie)
+      .set('X-CSRF-Token', f.admin.csrf)
+      .set('Idempotency-Key', 'http-approve')
+      .send({ decision: 'approve', reason: 'Synthetic authorized approval' })
+  await approve().expect(200)
+  await approve().expect(200)
+  expect((await orderModels(db.connection).orders.findById(f.id).orFail()).fulfillmentStatus).toBe(
+    'cancelled',
+  )
+  expect(
+    (await paymentModel(db.connection).findById(f.payment._id).orFail())
+      .merchandiseRefundHeldPoisha,
+  ).toBe(f.amount)
+  expect(await refundAttemptModel(db.connection).countDocuments()).toBe(1)
+})
+it('cancellation HTTP: verified guest scope and CSRF are exact and invalid customer cookies never downgrade', async () => {
+  const held = await heldOrder()
+  await initializeCancellationPersistence(db.connection)
+  const guests = guestSessionService(
+    db.connection,
+    identities,
+    {
+      secret: authSecret,
+      customerTtlSeconds: 600,
+      adminTtlSeconds: 300,
+      sameSite: 'lax',
+      appEnvironment: 'test',
+      apiOrigin: 'https://api.example.test',
+    },
+    600,
+    guestOrderAccess(db.connection).verify,
+    () => now,
+  )
+  const proof = await inTransaction(db.connection, (session) =>
+    guests.issueAfterProof(session, held.result.id),
+  )
+  const scope = orderScopeAccess(
+    createCustomerAccountAccess(db.connection, identities, sessions),
+    sessions,
+    guests,
+  )
+  const service = cancellationService(
+    db.connection,
+    scope,
+    createAdminAccountAccess(db.connection, identities, sessions),
+    cancellationAllocationService(db.connection, () => now),
+    cancellationPaymentAccess(db.connection),
+    undefined,
+    () => now,
+  )
+  const root = createApp({ apiRouter: cancellationRoutes(service, security, sessions, origin) })
+  const path = `/api/v1/orders/${held.result.id}/cancellation-requests`,
+    cookie = `sz_guest_order_sid=${proof.token}`
+  await request(root)
+    .post(path)
+    .set('Cookie', cookie)
+    .set('X-CSRF-Token', proof.csrfToken)
+    .set('Idempotency-Key', 'missing-origin')
+    .send({ reason: 'No origin' })
+    .expect(403)
+  await request(root)
+    .post(path)
+    .set('Origin', origin)
+    .set('Cookie', cookie)
+    .set('X-CSRF-Token', 'bad')
+    .set('Idempotency-Key', 'bad-csrf')
+    .send({ reason: 'Wrong CSRF' })
+    .expect(403)
+  await request(root)
+    .post(path)
+    .set('Origin', origin)
+    .set('Cookie', cookie)
+    .set('X-CSRF-Token', proof.csrfToken)
+    .set('Idempotency-Key', 'guest-cancel')
+    .send({ reason: 'Verified guest request' })
+    .expect(201)
+  await request(root).get(path).set('Cookie', `${cookie}; sz_customer_sid=invalid`).expect(401)
+  await request(root).get(path).set('Cookie', cookie).expect(200)
+})
 it('cancellation/read local: audit readiness failure leaves request/order/stock recoverable with the same decision key', async () => {
   const f = await cancellationReadFixture(),
     asked = await f.ask()
@@ -5093,6 +5470,177 @@ async function exceptionFixture(protectedDisposition = true) {
     adminAccess,
   }
 }
+it('customer admin local: detail requires active admin and returns masked customer-only fields', async () => {
+  const who = await customer(),
+    admin = await customer('admin'),
+    other = await customer()
+  const service = customerAdminService(
+    db.connection,
+    identities,
+    createAdminAccountAccess(db.connection, identities, sessions),
+  )
+  const result = await service.detail(admin.credentials.customerToken, who.user._id.toHexString())
+  expect(result).toMatchObject({
+    id: who.user._id.toHexString(),
+    status: 'active',
+    emailVerified: false,
+  })
+  expect(result.emailMasked).not.toBe(who.user.emailNormalized)
+  expect(JSON.stringify(result)).not.toContain(who.user.emailNormalized)
+  for (const field of ['passwordHash', 'addresses', 'deletionRequest', 'emailNormalized'])
+    expect(result).not.toHaveProperty(field)
+  await expect(
+    service.detail(other.credentials.customerToken, who.user._id.toHexString()),
+  ).rejects.toThrow()
+  await expect(
+    service.detail(admin.credentials.customerToken, admin.user._id.toHexString()),
+  ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+  await expect(
+    service.detail(admin.credentials.customerToken, new Types.ObjectId().toHexString()),
+  ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+  await identities.users.updateOne({ _id: admin.user._id }, { $set: { status: 'suspended' } })
+  await expect(
+    service.detail(admin.credentials.customerToken, who.user._id.toHexString()),
+  ).rejects.toThrow()
+})
+it('blocked customer audit: HTTP search/detail enforce admin and status decisions require CSRF, key and strict input', async () => {
+  const who = await customer(),
+    administrator = await customer('admin')
+  const administration = customerAdminService(
+    db.connection,
+    identities,
+    createAdminAccountAccess(db.connection, identities, sessions),
+  )
+  const root = createApp({ apiRouter: customerAdminRoutes(administration, security, sessions) })
+  const path = `/api/v1/admin/customers/${who.user._id}`
+  await request(root).get(path).set('Cookie', who.cookie).expect(401)
+  const detail = await request(root).get(path).set('Cookie', administrator.cookie).expect(200)
+  expect(JSON.stringify(detail.body.data)).not.toContain(who.user.emailNormalized)
+  const searched = await request(root)
+    .get('/api/v1/admin/customers')
+    .query({ q: who.user.emailNormalized, pageSize: '1' })
+    .set('Cookie', administrator.cookie)
+    .expect(200)
+  expect(searched.body.data.map((row: { id: string }) => row.id)).toEqual([
+    who.user._id.toHexString(),
+  ])
+  expect(searched.body.meta).toMatchObject({ totalItems: 1, pageSize: 1 })
+  expect(
+    (
+      await request(root)
+        .get('/api/v1/admin/customers?q=.*')
+        .set('Cookie', administrator.cookie)
+        .expect(200)
+    ).body.data,
+  ).toEqual([])
+  await request(root)
+    .post(`${path}/status-decisions`)
+    .set('Origin', 'http://localhost:5173')
+    .set('Cookie', administrator.cookie)
+    .send({ to: 'suspended', reason: 'Synthetic review' })
+    .expect(403)
+  await request(root)
+    .post(`${path}/status-decisions`)
+    .set('Origin', 'http://localhost:5173')
+    .set('Cookie', administrator.cookie)
+    .set('X-CSRF-Token', administrator.csrf)
+    .send({ to: 'suspended', reason: 'Synthetic review' })
+    .expect(400)
+  await request(root)
+    .post(`${path}/status-decisions`)
+    .set('Origin', 'http://localhost:5173')
+    .set('Cookie', administrator.cookie)
+    .set('X-CSRF-Token', administrator.csrf)
+    .set('Idempotency-Key', 'bad-input')
+    .send({ to: 'suspended', reason: 'Synthetic review', role: 'admin' })
+    .expect(400)
+  expect((await identities.users.findById(who.user._id))?.status).toBe('active')
+})
+it('blocked customer audit: suspension revokes every customer session and old retries cannot undo reactivation', async () => {
+  const who = await customer(),
+    administrator = await customer('admin')
+  const second = await sessions.issue('customer', who.user._id)
+  const administration = customerAdminService(
+    db.connection,
+    identities,
+    createAdminAccountAccess(db.connection, identities, sessions),
+  )
+  const root = createApp({ apiRouter: customerAdminRoutes(administration, security, sessions) })
+  const path = `/api/v1/admin/customers/${who.user._id}/status-decisions`
+  const post = (to: string, key: string) =>
+    request(root)
+      .post(path)
+      .set('Origin', 'http://localhost:5173')
+      .set('Cookie', administrator.cookie)
+      .set('X-CSRF-Token', administrator.csrf)
+      .set('Idempotency-Key', key)
+      .send({ to, reason: 'Synthetic authorized status review' })
+  await post('suspended', 'suspend').expect(200)
+  expect(
+    await db.connection
+      .collection('auditLogs')
+      .countDocuments({ targetId: who.user._id, action: 'customer.status.active.suspended' }),
+  ).toBe(1)
+  await expect(sessions.authenticate('customer', who.credentials.customerToken)).rejects.toThrow()
+  await expect(sessions.authenticate('customer', second.token)).rejects.toThrow()
+  await post('active', 'reactivate').expect(200)
+  expect((await post('suspended', 'suspend').expect(200)).body.data.status).toBe('active')
+  await expect(sessions.authenticate('customer', second.token)).rejects.toThrow()
+  await post('active', 'suspend').expect(409)
+  expect(
+    await db.connection
+      .collection('auditLogs')
+      .countDocuments({ targetId: who.user._id, action: 'customer.status.decision' }),
+  ).toBe(2)
+  await identities.users.updateOne({ _id: who.user._id }, { $set: { status: 'deletion_pending' } })
+  await post('active', 'unsafe-reactivation').expect(409)
+})
+it('blocked customer audit: concurrent duplicate decisions have one effect and transaction failure rolls back sessions and audit', async () => {
+  const who = await customer(),
+    administrator = await customer('admin')
+  const admins = createAdminAccountAccess(db.connection, identities, sessions)
+  const administration = customerAdminService(db.connection, identities, admins)
+  const id = who.user._id.toHexString(),
+    command = { to: 'suspended', reason: 'Synthetic concurrent review' }
+  await Promise.all([
+    administration.decideStatus(administrator.credentials.customerToken, id, command, 'concurrent'),
+    administration.decideStatus(administrator.credentials.customerToken, id, command, 'concurrent'),
+  ])
+  expect(
+    await db.connection
+      .collection('auditLogs')
+      .countDocuments({ targetId: who.user._id, action: 'customer.status.decision' }),
+  ).toBe(1)
+  const other = await customer()
+  const failing: Parameters<typeof customerAdminService>[2] = {
+    owned: (token, work, mutating) =>
+      admins.owned(
+        token,
+        async (actor, transaction) => {
+          await work(actor, transaction)
+          throw new Error('Synthetic failure after actual status, session and audit writes')
+        },
+        mutating,
+      ),
+  }
+  await expect(
+    customerAdminService(db.connection, identities, failing).decideStatus(
+      administrator.credentials.customerToken,
+      other.user._id.toHexString(),
+      command,
+      'rollback',
+    ),
+  ).rejects.toThrow()
+  expect((await identities.users.findById(other.user._id))?.status).toBe('active')
+  await expect(
+    sessions.authenticate('customer', other.credentials.customerToken),
+  ).resolves.toBeDefined()
+  expect(
+    await db.connection
+      .collection('auditLogs')
+      .countDocuments({ targetId: other.user._id, action: 'customer.status.decision' }),
+  ).toBe(0)
+})
 it('commerce/exception batch: actual lifecycle commits one order email event per cause and delivery remains financially independent', async () => {
   const f = await lifecycleFixture()
   await f.move('confirmed')
@@ -5491,6 +6039,100 @@ it('commerce/exception batch: scoped complaint contact resolution and privacy ne
   ).rejects.toThrow()
   await expect(f.complaints.list(other.credentials, f.id)).rejects.toThrow()
 })
+it('support read local: admin complaint queue filters, paginates and never exposes contact', async () => {
+  const f = await exceptionFixture(),
+    other = await customer()
+  const saved = await f.complaints.submit(f.creds, f.id, {
+    issue: 'Synthetic support issue',
+    contactEmail: 'sensitive@example.test',
+  })
+  const app = createApp({
+    apiRouter: supportReadRoutes(
+      f.complaints,
+      auditQueryService(db.connection, f.adminAccess),
+      security,
+      sessions,
+    ),
+  })
+  await request(app).get('/api/v1/admin/complaints').expect(401)
+  await request(app).get('/api/v1/admin/complaints').set('Cookie', other.cookie).expect(401)
+  const result = await request(app)
+    .get('/api/v1/admin/complaints?status=open&pageSize=1')
+    .set('Cookie', f.admin.cookie)
+    .expect(200)
+  expect(result.body.data).toHaveLength(1)
+  expect(result.body.data[0]).toMatchObject({
+    id: saved.id,
+    status: 'open',
+    issue: 'Synthetic support issue',
+  })
+  expect(JSON.stringify(result.body.data)).not.toContain('sensitive@example.test')
+  expect(result.body.data[0]).not.toHaveProperty('contact')
+  await request(app)
+    .get('/api/v1/admin/complaints?status=unknown')
+    .set('Cookie', f.admin.cookie)
+    .expect(400)
+  await identities.users.updateOne({ _id: f.admin.user._id }, { $set: { status: 'suspended' } })
+  await request(app).get('/api/v1/admin/complaints').set('Cookie', f.admin.cookie).expect(401)
+})
+it('support read local: audit history requires active admin, filters targets and hides sensitive metadata', async () => {
+  const f = await exceptionFixture(),
+    other = await customer()
+  const saved = await f.complaints.submit(f.creds, f.id, { issue: 'Synthetic complaint issue' })
+  await f.complaints.resolve(
+    f.token,
+    saved.id,
+    { status: 'in_review', resolution: 'private@example.test' },
+    'audit-local',
+  )
+  const app = createApp({
+    apiRouter: supportReadRoutes(
+      f.complaints,
+      auditQueryService(db.connection, f.adminAccess),
+      security,
+      sessions,
+    ),
+  })
+  const path = `/api/v1/admin/audit-logs?targetType=complaint&targetId=${saved.id}`
+  await request(app).get(path).expect(401)
+  await request(app).get(path).set('Cookie', other.cookie).expect(401)
+  const result = await request(app).get(path).set('Cookie', f.admin.cookie).expect(200)
+  expect(result.body.data).toHaveLength(2)
+  const firstPage = await request(app)
+    .get(`${path}&pageSize=1&page=1`)
+    .set('Cookie', f.admin.cookie)
+    .expect(200)
+  const secondPage = await request(app)
+    .get(`${path}&pageSize=1&page=2`)
+    .set('Cookie', f.admin.cookie)
+    .expect(200)
+  expect(firstPage.body.meta).toMatchObject({ page: 1, pageSize: 1, totalItems: 2, totalPages: 2 })
+  expect([...firstPage.body.data, ...secondPage.body.data]).toEqual(result.body.data)
+  expect(result.body.data.map((e: { action: string }) => e.action).sort()).toEqual([
+    'complaint.resolve',
+    'complaint.submit',
+  ])
+  expect(result.body.data[0]).toHaveProperty('actor.type')
+  expect(result.body.data[0].subject).toEqual({ type: 'complaint', id: saved.id })
+  for (const hidden of [
+    'private@example.test',
+    'operationKey',
+    'afterDigest',
+    'beforeDigest',
+    'reason',
+  ])
+    expect(JSON.stringify(result.body.data)).not.toContain(hidden)
+  await request(app)
+    .get(`/api/v1/admin/audit-logs?targetId=${saved.id}`)
+    .set('Cookie', f.admin.cookie)
+    .expect(400)
+  await request(app)
+    .get('/api/v1/admin/audit-logs?from=2026-01-02T00%3A00%3A00Z&to=2026-01-01T00%3A00%3A00Z')
+    .set('Cookie', f.admin.cookie)
+    .expect(400)
+  await identities.users.updateOne({ _id: f.admin.user._id }, { $set: { status: 'suspended' } })
+  await request(app).get(path).set('Cookie', f.admin.cookie).expect(401)
+})
 it('commerce/exception batch: complaints require documented response to resolve and preserve first response on close/replay', async () => {
   const f = await exceptionFixture(),
     complaint = await f.complaints.submit(f.creds, f.id, { issue: 'Synthetic issue' })
@@ -5802,7 +6444,7 @@ it('claim history local: scoped guest sees only its own claim and invalid custom
     complaintOrderAccess(db.connection),
     claimEvidenceMetadataAccess(db.connection),
   )
-  const app = createApp({ apiRouter: returnHistoryRoutes(service, security) })
+  const app = createApp({ apiRouter: returnHistoryRoutes(service, security, sessions) })
   const cookie = `sz_guest_order_sid=${proof.token}`
   const list = await request(app)
     .get(`/api/v1/orders/${f.id}/claims`)
@@ -5820,6 +6462,41 @@ it('claim history local: scoped guest sees only its own claim and invalid custom
     .get(`/api/v1/claims/${f.claimId}`)
     .set('Cookie', `${cookie}; sz_customer_sid=invalid`)
     .expect(401)
+})
+it('claim history local: admin queue and detail require an active admin and redact internal evidence', async () => {
+  const f = await physicalReturnFixture('shortage')
+  const customers = createCustomerAccountAccess(db.connection, identities, sessions)
+  const history = returnHistoryService(
+    db.connection,
+    orderScopeAccess(customers, sessions),
+    complaintOrderAccess(db.connection),
+    claimEvidenceMetadataAccess(db.connection),
+    createAdminAccountAccess(db.connection, identities, sessions),
+  )
+  const app = createApp({ apiRouter: returnHistoryRoutes(history, security, sessions) })
+  const adminCookie = `sz_admin_sid=${f.token}`
+  const list = await request(app)
+    .get('/api/v1/admin/claims?claimType=shortage&status=approved&pageSize=1')
+    .set('Cookie', adminCookie)
+    .expect(200)
+  expect(list.body.data).toHaveLength(1)
+  expect(list.body.data[0]).toMatchObject({ id: f.claimId, status: 'approved' })
+  const detail = await request(app)
+    .get(`/api/v1/admin/claims/${f.claimId}`)
+    .set('Cookie', adminCookie)
+    .expect(200)
+  expect(detail.body.data.eligibility).toEqual({ policyVersion: 'synthetic' })
+  expect(detail.body.data).not.toHaveProperty('requestedBy')
+  expect(detail.body.data).not.toHaveProperty('eligibilitySnapshot')
+  const other = await customer()
+  await request(app).get('/api/v1/admin/claims').set('Cookie', other.cookie).expect(401)
+  await request(app).get(`/api/v1/admin/claims/${f.claimId}`).expect(401)
+  await request(app)
+    .get('/api/v1/admin/claims?status=unknown')
+    .set('Cookie', adminCookie)
+    .expect(400)
+  await identities.users.updateOne({ _id: f.admin.user._id }, { $set: { status: 'suspended' } })
+  await request(app).get('/api/v1/admin/claims').set('Cookie', adminCookie).expect(401)
 })
 it('physical return local: receipt never restores stock, inspected resellable units restore once under replay', async () => {
   const f = await physicalReturnFixture(),
@@ -6053,6 +6730,508 @@ function refundAdvisory(policy?: Parameters<typeof refundAdvisoryService>[3]) {
     policy,
   )
 }
+function reservations(
+  admins = createAdminAccountAccess(db.connection, identities, sessions),
+  policy: Parameters<typeof refundReservationService>[6] = async () => ({
+    policyVersion: 'synthetic-reservation-policy',
+    method: 'manual_bank',
+    consentRequired: false,
+  }),
+) {
+  return refundReservationService(
+    db.connection,
+    admins,
+    refundClaimSnapshotAccess(db.connection),
+    refundOrderSnapshotAccess(db.connection),
+    refundUnitReservationAccess(db.connection),
+    refundFundingAccess(db.connection),
+    policy,
+  )
+}
+async function reservationFixture(collected = true) {
+  await initializeRefundAttemptPersistence(db.connection)
+  const f = await physicalReturnFixture('shortage')
+  if (collected) await f.cash()
+  const input = {
+    orderId: f.id,
+    basis: 'shortage',
+    basisRefId: f.claimId,
+    classification: 'merchandise',
+    requestedItems: [{ orderItemId: f.itemId, quantity: 1 }],
+    reason: 'Synthetic reservation review',
+  }
+  return { ...f, input, service: reservations() }
+}
+it('refund reservation: durable obligation, attempt and source/order/unit holds commit once across different replay keys', async () => {
+  const f = await reservationFixture()
+  const first = await f.service.reserve(f.token, f.input, 'reserve')
+  expect(first.refunds).toHaveLength(1)
+  expect(first.refunds[0]).toMatchObject({ status: 'approved', capacityStatus: 'reserved' })
+  expect(await f.service.reserve(f.token, f.input, 'reserve')).toEqual(first)
+  expect(
+    await f.service.reserve(
+      f.token,
+      { ...f.input, reason: 'Another authorized review' },
+      'changed-key',
+    ),
+  ).toEqual(first)
+  await expect(
+    f.service.reserve(f.token, { ...f.input, reason: 'Changed payload' }, 'reserve'),
+  ).rejects.toMatchObject({ code: 'IDEMPOTENCY_CONFLICT' })
+  const row = await refundModel(db.connection).findOne({ orderId: f.id }).orFail()
+  const attempt = await refundAttemptModel(db.connection).findOne({ refundId: row._id }).orFail()
+  expect(attempt.status).toBe('created')
+  expect(attempt.amountPoisha).toBe(row.amountPoisha)
+  expect(attempt.toObject()).not.toHaveProperty('confirmedAt')
+  expect(row.timingSnapshot).toMatchObject({ status: 'under_review' })
+  expect(row.timingSnapshot?.targetAt).toBeUndefined()
+  const source = await paymentRecordModels(db.connection)
+    .collections.findById(row.sourceCollectionId)
+    .orFail()
+  const payment = await paymentModel(db.connection).findById(row.paymentId).orFail()
+  const balance = await orderModels(db.connection).balances.findOne({ orderId: f.id }).orFail()
+  expect(source.get('merchandiseRefundHeldPoisha')).toBe(row.amountPoisha)
+  expect(payment.merchandiseRefundHeldPoisha).toBe(row.amountPoisha)
+  expect(balance.unitCoverage.reduce((sum, unit) => sum + unit.refundHeldPoisha, 0)).toBe(
+    row.amountPoisha,
+  )
+  expect(await refundModel(db.connection).countDocuments()).toBe(1)
+  expect(await refundAttemptModel(db.connection).countDocuments()).toBe(1)
+})
+it('refund reservation: different admins and keys converge on one natural business request', async () => {
+  const f = await reservationFixture(),
+    other = await customer('admin')
+  const results = await Promise.all([
+    f.service.reserve(f.token, f.input, 'first'),
+    f.service.reserve(other.credentials.customerToken, f.input, 'second'),
+  ])
+  expect(results[0]).toEqual(results[1])
+  expect(await refundModel(db.connection).countDocuments()).toBe(1)
+  expect(await refundAttemptModel(db.connection).countDocuments()).toBe(1)
+})
+it('refund reservation: competing quantities cannot reserve an original ordinal twice', async () => {
+  const f = await reservationFixture(),
+    other = await customer('admin')
+  const results = await Promise.allSettled([
+    f.service.reserve(f.token, f.input, 'one'),
+    f.service.reserve(
+      other.credentials.customerToken,
+      { ...f.input, requestedItems: [{ orderItemId: f.itemId, quantity: 2 }] },
+      'two',
+    ),
+  ])
+  expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
+  const balance = await orderModels(db.connection).balances.findOne({ orderId: f.id }).orFail()
+  expect(
+    balance.unitCoverage.every(
+      (u) => u.refundHeldPoisha + u.refundCompletedPoisha <= u.netEntitlementPoisha,
+    ),
+  ).toBe(true)
+})
+it('refund reservation: failure after actual financial, obligation, attempt and audit writes rolls everything back', async () => {
+  const f = await reservationFixture(),
+    admins = createAdminAccountAccess(db.connection, identities, sessions)
+  const fail: typeof admins = {
+    owned: (token, work, mutating) =>
+      admins.owned(
+        token,
+        async (actor, session) => {
+          await work(actor, session)
+          throw new Error('Synthetic post-reservation failure')
+        },
+        mutating,
+      ),
+  }
+  await expect(reservations(fail).reserve(f.token, f.input, 'fail')).rejects.toThrow()
+  expect(await refundModel(db.connection).countDocuments()).toBe(0)
+  expect(await refundAttemptModel(db.connection).countDocuments()).toBe(0)
+  expect(
+    (await paymentModel(db.connection).findOne({ orderId: f.id }).orFail())
+      .merchandiseRefundHeldPoisha,
+  ).toBe(0)
+  expect(
+    (
+      await orderModels(db.connection).balances.findOne({ orderId: f.id }).orFail()
+    ).unitCoverage.every((u) => u.refundHeldPoisha === 0),
+  ).toBe(true)
+  expect(
+    await db.connection.collection('auditLogs').countDocuments({ action: 'refund.group.reserve' }),
+  ).toBe(0)
+})
+it('refund reservation: uncollected COD, wrong basis, absent policy and unsupported gateway fail closed', async () => {
+  const f = await reservationFixture(false)
+  await expect(f.service.reserve(f.token, f.input, 'unfunded')).rejects.toMatchObject({
+    code: 'REFUND_BALANCE_EXCEEDED',
+  })
+  await f.cash()
+  await expect(
+    f.service.reserve(f.token, { ...f.input, basis: 'physical_return' }, 'wrong-basis'),
+  ).rejects.toMatchObject({ code: 'BUSINESS_RULE_VIOLATION' })
+  const missing = refundReservationService(
+    db.connection,
+    f.adminAccess,
+    refundClaimSnapshotAccess(db.connection),
+    refundOrderSnapshotAccess(db.connection),
+    refundUnitReservationAccess(db.connection),
+    refundFundingAccess(db.connection),
+  )
+  await expect(missing.reserve(f.token, f.input, 'no-policy')).rejects.toMatchObject({
+    code: 'SERVICE_UNAVAILABLE',
+  })
+  await expect(
+    reservations(f.adminAccess, async () => ({
+      policyVersion: 'synthetic',
+      method: 'gateway',
+      consentRequired: false,
+    })).reserve(f.token, f.input, 'bad-method'),
+  ).rejects.toMatchObject({ code: 'BUSINESS_RULE_VIOLATION' })
+  expect(await refundModel(db.connection).countDocuments()).toBe(0)
+})
+it('refund reservation: two verified sources split one original unit and retain separate durable intents', async () => {
+  const f = await reservationFixture(false)
+  await f.cash(1, 'first-source')
+  await f.cash(f.payment.expectedPoisha - 1, 'second-source')
+  const result = await f.service.reserve(f.token, f.input, 'multi-source')
+  expect(result.refunds).toHaveLength(2)
+  expect(await refundAttemptModel(db.connection).countDocuments()).toBe(2)
+  const balance = await orderModels(db.connection).balances.findOne({ orderId: f.id }).orFail()
+  const amount = result.refunds.reduce((sum, row) => sum + row.amountPoisha, 0)
+  expect(balance.unitCoverage[0]?.refundHeldPoisha).toBe(amount)
+  expect(new Set(result.refunds.map((row) => row.sourceCollectionId)).size).toBe(2)
+})
+it('refund reservation: existing correction intent advances once without consuming merchandise and persists gateway identity before dispatch', async () => {
+  await initializeRefundAttemptPersistence(db.connection)
+  const f = await processingFixture()
+  expect(await f.processor().process(f.claim)).toBe('committed')
+  f.change({
+    bank_tran_id: 'reservation-correction-bank',
+    val_id: 'reservation-correction-validation',
+  })
+  expect(
+    await f.processor().process({ ...f.claim, validationId: 'reservation-correction-validation' }),
+  ).toBe('committed')
+  const old = await refundModel(db.connection).findOne({ orderId: f.result.id }).orFail()
+  const before = await paymentModel(db.connection).findById(f.attempt.paymentId).orFail()
+  const admin = await customer('admin')
+  const service = reservations(
+    createAdminAccountAccess(db.connection, identities, sessions),
+    async () => ({
+      policyVersion: 'synthetic-qualified-gateway-policy',
+      method: 'gateway',
+      consentRequired: false,
+    }),
+  )
+  const command = {
+    orderId: f.result.id,
+    basis: 'payment_correction',
+    classification: 'payment_correction',
+    correctionCollectionId: old.sourceCollectionId.toHexString(),
+    reason: 'Synthetic correction review',
+  }
+  const result = await service.reserve(admin.credentials.customerToken, command, 'correction')
+  expect(result.refunds[0]?.id).toBe(old._id.toHexString())
+  expect(await refundModel(db.connection).countDocuments()).toBe(1)
+  const attempt = await refundAttemptModel(db.connection).findOne().orFail()
+  expect(attempt.status).toBe('created')
+  expect(attempt.originalBankTranId).toBe('reservation-correction-bank')
+  expect(attempt.refundTransId).toHaveLength(30)
+  expect(attempt.refundRefId).toBeUndefined()
+  const after = await paymentModel(db.connection).findById(f.attempt.paymentId).orFail()
+  expect(after.correctionRefundHeldPoisha).toBe(old.amountPoisha)
+  expect(after.merchandiseRefundHeldPoisha).toBe(0)
+  expect(after.merchandiseFundedPoisha).toBe(before.merchandiseFundedPoisha)
+  expect(after.paymentStatus).toBe('paid')
+})
+it('refund reservation: fallback consent and delivery authority cannot be supplied by the request body', async () => {
+  const f = await reservationFixture()
+  const consent = reservations(f.adminAccess, async () => ({
+    policyVersion: 'synthetic',
+    method: 'manual_bank',
+    consentRequired: true,
+  }))
+  await expect(consent.reserve(f.token, f.input, 'no-consent')).rejects.toMatchObject({
+    code: 'BUSINESS_RULE_VIOLATION',
+  })
+  await expect(
+    f.service.reserve(
+      f.token,
+      { ...f.input, deliveryChargeRequestedPoisha: 1 },
+      'no-delivery-policy',
+    ),
+  ).rejects.toMatchObject({ code: 'BUSINESS_RULE_VIOLATION' })
+  const authorized = reservations(f.adminAccess, async () => ({
+    policyVersion: 'synthetic',
+    method: 'manual_bank',
+    consentRequired: true,
+    consentEvidenceRef: 'synthetic-protected-consent',
+    deliveryApproved: true,
+  }))
+  const original = (await orderModels(db.connection).orders.findById(f.id).orFail()).pricingSnapshot
+    .deliveryChargePoisha
+  await expect(
+    authorized.reserve(
+      f.token,
+      { ...f.input, deliveryChargeRequestedPoisha: original + 1 },
+      'excess-delivery',
+    ),
+  ).rejects.toMatchObject({ code: 'REFUND_BALANCE_EXCEEDED' })
+  await authorized.reserve(
+    f.token,
+    { ...f.input, deliveryChargeRequestedPoisha: original },
+    'approved-delivery',
+  )
+  expect(
+    (await paymentModel(db.connection).findOne({ orderId: f.id }).orFail())
+      .deliveryRefundHeldPoisha,
+  ).toBe(original)
+  expect((await refundModel(db.connection).findOne().orFail()).consentEvidenceRef).toBe(
+    'synthetic-protected-consent',
+  )
+})
+async function reservedGatewayFixture() {
+  await initializeRefundAttemptPersistence(db.connection)
+  const f = await processingFixture()
+  expect(await f.processor().process(f.claim)).toBe('committed')
+  f.change({ bank_tran_id: 'dispatch-bank', val_id: 'dispatch-validation' })
+  expect(await f.processor().process({ ...f.claim, validationId: 'dispatch-validation' })).toBe(
+    'committed',
+  )
+  const obligation = await refundModel(db.connection).findOne({ orderId: f.result.id }).orFail(),
+    admin = await customer('admin')
+  const admins = createAdminAccountAccess(db.connection, identities, sessions)
+  const service = reservations(admins, async () => ({
+    policyVersion: 'synthetic-gateway',
+    method: 'gateway',
+    consentRequired: false,
+  }))
+  await service.reserve(
+    admin.credentials.customerToken,
+    {
+      orderId: f.result.id,
+      basis: 'payment_correction',
+      classification: 'payment_correction',
+      correctionCollectionId: obligation.sourceCollectionId.toHexString(),
+      reason: 'Synthetic approval',
+    },
+    'reserve-dispatch',
+  )
+  return { ...f, obligation, admin, admins }
+}
+it('refund dispatch: concurrent requests submit one persisted identity outside the transaction and acceptance remains processing', async () => {
+  const f = await reservedGatewayFixture()
+  const initiateRefund = vi
+    .fn<ReturnType<typeof createSslcommerzAdapter>['initiateRefund']>()
+    .mockImplementation(async () => {
+      assertOutsideTransaction()
+      expect((await refundAttemptModel(db.connection).findOne().orFail()).status).toBe('submitted')
+      expect((await refundModel(db.connection).findById(f.obligation._id).orFail()).status).toBe(
+        'processing',
+      )
+      return {
+        kind: 'accepted',
+        refundRefId: 'synthetic-provider-refund',
+        evidenceDigest: 'a'.repeat(64),
+      }
+    })
+  const service = refundDispatchService(
+    db.connection,
+    f.admins,
+    refundFundingAccess(db.connection),
+    { initiateRefund },
+  )
+  const command = { method: 'gateway', reason: 'Synthetic dispatch review' }
+  const result = await Promise.all([
+    service.dispatch(
+      f.admin.credentials.customerToken,
+      f.obligation._id.toHexString(),
+      command,
+      'send',
+    ),
+    service.dispatch(
+      f.admin.credentials.customerToken,
+      f.obligation._id.toHexString(),
+      command,
+      'send',
+    ),
+  ])
+  expect(result.every((r) => r.state === 'submitted')).toBe(true)
+  expect(initiateRefund).toHaveBeenCalledTimes(1)
+  const attempt = await refundAttemptModel(db.connection).findOne().orFail()
+  expect(attempt.refundRefId).toBe('synthetic-provider-refund')
+  expect(attempt.confirmedAt).toBeUndefined()
+  const payment = await paymentModel(db.connection).findById(f.attempt.paymentId).orFail()
+  expect(payment.correctionRefundHeldPoisha).toBe(f.obligation.amountPoisha)
+  expect(payment.correctionRefundCompletedPoisha).toBe(0)
+})
+it('refund dispatch: timeout preserves held funds and stable identity without automatic redispatch', async () => {
+  const f = await reservedGatewayFixture()
+  const initiateRefund = vi
+    .fn<ReturnType<typeof createSslcommerzAdapter>['initiateRefund']>()
+    .mockRejectedValue(new Error('Synthetic ambiguous external timeout'))
+  const service = refundDispatchService(
+    db.connection,
+    f.admins,
+    refundFundingAccess(db.connection),
+    { initiateRefund },
+  )
+  const command = { method: 'gateway', reason: 'Synthetic dispatch review' }
+  const result = await service.dispatch(
+    f.admin.credentials.customerToken,
+    f.obligation._id.toHexString(),
+    command,
+    'uncertain',
+  )
+  expect(result.state).toBe('uncertain')
+  expect(
+    (
+      await service.dispatch(
+        f.admin.credentials.customerToken,
+        f.obligation._id.toHexString(),
+        command,
+        'different-key',
+      )
+    ).state,
+  ).toBe('uncertain')
+  expect(initiateRefund).toHaveBeenCalledTimes(1)
+  await expect(
+    service.dispatch(
+      f.admin.credentials.customerToken,
+      f.obligation._id.toHexString(),
+      { ...command, reason: 'Changed' },
+      'uncertain',
+    ),
+  ).rejects.toMatchObject({ code: 'IDEMPOTENCY_CONFLICT' })
+  expect(
+    (await refundModel(db.connection).findById(f.obligation._id).orFail()).capacityStatus,
+  ).toBe('reserved')
+  await expect(
+    inTransaction(db.connection, () =>
+      service.dispatch(
+        f.admin.credentials.customerToken,
+        f.obligation._id.toHexString(),
+        command,
+        'inside-transaction',
+      ),
+    ),
+  ).rejects.toThrow()
+})
+it('correction advisory local: linked verified excess is class-isolated, bounded and read-only', async () => {
+  const f = await processingFixture()
+  expect(await f.processor().process(f.claim)).toBe('committed')
+  f.change({ bank_tran_id: 'correction-bank', val_id: 'correction-validation' })
+  expect(await f.processor().process({ ...f.claim, validationId: 'correction-validation' })).toBe(
+    'committed',
+  )
+  const collections = paymentRecordModels(db.connection).collections
+  const sources = await collections.find({ orderId: f.result.id })
+  const correction = sources.find((source) => source.get('correctionAllocatedPoisha') > 0)
+  const merchandise = sources.find((source) => source.get('merchandiseAllocatedPoisha') > 0)
+  if (!correction || !merchandise) throw new Error('Missing verified fixture collections')
+  const service = correctionRefundAdvisoryService(correctionPaymentSnapshotAccess(db.connection))
+  const input = {
+    orderId: f.result.id,
+    sourceCollectionIds: [correction._id.toHexString()],
+    requestedPoisha: correction.get('correctionAllocatedPoisha'),
+  }
+  const beforePayment = await paymentModel(db.connection).findById(f.attempt.paymentId).lean()
+  const beforeSources = await collections.find({ orderId: f.result.id }).sort({ _id: 1 }).lean()
+  expect(await inTransaction(db.connection, (session) => service(session, input))).toMatchObject({
+    status: 'advisory',
+    correctionAmountPoisha: input.requestedPoisha,
+    allocations: [
+      { sourceCollectionId: input.sourceCollectionIds[0], amountPoisha: input.requestedPoisha },
+    ],
+  })
+  expect(
+    await inTransaction(db.connection, (session) =>
+      service(session, { ...input, sourceCollectionIds: [merchandise._id.toHexString()] }),
+    ),
+  ).toMatchObject({ status: 'insufficient_collected_balance', sourceAvailablePoisha: 0 })
+  expect(
+    await inTransaction(db.connection, (session) =>
+      service(session, { ...input, requestedPoisha: input.requestedPoisha + 1 }),
+    ),
+  ).toMatchObject({ status: 'insufficient_collected_balance' })
+  await expect(
+    inTransaction(db.connection, (session) =>
+      service(session, { ...input, orderId: new Types.ObjectId().toHexString() }),
+    ),
+  ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+  const other = await processingFixture()
+  await expect(
+    inTransaction(db.connection, (session) =>
+      service(session, { ...input, orderId: other.result.id }),
+    ),
+  ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+  await expect(
+    inTransaction(db.connection, (session) =>
+      service(session, {
+        ...input,
+        sourceCollectionIds: [input.sourceCollectionIds[0], input.sourceCollectionIds[0]],
+      }),
+    ),
+  ).rejects.toThrow()
+  expect(await paymentModel(db.connection).findById(f.attempt.paymentId).lean()).toEqual(
+    beforePayment,
+  )
+  expect(await collections.find({ orderId: f.result.id }).sort({ _id: 1 }).lean()).toEqual(
+    beforeSources,
+  )
+})
+it('correction advisory local: deterministic multi-source planning subtracts existing commitments', async () => {
+  const f = await processingFixture()
+  expect(await f.processor().process(f.claim)).toBe('committed')
+  for (const label of ['first', 'second']) {
+    f.change({ bank_tran_id: `correction-${label}-bank`, val_id: `correction-${label}-validation` })
+    expect(
+      await f.processor().process({ ...f.claim, validationId: `correction-${label}-validation` }),
+    ).toBe('committed')
+  }
+  const collections = paymentRecordModels(db.connection).collections
+  const rows = (await collections.find({ orderId: f.result.id })).filter(
+    (row) => row.get('correctionAllocatedPoisha') > 0,
+  )
+  expect(rows).toHaveLength(2)
+  const first = rows[0]
+  if (!first) throw new Error('Missing correction source')
+  await inTransaction(db.connection, async (session) => {
+    await collections.updateOne(
+      { _id: first._id, revision: first.revision },
+      { $set: { correctionRefundHeldPoisha: 1 }, $inc: { revision: 1 } },
+      { session },
+    )
+    await paymentModel(db.connection).updateOne(
+      {
+        _id: f.attempt.paymentId,
+        revision: (
+          await paymentModel(db.connection).findById(f.attempt.paymentId).session(session).orFail()
+        ).revision,
+      },
+      { $set: { correctionRefundHeldPoisha: 1 }, $inc: { revision: 1 } },
+      { session },
+    )
+  })
+  const service = correctionRefundAdvisoryService(correctionPaymentSnapshotAccess(db.connection))
+  const ids = rows.map((row) => row._id.toHexString())
+  const input = {
+    orderId: f.result.id,
+    sourceCollectionIds: ids,
+    requestedPoisha: f.attempt.expectedAmountPoisha + 1,
+  }
+  const firstResult = await inTransaction(db.connection, (session) => service(session, input))
+  const reverseResult = await inTransaction(db.connection, (session) =>
+    service(session, { ...input, sourceCollectionIds: [...ids].reverse() }),
+  )
+  expect(firstResult).toEqual(reverseResult)
+  expect(firstResult).toMatchObject({
+    status: 'advisory',
+    orderAvailablePoisha: 2 * f.attempt.expectedAmountPoisha - 1,
+  })
+  if (firstResult.status === 'advisory')
+    expect(firstResult.allocations.reduce((sum, slice) => sum + slice.amountPoisha, 0)).toBe(
+      input.requestedPoisha,
+    )
+})
 it('refund advisory local: uncollected COD has no verified source and cannot produce a quote', async () => {
   const f = await physicalReturnFixture()
   await f.receive()
@@ -6610,6 +7789,101 @@ async function deliveredReviewFixture(deliver = true) {
   })
   return { buyer, selected, orderId, selection, eligibility, reviews }
 }
+function localReviewAuth() {
+  return {
+    customerAccounts: createCustomerAccountAccess(db.connection, identities, sessions),
+    adminAccounts: createAdminAccountAccess(db.connection, identities, sessions),
+    adminTransaction: adminTransactionAccess(identities, sessions),
+    sessions,
+    security,
+  }
+}
+it('blocked review audit: composed real purchase, visibility, admin fences and audit receipts survive moderation replay', async () => {
+  const f = await deliveredReviewFixture(),
+    administrator = await customer('admin')
+  const root = createApp({
+    apiRouter: composeLocalReviewRoutes(db.connection, 'test', localReviewAuth(), () => now),
+  })
+  const input = {
+    rating: 2,
+    comment: 'Authentic synthetic purchase review',
+    qualifyingOrderItemId: f.selection.qualifyingOrderItemId,
+  }
+  const productPath = `/api/v1/products/${f.selection.productId}/reviews`
+  const created = await request(root)
+    .post(productPath)
+    .set('Origin', origin)
+    .set('Cookie', f.buyer.cookie)
+    .set('X-CSRF-Token', f.buyer.csrf)
+    .send(input)
+    .expect(201)
+  const id = created.body.data.id,
+    moderatePath = `/api/v1/admin/reviews/${id}/moderation`
+  const approve = () =>
+    request(root)
+      .post(moderatePath)
+      .set('Origin', 'http://localhost:5173')
+      .set('Cookie', administrator.cookie)
+      .set('X-CSRF-Token', administrator.csrf)
+      .set('Idempotency-Key', 'real-review-approval')
+      .send({ decision: 'approve', reason: 'Verified actual purchase facts' })
+  await approve().expect(200)
+  expect((await request(root).get(productPath).expect(200)).body.data).toHaveLength(1)
+  await request(root)
+    .patch(`/api/v1/reviews/${id}`)
+    .set('Origin', origin)
+    .set('Cookie', f.buyer.cookie)
+    .set('X-CSRF-Token', f.buyer.csrf)
+    .send({ comment: 'Edited authentic review' })
+    .expect(200)
+  await approve().expect(200)
+  expect((await request(root).get(productPath).expect(200)).body.data).toEqual([])
+  expect(
+    await db.connection
+      .collection('auditLogs')
+      .countDocuments({ targetId: new Types.ObjectId(id), action: 'review.approve' }),
+  ).toBe(1)
+  await identities.users.updateOne(
+    { _id: administrator.user._id },
+    { $set: { status: 'suspended' } },
+  )
+  await approve().expect(403)
+  expect(() => composeLocalReviewRoutes(db.connection, 'production', localReviewAuth())).toThrow()
+})
+it('blocked review audit: composed review API denies undelivered purchase, foreign proof and missing CSRF', async () => {
+  const f = await deliveredReviewFixture(false),
+    foreign = await customer()
+  const root = createApp({
+    apiRouter: composeLocalReviewRoutes(db.connection, 'test', localReviewAuth(), () => now),
+  })
+  const input = {
+    rating: 5,
+    comment: 'Synthetic invalid proof',
+    qualifyingOrderItemId: f.selection.qualifyingOrderItemId,
+  }
+  const path = `/api/v1/products/${f.selection.productId}/reviews`
+  await request(root)
+    .post(path)
+    .set('Origin', origin)
+    .set('Cookie', f.buyer.cookie)
+    .set('X-CSRF-Token', f.buyer.csrf)
+    .send(input)
+    .expect(422)
+  await request(root)
+    .post(path)
+    .set('Origin', origin)
+    .set('Cookie', foreign.cookie)
+    .set('X-CSRF-Token', foreign.csrf)
+    .send(input)
+    .expect(422)
+  await request(root)
+    .post(path)
+    .set('Origin', origin)
+    .set('Cookie', f.buyer.cookie)
+    .send(input)
+    .expect(403)
+  expect(await reviewModel(db.connection).countDocuments()).toBe(0)
+})
 it('claim history local: customer ownership is enforced on list and nested detail', async () => {
   await initializeReturnPersistence(db.connection)
   const f = await deliveredReviewFixture(),
@@ -6634,7 +7908,7 @@ it('claim history local: customer ownership is enforced on list and nested detai
     complaintOrderAccess(db.connection),
     claimEvidenceMetadataAccess(db.connection),
   )
-  const app = createApp({ apiRouter: returnHistoryRoutes(history, security) })
+  const app = createApp({ apiRouter: returnHistoryRoutes(history, security, sessions) })
   await request(app)
     .get(`/api/v1/orders/${f.orderId}/claims`)
     .set('Cookie', f.buyer.cookie)
@@ -7011,4 +8285,590 @@ it('return notification local: default worker leaves return events queued withou
   expect(
     await db.connection.collection('notifications').findOne({ eventType: 'return_update' }),
   ).toMatchObject({ status: 'queued' })
+})
+
+// Package A runs real HTTP, current sessions and replica-set persistence. Policy/cash are synthetic.
+function packageARoot(
+  f: Awaited<ReturnType<typeof lifecycleFixture>>,
+  approved = true,
+  evidence = vi.fn(async (input: Parameters<typeof f.proof>[0]) => f.proof(input)),
+) {
+  const routers = composeOrderOperationsRoutes(
+    db.connection,
+    { ...localReviewAuth(), guestAccounts: undefined },
+    origin,
+    {
+      approvedDeadline: async () => {
+        if (!approved) throw new ApiError('SERVICE_UNAVAILABLE')
+      },
+      cashEvidence: evidence,
+      cancellationRefund: async () => {
+        throw new ApiError('SERVICE_UNAVAILABLE')
+      },
+    },
+    () => now,
+  )
+  return { root: createApp({ apiRouter: createApiRouter(undefined, routers) }), evidence }
+}
+function packageAPost(
+  root: ReturnType<typeof createApp>,
+  f: Awaited<ReturnType<typeof lifecycleFixture>>,
+  to: string,
+  key = to,
+) {
+  return request(root)
+    .post(`/api/v1/admin/orders/${f.id}/fulfillment-transitions`)
+    .set('Origin', 'http://localhost:5173')
+    .set('Cookie', f.admin.cookie)
+    .set('X-CSRF-Token', f.admin.csrf)
+    .set('Idempotency-Key', key)
+    .send({
+      to,
+      reason: 'Synthetic HTTP authorization',
+      ...(to === 'shipped' ? { dispatchReference: 'http-dispatch' } : {}),
+    })
+}
+it('Package A HTTP: full transition journey returns canonical admin detail; delivered COD remains unpaid', async () => {
+  const f = await lifecycleFixture(),
+    { root } = packageARoot(f)
+  const path = `/api/v1/admin/orders/${f.id}`
+  const initial = await request(root).get(path).set('Cookie', f.admin.cookie).expect(200)
+  expect(initial.body.data.allocationSummary.items[0].status).toBe('committed')
+  expect(initial.body.data).not.toHaveProperty('checkoutIntentId')
+  expect(initial.body.data).not.toHaveProperty('customerSnapshot')
+  for (const to of ['confirmed', 'processing', 'shipped', 'delivered']) {
+    const result = await packageAPost(root, f, to).expect(200)
+    expect(result.body.data.fulfillmentStatus).toBe(to)
+    expect(result.body.data.paymentSummary.status).toBe('pending')
+    expect(result.body.data.items[0].sku).toBe(f.selected.row.skuNormalized)
+    expect(result.body.data.auditRefs.length).toBeGreaterThan(0)
+  }
+  const replay = await packageAPost(root, f, 'shipped').expect(200)
+  expect(replay.body.data.fulfillmentStatus).toBe('delivered')
+  expect(replay.body.data.allocationSummary.items[0].status).toBe('shipped')
+  await packageAPost(root, f, 'processing', 'shipped').expect(409)
+})
+it('Package A HTTP: admin reads deny customers, missing/stale sessions and invalid parameters', async () => {
+  const f = await lifecycleFixture(),
+    { root } = packageARoot(f),
+    buyer = await customer()
+  for (const path of ['/api/v1/admin/orders', `/api/v1/admin/orders/${f.id}`]) {
+    await request(root).get(path).expect(401)
+    await request(root).get(path).set('Cookie', buyer.cookie).expect(401)
+  }
+  await request(root)
+    .get('/api/v1/admin/orders/not-an-id')
+    .set('Cookie', f.admin.cookie)
+    .expect(400)
+  await request(root)
+    .get('/api/v1/admin/orders?customerId=bad')
+    .set('Cookie', f.admin.cookie)
+    .expect(400)
+  await request(root)
+    .get(`/api/v1/admin/orders/${f.id}?unexpected=1`)
+    .set('Cookie', f.admin.cookie)
+    .expect(400)
+  await identities.users.updateOne({ _id: f.admin.user._id }, { $set: { status: 'suspended' } })
+  await request(root).get(`/api/v1/admin/orders/${f.id}`).set('Cookie', f.admin.cookie).expect(401)
+})
+it('Package A HTTP: missing keys, wrong origin/CSRF and client money cannot change fulfillment', async () => {
+  const f = await lifecycleFixture(),
+    { root } = packageARoot(f)
+  const path = `/api/v1/admin/orders/${f.id}/fulfillment-transitions`
+  for (const headers of [{}, { Origin: origin }, { Origin: 'http://localhost:5173' }]) {
+    await request(root)
+      .post(path)
+      .set('Cookie', f.admin.cookie)
+      .set(headers)
+      .send({ to: 'confirmed', reason: 'Denied' })
+      .expect(403)
+  }
+  await request(root)
+    .post(path)
+    .set('Origin', 'http://localhost:5173')
+    .set('Cookie', f.admin.cookie)
+    .set('X-CSRF-Token', f.admin.csrf)
+    .send({ to: 'confirmed', reason: 'Missing key' })
+    .expect(400)
+  await packageAPost(root, f, 'delivered').expect(409)
+  expect((await orderModels(db.connection).orders.findById(f.id).orFail()).fulfillmentStatus).toBe(
+    'pending',
+  )
+})
+it('Package A HTTP: unavailable policy prevents confirmation and shipping race dispatches only once', async () => {
+  const f = await lifecycleFixture(),
+    denied = packageARoot(f, false)
+  await packageAPost(denied.root, f, 'confirmed').expect(503)
+  const { root } = packageARoot(f)
+  await packageAPost(root, f, 'confirmed').expect(200)
+  await packageAPost(root, f, 'processing').expect(200)
+  const results = await Promise.all([
+    packageAPost(root, f, 'shipped'),
+    packageAPost(root, f, 'shipped'),
+  ])
+  expect(results.map((r) => r.status)).toEqual([200, 200])
+  const stock = await productModels(db.connection).variants.findById(f.selected.row._id).orFail()
+  expect(stock.stock.committed).toBe(0)
+})
+it('Package A HTTP: protected cash verification, collection projection and replay preserve one source', async () => {
+  const f = await lifecycleFixture(),
+    { root, evidence } = packageARoot(f)
+  const path = `/api/v1/admin/payments/${f.payment._id}/cod-collections`
+  await packageAPost(root, f, 'confirmed').expect(200)
+  const input = {
+    amountPoisha: f.payment.expectedPoisha,
+    collectionReference: 'package-a-cash',
+    evidenceRef: 'synthetic:cash',
+    reason: 'Synthetic original receipt',
+  }
+  await request(root)
+    .post(path)
+    .set('Origin', origin)
+    .set('Cookie', f.admin.cookie)
+    .set('X-CSRF-Token', f.admin.csrf)
+    .set('Idempotency-Key', 'cash')
+    .send(input)
+    .expect(403)
+  expect(evidence).not.toHaveBeenCalled()
+  const post = () =>
+    request(root)
+      .post(path)
+      .set('Origin', 'http://localhost:5173')
+      .set('Cookie', f.admin.cookie)
+      .set('X-CSRF-Token', f.admin.csrf)
+      .set('Idempotency-Key', 'cash')
+      .send(input)
+  const first = await post().expect(200),
+    second = await post().expect(200)
+  expect(first.body.data).toEqual(second.body.data)
+  expect(first.body.data).toMatchObject({
+    sourceKind: 'cod_manual',
+    merchandiseAllocatedPoisha: input.amountPoisha,
+    correctionAllocatedPoisha: 0,
+    unassignedAllocatedPoisha: 0,
+    merchandiseRefundHeldPoisha: 0,
+    correctionRefundCompletedPoisha: 0,
+  })
+  expect(first.body.data).not.toHaveProperty('evidenceDigest')
+  expect(evidence).toHaveBeenCalledTimes(1)
+})
+it('Package A HTTP: canonical payment filter precedes pagination and cancellation routes share composition', async () => {
+  const f = await lifecycleFixture(),
+    { root } = packageARoot(f)
+  await initializeCancellationPersistence(db.connection)
+  await packageAPost(root, f, 'confirmed').expect(200)
+  await f.cash()
+  const pending = await lifecycleFixture()
+  const list = await request(root)
+    .get('/api/v1/admin/orders?paymentStatus=paid&pageSize=1')
+    .set('Cookie', f.admin.cookie)
+    .expect(200)
+  expect(list.body.data.map((r: { id: string }) => r.id)).toContain(f.id)
+  expect(list.body.meta.totalItems).toBe(1)
+  await request(root)
+    .get('/api/v1/admin/orders?paymentStatus=pending')
+    .set('Cookie', f.admin.cookie)
+    .expect(200)
+    .expect((r) => expect(r.body.data.map((row: { id: string }) => row.id)).toEqual([pending.id]))
+  await request(root)
+    .get('/api/v1/admin/cancellation-requests')
+    .set('Cookie', f.admin.cookie)
+    .expect(200)
+})
+
+it('Package A HTTP: composed paid cancellation reserves real obligations and exposes customer history', async () => {
+  const f = await fundedCancellationFixture()
+  const routers = composeOrderOperationsRoutes(
+    db.connection,
+    { ...localReviewAuth(), guestAccounts: undefined },
+    origin,
+    {
+      approvedDeadline: async () => {},
+      cashEvidence: async () => {
+        throw new ApiError('SERVICE_UNAVAILABLE')
+      },
+      cancellationRefund: f.refund,
+    },
+    () => now,
+  )
+  const root = createApp({ apiRouter: createApiRouter(undefined, routers) })
+  const asked = await f.ask()
+  const decision = () =>
+    request(root)
+      .post(`/api/v1/admin/cancellation-requests/${asked.id}/decision`)
+      .set('Origin', 'http://localhost:5173')
+      .set('Cookie', f.admin.cookie)
+      .set('X-CSRF-Token', f.admin.csrf)
+      .set('Idempotency-Key', 'package-a-funded')
+      .send({ decision: 'approve', reason: 'Synthetic funded review' })
+  await decision().expect(200)
+  await decision().expect(200)
+  const detail = await request(root)
+    .get(`/api/v1/admin/orders/${f.id}`)
+    .set('Cookie', f.admin.cookie)
+    .expect(200)
+  expect(detail.body.data.fulfillmentStatus).toBe('cancelled')
+  expect(detail.body.data.paymentSummary.merchandiseRefundHeldPoisha).toBe(f.amount)
+  expect(
+    detail.body.data.allocationSummary.items.every(
+      (i: { status: string }) => i.status === 'released',
+    ),
+  ).toBe(true)
+  const orders = await request(root).get('/api/v1/orders').set('Cookie', f.who.cookie).expect(200)
+  expect(orders.body.data.some((o: { id: string }) => o.id === f.id)).toBe(true)
+  const other = await customer()
+  await request(root).get(`/api/v1/orders/${f.id}`).set('Cookie', other.cookie).expect(404)
+  expect(await refundModel(db.connection).countDocuments({ orderId: f.id })).toBe(1)
+})
+
+it('Package A HTTP: unprovisioned cancellation persistence returns unavailable without activation or effects', async () => {
+  const f = await lifecycleFixture(),
+    { root } = packageARoot(f)
+  if (await db.connection.db?.listCollections({ name: 'cancellationRequests' }).hasNext())
+    await db.connection.dropCollection('cancellationRequests')
+  await request(root)
+    .get('/api/v1/admin/cancellation-requests')
+    .set('Cookie', f.admin.cookie)
+    .expect(503)
+  expect((await orderModels(db.connection).orders.findById(f.id).orFail()).fulfillmentStatus).toBe(
+    'pending',
+  )
+  await initializeCancellationPersistence(db.connection)
+})
+
+it('Package A HTTP: actual application composition installs operations explicitly and refuses missing admission', async () => {
+  const config = loadEnvironment({ ...identityEnvironment(), CUSTOMER_ORDER_READ_ENABLED: 'true' })
+  const dependencies = {
+    approvedDeadline: async () => {
+      throw new ApiError('SERVICE_UNAVAILABLE')
+    },
+    cashEvidence: async () => {
+      throw new ApiError('SERVICE_UNAVAILABLE')
+    },
+    cancellationRefund: async () => {
+      throw new ApiError('SERVICE_UNAVAILABLE')
+    },
+  }
+  const make = (enabled: boolean) =>
+    composeApplication(
+      db.connection,
+      config,
+      { isReady: async () => true },
+      createLogger(config, () => {}),
+      undefined,
+      [],
+      undefined,
+      [],
+      undefined,
+      undefined,
+      enabled ? dependencies : undefined,
+    )
+  const active = await make(true),
+    inactive = await make(false)
+  await request(active).get('/api/v1/admin/orders').expect(401)
+  await request(active).get('/api/v1/admin/cancellation-requests').expect(401)
+  await request(inactive).get('/api/v1/admin/orders').expect(404)
+  const invalid = { ...config, CUSTOMER_ORDER_READ_ENABLED: false }
+  await expect(
+    composeApplication(
+      db.connection,
+      invalid,
+      { isReady: async () => true },
+      createLogger(config, () => {}),
+      undefined,
+      [],
+      undefined,
+      [],
+      undefined,
+      undefined,
+      dependencies,
+    ),
+  ).rejects.toThrow('Reviewed order operations require')
+})
+it('Package A HTTP: cash evidence binding failure, invalid body and customer credentials create no receipt', async () => {
+  const f = await lifecycleFixture(),
+    verifier = vi.fn(async (input: Parameters<typeof f.proof>[0]) => ({
+      ...f.proof(input),
+      amountPoisha: 1,
+    })),
+    { root } = packageARoot(f, true, verifier)
+  await packageAPost(root, f, 'confirmed').expect(200)
+  const path = `/api/v1/admin/payments/${f.payment._id}/cod-collections`
+  const input = {
+    amountPoisha: f.payment.expectedPoisha,
+    collectionReference: 'bad-proof',
+    evidenceRef: 'synthetic:bad-proof',
+    reason: 'Synthetic mismatch',
+  }
+  const post = (data: object, cookie = f.admin.cookie) =>
+    request(root)
+      .post(path)
+      .set('Origin', 'http://localhost:5173')
+      .set('Cookie', cookie)
+      .set('X-CSRF-Token', f.admin.csrf)
+      .set('Idempotency-Key', 'bad-proof')
+      .send(data)
+  await post({ ...input, paymentStatus: 'paid' }).expect(400)
+  expect(verifier).not.toHaveBeenCalled()
+  const buyer = await customer()
+  await post(input, buyer.cookie).expect(403)
+  expect(verifier).not.toHaveBeenCalled()
+  await post(input)
+    .expect(422)
+    .expect((r) => expect(r.body.error.code).toBe('BUSINESS_RULE_VIOLATION'))
+  expect(
+    await paymentRecordModels(db.connection).collections.countDocuments({
+      paymentId: f.payment._id,
+    }),
+  ).toBe(0)
+})
+
+it('Package A protected authorities: configured original receipt verifies through composed COD HTTP', async () => {
+  const f = await lifecycleFixture(),
+    root = await mkdtemp(join(tmpdir(), 'sportzone-http-proof-'))
+  try {
+    const artifactPath = join(root, 'original.txt'),
+      cashReceiptFile = join(root, 'receipts.json')
+    const bytes = 'SYNTHETIC LOCAL RECEIPT - NOT ACTUAL CASH'
+    await writeFile(artifactPath, bytes, { mode: 0o600 })
+    const row = {
+      paymentId: f.payment._id.toHexString(),
+      amountPoisha: f.payment.expectedPoisha,
+      collectionReference: 'protected-original',
+      evidenceRef: 'synthetic:protected-original',
+      collectedAt: now.toISOString(),
+      verifiedAt: now.toISOString(),
+      verifiedBy: 'Synthetic operator',
+      artifactPath,
+      digest: createHash('sha256').update(bytes).digest('hex'),
+    }
+    await writeFile(cashReceiptFile, JSON.stringify({ version: 1, receipts: [row] }), {
+      mode: 0o600,
+    })
+    const captured = deadline().snapshotForCheckout(),
+      { capturedAt, ...manifest } = captured
+    void capturedAt
+    const dependencies = configuredOrderOperations(
+      db.connection,
+      { deadline: manifest, cashReceiptFile, cancellationAuthorizations: [] },
+      () => now,
+    )
+    const routers = composeOrderOperationsRoutes(
+      db.connection,
+      { ...localReviewAuth(), guestAccounts: undefined },
+      origin,
+      dependencies,
+      () => now,
+    )
+    const app = createApp({ apiRouter: createApiRouter(undefined, routers) })
+    await packageAPost(app, f, 'confirmed').expect(200)
+    const input = {
+      amountPoisha: row.amountPoisha,
+      collectionReference: row.collectionReference,
+      evidenceRef: row.evidenceRef,
+      reason: 'Synthetic operator original verification',
+    }
+    const post = () =>
+      request(app)
+        .post(`/api/v1/admin/payments/${f.payment._id}/cod-collections`)
+        .set('Origin', 'http://localhost:5173')
+        .set('Cookie', f.admin.cookie)
+        .set('X-CSRF-Token', f.admin.csrf)
+        .set('Idempotency-Key', 'protected-source')
+        .send(input)
+    const first = await post().expect(200)
+    expect(first.body.data.amountPoisha).toBe(row.amountPoisha)
+    await rm(artifactPath)
+    // Replay returns the immutable prior collection without reopening or resubmitting evidence.
+    await post().expect(200)
+    expect(
+      await paymentRecordModels(db.connection).collections.countDocuments({
+        paymentId: f.payment._id,
+      }),
+    ).toBe(1)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it('Package A protected authorities: real server startup loads operator configuration and protects runtime HTTP', async () => {
+  const f = await lifecycleFixture(),
+    root = await mkdtemp(join(tmpdir(), 'sportzone-startup-authority-'))
+  const originalEnvironment = process.env
+  let runtime: Awaited<ReturnType<typeof startServer>> | undefined
+  try {
+    const cash = join(root, 'cash.json'),
+      policy = join(root, 'policy.json'),
+      delivery = join(root, 'delivery.json')
+    const { capturedAt, ...manifest } = deadline().snapshotForCheckout()
+    void capturedAt
+    await writeFile(cash, JSON.stringify({ version: 1, receipts: [] }), { mode: 0o600 })
+    await writeFile(policy, JSON.stringify({ version: 1, authorizations: [] }), { mode: 0o600 })
+    await writeFile(delivery, JSON.stringify(manifest), { mode: 0o600 })
+    const env = {
+      ...identityEnvironment(),
+      SESSION_SECRET: authSecret,
+      MONGODB_URI: db.replica.getUri(),
+      MONGODB_DB_NAME: db.connection.name,
+      CUSTOMER_ORDER_READ_ENABLED: 'true',
+      ORDER_OPERATIONS_ENABLED: 'true',
+      DELIVERY_DEADLINE_POLICY_FILE: delivery,
+      COD_COLLECTION_EVIDENCE_FILE: cash,
+      CANCELLATION_REFUND_AUTHORIZATIONS_FILE: policy,
+    }
+    // Only synthetic local configuration is visible to this startup; no host provider settings.
+    process.env = { ...env }
+    const config = { ...loadEnvironment(env), PORT: 0 }
+    runtime = await startServer(
+      config,
+      createLogger(config, () => {}),
+    )
+    await request(runtime.server).get('/api/v1/admin/orders').expect(401)
+    await request(runtime.server)
+      .get(`/api/v1/admin/orders/${f.id}`)
+      .set('Cookie', f.admin.cookie)
+      .expect(200)
+    await request(runtime.server)
+      .post(`/api/v1/admin/orders/${f.id}/fulfillment-transitions`)
+      .set('Origin', 'https://admin.example.test')
+      .set('Cookie', f.admin.cookie)
+      .set('X-CSRF-Token', f.admin.csrf)
+      .set('Idempotency-Key', 'startup-confirm')
+      .send({ to: 'confirmed', reason: 'Synthetic configured registry proof' })
+      .expect(200)
+  } finally {
+    await runtime?.close()
+    process.env = originalEnvironment
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it('Package A protected authorities: cancellation policy is request-bound and reserves funded liability once', async () => {
+  const f = await fundedCancellationFixture(),
+    asked = await f.ask()
+  const directory = await mkdtemp(join(tmpdir(), 'sportzone-cancel-authority-'))
+  try {
+    const cashReceiptFile = join(directory, 'cash.json')
+    await writeFile(cashReceiptFile, JSON.stringify({ version: 1, receipts: [] }), { mode: 0o600 })
+    const { capturedAt, ...manifest } = deadline().snapshotForCheckout()
+    void capturedAt
+    const root = (requestId: string) =>
+      createApp({
+        apiRouter: createApiRouter(
+          undefined,
+          composeOrderOperationsRoutes(
+            db.connection,
+            { ...localReviewAuth(), guestAccounts: undefined },
+            origin,
+            configuredOrderOperations(
+              db.connection,
+              {
+                deadline: manifest,
+                cashReceiptFile,
+                cancellationAuthorizations: [
+                  {
+                    orderId: f.id,
+                    requestId,
+                    evidenceRef: 'synthetic:request-policy',
+                    approvedBy: 'Synthetic operator',
+                    approvedAt: now.toISOString(),
+                    approval: {
+                      policyVersion: 'synthetic-cancellation',
+                      method: 'manual_bank',
+                      consentRequired: false,
+                      deliveryApproved: true,
+                    },
+                  },
+                ],
+              },
+              () => now,
+            ),
+            () => now,
+          ),
+        ),
+      })
+    const post = (app: ReturnType<typeof createApp>) =>
+      request(app)
+        .post(`/api/v1/admin/cancellation-requests/${asked.id}/decision`)
+        .set('Origin', 'http://localhost:5173')
+        .set('Cookie', f.admin.cookie)
+        .set('X-CSRF-Token', f.admin.csrf)
+        .set('Idempotency-Key', 'configured-cancellation')
+        .send({ decision: 'approve', reason: 'Synthetic approved original policy' })
+    await post(root('0'.repeat(24))).expect(503)
+    expect(await refundModel(db.connection).countDocuments({ orderId: f.id })).toBe(0)
+    const active = root(asked.id)
+    await post(active).expect(200)
+    await post(active).expect(200)
+    expect(await refundModel(db.connection).countDocuments({ orderId: f.id })).toBe(1)
+    expect(
+      (await paymentModel(db.connection).findById(f.payment._id).orFail())
+        .merchandiseRefundHeldPoisha,
+    ).toBe(f.amount)
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+it('Package A prepaid timing: actual verified collection anchors confirmation commitment and customer handover projection', async () => {
+  const f = await processingFixture(false, undefined, true)
+  now = new Date(now.getTime() + 1000)
+  f.change({ tran_date: now.toISOString() })
+  await f.processor().process(f.claim)
+  const fullyPaidAt = now.toISOString()
+  now = new Date(now.getTime() + 1000)
+  const admin = await customer('admin')
+  const lifecycle = orderLifecycleService(
+    db.connection,
+    createAdminAccountAccess(db.connection, identities, sessions),
+    fulfillmentPaymentAccess(db.connection, () => now),
+    fulfillmentAllocationService(db.connection, () => now),
+    async () => {},
+    () => now,
+  )
+  const collections = paymentRecordModels(db.connection).collections
+  const original = await collections.findOne({ orderId: f.result.id }).lean().orFail()
+  const beforeRevision = (await paymentModel(db.connection).findById(f.attempt.paymentId).orFail())
+    .revision
+  await collections.collection.deleteOne({ _id: original._id })
+  await expect(
+    lifecycle.transition(
+      admin.credentials.customerToken,
+      f.result.id,
+      { to: 'confirmed', reason: 'Synthetic verified prepaid rule' },
+      'prepaid-confirm',
+    ),
+  ).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' })
+  expect(
+    (await orderModels(db.connection).orders.findById(f.result.id).orFail()).fulfillmentStatus,
+  ).toBe('pending')
+  expect((await paymentModel(db.connection).findById(f.attempt.paymentId).orFail()).revision).toBe(
+    beforeRevision,
+  )
+  await collections.collection.insertOne(original)
+  await lifecycle.transition(
+    admin.credentials.customerToken,
+    f.result.id,
+    { to: 'confirmed', reason: 'Synthetic verified prepaid rule' },
+    'prepaid-confirm',
+  )
+  const order = await orderModels(db.connection).orders.findById(f.result.id).orFail()
+  expect(order.deliveryCommitment.fullyPaidAt?.toISOString()).toBe(fullyPaidAt)
+  expect(order.deliveryCommitment.effectiveDeadlineAt?.toISOString()).toBe(
+    new Date(order.placedAt.getTime() + 5 * 86400000).toISOString(),
+  )
+  const customers = createCustomerAccountAccess(db.connection, identities, sessions)
+  const reads = orderReadService(
+    db.connection,
+    customers,
+    orderScopeAccess(customers, sessions),
+    customerPaymentSummaryAccess(db.connection),
+    orderPolicySnapshotAccess(db.connection),
+    () => now,
+  )
+  const detail = await reads.read(f.who.credentials, f.result.id)
+  expect(detail.deliveryDeadline).toMatchObject({
+    handoverStatus: 'pending',
+    handoverDeadlineAt: new Date(Date.parse(fullyPaidAt) + 48 * 3600000).toISOString(),
+  })
 })

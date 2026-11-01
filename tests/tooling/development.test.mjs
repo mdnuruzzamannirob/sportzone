@@ -351,6 +351,70 @@ test('HISTORY-BOUNDARY-01: review and claim readers cannot import foreign privat
   }
 })
 
+test('SUPPORT-BOUNDARY-01: support routes cannot import audit or complaint persistence', (t) => {
+  const { root, put } = fixture(t)
+  for (const owner of ['audit/audit', 'support/complaint']) {
+    put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
+    put('backend/src/modules/support/support-read.routes.ts', `import "../${owner}.model.js"`)
+    assert.ok(
+      checkBoundaries(root).errors.some(
+        (e) => e.includes('controller') || e.includes('private persistence'),
+      ),
+    )
+    put('backend/src/modules/support/support-read.routes.ts', 'export const router = 1')
+  }
+})
+
+test('REPORT-BOUNDARY-01: reporting cannot import foreign private persistence', (t) => {
+  const { root, put } = fixture(t)
+  for (const owner of ['orders/order', 'payments/payment', 'refunds/refund']) {
+    put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
+    put(
+      'backend/src/modules/reports/report-calculation.service.ts',
+      `import "../${owner}.model.js"`,
+    )
+    assert.ok(checkBoundaries(root).errors.some((e) => e.includes('private persistence')))
+    put('backend/src/modules/reports/report-calculation.service.ts', 'export const calculate = 1')
+  }
+})
+
+test('BLOCKED-AUDIT-BOUNDARY-01: customer routes and reviews retain auth and audit persistence privacy', (t) => {
+  const { root, put } = fixture(t)
+  for (const [consumer, owner] of [
+    ['customers/customer-admin.routes', 'auth/auth'],
+    ['reviews/review.service', 'auth/auth'],
+    ['reviews/review.service', 'audit/audit'],
+  ]) {
+    put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
+    put(`backend/src/modules/${consumer}.ts`, `import "../${owner}.model.js"`)
+    assert.ok(
+      checkBoundaries(root).errors.some(
+        (e) => e.includes('private persistence') || e.includes('controller'),
+      ),
+    )
+    put(`backend/src/modules/${consumer}.ts`, 'export const consumer = 1')
+  }
+})
+
+test('REFUND-DURABLE-BOUNDARY-01: reservation, cancellation and controllers cannot bypass owning financial persistence', (t) => {
+  const { root, put } = fixture(t)
+  for (const [consumer, owner] of [
+    ['refunds/refund-reservation.service', 'orders/order'],
+    ['refunds/refund-dispatch.service', 'payments/payment-record'],
+    ['refunds/cancellation-refund.service', 'orders/cancellation'],
+    ['orders/cancellation.routes', 'refunds/refund'],
+  ]) {
+    put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
+    put(`backend/src/modules/${consumer}.ts`, `import "../${owner}.model.js"`)
+    assert.ok(
+      checkBoundaries(root).errors.some(
+        (e) => e.includes('private persistence') || e.includes('controller'),
+      ),
+    )
+    put(`backend/src/modules/${consumer}.ts`, 'export const consumer = 1')
+  }
+})
+
 test('BACKEND-BOUNDARY-03: shared technical helpers cannot import domain/configuration via barrels', (t) => {
   const { root, put } = fixture(t)
   put('backend/src/modules/orders/order.service.ts', 'export const service = 1')
@@ -658,5 +722,28 @@ test('DEPLOY-02: Vercel separates app builds, uses the locked workspace and expo
       assert.equal(Object.hasOwn(config, 'rewrites'), false)
       assert.equal(Object.hasOwn(config, 'outputDirectory'), false)
     }
+  }
+})
+
+test('ORDER-OPERATIONS-BOUNDARY-01: admin HTTP and order projections cannot import private models', (t) => {
+  const { root, put } = fixture(t)
+  for (const [consumer, owner] of [
+    ['orders/order-admin.routes', 'orders/order'],
+    ['orders/order-admin.routes', 'payments/payment-record'],
+    ['orders/order-read.service', 'inventory/inventory'],
+    ['orders/order-read.service', 'audit/audit'],
+  ]) {
+    put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
+    const from =
+      consumer.startsWith('orders/') && owner.startsWith('orders/')
+        ? './order.model.js'
+        : `../${owner}.model.js`
+    put(`backend/src/modules/${consumer}.ts`, `import "${from}"`)
+    assert.ok(
+      checkBoundaries(root).errors.some(
+        (e) => e.includes('private persistence') || e.includes('controller'),
+      ),
+    )
+    put(`backend/src/modules/${consumer}.ts`, 'export const consumer = 1')
   }
 })

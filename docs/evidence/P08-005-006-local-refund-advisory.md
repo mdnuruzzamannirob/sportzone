@@ -1,5 +1,9 @@
 # P08-005 / P08-006 — Private refund advisory and attempt facts
 
+The later [durable obligation/attempt and reservation implementation](./P06-013-P08-005-008-durable-reservations.md)
+supersedes this revision's transient-only attempt/no-writer limitation. The original checks below
+remain historical; verified completion/reconciliation, external qualification and full acceptance are still pending.
+
 Date: 31 October 2026 (Asia/Dhaka). Executor: Codex. Base revision `160d636`; prior P08-003/004
 work was staged at task start and preserved; it subsequently appeared in commit `f6cf96b` during
 this work, which this task did not create. Full task status: **Blocked**. Owner requested the next

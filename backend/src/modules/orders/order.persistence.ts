@@ -37,6 +37,14 @@ const deadlineBasis = object(
         effectiveTo: text(100),
         target: timing,
         estimate: timing,
+        prepaid: object(
+          {
+            ruleRef: text(2000),
+            handoverHours: { ...integer, minimum: 1, maximum: 8760 },
+            deliveryCalendarDays: { ...integer, minimum: 1, maximum: 3660 },
+          },
+          ['ruleRef', 'handoverHours', 'deliveryCalendarDays'],
+        ),
         legalCaps: {
           bsonType: 'array',
           maxItems: 10,
@@ -146,6 +154,7 @@ const orderValidator = {
           targetDeadlineAt: date,
           legalDeadlineAt: date,
           effectiveDeadlineAt: date,
+          fullyPaidAt: date,
           calculatedAt: date,
           revision: integer,
         },
@@ -379,6 +388,7 @@ export async function verifyOrderPersistence(connection: Connection) {
 }
 
 export async function migrateOrderPostalCode(connection: Connection) {
+  await migrateOrderPrepaidTiming(connection)
   const db = connection.db
   if (!db) throw new Error('Order database unavailable')
   const row = await db.listCollections({ name: 'orders' }, { nameOnly: false }).next()
@@ -395,6 +405,38 @@ export async function migrateOrderPostalCode(connection: Connection) {
   )
     throw new Error('Unknown order validator; reviewed migration required')
   if (isDeepStrictEqual(row.options.validator, legacy))
+    await db.command({
+      collMod: 'orders',
+      validator: current,
+      validationLevel: 'strict',
+      validationAction: 'error',
+    })
+}
+
+// Explicit additive migration for the exact prior validator, never startup auto-DDL.
+export async function migrateOrderPrepaidTiming(connection: Connection) {
+  const db = connection.db
+  if (!db) throw new Error('Order database unavailable')
+  const row = await db.listCollections({ name: 'orders' }, { nameOnly: false }).next()
+  if (!row) return
+  const current = orderValidators.orders
+  const prior: unknown = JSON.parse(
+    JSON.stringify(current, (key, value: unknown) =>
+      ['prepaid', 'fullyPaidAt'].includes(key) ? undefined : value,
+    ),
+  )
+  const withoutPostal = (value: unknown): unknown =>
+    JSON.parse(
+      JSON.stringify(value, (key, item: unknown) => (key === 'postalCode' ? undefined : item)),
+    )
+  const recognized = [current, prior, withoutPostal(current), withoutPostal(prior)]
+  if (
+    row.options?.validationLevel !== 'strict' ||
+    row.options?.validationAction !== 'error' ||
+    !recognized.some((value) => isDeepStrictEqual(row.options?.validator, value))
+  )
+    throw new Error('Unknown order validator; reviewed migration required')
+  if (!isDeepStrictEqual(row.options.validator, current))
     await db.command({
       collMod: 'orders',
       validator: current,

@@ -3,6 +3,7 @@ import {
   createDeliveryDeadlineService,
   deliveryDeadlineDigest,
   addDeliveryCalendarDays,
+  deliveryDeadlineApprovalAccess,
 } from '../../src/modules/orders/delivery-deadline.service.js'
 import {
   deliveryDeadlineRule,
@@ -238,4 +239,95 @@ it('preserves the reviewed preview when the read capability is passed independen
     startEvent: 'confirmedAt',
     ruleVersion: 'synthetic-v1',
   })
+})
+
+it('confirmation authority binds an immutable snapshot to the independent configured registry', async () => {
+  const policy = manifest(),
+    capturedAt = '2026-02-01T00:00:00Z'
+  const authority = deliveryDeadlineApprovalAccess([policy], () => new Date('2026-03-01T00:00:00Z'))
+  const session = { inTransaction: () => true },
+    basis = { ...structuredClone(policy), capturedAt }
+  await expect(authority(session, basis)).resolves.toBeUndefined()
+  policy.rule.target.calendarDays = 100
+  await expect(authority(session, basis)).resolves.toBeUndefined()
+  for (const candidate of [
+    { ...basis, review: { ...basis.review, approvedBy: 'Invented reviewer' } },
+    { ...basis, rule: { ...basis.rule, target: { ...basis.rule.target, calendarDays: 100 } } },
+    { ...basis, capturedAt: '2027-01-01T00:00:00Z' },
+  ])
+    await expect(authority(session, candidate)).rejects.toMatchObject({
+      code: 'SERVICE_UNAVAILABLE',
+    })
+  await expect(authority({ inTransaction: () => false }, basis)).rejects.toMatchObject({
+    code: 'STATE_CONFLICT',
+  })
+  await expect(deliveryDeadlineApprovalAccess([])(session, basis)).rejects.toMatchObject({
+    code: 'SERVICE_UNAVAILABLE',
+  })
+})
+
+function prepaidFixture() {
+  const policy = manifest()
+  policy.rule = deliveryDeadlineRule.parse({
+    ...policy.rule,
+    prepaid: {
+      ruleRef: 'synthetic:reviewed-prepaid-rule',
+      handoverHours: 48,
+      deliveryCalendarDays: 5,
+    },
+  })
+  policy.review.ruleDigest = deliveryDeadlineDigest(policy.rule)
+  return fixture(policy)
+}
+it('prepaid timing separates actual-payment courier hours from placement delivery days and confirmation target', () => {
+  const { service, basis, setNow } = prepaidFixture()
+  setNow('2026-10-30T00:00:00Z')
+  const events = {
+    paymentMethod: 'online',
+    placedAt: '2026-10-26T00:00:00Z',
+    confirmedAt: '2026-10-27T01:00:00Z',
+    fullyPaidAt: '2026-10-27T00:00:00Z',
+  }
+  expect(service.project(basis, events)).toMatchObject({
+    status: 'calculated',
+    targetDeadlineAt: '2026-11-10T01:00:00.000Z',
+    legalCapAt: '2026-10-31T00:00:00.000Z',
+    effectiveAt: '2026-10-31T00:00:00.000Z',
+    handoverDeadlineAt: '2026-10-29T00:00:00.000Z',
+    handoverStatus: 'overdue',
+  })
+  expect(service.project(basis, { ...events, shippedAt: '2026-10-28T00:00:00Z' })).toMatchObject({
+    handoverStatus: 'met',
+  })
+  expect(service.project(basis, { ...events, shippedAt: '2026-10-29T01:00:00Z' })).toMatchObject({
+    handoverStatus: 'overdue',
+  })
+})
+it('prepaid timing never treats confirmation or delivery as proof of payment and excludes COD', () => {
+  const { service, basis, setNow } = prepaidFixture()
+  setNow('2026-10-30T00:00:00Z')
+  const events = { placedAt: '2026-10-26T00:00:00Z', confirmedAt: '2026-10-27T00:00:00Z' }
+  const waiting = service.project(basis, { ...events, paymentMethod: 'online' })
+  expect(waiting).toMatchObject({ status: 'awaiting_start', handoverStatus: 'awaiting_payment' })
+  expect(waiting).not.toHaveProperty('handoverDeadlineAt')
+  expect(waiting).not.toHaveProperty('effectiveAt')
+  const cod = service.project(basis, { ...events, paymentMethod: 'cod' })
+  expect(cod).toMatchObject({ status: 'calculated', effectiveAt: '2026-11-10T00:00:00.000Z' })
+  expect(cod).not.toHaveProperty('handoverStatus')
+})
+it('prepaid timing denies unknown method, future payment, payment before placement and impossible handover', () => {
+  const { service, basis, setNow } = prepaidFixture()
+  setNow('2026-10-30T00:00:00Z')
+  const events = { placedAt: '2026-10-26T00:00:00Z', confirmedAt: '2026-10-27T00:00:00Z' }
+  for (const addition of [
+    {},
+    { paymentMethod: 'online', fullyPaidAt: '2026-10-31T00:00:00Z' },
+    { paymentMethod: 'online', fullyPaidAt: '2026-10-25T00:00:00Z' },
+    {
+      paymentMethod: 'online',
+      fullyPaidAt: '2026-10-26T01:00:00Z',
+      shippedAt: '2026-10-26T02:00:00Z',
+    },
+  ])
+    expect(service.project(basis, { ...events, ...addition }).status).toBe('under_review')
 })

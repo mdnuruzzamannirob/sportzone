@@ -4,9 +4,13 @@ import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import type { refundOrderSnapshotAccess } from '../orders/order.service.js'
 import type { refundClaimSnapshotAccess } from '../returns/return.service.js'
-import type { refundPaymentSnapshotAccess } from '../payments/payment.service.js'
+import type {
+  correctionPaymentSnapshotAccess,
+  refundPaymentSnapshotAccess,
+} from '../payments/payment.service.js'
 import {
   calculateMerchandiseRefund,
+  calculateCorrectionRefund,
   planMultiSourceMerchandiseRefund,
 } from './refund-calculation.service.js'
 
@@ -60,6 +64,62 @@ export function refundAdvisoryService(
         approvedByPolicy,
       },
     })
+  }
+}
+
+const correctionCommand = z.strictObject({
+  orderId: id,
+  sourceCollectionIds: z
+    .array(id)
+    .min(1)
+    .max(50)
+    .refine((ids) => new Set(ids).size === ids.length),
+  requestedPoisha: z.int().min(1).max(Number.MAX_SAFE_INTEGER),
+})
+// Read-only snapshot; caller must authorize and a future writer must fence every capacity.
+export function correctionRefundAdvisoryService(
+  payment: ReturnType<typeof correctionPaymentSnapshotAccess>,
+) {
+  return async (session: ClientSession, raw: unknown) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    const input = parseInput(correctionCommand, raw)
+    const slices: { sourceCollectionId: string; availablePoisha: number }[] = []
+    let order: Awaited<ReturnType<typeof payment>>['order'] | undefined
+    for (const sourceCollectionId of [...input.sourceCollectionIds].sort()) {
+      const snapshot = await payment(session, input.orderId, sourceCollectionId)
+      if (
+        order &&
+        (order.allocatedPoisha !== snapshot.order.allocatedPoisha ||
+          order.heldPoisha !== snapshot.order.heldPoisha ||
+          order.completedPoisha !== snapshot.order.completedPoisha)
+      )
+        throw new ApiError('STATE_CONFLICT')
+      order = snapshot.order
+      const checked = calculateCorrectionRefund({
+        source: snapshot.source,
+        order,
+        requestedPoisha: 1,
+      })
+      slices.push({ sourceCollectionId, availablePoisha: checked.sourceAvailablePoisha })
+    }
+    if (!order) throw new ApiError('STATE_CONFLICT')
+    const total = slices.reduce((sum, item) => sum + BigInt(item.availablePoisha), 0n)
+    if (total > BigInt(Number.MAX_SAFE_INTEGER)) throw new ApiError('STATE_CONFLICT')
+    const result = calculateCorrectionRefund({
+      source: { allocatedPoisha: Number(total), heldPoisha: 0, completedPoisha: 0 },
+      order,
+      requestedPoisha: input.requestedPoisha,
+    })
+    if (result.status !== 'advisory') return result
+    let remaining = input.requestedPoisha
+    const allocations = []
+    for (const slice of slices) {
+      const amountPoisha = Math.min(remaining, slice.availablePoisha)
+      if (amountPoisha)
+        allocations.push({ sourceCollectionId: slice.sourceCollectionId, amountPoisha })
+      remaining -= amountPoisha
+    }
+    return { ...result, allocations }
   }
 }
 

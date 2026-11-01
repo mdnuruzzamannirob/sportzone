@@ -186,6 +186,58 @@ reference, validation, rotation and verification evidence for each deployed key.
 - Configuration changes affecting delivery, policy, payments or access are versioned/approved and audited, not
   performed as undocumented runtime edits.
 
+Order operations use `ORDER_OPERATIONS_ENABLED=false` by default. Explicit local/test startup can
+load `DELIVERY_DEADLINE_POLICY_FILE`, `COD_COLLECTION_EVIDENCE_FILE` and
+`CANCELLATION_REFUND_AUTHORIZATIONS_FILE` through the protected loader and root composition.
+Customer/admin authentication and customer order-read admission are mandatory; deployed activation
+is refused. No environment boolean supplies policy review or proof of cash by itself. The root never
+creates collections or indexes: verify the owning order/allocation/payment/cancellation/refund/attempt,
+audit and notification setup before admission.
+
+The receipt-source JSON is `{version:1,receipts:[...]}`. Each entry contains the existing
+codCollectionProof fields, with collectedAt as ISO date, plus verifiedAt, verifiedBy and an absolute
+artifactPath. The original artifact's SHA-256 must equal digest. Sources and original artifacts must
+be regular, current-process-owned files with no group/world access; symlink leaves and oversized
+files are refused. Browser evidenceRef never supplies a path. Verify original cash/settlement evidence
+before writing a record; these integrity checks do not decide whether fabricated documents are true.
+Receipt reference and evidence reference must each be unique in the source. Proof IO occurs outside
+transactions after authorization, and the service reauthorizes before committing.
+
+Cancellation authority JSON is `{version:1,authorizations:[{orderId,requestId,approval,evidenceRef,
+approvedBy,approvedAt}]}`; approval is the existing policyVersion/method/consentRequired/
+deliveryApproved/optional-consentEvidenceRef allowlist. Each order/request pair is unique. Approval
+is explicitly bound to that cancellation request; unknown pairs fail closed. Keep original policy and
+consent evidence in the protected operator store. The loader rejects future timestamps, missing or
+public-readable files and malformed configuration with redacted errors. Cancellation authorities and
+deadline registry are frozen at composition; a reviewed change/revocation requires a restart. Receipt
+sources are reread for a fresh collection; historical keyed replay uses its already committed receipt.
+Preserve these authority records, source evidence, submitted refund identities and financial holds
+during recovery. Never manufacture originals, reviewer identity or legal applicability to enable a feature.
+
+Reviewed prepaid rules may optionally configure `rule.prepaid` with ruleRef, handoverHours and
+deliveryCalendarDays. This is not automatically inferred from a country name or payment secret.
+Before admitting new rules, run the explicit local/test order bootstrap on the reviewed target:
+`node --env-file=.env backend/scripts/bootstrap-orders.mjs`. It recognizes only the exact current
+or known predecessor order validators and additively admits prepaid timing/frozen fullyPaidAt;
+unknown drift stops. The existing explicit postal migration delegates to the same known-schema
+upgrade. No records are rewritten, no indices dropped and no DDL runs at server startup. Deployed
+rollout still requires its owning target-plan review. Keep a compatible binary for rollback because
+an older strict validator/model cannot accept newly written prepaid snapshots.
+
+Full-payment time is reconstructed from at most 100 canonical verified online source collections,
+ordered by actual collectedAt, reaching original merchandise funding. Aggregate/source mismatch or
+missing proof blocks confirmation atomically. Confirmation freezes that event in the operational
+commitment. Handover is elapsed hours from that payment, while delivery cap is Dhaka calendar days
+from placement. COD ignores prepaid rules. Late handover remains visible as overdue rather than
+preventing recovery shipment or pretending the delivery was on time.
+
+Development completion is distinct from operational qualification. Package A software verification
+is retained with its development tasks; P11-007 owns current delivery-policy applicability, approved
+Bangla publication and genuine protected review manifests. P11-008 owns actual original-cash-source
+qualification and authorized COD smoke evidence. Keep both release checks open until performed.
+Neither a development Done checkbox nor a passing synthetic fixture enables flags, proves receipt
+of money, confirms payout or substitutes for an explicit release/milestone decision.
+
 ### 3.3 Change classes
 
 | Change                                                | Approval/review requirement                                | Release implication                                      |
@@ -1843,6 +1895,28 @@ provider `refunded` report or syntactically valid manual evidence still requires
 verification and transaction that binds the reserved obligation, source, attempt and payout evidence.
 A `cancelled` report or an unknown outcome remains under investigation; never retry on this report alone.
 
+#### Private refund reservation and attempt bootstrap
+
+After backend build, run `node --env-file=.env backend/scripts/bootstrap-refunds.mjs` only against
+an owned local/test database. The explicit migration recognizes the exact correction-only predecessor,
+checks existing rows against the new validator, adds indexes and preserves historical intents. It
+creates strict `refundAttempts` persistence with one open attempt per obligation and no TTL. Unknown
+validator drift fails closed; ordinary startup never repairs it. Existing databases must complete this
+step before running a new binary/payment-initiation bootstrap that verifies the extended refund schema.
+
+This command enables no HTTP route, policy authority or payout dispatcher. Private reservation tests
+use injected policy/cash evidence. Actual activation still requires qualified policy, consent/method,
+merchant and operator acceptance. Reservation creates an approved source-funded obligation and a
+created attempt, with no inferred payout. The private gateway dispatcher changes intent to submitted
+before its one external call; accepted/unknown outcomes retain held funds. A crash after submission
+must be investigated using the original bank/merchant identity; never reset to created or blindly resend.
+
+Back up and restore refunds, attempts, source/aggregate/unit/delivery counters, cancellation/allocation
+history and audit consistently. An older correction-only binary cannot verify or process the extended
+schema. Roll back application code only to a compatible build; retain financial records and reconcile
+external effects. Reconciliation, verified completion/release and ordinary scheduler/API activation
+remain separate capabilities and must not be simulated by manual database edits.
+
 #### Private claim persistence bootstrap
 
 After backend build, run `node --env-file=.env backend/scripts/bootstrap-returns.mjs` only against an
@@ -1897,9 +1971,11 @@ and /orders/{id}/status only when enabled. All are no-store; no browser mutation
 flag. Missing/contradictory historical PolicyRefs in consumed quotes fail detail closed, never fall
 back to current policy; assess retained history before cleanup/restore or enabling reads.
 
-Cancellation mutation services remain private until accepted P06-011 and their browser/admin Origin,
-CSRF, rate/access and DTO integration. Missing real source-backed merchandise refund capability blocks
-paid approvals; the correction-only refund model is not a substitute. Unpaid online cancellation does
+Cancellation has an explicitly composed local/test request/history/admin queue/decision router with
+Origin, CSRF, ownership and replay guards. Ordinary startup remains gated on accepted P06-011,
+qualified policy/evidence and deployment/rate controls. The private paid-decision coordinator can
+reserve source-funded obligations/attempts atomically with release and cancellation; a missing policy
+or refund capability still blocks paid approval. Unpaid online cancellation does
 not remove attempts or disable merchant reconciliation; later verified funds remain correction-only.
 
 #### Delivery exception and complaint foundation
@@ -2686,6 +2762,7 @@ the template and runtime validator determine which exact keys are currently supp
 
 | Configuration category     | Identifiers / contents                                                                              | Exposure / validation                                                                                                                                                |
 | -------------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Order operations | `ORDER_OPERATIONS_ENABLED`, `COD_COLLECTION_EVIDENCE_FILE`, `CANCELLATION_REFUND_AUTHORIZATIONS_FILE` | Server-only; explicit local/test activation with auth/read admission and protected original evidence; no default authority or deployed activation. |
 | Runtime                    | `NODE_ENV`, `APP_ENV`, `PORT`, `API_BIND_HOST`, `RELEASE_ID`                                        | Server runtime, allowlisted env and valid port                                                                                                                       |
 | Backend URL/origins        | `API_PUBLIC_ORIGIN`, `STOREFRONT_ORIGIN`, `ADMIN_ORIGIN`, `CORS_ALLOWED_ORIGINS`                    | Server, exact HTTPS origins in prod; avoid wildcard credentials                                                                                                      |
 | MongoDB                    | `MONGODB_URI`, `MONGODB_DB_NAME`, optional TLS/CA path                                              | **Secret** URI; replica set and transaction capability checks                                                                                                        |

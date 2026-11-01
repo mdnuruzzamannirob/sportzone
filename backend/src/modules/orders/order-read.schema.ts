@@ -65,3 +65,29 @@ export const customerOrderDetail = orderReadSummary.safeExtend({
     status: z.literal('under_review'),
   }),
 })
+
+export const adminOrderQuery = paginationSchema.safeExtend({
+  orderNumber: z.string().trim().min(1).max(128).optional(),
+  customerId: z
+    .string()
+    .regex(/^[a-f0-9]{24}$/)
+    .optional(),
+  fulfillmentStatus: fulfillmentStatus.optional(),
+  paymentStatus: checkoutOrderSummary.shape.paymentStatus.optional(),
+})
+export const adminOrderDetail = customerOrderDetail.safeExtend({
+  allocationSummary: z.strictObject({
+    generation: z.int().positive().nullable(),
+    items: z
+      .array(
+        z.strictObject({
+          variantId: z.string().regex(/^[a-f0-9]{24}$/),
+          quantity: z.int().positive(),
+          status: z.enum(['held', 'committed', 'released', 'shipped']),
+        }),
+      )
+      .max(50),
+  }),
+  fulfillmentActions: z.array(fulfillmentStatus).max(4),
+  auditRefs: z.array(z.string().regex(/^[a-f0-9]{24}$/)).max(40),
+})

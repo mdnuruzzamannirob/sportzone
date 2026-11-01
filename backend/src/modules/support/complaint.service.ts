@@ -14,7 +14,12 @@ import { complaintModel } from './complaint.model.js'
 import { verifyComplaintPersistence } from './complaint.persistence.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
+import { paginationSchema, pageMeta } from '../../shared/pagination.js'
+import { z } from 'zod'
 const hash = (s: string) => createHash('sha256').update(s).digest('hex')
+const adminQuery = paginationSchema.safeExtend({
+  status: z.enum(['open', 'in_review', 'resolved', 'closed']).optional(),
+})
 export function complaintService(
   connection: Connection,
   scope: ReturnType<typeof orderScopeAccess>,
@@ -37,6 +42,28 @@ export function complaintService(
       ...(row.resolution ? { resolution: row.resolution } : {}),
     })
   return {
+    async adminList(token: string | undefined, raw: unknown) {
+      const query = parseInput(adminQuery, raw)
+      return admin.owned(
+        token,
+        async (_actorId, session) => {
+          await verifyComplaintPersistence(connection)
+          const filter = query.status ? { status: query.status } : {}
+          const rows = await model
+            .find(filter)
+            .select('+issue')
+            .sort({ createdAt: -1, _id: -1 })
+            .skip((query.page - 1) * query.pageSize)
+            .limit(query.pageSize)
+            .session(session)
+          return {
+            items: rows.map(view),
+            pagination: pageMeta(query, await model.countDocuments(filter).session(session)),
+          }
+        },
+        false,
+      )
+    },
     async submit(credentials: PaymentInitiationCredentials, rawId: unknown, raw: unknown) {
       const id = parseInput(orderId, rawId),
         input = parseInput(complaintInput, raw),

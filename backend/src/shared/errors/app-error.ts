@@ -1,4 +1,8 @@
 export const errorDefinitions = {
+  REFUND_BALANCE_EXCEEDED: {
+    status: 409,
+    message: 'The requested refund exceeds the available balance.',
+  },
   OUT_OF_STOCK: { status: 409, message: 'Requested stock is not available.' },
   QUOTE_CHANGED: { status: 409, message: 'Review and confirm a new checkout quote.' },
   QUOTE_EXPIRED: { status: 409, message: 'Checkout quote has expired.' },

@@ -7,7 +7,10 @@ import request from 'supertest'
 import { testEnvironment } from '../helpers/environment.js'
 import { categoryModel } from '../../src/modules/catalog/categories/category.model.js'
 import { attributeSignature } from '../../src/modules/catalog/variants/variant.schema.js'
-import { catalogService } from '../../src/modules/catalog/catalog.service.js'
+import {
+  catalogReviewVisibility,
+  catalogService,
+} from '../../src/modules/catalog/catalog.service.js'
 import { catalogRoutes } from '../../src/modules/catalog/catalog.routes.js'
 import { createApp } from '../../src/app.js'
 import { createDeclaredIndexes } from '../../src/shared/database/indexes.js'
@@ -742,6 +745,49 @@ it('review API local: approved-only public reads, scoped customer history and mo
         .expect(200)
     ).body.data,
   ).toHaveLength(1)
+})
+it('review API local: catalog visibility hides inactive product, category ancestry and variants', async () => {
+  const app = localReviewApp(catalogReviewVisibility(db.connection))
+  const product = await productModels(db.connection).products.findById(productId).orFail()
+  const category = await categoryModel(db.connection).findById(product.categoryIds[0]).orFail()
+  const variant = await productModels(db.connection).variants.findOne({ productId }).orFail()
+  const path = `/api/v1/products/${productId}/reviews`
+  await request(app).get(path).expect(200)
+  await categoryModel(db.connection).updateOne(
+    { _id: category._id },
+    { $set: { status: 'inactive' } },
+  )
+  await request(app).get(path).expect(404)
+  await categoryModel(db.connection).updateOne(
+    { _id: category._id },
+    { $set: { status: 'active' } },
+  )
+  const parent = await categoryModel(db.connection).create({
+    name: 'Synthetic parent',
+    slug: `parent-${randomUUID()}`,
+    status: 'inactive',
+  })
+  await categoryModel(db.connection).updateOne(
+    { _id: category._id },
+    { $set: { parentId: parent._id } },
+  )
+  await request(app).get(path).expect(404)
+  await categoryModel(db.connection).updateOne({ _id: parent._id }, { $set: { status: 'active' } })
+  await request(app).get(path).expect(200)
+  await productModels(db.connection).variants.updateOne(
+    { _id: variant._id },
+    { $set: { status: 'inactive' } },
+  )
+  await request(app).get(path).expect(404)
+  await productModels(db.connection).variants.updateOne(
+    { _id: variant._id },
+    { $set: { status: 'active' } },
+  )
+  await productModels(db.connection).products.updateOne(
+    { _id: productId },
+    { $set: { status: 'inactive' } },
+  )
+  await request(app).get(path).expect(404)
 })
 it('review API local: missing auth, wrong CSRF, owner violations and moderator payload injection are denied', async () => {
   const own = await account(),

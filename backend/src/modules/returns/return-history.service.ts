@@ -6,6 +6,9 @@ import type {
 } from '../auth/checkout-access.service.js'
 import type { complaintOrderAccess } from '../orders/order.service.js'
 import type { claimEvidenceMetadataAccess } from '../media/claim-evidence.service.js'
+import type { AdminAccountAccess } from '../auth/admin-account.service.js'
+import { z } from 'zod'
+import { paginationSchema, pageMeta } from '../../shared/pagination.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { returnModel } from './return.model.js'
@@ -15,12 +18,28 @@ import { claimId } from './return.schema.js'
 type Row = HydratedDocument<
   import('mongoose').InferSchemaType<ReturnType<typeof returnModel>['schema']>
 >
+const adminQuery = paginationSchema.safeExtend({
+  claimType: z.enum(['physical_return', 'shortage']).optional(),
+  status: z
+    .enum([
+      'requested',
+      'under_review',
+      'approved',
+      'awaiting_return',
+      'received',
+      'inspected',
+      'completed',
+      'rejected',
+    ])
+    .optional(),
+})
 // Local-only read composition: scope and order ownership are both checked server-side.
 export function returnHistoryService(
   connection: Connection,
   scope: ReturnType<typeof orderScopeAccess>,
   order: ReturnType<typeof complaintOrderAccess>,
   evidence: ReturnType<typeof claimEvidenceMetadataAccess>,
+  admins?: AdminAccountAccess,
 ) {
   const model = returnModel(connection)
   async function view(session: ClientSession, row: Row) {
@@ -53,6 +72,58 @@ export function returnHistoryService(
     await verifyReturnPersistence(connection)
   }
   return {
+    async adminList(token: string | undefined, raw: unknown) {
+      if (!admins) throw new ApiError('SERVICE_UNAVAILABLE')
+      const query = parseInput(adminQuery, raw)
+      return admins.owned(
+        token,
+        async (_actor, session) => {
+          await verifyReturnPersistence(connection)
+          const filter = {
+            ...(query.claimType ? { claimType: query.claimType } : {}),
+            ...(query.status ? { status: query.status } : {}),
+          }
+          const rows = await model
+            .find(filter)
+            .sort({ createdAt: -1, _id: -1 })
+            .skip((query.page - 1) * query.pageSize)
+            .limit(query.pageSize)
+            .session(session)
+          const items = []
+          for (const row of rows) items.push(await view(session, row))
+          return {
+            items,
+            pagination: pageMeta(query, await model.countDocuments(filter).session(session)),
+          }
+        },
+        false,
+      )
+    },
+    async adminDetail(token: string | undefined, rawId: unknown) {
+      if (!admins) throw new ApiError('SERVICE_UNAVAILABLE')
+      const id = parseInput(claimId, rawId)
+      return admins.owned(
+        token,
+        async (_actor, session) => {
+          await verifyReturnPersistence(connection)
+          const row = await model.findById(id).session(session)
+          if (!row) throw new ApiError('NOT_FOUND')
+          return {
+            ...(await view(session, row)),
+            eligibility: {
+              policyVersion: row.eligibilitySnapshot.policyVersion,
+              ...(row.eligibilitySnapshot.deliveredAt
+                ? { deliveredAt: row.eligibilitySnapshot.deliveredAt.toISOString() }
+                : {}),
+              ...(row.eligibilitySnapshot.requestDeadlineAt
+                ? { requestDeadlineAt: row.eligibilitySnapshot.requestDeadlineAt.toISOString() }
+                : {}),
+            },
+          }
+        },
+        false,
+      )
+    },
     async list(credentials: PaymentInitiationCredentials, rawId: unknown) {
       const id = parseInput(claimId, rawId)
       return scope.owned(credentials, id, async (principal, session) => {

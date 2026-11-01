@@ -25,6 +25,7 @@ import { syntheticOrderProof, orderTestTime } from '../helpers/orders.js'
 import { orderModels } from '../../src/modules/orders/order.model.js'
 import {
   initializeOrderPersistence,
+  migrateOrderPrepaidTiming,
   verifyOrderPersistence,
   orderValidators,
 } from '../../src/modules/orders/order.persistence.js'
@@ -1083,4 +1084,39 @@ it('return eligibility local: request timestamp rechecks expiry before committin
   expect((await orderModels(db.connection).balances.findById(f.balance._id))?.activeClaimQty).toBe(
     0,
   )
+})
+
+it('prepaid timing migration recognizes only exact prior validators and preserves records on repeated additive upgrades', async () => {
+  const database = db.connection.db
+  if (!database) throw new Error('Missing isolated database')
+  const current = orderValidators.orders
+  const prior: unknown = JSON.parse(
+    JSON.stringify(current, (key, value: unknown) =>
+      ['prepaid', 'fullyPaidAt'].includes(key) ? undefined : value,
+    ),
+  )
+  const before = await database.collection('orders').countDocuments()
+  try {
+    await database.command({
+      collMod: 'orders',
+      validator: prior,
+      validationLevel: 'strict',
+      validationAction: 'error',
+    })
+    await migrateOrderPrepaidTiming(db.connection)
+    await migrateOrderPrepaidTiming(db.connection)
+    await verifyOrderPersistence(db.connection)
+    expect(await database.collection('orders').countDocuments()).toBe(before)
+    await database.command({ collMod: 'orders', validator: {} })
+    await expect(migrateOrderPrepaidTiming(db.connection)).rejects.toThrow(
+      'Unknown order validator',
+    )
+  } finally {
+    await database.command({
+      collMod: 'orders',
+      validator: current,
+      validationLevel: 'strict',
+      validationAction: 'error',
+    })
+  }
 })

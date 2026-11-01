@@ -114,8 +114,7 @@ boundary checks and negative fixtures with the owning refactor; a documentation 
 not prove enforcement. Use narrow capabilities for shared collections and preserve canonical models.
 
 **One application at a time:** Follow Implementation Plan §3.1: foundation → backend → admin → storefront → integrated release. The stage closeouts are P01-024, P03-022, P09-010 and P02-017 respectively; consult Tasks for their dependencies and evidence. Historical refactor IDs retain their recorded acceptance. Accept each application before starting the next. When the owner explicitly
-requests a combined application/monorepo batch, implement and verify each application in sequence, then collect
-independent acceptance for every task in the final review; a batch request never self-approves a task or milestone.
+requests a combined application/monorepo batch, implement and verify each application in sequence, then apply the task-completion convention in Tasks §2 and collect independent acceptance for each application closeout; a batch request never self-approves an application stage, external qualification or milestone.
 Move imports, tools, test discovery, aliases and actual CI inventory together; retain compatibility
 and existing user/staged edits. No new behavior, package/framework, collection or destructive cleanup
 is implied by source organization. Exceptions require an explicit architecture decision and checks.
@@ -227,7 +226,7 @@ Verification depends on the change type. Consult [Testing](docs/TESTING.md) for 
 | Configuration/operations | Environment safety, deploy/rollback compatibility, monitoring and affected recovery runbooks              |
 | Documentation            | Correct references, Markdown structure/links, consistency with related contracts                          |
 
-Use change-based local verification in [Testing §15.5](docs/TESTING.md#155-change-based-local-verification). Select affected checks before running them; reuse valid results for unchanged inputs. After a localized fix, rerun the failed suite and affected consumers rather than restarting the whole pipeline. Documentation-only work needs repository documentation checks, not application builds/tests. At application-stage closeout, use its final unfinished task for consolidated owning-application regression; integrated product/release closeout adds cross-application checks under Testing §15.5; do not repeat full-project suites after every task. Required task-level safety checks and independent acceptance remain mandatory. Backend-private work uses backend verification without frontend builds, UI tests or browser setup. Hosted scope selection and full integrated/release verification follow Testing §15; inspect actual workflow support before claiming isolation. Do not repeat settled architecture research without a concrete unresolved question.
+Use change-based local verification in [Testing §15.5](docs/TESTING.md#155-change-based-local-verification). Select affected checks before running them; reuse valid results for unchanged inputs. After a localized fix, rerun the failed suite and affected consumers rather than restarting the whole pipeline. Documentation-only work needs repository documentation checks, not application builds/tests. At application-stage closeout, use its final unfinished task for consolidated owning-application regression; integrated product/release closeout adds cross-application checks under Testing §15.5; do not repeat full-project suites after every task. Required task-level safety checks remain mandatory. Ordinary engineering completion follows Tasks §2; explicitly required stage, external and milestone acceptance remains mandatory. Backend-private work uses backend verification without frontend builds, UI tests or browser setup. Hosted scope selection and full integrated/release verification follow Testing §15; inspect actual workflow support before claiming isolation. Do not repeat settled architecture research without a concrete unresolved question.
 
 Execute repository scripts **only after confirming their actual names** in `package.json` and CI. Do not imply planned scripts/tests already exist. Record command, environment, observed result and artifact link. Use these results honestly: **Passed**, **Failed**, **Not Run** (including unavailable infrastructure), or **Blocked**. A mock-only check or static review is not real provider, concurrency, deployment or production acceptance.
 
@@ -249,7 +248,7 @@ When scaffolding a workspace or adding its scripts/dependencies, update [ci-work
 
 ## 13. Task completion & reporting
 
-Follow [Tasks §2](docs/TASKS.md): `Not Started`, `Ready`, `In Progress`, `Blocked`, `In Review`, `Done`, `Deferred`. A task checkbox changes to `[x]` **only** when status is `Done` after applicable acceptance checks and independent review. Do not self-approve milestones M1–M8 or operator/legal/provider gates.
+Follow [Tasks §2](docs/TASKS.md): `Not Started`, `Ready`, `In Progress`, `Blocked`, `In Review`, `Done`, `Deferred`. For ordinary development tasks, a checkbox changes to `[x]` only after applicable implementation/checks, executor diff review and recorded completion under the owner-approved engineering convention in Tasks §2. A separate independent sign-off is not required per such task. Explicit external-qualification tasks and application closeouts retain their real verification and independent acceptance. Do not self-approve milestones M1–M8 or operator/legal/provider gates.
 
 Use a concise final handoff containing:
 
@@ -260,7 +259,7 @@ Use a concise final handoff containing:
 | Verification    | Exact commands/checks, Passed/Failed/Not Run/Blocked, environment and evidence links                    |
 | Risk & blockers | Open defects, missing approvals, provider/infrastructure dependencies, rollback concerns                |
 | Documentation   | Contracts updated and any unresolved cross-document conflict                                            |
-| Status          | `In Review` pending acceptance, or another justified TASKS status; `Done` only with recorded acceptance |
+| Status          | `Done` after recorded engineering verification under Tasks §2; `In Review` where an explicit separate acceptance is pending; external/stage gates retain their required acceptance |
 
 Do not claim a task is complete because files were generated, tests were suggested, a CI configuration exists, a diagram parsed, or a provider mock responded. A feature passes the [Implementation Plan §3.3 Definition of Done](docs/IMPLEMENTATION_PLAN.md) only when **all applicable behavior and evidence** exist.
 

@@ -7,6 +7,8 @@ import { buildOrderSnapshot } from './order-snapshot.service.js'
 import { orderModels } from './order.model.js'
 import { verifyOrderPersistence } from './order.persistence.js'
 import { initialOrderResult, orderCreateCommand } from './order.schema.js'
+import { cancellationModel } from './cancellation.model.js'
+import { verifyCancellationPersistence } from './cancellation.persistence.js'
 // REQUIRED checkout coordinator capability. In THIS transaction it must authorize current
 // principal/consent, bind the intended order/intent, consume its valid quote and coordinate
 // durable intent outcome. Real allocations/payment intent must join before outer commit.
@@ -782,6 +784,123 @@ export function refundOrderSnapshotAccess(connection: Connection) {
     return {
       lines,
       deliveryChargePoisha: order.pricingSnapshot.deliveryChargePoisha,
+    }
+  }
+}
+
+// Called only by the cancellation-decision coordinator inside its still-uncommitted approval.
+export function cancellationRefundSnapshotAccess(connection: Connection) {
+  const { orders, balances } = orderModels(connection),
+    requests = cancellationModel(connection)
+  return async (session: ClientSession, orderId: string, requestId: string) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyOrderPersistence(connection)
+    await verifyCancellationPersistence(connection)
+    const request = await requests
+      .findOne({ _id: requestId, orderId, status: 'requested' })
+      .session(session)
+    const order = await orders.findById(orderId).session(session)
+    if (
+      !request ||
+      !order ||
+      !['pending', 'confirmed', 'processing'].includes(order.fulfillmentStatus) ||
+      order.shippedAt ||
+      order.shipment?.dispatchReference ||
+      order.cancelledAt
+    )
+      throw new ApiError('STATE_CONFLICT')
+    const lines = []
+    for (const item of order.items) {
+      const row = await balances.findOne({ orderId, orderItemId: item.id }).session(session)
+      if (!row || row.purchasedQty !== item.quantity) throw new ApiError('STATE_CONFLICT')
+      lines.push({
+        orderItemId: item.id.toHexString(),
+        quantity: item.quantity,
+        units: row.unitCoverage.map((u) => ({
+          ordinal: u.ordinal,
+          netEntitlementPoisha: u.netEntitlementPoisha,
+          refundHeldPoisha: u.refundHeldPoisha,
+          refundCompletedPoisha: u.refundCompletedPoisha,
+          eligible: u.claimState === 'available' && !u.claimId,
+        })),
+      })
+    }
+    return { lines, deliveryChargePoisha: order.pricingSnapshot.deliveryChargePoisha }
+  }
+}
+
+// Claim or pre-dispatch cancellation ordinals retain the same original entitlement namespace.
+export function refundUnitReservationAccess(connection: Connection) {
+  const { balances } = orderModels(connection)
+  const id = z.string().regex(/^[a-f0-9]{24}$/)
+  const command = z.strictObject({
+    orderId: id,
+    claimId: id.optional(),
+    cancellationRequestId: id.optional(),
+    items: z
+      .array(
+        z.strictObject({
+          orderItemId: id,
+          unitAmounts: z
+            .array(
+              z.strictObject({
+                ordinal: z.int().min(1).max(50),
+                amountPoisha: z.int().positive().max(Number.MAX_SAFE_INTEGER),
+              }),
+            )
+            .min(1)
+            .max(50),
+        }),
+      )
+      .max(50),
+  })
+  return async (session: ClientSession, raw: unknown) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    const input = parseInput(command, raw)
+    if (!!input.claimId === !!input.cancellationRequestId) throw new ApiError('VALIDATION_FAILED')
+    if (input.cancellationRequestId)
+      await cancellationRefundSnapshotAccess(connection)(
+        session,
+        input.orderId,
+        input.cancellationRequestId,
+      )
+    if (new Set(input.items.map((i) => i.orderItemId)).size !== input.items.length)
+      throw new ApiError('VALIDATION_FAILED')
+    await verifyOrderPersistence(connection)
+    for (const item of input.items) {
+      if (new Set(item.unitAmounts.map((u) => u.ordinal)).size !== item.unitAmounts.length)
+        throw new ApiError('VALIDATION_FAILED')
+      const row = await balances
+        .findOne({ orderId: input.orderId, orderItemId: item.orderItemId })
+        .session(session)
+      if (!row || row.revision >= Number.MAX_SAFE_INTEGER) throw new ApiError('STATE_CONFLICT')
+      const set: Record<string, number> = {}
+      for (const amount of item.unitAmounts) {
+        const unit = row.unitCoverage.find((u) => u.ordinal === amount.ordinal)
+        if (
+          !unit ||
+          (input.cancellationRequestId
+            ? unit.claimState !== 'available' || !!unit.claimId
+            : unit.claimId?.toHexString() !== input.claimId ||
+              !['protected', 'resolved'].includes(unit.claimState))
+        )
+          throw new ApiError('STATE_CONFLICT')
+        if (
+          BigInt(unit.refundHeldPoisha) +
+            BigInt(unit.refundCompletedPoisha) +
+            BigInt(amount.amountPoisha) >
+          BigInt(unit.netEntitlementPoisha)
+        )
+          throw new ApiError('REFUND_BALANCE_EXCEEDED')
+        set[`unitCoverage.${amount.ordinal - 1}.refundHeldPoisha`] =
+          unit.refundHeldPoisha + amount.amountPoisha
+      }
+      const changed = await balances.updateOne(
+        { _id: row._id, revision: row.revision },
+        { $set: set, $inc: { revision: 1 } },
+        { session },
+      )
+      if (changed.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
     }
   }
 }

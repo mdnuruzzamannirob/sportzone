@@ -98,11 +98,17 @@ export function orderLifecycleService(
           if (!approvedDeadline || row.confirmedAt) throw new ApiError('SERVICE_UNAVAILABLE')
           const basis = row.toObject({ flattenMaps: true }).deliverySnapshot.deadlineBasis
           await approvedDeadline(session, basis)
+          const fullyPaidAt =
+            basis.rule.prepaid && row.paymentMethod === 'online'
+              ? await payment.fundedAt(session, id)
+              : undefined
           const timing = parseInput(
             deliveryDeadline,
             createDeliveryDeadlineService(undefined, clock).requireConfirmation(basis, {
               placedAt: row.placedAt.toISOString(),
               confirmedAt: now.toISOString(),
+              paymentMethod: row.paymentMethod,
+              ...(fullyPaidAt ? { fullyPaidAt } : {}),
             }),
           )
           if (
@@ -116,6 +122,7 @@ export function orderLifecycleService(
           set.confirmedAt = now
           set.deliveryCommitment = {
             status: 'calculated',
+            ...(fullyPaidAt ? { fullyPaidAt: new Date(fullyPaidAt) } : {}),
             startEventAt: now,
             targetDeadlineAt: new Date(timing.targetDeadlineAt),
             ...(timing.legalCapAt ? { legalDeadlineAt: new Date(timing.legalCapAt) } : {}),

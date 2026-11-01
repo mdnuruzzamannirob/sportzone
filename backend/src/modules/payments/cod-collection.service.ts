@@ -79,6 +79,8 @@ export function codCollectionService(
               paymentId,
               orderId: row.orderId.toHexString(),
               provider: 'cod_manual',
+              sourceKind: 'cod_manual',
+              ...Object.fromEntries(collectionAmounts.map((name) => [name, row.get(name)])),
               amountPoisha: row.amountPoisha,
               currency: 'BDT',
               collectedAt: row.collectedAt.toISOString(),

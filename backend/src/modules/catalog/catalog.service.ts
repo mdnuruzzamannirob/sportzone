@@ -645,6 +645,23 @@ export function catalogService(
 
 // Checkout receives only detached selected-SKU facts; catalog retains private persistence and
 // the same active product/category/variant visibility checks used by shopping reads.
+export function catalogReviewVisibility(connection: Connection) {
+  const products = productModels(connection).products
+  return async (session: ClientSession, productId: string) => {
+    if (!session.inTransaction() || !/^[a-f0-9]{24}$/.test(productId))
+      throw new ApiError('STATE_CONFLICT')
+    const rows = await products
+      .aggregate([
+        { $match: { _id: new Types.ObjectId(productId), status: 'active' } },
+        ...visibleProducts(),
+        { $limit: 1 },
+        { $project: { _id: 1 } },
+      ])
+      .session(session)
+    return rows.length === 1
+  }
+}
+
 export function catalogCheckoutAccess(connection: Connection) {
   const catalog = catalogService(connection, async () => new Map())
   const models = productModels(connection)

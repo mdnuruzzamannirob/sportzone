@@ -293,6 +293,12 @@ intake. Supplied email/role/status/credential/security fields are never written.
 is preserved; read-only or expired scopes cannot save. Customers owns validation/coverage and profile operations,
 with no foreign user model or duplicated schema. The coordinating transaction is retained across the capability.
 
+Administrative customer status decisions remain Auth-owned: guard customer role, current status and
+security revision, then update only active/suspended status, increment security revision, revoke
+customer sessions and append keyed decision/transition audit in the same transaction. Reactivation
+cannot restore old credentials or override deletion-pending/deactivated states. Idempotent replay
+does not repeat revocation or apply an older status decision again.
+
 Composition wires narrow public operations, never a second mutable schema for the same collection or unrestricted foreign-model access. Public capabilities accept the coordinating transaction session; participants must not start nested transactions or parallel operations in the same session. Preserve ObjectIds, snapshots, integer-poisha arithmetic, unique identities, BSON validation and all existing indexes. Raw model, validator and bootstrap path moves require updated tooling and parity tests; a filename change is not permission to change durable data or mark a migration executed.
 
 ### 4.3 Atomic allocation and verified-payment flow
@@ -867,6 +873,14 @@ never silently replace its key or assume external/financial completion. Replay r
 current order projection even after `replayUntil`; that field cannot expire the durable registry.
 
 ### 7.2 `orders` — `checkout` / `orders`
+
+Optional reviewed deadline-basis `rule.prepaid` stores ruleRef, handoverHours (elapsed hours) and
+deliveryCalendarDays (Asia/Dhaka calendar days). It applies to online orders only. The operational
+commitment may additionally freeze fullyPaidAt, derived inside confirmation's transaction from the
+bounded canonical verified source collections reaching original expected merchandise funding.
+This is an event snapshot, not permission to mark a payment Paid. Existing snapshots remain valid;
+use the explicit additive local/test validator migration before admitting new rules. Do not rewrite
+historical timing or infer a cash event from order/fulfillment timestamps.
 
 | Field | Type | Constraints / notes |
 | --- | --- | --- |
@@ -1490,12 +1504,30 @@ planner orders verified sources and item ordinals deterministically, may split a
 sources and enforces aggregate source/order limits in its snapshot. Persisting all source slices,
 capacity fences and attempt intent remains the separate atomic reservation operation. No delivery
 policy is assumed when the authority is absent.
-Correction advisory arithmetic is isolated from merchandise ordinals. No new `refundAttempts` writer,
-status transition, collection or provider interaction is enabled by this advisory.
+Correction advisory arithmetic is isolated from merchandise ordinals. A private transaction-scoped
+planner can bind correction capacities to verified collections linked to the same order/payment and
+allocate a requested amount deterministically across distinct sources, subject to source and aggregate
+correction counters. This is a nonbinding snapshot: approval requires separate authorization and
+atomic revalidation/reservation. The advisory itself does not create obligations, attempts or provider effects.
+
+The private reservation coordinator separately reauthorizes an administrator and protected policy,
+binds approved shortage or inspected physical-return quantities, and commits source-class, aggregate,
+unit and delivery holds with approved obligations, created attempts and audit. Distinct source slices
+share a deterministic business group; changing request keys or reason cannot reserve the same natural
+request again. Correction reservation advances its existing unreserved intent rather than duplicating
+it. Method/policy/consent approval is mandatory. Without a qualified calendar, approval records timing
+under review and no target date. No payout is inferred from a reservation.
+
+The cancellation-decision coordinator can invoke the private cancellation reservation capability in
+its existing transaction. Orders rechecks the pending request and original pre-dispatch unit facts;
+only the verified collected amount is reserved, including partial COD. Any required delivery component
+needs protected policy authority. Refunds, attempts, balances, stock/coupon release, cancellation
+history, audit and notification either commit together or roll back. This does not enable ordinary
+startup, bypass qualified confirmation policy or establish a real original-cash verifier.
 
 `requestedAt` in the API maps to immutable refund `createdAt`. The public timeline is a bounded projection of durable status/audit events; retain approval/completion facts separately so history truncation cannot remove timing authority. Timing basis corrections require audited domain updates, preserve approvedAt, and must not delay an otherwise authorized payout.
 
-**Indexes:** unique `{orderId:1,decisionKey:1}`; `{sourceCollectionId:1,status:1}`; `{orderId:1,classification:1,createdAt:-1}`.
+**Indexes:** unique `{orderId:1,decisionKey:1}`; `{sourceCollectionId:1,status:1}`; `{orderId:1,classification:1,createdAt:-1}`; `{refundGroupKey:1,createdAt:1}`.
 
 **Rules:** a multi-collection refund uses separate source-funded obligations with exact `unitAmounts[]`, one shared
 `refundGroupKey`/business `basisRefId` when applicable, and a **distinct unique `decisionKey` per source-funded slice**.
@@ -1520,10 +1552,12 @@ ordinal can receive another source-funded payment only for its exact remaining n
 | `lastCheckedAt`? / `confirmedAt`? | Date | Verification timestamps |
 | `manualEvidence`? | embedded | `{destinationMasked,transferReference,evidenceDigest,confirmedBy?,confirmedAt?}`; access restricted |
 | `failureCode`? / `lastOperationKey`? | string | Safe failure metadata and unique causal reference |
+| `revision`! | int | Safe-integer CAS revision; generic model edits/deletes remain prohibited |
 
 **Indexes:** unique `{refundId:1,attemptNumber:1}`; unique `{provider:1,idempotencyKey:1}`; partial unique
 `{provider:1,refundTransId:1}` and `{provider:1,refundRefId:1}` **where the field is a string**, after account-level
-semantics are verified; `{status:1,lastCheckedAt:1}`. Use one merchant `refundTransId` for replay/reconciliation of the
+semantics are verified; `{status:1,lastCheckedAt:1}`; partial unique `{refundId:1}` for
+`created/submitted/uncertain` prevents two simultaneously open attempts. Use one merchant `refundTransId` for replay/reconciliation of the
 **same uncertain gateway request**. A new ID represents a new payout attempt only after independent confirmation that the
 previous attempt cannot pay. Never regenerate an ID merely because an HTTP request timed out.
 

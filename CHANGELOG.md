@@ -8,6 +8,72 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 1 November 2026 — Package A development closeout
+
+- Owner approved separating ordinary development completion from live-release qualification; aligned the owning completion/testing instructions.
+- Marked P06-003 and Package A P06-011/012/013/014 Done using the verified implementation, affected tests and executor review.
+- Assigned outstanding policy/publication and actual cash qualification explicitly to existing P11-007/P11-008 release checklists; preserved runtime safeguards and stage/milestone gates.
+- Counts: 112 Done, 19 Blocked, 77 Not Started, 2 Deferred; no production launch or external success claimed.
+
+## 1 November 2026 — Prepaid delivery timing mapping
+
+- Added optional reviewed prepaid delivery caps and separate courier-handover milestones, using canonical verified full-payment events rather than fulfillment timestamps.
+- Propagated rules through quote/order snapshots, froze confirmation's funding event, and exposed current handover status through protected order projections.
+- Added exact-predecessor additive local/test validator migration, schema/API compatibility and real payment/confirmation rollback coverage.
+- No qualified policy review, actual cash receipt, deployed activation or independent task acceptance is inferred from automated verification.
+
+## 1 November 2026 — Protected order-operation authorities
+
+- Implemented protected original-receipt integrity/binding verification and configured deadline-registry checks.
+- Wired explicit local/test server activation and request-bound funded-cancellation authorities without default financial evidence or review records.
+- Added configuration, privacy/tamper, real server startup and cancellation replay/rollback coverage; real policy/cash qualification and full task acceptance remain outstanding.
+
+## 1 November 2026 — Bangladesh policy preparation
+
+- Inspected official Bangladesh digital-commerce sources and prepared Bangla order/delivery/COD policy text plus an original-receipt verification procedure.
+- Recorded the missing full-payment/hourly-handover timing mapping; retained genuine policy review, deployed activation and task acceptance gates.
+- Documentation/evidence only; no invented approval, financial receipt or env activation.
+
+## 1 November 2026 — Package A order operations integration
+
+- Added protected admin order list/detail, fulfillment-transition and COD collection HTTP with explicit root capability composition, customer history and funded cancellation.
+- Reused historical projections, added bounded allocation/audit and collection balance projections, and mapped unavailable cancellation persistence to 503.
+- Added real replica-set HTTP/race/replay/ownership coverage; qualified policy/cash authority, deployed activation and independent task acceptance remain outstanding.
+
+## 1 November 2026 — Durable refund reservations and funded cancellation
+
+- Added source/order/unit/delivery reservations, durable obligations/attempts and explicit additive local migration.
+- Joined paid and partially collected COD cancellation with refund intents, allocation release and audit atomically; added explicit local cancellation HTTP.
+- Added one-shot gateway dispatch that preserves held funds and original identity on uncertainty; corrected payment-monitor classification.
+- Verified payout completion, reconciliation, real policy/provider evidence and full task acceptance remain outstanding.
+
+## 1 November 2026 — Blocked backend task review
+
+- Reviewed all 24 blocked tasks against current code, dependencies and acceptance evidence; retained explicit incomplete code and external approval blockers.
+- Added real local review composition with delivered purchase, catalog visibility, admin fences and durable moderation replay.
+- Added local customer search/detail and audited suspension/reactivation with atomic session revocation and rollback checks.
+- Full task acceptance and external gates remain unresolved.
+
+## 1 November 2026 — Private reporting and customer read foundation
+
+- Added non-authoritative financial report arithmetic and an admin-scoped masked customer detail capability.
+- P09-002/015 remain Blocked pending accepted prerequisites, full integration and independent review.
+
+## 1 November 2026 — Local support and audit reads
+
+- Added locally composed administrative complaint queue and redacted audit history with current-session checks.
+- P09-016/017 remain Blocked on dependencies, remaining operations, query profiles and independent acceptance.
+
+## 1 November 2026 — Local payment correction advisory
+
+- Bound read-only correction calculations to verified, order-linked source balances and added deterministic multi-source planning.
+- P08-006/007 remain Blocked pending prerequisites, atomic reservation and independent acceptance.
+
+## 1 November 2026 — Local review visibility and administrator claim reads
+
+- Added Catalog-owned review visibility checks and locally composed, admin-protected claim queue and detail reads.
+- P05-016 and P08-019 remain Blocked pending accepted dependencies, full integration and independent review.
+
 ## 31 October 2026 — Local review and claim reads
 
 - Added locally composed review reading, submission and moderation routes and scoped claim reads with private evidence metadata.

@@ -114,7 +114,7 @@ acceptance are recorded. The original domain milestones M1–M8 remain aggregate
 
 Within backend, implement identity/security → catalog/media/inventory management APIs → store settings/delivery → cart/pricing/promotions → orders/checkout/COD → payments → returns/refunds → qualified reviews/support/reporting, adding notifications, audit and jobs with their owning workflows. Provision staging/provider prerequisites when needed for backend acceptance.
 
-A work package follows `Confirm contracts → Implement owning application capability → Verify affected behavior → Record evidence → Independent review`. Backend implementation does not require frontend builds, browser installation or screen development. Shared contract changes require compatibility assessment; client integration is verified in its owning stage. Keep existing public contracts compatible unless an explicit contract change is approved.
+A work package follows `Confirm contracts → Implement owning application capability → Verify affected behavior → Record evidence → Review under Tasks §2`. Backend implementation does not require frontend builds, browser installation or screen development. Shared contract changes require compatibility assessment; client integration is verified in its owning stage. Keep existing public contracts compatible unless an explicit contract change is approved.
 
 Separate reusable local capabilities from external acceptance when the latter is not needed to implement a
 consumer safely. P04-020 verifies the media ledger, authorization, scanner/provider protocol boundaries and
@@ -136,7 +136,7 @@ Each phase in §6 identifies its objective, prerequisite, implementation work, v
 Before closing an application stage or integrated product phase, its final unfinished task coordinates the appropriately scoped regression and exit-gate
 evidence defined in [Testing §15.5](./TESTING.md#155-change-based-local-verification). Earlier tasks run
 focused checks as they deliver changes; phase closeout does not defer their required safety tests or
-replace independent task/milestone acceptance.
+replace task-specific checks or explicitly required external, application-stage and milestone acceptance.
 
 ### 3.3 Feature-level definition of done
 
@@ -150,6 +150,17 @@ An implementation work package is done when all applicable conditions are met:
 - Responsive, keyboard, focus, contrast, and light/dark behavior meet the design specification where UI is involved.
 - Appropriate logs, audit events, documentation, and operational checks have been added.
 - Acceptance evidence and any known limitation are recorded in the corresponding `TASKS.md` item.
+
+Development-task completion is separate from live-release qualification. An ordinary implementation
+task may be Done after its applicable behavior, affected checks, executor diff review and evidence
+are complete under the project owner's approved completion convention (Tasks §2). A separate
+independent acceptance ceremony is not required for each such task. Real cash/sender/provider
+qualification, operative legal-policy approval and live deployment evidence belong to the explicit
+release/qualification tasks; link them as outstanding there rather than treating them as missing
+software. This never permits a fake verified collection, payout, approval or deployed feature.
+Tasks explicitly delivering an external qualification, application-stage closeouts and M1–M8 retain
+their actual verification and independent approval requirements. An incomplete implementation,
+failed safety check or unfinished engineering prerequisite still prevents development Done.
 
 A mock-only page, a passing happy path without required failure handling, or a browser payment redirect without server verification does not satisfy this definition.
 

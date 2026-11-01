@@ -31,7 +31,7 @@ import {
   transportOperations,
 } from '../../contracts/registry.js'
 import { createApp } from '../../src/app.js'
-import { localReadRouters, registeredOperations, registeredRouter } from './routes.fixture.js'
+import { localOnlyRouters, registeredOperations, registeredRouter } from './routes.fixture.js'
 
 const markdown = readFileSync(resolve('../docs/API.md'), 'utf8')
 const artifacts = generateArtifacts(markdown)
@@ -118,6 +118,7 @@ describe('executable API contract registry', () => {
         'cart/wishlist.routes.ts',
         'checkout/checkout.routes.ts',
         'customers/customer.routes.ts',
+        'customers/customer-admin.routes.ts',
         'delivery/delivery.routes.ts',
         'health/health.routes.ts',
         'inventory/inventory-admin.routes.ts',
@@ -127,21 +128,39 @@ describe('executable API contract registry', () => {
         'payments/payment-callback.routes.ts',
         'payments/payment-risk.routes.ts',
         'orders/order-read.routes.ts',
+        'orders/order-admin.routes.ts',
+        'orders/cancellation.routes.ts',
         'payments/payment-monitor.routes.ts',
         'promotions/coupon-admin.routes.ts',
         'returns/return-history.routes.ts',
         'reviews/review.routes.ts',
         'settings/settings.routes.ts',
+        'support/support-read.routes.ts',
       ].sort(),
     )
   })
-  it('keeps local-only history and review routes aligned with planned API paths', () => {
-    const actual = localReadRouters()
+  it('keeps local-only domain routes aligned with planned API paths', () => {
+    const actual = localOnlyRouters()
       .flatMap((router) => registeredOperations(router))
       .filter((op) => !['HEAD', 'OPTIONS'].includes(op.method))
     const expected = [
+      'GET /admin/orders',
+      'GET /admin/orders/{orderId}',
+      'POST /admin/orders/{orderId}/fulfillment-transitions',
+      'POST /admin/payments/{paymentId}/cod-collections',
       'GET /orders/{orderId}/claims',
       'GET /claims/{claimId}',
+      'GET /admin/claims',
+      'GET /admin/claims/{claimId}',
+      'GET /admin/complaints',
+      'GET /admin/audit-logs',
+      'POST /orders/{orderId}/cancellation-requests',
+      'GET /orders/{orderId}/cancellation-requests',
+      'GET /admin/cancellation-requests',
+      'POST /admin/cancellation-requests/{requestId}/decision',
+      'GET /admin/customers',
+      'GET /admin/customers/{customerId}',
+      'POST /admin/customers/{customerId}/status-decisions',
       'GET /products/{productId}/reviews',
       'GET /me/reviews',
       'POST /products/{productId}/reviews',

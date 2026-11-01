@@ -53,6 +53,8 @@ const deadline = new Schema(
     targetDeadlineAt: String,
     legalCapAt: String,
     effectiveAt: String,
+    handoverDeadlineAt: String,
+    handoverStatus: String,
   },
   embedded,
 )
@@ -71,6 +73,17 @@ const basis = new Schema(
           effectiveTo: String,
           target: { type: timingRule, required: true },
           estimate: { type: timingRule, default: undefined },
+          prepaid: {
+            type: new Schema(
+              {
+                ruleRef: text,
+                handoverHours: { ...integerField(1), required: true, max: 8760 },
+                deliveryCalendarDays: { ...integerField(1), required: true, max: 3660 },
+              },
+              embedded,
+            ),
+            default: undefined,
+          },
           legalCaps: {
             type: [
               new Schema(

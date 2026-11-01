@@ -4,6 +4,19 @@ import { authorizeAccount } from './sessions/authorization.service.js'
 import type { IdentityModels } from './auth.model.js'
 import type { SessionService } from './sessions/session.service.js'
 
+// Domain coordinators with an existing transaction reuse the same authorization fences.
+export function adminTransactionAccess(
+  models: IdentityModels,
+  sessions: SessionService,
+  clock: () => Date = () => new Date(),
+) {
+  return async (token: string | undefined, transaction: ClientSession) => {
+    const identity = await sessions.authenticate('admin', token)
+    await authorizeAccount(models, identity, 'admin', transaction, clock())
+    return identity.userId.toHexString()
+  }
+}
+
 export function createAdminAccountAccess(
   connection: Connection,
   models: IdentityModels,

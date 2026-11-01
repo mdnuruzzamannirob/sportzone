@@ -1,3 +1,4 @@
+import type { ClientSession } from 'mongoose'
 import { createHash } from 'node:crypto'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
@@ -74,6 +75,7 @@ function freezeBasis(basis: DeliveryDeadlineBasis) {
   for (const cap of basis.rule.legalCaps) Object.freeze(cap)
   Object.freeze(basis.rule.legalCaps)
   if (basis.rule.estimate) Object.freeze(basis.rule.estimate)
+  if (basis.rule.prepaid) Object.freeze(basis.rule.prepaid)
   Object.freeze(basis.rule.target)
   Object.freeze(basis.rule)
   Object.freeze(basis.review)
@@ -107,6 +109,15 @@ export function createDeliveryDeadlineService(
     if (!events.success) return fallback(basis.rule.version)
     const placed = events.data.placedAt ? new Date(events.data.placedAt) : undefined
     const confirmed = events.data.confirmedAt ? new Date(events.data.confirmedAt) : undefined
+    const paid = events.data.fullyPaidAt ? new Date(events.data.fullyPaidAt) : undefined
+    const shipped = events.data.shippedAt ? new Date(events.data.shippedAt) : undefined
+    if (
+      (basis.rule.prepaid && !events.data.paymentMethod) ||
+      (paid && (!placed || paid < placed || paid > at)) ||
+      (paid && confirmed && events.data.paymentMethod === 'online' && paid > confirmed) ||
+      (shipped && (!confirmed || shipped < confirmed || shipped > at))
+    )
+      return fallback(basis.rule.version)
     if (
       (placed && (placed > at || placed < capturedAt)) ||
       (confirmed && (!placed || confirmed < placed || confirmed > at))
@@ -120,15 +131,37 @@ export function createDeliveryDeadlineService(
         const start = cap.startEvent === 'placedAt' ? placed : confirmed
         return start ? addDeliveryCalendarDays(start.toISOString(), cap.calendarDays) : undefined
       })
+      const prepaid = events.data.paymentMethod === 'online' ? basis.rule.prepaid : undefined
+      if (prepaid && paid && placed)
+        caps.push(addDeliveryCalendarDays(placed.toISOString(), prepaid.deliveryCalendarDays))
+      const handover =
+        prepaid && paid ? new Date(paid.getTime() + prepaid.handoverHours * 3600000) : undefined
       const capDates = caps.filter((value): value is string => value !== undefined)
       const legal = capDates.length
         ? capDates.reduce((a, b) => (Date.parse(a) < Date.parse(b) ? a : b))
         : undefined
-      const complete = target !== undefined && caps.every((value) => value !== undefined)
+      const complete =
+        target !== undefined &&
+        caps.every((value) => value !== undefined) &&
+        (!prepaid || paid !== undefined)
       return parseInput(deliveryDeadline, {
         status: complete ? 'calculated' : 'awaiting_start',
         startEvent: 'confirmedAt',
         ruleVersion: basis.rule.version,
+        ...(prepaid
+          ? {
+              handoverStatus: !handover
+                ? 'awaiting_payment'
+                : shipped
+                  ? shipped <= handover
+                    ? 'met'
+                    : 'overdue'
+                  : at > handover
+                    ? 'overdue'
+                    : 'pending',
+            }
+          : {}),
+        ...(handover ? { handoverDeadlineAt: handover.toISOString() } : {}),
         ...(confirmed ? { startEventAt: confirmed.toISOString() } : {}),
         ...(target ? { targetDeadlineAt: target } : {}),
         ...(legal ? { legalCapAt: legal } : {}),
@@ -153,7 +186,7 @@ export function createDeliveryDeadlineService(
     project,
     preview() {
       try {
-        return project(snapshotForCheckout(), {})
+        return project(snapshotForCheckout(), { paymentMethod: 'online' })
       } catch {
         return fallback()
       }
@@ -180,5 +213,33 @@ export function createDeliveryDeadlineService(
       if (result.status !== 'calculated') throw new ApiError('BUSINESS_RULE_VIOLATION')
       return result
     },
+  }
+}
+
+// Protect confirmation against fabricated/tampered order snapshots. The registry is supplied
+// only by the operator's reviewed configuration, never by browser input or a default rule.
+export function deliveryDeadlineApprovalAccess(
+  manifests: readonly DeliveryDeadlineManifest[],
+  clock: () => Date = () => new Date(),
+) {
+  const approved = manifests.map((value) => deliveryDeadlineManifest.parse(structuredClone(value)))
+  if (new Set(approved.map((value) => value.rule.version)).size !== approved.length)
+    throw new ApiError('SERVICE_UNAVAILABLE')
+  return async (session: Pick<ClientSession, 'inTransaction'>, raw: unknown) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    const parsed = deliveryDeadlineBasis.safeParse(raw),
+      now = clock().getTime()
+    if (!parsed.success || !Number.isFinite(now)) throw new ApiError('SERVICE_UNAVAILABLE')
+    const basis = parsed.data,
+      captured = new Date(basis.capturedAt)
+    const policy = approved.find((value) => value.rule.version === basis.rule.version)
+    if (
+      !policy ||
+      captured.getTime() > now ||
+      !active(basis, captured) ||
+      deliveryDeadlineDigest(policy.rule) !== deliveryDeadlineDigest(basis.rule) ||
+      JSON.stringify(policy.review) !== JSON.stringify(basis.review)
+    )
+      throw new ApiError('SERVICE_UNAVAILABLE')
   }
 }

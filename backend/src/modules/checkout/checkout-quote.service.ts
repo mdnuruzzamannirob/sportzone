@@ -87,7 +87,9 @@ export function checkoutQuoteService(
     )
     const settings = await dependencies.settings(session, now),
       deadlineBasis = dependencies.deadline.snapshotForCheckout()
-    const deliveryDeadline = dependencies.deadline.project(deadlineBasis, {})
+    const deliveryDeadline = dependencies.deadline.project(deadlineBasis, {
+      paymentMethod: draft.method === 'cod' ? 'cod' : 'online',
+    })
     const lines = draft.items.map((item) => {
       const selected = selections.get(item.variantId)
       if (!selected || selected.availableQty < item.quantity) throw new ApiError('OUT_OF_STOCK')

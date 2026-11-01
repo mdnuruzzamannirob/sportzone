@@ -856,7 +856,9 @@ A per-customer-limited coupon cannot be used by a guest even if a checkout email
 Reviews require a delivered qualifying purchase, exactly one active customer/product review, proper ownership and moderation; approved reviews alone affect public ratings.
 Do not accept a client-controlled `isVerifiedPurchase`, `status`, or `reviewedBy` field. The private local
 qualification capability fences the selected delivered customer order/item against concurrent return
-and refund changes; it is not yet wired to public review operations.
+and refund changes. An explicit local/test composition connects this capability to review HTTP
+operations with real Catalog visibility, current-admin authorization and durable moderation receipts;
+ordinary deployed activation and prerequisite acceptance remain gated.
 
 ### 10.4 Shopping DTO examples
 
@@ -1019,6 +1021,11 @@ requires explicit dispatch-not-started verification. Unpaid stock/coupon release
 audit commit once. Collected orders require a real transaction-bound refund-obligation capability;
 without one approval is blocked and all changes roll back. Payment attempts/reconciliation history
 remain intact after cancellation. These local capabilities do not waive P06-011 acceptance.
+Explicit local cancellation HTTP composition supports scoped request/history and protected admin
+queue/decision. Its paid-decision capability reserves source-funded obligations and created attempts
+with the cancellation transaction, including partial collected COD; it does not mark a payout complete.
+Customer/guest mutations require exact storefront Origin and their current scope-bound CSRF proof;
+admin decisions require admin Origin/CSRF. Ordinary activation and operator/policy evidence remain gated.
 
 ### 11.2 Price, hold and order response rules
 
@@ -1039,6 +1046,14 @@ access. Protected order details/actions require email challenge + `guest_order` 
 recovered through same-key context replay or verified guest proof, not order-number guessing.
 
 ### 11.3 Cancellation, fulfillment and shipment
+
+A reviewed deadline rule may include optional `prepaid:{ruleRef,handoverHours,deliveryCalendarDays}`.
+This applies only to online orders with independently verified full merchandise funding. Its delivery
+cap starts at order placement; its separate handover milestone starts at the actual full-payment
+collection event. Never substitute confirmation for payment or conflate courier handover with final
+delivery. Deadline projections may return handoverDeadlineAt and handoverStatus
+(awaiting_payment/pending/met/overdue); COD excludes prepaid rules. Confirmation freezes verified
+fullyPaidAt in the operational commitment. Missing/mismatched funding evidence fails closed.
 
 Customer cancellations are **requests**, not direct order-state updates.
 The admin accepts/rejects after checking `pending/confirmed`, or `processing` with explicit not-dispatched verification; stock and coupons release exactly once in transaction.
@@ -1453,12 +1468,14 @@ a refund basis without return receipt. Completing a claim **never** asserts a pa
 | `POST` | `/admin/refunds/{refundId}/reconcile`            | A      | `{reason} + Idempotency-Key → {status,attemptState}`                                            | 33  |
 | `POST` | `/admin/refunds/{refundId}/manual-confirmations` | A      | `{transferReference,evidenceRef,reason} + Idempotency-Key → Refund`                             | 33  |
 
-The private local refund advisory is not an HTTP operation or obligation. It reads selected linked
-verified collections and canonical claim/order snapshots in one transaction, and can deterministically
-plan unit amounts across sources. Public authorization, atomic reservation, durable attempt intent and
-execution remain separate work. The local SSLCOMMERZ initiation transport returns provider acceptance
-or uncertainty; neither establishes verified payout and no application executor is wired. Its private
-status query emits only a matched, redacted provider report; `refunded` still needs qualified durable
+The private local refund advisory reads linked verified collections and canonical claim/order snapshots
+in one transaction. A separately protected reservation coordinator now commits source/aggregate/unit/
+delivery holds, approved obligations, created attempts and audit atomically. It derives a natural business
+group so changed request keys cannot duplicate the same request. A private one-shot gateway dispatcher
+persists submitted intent before calling the provider outside the transaction; replay or uncertainty
+never resends automatically. Acceptance remains Processing and held funds remain reserved. Ordinary
+refund HTTP/root activation, reconciliation/completion and provider/operator acceptance remain gated.
+The private status query emits only a matched, redacted provider report; `refunded` still needs qualified durable
 identity/amount/time verification, and `cancelled` remains under investigation. Manual evidence
 verification is likewise a private, read-only gate and does not record a completed payout.
 
@@ -1708,6 +1725,40 @@ conflict boundary, preventing overselling or stale CAS even across different adm
 | `POST` | `/admin/customers/{customerId}/status-decisions`    | `{to:enum(active,suspended),reason} + Idempotency-Key → {status}`                                             | 27  |
 | `GET`  | `/admin/reviews`                                    | `status?,productId?,page? → AdminReview[]`                                                                    | 31  |
 | `POST` | `/admin/reviews/{reviewId}/moderation`              | `{decision:enum(approve,reject,hide),reason} + Idempotency-Key → AdminReview`                                 | 31  |
+
+Configured local/test order operations may load protected reviewed deadline, original COD receipt
+and request-bound cancellation authorities at server composition. No browser route installs these
+sources. Receipt-byte integrity, binding and current admin checks precede collection; missing,
+ambiguous, tampered or unavailable originals deny a new write. An identical previously committed
+collection replay does not require resubmitting evidence or create another financial source.
+
+Admin order list/detail and fulfillment/COD mutations use current admin sessions; browser mutations
+require the exact admin Origin, CSRF and Idempotency-Key. Fulfillment mutation returns the current
+`AdminOrderDetail` after the guarded command, including on an identical historical replay; changed
+payload under the same key conflicts. Cancellation still uses its dedicated request/decision flow.
+Order-number search is exact; customer/fulfillment/payment filters and canonical pagination reject
+unknown input. Payment-status filtering intersects authoritative payment summaries before pagination.
+The protected bounded implementation admits at most 1,000 candidate orders after the other filters;
+a larger intersection returns `503 SERVICE_UNAVAILABLE`, requiring narrower filters rather than partial
+results or incorrect counts. Queries without a payment-status filter use normal database pagination.
+
+`AdminOrderDetail.allocationSummary` contains `{generation:int|null,items:[{variantId,quantity,status}]}`
+from the latest Inventory generation; status is held/committed/released/shipped, at most 50 rows.
+`fulfillmentActions` lists advisory next-state candidates, never mutation authority; services recheck
+policy, risk, funding and stock. `auditRefs` contains at most 40 latest opaque order-audit IDs, never
+raw digests or private evidence. Historical item/pricing/delivery/policy projections are shared with
+owner reads, while all admin access is separately authorized. COD `CollectionSummary` includes
+`sourceKind:cod_manual` and the canonical allocation/held/completed balances; evidence/provider secrets
+are omitted. Collection is forbidden before confirmation and delivery alone never records cash.
+
+Customer administration returns masked identity fields and excludes admin principals. Search text
+is a bounded literal name/email prefix, never caller-controlled regular-expression syntax. Status
+decisions affect only `active`/`suspended` customers; deletion-pending and deactivated states cannot
+be reactivated through this route. Decisions require current admin, Origin/CSRF and a keyed reason,
+then atomically update security revision, revoke customer sessions and retain exact transition audit.
+Reactivation never restores revoked sessions. A historical identical decision key returns current
+status without repeating the effect; a changed payload conflicts. These capabilities currently have
+explicit local/test composition only; full histories, deletion review and ordinary activation remain gated.
 
 Private delivery/support foundation records admin delay/failed-attempt/final-non-delivery cases with
 keyed replay and bounded contact outcomes. Failed-attempt and delay resolution leave Shipped/status

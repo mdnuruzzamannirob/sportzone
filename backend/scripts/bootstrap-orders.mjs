@@ -1,12 +1,16 @@
 import { loadEnvironment } from '../dist/config/env.js'
 import { openDatabase } from '../dist/config/database.js'
-import { initializeOrderPersistence } from '../dist/modules/orders/order.persistence.js'
+import {
+  initializeOrderPersistence,
+  migrateOrderPrepaidTiming,
+} from '../dist/modules/orders/order.persistence.js'
 import { initializeAuditPersistence } from '../dist/modules/audit/audit.persistence.js'
 let connection
 try {
   const config = loadEnvironment(process.env)
   if (!['local', 'test'].includes(config.APP_ENV)) throw new Error('Local/test only')
   connection = await openDatabase(config.MONGODB_URI, config.MONGODB_DB_NAME)
+  await migrateOrderPrepaidTiming(connection)
   await initializeOrderPersistence(connection)
   await initializeAuditPersistence(connection)
   console.log(
