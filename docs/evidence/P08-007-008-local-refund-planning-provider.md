@@ -1,5 +1,24 @@
 # P08-007 / P08-008 — Local multi-source planning and refund transport
 
+## 1 November 2026 — correction advisory follow-up (P08-006 / P08-007)
+
+Payments now provides a private, transaction-scoped snapshot of correction balances for a verified
+collection linked to the exact order and payment. Refunds uses it to produce a deterministic,
+nonbinding multi-source correction plan, separately from merchandise quantities. Duplicate and
+foreign sources fail, and source/order held and completed counters constrain the plan. Nothing
+reserves capacity or creates an obligation or payout; the caller still needs authorization and a
+future mutation must re-read and atomically fence current balances. Both P08-006 and P08-007 remain
+Blocked on their accepted prerequisites, reservation/attempt work and independent acceptance.
+
+On isolated MongoDB replica set, `cd backend && ../node_modules/.bin/vitest run --config
+vitest.integration.config.ts checkout-quote.test.ts -t 'refund advisory local|correction advisory
+local|multi-source refund local' --reporter=dot` passed 11 tests (226 skipped). `npm run test:unit
+--workspace=backend -- refund-calculation.test.ts` passed 17 tests. Backend build, typecheck, lint,
+boundaries and format checks passed. Initial typecheck found missing generated-schema TypeScript
+fields in the test fixture and the first integration run correctly rejected a fixture update lacking
+a revision guard; both were corrected and the affected checks rerun. No deployed/provider acceptance
+or full checkout suite was run.
+
 Date: 31 October 2026 (Asia/Dhaka). Executor: Codex. Prior P08-005/006 work was uncommitted at
 turn start and subsequently appeared in commit `37e7826` during this work; it was preserved, and this
 work did not create that commit. Status: **Blocked** for full task acceptance. The owner requested the

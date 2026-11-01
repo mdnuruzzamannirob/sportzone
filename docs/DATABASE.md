@@ -1490,8 +1490,12 @@ planner orders verified sources and item ordinals deterministically, may split a
 sources and enforces aggregate source/order limits in its snapshot. Persisting all source slices,
 capacity fences and attempt intent remains the separate atomic reservation operation. No delivery
 policy is assumed when the authority is absent.
-Correction advisory arithmetic is isolated from merchandise ordinals. No new `refundAttempts` writer,
-status transition, collection or provider interaction is enabled by this advisory.
+Correction advisory arithmetic is isolated from merchandise ordinals. A private transaction-scoped
+planner can bind correction capacities to verified collections linked to the same order/payment and
+allocate a requested amount deterministically across distinct sources, subject to source and aggregate
+correction counters. This is a nonbinding snapshot: approval requires separate authorization and
+atomic revalidation/reservation. No new `refundAttempts` writer, status transition, collection or
+provider interaction is enabled by this advisory.
 
 `requestedAt` in the API maps to immutable refund `createdAt`. The public timeline is a bounded projection of durable status/audit events; retain approval/completion facts separately so history truncation cannot remove timing authority. Timing basis corrections require audited domain updates, preserve approvedAt, and must not delay an otherwise authorized payout.
 

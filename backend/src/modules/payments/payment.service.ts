@@ -52,6 +52,34 @@ export function refundPaymentSnapshotAccess(connection: Connection) {
     }
   }
 }
+// Detached correction balances for a verified collection linked to this order's payment.
+export function correctionPaymentSnapshotAccess(connection: Connection) {
+  const payments = paymentModel(connection),
+    { collections } = paymentRecordModels(connection)
+  return async (session: ClientSession, orderId: string, sourceCollectionId: string) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyPaymentPersistence(connection)
+    await verifyPaymentRecordPersistence(connection)
+    const payment = await payments.findOne({ orderId }).session(session)
+    if (!payment) throw new ApiError('NOT_FOUND')
+    const source = await collections
+      .findOne({ _id: sourceCollectionId, orderId, paymentId: payment._id })
+      .session(session)
+    if (!source) throw new ApiError('NOT_FOUND')
+    return {
+      source: {
+        allocatedPoisha: source.get('correctionAllocatedPoisha'),
+        heldPoisha: source.get('correctionRefundHeldPoisha'),
+        completedPoisha: source.get('correctionRefundCompletedPoisha'),
+      },
+      order: {
+        allocatedPoisha: payment.correctionCollectedPoisha,
+        heldPoisha: payment.correctionRefundHeldPoisha,
+        completedPoisha: payment.correctionRefundCompletedPoisha,
+      },
+    }
+  }
+}
 // Trusted checkout capability only; owning coordinator binds these facts to the canonical order.
 // No collection/attempt or Paid transition exists in this service.
 export function checkoutPaymentAccess(connection: Connection) {

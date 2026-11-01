@@ -13,10 +13,14 @@ import { manualPayoutVerificationService } from '../../src/modules/refunds/manua
 import {
   refundAdvisoryService,
   multiSourceRefundAdvisoryService,
+  correctionRefundAdvisoryService,
 } from '../../src/modules/refunds/refund-advisory.service.js'
 import { refundOrderSnapshotAccess } from '../../src/modules/orders/order.service.js'
 import { refundClaimSnapshotAccess } from '../../src/modules/returns/return.service.js'
-import { refundPaymentSnapshotAccess } from '../../src/modules/payments/payment.service.js'
+import {
+  correctionPaymentSnapshotAccess,
+  refundPaymentSnapshotAccess,
+} from '../../src/modules/payments/payment.service.js'
 import { returnPhysicalService } from '../../src/modules/returns/return-physical.service.js'
 import { returnLifecycleService } from '../../src/modules/returns/return-lifecycle.service.js'
 import { returnService } from '../../src/modules/returns/return.service.js'
@@ -6088,6 +6092,123 @@ function refundAdvisory(policy?: Parameters<typeof refundAdvisoryService>[3]) {
     policy,
   )
 }
+it('correction advisory local: linked verified excess is class-isolated, bounded and read-only', async () => {
+  const f = await processingFixture()
+  expect(await f.processor().process(f.claim)).toBe('committed')
+  f.change({ bank_tran_id: 'correction-bank', val_id: 'correction-validation' })
+  expect(await f.processor().process({ ...f.claim, validationId: 'correction-validation' })).toBe(
+    'committed',
+  )
+  const collections = paymentRecordModels(db.connection).collections
+  const sources = await collections.find({ orderId: f.result.id })
+  const correction = sources.find((source) => source.get('correctionAllocatedPoisha') > 0)
+  const merchandise = sources.find((source) => source.get('merchandiseAllocatedPoisha') > 0)
+  if (!correction || !merchandise) throw new Error('Missing verified fixture collections')
+  const service = correctionRefundAdvisoryService(correctionPaymentSnapshotAccess(db.connection))
+  const input = {
+    orderId: f.result.id,
+    sourceCollectionIds: [correction._id.toHexString()],
+    requestedPoisha: correction.get('correctionAllocatedPoisha'),
+  }
+  const beforePayment = await paymentModel(db.connection).findById(f.attempt.paymentId).lean()
+  const beforeSources = await collections.find({ orderId: f.result.id }).sort({ _id: 1 }).lean()
+  expect(await inTransaction(db.connection, (session) => service(session, input))).toMatchObject({
+    status: 'advisory',
+    correctionAmountPoisha: input.requestedPoisha,
+    allocations: [
+      { sourceCollectionId: input.sourceCollectionIds[0], amountPoisha: input.requestedPoisha },
+    ],
+  })
+  expect(
+    await inTransaction(db.connection, (session) =>
+      service(session, { ...input, sourceCollectionIds: [merchandise._id.toHexString()] }),
+    ),
+  ).toMatchObject({ status: 'insufficient_collected_balance', sourceAvailablePoisha: 0 })
+  expect(
+    await inTransaction(db.connection, (session) =>
+      service(session, { ...input, requestedPoisha: input.requestedPoisha + 1 }),
+    ),
+  ).toMatchObject({ status: 'insufficient_collected_balance' })
+  await expect(
+    inTransaction(db.connection, (session) =>
+      service(session, { ...input, orderId: new Types.ObjectId().toHexString() }),
+    ),
+  ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+  const other = await processingFixture()
+  await expect(
+    inTransaction(db.connection, (session) =>
+      service(session, { ...input, orderId: other.result.id }),
+    ),
+  ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+  await expect(
+    inTransaction(db.connection, (session) =>
+      service(session, {
+        ...input,
+        sourceCollectionIds: [input.sourceCollectionIds[0], input.sourceCollectionIds[0]],
+      }),
+    ),
+  ).rejects.toThrow()
+  expect(await paymentModel(db.connection).findById(f.attempt.paymentId).lean()).toEqual(
+    beforePayment,
+  )
+  expect(await collections.find({ orderId: f.result.id }).sort({ _id: 1 }).lean()).toEqual(
+    beforeSources,
+  )
+})
+it('correction advisory local: deterministic multi-source planning subtracts existing commitments', async () => {
+  const f = await processingFixture()
+  expect(await f.processor().process(f.claim)).toBe('committed')
+  for (const label of ['first', 'second']) {
+    f.change({ bank_tran_id: `correction-${label}-bank`, val_id: `correction-${label}-validation` })
+    expect(
+      await f.processor().process({ ...f.claim, validationId: `correction-${label}-validation` }),
+    ).toBe('committed')
+  }
+  const collections = paymentRecordModels(db.connection).collections
+  const rows = (await collections.find({ orderId: f.result.id })).filter(
+    (row) => row.get('correctionAllocatedPoisha') > 0,
+  )
+  expect(rows).toHaveLength(2)
+  const first = rows[0]
+  if (!first) throw new Error('Missing correction source')
+  await inTransaction(db.connection, async (session) => {
+    await collections.updateOne(
+      { _id: first._id, revision: first.revision },
+      { $set: { correctionRefundHeldPoisha: 1 }, $inc: { revision: 1 } },
+      { session },
+    )
+    await paymentModel(db.connection).updateOne(
+      {
+        _id: f.attempt.paymentId,
+        revision: (
+          await paymentModel(db.connection).findById(f.attempt.paymentId).session(session).orFail()
+        ).revision,
+      },
+      { $set: { correctionRefundHeldPoisha: 1 }, $inc: { revision: 1 } },
+      { session },
+    )
+  })
+  const service = correctionRefundAdvisoryService(correctionPaymentSnapshotAccess(db.connection))
+  const ids = rows.map((row) => row._id.toHexString())
+  const input = {
+    orderId: f.result.id,
+    sourceCollectionIds: ids,
+    requestedPoisha: f.attempt.expectedAmountPoisha + 1,
+  }
+  const firstResult = await inTransaction(db.connection, (session) => service(session, input))
+  const reverseResult = await inTransaction(db.connection, (session) =>
+    service(session, { ...input, sourceCollectionIds: [...ids].reverse() }),
+  )
+  expect(firstResult).toEqual(reverseResult)
+  expect(firstResult).toMatchObject({
+    status: 'advisory',
+    orderAvailablePoisha: 2 * f.attempt.expectedAmountPoisha - 1,
+  })
+  if (firstResult.status === 'advisory')
+    expect(firstResult.allocations.reduce((sum, slice) => sum + slice.amountPoisha, 0)).toBe(
+      input.requestedPoisha,
+    )
+})
 it('refund advisory local: uncollected COD has no verified source and cannot produce a quote', async () => {
   const f = await physicalReturnFixture()
   await f.receive()

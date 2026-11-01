@@ -1467,7 +1467,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P08-005`\
   **Deliverable:** Use purchase-time item/allocated coupon amounts, physical-return/shortage quantity limits, delivery-charge policy and prior commitments. Payment corrections consume source-collection financial capacity independently of merchandise-return quantities.\
   **Acceptance:** No current-catalog price used; deterministic rounding; no refund for uncollected COD.\
-  **Evidence:** [Local advisory/state validation, actual tests and remaining work](./evidence/P08-005-006-local-refund-advisory.md). Prerequisites and independent acceptance remain pending; no reservation, attempt writer or payout enabled.
+  **Evidence:** [Local advisory/state validation](./evidence/P08-005-006-local-refund-advisory.md) and [correction-source follow-up](./evidence/P08-007-008-local-refund-planning-provider.md#1-november-2026--correction-advisory-follow-up-p08-006--p08-007). Prerequisites and independent acceptance remain pending; no reservation, attempt writer or payout enabled.
 
 - [ ] **P08-007 — Atomically reserve eligible collected refund balance**\
   **Status:** `Blocked` · **Area:** Backend/refunds\
@@ -1476,7 +1476,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P08-006`\
   **Deliverable:** Reserve refundable capacity before payout and guard against concurrent attempts.\
   **Acceptance:** Pending+completed commitments never exceed independently verified collections at either source-collection or order level; duplicate-collection refunds do not consume merchandise quantity entitlement.\
-  **Evidence:** [Separate local planning/transport, tests and outstanding prerequisites](./evidence/P08-007-008-local-refund-planning-provider.md). No reservation, durable payout attempt, executor or sandbox acceptance is implied.
+  **Evidence:** [Separate local planning/transport, correction-source follow-up, tests and outstanding prerequisites](./evidence/P08-007-008-local-refund-planning-provider.md). No reservation, durable payout attempt, executor or sandbox acceptance is implied.
 
 - [ ] **P08-008 — Implement supported gateway payout requests and references**\
   **Status:** `Blocked` · **Area:** Backend/refunds\
@@ -2576,3 +2576,5 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **31 October 2026 — P05-016/P08-019 local reads:** Each Not Started → In Progress → Blocked. Added locally composed review routes and scoped order-claim history with private evidence metadata. [Verification, limits and outstanding dependencies](./evidence/P05-016-P08-019-local-reads.md). Integrated activation, remaining claim/refund surfaces and independent acceptance remain pending. Overall: 210 tasks, 107 Done, 81 Not Started, 20 Blocked, 2 Deferred.
 
 **1 November 2026 — P05-016/P08-019 follow-up:** Added actual catalog visibility checks for local review composition and protected local administrator claim queue/detail reads. [Checks and remaining blockers](./evidence/P05-016-P08-019-local-reads.md#1-november-2026--additional-local-review-and-admin-claim-reads). Statuses and totals unchanged; neither task is accepted.
+
+**1 November 2026 — P08-006/P08-007 correction follow-up:** Added verified linked-source correction balance snapshots and nonbinding multi-source planning. [Actual tests and remaining blockers](./evidence/P08-007-008-local-refund-planning-provider.md#1-november-2026--correction-advisory-follow-up-p08-006--p08-007). Statuses and totals unchanged; no financial reservation or task acceptance is implied.
