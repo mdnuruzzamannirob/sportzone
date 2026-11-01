@@ -83,6 +83,7 @@ import { paymentRiskRoutes } from '../../src/modules/payments/payment-risk.route
 import { paymentRiskService } from '../../src/modules/payments/payment-risk.service.js'
 import { paymentSettlementService } from '../../src/modules/payments/payment-settlement.service.js'
 import { createAdminAccountAccess } from '../../src/modules/auth/admin-account.service.js'
+import { customerAdminQueryService } from '../../src/modules/auth/customer-admin-query.service.js'
 import { initializeCorrectionPersistence } from '../../src/modules/refunds/refund.persistence.js'
 import { createAuditWriter } from '../../src/modules/audit/audit.service.js'
 import { paymentProcessingService } from '../../src/modules/payments/payment-processing.service.js'
@@ -5099,6 +5100,39 @@ async function exceptionFixture(protectedDisposition = true) {
     adminAccess,
   }
 }
+it('customer admin local: detail requires active admin and returns masked customer-only fields', async () => {
+  const who = await customer(),
+    admin = await customer('admin'),
+    other = await customer()
+  const service = customerAdminQueryService(
+    db.connection,
+    identities,
+    createAdminAccountAccess(db.connection, identities, sessions),
+  )
+  const result = await service.detail(admin.credentials.customerToken, who.user._id.toHexString())
+  expect(result).toMatchObject({
+    id: who.user._id.toHexString(),
+    status: 'active',
+    emailVerified: false,
+  })
+  expect(result.emailMasked).not.toBe(who.user.emailNormalized)
+  expect(JSON.stringify(result)).not.toContain(who.user.emailNormalized)
+  for (const field of ['passwordHash', 'addresses', 'deletionRequest', 'emailNormalized'])
+    expect(result).not.toHaveProperty(field)
+  await expect(
+    service.detail(other.credentials.customerToken, who.user._id.toHexString()),
+  ).rejects.toThrow()
+  await expect(
+    service.detail(admin.credentials.customerToken, admin.user._id.toHexString()),
+  ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+  await expect(
+    service.detail(admin.credentials.customerToken, new Types.ObjectId().toHexString()),
+  ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+  await identities.users.updateOne({ _id: admin.user._id }, { $set: { status: 'suspended' } })
+  await expect(
+    service.detail(admin.credentials.customerToken, who.user._id.toHexString()),
+  ).rejects.toThrow()
+})
 it('commerce/exception batch: actual lifecycle commits one order email event per cause and delivery remains financially independent', async () => {
   const f = await lifecycleFixture()
   await f.move('confirmed')

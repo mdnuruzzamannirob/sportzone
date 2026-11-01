@@ -8,6 +8,11 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 1 November 2026 — Private reporting and customer read foundation
+
+- Added non-authoritative financial report arithmetic and an admin-scoped masked customer detail capability.
+- P09-002/015 remain Blocked pending accepted prerequisites, full integration and independent review.
+
 ## 1 November 2026 — Local support and audit reads
 
 - Added locally composed administrative complaint queue and redacted audit history with current-session checks.

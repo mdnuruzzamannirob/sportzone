@@ -365,6 +365,19 @@ test('SUPPORT-BOUNDARY-01: support routes cannot import audit or complaint persi
   }
 })
 
+test('REPORT-BOUNDARY-01: reporting cannot import foreign private persistence', (t) => {
+  const { root, put } = fixture(t)
+  for (const owner of ['orders/order', 'payments/payment', 'refunds/refund']) {
+    put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
+    put(
+      'backend/src/modules/reports/report-calculation.service.ts',
+      `import "../${owner}.model.js"`,
+    )
+    assert.ok(checkBoundaries(root).errors.some((e) => e.includes('private persistence')))
+    put('backend/src/modules/reports/report-calculation.service.ts', 'export const calculate = 1')
+  }
+})
+
 test('BACKEND-BOUNDARY-03: shared technical helpers cannot import domain/configuration via barrels', (t) => {
   const { root, put } = fixture(t)
   put('backend/src/modules/orders/order.service.ts', 'export const service = 1')

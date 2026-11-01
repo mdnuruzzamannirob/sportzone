@@ -133,11 +133,11 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |           6 |     0 |           0 |       7 |         0 |      9 |        0 |
 | 07 — Payment Integration and Verification     |      18 |           3 |     0 |           0 |       0 |         0 |     15 |        0 |
 | 08 — Returns and Refunds                      |      19 |           6 |     0 |           0 |      12 |         0 |      1 |        0 |
-| 09 — Admin Management and Reports             |      18 |          14 |     0 |           0 |       2 |         0 |      1 |        1 |
+| 09 — Admin Management and Reports             |      18 |          12 |     0 |           0 |       4 |         0 |      1 |        1 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **79** | **0** | **0** | **22** | **0** | **107** | **2** |
+| **Total** | **210** | **77** | **0** | **0** | **24** | **0** | **107** | **2** |
 
 ## 4. Milestone tracker
 
@@ -1600,13 +1600,13 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence to attach:** Dashboard dataset/route tests.
 
 - [ ] **P09-002 — Implement separated gross/discount/paid/COD/refund/net reporting**\
-  **Status:** `Not Started` · **Area:** Backend/reports\
+  **Status:** `Blocked` · **Area:** Backend/reports\
   **Stage:** `Backend`\
   **Sources:** FR-22; FR-29\
   **Depends on:** `P06-012`, `P08-005`\
   **Deliverable:** Calculate gross merchandise, sale/coupon discounts, verified paid collections, outstanding COD, pending/completed refunds and net collected revenue.\
   **Acceptance:** Uncollected COD does not inflate collected revenue; refund and duplicate attempt aggregates remain accurate.\
-  **Evidence to attach:** Financial sample-ledger tests.
+  **Evidence:** [Private arithmetic and remaining source/cutoff work](./evidence/P09-002-015-local-report-customer.md). Accepted COD/refund prerequisites, authoritative ledger adapters and independent acceptance remain pending.
 
 - [ ] **P09-003 — Complete admin customer search, history and suspension workflow**\
   **Status:** `Not Started` · **Area:** Admin/customers\
@@ -1718,13 +1718,13 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
 
 - [ ] **P09-015 — Expose customer administration and privacy review APIs**\
-  **Status:** `Not Started` · **Area:** Backend\
+  **Status:** `Blocked` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-27; PRD §10.2; API §14.2\
   **Depends on:** `P03-008`, `P06-014`, `P08-019`\
   **Deliverable:** Implement customer search, authorized history, suspension/reactivation and verified deletion-request review with retention/legal-hold-safe decisions.\
   **Acceptance:** Suspension revokes relevant sessions; foreign access and unsafe deletion fail; required order/financial/audit history remains and sensitive data is minimized.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Local masked customer read and remaining scope](./evidence/P09-002-015-local-report-customer.md). P06-014/P08-019, full operations and independent acceptance remain pending.
 
 - [ ] **P09-016 — Expose support and complaint operations APIs**\
   **Status:** `Blocked` · **Area:** Backend\
@@ -2580,3 +2580,5 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **1 November 2026 — P08-006/P08-007 correction follow-up:** Added verified linked-source correction balance snapshots and nonbinding multi-source planning. [Actual tests and remaining blockers](./evidence/P08-007-008-local-refund-planning-provider.md#1-november-2026--correction-advisory-follow-up-p08-006--p08-007). Statuses and totals unchanged; no financial reservation or task acceptance is implied.
 
 **1 November 2026 — P09-016/P09-017 local reads:** Each Not Started → In Progress → Blocked. Added locally composed admin complaint queue and redacted audit history. [Tests, limitations and outstanding gates](./evidence/P09-016-017-local-support-audit.md). Overall: 210 tasks, 107 Done, 79 Not Started, 22 Blocked, 2 Deferred. No independent acceptance or milestone approval inferred.
+
+**1 November 2026 — P09-002/P09-015 local foundation:** Each Not Started → In Progress → Blocked. Added non-authoritative financial arithmetic and an admin-scoped masked customer detail reader. [Tests, limits and dependencies](./evidence/P09-002-015-local-report-customer.md). Overall: 210 tasks, 107 Done, 77 Not Started, 24 Blocked, 2 Deferred. Full task implementation and independent acceptance remain outstanding.
