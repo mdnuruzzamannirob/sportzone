@@ -133,11 +133,11 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |           6 |     0 |           0 |       7 |         0 |      9 |        0 |
 | 07 — Payment Integration and Verification     |      18 |           3 |     0 |           0 |       0 |         0 |     15 |        0 |
 | 08 — Returns and Refunds                      |      19 |           6 |     0 |           0 |      12 |         0 |      1 |        0 |
-| 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       0 |         0 |      1 |        1 |
+| 09 — Admin Management and Reports             |      18 |          14 |     0 |           0 |       2 |         0 |      1 |        1 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **81** | **0** | **0** | **20** | **0** | **107** | **2** |
+| **Total** | **210** | **79** | **0** | **0** | **22** | **0** | **107** | **2** |
 
 ## 4. Milestone tracker
 
@@ -1727,22 +1727,22 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
 
 - [ ] **P09-016 — Expose support and complaint operations APIs**\
-  **Status:** `Not Started` · **Area:** Backend\
+  **Status:** `Blocked` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-16; FR-26; FR-34; API §14.4\
   **Depends on:** `P06-017`\
   **Deliverable:** Expose public/scoped complaint intake and admin search/contact/status/resolution with order context, deadline policy and durable customer-response events.\
   **Acceptance:** Anonymous inputs require contactName/contactEmail; authenticated defaults use verified own data only; replay/throttle/access tests preserve history and notification truth.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Local complaint and audit read work](./evidence/P09-016-017-local-support-audit.md). P06-017, remaining intake/response integration and independent acceptance remain pending.
 
 - [ ] **P09-017 — Expose audit and operational exception APIs**\
-  **Status:** `Not Started` · **Area:** Backend\
+  **Status:** `Blocked` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-25; FR-26; FR-29; FR-33; API §14.4\
   **Depends on:** `P07-018`, `P08-019`, `P04-018`, `P09-002`\
   **Deliverable:** Expose bounded sanitized audit/history and stock, payment, refund and reconciliation exception queues; domain services retain mutation authority.\
   **Acceptance:** Restricted queries enforce admin access and safe pagination; immutable actor/action/time history remains; no operational screen is needed to prove the backend contract.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Local complaint and audit read work](./evidence/P09-016-017-local-support-audit.md). Prerequisite acceptance, bounded query profiles, operational queues and independent acceptance remain pending.
 
 - [ ] **P09-018 — Expose bounded business report queries**\
   **Status:** `Not Started` · **Area:** Backend\
@@ -2578,3 +2578,5 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **1 November 2026 — P05-016/P08-019 follow-up:** Added actual catalog visibility checks for local review composition and protected local administrator claim queue/detail reads. [Checks and remaining blockers](./evidence/P05-016-P08-019-local-reads.md#1-november-2026--additional-local-review-and-admin-claim-reads). Statuses and totals unchanged; neither task is accepted.
 
 **1 November 2026 — P08-006/P08-007 correction follow-up:** Added verified linked-source correction balance snapshots and nonbinding multi-source planning. [Actual tests and remaining blockers](./evidence/P08-007-008-local-refund-planning-provider.md#1-november-2026--correction-advisory-follow-up-p08-006--p08-007). Statuses and totals unchanged; no financial reservation or task acceptance is implied.
+
+**1 November 2026 — P09-016/P09-017 local reads:** Each Not Started → In Progress → Blocked. Added locally composed admin complaint queue and redacted audit history. [Tests, limitations and outstanding gates](./evidence/P09-016-017-local-support-audit.md). Overall: 210 tasks, 107 Done, 79 Not Started, 22 Blocked, 2 Deferred. No independent acceptance or milestone approval inferred.

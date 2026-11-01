@@ -44,6 +44,8 @@ import { initializeDeliveryExceptionPersistence } from '../../src/modules/orders
 import { deliveryExceptionModel } from '../../src/modules/orders/delivery-exception.model.js'
 import { recoveryReceiptService } from '../../src/modules/inventory/recovery-receipt.service.js'
 import { complaintService } from '../../src/modules/support/complaint.service.js'
+import { supportReadRoutes } from '../../src/modules/support/support-read.routes.js'
+import { auditQueryService } from '../../src/modules/audit/audit-query.service.js'
 import { initializeComplaintPersistence } from '../../src/modules/support/complaint.persistence.js'
 import { complaintModel } from '../../src/modules/support/complaint.model.js'
 import { complaintOrderAccess } from '../../src/modules/orders/order.service.js'
@@ -5494,6 +5496,100 @@ it('commerce/exception batch: scoped complaint contact resolution and privacy ne
     }),
   ).rejects.toThrow()
   await expect(f.complaints.list(other.credentials, f.id)).rejects.toThrow()
+})
+it('support read local: admin complaint queue filters, paginates and never exposes contact', async () => {
+  const f = await exceptionFixture(),
+    other = await customer()
+  const saved = await f.complaints.submit(f.creds, f.id, {
+    issue: 'Synthetic support issue',
+    contactEmail: 'sensitive@example.test',
+  })
+  const app = createApp({
+    apiRouter: supportReadRoutes(
+      f.complaints,
+      auditQueryService(db.connection, f.adminAccess),
+      security,
+      sessions,
+    ),
+  })
+  await request(app).get('/api/v1/admin/complaints').expect(401)
+  await request(app).get('/api/v1/admin/complaints').set('Cookie', other.cookie).expect(401)
+  const result = await request(app)
+    .get('/api/v1/admin/complaints?status=open&pageSize=1')
+    .set('Cookie', f.admin.cookie)
+    .expect(200)
+  expect(result.body.data).toHaveLength(1)
+  expect(result.body.data[0]).toMatchObject({
+    id: saved.id,
+    status: 'open',
+    issue: 'Synthetic support issue',
+  })
+  expect(JSON.stringify(result.body.data)).not.toContain('sensitive@example.test')
+  expect(result.body.data[0]).not.toHaveProperty('contact')
+  await request(app)
+    .get('/api/v1/admin/complaints?status=unknown')
+    .set('Cookie', f.admin.cookie)
+    .expect(400)
+  await identities.users.updateOne({ _id: f.admin.user._id }, { $set: { status: 'suspended' } })
+  await request(app).get('/api/v1/admin/complaints').set('Cookie', f.admin.cookie).expect(401)
+})
+it('support read local: audit history requires active admin, filters targets and hides sensitive metadata', async () => {
+  const f = await exceptionFixture(),
+    other = await customer()
+  const saved = await f.complaints.submit(f.creds, f.id, { issue: 'Synthetic complaint issue' })
+  await f.complaints.resolve(
+    f.token,
+    saved.id,
+    { status: 'in_review', resolution: 'private@example.test' },
+    'audit-local',
+  )
+  const app = createApp({
+    apiRouter: supportReadRoutes(
+      f.complaints,
+      auditQueryService(db.connection, f.adminAccess),
+      security,
+      sessions,
+    ),
+  })
+  const path = `/api/v1/admin/audit-logs?targetType=complaint&targetId=${saved.id}`
+  await request(app).get(path).expect(401)
+  await request(app).get(path).set('Cookie', other.cookie).expect(401)
+  const result = await request(app).get(path).set('Cookie', f.admin.cookie).expect(200)
+  expect(result.body.data).toHaveLength(2)
+  const firstPage = await request(app)
+    .get(`${path}&pageSize=1&page=1`)
+    .set('Cookie', f.admin.cookie)
+    .expect(200)
+  const secondPage = await request(app)
+    .get(`${path}&pageSize=1&page=2`)
+    .set('Cookie', f.admin.cookie)
+    .expect(200)
+  expect(firstPage.body.meta).toMatchObject({ page: 1, pageSize: 1, totalItems: 2, totalPages: 2 })
+  expect([...firstPage.body.data, ...secondPage.body.data]).toEqual(result.body.data)
+  expect(result.body.data.map((e: { action: string }) => e.action).sort()).toEqual([
+    'complaint.resolve',
+    'complaint.submit',
+  ])
+  expect(result.body.data[0]).toHaveProperty('actor.type')
+  expect(result.body.data[0].subject).toEqual({ type: 'complaint', id: saved.id })
+  for (const hidden of [
+    'private@example.test',
+    'operationKey',
+    'afterDigest',
+    'beforeDigest',
+    'reason',
+  ])
+    expect(JSON.stringify(result.body.data)).not.toContain(hidden)
+  await request(app)
+    .get(`/api/v1/admin/audit-logs?targetId=${saved.id}`)
+    .set('Cookie', f.admin.cookie)
+    .expect(400)
+  await request(app)
+    .get('/api/v1/admin/audit-logs?from=2026-01-02T00%3A00%3A00Z&to=2026-01-01T00%3A00%3A00Z')
+    .set('Cookie', f.admin.cookie)
+    .expect(400)
+  await identities.users.updateOne({ _id: f.admin.user._id }, { $set: { status: 'suspended' } })
+  await request(app).get(path).set('Cookie', f.admin.cookie).expect(401)
 })
 it('commerce/exception batch: complaints require documented response to resolve and preserve first response on close/replay', async () => {
   const f = await exceptionFixture(),

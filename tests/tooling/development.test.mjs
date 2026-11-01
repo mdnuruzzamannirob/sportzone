@@ -351,6 +351,20 @@ test('HISTORY-BOUNDARY-01: review and claim readers cannot import foreign privat
   }
 })
 
+test('SUPPORT-BOUNDARY-01: support routes cannot import audit or complaint persistence', (t) => {
+  const { root, put } = fixture(t)
+  for (const owner of ['audit/audit', 'support/complaint']) {
+    put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
+    put('backend/src/modules/support/support-read.routes.ts', `import "../${owner}.model.js"`)
+    assert.ok(
+      checkBoundaries(root).errors.some(
+        (e) => e.includes('controller') || e.includes('private persistence'),
+      ),
+    )
+    put('backend/src/modules/support/support-read.routes.ts', 'export const router = 1')
+  }
+})
+
 test('BACKEND-BOUNDARY-03: shared technical helpers cannot import domain/configuration via barrels', (t) => {
   const { root, put } = fixture(t)
   put('backend/src/modules/orders/order.service.ts', 'export const service = 1')

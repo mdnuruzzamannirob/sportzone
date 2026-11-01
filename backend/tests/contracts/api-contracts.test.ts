@@ -132,6 +132,7 @@ describe('executable API contract registry', () => {
         'returns/return-history.routes.ts',
         'reviews/review.routes.ts',
         'settings/settings.routes.ts',
+        'support/support-read.routes.ts',
       ].sort(),
     )
   })
@@ -144,6 +145,8 @@ describe('executable API contract registry', () => {
       'GET /claims/{claimId}',
       'GET /admin/claims',
       'GET /admin/claims/{claimId}',
+      'GET /admin/complaints',
+      'GET /admin/audit-logs',
       'GET /products/{productId}/reviews',
       'GET /me/reviews',
       'POST /products/{productId}/reviews',

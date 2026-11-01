@@ -8,6 +8,11 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 1 November 2026 — Local support and audit reads
+
+- Added locally composed administrative complaint queue and redacted audit history with current-session checks.
+- P09-016/017 remain Blocked on dependencies, remaining operations, query profiles and independent acceptance.
+
 ## 1 November 2026 — Local payment correction advisory
 
 - Bound read-only correction calculations to verified, order-linked source balances and added deterministic multi-source planning.
