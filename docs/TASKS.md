@@ -1068,6 +1068,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** 14-day planning target cannot override shorter applicable requirements; uncertain policy blocks final publication.\
   **Evidence:** [Verified local boundary, commands and missing sign-off](./evidence/P06-003-delivery-deadline-boundary.md). Project owner accepted the local implementation on 26 October 2026: “done koro”; [technical acceptance record](./evidence/P06-003-delivery-deadline-boundary.md#owner-review-of-local-implementation). Required qualified sign-off remains missing.
   **Blocked:** Store owner/authorized policy approver must supply the exact approved deadline rule and qualified current compliance sign-off (EXT-07/EXT-08). Local synthetic checks do not establish legal applicability. Missing review blocks new basis capture and affected acceptance/confirmation; actual order/API integration remains with its owning tasks.\
+  **Policy preparation:** [Bangladesh primary sources, Bangla policy draft, COD verification procedure and timing-model mapping issue](./evidence/P06-003-delivery-deadline-boundary.md#bangladesh-source-research-and-prepared-operating-policy--1-november-2026). Owner delegated preparation; qualified applicability/full-payment trigger mapping and acceptance remain unresolved.\
   **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [x] **P06-004 — Implement authoritative checkout quote and validation**\
@@ -1141,7 +1142,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Deliverable:** Enforce Pending/Confirmed/Processing/Shipped/Delivered/Cancelled transitions and shipment decrement of physical+committed.\
   **Acceptance:** Admin cannot skip forbidden transitions; shipping/failed delivery retains event history.\
   **Evidence:** [Local transition/stock tests, recorded checks and remaining acceptance](./evidence/P06-011-012-local-lifecycle-cod.md). Local implementation/tests explicitly authorized by owner; no full task acceptance.\
-  **Blocked:** P06-003 qualified rule/sign-off remains absent. Ordinary confirmation/runtime HTTP integration stays disabled; cancellation/final non-delivery and notifications remain their owning tasks.\
+  **Blocked:** P06-003 qualified rule/sign-off remains absent. Admin lifecycle/list/detail HTTP and explicit root composition are implemented and verified in Package A; ordinary deployment stays disabled pending approved authority. Final non-delivery and notifications remain their owning tasks.\
+  **Package A:** [Admin HTTP, shared root composition, funded cancellation/history regression and exact remaining gates](./evidence/P06-011-012-local-lifecycle-cod.md#package-a-http-and-root-composition--1-november-2026). Local integration is verified; no full task acceptance is recorded.\
   **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P06-012 — Implement authorized COD collection confirmation**\
@@ -1152,7 +1154,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Deliverable:** Record collected COD only on authorized confirmation with ledger and audit reference.\
   **Acceptance:** Delivery alone never marks COD Paid; duplicate confirmation has single effect.\
   **Evidence:** [Local COD source/audit/concurrency tests and remaining acceptance](./evidence/P06-011-012-local-lifecycle-cod.md). Local implementation/tests explicitly authorized by owner; no full task acceptance.\
-  **Blocked:** P06-011 remains unaccepted; a real protected original-cash evidence verifier/source and HTTP/root authorization/CSRF integration are not supplied or activated.\
+  **Blocked:** P06-011 remains unaccepted; HTTP/root authorization/CSRF and canonical collection projections are verified in Package A; a real protected original-cash evidence verifier/source, deployed activation and independent acceptance remain absent.\
+  **Package A:** [Admin HTTP, shared root composition, funded cancellation/history regression and exact remaining gates](./evidence/P06-011-012-local-lifecycle-cod.md#package-a-http-and-root-composition--1-november-2026). Local integration is verified; no full task acceptance is recorded.\
   **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P06-013 — Implement pre-shipment cancellation and exactly-once release**\
@@ -1163,7 +1166,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Deliverable:** Require administrator approval/rejection of every customer cancellation request; atomically recheck eligibility and dispatch status, retain reasons, release eligible allocation once, and create collected-payment refund obligations. Unpaid online cancellations keep provider reconciliation active for any later collection.\
   **Acceptance:** Shipped orders cannot use ordinary cancellation; uncollected COD has no monetary refund.\
   **Evidence:** [Durable funded cancellation and HTTP verification](./evidence/P06-013-P08-005-008-durable-reservations.md). Source-funded obligations/attempts and paid/partial-COD cancellation now commit atomically in explicit local composition; P06-011, qualified policy/cash evidence, ordinary activation and independent acceptance remain pending.\
-  **Blocked:** P06-011 and qualified cash/policy acceptance remain unresolved. The funded-cancellation capability is explicitly composed only in local tests; ordinary deployment and independent full task acceptance remain pending.\
+  **Blocked:** P06-011 and qualified cash/policy acceptance remain unresolved. The funded-cancellation capability now has shared explicit root composition and HTTP verification; ordinary deployment and independent full task acceptance remain pending.\
+  **Package A:** [Admin HTTP, shared root composition, funded cancellation/history regression and exact remaining gates](./evidence/P06-011-012-local-lifecycle-cod.md#package-a-http-and-root-composition--1-november-2026). Local integration is verified; no full task acceptance is recorded.\
   **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P06-014 — Implement authenticated customer order history/detail API**\
@@ -1175,6 +1179,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Cross-account access denied; order totals use historical snapshots.\
   **Evidence:** [Implemented scoped read APIs, historical snapshot checks and verification](./evidence/P06-013-014-cancellation-owned-reads.md). Explicit local/test read-only activation, default off.\
   **Blocked:** Declared P06-011 prerequisite remains unaccepted. No legal/staging/backend-stage acceptance inferred from local read APIs; independent full task acceptance pending.\
+  **Package A:** [Admin HTTP, shared root composition, funded cancellation/history regression and exact remaining gates](./evidence/P06-011-012-local-lifecycle-cod.md#package-a-http-and-root-composition--1-november-2026). Local integration is verified; no full task acceptance is recorded.\
   **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [x] **P06-015 — Implement secure guest order lookup and scoped proof**\

@@ -102,3 +102,100 @@ fails closed and rollback cannot erase verified financial facts. Ordinary runtim
 Resume after the owner supplies qualified P06-003 evidence and an approved protected cash-evidence
 source. Implement and test the owning HTTP/root contracts and obtain independent review before Done.
 No generic acceptance of this local package substitutes those prerequisites.
+
+## Package A HTTP and root composition — 1 November 2026
+
+Owner requested P06-011/012/013/014 implementation and Done status. Execution started from clean
+HEAD `a2ad682` and preserved the committed refund/cancellation foundation. This record supplies local
+engineering verification, not missing qualified policy/cash evidence or independent acceptance.
+All four tasks remain **Blocked** on their declared prerequisites and external/full-task review.
+
+### Delivered integration
+
+- Orders owns protected admin list/detail and fulfillment-transition routes. Current admin sessions,
+  exact admin Origin/CSRF, strict input and mandatory keys protect mutations. Transitions return the
+  current canonical AdminOrderDetail; historical identical replay cannot re-dispatch or rewind state.
+- Existing owner detail projection is reused inside Orders, preserving historical pricing, item,
+  delivery and policy facts. Admin details add bounded latest-generation Inventory allocation and
+  opaque Audit references through public same-transaction capabilities; no foreign persistence leaks.
+- Admin search supports exact order number, customer, fulfillment and payment filters. Payment status
+  is resolved through authoritative Payments summaries before pagination/counting. The cross-domain
+  intersection is capped at 1,000 candidates after other filters; larger searches fail 503 rather than
+  truncate/count incorrectly. Queries without that filter paginate normally. This query limit and the
+  advisory nature of fulfillmentActions require reviewer awareness; actions never authorize mutations.
+- COD HTTP delegates to the existing independently protected cash verifier and transactional source
+  accounting. CollectionSummary now includes canonical source/allocation/held/completed balances;
+  original evidence, private references and digests do not escape. Pending orders cannot record cash;
+  delivery alone never marks Paid.
+- Root composition accepts explicit approvedDeadline, cashEvidence and cancellationRefund capabilities.
+  It joins admin operations, existing customer/guest reads and cancellation requests/decisions. Actual
+  composeApplication admission/default-omission is tested; no fake authority/default adapter is added.
+  Customer/admin auth and order-read admission are mandatory. Current admission remains local/test;
+  ordinary server startup does not supply these authorities or activate deployed commerce.
+- Paid cancellation uses the existing real durable refund capability in the composed HTTP regression:
+  obligation/attempt/source holds, stock release and audit commit once; customer history and cross-owner
+  denial are exercised. Missing cancellation persistence now returns safe 503 instead of raw 500.
+- API/Testing/Operations describe the owning projections, HTTP expectations and admission procedure.
+  Executable local router inventory and negative ownership fixtures cover the new controller.
+  Implemented public registry count stays 98; local-only routes are not relabeled as deployed acceptance.
+
+### Observed verification
+
+Local Node/npm; isolated MongoDB 8.0.16 replica sets, real HTTP and canonical persistence. Policy and
+cash proof are explicitly synthetic test authorities. Compiled checks used the final source build.
+
+| Command | Observed result |
+| --- | --- |
+| `npm run build --workspace=backend` | Passed. |
+| `npm run typecheck --workspace=backend` | Passed. |
+| `cd backend && ../node_modules/.bin/vitest run --config vitest.integration.config.ts checkout-quote.test.ts orders.test.ts payment-records.test.ts payment-correction-migration.test.ts --reporter=dot --reporter=json --outputFile=../test-results/package-a-regression.json` | Passed: 330 tests / 4 files, including all 10 new Package A HTTP cases. |
+| `npm run test:unit --workspace=backend -- --reporter=dot --reporter=json --outputFile=../test-results/package-a-unit.json` | 39 files / 609 tests Passed unaffected; five listener/subprocess suites had 58 sandbox EPERM failures, rechecked below. |
+| `cd backend && ../node_modules/.bin/vitest run tests/unit/app.test.ts tests/unit/auth-rate-limit.test.ts tests/unit/container-health.test.ts tests/unit/identity-contracts.test.ts tests/unit/operations.test.ts --reporter=dot --reporter=json --outputFile=../test-results/package-a-unit-listeners.json` | Passed outside listener restrictions: all 172 tests / 5 files. Together with the 39 unchanged passing files, all 781 unit cases verified. |
+| `npm run test:contract --workspace=backend` | Passed outside listener/subprocess restrictions: 112 tests; all four generated artifacts current. |
+| `node --test --test-isolation=none --test-name-pattern=ORDER-OPERATIONS-BOUNDARY tests/tooling/development.test.mjs` | Passed: new negative route/private-persistence ownership fixture. |
+| `npm run lint --workspace=backend`, `npm run lint:boundaries` | Passed: 428 linted files; 391 source files, zero boundary errors. |
+| `npm run test:smoke --workspace=backend` | Passed outside localhost restrictions: compiled real DB startup, liveness/restricted readiness and graceful shutdown. |
+| `npm run test:security` | Passed outside subprocess restrictions; redacted secret scan and dependency advisory check. |
+| `npm run format:check`, `git diff --check` | Passed; scoped format inventory 593 files. |
+
+Final source/test/tooling snapshot is SHA-256
+`d2a220e3f059f9dd65416fb1b6185a88bc6935eb0acf47834212be9a73244ccb`:
+13 sorted changed/untracked paths under backend/src, backend/tests and tests/tooling, encoded as
+path + NUL + bytes + NUL. Documentation is excluded. No commit, push, external migration,
+provider call or deployment was performed. JSON test artifacts are ignored replaceable local files.
+
+Initial sandbox integration/contract/unit/security attempts could not open localhost ports or execute
+required subprocesses; elevated local verification succeeded. Focused test development also exposed
+incorrect fixture SKU/state setup, missing cancellation persistence, missing synthetic admin-recovery
+configuration, a duplicate import/type mismatch and incorrect expected 401/409 instead of the existing
+403/422 contracts. Those assertions/fixtures were corrected; the final four-file regression is green.
+The initial failures remain failures, not purported passing runs.
+
+### Exact remaining acceptance
+
+1. P06-003: real approved rule/version/start basis/effective window and qualified sign-off. The local
+   technical acceptance does not supply this authority.
+2. P06-012: real protected original cash-evidence source/verifier and operator qualification. A synthetic
+   callback or admin request field cannot establish original receipt truth.
+3. P06-013: accepted P06-011 and applicable cancellation/refund policy authority, protected cash evidence
+   where applicable, reviewed admission/migration and independent acceptance.
+4. P06-014: accepted P06-011, reviewed admission and independent acceptance. Existing scoped read safety
+   is retained and regressed; no frontend is required for backend acceptance.
+5. Full-task independent review and required runtime qualification against the accepted configuration;
+   current code cannot honestly mark these tasks Done or enable staging by removing local/test guards.
+
+The owner was asked for existing policy/sign-off and protected cash-source references while engineering
+work continued. None is invented in this record. Full acceptance remains pending; notifications/final
+non-delivery and refund payout completion remain their separately owned packages.
+
+### Owner follow-up and env inventory
+
+The owner replied that none of the requested policy/sign-off/cash references are available and asked
+the agent to add them, noting that secrets are configured. A values-redacted parse of `.env` and
+`.env.staging` found the deadline policy-file, policy-approvals-file and required-policy-type keys
+empty, with COD admission false. No configured original-cash verifier exists in the code inventory.
+Existing provider secrets were neither displayed nor modified. An explicit delivery-rule review draft
+and the remaining decision fields are retained in the
+[P06-003 evidence](./P06-003-delivery-deadline-boundary.md#package-a-owner-response-and-configuration-check--1-november-2026).
+No qualified finding, actual cash receipt, sign-off or admission was invented. This follow-up resolves
+the input question as "not available"; it does not clear any acceptance gate.

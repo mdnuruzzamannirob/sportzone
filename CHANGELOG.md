@@ -8,6 +8,18 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 1 November 2026 — Bangladesh policy preparation
+
+- Inspected official Bangladesh digital-commerce sources and prepared Bangla order/delivery/COD policy text plus an original-receipt verification procedure.
+- Recorded the missing full-payment/hourly-handover timing mapping; retained genuine policy review, deployed activation and task acceptance gates.
+- Documentation/evidence only; no invented approval, financial receipt or env activation.
+
+## 1 November 2026 — Package A order operations integration
+
+- Added protected admin order list/detail, fulfillment-transition and COD collection HTTP with explicit root capability composition, customer history and funded cancellation.
+- Reused historical projections, added bounded allocation/audit and collection balance projections, and mapped unavailable cancellation persistence to 503.
+- Added real replica-set HTTP/race/replay/ownership coverage; qualified policy/cash authority, deployed activation and independent task acceptance remain outstanding.
+
 ## 1 November 2026 — Durable refund reservations and funded cancellation
 
 - Added source/order/unit/delivery reservations, durable obligations/attempts and explicit additive local migration.

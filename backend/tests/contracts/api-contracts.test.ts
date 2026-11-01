@@ -128,6 +128,7 @@ describe('executable API contract registry', () => {
         'payments/payment-callback.routes.ts',
         'payments/payment-risk.routes.ts',
         'orders/order-read.routes.ts',
+        'orders/order-admin.routes.ts',
         'orders/cancellation.routes.ts',
         'payments/payment-monitor.routes.ts',
         'promotions/coupon-admin.routes.ts',
@@ -143,6 +144,10 @@ describe('executable API contract registry', () => {
       .flatMap((router) => registeredOperations(router))
       .filter((op) => !['HEAD', 'OPTIONS'].includes(op.method))
     const expected = [
+      'GET /admin/orders',
+      'GET /admin/orders/{orderId}',
+      'POST /admin/orders/{orderId}/fulfillment-transitions',
+      'POST /admin/payments/{paymentId}/cod-collections',
       'GET /orders/{orderId}/claims',
       'GET /claims/{claimId}',
       'GET /admin/claims',

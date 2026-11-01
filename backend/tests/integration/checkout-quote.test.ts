@@ -1,3 +1,6 @@
+import { ApiError } from '../../src/shared/errors/app-error.js'
+import { composeOrderOperationsRoutes } from '../../src/setup.js'
+import { createApiRouter } from '../../src/routes.js'
 import {
   returnDecisionNotifier,
   returnMessageService,
@@ -8265,4 +8268,340 @@ it('return notification local: default worker leaves return events queued withou
   expect(
     await db.connection.collection('notifications').findOne({ eventType: 'return_update' }),
   ).toMatchObject({ status: 'queued' })
+})
+
+// Package A runs real HTTP, current sessions and replica-set persistence. Policy/cash are synthetic.
+function packageARoot(
+  f: Awaited<ReturnType<typeof lifecycleFixture>>,
+  approved = true,
+  evidence = vi.fn(async (input: Parameters<typeof f.proof>[0]) => f.proof(input)),
+) {
+  const routers = composeOrderOperationsRoutes(
+    db.connection,
+    { ...localReviewAuth(), guestAccounts: undefined },
+    origin,
+    {
+      approvedDeadline: async () => {
+        if (!approved) throw new ApiError('SERVICE_UNAVAILABLE')
+      },
+      cashEvidence: evidence,
+      cancellationRefund: async () => {
+        throw new ApiError('SERVICE_UNAVAILABLE')
+      },
+    },
+    () => now,
+  )
+  return { root: createApp({ apiRouter: createApiRouter(undefined, routers) }), evidence }
+}
+function packageAPost(
+  root: ReturnType<typeof createApp>,
+  f: Awaited<ReturnType<typeof lifecycleFixture>>,
+  to: string,
+  key = to,
+) {
+  return request(root)
+    .post(`/api/v1/admin/orders/${f.id}/fulfillment-transitions`)
+    .set('Origin', 'http://localhost:5173')
+    .set('Cookie', f.admin.cookie)
+    .set('X-CSRF-Token', f.admin.csrf)
+    .set('Idempotency-Key', key)
+    .send({
+      to,
+      reason: 'Synthetic HTTP authorization',
+      ...(to === 'shipped' ? { dispatchReference: 'http-dispatch' } : {}),
+    })
+}
+it('Package A HTTP: full transition journey returns canonical admin detail; delivered COD remains unpaid', async () => {
+  const f = await lifecycleFixture(),
+    { root } = packageARoot(f)
+  const path = `/api/v1/admin/orders/${f.id}`
+  const initial = await request(root).get(path).set('Cookie', f.admin.cookie).expect(200)
+  expect(initial.body.data.allocationSummary.items[0].status).toBe('committed')
+  expect(initial.body.data).not.toHaveProperty('checkoutIntentId')
+  expect(initial.body.data).not.toHaveProperty('customerSnapshot')
+  for (const to of ['confirmed', 'processing', 'shipped', 'delivered']) {
+    const result = await packageAPost(root, f, to).expect(200)
+    expect(result.body.data.fulfillmentStatus).toBe(to)
+    expect(result.body.data.paymentSummary.status).toBe('pending')
+    expect(result.body.data.items[0].sku).toBe(f.selected.row.skuNormalized)
+    expect(result.body.data.auditRefs.length).toBeGreaterThan(0)
+  }
+  const replay = await packageAPost(root, f, 'shipped').expect(200)
+  expect(replay.body.data.fulfillmentStatus).toBe('delivered')
+  expect(replay.body.data.allocationSummary.items[0].status).toBe('shipped')
+  await packageAPost(root, f, 'processing', 'shipped').expect(409)
+})
+it('Package A HTTP: admin reads deny customers, missing/stale sessions and invalid parameters', async () => {
+  const f = await lifecycleFixture(),
+    { root } = packageARoot(f),
+    buyer = await customer()
+  for (const path of ['/api/v1/admin/orders', `/api/v1/admin/orders/${f.id}`]) {
+    await request(root).get(path).expect(401)
+    await request(root).get(path).set('Cookie', buyer.cookie).expect(401)
+  }
+  await request(root)
+    .get('/api/v1/admin/orders/not-an-id')
+    .set('Cookie', f.admin.cookie)
+    .expect(400)
+  await request(root)
+    .get('/api/v1/admin/orders?customerId=bad')
+    .set('Cookie', f.admin.cookie)
+    .expect(400)
+  await request(root)
+    .get(`/api/v1/admin/orders/${f.id}?unexpected=1`)
+    .set('Cookie', f.admin.cookie)
+    .expect(400)
+  await identities.users.updateOne({ _id: f.admin.user._id }, { $set: { status: 'suspended' } })
+  await request(root).get(`/api/v1/admin/orders/${f.id}`).set('Cookie', f.admin.cookie).expect(401)
+})
+it('Package A HTTP: missing keys, wrong origin/CSRF and client money cannot change fulfillment', async () => {
+  const f = await lifecycleFixture(),
+    { root } = packageARoot(f)
+  const path = `/api/v1/admin/orders/${f.id}/fulfillment-transitions`
+  for (const headers of [{}, { Origin: origin }, { Origin: 'http://localhost:5173' }]) {
+    await request(root)
+      .post(path)
+      .set('Cookie', f.admin.cookie)
+      .set(headers)
+      .send({ to: 'confirmed', reason: 'Denied' })
+      .expect(403)
+  }
+  await request(root)
+    .post(path)
+    .set('Origin', 'http://localhost:5173')
+    .set('Cookie', f.admin.cookie)
+    .set('X-CSRF-Token', f.admin.csrf)
+    .send({ to: 'confirmed', reason: 'Missing key' })
+    .expect(400)
+  await packageAPost(root, f, 'delivered').expect(409)
+  expect((await orderModels(db.connection).orders.findById(f.id).orFail()).fulfillmentStatus).toBe(
+    'pending',
+  )
+})
+it('Package A HTTP: unavailable policy prevents confirmation and shipping race dispatches only once', async () => {
+  const f = await lifecycleFixture(),
+    denied = packageARoot(f, false)
+  await packageAPost(denied.root, f, 'confirmed').expect(503)
+  const { root } = packageARoot(f)
+  await packageAPost(root, f, 'confirmed').expect(200)
+  await packageAPost(root, f, 'processing').expect(200)
+  const results = await Promise.all([
+    packageAPost(root, f, 'shipped'),
+    packageAPost(root, f, 'shipped'),
+  ])
+  expect(results.map((r) => r.status)).toEqual([200, 200])
+  const stock = await productModels(db.connection).variants.findById(f.selected.row._id).orFail()
+  expect(stock.stock.committed).toBe(0)
+})
+it('Package A HTTP: protected cash verification, collection projection and replay preserve one source', async () => {
+  const f = await lifecycleFixture(),
+    { root, evidence } = packageARoot(f)
+  const path = `/api/v1/admin/payments/${f.payment._id}/cod-collections`
+  await packageAPost(root, f, 'confirmed').expect(200)
+  const input = {
+    amountPoisha: f.payment.expectedPoisha,
+    collectionReference: 'package-a-cash',
+    evidenceRef: 'synthetic:cash',
+    reason: 'Synthetic original receipt',
+  }
+  await request(root)
+    .post(path)
+    .set('Origin', origin)
+    .set('Cookie', f.admin.cookie)
+    .set('X-CSRF-Token', f.admin.csrf)
+    .set('Idempotency-Key', 'cash')
+    .send(input)
+    .expect(403)
+  expect(evidence).not.toHaveBeenCalled()
+  const post = () =>
+    request(root)
+      .post(path)
+      .set('Origin', 'http://localhost:5173')
+      .set('Cookie', f.admin.cookie)
+      .set('X-CSRF-Token', f.admin.csrf)
+      .set('Idempotency-Key', 'cash')
+      .send(input)
+  const first = await post().expect(200),
+    second = await post().expect(200)
+  expect(first.body.data).toEqual(second.body.data)
+  expect(first.body.data).toMatchObject({
+    sourceKind: 'cod_manual',
+    merchandiseAllocatedPoisha: input.amountPoisha,
+    correctionAllocatedPoisha: 0,
+    unassignedAllocatedPoisha: 0,
+    merchandiseRefundHeldPoisha: 0,
+    correctionRefundCompletedPoisha: 0,
+  })
+  expect(first.body.data).not.toHaveProperty('evidenceDigest')
+  expect(evidence).toHaveBeenCalledTimes(1)
+})
+it('Package A HTTP: canonical payment filter precedes pagination and cancellation routes share composition', async () => {
+  const f = await lifecycleFixture(),
+    { root } = packageARoot(f)
+  await initializeCancellationPersistence(db.connection)
+  await packageAPost(root, f, 'confirmed').expect(200)
+  await f.cash()
+  const pending = await lifecycleFixture()
+  const list = await request(root)
+    .get('/api/v1/admin/orders?paymentStatus=paid&pageSize=1')
+    .set('Cookie', f.admin.cookie)
+    .expect(200)
+  expect(list.body.data.map((r: { id: string }) => r.id)).toContain(f.id)
+  expect(list.body.meta.totalItems).toBe(1)
+  await request(root)
+    .get('/api/v1/admin/orders?paymentStatus=pending')
+    .set('Cookie', f.admin.cookie)
+    .expect(200)
+    .expect((r) => expect(r.body.data.map((row: { id: string }) => row.id)).toEqual([pending.id]))
+  await request(root)
+    .get('/api/v1/admin/cancellation-requests')
+    .set('Cookie', f.admin.cookie)
+    .expect(200)
+})
+
+it('Package A HTTP: composed paid cancellation reserves real obligations and exposes customer history', async () => {
+  const f = await fundedCancellationFixture()
+  const routers = composeOrderOperationsRoutes(
+    db.connection,
+    { ...localReviewAuth(), guestAccounts: undefined },
+    origin,
+    {
+      approvedDeadline: async () => {},
+      cashEvidence: async () => {
+        throw new ApiError('SERVICE_UNAVAILABLE')
+      },
+      cancellationRefund: f.refund,
+    },
+    () => now,
+  )
+  const root = createApp({ apiRouter: createApiRouter(undefined, routers) })
+  const asked = await f.ask()
+  const decision = () =>
+    request(root)
+      .post(`/api/v1/admin/cancellation-requests/${asked.id}/decision`)
+      .set('Origin', 'http://localhost:5173')
+      .set('Cookie', f.admin.cookie)
+      .set('X-CSRF-Token', f.admin.csrf)
+      .set('Idempotency-Key', 'package-a-funded')
+      .send({ decision: 'approve', reason: 'Synthetic funded review' })
+  await decision().expect(200)
+  await decision().expect(200)
+  const detail = await request(root)
+    .get(`/api/v1/admin/orders/${f.id}`)
+    .set('Cookie', f.admin.cookie)
+    .expect(200)
+  expect(detail.body.data.fulfillmentStatus).toBe('cancelled')
+  expect(detail.body.data.paymentSummary.merchandiseRefundHeldPoisha).toBe(f.amount)
+  expect(
+    detail.body.data.allocationSummary.items.every(
+      (i: { status: string }) => i.status === 'released',
+    ),
+  ).toBe(true)
+  const orders = await request(root).get('/api/v1/orders').set('Cookie', f.who.cookie).expect(200)
+  expect(orders.body.data.some((o: { id: string }) => o.id === f.id)).toBe(true)
+  const other = await customer()
+  await request(root).get(`/api/v1/orders/${f.id}`).set('Cookie', other.cookie).expect(404)
+  expect(await refundModel(db.connection).countDocuments({ orderId: f.id })).toBe(1)
+})
+
+it('Package A HTTP: unprovisioned cancellation persistence returns unavailable without activation or effects', async () => {
+  const f = await lifecycleFixture(),
+    { root } = packageARoot(f)
+  if (await db.connection.db?.listCollections({ name: 'cancellationRequests' }).hasNext())
+    await db.connection.dropCollection('cancellationRequests')
+  await request(root)
+    .get('/api/v1/admin/cancellation-requests')
+    .set('Cookie', f.admin.cookie)
+    .expect(503)
+  expect((await orderModels(db.connection).orders.findById(f.id).orFail()).fulfillmentStatus).toBe(
+    'pending',
+  )
+  await initializeCancellationPersistence(db.connection)
+})
+
+it('Package A HTTP: actual application composition installs operations explicitly and refuses missing admission', async () => {
+  const config = loadEnvironment({ ...identityEnvironment(), CUSTOMER_ORDER_READ_ENABLED: 'true' })
+  const dependencies = {
+    approvedDeadline: async () => {
+      throw new ApiError('SERVICE_UNAVAILABLE')
+    },
+    cashEvidence: async () => {
+      throw new ApiError('SERVICE_UNAVAILABLE')
+    },
+    cancellationRefund: async () => {
+      throw new ApiError('SERVICE_UNAVAILABLE')
+    },
+  }
+  const make = (enabled: boolean) =>
+    composeApplication(
+      db.connection,
+      config,
+      { isReady: async () => true },
+      createLogger(config, () => {}),
+      undefined,
+      [],
+      undefined,
+      [],
+      undefined,
+      undefined,
+      enabled ? dependencies : undefined,
+    )
+  const active = await make(true),
+    inactive = await make(false)
+  await request(active).get('/api/v1/admin/orders').expect(401)
+  await request(active).get('/api/v1/admin/cancellation-requests').expect(401)
+  await request(inactive).get('/api/v1/admin/orders').expect(404)
+  const invalid = { ...config, CUSTOMER_ORDER_READ_ENABLED: false }
+  await expect(
+    composeApplication(
+      db.connection,
+      invalid,
+      { isReady: async () => true },
+      createLogger(config, () => {}),
+      undefined,
+      [],
+      undefined,
+      [],
+      undefined,
+      undefined,
+      dependencies,
+    ),
+  ).rejects.toThrow('Reviewed order operations require')
+})
+it('Package A HTTP: cash evidence binding failure, invalid body and customer credentials create no receipt', async () => {
+  const f = await lifecycleFixture(),
+    verifier = vi.fn(async (input: Parameters<typeof f.proof>[0]) => ({
+      ...f.proof(input),
+      amountPoisha: 1,
+    })),
+    { root } = packageARoot(f, true, verifier)
+  await packageAPost(root, f, 'confirmed').expect(200)
+  const path = `/api/v1/admin/payments/${f.payment._id}/cod-collections`
+  const input = {
+    amountPoisha: f.payment.expectedPoisha,
+    collectionReference: 'bad-proof',
+    evidenceRef: 'synthetic:bad-proof',
+    reason: 'Synthetic mismatch',
+  }
+  const post = (data: object, cookie = f.admin.cookie) =>
+    request(root)
+      .post(path)
+      .set('Origin', 'http://localhost:5173')
+      .set('Cookie', cookie)
+      .set('X-CSRF-Token', f.admin.csrf)
+      .set('Idempotency-Key', 'bad-proof')
+      .send(data)
+  await post({ ...input, paymentStatus: 'paid' }).expect(400)
+  expect(verifier).not.toHaveBeenCalled()
+  const buyer = await customer()
+  await post(input, buyer.cookie).expect(403)
+  expect(verifier).not.toHaveBeenCalled()
+  await post(input)
+    .expect(422)
+    .expect((r) => expect(r.body.error.code).toBe('BUSINESS_RULE_VIOLATION'))
+  expect(
+    await paymentRecordModels(db.connection).collections.countDocuments({
+      paymentId: f.payment._id,
+    }),
+  ).toBe(0)
 })

@@ -186,6 +186,15 @@ reference, validation, rotation and verification evidence for each deployed key.
 - Configuration changes affecting delivery, policy, payments or access are versioned/approved and audited, not
   performed as undocumented runtime edits.
 
+Order operations are composed through the explicit `OrderOperationsDependencies` root argument,
+not an environment-only activation switch. Require protected approved-deadline, original-cash-evidence
+and cancellation-refund capabilities together with customer/admin auth and customer order-read
+admission. Current order-read admission remains local/test only. Ordinary server startup supplies no
+such authority and therefore installs no admin lifecycle/COD/cancellation mutations. The root never
+creates collections or indexes: verify the owning order/allocation/payment/cancellation/refund/attempt,
+audit and notification setup before admission. Preserve submitted refund identities and financial
+holds during recovery; do not replace an unavailable verifier with a request-body assertion.
+
 ### 3.3 Change classes
 
 | Change                                                | Approval/review requirement                                | Release implication                                      |

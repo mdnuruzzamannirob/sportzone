@@ -8,7 +8,7 @@ import { orderId } from './order.schema.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { respond } from '../../shared/responses.js'
 export function orderReadRoutes(
-  service: ReturnType<typeof orderReadService>,
+  service: Pick<ReturnType<typeof orderReadService>, 'list' | 'read'>,
   security: BrowserSecurity,
 ) {
   const router = Router(),

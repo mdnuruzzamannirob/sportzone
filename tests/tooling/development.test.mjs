@@ -724,3 +724,26 @@ test('DEPLOY-02: Vercel separates app builds, uses the locked workspace and expo
     }
   }
 })
+
+test('ORDER-OPERATIONS-BOUNDARY-01: admin HTTP and order projections cannot import private models', (t) => {
+  const { root, put } = fixture(t)
+  for (const [consumer, owner] of [
+    ['orders/order-admin.routes', 'orders/order'],
+    ['orders/order-admin.routes', 'payments/payment-record'],
+    ['orders/order-read.service', 'inventory/inventory'],
+    ['orders/order-read.service', 'audit/audit'],
+  ]) {
+    put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
+    const from =
+      consumer.startsWith('orders/') && owner.startsWith('orders/')
+        ? './order.model.js'
+        : `../${owner}.model.js`
+    put(`backend/src/modules/${consumer}.ts`, `import "${from}"`)
+    assert.ok(
+      checkBoundaries(root).errors.some(
+        (e) => e.includes('private persistence') || e.includes('controller'),
+      ),
+    )
+    put(`backend/src/modules/${consumer}.ts`, 'export const consumer = 1')
+  }
+})

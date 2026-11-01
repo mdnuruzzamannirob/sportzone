@@ -19,6 +19,10 @@ This table records the review before the later
 That follow-up supersedes the correction-only/no-reservation/no-attempt findings for P06-013 and
 P08-005–009; full-task and external acceptance remain unresolved. Tasks contains current evidence.
 
+The later [Package A HTTP/root integration](./P06-011-012-local-lifecycle-cod.md#package-a-http-and-root-composition--1-november-2026)
+also supersedes the missing admin lifecycle/COD HTTP composition findings below. Protected real
+policy/cash authority, ordinary deployment and independent task acceptance remain unresolved.
+
 All rows remain **Blocked**. Passing local checks do not replace an incomplete deliverable or an
 unaccepted prerequisite. Existing task evidence contains earlier detailed procedures; this record
 reconciles it with the actual code and current verification.

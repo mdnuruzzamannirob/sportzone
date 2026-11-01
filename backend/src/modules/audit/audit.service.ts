@@ -158,3 +158,19 @@ export function paymentReconciliationScheduleAccess(connection: Connection) {
     return rows.map((r) => ({ paymentId: r._id, requestedAt: r.requestedAt }))
   }
 }
+
+// Narrow same-transaction projection for protected order details; no raw audit payload escapes.
+export function orderAuditRefsAccess(connection: Connection) {
+  return async (session: ClientSession, orderId: string) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    const targetId = parseInput(id, orderId)
+    await verifyAuditPersistence(connection)
+    const rows = await auditModel(connection)
+      .find({ targetType: 'order', targetId })
+      .select({ _id: 1 })
+      .sort({ occurredAt: -1, _id: -1 })
+      .limit(40)
+      .session(session)
+    return rows.map((row) => row._id.toHexString())
+  }
+}

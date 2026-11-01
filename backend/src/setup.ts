@@ -1,3 +1,17 @@
+import { orderAdminRoutes } from './modules/orders/order-admin.routes.js'
+import { orderLifecycleService } from './modules/orders/order-lifecycle.service.js'
+import { codCollectionService } from './modules/payments/cod-collection.service.js'
+import { codCollectionOrderAccess } from './modules/orders/order.service.js'
+import { cancellationRoutes } from './modules/orders/cancellation.routes.js'
+import { cancellationService } from './modules/orders/cancellation.service.js'
+import { cancellationAllocationService } from './modules/checkout/cancellation-allocation.service.js'
+import { fulfillmentAllocationService } from './modules/checkout/fulfillment-allocation.service.js'
+import {
+  cancellationPaymentAccess,
+  fulfillmentPaymentAccess,
+} from './modules/payments/payment.service.js'
+import { allocationService } from './modules/inventory/allocation.service.js'
+import { orderAuditRefsAccess } from './modules/audit/audit.service.js'
 import { orderMessageService } from './modules/notifications/order-message.service.js'
 import { reviewModerationReceiptAccess } from './modules/audit/audit.service.js'
 import { reviewPurchaseEligibilityAccess } from './modules/orders/order.service.js'
@@ -138,6 +152,80 @@ import { createApiRouter } from './routes.js'
 import { ApiError } from './shared/errors/app-error.js'
 import type { Logger } from './shared/logger.js'
 
+export type OrderOperationsDependencies = {
+  approvedDeadline: NonNullable<Parameters<typeof orderLifecycleService>[4]>
+  cashEvidence: NonNullable<Parameters<typeof codCollectionService>[3]>
+  cancellationRefund: NonNullable<Parameters<typeof cancellationService>[5]>
+}
+
+// No default policy, cash proof or refund stand-in: the caller supplies protected authorities.
+export function composeOrderOperationsRoutes(
+  connection: Connection,
+  auth: Pick<
+    Awaited<ReturnType<typeof createAuthRuntime>>,
+    'customerAccounts' | 'adminAccounts' | 'guestAccounts' | 'sessions' | 'security'
+  >,
+  storefrontOrigin: string,
+  dependencies: OrderOperationsDependencies,
+  clock: () => Date = () => new Date(),
+) {
+  const scope = orderScopeAccess(auth.customerAccounts, auth.sessions, auth.guestAccounts)
+  const stock = allocationService(connection, undefined, clock)
+  const reads = orderReadService(
+    connection,
+    auth.customerAccounts,
+    scope,
+    customerPaymentSummaryAccess(connection),
+    orderPolicySnapshotAccess(connection),
+    clock,
+    {
+      accounts: auth.adminAccounts,
+      auditRefs: orderAuditRefsAccess(connection),
+      allocation: async (session, orderId) => {
+        const generation = await stock.latestGeneration(session, orderId)
+        const rows = generation ? await stock.generation(session, orderId, generation) : []
+        return {
+          generation: generation ?? null,
+          items: rows.map((row) => ({
+            variantId: row.variantId,
+            quantity: row.quantity,
+            status: row.status,
+          })),
+        }
+      },
+    },
+  )
+  const lifecycle = orderLifecycleService(
+    connection,
+    auth.adminAccounts,
+    fulfillmentPaymentAccess(connection),
+    fulfillmentAllocationService(connection, clock),
+    dependencies.approvedDeadline,
+    clock,
+  )
+  const cash = codCollectionService(
+    connection,
+    auth.adminAccounts,
+    codCollectionOrderAccess(connection),
+    dependencies.cashEvidence,
+    clock,
+  )
+  const cancellation = cancellationService(
+    connection,
+    scope,
+    auth.adminAccounts,
+    cancellationAllocationService(connection, clock),
+    cancellationPaymentAccess(connection),
+    dependencies.cancellationRefund,
+    clock,
+  )
+  return [
+    orderReadRoutes(reads, auth.security),
+    orderAdminRoutes(reads, lifecycle, cash, auth.security, auth.sessions),
+    cancellationRoutes(cancellation, auth.security, auth.sessions, storefrontOrigin),
+  ]
+}
+
 // Only the root composition coordinates independent domain routers and capabilities.
 export function composeLocalReviewRoutes(
   connection: Connection,
@@ -182,10 +270,24 @@ export async function composeIdentityRoutes(
   checkout?: CheckoutOptions,
   channelApprovals: readonly PaymentChannelApproval[] = [],
   paymentGateway?: PaymentInitiationDependencies,
+  orderOperations?: OrderOperationsDependencies,
 ) {
   const notifications = createRegistrationNotifications(connection)
   const auth = await createAuthRuntime(connection, config, notifications)
-  if (config.CUSTOMER_ORDER_READ_ENABLED)
+  if (orderOperations) {
+    if (
+      !config.CUSTOMER_AUTH_ENABLED ||
+      !config.ADMIN_AUTH_ENABLED ||
+      !config.CUSTOMER_ORDER_READ_ENABLED
+    )
+      throw new Error(
+        'Reviewed order operations require customer/admin authentication and order reads.',
+      )
+    auth.router.use(
+      ...composeOrderOperationsRoutes(connection, auth, config.STOREFRONT_ORIGIN, orderOperations),
+    )
+  }
+  if (config.CUSTOMER_ORDER_READ_ENABLED && !orderOperations)
     auth.router.use(
       orderReadRoutes(
         orderReadService(
@@ -479,7 +581,10 @@ export async function composeApplication(
   channelApprovals: readonly PaymentChannelApproval[] = [],
   paymentGateway?: PaymentInitiationDependencies,
   callbacks?: PaymentCallbackDependencies,
+  orderOperations?: OrderOperationsDependencies,
 ) {
+  if (orderOperations && (!config.CUSTOMER_AUTH_ENABLED || !config.ADMIN_AUTH_ENABLED))
+    throw new Error('Customer/admin authentication required for order operations.')
   if (paymentGateway && !config.CUSTOMER_AUTH_ENABLED)
     throw new Error('Customer auth required for payment initiation')
   if (checkout && !config.CUSTOMER_AUTH_ENABLED)
@@ -494,6 +599,7 @@ export async function composeApplication(
           checkout,
           channelApprovals,
           paymentGateway,
+          orderOperations,
         )
       : undefined
   const unavailable = async (): Promise<never> => {

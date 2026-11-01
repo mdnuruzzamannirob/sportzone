@@ -1,3 +1,4 @@
+import { orderAdminRoutes } from '../../src/modules/orders/order-admin.routes.js'
 import { orderReadRoutes } from '../../src/modules/orders/order-read.routes.js'
 import { supportReadRoutes } from '../../src/modules/support/support-read.routes.js'
 import { customerAdminRoutes } from '../../src/modules/customers/customer-admin.routes.js'
@@ -92,6 +93,13 @@ const media = {
 // These routers are locally composed only and are deliberately excluded from live registry parity.
 export function localOnlyRouters() {
   return [
+    orderAdminRoutes(
+      { adminRead: unused, adminList: unused },
+      { transition: unused },
+      { collect: unused },
+      security,
+      sessions,
+    ),
     cancellationRoutes(
       { request: unused, decide: unused, list: unused, adminList: unused },
       security,

@@ -55,8 +55,12 @@ export function cancellationService(
       ...(r.reviewedAt ? { reviewedAt: r.reviewedAt.toISOString() } : {}),
     })
   async function ready() {
-    await verifyOrderPersistence(connection)
-    await verifyCancellationPersistence(connection)
+    try {
+      await verifyOrderPersistence(connection)
+      await verifyCancellationPersistence(connection)
+    } catch {
+      throw new ApiError('SERVICE_UNAVAILABLE')
+    }
   }
   return {
     async list(credentials: PaymentInitiationCredentials, rawId: unknown) {
