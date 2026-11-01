@@ -1,3 +1,37 @@
+import {
+  returnDecisionNotifier,
+  returnMessageService,
+} from '../../src/modules/notifications/return-message.service.js'
+import { returnNotificationOrderAccess } from '../../src/modules/orders/order.service.js'
+import { returnNotificationProofAccess } from '../../src/modules/returns/return.service.js'
+import { reviewPurchaseEligibilityAccess } from '../../src/modules/orders/order.service.js'
+import { createReviewService } from '../../src/modules/reviews/review.service.js'
+import { initializeReviewPersistence } from '../../src/modules/reviews/review.persistence.js'
+import { reviewModel } from '../../src/modules/reviews/review.model.js'
+import { productReviewAccess } from '../../src/modules/catalog/products/product.service.js'
+import { manualPayoutVerificationService } from '../../src/modules/refunds/manual-payout-verification.service.js'
+import {
+  refundAdvisoryService,
+  multiSourceRefundAdvisoryService,
+} from '../../src/modules/refunds/refund-advisory.service.js'
+import { refundOrderSnapshotAccess } from '../../src/modules/orders/order.service.js'
+import { refundClaimSnapshotAccess } from '../../src/modules/returns/return.service.js'
+import { refundPaymentSnapshotAccess } from '../../src/modules/payments/payment.service.js'
+import { returnPhysicalService } from '../../src/modules/returns/return-physical.service.js'
+import { returnLifecycleService } from '../../src/modules/returns/return-lifecycle.service.js'
+import { returnService } from '../../src/modules/returns/return.service.js'
+import { returnHistoryService } from '../../src/modules/returns/return-history.service.js'
+import { returnHistoryRoutes } from '../../src/modules/returns/return-history.routes.js'
+import { claimEvidenceMetadataAccess } from '../../src/modules/media/claim-evidence.service.js'
+import { initializeReturnPersistence } from '../../src/modules/returns/return.persistence.js'
+import { returnModel } from '../../src/modules/returns/return.model.js'
+import {
+  claimQuantityAccess,
+  claimReviewQuantityAccess,
+  claimRestockAccess,
+} from '../../src/modules/orders/order.service.js'
+import { returnReceiptService } from '../../src/modules/inventory/return-receipt.service.js'
+import { inTransaction } from '../../src/shared/database/transaction.js'
 import { orderMessageService } from '../../src/modules/notifications/order-message.service.js'
 import { orderNotificationAccess } from '../../src/modules/orders/order-notification.service.js'
 import { paymentNotificationValidator } from '../../src/modules/notifications/notification.persistence.js'
@@ -71,7 +105,6 @@ import {
   jobLeaseValidator,
 } from '../../src/shared/jobs/job-lease.model.js'
 import { jobLeaseService } from '../../src/shared/jobs/job-lease.service.js'
-import { inTransaction } from '../../src/shared/database/transaction.js'
 import { checkoutIntentService } from '../../src/modules/checkout/checkout-intent.service.js'
 import { checkoutCompletion } from '../../src/modules/checkout/checkout-completion.service.js'
 import { checkoutAllocationService } from '../../src/modules/checkout/checkout-allocation.service.js'
@@ -363,6 +396,8 @@ beforeEach(async () => {
     'complaints',
     'cancellationRequests',
     'orderItemBalances',
+    'returnRequests',
+    'reviews',
     'payments',
     'paymentAttempts',
     'paymentInitiations',
@@ -1131,6 +1166,8 @@ it('notification persistence failure rolls back COD order, payment, stock and qu
     for (const name of [
       'orders',
       'orderItemBalances',
+      'returnRequests',
+      'reviews',
       'checkoutIntents',
       'payments',
       'inventoryMovements',
@@ -5657,4 +5694,1321 @@ it('commerce/exception batch: a pending-order delay concern records no fabricate
       'invalid-final',
     ),
   ).rejects.toThrow()
+})
+
+async function physicalReturnFixture(
+  type: 'physical_return' | 'shortage' = 'physical_return',
+  prepare = true,
+) {
+  await initializeReturnPersistence(db.connection)
+  const f = await lifecycleFixture()
+  for (const status of ['confirmed', 'processing', 'shipped', 'delivered']) await f.move(status)
+  const order = await orderModels(db.connection).orders.findById(f.id).orFail(),
+    item = order.items[0]
+  if (!item) throw new Error('Missing fixture item')
+  const claimId = new Types.ObjectId().toHexString(),
+    itemId = item.id.toHexString()
+  const create = returnService(db.connection, claimQuantityAccess(db.connection), async () => ({
+    requestedBy: { type: 'guest', id: new Types.ObjectId().toHexString() },
+    eligibilitySnapshot: { policyVersion: 'synthetic' },
+  }))
+  await inTransaction(db.connection, (session) =>
+    create.create(session, {
+      claimId,
+      orderId: f.id,
+      claimType: type,
+      items: [{ orderItemId: itemId, quantity: 2, reason: 'Synthetic' }],
+    }),
+  )
+  let ticks = Date.now() + 10000
+  const clock = () => new Date(ticks++)
+  const review = returnLifecycleService(
+    db.connection,
+    f.adminAccess,
+    claimReviewQuantityAccess(db.connection),
+    clock,
+  )
+  if (prepare) {
+    await review.transition(f.token, claimId, { to: 'under_review', reason: 'Review' }, 'review')
+    await review.transition(
+      f.token,
+      claimId,
+      { to: 'approved', reason: 'Approved', approvedItems: [{ orderItemId: itemId, quantity: 2 }] },
+      'approve',
+    )
+  }
+  if (prepare && type === 'physical_return')
+    await review.transition(
+      f.token,
+      claimId,
+      { to: 'awaiting_return', reason: 'Awaiting' },
+      'await',
+    )
+  const physical = returnPhysicalService(
+    db.connection,
+    f.adminAccess,
+    claimRestockAccess(db.connection),
+    returnReceiptService(db.connection, clock),
+    clock,
+  )
+  const receive = (key = 'receipt') =>
+    physical.receive(
+      f.token,
+      claimId,
+      {
+        receiptReference: 'synthetic-reference',
+        reason: 'Received',
+        items: [{ orderItemId: itemId, quantity: 2 }],
+      },
+      key,
+    )
+  const inspect = (key = 'inspection', resellableQty = 1) =>
+    physical.inspect(
+      f.token,
+      claimId,
+      {
+        reason: 'Inspected',
+        items: [{ orderItemId: itemId, acceptedQty: 2, resellableQty, reason: 'One resellable' }],
+      },
+      key,
+    )
+  return { ...f, claimId, itemId, review, physical, receive, inspect }
+}
+it('claim history local: scoped guest sees only its own claim and invalid customer credentials never downgrade', async () => {
+  const f = await physicalReturnFixture('shortage'),
+    other = await physicalReturnFixture('shortage')
+  const customers = createCustomerAccountAccess(db.connection, identities, sessions)
+  const guests = guestSessionService(
+    db.connection,
+    identities,
+    {
+      secret: authSecret,
+      customerTtlSeconds: 600,
+      adminTtlSeconds: 300,
+      sameSite: 'lax',
+      appEnvironment: 'test',
+      apiOrigin: 'https://api.example.test',
+    },
+    600,
+    guestOrderAccess(db.connection).verify,
+    () => now,
+  )
+  const proof = await inTransaction(db.connection, (session) =>
+    guests.issueAfterProof(session, f.id),
+  )
+  const service = returnHistoryService(
+    db.connection,
+    orderScopeAccess(customers, sessions, guests),
+    complaintOrderAccess(db.connection),
+    claimEvidenceMetadataAccess(db.connection),
+  )
+  const app = createApp({ apiRouter: returnHistoryRoutes(service, security) })
+  const cookie = `sz_guest_order_sid=${proof.token}`
+  const list = await request(app)
+    .get(`/api/v1/orders/${f.id}/claims`)
+    .set('Cookie', cookie)
+    .expect(200)
+  expect(list.body.data).toHaveLength(1)
+  expect(list.body.data[0]).toMatchObject({ id: f.claimId, orderId: f.id, evidence: [] })
+  for (const field of ['requestedBy', 'eligibilitySnapshot', 'protectedUnitOrdinals'])
+    expect(list.body.data[0]).not.toHaveProperty(field)
+  await request(app).get(`/api/v1/claims/${f.claimId}`).set('Cookie', cookie).expect(200)
+  await request(app).get(`/api/v1/orders/${f.id}/claims`).expect(401)
+  await request(app).get(`/api/v1/orders/${other.id}/claims`).set('Cookie', cookie).expect(401)
+  await request(app).get(`/api/v1/claims/${other.claimId}`).set('Cookie', cookie).expect(404)
+  await request(app)
+    .get(`/api/v1/claims/${f.claimId}`)
+    .set('Cookie', `${cookie}; sz_customer_sid=invalid`)
+    .expect(401)
+})
+it('physical return local: receipt never restores stock, inspected resellable units restore once under replay', async () => {
+  const f = await physicalReturnFixture(),
+    variants = productModels(db.connection).variants
+  const afterDispatch = (await variants.findById(f.selected.row._id).orFail()).stock.physical
+  await expect(f.inspect()).rejects.toThrow()
+  await f.receive()
+  expect((await variants.findById(f.selected.row._id).orFail()).stock.physical).toBe(afterDispatch)
+  await f.receive()
+  await f.inspect()
+  await f.inspect()
+  expect((await variants.findById(f.selected.row._id).orFail()).stock.physical).toBe(
+    afterDispatch + 1,
+  )
+  const claim = await returnModel(db.connection).findById(f.claimId).orFail()
+  expect(claim.status).toBe('inspected')
+  expect(claim.items[0]?.resellableUnitOrdinals).toHaveLength(1)
+  expect(
+    await db.connection
+      .collection('inventoryMovements')
+      .countDocuments({ type: 'return_receipt', orderId: new Types.ObjectId(f.id) }),
+  ).toBe(1)
+  await expect(f.inspect('another-key')).rejects.toThrow()
+  expect((await variants.findById(f.selected.row._id).orFail()).stock.physical).toBe(
+    afterDispatch + 1,
+  )
+})
+it('physical return local: audit failure rolls back stock, unit fence, movement and inspection', async () => {
+  const f = await physicalReturnFixture(),
+    variants = productModels(db.connection).variants
+  await f.receive()
+  const before = (await variants.findById(f.selected.row._id).orFail()).stock.physical
+  await db.connection.collection('auditLogs').dropIndex('audit_cause_unique')
+  try {
+    await expect(f.inspect()).rejects.toThrow()
+  } finally {
+    await initializeAuditPersistence(db.connection)
+  }
+  expect((await variants.findById(f.selected.row._id).orFail()).stock.physical).toBe(before)
+  expect((await returnModel(db.connection).findById(f.claimId).orFail()).status).toBe('received')
+  expect(
+    await db.connection
+      .collection('inventoryMovements')
+      .countDocuments({ type: 'return_receipt', orderId: new Types.ObjectId(f.id) }),
+  ).toBe(0)
+  expect(
+    (
+      await orderModels(db.connection).balances.findOne({ orderId: f.id }).orFail()
+    ).unitCoverage.every((u) => !u.restockOperationKey),
+  ).toBe(true)
+  await f.inspect()
+})
+it('physical return local: competing inspection and shortage paths cannot duplicate stock', async () => {
+  const f = await physicalReturnFixture(),
+    variants = productModels(db.connection).variants
+  await f.receive()
+  const before = (await variants.findById(f.selected.row._id).orFail()).stock.physical
+  const outcomes = await Promise.allSettled([f.inspect('race-a'), f.inspect('race-b')])
+  expect(outcomes.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
+  expect((await variants.findById(f.selected.row._id).orFail()).stock.physical).toBe(before + 1)
+})
+it('physical return local: invalid quantities and unauthorized admin do not change stock', async () => {
+  const f = await physicalReturnFixture(),
+    variants = productModels(db.connection).variants
+  const before = (await variants.findById(f.selected.row._id).orFail()).stock.physical
+  await expect(
+    f.physical.receive(
+      undefined,
+      f.claimId,
+      { receiptReference: 'x', reason: 'x', items: [{ orderItemId: f.itemId, quantity: 2 }] },
+      'no-auth',
+    ),
+  ).rejects.toThrow()
+  await expect(
+    f.physical.receive(
+      f.token,
+      f.claimId,
+      { receiptReference: 'x', reason: 'x', items: [{ orderItemId: f.itemId, quantity: 3 }] },
+      'too-many',
+    ),
+  ).rejects.toThrow()
+  await f.receive()
+  await expect(f.inspect('bad', 3)).rejects.toThrow()
+  expect((await variants.findById(f.selected.row._id).orFail()).stock.physical).toBe(before)
+})
+it('physical return local: shortage cannot receive or inspect physical goods', async () => {
+  const f = await physicalReturnFixture('shortage')
+  await expect(f.receive()).rejects.toThrow()
+  await expect(f.inspect()).rejects.toThrow()
+  expect(
+    await db.connection
+      .collection('inventoryMovements')
+      .countDocuments({ type: 'return_receipt', orderId: new Types.ObjectId(f.id) }),
+  ).toBe(0)
+})
+it('physical return local: partial receipt and zero resellable quantity preserve unreturned units', async () => {
+  const f = await physicalReturnFixture(),
+    variants = productModels(db.connection).variants
+  const before = (await variants.findById(f.selected.row._id).orFail()).stock.physical
+  const input = {
+    receiptReference: 'partial',
+    reason: 'Received one',
+    items: [{ orderItemId: f.itemId, quantity: 1 }],
+  }
+  await f.physical.receive(f.token, f.claimId, input, 'partial-receipt')
+  await expect(
+    f.physical.receive(
+      f.token,
+      f.claimId,
+      { ...input, receiptReference: 'different' },
+      'partial-receipt',
+    ),
+  ).rejects.toMatchObject({ code: 'IDEMPOTENCY_CONFLICT' })
+  await f.physical.inspect(
+    f.token,
+    f.claimId,
+    {
+      reason: 'Not resellable',
+      items: [{ orderItemId: f.itemId, acceptedQty: 1, resellableQty: 0, reason: 'Damaged' }],
+    },
+    'partial-inspection',
+  )
+  const claim = await returnModel(db.connection).findById(f.claimId).orFail()
+  expect(claim.items[0]?.approvedUnitOrdinals).toHaveLength(2)
+  expect(claim.items[0]?.receivedUnitOrdinals).toHaveLength(1)
+  expect(claim.items[0]?.acceptedUnitOrdinals).toHaveLength(1)
+  expect(claim.items[0]?.resellableUnitOrdinals).toEqual([])
+  expect((await variants.findById(f.selected.row._id).orFail()).stock.physical).toBe(before)
+  expect(
+    (await orderModels(db.connection).balances.findOne({ orderId: f.id }).orFail()).activeClaimQty,
+  ).toBe(2)
+})
+it('physical return local: downstream failure after movement rolls back stock and ordinal fence', async () => {
+  const f = await physicalReturnFixture(),
+    variants = productModels(db.connection).variants
+  await f.receive()
+  const before = (await variants.findById(f.selected.row._id).orFail()).stock.physical
+  const receipt = returnReceiptService(db.connection)
+  const failing = returnPhysicalService(
+    db.connection,
+    f.adminAccess,
+    claimRestockAccess(db.connection),
+    async (session, input) => {
+      await receipt(session, input)
+      throw new Error('Synthetic downstream failure')
+    },
+    () => new Date(Date.now() + 20000),
+  )
+  await expect(
+    failing.inspect(
+      f.token,
+      f.claimId,
+      {
+        reason: 'Inspect',
+        items: [{ orderItemId: f.itemId, acceptedQty: 2, resellableQty: 1, reason: 'Resellable' }],
+      },
+      'failure',
+    ),
+  ).rejects.toThrow('Synthetic downstream failure')
+  expect((await variants.findById(f.selected.row._id).orFail()).stock.physical).toBe(before)
+  expect(
+    await db.connection
+      .collection('inventoryMovements')
+      .countDocuments({ type: 'return_receipt', orderId: new Types.ObjectId(f.id) }),
+  ).toBe(0)
+  expect(
+    (
+      await orderModels(db.connection).balances.findOne({ orderId: f.id }).orFail()
+    ).unitCoverage.every((u) => !u.restockOperationKey),
+  ).toBe(true)
+  expect((await returnModel(db.connection).findById(f.claimId).orFail()).status).toBe('received')
+  await f.inspect()
+})
+
+it('physical return local: completion requires fully received and accepted units and never restocks twice', async () => {
+  const f = await physicalReturnFixture(),
+    variants = productModels(db.connection).variants
+  await f.receive()
+  await f.inspect()
+  const before = (await variants.findById(f.selected.row._id).orFail()).stock.physical
+  await f.review.transition(
+    f.token,
+    f.claimId,
+    { to: 'completed', reason: 'Inspection complete' },
+    'complete',
+  )
+  await f.review.transition(
+    f.token,
+    f.claimId,
+    { to: 'completed', reason: 'Inspection complete' },
+    'complete',
+  )
+  expect((await returnModel(db.connection).findById(f.claimId).orFail()).status).toBe('completed')
+  expect((await variants.findById(f.selected.row._id).orFail()).stock.physical).toBe(before)
+  const balance = await orderModels(db.connection).balances.findOne({ orderId: f.id }).orFail()
+  expect(balance.activeClaimQty).toBe(0)
+  expect(balance.resolvedClaimQty).toBe(2)
+})
+it('physical return local: partially received units cannot be marked completed', async () => {
+  const f = await physicalReturnFixture()
+  await f.physical.receive(
+    f.token,
+    f.claimId,
+    {
+      receiptReference: 'partial',
+      reason: 'Partial',
+      items: [{ orderItemId: f.itemId, quantity: 1 }],
+    },
+    'partial',
+  )
+  await f.physical.inspect(
+    f.token,
+    f.claimId,
+    {
+      reason: 'Inspect',
+      items: [{ orderItemId: f.itemId, acceptedQty: 1, resellableQty: 1, reason: 'Accepted' }],
+    },
+    'inspection',
+  )
+  await expect(
+    f.review.transition(f.token, f.claimId, { to: 'completed', reason: 'Too early' }, 'complete'),
+  ).rejects.toMatchObject({ code: 'BUSINESS_RULE_VIOLATION' })
+  expect((await returnModel(db.connection).findById(f.claimId).orFail()).status).toBe('inspected')
+})
+
+function refundAdvisory(policy?: Parameters<typeof refundAdvisoryService>[3]) {
+  return refundAdvisoryService(
+    refundClaimSnapshotAccess(db.connection),
+    refundOrderSnapshotAccess(db.connection),
+    refundPaymentSnapshotAccess(db.connection),
+    policy,
+  )
+}
+it('refund advisory local: uncollected COD has no verified source and cannot produce a quote', async () => {
+  const f = await physicalReturnFixture()
+  await f.receive()
+  await f.inspect()
+  await expect(
+    inTransaction(db.connection, (session) =>
+      refundAdvisory()(session, {
+        orderId: f.id,
+        claimId: f.claimId,
+        sourceCollectionId: new Types.ObjectId().toHexString(),
+        items: [{ orderItemId: f.itemId, quantity: 1 }],
+        deliveryRequestedPoisha: 0,
+      }),
+    ),
+  ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+  expect(
+    await paymentRecordModels(db.connection).collections.countDocuments({ orderId: f.id }),
+  ).toBe(0)
+})
+it('refund advisory local: verified COD and inspected claim use historical unit price without changing balances', async () => {
+  const f = await physicalReturnFixture()
+  await f.receive()
+  await f.inspect()
+  await f.cash()
+  const source = await paymentRecordModels(db.connection)
+    .collections.findOne({ orderId: f.id })
+    .orFail()
+  const beforeOrder = await orderModels(db.connection).orders.findById(f.id).lean().orFail()
+  const beforeBalance = await orderModels(db.connection)
+    .balances.findOne({ orderId: f.id })
+    .lean()
+    .orFail()
+  const beforeSource = await paymentRecordModels(db.connection)
+    .collections.findById(source._id)
+    .lean()
+    .orFail()
+  const input = {
+    orderId: f.id,
+    claimId: f.claimId,
+    sourceCollectionId: source._id.toHexString(),
+    items: [{ orderItemId: f.itemId, quantity: 1 }],
+    deliveryRequestedPoisha: 0,
+  }
+  const unit = beforeBalance.unitCoverage[0]
+  if (!unit) throw new Error('Missing historical unit')
+  await productModels(db.connection).variants.updateOne(
+    { _id: f.selected.row._id },
+    { $set: { regularPricePoisha: 3000, salePricePoisha: 2000 } },
+  )
+  const result = await inTransaction(db.connection, (session) => refundAdvisory()(session, input))
+  expect(result).toMatchObject({
+    status: 'advisory',
+    amountPoisha: unit.netEntitlementPoisha,
+    items: [{ unitAmounts: [{ ordinal: unit.ordinal, amountPoisha: unit.netEntitlementPoisha }] }],
+  })
+  expect(await orderModels(db.connection).orders.findById(f.id).lean().orFail()).toEqual(
+    beforeOrder,
+  )
+  expect(
+    await orderModels(db.connection).balances.findOne({ orderId: f.id }).lean().orFail(),
+  ).toEqual(beforeBalance)
+  expect(
+    await paymentRecordModels(db.connection).collections.findById(source._id).lean().orFail(),
+  ).toEqual(beforeSource)
+  expect(
+    await db.connection.collection('refunds').countDocuments({ orderId: new Types.ObjectId(f.id) }),
+  ).toBe(0)
+  await expect(
+    inTransaction(db.connection, (session) =>
+      refundAdvisory()(session, { ...input, items: [{ orderItemId: f.itemId, quantity: 3 }] }),
+    ),
+  ).rejects.toThrow()
+  await expect(
+    inTransaction(db.connection, (session) =>
+      refundAdvisory()(session, { ...input, orderId: new Types.ObjectId().toHexString() }),
+    ),
+  ).rejects.toThrow()
+  await expect(
+    inTransaction(db.connection, (session) =>
+      refundAdvisory()(session, { ...input, deliveryRequestedPoisha: 1 }),
+    ),
+  ).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' })
+})
+it('refund advisory local: physical receipt without inspection cannot authorize a refund', async () => {
+  const f = await physicalReturnFixture()
+  await f.receive()
+  await f.cash()
+  const source = await paymentRecordModels(db.connection)
+    .collections.findOne({ orderId: f.id })
+    .orFail()
+  await expect(
+    inTransaction(db.connection, (session) =>
+      refundAdvisory()(session, {
+        orderId: f.id,
+        claimId: f.claimId,
+        sourceCollectionId: source._id.toHexString(),
+        items: [{ orderItemId: f.itemId, quantity: 1 }],
+        deliveryRequestedPoisha: 0,
+      }),
+    ),
+  ).rejects.toMatchObject({ code: 'BUSINESS_RULE_VIOLATION' })
+})
+it('refund advisory local: approved shortage uses only approved ordinals with no physical restoration', async () => {
+  const f = await physicalReturnFixture('shortage')
+  await f.cash()
+  const source = await paymentRecordModels(db.connection)
+    .collections.findOne({ orderId: f.id })
+    .orFail()
+  const result = await inTransaction(db.connection, (session) =>
+    refundAdvisory()(session, {
+      orderId: f.id,
+      claimId: f.claimId,
+      sourceCollectionId: source._id.toHexString(),
+      items: [{ orderItemId: f.itemId, quantity: 1 }],
+      deliveryRequestedPoisha: 0,
+    }),
+  )
+  expect(result.status).toBe('advisory')
+  expect(
+    await db.connection
+      .collection('inventoryMovements')
+      .countDocuments({ type: 'return_receipt', orderId: new Types.ObjectId(f.id) }),
+  ).toBe(0)
+})
+it('refund advisory local: held amounts reduce historical unit and both verified funding balances', async () => {
+  const f = await physicalReturnFixture()
+  await f.receive()
+  await f.inspect()
+  await f.cash()
+  const collections = paymentRecordModels(db.connection).collections
+  const source = await collections.findOne({ orderId: f.id }).orFail()
+  const payment = await paymentModel(db.connection).findOne({ orderId: f.id }).orFail()
+  const balances = orderModels(db.connection).balances
+  const balance = await balances.findOne({ orderId: f.id }).orFail()
+  const unit = balance.unitCoverage[0]
+  if (!unit || unit.netEntitlementPoisha < 2) throw new Error('Unsuitable fixture entitlement')
+  // Isolated synthetic prior commitment; no refund writer is enabled in application runtime.
+  await inTransaction(db.connection, async (session) => {
+    await balances.updateOne(
+      { _id: balance._id, revision: balance.revision },
+      { $set: { 'unitCoverage.0.refundHeldPoisha': 1 }, $inc: { revision: 1 } },
+      { session },
+    )
+    await collections.updateOne(
+      { _id: source._id, revision: source.revision },
+      { $set: { merchandiseRefundHeldPoisha: 1 }, $inc: { revision: 1 } },
+      { session },
+    )
+    await paymentModel(db.connection).updateOne(
+      { _id: payment._id, revision: payment.revision },
+      { $set: { merchandiseRefundHeldPoisha: 1 }, $inc: { revision: 1 } },
+      { session },
+    )
+  })
+  const result = await inTransaction(db.connection, (session) =>
+    refundAdvisory()(session, {
+      orderId: f.id,
+      claimId: f.claimId,
+      sourceCollectionId: source._id.toHexString(),
+      items: [{ orderItemId: f.itemId, quantity: 1 }],
+      deliveryRequestedPoisha: 0,
+    }),
+  )
+  expect(result).toMatchObject({ status: 'advisory', amountPoisha: unit.netEntitlementPoisha - 1 })
+  if (result.status === 'advisory') {
+    expect(result.sourceAvailablePoisha).toBe(source.get('merchandiseAllocatedPoisha') - 1)
+    expect(result.orderAvailablePoisha).toBe(payment.merchandiseFundedPoisha - 1)
+  }
+})
+it('refund advisory local: a source collected for another order is never usable', async () => {
+  const f = await physicalReturnFixture()
+  await f.receive()
+  await f.inspect()
+  const other = await physicalReturnFixture()
+  await other.cash()
+  const source = await paymentRecordModels(db.connection)
+    .collections.findOne({ orderId: other.id })
+    .orFail()
+  await expect(
+    inTransaction(db.connection, (session) =>
+      refundAdvisory()(session, {
+        orderId: f.id,
+        claimId: f.claimId,
+        sourceCollectionId: source._id.toHexString(),
+        items: [{ orderItemId: f.itemId, quantity: 1 }],
+        deliveryRequestedPoisha: 0,
+      }),
+    ),
+  ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+})
+it('refund advisory local: delivery charge requires current trusted policy and stays within original snapshot', async () => {
+  const f = await physicalReturnFixture()
+  await f.receive()
+  await f.inspect()
+  await f.cash()
+  const source = await paymentRecordModels(db.connection)
+    .collections.findOne({ orderId: f.id })
+    .orFail()
+  const input = {
+    orderId: f.id,
+    claimId: f.claimId,
+    sourceCollectionId: source._id.toHexString(),
+    items: [{ orderItemId: f.itemId, quantity: 1 }],
+    deliveryRequestedPoisha: 1,
+  }
+  await expect(
+    inTransaction(db.connection, (session) => refundAdvisory(async () => false)(session, input)),
+  ).rejects.toMatchObject({ code: 'BUSINESS_RULE_VIOLATION' })
+  expect(
+    await inTransaction(db.connection, (session) =>
+      refundAdvisory(async () => true)(session, input),
+    ),
+  ).toMatchObject({ status: 'advisory', deliveryAmountPoisha: 1 })
+  await expect(
+    inTransaction(db.connection, (session) =>
+      refundAdvisory(async () => true)(session, { ...input, deliveryRequestedPoisha: 101 }),
+    ),
+  ).rejects.toMatchObject({ code: 'BUSINESS_RULE_VIOLATION' })
+})
+
+it('multi-source refund local: linked partial COD collections split one original unit without writes', async () => {
+  const f = await physicalReturnFixture()
+  await f.receive()
+  await f.inspect()
+  await f.cash(300, 'source-first')
+  await f.cash(300, 'source-second')
+  const collection = paymentRecordModels(db.connection).collections
+  const sources = await collection.find({ orderId: f.id }).sort({ _id: 1 }).lean()
+  expect(sources).toHaveLength(2)
+  const before = await orderModels(db.connection)
+    .balances.findOne({ orderId: f.id })
+    .lean()
+    .orFail()
+  const planner = multiSourceRefundAdvisoryService(
+    refundClaimSnapshotAccess(db.connection),
+    refundOrderSnapshotAccess(db.connection),
+    refundPaymentSnapshotAccess(db.connection),
+  )
+  const input = {
+    orderId: f.id,
+    claimId: f.claimId,
+    sourceCollectionIds: sources.map((s) => s._id.toHexString()),
+    items: [{ orderItemId: f.itemId, quantity: 1 }],
+    deliveryRequestedPoisha: 0,
+  }
+  const plan = await inTransaction(db.connection, (session) => planner(session, input))
+  expect(plan.status).toBe('advisory')
+  if (plan.status !== 'advisory') throw new Error('Expected valid advisory')
+  expect(plan.amountPoisha).toBe(before.unitCoverage[0]?.netEntitlementPoisha)
+  expect(plan.slices).toHaveLength(2)
+  expect(plan.slices.reduce((sum, slice) => sum + slice.amountPoisha, 0)).toBe(plan.amountPoisha)
+  expect(
+    await inTransaction(db.connection, (session) =>
+      planner(session, { ...input, sourceCollectionIds: [...input.sourceCollectionIds].reverse() }),
+    ),
+  ).toEqual(plan)
+  expect(
+    await orderModels(db.connection).balances.findOne({ orderId: f.id }).lean().orFail(),
+  ).toEqual(before)
+  expect(await collection.find({ orderId: f.id }).sort({ _id: 1 }).lean()).toEqual(sources)
+  expect(
+    await db.connection.collection('refunds').countDocuments({ orderId: new Types.ObjectId(f.id) }),
+  ).toBe(0)
+})
+it('multi-source refund local: duplicate or foreign collection sources cannot create a plan', async () => {
+  const f = await physicalReturnFixture()
+  await f.receive()
+  await f.inspect()
+  await f.cash()
+  const other = await physicalReturnFixture()
+  await other.cash(undefined, 'foreign-source-unique')
+  const collection = paymentRecordModels(db.connection).collections
+  const own = await collection.findOne({ orderId: f.id }).orFail(),
+    foreign = await collection.findOne({ orderId: other.id }).orFail()
+  const planner = multiSourceRefundAdvisoryService(
+    refundClaimSnapshotAccess(db.connection),
+    refundOrderSnapshotAccess(db.connection),
+    refundPaymentSnapshotAccess(db.connection),
+  )
+  const input = {
+    orderId: f.id,
+    claimId: f.claimId,
+    sourceCollectionIds: [own._id.toHexString(), foreign._id.toHexString()],
+    items: [{ orderItemId: f.itemId, quantity: 1 }],
+    deliveryRequestedPoisha: 0,
+  }
+  await expect(
+    inTransaction(db.connection, (session) => planner(session, input)),
+  ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+  await expect(
+    inTransaction(db.connection, (session) =>
+      planner(session, {
+        ...input,
+        sourceCollectionIds: [own._id.toHexString(), own._id.toHexString()],
+      }),
+    ),
+  ).rejects.toThrow()
+})
+
+it('refund transport local: provider request is forbidden inside a MongoDB transaction', async () => {
+  const transport = vi.fn<typeof fetch>()
+  const provider = createSslcommerzAdapter(
+    {
+      appEnv: 'test',
+      mode: 'sandbox',
+      storeId: 'synthetic-store',
+      storePassword: 'synthetic-password',
+      callbackOrigin: 'https://api.example.test',
+      timeoutMs: 1000,
+    },
+    transport,
+  )
+  await expect(
+    inTransaction(db.connection, (session) => {
+      expect(session.inTransaction()).toBe(true)
+      return provider.initiateRefund({
+        bankTranId: 'bank',
+        refundTransId: 'refund',
+        amountPoisha: 100,
+        remarks: 'synthetic',
+      })
+    }),
+  ).rejects.toThrow()
+  expect(transport).not.toHaveBeenCalled()
+})
+
+async function manualEvidenceFixture(options: { consentRequired?: boolean } = {}) {
+  const administrator = await customer('admin'),
+    access = createAdminAccountAccess(db.connection, identities, sessions)
+  const id = () => new Types.ObjectId().toHexString(),
+    at = new Date(Date.now() - 30000)
+  let snapshot = {
+    refundId: id(),
+    orderId: id(),
+    sourceCollectionId: id(),
+    attemptId: id(),
+    method: 'manual_bkash',
+    amountPoisha: 100,
+    sourceCollectedPoisha: 100,
+    sourceReservedPoisha: 100,
+    obligationReservedPoisha: 100,
+    capacityStatus: 'reserved',
+    status: 'processing',
+    attemptStatus: 'submitted',
+    collectionVerifiedAt: at,
+    approvedAt: at,
+    initiatedAt: at,
+    refundRevision: 1,
+    sourceRevision: 1,
+    attemptRevision: 1,
+    consentRequired: options.consentRequired ?? false,
+  }
+  const proof = () => ({
+    refundId: snapshot.refundId,
+    orderId: snapshot.orderId,
+    sourceCollectionId: snapshot.sourceCollectionId,
+    attemptId: snapshot.attemptId,
+    method: snapshot.method,
+    amountPoisha: snapshot.amountPoisha,
+    transferReference: 'synthetic-transfer',
+    evidenceRef: 'synthetic-private',
+    verdict: 'verified',
+    transferredAt: at,
+    evidenceDigest: 'a'.repeat(64),
+    destinationMasked: '***123',
+  })
+  let provider = async () => proof()
+  let calls = 0
+  const verify = manualPayoutVerificationService(
+    access,
+    async (session, id) => {
+      if (!session.inTransaction() || id !== snapshot.refundId)
+        throw new Error('Invalid synthetic scope')
+      return snapshot
+    },
+    async () => {
+      calls++
+      return provider()
+    },
+  )
+  return {
+    administrator,
+    verify,
+    get snapshot() {
+      return snapshot
+    },
+    setSnapshot(value: typeof snapshot) {
+      snapshot = value
+    },
+    setProvider(value: () => Promise<ReturnType<typeof proof>>) {
+      provider = value
+    },
+    proof,
+    calls: () => calls,
+    request: { transferReference: 'synthetic-transfer', evidenceRef: 'synthetic-private' },
+  }
+}
+it('manual payout evidence local: real admin authorizes verified bound proof without any financial write', async () => {
+  const f = await manualEvidenceFixture(),
+    token = f.administrator.credentials.customerToken
+  const result = await f.verify(token, f.snapshot.refundId, f.request)
+  expect(result).toMatchObject({ state: 'evidence_verified', evidenceDigest: 'a'.repeat(64) })
+  expect(JSON.stringify(result)).not.toContain('synthetic-transfer')
+  expect(JSON.stringify(result)).not.toContain('***123')
+  expect(await db.connection.collection('refunds').countDocuments()).toBe(0)
+  expect(await db.connection.collection('paymentCollections').countDocuments()).toBe(0)
+  expect(await db.connection.collection('auditLogs').countDocuments()).toBe(0)
+})
+it('manual payout evidence local: unauthorized or unfunded snapshots never access protected evidence', async () => {
+  const f = await manualEvidenceFixture()
+  await expect(f.verify(undefined, f.snapshot.refundId, f.request)).rejects.toThrow()
+  expect(f.calls()).toBe(0)
+  f.setSnapshot({ ...f.snapshot, sourceCollectedPoisha: 0 })
+  await expect(
+    f.verify(f.administrator.credentials.customerToken, f.snapshot.refundId, f.request),
+  ).rejects.toThrow()
+  expect(f.calls()).toBe(0)
+  f.setSnapshot({ ...f.snapshot, sourceCollectedPoisha: 100, sourceReservedPoisha: 101 })
+  await expect(
+    f.verify(f.administrator.credentials.customerToken, f.snapshot.refundId, f.request),
+  ).rejects.toThrow()
+  expect(f.calls()).toBe(0)
+})
+it('manual payout evidence local: forged binding, time, masked destination and consent cannot establish proof', async () => {
+  const f = await manualEvidenceFixture({ consentRequired: true })
+  const base = f.proof()
+  const cases = [
+    { ...base, amountPoisha: 99 },
+    { ...base, sourceCollectionId: new Types.ObjectId().toHexString() },
+    { ...base, orderId: new Types.ObjectId().toHexString() },
+    { ...base, method: 'manual_bank' },
+    { ...base, attemptId: new Types.ObjectId().toHexString() },
+    { ...base, transferReference: 'other' },
+    { ...base, evidenceRef: 'other' },
+    { ...base, transferredAt: new Date(Date.now() + 60000) },
+    { ...base, verdict: 'unknown' },
+    { ...base, destinationMasked: '1234567890' },
+    base,
+  ]
+  for (const fact of cases) {
+    f.setProvider(async () => fact)
+    await expect(
+      f.verify(f.administrator.credentials.customerToken, f.snapshot.refundId, f.request),
+    ).rejects.toThrow()
+  }
+  f.setProvider(async () => ({
+    ...base,
+    consentDigest: 'b'.repeat(64),
+    consentAt: base.transferredAt,
+  }))
+  await expect(
+    f.verify(f.administrator.credentials.customerToken, f.snapshot.refundId, f.request),
+  ).resolves.toMatchObject({ state: 'evidence_verified', consentDigest: 'b'.repeat(64) })
+})
+it('manual payout evidence local: changed reservation or revoked admin during evidence read fails closed', async () => {
+  const f = await manualEvidenceFixture(),
+    base = f.proof()
+  f.setProvider(async () => {
+    f.setSnapshot({ ...f.snapshot, sourceRevision: f.snapshot.sourceRevision + 1 })
+    return base
+  })
+  await expect(
+    f.verify(f.administrator.credentials.customerToken, f.snapshot.refundId, f.request),
+  ).rejects.toMatchObject({ code: 'STATE_CONFLICT' })
+  f.setProvider(async () => {
+    await identities.users.updateOne(
+      { _id: f.administrator.user._id },
+      { $set: { status: 'suspended' } },
+    )
+    return base
+  })
+  await expect(
+    f.verify(f.administrator.credentials.customerToken, f.snapshot.refundId, f.request),
+  ).rejects.toThrow()
+  expect(await db.connection.collection('refunds').countDocuments()).toBe(0)
+})
+it('manual payout evidence local: unknown evidence failure is sanitized and no retry or completion occurs', async () => {
+  const f = await manualEvidenceFixture()
+  f.setProvider(async () => {
+    throw new Error('synthetic-secret')
+  })
+  await expect(
+    f.verify(f.administrator.credentials.customerToken, f.snapshot.refundId, f.request),
+  ).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' })
+  expect(f.calls()).toBe(1)
+  expect(await db.connection.collection('refunds').countDocuments()).toBe(0)
+})
+it('refund status local: provider status reads are forbidden inside transaction', async () => {
+  const transport = vi.fn<typeof fetch>()
+  const provider = createSslcommerzAdapter(
+    {
+      appEnv: 'test',
+      mode: 'sandbox',
+      storeId: 'synthetic-store',
+      storePassword: 'synthetic-password',
+      callbackOrigin: 'https://api.example.test',
+      timeoutMs: 1000,
+    },
+    transport,
+  )
+  await expect(
+    inTransaction(db.connection, () =>
+      provider.queryRefund({ bankTranId: 'bank', refundRefId: 'refund' }),
+    ),
+  ).rejects.toThrow()
+  expect(transport).not.toHaveBeenCalled()
+})
+
+async function deliveredReviewFixture(deliver = true) {
+  await initializePaymentRecordPersistence(db.connection)
+  await initializeReviewPersistence(db.connection)
+  const buyer = await customer(),
+    selected = await variant(),
+    draft = body([selected.item])
+  const quote = await service.create(buyer.credentials, draft)
+  const placed = await placeCod(buyer, submit(draft, quote)).expect(201)
+  const orderId = placed.body.data.order.id
+  const admin = await customer('admin'),
+    access = createAdminAccountAccess(db.connection, identities, sessions)
+  const lifecycle = orderLifecycleService(
+    db.connection,
+    access,
+    fulfillmentPaymentAccess(db.connection),
+    fulfillmentAllocationService(db.connection, () => now),
+    async () => {},
+    () => now,
+  )
+  if (deliver)
+    for (const status of ['confirmed', 'processing', 'shipped', 'delivered'])
+      await lifecycle.transition(
+        admin.credentials.customerToken,
+        orderId,
+        {
+          to: status,
+          reason: 'Synthetic',
+          ...(status === 'shipped' ? { dispatchReference: 'synthetic-review-dispatch' } : {}),
+        },
+        `review-${status}`,
+      )
+  const order = await orderModels(db.connection).orders.findById(orderId).orFail(),
+    line = order.items[0]
+  if (!line) throw new Error('Missing item')
+  const selection = {
+    userId: buyer.user._id.toHexString(),
+    productId: line.productId.toHexString(),
+    qualifyingOrderItemId: line.id.toHexString(),
+  }
+  const eligibility = reviewPurchaseEligibilityAccess(db.connection)
+  const accounts = createCustomerAccountAccess(db.connection, identities, sessions)
+  const reviews = createReviewService(db.connection, {
+    accounts,
+    catalog: productReviewAccess(db.connection),
+    audit: createAuditWriter(db.connection),
+    eligibility,
+  })
+  return { buyer, selected, orderId, selection, eligibility, reviews }
+}
+it('claim history local: customer ownership is enforced on list and nested detail', async () => {
+  await initializeReturnPersistence(db.connection)
+  const f = await deliveredReviewFixture(),
+    other = await customer()
+  const claimId = new Types.ObjectId().toHexString()
+  const create = returnService(db.connection, claimQuantityAccess(db.connection), async () => ({
+    requestedBy: { type: 'customer', id: f.buyer.user._id.toHexString() },
+    eligibilitySnapshot: { policyVersion: 'synthetic' },
+  }))
+  await inTransaction(db.connection, (session) =>
+    create.create(session, {
+      claimId,
+      orderId: f.orderId,
+      claimType: 'shortage',
+      items: [{ orderItemId: f.selection.qualifyingOrderItemId, quantity: 1, reason: 'Synthetic' }],
+    }),
+  )
+  const accounts = createCustomerAccountAccess(db.connection, identities, sessions)
+  const history = returnHistoryService(
+    db.connection,
+    orderScopeAccess(accounts, sessions),
+    complaintOrderAccess(db.connection),
+    claimEvidenceMetadataAccess(db.connection),
+  )
+  const app = createApp({ apiRouter: returnHistoryRoutes(history, security) })
+  await request(app)
+    .get(`/api/v1/orders/${f.orderId}/claims`)
+    .set('Cookie', f.buyer.cookie)
+    .expect(200)
+  await request(app).get(`/api/v1/claims/${claimId}`).set('Cookie', f.buyer.cookie).expect(200)
+  await request(app)
+    .get(`/api/v1/orders/${f.orderId}/claims`)
+    .set('Cookie', other.cookie)
+    .expect(404)
+  await request(app).get(`/api/v1/claims/${claimId}`).set('Cookie', other.cookie).expect(404)
+})
+async function markSyntheticFullReturnAndRefund(orderId: string) {
+  const balances = orderModels(db.connection).balances,
+    row = await balances.findOne({ orderId }).orFail()
+  const set: Record<string, unknown> = {
+    activeClaimQty: 0,
+    resolvedClaimQty: row.purchasedQty,
+    refundedMerchandiseQty: row.purchasedQty,
+  }
+  row.unitCoverage.forEach((unit, index) => {
+    set[`unitCoverage.${index}.claimState`] = 'resolved'
+    set[`unitCoverage.${index}.claimId`] = new Types.ObjectId()
+    set[`unitCoverage.${index}.refundCompletedPoisha`] = unit.netEntitlementPoisha
+  })
+  await balances.updateOne(
+    { _id: row._id, revision: row.revision },
+    { $set: set, $inc: { revision: 1 } },
+  )
+}
+it('review qualification local: only the owner of the exact delivered product item qualifies', async () => {
+  const f = await deliveredReviewFixture()
+  const proof = await inTransaction(db.connection, (session) => f.eligibility(session, f.selection))
+  expect(proof).toEqual({ ...f.selection, orderId: f.orderId, delivered: true, eligible: true })
+  for (const selection of [
+    { ...f.selection, userId: new Types.ObjectId().toHexString() },
+    { ...f.selection, productId: new Types.ObjectId().toHexString() },
+    { ...f.selection, qualifyingOrderItemId: new Types.ObjectId().toHexString() },
+  ])
+    expect(
+      await inTransaction(db.connection, (session) => f.eligibility(session, selection)),
+    ).toBeNull()
+  const session = await db.connection.startSession()
+  try {
+    await expect(f.eligibility(session, f.selection)).rejects.toThrow()
+  } finally {
+    await session.endSession()
+  }
+})
+it('review qualification local: undelivered order cannot create a verified review', async () => {
+  const f = await deliveredReviewFixture(false)
+  expect(
+    await inTransaction(db.connection, (session) => f.eligibility(session, f.selection)),
+  ).toBeNull()
+  await expect(
+    f.reviews.create(f.buyer.credentials.customerToken, f.selection.productId, {
+      rating: 4,
+      comment: 'Synthetic review',
+      qualifyingOrderItemId: f.selection.qualifyingOrderItemId,
+    }),
+  ).rejects.toMatchObject({ code: 'BUSINESS_RULE_VIOLATION' })
+})
+it('review qualification local: full return and synthetic completed refund block a new review while preserving existing review and moderation', async () => {
+  const f = await deliveredReviewFixture()
+  const created = await f.reviews.create(f.buyer.credentials.customerToken, f.selection.productId, {
+    rating: 4,
+    comment: 'Synthetic review',
+    qualifyingOrderItemId: f.selection.qualifyingOrderItemId,
+  })
+  await markSyntheticFullReturnAndRefund(f.orderId)
+  expect(
+    await inTransaction(db.connection, (session) => f.eligibility(session, f.selection)),
+  ).toBeNull()
+  expect(await f.reviews.readOwn(f.buyer.credentials.customerToken, created.id)).toMatchObject({
+    id: created.id,
+    comment: 'Synthetic review',
+  })
+  expect(
+    await f.reviews.edit(f.buyer.credentials.customerToken, created.id, {
+      comment: 'Edited review',
+    }),
+  ).toMatchObject({ status: 'pending' })
+  expect(await reviewModel(db.connection).countDocuments({ _id: created.id })).toBe(1)
+})
+it('review qualification local: a second delivered purchase remains eligible after the first is fully returned/refunded', async () => {
+  const f = await deliveredReviewFixture()
+  await markSyntheticFullReturnAndRefund(f.orderId)
+  const draft = body([f.selected.item]),
+    quote = await service.create(f.buyer.credentials, draft)
+  const placed = await placeCod(f.buyer, submit(draft, quote), 'second-review-checkout').expect(201)
+  const secondId = placed.body.data.order.id,
+    admin = await customer('admin')
+  const lifecycle = orderLifecycleService(
+    db.connection,
+    createAdminAccountAccess(db.connection, identities, sessions),
+    fulfillmentPaymentAccess(db.connection),
+    fulfillmentAllocationService(db.connection, () => now),
+    async () => {},
+    () => now,
+  )
+  for (const status of ['confirmed', 'processing', 'shipped', 'delivered'])
+    await lifecycle.transition(
+      admin.credentials.customerToken,
+      secondId,
+      {
+        to: status,
+        reason: 'Synthetic',
+        ...(status === 'shipped' ? { dispatchReference: 'second' } : {}),
+      },
+      `second-${status}`,
+    )
+  const order = await orderModels(db.connection).orders.findById(secondId).orFail(),
+    item = order.items[0]
+  if (!item) throw new Error('Missing second item')
+  const selection = { ...f.selection, qualifyingOrderItemId: item.id.toHexString() }
+  expect(
+    await inTransaction(db.connection, (session) => f.eligibility(session, selection)),
+  ).toMatchObject({ eligible: true, orderId: secondId })
+})
+it('review qualification local: return alone and pending refund commitments do not disqualify', async () => {
+  const f = await deliveredReviewFixture(),
+    balances = orderModels(db.connection).balances
+  const row = await balances.findOne({ orderId: f.orderId }).orFail(),
+    set: Record<string, unknown> = { activeClaimQty: 0, resolvedClaimQty: row.purchasedQty }
+  row.unitCoverage.forEach((unit, index) => {
+    set[`unitCoverage.${index}.claimState`] = 'resolved'
+    set[`unitCoverage.${index}.claimId`] = new Types.ObjectId()
+    set[`unitCoverage.${index}.refundHeldPoisha`] = unit.netEntitlementPoisha
+  })
+  await balances.updateOne(
+    { _id: row._id, revision: row.revision },
+    { $set: set, $inc: { revision: 1 } },
+  )
+  expect(
+    await inTransaction(db.connection, (session) => f.eligibility(session, f.selection)),
+  ).toMatchObject({ eligible: true })
+})
+it('review qualification local: concurrent full refund invalidates a stale transaction snapshot', async () => {
+  const f = await deliveredReviewFixture()
+  let release: () => void = () => {},
+    observed: () => void = () => {}
+  const proceed = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  const seen = new Promise<void>((resolve) => {
+    observed = resolve
+  })
+  const ongoing = inTransaction(db.connection, async (session) => {
+    await orderModels(db.connection)
+      .balances.findOne({ orderId: f.orderId })
+      .session(session)
+      .orFail()
+    observed()
+    await proceed
+    return f.eligibility(session, f.selection)
+  })
+  await seen
+  try {
+    await markSyntheticFullReturnAndRefund(f.orderId)
+  } finally {
+    release()
+  }
+  expect(await ongoing).toBeNull()
+})
+
+async function returnNotificationFixture(prepare = true) {
+  const f = await physicalReturnFixture('shortage', prepare)
+  let t = Date.now() + 20000
+  const clock = () => new Date(t++)
+  const store = createRegistrationNotifications(db.connection, clock),
+    order = returnNotificationOrderAccess(db.connection)
+  const notifier = returnDecisionNotifier(order, store)
+  const lifecycle = returnLifecycleService(
+    db.connection,
+    f.adminAccess,
+    claimReviewQuantityAccess(db.connection),
+    clock,
+    notifier,
+  )
+  const complete = (key = 'notify-complete') =>
+    lifecycle.transition(
+      f.token,
+      f.claimId,
+      { to: 'completed', reason: 'Synthetic completion' },
+      key,
+    )
+  const send = vi
+    .fn<EmailAdapter['send']>()
+    .mockResolvedValue({ kind: 'accepted', providerMessageId: 'synthetic-message' })
+  const delivery = createNotificationDeliveryService(
+    store,
+    { send },
+    { maxAttempts: 3, baseDelayMs: 1000, maxDelayMs: 10000, claimTtlMs: 30000, batchSize: 10 },
+    clock,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    returnMessageService(returnNotificationProofAccess(db.connection, order)),
+  )
+  return {
+    ...f,
+    store,
+    lifecycle,
+    complete,
+    send,
+    delivery,
+    clock,
+    advance: (ms: number) => {
+      t += ms
+    },
+  }
+}
+it('return notification local: actual claim completion queues once and never claims refund payout', async () => {
+  const f = await returnNotificationFixture()
+  await f.complete()
+  await f.complete()
+  expect(
+    await db.connection
+      .collection('notifications')
+      .countDocuments({ eventType: 'return_update', orderId: new Types.ObjectId(f.id) }),
+  ).toBe(1)
+  await f.delivery.runBatch()
+  expect(f.send).toHaveBeenCalledTimes(1)
+  const message = f.send.mock.calls[0]?.[0]
+  expect(message?.text).toContain('does not confirm that a refund was paid')
+  expect(message?.text).not.toContain('refund was completed')
+  await f.delivery.runBatch()
+  expect(f.send).toHaveBeenCalledTimes(1)
+})
+it('return notification local: missing outbox uniqueness rolls back the claim and quantity transition', async () => {
+  const f = await returnNotificationFixture()
+  await db.connection.collection('notifications').dropIndex('notifications_event_key_unique')
+  try {
+    await expect(f.complete()).rejects.toThrow()
+  } finally {
+    await f.store.migrateFoundation()
+  }
+  expect((await returnModel(db.connection).findById(f.claimId).orFail()).status).toBe('approved')
+  const balance = await orderModels(db.connection).balances.findOne({ orderId: f.id }).orFail()
+  expect(balance.activeClaimQty).toBe(2)
+  expect(
+    await db.connection.collection('notifications').countDocuments({ eventType: 'return_update' }),
+  ).toBe(0)
+  await f.complete()
+})
+it.each(['recipient', 'time'])(
+  'return notification local: tampered %s cannot send a message',
+  async (field) => {
+    const f = await returnNotificationFixture()
+    await f.complete()
+    await db.connection.collection('notifications').updateOne(
+      { eventType: 'return_update' },
+      {
+        $set:
+          field === 'recipient'
+            ? { 'recipient.emailNormalized': 'other@example.test' }
+            : { 'payload.occurredAt': new Date('2027-01-01') },
+      },
+    )
+    await f.delivery.runBatch()
+    expect(f.send).not.toHaveBeenCalled()
+    expect(
+      await db.connection.collection('notifications').findOne({ eventType: 'return_update' }),
+    ).toMatchObject({ status: 'failed', lastErrorCode: 'PROOF_UNAVAILABLE' })
+  },
+)
+it('return notification local: prior commerce validator upgrades additively without deleting queued facts', async () => {
+  const { commerceNotificationValidator, registrationNotificationValidator } = await import(
+    '../../src/modules/notifications/notification.persistence.js'
+  )
+  const store = createRegistrationNotifications(db.connection)
+  const account = await customer()
+  await inTransaction(db.connection, (session) =>
+    store.enqueue(
+      { userId: account.user._id, email: account.user.emailNormalized, name: 'Synthetic' },
+      session,
+    ),
+  )
+  const before = await db.connection
+    .collection('notifications')
+    .findOne({ eventType: 'registration' })
+  await db.connection.db?.command({
+    collMod: 'notifications',
+    validator: commerceNotificationValidator,
+  })
+  try {
+    await expect(store.verifyIndexes()).rejects.toThrow()
+    await store.migrateFoundation()
+    await store.migrateFoundation()
+    await store.verifyIndexes()
+    expect(
+      await db.connection.collection('notifications').findOne({ eventType: 'registration' }),
+    ).toEqual(before)
+    expect(
+      (
+        await db.connection.db
+          ?.listCollections({ name: 'notifications' }, { nameOnly: false })
+          .next()
+      )?.options?.validator,
+    ).toEqual(registrationNotificationValidator)
+  } finally {
+    await db.connection.db?.command({
+      collMod: 'notifications',
+      validator: registrationNotificationValidator,
+    })
+  }
+})
+it('return notification local: known retry retains identical message and idempotency key', async () => {
+  const f = await returnNotificationFixture()
+  f.send.mockResolvedValueOnce({ kind: 'rejected', retryable: true, code: 'PROVIDER_RATE_LIMIT' })
+  await f.complete()
+  await f.delivery.runBatch()
+  expect(f.send).toHaveBeenCalledTimes(1)
+  f.advance(2000)
+  await f.delivery.runBatch()
+  expect(f.send).toHaveBeenCalledTimes(2)
+  expect(f.send.mock.calls[1]?.[0]).toEqual(f.send.mock.calls[0]?.[0])
+})
+it('review qualification local: stale refund quantity projection cannot make fully paid returned units eligible', async () => {
+  const f = await deliveredReviewFixture()
+  await markSyntheticFullReturnAndRefund(f.orderId)
+  const balances = orderModels(db.connection).balances,
+    row = await balances.findOne({ orderId: f.orderId }).orFail()
+  await balances.updateOne(
+    { _id: row._id, revision: row.revision },
+    { $set: { refundedMerchandiseQty: 0 }, $inc: { revision: 1 } },
+  )
+  expect(
+    await inTransaction(db.connection, (session) => f.eligibility(session, f.selection)),
+  ).toBeNull()
+})
+it.each(['approved', 'rejected'])(
+  'return notification local: real %s decision queues one verified event',
+  async (decision) => {
+    const f = await returnNotificationFixture(false)
+    await f.lifecycle.transition(
+      f.token,
+      f.claimId,
+      { to: 'under_review', reason: 'Review' },
+      'review-with-notifier',
+    )
+    const command = {
+      to: decision,
+      reason: 'Synthetic decision',
+      ...(decision === 'approved'
+        ? { approvedItems: [{ orderItemId: f.itemId, quantity: 2 }] }
+        : {}),
+    }
+    await f.lifecycle.transition(f.token, f.claimId, command, `decision-${decision}`)
+    await f.lifecycle.transition(f.token, f.claimId, command, `decision-${decision}`)
+    expect(
+      await db.connection
+        .collection('notifications')
+        .countDocuments({ eventType: 'return_update' }),
+    ).toBe(1)
+    await f.delivery.runBatch()
+    expect(f.send).toHaveBeenCalledTimes(1)
+    expect(f.send.mock.calls[0]?.[0].text).toContain(`claim was ${decision}`)
+  },
+)
+it('return notification local: default worker leaves return events queued without a configured renderer', async () => {
+  const f = await returnNotificationFixture()
+  await f.complete()
+  const worker = createNotificationDeliveryService(
+    f.store,
+    { send: f.send },
+    { maxAttempts: 3, baseDelayMs: 1000, maxDelayMs: 10000, claimTtlMs: 30000, batchSize: 10 },
+    f.clock,
+  )
+  await worker.runBatch()
+  expect(f.send).not.toHaveBeenCalled()
+  expect(
+    await db.connection.collection('notifications').findOne({ eventType: 'return_update' }),
+  ).toMatchObject({ status: 'queued' })
 })

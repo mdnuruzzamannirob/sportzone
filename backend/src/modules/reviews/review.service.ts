@@ -62,6 +62,7 @@ const dto = (row: HydratedDocument<ReviewRecord>) => ({
   rating: row.rating,
   comment: row.comment,
   status: row.status,
+  createdAt: row.createdAt.toISOString(),
   verifiedPurchase: true,
 })
 export function createReviewService(

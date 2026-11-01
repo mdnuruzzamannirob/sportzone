@@ -8,6 +8,45 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 31 October 2026 — Local review and claim reads
+
+- Added locally composed review reading, submission and moderation routes and scoped claim reads with private evidence metadata.
+- P05-016 and P08-019 remain Blocked on accepted dependencies, full integration and independent review.
+
+## 31 October 2026 — Local return decisions and review qualification
+
+- Added transactional return-decision notification intents and proof-checked local delivery with no payout-success implication.
+- Added transaction-fenced delivered-purchase review qualification and an additive notification-validator migration.
+- P08-011/016 remain Blocked on refund prerequisites, integrated runtime and independent acceptance.
+
+## 31 October 2026 — Private refund status and manual evidence checks
+
+- Added redacted gateway refund status reports and non-authorizing retry assessment.
+- Added two-phase admin and manual evidence verification; durable reconciliation, protected evidence sources and payout completion remain blocked.
+
+## 31 October 2026 — Local multi-source refund planning and provider transport
+
+- Added private, nonbinding multi-source unit/delivery refund plans with source and order capacity limits.
+- Added isolated SSLCOMMERZ initiation transport; acceptance remains unverified and no runtime payout executor is enabled.
+- P08-007/008 remain Blocked pending atomic reservations, durable attempts, prerequisites and provider-backed acceptance.
+
+## 31 October 2026 — Private refund advisory
+
+- Added read-only, single-source claim/order/payment refund calculations with original unit amounts and held/completed capacity limits.
+- Added transient payout-attempt fact validation; full attempt persistence, multi-source allocation, reservation and payout remain blocked.
+
+## 31 October 2026 — Private physical return inspection
+
+- Added local receipt/inspection and transactionally restocked only selected inspected resellable units, with ordinal fences and replay/race protection.
+- Extended explicit local/test validator upgrade; P08-003/004 remain Blocked on prerequisites, further receipt batches, partial-case resolution and integrated acceptance.
+
+## 31 October 2026 — Private return eligibility and review
+
+- Added scoped delivered-order eligibility, inclusive seven-day physical window and protected policy exceptions.
+- Added private partial approval/rejection, exact unit release, shortage resolution and atomic private Media evidence attachment.
+- Added strict lifecycle persistence, explicit additive local/test upgrade and race/replay/rollback/boundary checks.
+- P08-002/003 remain Blocked on prerequisites and remaining physical lifecycle, HTTP and qualified integration work; no release acceptance implied.
+
 ## 31 October 2026 — CI scope and container-gate corrections
 
 - Prose-only changes now run repository/security checks without unnecessary application/browser builds;

@@ -670,7 +670,38 @@ timestamps. Verify root activation and no provider/financial effect from schedul
 Claim foundation tests must race physical/shortage requests over the same canonical unit pool, exclude
 resolved/refunded/held units, reject caller-selected ordinals/duplicate lines, enforce transaction and
 current-authority boundaries, and roll back every line/request when audit or persistence fails.
-No synthetic authorization/eligibility fixture proves real return-window or private-media acceptance.
+Private return eligibility tests cover the exact inclusive seven-calendar-day boundary, expired and
+future delivery, protected exception basis, shortage without an invented physical deadline, wrong
+scope, invalid clocks, client overrides and transaction rollback. Review tests cover partial approval,
+rejection/release, held-balance denial, approve/reject races, idempotency conflicts, audit rollback,
+shortage resolution without receipt/inspection/restock/payout, and physical completion denial.
+Evidence attachment must bind private Media owner/order/type/item, reject duplicate/reused assets,
+and roll back claim/balance/ledger together. Reuse Media upload/type/size/scan, retrieval, retention
+and orphan-cleanup tests. Test exact-validator additive migration, preservation, repeated execution
+and unknown-drift refusal. Physical receipt/inspection tests must check no restock before inspection,
+partial receipt and nonresellable units, full-only completion, same-key replay, competing inspections, wrong authority and
+shortage denial, plus atomic rollback of stock/ordinal/movement/claim on audit failure. No synthetic authorization/policy/provider fixture proves qualified
+policy, deployed private-media or public HTTP acceptance.
+
+Private return notification tests cover real approval/rejection/completion, outbox/audit atomicity,
+duplicate causes, additive predecessor migration, tampered recipient/time, retry identity and wording
+that never implies refund payout. Private review-eligibility checks cover exact owner/product/order,
+delivery, full return plus completed refund, incomplete/pending refund, another qualifying purchase,
+preservation/edit moderation of existing reviews and a stale-snapshot race. Synthetic refund facts do
+not prove verified deployed payout or public review authorization.
+
+Private refund advisory tests use immutable ordinal entitlements and separate held/completed source,
+order and delivery balances; cover source mismatch, no verified COD receipt, physical inspection and
+shortage eligibility, catalog price changes, delivery-policy authority, overflow and class separation.
+Test deterministic multi-source unit splits, per-source/aggregate caps, duplicate and foreign sources,
+delivery distribution and read-only snapshot behavior. A quote is not a reservation; reservation
+races and provider/manual payout verification remain separate. Mock gateway initiation tests verify
+exact references/amount, malformed and uncertain responses, redaction, no retry, and no provider call
+inside a transaction; they do not prove merchant sandbox support or a verified payout. Status-report
+checks cover merchant/reference mismatch, missing/ambiguous reports, provider downtime, and no blind
+retry. Manual evidence checks cover current admin before and after verification, same-refund/source/
+attempt/amount binding, held source capacity, required consent, transfer time, redacted destinations,
+revocation and stale snapshots. These read-only checks do not establish a real source authority or payout.
 
 Local lifecycle/COD tests use synthetic qualified-approval and protected evidence capabilities only.
 Check missing approval denial, exact graph/shipment/coupon fencing, actual deadline projection from

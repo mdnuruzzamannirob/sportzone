@@ -1,3 +1,7 @@
+import { createBrowserSecurity } from '../../src/modules/auth/sessions/browser-security.service.js'
+import { createAdminAccountAccess } from '../../src/modules/auth/admin-account.service.js'
+import { reviewQueryService } from '../../src/modules/reviews/review-query.service.js'
+import { reviewRoutes } from '../../src/modules/reviews/review.routes.js'
 import { spawnSync } from 'node:child_process'
 import request from 'supertest'
 import { testEnvironment } from '../helpers/environment.js'
@@ -45,7 +49,7 @@ async function account(role: 'customer' | 'admin' = 'customer') {
     role,
   })
   const issued = await sessions.issue(role, user._id)
-  return { user, token: issued.token }
+  return { user, token: issued.token, csrf: issued.csrfToken }
 }
 async function proof(
   session: ClientSession,
@@ -644,4 +648,140 @@ it('deduplicates concurrent moderation causes and rejects changed replay payload
     ),
   ).rejects.toMatchObject({ code: 'STATE_CONFLICT' })
   expect((await reviewModel(db.connection).findById(review.id))?.status).toBe('approved')
+})
+
+function localReviewApp(visibility?: (session: ClientSession, id: string) => Promise<boolean>) {
+  const security = createBrowserSecurity(db.connection, models, sessions, {
+    secret: randomBytes(32).toString('hex'),
+    contextTtlSeconds: 300,
+    storefrontOrigin: 'http://localhost:3000',
+    adminOrigin: 'http://localhost:5173',
+  })
+  return createApp({
+    apiRouter: reviewRoutes(
+      reviewQueryService(
+        db.connection,
+        accounts,
+        createAdminAccountAccess(db.connection, models, sessions),
+        visibility,
+      ),
+      service,
+      security,
+      sessions,
+    ),
+  })
+}
+it('review API local: approved-only public reads, scoped customer history and moderated editing', async () => {
+  const own = await account(),
+    admin = await account('admin'),
+    other = await account()
+  await purchase(own.user._id)
+  const app = localReviewApp(async (_session, id) => id === productId),
+    ownCookie = `sz_customer_sid=${own.token}`,
+    adminCookie = `sz_admin_sid=${admin.token}`
+  const create = await request(app)
+    .post(`/api/v1/products/${productId}/reviews`)
+    .set('Origin', 'http://localhost:3000')
+    .set('Cookie', ownCookie)
+    .set('X-CSRF-Token', own.csrf)
+    .send(input)
+    .expect(201)
+  const reviewId = create.body.data.id
+  expect(create.body.data).toMatchObject({
+    status: 'pending',
+    verifiedPurchase: true,
+    createdAt: expect.any(String),
+  })
+  expect(
+    (await request(app).get(`/api/v1/products/${productId}/reviews`).expect(200)).body.data,
+  ).toEqual([])
+  expect(
+    (
+      await request(app)
+        .get('/api/v1/me/reviews')
+        .set('Cookie', `sz_customer_sid=${other.token}`)
+        .expect(200)
+    ).body.data,
+  ).toEqual([])
+  const ownRows = (
+    await request(app)
+      .get('/api/v1/me/reviews?page=1&pageSize=10')
+      .set('Cookie', ownCookie)
+      .expect(200)
+  ).body.data
+  expect(ownRows).toHaveLength(1)
+  await request(app)
+    .post(`/api/v1/admin/reviews/${reviewId}/moderation`)
+    .set('Origin', 'http://localhost:5173')
+    .set('Cookie', adminCookie)
+    .set('X-CSRF-Token', admin.csrf)
+    .set('Idempotency-Key', 'approve-local')
+    .send({ decision: 'approve', reason: 'Reviewed' })
+    .expect(200)
+  const publicRows = (await request(app).get(`/api/v1/products/${productId}/reviews`).expect(200))
+    .body.data
+  expect(publicRows).toHaveLength(1)
+  expect(publicRows[0]).toMatchObject({ id: reviewId, status: 'approved' })
+  for (const secret of ['userId', 'orderId', 'moderationReason', 'qualifyingOrderItemId'])
+    expect(publicRows[0]).not.toHaveProperty(secret)
+  await request(app)
+    .patch(`/api/v1/reviews/${reviewId}`)
+    .set('Origin', 'http://localhost:3000')
+    .set('Cookie', ownCookie)
+    .set('X-CSRF-Token', own.csrf)
+    .send({ comment: 'Edited' })
+    .expect(200)
+  expect(
+    (await request(app).get(`/api/v1/products/${productId}/reviews`).expect(200)).body.data,
+  ).toEqual([])
+  expect(
+    (
+      await request(app)
+        .get(`/api/v1/admin/reviews?status=pending&productId=${productId}`)
+        .set('Cookie', adminCookie)
+        .expect(200)
+    ).body.data,
+  ).toHaveLength(1)
+})
+it('review API local: missing auth, wrong CSRF, owner violations and moderator payload injection are denied', async () => {
+  const own = await account(),
+    other = await account(),
+    admin = await account('admin')
+  await purchase(own.user._id)
+  const app = localReviewApp(async () => true),
+    ownCookie = `sz_customer_sid=${own.token}`
+  await request(app)
+    .post(`/api/v1/products/${productId}/reviews`)
+    .set('Origin', 'http://localhost:3000')
+    .send(input)
+    .expect(403)
+  await request(app)
+    .post(`/api/v1/products/${productId}/reviews`)
+    .set('Origin', 'http://localhost:3000')
+    .set('Cookie', ownCookie)
+    .set('X-CSRF-Token', 'invalid')
+    .send(input)
+    .expect(403)
+  const created = await service.create(own.token, productId, input)
+  await request(app)
+    .patch(`/api/v1/reviews/${created.id}`)
+    .set('Origin', 'http://localhost:3000')
+    .set('Cookie', `sz_customer_sid=${other.token}`)
+    .set('X-CSRF-Token', other.csrf)
+    .send({ comment: 'Other' })
+    .expect(404)
+  await request(app).get('/api/v1/admin/reviews').set('Cookie', ownCookie).expect(401)
+  await request(app)
+    .post(`/api/v1/admin/reviews/${created.id}/moderation`)
+    .set('Origin', 'http://localhost:5173')
+    .set('Cookie', `sz_admin_sid=${admin.token}`)
+    .set('X-CSRF-Token', admin.csrf)
+    .set('Idempotency-Key', 'bad')
+    .send({ decision: 'approve', reason: 'x', rating: 5 })
+    .expect(400)
+  await request(app)
+    .get('/api/v1/admin/reviews?status=unknown')
+    .set('Cookie', `sz_admin_sid=${admin.token}`)
+    .expect(400)
+  await request(localReviewApp()).get(`/api/v1/products/${productId}/reviews`).expect(503)
 })

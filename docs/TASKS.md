@@ -128,16 +128,16 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 01 — Requirements Finalization and Planning | 24 | 0 | 0 | 0 | 0 | 0 | 24 | 0 |
 | 02 — UI/UX Design                             |      17 |           1 |     0 |           0 |       0 |         0 |     16 |        0 |
 | 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |     21 |        0 |
-| 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       1 |         0 |     12 |        0 |
-| 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           9 |     0 |           0 |       0 |         0 |      8 |        0 |
+| 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       0 |         0 |     12 |        1 |
+| 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           8 |     0 |           0 |       1 |         0 |      8 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |           6 |     0 |           0 |       7 |         0 |      9 |        0 |
 | 07 — Payment Integration and Verification     |      18 |           3 |     0 |           0 |       0 |         0 |     15 |        0 |
-| 08 — Returns and Refunds                      |      19 |          18 |     0 |           0 |       0 |         0 |      1 |        0 |
-| 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       1 |         0 |      1 |        0 |
+| 08 — Returns and Refunds                      |      19 |           6 |     0 |           0 |      12 |         0 |      1 |        0 |
+| 09 — Admin Management and Reports             |      18 |          16 |     0 |           0 |       0 |         0 |      1 |        1 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **94** | **0** | **0** | **9** | **0** | **107** | **0** |
+| **Total** | **210** | **81** | **0** | **0** | **20** | **0** | **107** | **2** |
 
 ## 4. Milestone tracker
 
@@ -1019,13 +1019,13 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence:** [Implementation, observed verification and recovery](./evidence/P05-015-coupon-administration.md). Accepted by project owner, 25 October 2026 — “Review করেছি—accept করছি, Done করো”.
 
 - [ ] **P05-016 — Expose review reading and moderation APIs**\
-  **Status:** `Not Started` · **Area:** Backend\
+  **Status:** `Blocked` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-10; FR-31; API §§10.3,14.2\
   **Depends on:** `P08-016`\
   **Deliverable:** Expose approved public ratings/reviews, customer-owned history and eligible submit/edit, and protected moderation queues/actions with reasons and audit history.\
   **Acceptance:** Eligibility, one active review, moderation-after-edit and public allowlists are verified through HTTP; administrators cannot attribute altered rating values to customers.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Local scope, checks and blockers](./evidence/P05-016-P08-019-local-reads.md). P08-016 acceptance and integrated runtime remain pending.
 
 - [ ] **P05-017 — Implement admin review moderation controls**\
   **Status:** `Not Started` · **Area:** Admin\
@@ -1425,94 +1425,94 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence:** [Separate acceptance checklist, ordinal races, rollback and bootstrap checks](./evidence/P07-018-P08-001-monitoring-claim-foundation.md). Private requested-claim foundation only; eligibility/lifecycle/media activation remain owning later tasks. Project-owner independent acceptance recorded on 30 October 2026.
 
 - [ ] **P08-002 — Validate delivered-order return eligibility and policy windows**\
-  **Status:** `Not Started` · **Area:** Backend/returns\
+  **Status:** `Blocked` · **Area:** Backend/returns\
   **Stage:** `Backend`\
   **Sources:** FR-17\
   **Depends on:** `P08-001`, `P06-011`\
   **Deliverable:** Enforce delivered status, development-baseline seven-day window and legally protected exceptions via approved policy.\
   **Acceptance:** Unsupported blanket rejection cannot override applicable rights; ineligible claims have clear reasons.\
-  **Evidence to attach:** Eligibility boundary tests.
+  **Evidence:** [Separate local scope, actual checks and remaining gates](./evidence/P08-002-003-local-return-eligibility-lifecycle.md). Owner authorized local implementation/tests; full prerequisite, HTTP/policy and physical lifecycle integrations remain blocked. No task acceptance is inferred.
 
 - [ ] **P08-003 — Implement separate return lifecycle with admin review**\
-  **Status:** `Not Started` · **Area:** Backend/returns\
+  **Status:** `Blocked` · **Area:** Backend/returns\
   **Stage:** `Backend`\
   **Sources:** FR-17; FR-32\
   **Depends on:** `P08-002`, `P06-015`\
   **Deliverable:** Implement Requested/Under Review/Approved/Awaiting Return/Received/Inspected/Completed, rejection history and customer-scoped supporting-image upload using a separately authorized media path.\
   **Acceptance:** Invalid transitions and unauthorized approval are blocked; physical returns cannot skip receipt/inspection; approved missing-item/shortage claims have a non-physical path without receipt/inspection/restock; optional evidence enforces type/size checks, verified customer or scoped guest authorization, private retrieval and safe orphan/retention cleanup.\
-  **Evidence to attach:** Return state/authorization and evidence-upload/access/cleanup tests.
+  **Evidence:** [Separate local scope, actual checks and remaining gates](./evidence/P08-002-003-local-return-eligibility-lifecycle.md). Owner authorized local implementation/tests; full prerequisite, HTTP/policy and physical lifecycle integrations remain blocked. No task acceptance is inferred.
 
 - [ ] **P08-004 — Record receipt/inspection and resellable stock restoration**\
-  **Status:** `Not Started` · **Area:** Backend/inventory\
+  **Status:** `Blocked` · **Area:** Backend/inventory\
   **Stage:** `Backend`\
   **Sources:** FR-17; FR-13; FR-32\
   **Depends on:** `P08-003`\
   **Deliverable:** Require inspection to mark resellable quantities and atomically add physical stock.\
   **Acceptance:** Request/approval alone never restocks; duplicate receipt cannot double-add stock.\
-  **Evidence to attach:** Inspection/restock test.
+  **Evidence:** [Local receipt/inspection, stock and verification](./evidence/P08-003-004-local-return-inspection.md). Blocked on P08-003 acceptance, partial-receipt follow-up and integrated access; independent acceptance remains pending.
 
 - [ ] **P08-005 — Model refund obligations, attempts and commitments**\
-  **Status:** `Not Started` · **Area:** Backend/refunds\
+  **Status:** `Blocked` · **Area:** Backend/refunds\
   **Stage:** `Backend`\
   **Sources:** FR-18; FR-33\
   **Depends on:** `P07-002`, `P06-013`, `P08-003`\
   **Deliverable:** Separate refunds from returns and store approval/payout attempts, status and source collection.\
   **Acceptance:** Original order fulfillment history remains immutable; pending vs completed are distinct.\
-  **Evidence to attach:** Refund model/state tests.
+  **Evidence:** [Local advisory/state validation, actual tests and remaining work](./evidence/P08-005-006-local-refund-advisory.md). Prerequisites and independent acceptance remain pending; no reservation, attempt writer or payout enabled.
 
 - [ ] **P08-006 — Calculate item-level partial/full refundable balance**\
-  **Status:** `Not Started` · **Area:** Backend/refunds\
+  **Status:** `Blocked` · **Area:** Backend/refunds\
   **Stage:** `Backend`\
   **Sources:** FR-18; FR-33\
   **Depends on:** `P08-005`\
   **Deliverable:** Use purchase-time item/allocated coupon amounts, physical-return/shortage quantity limits, delivery-charge policy and prior commitments. Payment corrections consume source-collection financial capacity independently of merchandise-return quantities.\
   **Acceptance:** No current-catalog price used; deterministic rounding; no refund for uncollected COD.\
-  **Evidence to attach:** Refund amount/rounding unit tests.
+  **Evidence:** [Local advisory/state validation, actual tests and remaining work](./evidence/P08-005-006-local-refund-advisory.md). Prerequisites and independent acceptance remain pending; no reservation, attempt writer or payout enabled.
 
 - [ ] **P08-007 — Atomically reserve eligible collected refund balance**\
-  **Status:** `Not Started` · **Area:** Backend/refunds\
+  **Status:** `Blocked` · **Area:** Backend/refunds\
   **Stage:** `Backend`\
   **Sources:** FR-18\
   **Depends on:** `P08-006`\
   **Deliverable:** Reserve refundable capacity before payout and guard against concurrent attempts.\
   **Acceptance:** Pending+completed commitments never exceed independently verified collections at either source-collection or order level; duplicate-collection refunds do not consume merchandise quantity entitlement.\
-  **Evidence to attach:** Parallel partial-refund tests.
+  **Evidence:** [Separate local planning/transport, tests and outstanding prerequisites](./evidence/P08-007-008-local-refund-planning-provider.md). No reservation, durable payout attempt, executor or sandbox acceptance is implied.
 
 - [ ] **P08-008 — Implement supported gateway payout requests and references**\
-  **Status:** `Not Started` · **Area:** Backend/refunds\
+  **Status:** `Blocked` · **Area:** Backend/refunds\
   **Stage:** `Backend`\
   **Sources:** FR-18; FR-33\
   **Depends on:** `P08-007`, `P07-001`\
   **Deliverable:** Use original bank_tran_id and supported provider API; record refund identifiers and attempt states.\
   **Acceptance:** Provider acceptance leaves refund Processing until independently verified payout.\
-  **Evidence to attach:** Sandbox refund-init contract tests.
+  **Evidence:** [Separate local planning/transport, tests and outstanding prerequisites](./evidence/P08-007-008-local-refund-planning-provider.md). No reservation, durable payout attempt, executor or sandbox acceptance is implied.
 
 - [ ] **P08-009 — Implement refund-status verification/retry/investigation**\
-  **Status:** `Not Started` · **Area:** Backend/jobs\
+  **Status:** `Blocked` · **Area:** Backend/jobs\
   **Stage:** `Backend`\
   **Sources:** FR-18; FR-33\
   **Depends on:** `P08-008`\
   **Deliverable:** Query supported status, reconcile uncertainty and guard authorized retry without duplicate payout.\
   **Acceptance:** Unknown result never marked Completed; duplicate callbacks and job restarts are safe.\
-  **Evidence to attach:** Refund reconciliation tests.
+  **Evidence:** [Local status/retry assessment and manual evidence verification](./evidence/P08-009-010-local-refund-evidence.md). Durable attempts, real source/consent verification and transactional completion remain unavailable; prerequisites and independent acceptance remain pending.
 
 - [ ] **P08-010 — Implement controlled COD/manual payout evidence**\
-  **Status:** `Not Started` · **Area:** Backend/refunds\
+  **Status:** `Blocked` · **Area:** Backend/refunds\
   **Stage:** `Backend`\
   **Sources:** FR-18; FR-33\
   **Depends on:** `P08-007`, `P06-012`\
   **Deliverable:** Record consent where required, verified transfer and admin confirmation for COD/bank/mobile wallet.\
   **Acceptance:** Uncollected COD cannot be refunded; no Completed state without payout evidence.\
-  **Evidence to attach:** Manual transfer security/audit test.
+  **Evidence:** [Local status/retry assessment and manual evidence verification](./evidence/P08-009-010-local-refund-evidence.md). Durable attempts, real source/consent verification and transactional completion remain unavailable; prerequisites and independent acceptance remain pending.
 
 - [ ] **P08-011 — Persist return and refund decisions and notifications**\
-  **Status:** `Not Started` · **Area:** Backend/notifications\
+  **Status:** `Blocked` · **Area:** Backend/notifications\
   **Stage:** `Backend`\
   **Sources:** FR-20; FR-17; FR-18\
   **Depends on:** `P08-009`, `P08-010`\
   **Deliverable:** Record approvals, rejection reasons, retry/failure and accurate customer status email.\
   **Acceptance:** Return completion never sends unverified refund-completed claim; notifications deduplicate.\
-  **Evidence to attach:** Return/refund event tests.
+  **Evidence:** [Local return notifications, review qualification and actual checks](./evidence/P08-011-016-return-notifications-review.md). Required refund prerequisites, production composition and independent acceptance remain outstanding.
 
 - [ ] **P08-012 — Implement request/history and evidence UX**\
   **Status:** `Not Started` · **Area:** Storefront/returns\
@@ -1551,13 +1551,13 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence to attach:** Admin refund E2E.
 
 - [ ] **P08-016 — Complete delivered-purchase and full-return review eligibility**\
-  **Status:** `Not Started` · **Area:** Backend/reviews\
+  **Status:** `Blocked` · **Area:** Backend/reviews\
   **Stage:** `Backend`\
   **Sources:** FR-10; FR-31\
   **Depends on:** `P05-009`, `P08-005`\
   **Deliverable:** Require qualifying delivered purchase and block new verification after fully returned/refunded purchase unless another qualifies.\
   **Acceptance:** Legitimate prior reviews are not auto-deleted solely by refund; edited reviews return to moderation when required.\
-  **Evidence to attach:** Verified purchase/return review tests.
+  **Evidence:** [Local return notifications, review qualification and actual checks](./evidence/P08-011-016-return-notifications-review.md). Required refund prerequisites, production composition and independent acceptance remain outstanding.
 
 - [ ] **P08-017 — Enable verified customer review submission and editing UI**\
   **Status:** `Not Started` · **Area:** Storefront/reviews\
@@ -1578,13 +1578,13 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence to attach:** M5 after-sales test report.
 
 - [ ] **P08-019 — Expose scoped claim and refund history APIs**\
-  **Status:** `Not Started` · **Area:** Backend\
+  **Status:** `Blocked` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-17; FR-18; FR-19; API §13\
   **Depends on:** `P08-011`\
   **Deliverable:** Complete customer/guest and admin claim/refund list/detail/decision surfaces, evidence access and safe timelines using return/refund services; include timing snapshots and investigation status.\
   **Acceptance:** Nested ownership, guest proof scope, private image retrieval, quantity/source caps and verified payout status are proven by API tests; missing policy timing never produces a guessed deadline.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Local scope, checks and blockers](./evidence/P05-016-P08-019-local-reads.md). P08-011 acceptance and remaining history/refund surfaces remain pending.
 
 ### Phase 09 — Admin management and reports
 
@@ -2560,3 +2560,17 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **30 October 2026 — P06-013/014 safe local work:** Each Not Started → In Progress → Blocked after local cancellation request/review/unpaid release and scoped historical order read APIs. Owner explicitly approved mandatory submission Idempotency-Key: “Idempotency-Key বাধ্যতামূলক করুন”. [Separate implementation/checks/remaining gates](./evidence/P06-013-014-cancellation-owned-reads.md). Passed 268 integration, 68 unit and 111 contract tests; 98 implemented/66 planned operations. Overall: 210 tasks, 107 Done, 96 Not Started, 7 Blocked, 0 In Review. Paid cancellation without real refund obligations remains denied; P06-011 and external acceptance are not waived.
 
 **30 October 2026 — P06-016/017 safe local work:** Not Started → Blocked after locally verified commerce outbox/templates and private delivery-exception/recovery/complaint capabilities. [Separate task scope, checks and remaining gates](./evidence/P06-016-017-commerce-delivery-support.md). Prerequisites P06-013/P06-011, real disposition/refund/support integration and qualified external acceptance remain unresolved; no task/milestone is self-approved. Overall: 210 tasks, 107 Done, 94 Not Started, 9 Blocked, 0 In Review.
+
+**31 October 2026 — P08-002/003 safe local work:** Each Not Started → In Progress → Blocked under explicit owner local-work selection. Added private delivered eligibility/window/exception authority, guarded review/partial release/shortage resolution and atomic scoped Media attachment. [Separate outcomes, actual verification and remaining work](./evidence/P08-002-003-local-return-eligibility-lifecycle.md). Full physical receipt/inspection/completion, ordinary HTTP/auth/CSRF integration and qualified policy/Media acceptance remain pending; no prerequisite or milestone waived. Overall: 210 tasks, 107 Done, 92 Not Started, 9 Blocked, 2 Deferred, 0 In Review. Current dashboard reconciled to existing P04-003/P09-011 Deferred statuses; their status and historical evidence were preserved.
+
+**31 October 2026 — P08-003/004 local physical return work:** Continued P08-003 and moved P08-004 Not Started → In Progress → Blocked. Added single partial/full receipt, inspection and atomic resellable ordinal stock restoration with current-admin and replay guards. [Scope, observed verification and remaining work](./evidence/P08-003-004-local-return-inspection.md). Additional receipt batches, partial-case resolution, accepted prerequisites and real HTTP/policy integration remain outstanding. Overall: 210 tasks, 107 Done, 91 Not Started, 10 Blocked, 2 Deferred.
+
+**31 October 2026 — P08-005/006 local refund work:** Each Not Started → In Progress → Blocked under the owner-requested local batch. Added transient attempt-state validation and transaction-scoped, single-source refund advisory from claim/order/verified funding snapshots. [Separate local outcomes, tests and remaining work](./evidence/P08-005-006-local-refund-advisory.md). Full attempt persistence, multi-source allocation, reservation, payout, accepted prerequisites and independent reviews remain outstanding. Overall: 210 tasks, 107 Done, 89 Not Started, 12 Blocked, 2 Deferred.
+
+**31 October 2026 — P08-007/008 local planning and transport:** Each Not Started → In Progress → Blocked. Added nonbinding, deterministic multi-source claim/order/verified-collection allocation and narrowly validated SSLCOMMERZ refund-initiation transport. [Observed verification and remaining gates](./evidence/P08-007-008-local-refund-planning-provider.md). Atomic reservation/durable attempts, provider-backed sandbox, accepted prerequisites and independent reviews remain outstanding. Overall: 210 tasks, 107 Done, 87 Not Started, 14 Blocked, 2 Deferred.
+
+**31 October 2026 — P08-009/010 local evidence work:** Each Not Started → In Progress → Blocked. Added redacted matched gateway status reporting, non-authorizing retry assessment and a two-phase current-admin manual-evidence verification capability. [Actual verification and remaining work](./evidence/P08-009-010-local-refund-evidence.md). No durable refund attempt, payout, real consent/source adapter or task/milestone acceptance is inferred. Overall: 210 tasks, 107 Done, 85 Not Started, 16 Blocked, 2 Deferred.
+
+**31 October 2026 — P08-011/016 local after-sales batch:** Each Not Started → In Progress → Blocked. Added transactional return-decision outbox with independently verified local delivery, and transaction-fenced delivered-purchase review eligibility. [Separate local scope, actual checks and outstanding gates](./evidence/P08-011-016-return-notifications-review.md). Refund-state notifications, real refund-source acceptance, ordinary runtime/API composition and independent reviews remain outstanding. Overall: 210 tasks, 107 Done, 83 Not Started, 18 Blocked, 2 Deferred.
+
+**31 October 2026 — P05-016/P08-019 local reads:** Each Not Started → In Progress → Blocked. Added locally composed review routes and scoped order-claim history with private evidence metadata. [Verification, limits and outstanding dependencies](./evidence/P05-016-P08-019-local-reads.md). Integrated activation, remaining claim/refund surfaces and independent acceptance remain pending. Overall: 210 tasks, 107 Done, 81 Not Started, 20 Blocked, 2 Deferred.

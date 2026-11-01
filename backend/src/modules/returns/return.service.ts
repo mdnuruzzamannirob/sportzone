@@ -3,7 +3,13 @@ import { createHash } from 'node:crypto'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { createAuditWriter } from '../audit/audit.service.js'
+import { auditOperationReader } from '../audit/audit.service.js'
+import { inTransaction } from '../../shared/database/transaction.js'
+import { z } from 'zod'
+import type { returnNotificationOrderAccess } from '../orders/order.service.js'
 import type { claimQuantityAccess } from '../orders/order.service.js'
+import type { MediaService } from '../media/media.service.js'
+import { verifyMediaPersistence } from '../media/media.service.js'
 import { returnModel } from './return.model.js'
 import { verifyReturnPersistence } from './return.persistence.js'
 import { claimAuthority, claimCommand } from './return.schema.js'
@@ -16,6 +22,7 @@ export function returnService(
     command: ReturnType<typeof claimCommand.parse>,
   ) => Promise<unknown>,
   clock: () => Date = () => new Date(),
+  evidence?: { attach: MediaService['attach']; credential?: string },
 ) {
   const model = returnModel(connection),
     audit = createAuditWriter(connection)
@@ -30,6 +37,49 @@ export function returnService(
       const selected = await quantities(session, input)
       const now = clock()
       if (!Number.isFinite(now.getTime())) throw new ApiError('STATE_CONFLICT')
+      const timing = authority.eligibilitySnapshot
+      if (timing.deliveredAt && now < timing.deliveredAt) throw new ApiError('STATE_CONFLICT')
+      if (timing.requestDeadlineAt && now > timing.requestDeadlineAt && !timing.exceptionBasis)
+        throw new ApiError('BUSINESS_RULE_VIOLATION', [
+          { field: 'orderId', code: 'RETURN_WINDOW_EXPIRED' },
+        ])
+      const evidenceIds: Types.ObjectId[][] = input.items.map(() => [])
+      const allAssets = input.items.flatMap((item) => item.evidenceAssetIds ?? [])
+      if (new Set(allAssets).size !== allAssets.length) throw new ApiError('VALIDATION_FAILED')
+      if (allAssets.length && !evidence) throw new ApiError('SERVICE_UNAVAILABLE')
+      if (allAssets.length) await verifyMediaPersistence(connection)
+      for (const [index, item] of input.items.entries()) {
+        for (const assetId of item.evidenceAssetIds ?? []) {
+          if (!evidence) throw new ApiError('SERVICE_UNAVAILABLE')
+          await evidence.attach(
+            evidence.credential,
+            assetId,
+            {
+              targetType: 'claim',
+              targetId: new Types.ObjectId(input.claimId),
+              slot: `item:${item.orderItemId}`,
+            },
+            session,
+            async (asset) => {
+              const ownerKind =
+                authority.requestedBy.type === 'customer' ? 'customer' : 'guest_order'
+              const ownerId =
+                authority.requestedBy.type === 'customer' ? authority.requestedBy.id : input.orderId
+              if (
+                asset.assetKind !== 'claim_evidence' ||
+                asset.access !== 'private' ||
+                asset.orderId?.toHexString() !== input.orderId ||
+                asset.claimType !== input.claimType ||
+                !asset.orderItemIds.some((id) => id.toHexString() === item.orderItemId) ||
+                asset.owner.kind !== ownerKind ||
+                asset.owner.principalId.toHexString() !== ownerId
+              )
+                throw new ApiError('FORBIDDEN')
+              evidenceIds[index]?.push(new Types.ObjectId(assetId))
+            },
+          )
+        }
+      }
       const row = new model({
         _id: new Types.ObjectId(input.claimId),
         orderId: new Types.ObjectId(input.orderId),
@@ -45,7 +95,7 @@ export function returnService(
           reason: item.reason,
           protectedUnitOrdinals: selected[index]?.ordinals,
           approvedUnitOrdinals: [],
-          evidenceRefs: [],
+          evidenceRefs: evidenceIds[index],
         })),
       })
       await row.save({ session })
@@ -64,5 +114,75 @@ export function returnService(
         items: selected,
       }
     },
+  }
+}
+
+// Only an inspected physical claim or an approved shortage supplies refund ordinals.
+export function refundClaimSnapshotAccess(connection: Connection) {
+  const model = returnModel(connection)
+  return async (
+    session: ClientSession,
+    orderId: string,
+    claimId: string,
+    requested: { orderItemId: string; quantity: number }[],
+  ) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyReturnPersistence(connection)
+    const row = await model.findOne({ _id: claimId, orderId }).session(session)
+    if (!row) throw new ApiError('NOT_FOUND')
+    if (
+      (row.claimType === 'physical_return' && !['inspected', 'completed'].includes(row.status)) ||
+      (row.claimType === 'shortage' && !['approved', 'completed'].includes(row.status))
+    )
+      throw new ApiError('BUSINESS_RULE_VIOLATION')
+    return requested.map((line) => {
+      const item = row.items.find((i) => i.orderItemId.toHexString() === line.orderItemId)
+      if (!item) throw new ApiError('BUSINESS_RULE_VIOLATION')
+      const ordinals =
+        row.claimType === 'shortage' ? item.approvedUnitOrdinals : item.acceptedUnitOrdinals
+      if (!ordinals || ordinals.length < line.quantity)
+        throw new ApiError('BUSINESS_RULE_VIOLATION')
+      return { ...line, ordinals: [...ordinals] }
+    })
+  }
+}
+
+// Existing transition audit is the immutable event proof, even after later claim changes.
+export function returnNotificationProofAccess(
+  connection: Connection,
+  order: ReturnType<typeof returnNotificationOrderAccess>,
+) {
+  const model = returnModel(connection),
+    lookup = auditOperationReader(connection)
+  const event = z.strictObject({
+    orderId: claimCommand.shape.orderId,
+    returnId: claimCommand.shape.claimId,
+    from: z.enum(['under_review', 'approved', 'inspected']),
+    to: z.enum(['approved', 'rejected', 'completed']),
+    operationKey: z.string().regex(/^[a-f0-9]{64}$/),
+    occurredAt: z.date(),
+    recipient: z.email(),
+  })
+  return async (raw: unknown) => {
+    const parsed = event.safeParse(raw)
+    if (!parsed.success) return undefined
+    const data = parsed.data
+    return inTransaction(connection, async (session) => {
+      await verifyReturnPersistence(connection)
+      const claim = await model
+        .findOne({ _id: data.returnId, orderId: data.orderId })
+        .session(session)
+      if (!claim) return undefined
+      const contact = await order(session, data.orderId)
+      if (contact.email !== data.recipient) return undefined
+      const audit = await lookup(session, {
+        action: `claim.lifecycle.${data.from}.${data.to}`,
+        targetType: 'return_request',
+        targetId: data.returnId,
+        operationKey: data.operationKey,
+      })
+      if (!audit || audit.occurredAt.getTime() !== data.occurredAt.getTime()) return undefined
+      return { orderNumber: contact.orderNumber, recipient: contact.email }
+    })
   }
 }

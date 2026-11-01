@@ -732,6 +732,15 @@ category/SKU eligibility is enforced by owning services, not by foreign model ac
 
 **Rules:** validate delivered qualifying purchase and exclusions (PRD FR-10); default to denied without authoritative eligibility evidence. Actual authored changes return the review to pending; unchanged content does not reset approval. Audit customer/moderator changes and preserve prior decisions when current moderation metadata is cleared. Administrators cannot rewrite authored ratings. Only active approved rows contribute to the canonical product rating summary; serialize review changes through the catalog-owned product fence and update the summary in the same transaction. Rating aggregates remain recalculable projections.
 
+Private local review qualification checks the selected order belongs to the customer, is Delivered,
+and contains the exact selected product/item. It fences the order and item-balance revisions in the
+review transaction, so a concurrent payout/return cannot be read from a stale snapshot. A purchase
+is excluded only when all units are both resolved and fully paid out; a return or pending refund
+alone is not a completed refund. For zero-value units without completed-quantity evidence the
+capability fails closed rather than inferring payout. Another separately selected delivered purchase
+may qualify. Existing reviews are not automatically deleted. This capability is not wired into the
+ordinary runtime until the prerequisite refund/payment and authorization work is accepted.
+
 ### 6.7 `mediaAssets` — `media`
 
 | Field | Type | Constraints / notes |
@@ -1393,7 +1402,7 @@ no retry of an uncertain external transaction is presumed safe.
 | --- | --- | --- |
 | `orderId`! / `requestedBy`! | ObjectId / embedded | Authenticated user or verified scoped guest session |
 | `claimType`! | enum(`physical_return`,`shortage`) | Explicitly separate physical/non-physical processes |
-| `items[]`! | embedded[] | `{id,orderItemId,requestedQty,approvedQty?,protectedUnitOrdinals[],approvedUnitOrdinals[],reason,inspectionResult?,resellableQty?,evidenceRefs[]}`; approved ordinals subset of protected |
+| `items[]`! | embedded[] | `{id,orderItemId,requestedQty,approvedQty?,protectedUnitOrdinals[],approvedUnitOrdinals[],receivedUnitOrdinals?,inspectedUnitOrdinals?,acceptedUnitOrdinals?,resellableUnitOrdinals?,reason,inspectionReason?,inspectionResult?,resellableQty?,evidenceRefs[]}`; each successive ordinal set is a subset of its predecessor |
 | `status`! | enum(`requested`,`under_review`,`approved`,`awaiting_return`,`received`,`inspected`,`completed`,`rejected`) | Only valid paths allowed per claim type |
 | `requestedAt`! / `approvedAt`? / `receivedAt`? / `inspectedAt`? / `completedAt`? | Date | Stage proof, not derived from UI |
 | `eligibilitySnapshot`! | embedded | `{deliveredAt?,requestDeadlineAt?,policyVersion,exceptionBasis?}` |
@@ -1409,21 +1418,41 @@ either route, acquire **specific** `orderItemBalances.unitCoverage[].ordinal` cl
 nonapproved ordinals are released only when refund capacity is zero. Both physical and shortage claims share this exact
 ordinal namespace. A completed claim does not mean the payout has completed.
 
-The P08-001 foundation persists only `requested` claims; later eligibility/lifecycle/media tasks
-own additive state expansion and public activation. No public submission or policy approval is implied.
-`requestedBy` is `{type:'customer'|'guest',id:ObjectId}` from a trusted current authorization capability;
-`id` identifies the customer or verified guest session. Item IDs are server-generated. No evidence may
-be attached until the separately authorized private-media capability exists; both evidence arrays are
-empty in this foundation. Private ledger references, rather than arbitrary client URLs, will govern
-attachment. Request identity is server-assigned and duplicate IDs cannot protect capacity twice.
+The private local lifecycle persists `requested → under_review → approved → awaiting_return` for
+physical claims, and `requested → under_review → approved → completed` for shortages. Review may
+instead reject from `under_review`. Private local receipt and inspection extend the physical route through `received → inspected`.
+A single receipt records the received approved-unit subset and its reference; inspection records
+inspected, accepted and resellable subsets and a reason. Only resellable ordinals add physical
+stock, with one unique return movement per claim/item; ordinal restock fences, stock changes,
+claim CAS and audit commit atomically. Unreceived or nonaccepted units remain protected. Full physical completion is allowed only after every approved unit was received and accepted;
+partial or nonaccepted quantities remain protected. Additional receipt batches and partial-case
+resolution require their owning reviewed workflow. Public activation remains disabled.
+`approvedAt`, `completedAt`, `reviewedBy`, `decisionReason`, exact approved ordinals and revision CAS
+record decisions. Append-only audit identities record each from/to transition and the replay digest.
+Completion of a shortage resolves its approved ordinals without creating stock or a completed payout.
+Rejected and nonapproved ordinals are released only with zero refund commitments and no restock fact;
+resolved units stay unavailable. All request, balance, media-reference and audit effects share one transaction.
 
-The coordinator requires an existing outer transaction and a current eligibility/ownership capability;
-Orders selects available exact ordinals and updates its private balance by revision CAS. Request,
-ordinal protections and audit commit together, including multi-line rollback. Resolved, refunded,
-refund-held or restocked ordinals are excluded. Historical unit entitlement is never recalculated.
-Requested claim records reject mutation/deletion until an owning lifecycle implementation is reviewed.
-Explicit local/test bootstrap creates strict validators and indexes; runtime never provisions or
-repairs unknown drift. Existing order balances need no migration.
+`requestedBy` is `{type:'customer'|'guest',id:ObjectId}` from current trusted authorization;
+`id` identifies the customer or verified guest session. Orders supplies a scoped revision-fenced
+canonical delivered-state capability. Returns computes the inclusive seven-calendar-day physical
+window from delivery, preserving Bangladesh local time of day. A protected policy capability supplies
+policy version and qualifying exception basis; client overrides are forbidden. Shortage claims do
+not inherit an invented physical-return deadline. Public activation and qualified policy integration
+remain blocked on the owning prerequisites.
+
+Item IDs are server-generated. Each item may attach up to five distinct private Media ledger IDs;
+IDs cannot repeat across lines. Attachment binds owner, order, claim type and item, requires current
+Media authorization, clean nonexpired assets, and commits ledger references with the claim. Public
+URLs and caller-selected storage metadata are forbidden. Existing Media owns file validation,
+private retrieval, orphan cleanup and retention/legal holds; attachment performs no provider call
+inside the transaction. Without that separately configured capability, evidence submissions fail closed.
+
+Canonical models prohibit direct claim edits/deletion. Only the private lifecycle service writes
+through its guarded CAS and strict BSON validation. Explicit local/test bootstrap creates current
+validators/indexes; an explicit additive upgrade recognizes only the exact foundation or review-only validator,
+checks indexes, preserves requests and refuses unknown drift. Runtime never provisions or repairs it.
+Restore claim requests, exact ordinal coverage, media references and audit consistently.
 
 ### 9.2 `refunds` — `refunds`
 
@@ -1451,6 +1480,18 @@ amount equal to the source correction entitlement and stable decisionKey. The in
 only under_review/not_reserved intents, reserves no money and exposes no approval/payout operation.
 Missing method/policy is never replaced by a guessed default. Generic saves/updates/deletes cannot
 rewrite the intent; future refund approval needs its reviewed schema/capacity transition.
+
+A private, transaction-scoped advisory can read approved shortage/inspected physical claim ordinals,
+original order-unit entitlement and verified linked source/order funding counters. It subtracts held
+and completed amounts, rejects invalid balances, and bounds any requested delivery amount by the
+purchase-time charge and an injected protected policy decision. Private single- and multi-source
+advisories are not a reservation, obligation, payout instruction or public API. The multi-source
+planner orders verified sources and item ordinals deterministically, may split an original unit across
+sources and enforces aggregate source/order limits in its snapshot. Persisting all source slices,
+capacity fences and attempt intent remains the separate atomic reservation operation. No delivery
+policy is assumed when the authority is absent.
+Correction advisory arithmetic is isolated from merchandise ordinals. No new `refundAttempts` writer,
+status transition, collection or provider interaction is enabled by this advisory.
 
 `requestedAt` in the API maps to immutable refund `createdAt`. The public timeline is a bounded projection of durable status/audit events; retain approval/completion facts separately so history truncation cannot remove timing authority. Timing basis corrections require audited domain updates, preserve approvedAt, and must not delay an otherwise authorized payout.
 
@@ -1548,6 +1589,15 @@ actual transition causes. Existing `order_received:orderId:v1` keeps empty paylo
 payload fields cannot appear in commerce records or vice versa. Order history, recipient and cause
 must match before sending. The exact payment-notification validator is a known additive migration
 predecessor; existing status/lease/provider evidence is preserved. Default workers skip commerce.
+
+Private return-decision events use `return_update`/`return-update-v1`, a unique claim/operation key,
+order and claim IDs, source/destination state and occurredAt; no free-form reason or payout evidence is
+stored in the outbox. Approval, rejection and completion intents commit in the same transaction as the
+claim change and audit. Delivery rechecks the immutable matching transition audit, order ownership and
+snapshotted recipient before rendering. A completion message explicitly does not claim refund payout.
+The exact commerce validator is an additive migration predecessor and its records/leases are preserved.
+The sender remains disabled unless explicitly composed in a controlled local/test worker; no ordinary
+runtime activation or refund-completion notification is implied.
 
 Other notification event types require an explicit backward-compatible validator/model expansion before activation.
 Existing validators are checked, never silently replaced by startup or local bootstrap.

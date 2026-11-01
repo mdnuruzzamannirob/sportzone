@@ -271,6 +271,86 @@ test('BACKEND-BOUNDARY-02: controllers and routes access models only through dom
   assert.deepEqual(checkBoundaries(root).errors, [])
 })
 
+test('RETURN-BOUNDARY-01: claims consume Orders, Media and Inventory capabilities without persistence imports', (t) => {
+  const { root, put } = fixture(t)
+  for (const owner of ['orders/order', 'media/media', 'inventory/inventory']) {
+    put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
+    put('backend/src/modules/returns/return.service.ts', `import "../${owner}.model.js"`)
+    assert.ok(checkBoundaries(root).errors.some((e) => e.includes('private persistence')))
+    put(
+      `backend/src/modules/${owner}.service.ts`,
+      `import "./${owner.split('/')[1]}.model.js"; export const access = 1`,
+    )
+    put('backend/src/modules/returns/return.service.ts', `import "../${owner}.service.js"`)
+    assert.deepEqual(checkBoundaries(root).errors, [])
+  }
+  put('backend/src/modules/returns/return.model.ts', 'export const model = 1')
+  put('backend/src/modules/orders/order.service.ts', 'import "../returns/return.model.js"')
+  assert.ok(checkBoundaries(root).errors.some((e) => e.includes('private persistence')))
+})
+
+test('REFUND-BOUNDARY-01: advisory uses claim, order and payment services, never private models', (t) => {
+  const { root, put } = fixture(t)
+  for (const owner of ['orders/order', 'returns/return', 'payments/payment-record']) {
+    put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
+    put('backend/src/modules/refunds/refund-advisory.service.ts', `import "../${owner}.model.js"`)
+    assert.ok(checkBoundaries(root).errors.some((e) => e.includes('private persistence')))
+    put(
+      `backend/src/modules/${owner}.service.ts`,
+      `import "./${owner.split('/')[1]}.model.js"; export const access = 1`,
+    )
+    put('backend/src/modules/refunds/refund-advisory.service.ts', `import "../${owner}.service.js"`)
+    assert.deepEqual(checkBoundaries(root).errors, [])
+  }
+})
+
+test('REFUND-BOUNDARY-02: provider transport cannot depend on refund decisions or private auth', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/modules/refunds/refund-investigation.service.ts', 'export const investigate = 1')
+  put(
+    'backend/src/providers/sslcommerz/sslcommerz.client.ts',
+    'import "../../modules/refunds/refund-investigation.service.js"',
+  )
+  assert.ok(checkBoundaries(root).errors.some((e) => e.includes('provider transport')))
+  put('backend/src/providers/sslcommerz/sslcommerz.client.ts', 'export const transport = 1')
+  put('backend/src/modules/auth/auth.model.ts', 'export const privateModel = 1')
+  put(
+    'backend/src/modules/refunds/manual-payout-verification.service.ts',
+    'import "../auth/auth.model.js"',
+  )
+  assert.ok(checkBoundaries(root).errors.some((e) => e.includes('private persistence')))
+})
+
+test('AFTERSALES-BOUNDARY-01: notifications and review eligibility cannot import foreign models', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/modules/returns/return.model.ts', 'export const model = 1')
+  put(
+    'backend/src/modules/notifications/return-message.service.ts',
+    'import "../returns/return.model.js"',
+  )
+  assert.ok(checkBoundaries(root).errors.some((e) => e.includes('private persistence')))
+  put('backend/src/modules/notifications/return-message.service.ts', 'export const message = 1')
+  put('backend/src/modules/reviews/review.model.ts', 'export const model = 1')
+  put('backend/src/modules/orders/order.service.ts', 'import "../reviews/review.model.js"')
+  assert.ok(checkBoundaries(root).errors.some((e) => e.includes('private persistence')))
+})
+
+test('HISTORY-BOUNDARY-01: review and claim readers cannot import foreign private models', (t) => {
+  const { root, put } = fixture(t)
+  for (const [reader, owner] of [
+    ['reviews/review-query', 'orders/order'],
+    ['reviews/review-query', 'catalog/products/product'],
+    ['returns/return-history', 'orders/order'],
+    ['returns/return-history', 'media/media'],
+  ]) {
+    put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
+    const relative = `../${owner}.model.js`
+    put(`backend/src/modules/${reader}.service.ts`, `import "${relative}"`)
+    assert.ok(checkBoundaries(root).errors.some((e) => e.includes('private persistence')))
+    put(`backend/src/modules/${reader}.service.ts`, 'export const reader = 1')
+  }
+})
+
 test('BACKEND-BOUNDARY-03: shared technical helpers cannot import domain/configuration via barrels', (t) => {
   const { root, put } = fixture(t)
   put('backend/src/modules/orders/order.service.ts', 'export const service = 1')

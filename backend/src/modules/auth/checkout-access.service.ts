@@ -156,6 +156,26 @@ export function orderScopeAccess(
   guests?: Pick<import('./guest-access/guest-session.service.js').GuestSessions, 'owned'>,
 ) {
   return {
+    // For nested resources, authenticate first, then resolve the resource's order in the same
+    // transaction; the owning domain must still verify customer/guest order ownership.
+    async ownedAny<T>(
+      credentials: PaymentInitiationCredentials,
+      work: (principal: OrderPrincipal, session: ClientSession) => Promise<T>,
+    ) {
+      if (credentials.customerPresent)
+        return customers.owned(
+          credentials.customerToken,
+          (profile, scope) => work({ kind: 'customer', userId: profile.id }, scope.transaction),
+          false,
+        )
+      if (!guests) throw new ApiError('GUEST_PROOF_REQUIRED')
+      return guests.owned(credentials.guestToken, undefined, (scope, session) =>
+        work(
+          { kind: 'guest_order', orderId: scope.orderId, guestSessionId: scope.sessionId },
+          session,
+        ),
+      )
+    },
     async owned<T>(
       credentials: PaymentInitiationCredentials,
       orderId: string,

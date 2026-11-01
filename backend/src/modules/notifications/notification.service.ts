@@ -98,6 +98,47 @@ export function createRegistrationNotifications(
         { upsert: true, session, runValidators: true },
       )
     },
+    async enqueueReturnDecision(
+      input: {
+        orderId: Types.ObjectId
+        userId?: Types.ObjectId
+        email: string
+        name: string
+        returnId: Types.ObjectId
+        from: 'under_review' | 'approved' | 'inspected'
+        to: 'approved' | 'rejected' | 'completed'
+        operationKey: string
+        occurredAt: Date
+      },
+      session: ClientSession,
+    ) {
+      if (!session.inTransaction())
+        throw new Error('Return notification requires business transaction')
+      await createNotificationPersistence(connection, model).verifyIndexes()
+      await model.updateOne(
+        { eventKey: `return_update:${input.returnId.toHexString()}:${input.operationKey}:v1` },
+        {
+          $setOnInsert: {
+            orderId: input.orderId,
+            ...(input.userId ? { userId: input.userId } : {}),
+            recipient: { emailNormalized: input.email, displayName: input.name },
+            eventType: 'return_update',
+            templateVersion: 'return-update-v1',
+            payload: {
+              returnId: input.returnId,
+              returnFrom: input.from,
+              returnTo: input.to,
+              operationKey: input.operationKey,
+              occurredAt: input.occurredAt,
+            },
+            status: 'queued',
+            attemptCount: 0,
+            nextAttemptAt: clock(),
+          },
+        },
+        { upsert: true, session, runValidators: true },
+      )
+    },
     async enqueuePayment(
       input: {
         event: 'success' | 'failure' | 'pending'
@@ -224,6 +265,7 @@ export function createRegistrationNotifications(
       includeGuestProofs = false,
       includePayments = false,
       includeCommerce = false,
+      includeReturns = false,
     ) {
       const claimId = randomUUID()
       const row = await model
@@ -231,6 +273,9 @@ export function createRegistrationNotifications(
           {
             $or: [
               { eventType: 'registration', templateVersion: 'registration-v1' },
+              ...(includeReturns
+                ? [{ eventType: 'return_update' as const, templateVersion: 'return-update-v1' }]
+                : []),
               ...(includeCommerce
                 ? [
                     { eventType: 'order_received' as const, templateVersion: 'order-received-v1' },

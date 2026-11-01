@@ -854,7 +854,9 @@ Coupon preview **does not consume quota** or lock price/stock; final checkout ev
 `code` is normalized case-insensitively, percentage uses integer basis points and line allocation from Database §§2.3, 8.1–8.3.
 A per-customer-limited coupon cannot be used by a guest even if a checkout email matches an account.
 Reviews require a delivered qualifying purchase, exactly one active customer/product review, proper ownership and moderation; approved reviews alone affect public ratings.
-Do not accept a client-controlled `isVerifiedPurchase`, `status`, or `reviewedBy` field.
+Do not accept a client-controlled `isVerifiedPurchase`, `status`, or `reviewedBy` field. The private local
+qualification capability fences the selected delivered customer order/item against concurrent return
+and refund changes; it is not yet wired to public review operations.
 
 ### 10.4 Shopping DTO examples
 
@@ -1415,6 +1417,14 @@ the caller to the claim/cancellation workflow; **do not** invent a standalone `r
 refund. Customers cannot select `sourceCollectionId`, refund amount, payout method or internal unit ordinals. A physical
 return must still be inspected before refund approval.
 
+Private local claim composition validates delivered ownership, the standard physical window and
+protected policy exceptions, and attaches scoped private Media ledger assets transactionally. Private
+local receipt/inspection records a single partial or full receipt and atomically restores only inspected
+resellable units; full physical completion requires all approved units received and accepted. The API
+remains inactive, and partial-case follow-up is not yet implemented.
+These capabilities do not activate the planned HTTP operations above. Current session/guest proof,
+CSRF, canonical DTO/idempotency integration and prerequisite acceptance must precede public activation.
+
 ### 13.2 Admin claim and return processing
 
 | Method | Path                                 | Access | Request → response                                                                          | FR  |
@@ -1442,6 +1452,15 @@ a refund basis without return receipt. Completing a claim **never** asserts a pa
 | `POST` | `/admin/refunds/{refundId}/payout-attempts`      | A      | `{method,reason} + Idempotency-Key → {attemptId,state}`                                         | 33  |
 | `POST` | `/admin/refunds/{refundId}/reconcile`            | A      | `{reason} + Idempotency-Key → {status,attemptState}`                                            | 33  |
 | `POST` | `/admin/refunds/{refundId}/manual-confirmations` | A      | `{transferReference,evidenceRef,reason} + Idempotency-Key → Refund`                             | 33  |
+
+The private local refund advisory is not an HTTP operation or obligation. It reads selected linked
+verified collections and canonical claim/order snapshots in one transaction, and can deterministically
+plan unit amounts across sources. Public authorization, atomic reservation, durable attempt intent and
+execution remain separate work. The local SSLCOMMERZ initiation transport returns provider acceptance
+or uncertainty; neither establishes verified payout and no application executor is wired. Its private
+status query emits only a matched, redacted provider report; `refunded` still needs qualified durable
+identity/amount/time verification, and `cancelled` remains under investigation. Manual evidence
+verification is likewise a private, read-only gate and does not record a completed payout.
 
 **RefundGroupInput (admin):**
 `{orderId,basis,basisRefId?,classification,requestedItems?:[{orderItemId,quantity}],deliveryChargeRequestedPoisha?,correctionCollectionId?,reason}`.

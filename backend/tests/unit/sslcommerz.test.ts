@@ -371,3 +371,159 @@ describe('gateway configuration and exact money', () => {
     expect(() => bdtDecimal(1.01)).toThrow()
   })
 })
+
+describe('SSLCOMMERZ refund initiation transport (synthetic only)', () => {
+  const command = {
+    bankTranId: 'bank-123',
+    refundTransId: 'refund-123',
+    amountPoisha: 12345,
+    remarks: 'Synthetic return',
+    referenceId: 'local-ref',
+  }
+  const response = {
+    APIConnect: 'DONE',
+    status: 'success',
+    bank_tran_id: 'bank-123',
+    refund_ref_id: 'provider-ref',
+    card_no: 'synthetic-private-card',
+    store_passwd: 'synthetic-password',
+  }
+  it.each(['success', 'processing'])(
+    'sends original and merchant references and returns %s as unverified acceptance',
+    async (status) => {
+      const transport = mock({ ...response, status })
+      const result = await createSslcommerzAdapter(settings, transport).initiateRefund(command)
+      expect(result).toEqual({
+        kind: 'accepted',
+        refundRefId: 'provider-ref',
+        evidenceDigest: createHash('sha256')
+          .update(JSON.stringify({ ...response, status }))
+          .digest('hex'),
+      })
+      expect(transport).toHaveBeenCalledTimes(1)
+      const call = transport.mock.calls[0]
+      if (!call) throw new Error('Missing synthetic transport call')
+      const url = new URL(String(call[0]))
+      expect(url.origin).toBe('https://sandbox.sslcommerz.com')
+      expect(url.pathname).toBe('/validator/api/merchantTransIDvalidationAPI.php')
+      expect(Object.fromEntries(url.searchParams)).toMatchObject({
+        bank_tran_id: command.bankTranId,
+        refund_trans_id: command.refundTransId,
+        refund_amount: '123.45',
+        refund_remarks: command.remarks,
+        refe_id: command.referenceId,
+        store_id: settings.storeId,
+        store_passwd: settings.storePassword,
+        format: 'json',
+      })
+      expect(call[1]).toMatchObject({
+        method: 'GET',
+        redirect: 'error',
+        signal: expect.any(AbortSignal),
+      })
+      expect(JSON.stringify(result)).not.toContain(settings.storePassword)
+      expect(JSON.stringify(result)).not.toContain('synthetic-private-card')
+      expect(JSON.stringify(result)).not.toContain('confirmed')
+    },
+  )
+  it.each([
+    { ...command, bankTranId: '' },
+    { ...command, bankTranId: 'a'.repeat(81) },
+    { ...command, refundTransId: 'x'.repeat(31) },
+    { ...command, amountPoisha: 0 },
+    { ...command, amountPoisha: 1.5 },
+    { ...command, amountPoisha: 10000000000 },
+    { ...command, remarks: ' ' },
+    { ...command, callbackUrl: 'https://example.test' },
+  ])('rejects malformed input before any request', async (bad) => {
+    const transport = mock(response)
+    expect(await createSslcommerzAdapter(settings, transport).initiateRefund(bad)).toEqual({
+      kind: 'rejected',
+      code: 'INVALID_PROVIDER_INPUT',
+    })
+    expect(transport).not.toHaveBeenCalled()
+  })
+  it.each([
+    { ...response, bank_tran_id: 'wrong' },
+    { ...response, refund_ref_id: '' },
+    { ...response, APIConnect: 'FAILED' },
+    { ...response, status: 'failed' },
+    { ...response, status: 'refunded' },
+    { APIConnect: 'DONE', status: 'success' },
+  ])('keeps missing, mismatched or unexpected provider results uncertain', async (body) => {
+    const transport = mock(body)
+    expect(await createSslcommerzAdapter(settings, transport).initiateRefund(command)).toEqual(
+      uncertain,
+    )
+    expect(transport).toHaveBeenCalledTimes(1)
+  })
+  it('does not retry uncertain transport and does not expose error details', async () => {
+    const transport = vi.fn<typeof fetch>().mockRejectedValue(new Error(settings.storePassword))
+    expect(await createSslcommerzAdapter(settings, transport).initiateRefund(command)).toEqual(
+      uncertain,
+    )
+    expect(transport).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('SSLCOMMERZ refund status report transport (synthetic only)', () => {
+  const input = { refundRefId: 'provider-ref', bankTranId: 'bank-123' }
+  const record = {
+    APIConnect: 'DONE',
+    status: 'refunded',
+    bank_tran_id: 'bank-123',
+    refund_ref_id: 'provider-ref',
+    refunded_on: '2026-10-31 10:00:00',
+    card_no: 'synthetic-card',
+    store_passwd: 'synthetic-password',
+  }
+  it.each(['refunded', 'processing', 'cancelled'])(
+    'returns a redacted %s report without declaring payout',
+    async (status) => {
+      const body = { ...record, status },
+        transport = mock(body)
+      const result = await createSslcommerzAdapter(settings, transport).queryRefund(input)
+      expect(result).toMatchObject({
+        kind: 'refund_report',
+        status,
+        evidenceDigest: createHash('sha256').update(JSON.stringify(body)).digest('hex'),
+      })
+      const call = transport.mock.calls[0]
+      if (!call) throw new Error('Missing transport')
+      const url = new URL(String(call[0]))
+      expect(url.origin).toBe('https://sandbox.sslcommerz.com')
+      expect(url.pathname).toBe('/validator/api/merchantTransIDvalidationAPI.php')
+      expect(url.searchParams.get('refund_ref_id')).toBe(input.refundRefId)
+      expect(url.searchParams.get('store_id')).toBe(settings.storeId)
+      expect(url.searchParams.get('store_passwd')).toBe(settings.storePassword)
+      expect(call[1]).toMatchObject({ method: 'GET', redirect: 'error' })
+      expect(JSON.stringify(result)).not.toContain(settings.storePassword)
+      expect(JSON.stringify(result)).not.toContain('synthetic-card')
+      expect(JSON.stringify(result)).not.toContain('confirmed')
+    },
+  )
+  it.each([
+    { ...record, bank_tran_id: 'foreign' },
+    { ...record, refund_ref_id: 'foreign' },
+    { ...record, store_id: 'foreign-merchant' },
+    { ...record, APIConnect: 'FAILED' },
+    { ...record, status: 'success' },
+    { ...record, refunded_on: '' },
+    { APIConnect: 'DONE', status: 'refunded' },
+  ])('rejects incomplete, mismatched or unexpected provider reports', async (body) => {
+    expect(await createSslcommerzAdapter(settings, mock(body)).queryRefund(input)).toEqual(
+      uncertain,
+    )
+  })
+  it('requires both bounded references before network and does not retry a timeout', async () => {
+    const transport = vi.fn<typeof fetch>().mockRejectedValue(new Error(settings.storePassword))
+    const adapter = createSslcommerzAdapter(settings, transport)
+    expect(await adapter.queryRefund({ refundRefId: '', bankTranId: 'bank' })).toEqual({
+      kind: 'rejected',
+      code: 'INVALID_PROVIDER_INPUT',
+    })
+    expect(transport).not.toHaveBeenCalled()
+    expect(await adapter.queryRefund(input)).toEqual(uncertain)
+    expect(transport).toHaveBeenCalledTimes(1)
+  })
+})

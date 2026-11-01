@@ -1477,6 +1477,13 @@ worker readiness, build and explicitly run `migrate-notifications.mjs` or the lo
 leases, accepted sends and uncertainty. Old binaries need a schema-compatible rollback build rather
 than deletion or a validator downgrade. Provider acceptance remains distinct from inbox delivery.
 
+Return-decision outbox events extend the known commerce validator; before upgraded readiness, use
+`migrate-notifications.mjs` in local/test to upgrade only an exact recognized predecessor. Preserve
+queued/sent/uncertain rows and audit/order/claim facts together; do not downgrade validators or delete
+outbox records to roll back. The local return sender requires explicit composition and is not enabled
+by ordinary worker configuration. Real sender/provider qualification and refund-completion delivery
+remain separate gates.
+
 Policy bounds: 1–10 attempts; 1–100 claims per batch; base delay 100–3600000 ms; maximum delay at least the base and at most
 86400000 ms; lease 1000–3600000 ms; HTTP timeout 1–60000 ms. Require lease strictly greater than timeout plus 1000 ms.
 All values are explicit; the sanitized template leaves them blank. Run cadence and concurrency must respect provider
@@ -1831,14 +1838,31 @@ pending request is **not** completed payout.
 | Refund initiation/timeout/unknown                       | Keep source balance reserved, verify payout outcome; no new blindly generated payout ID |
 | Confirmed refund payout                                 | Mark completed only with trusted evidence; separately report merchandise vs correction  |
 
-#### Claim foundation bootstrap
+The private local refund status/evidence capabilities are not wired to an operational executor. A
+provider `refunded` report or syntactically valid manual evidence still requires the durable, qualified
+verification and transaction that binds the reserved obligation, source, attempt and payout evidence.
+A `cancelled` report or an unknown outcome remains under investigation; never retry on this report alone.
+
+#### Private claim persistence bootstrap
 
 After backend build, run `node --env-file=.env backend/scripts/bootstrap-returns.mjs` only against an
-owned local/test database. It creates the strict requested-claim validator and declared indexes,
-refuses unknown drift and deployed environments, and enables no HTTP route. Preserve return requests,
-order-item ordinal coverage and audit together during restore. Do not delete a claim to release
-capacity; release/approval/refund/restock require their later owning workflows. No real policy,
-media evidence or customer submission is seeded.
+owned local/test database. It creates the current private claim validator and declared indexes,
+refuses unknown drift and deployed environments, and enables no HTTP route. For an existing exact
+requested-only foundation or review-only validator, explicitly run the same command with `--lifecycle`; this additive
+upgrade verifies indexes, preserves requests and can be repeated. Unknown drift requires investigation,
+not validator replacement. No command seeds policy sign-off or enables a public submission/approval route.
+
+Preserve return requests, order-item ordinal coverage, Media references and audit together during
+restore. Do not delete claims or reset ordinal coverage to release capacity. Review releases only
+unapproved units with zero refund commitments; shortages resolve without stock/payout effects.
+Private receipt/inspection can atomically record a single partial/full receipt and resellable-only stock
+movement in local tests; complete a physical claim only when every approved unit has been received
+and accepted. Additional receipt batches, partial-case resolution and public activation remain disabled
+pending the owning integration. Reconcile claim ordinals, movement and variant stock together. Keep
+attached private evidence under existing Media retention/legal-hold rules; orphan maintenance must
+never delete referenced assets. An older requested-only or review-only binary cannot safely process upgraded
+lifecycle records: retain the upgraded validator/data and restore a compatible binary, rather than
+downgrading history. Reconcile external effects separately after restore.
 
 Administrator payment reconcile requests are durable audit intents, not synchronous provider calls.
 Run the existing merchant-partitioned reconciliation worker to process them. Inspect canonical payment

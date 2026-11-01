@@ -1,3 +1,13 @@
+import { createMediaService } from '../../src/modules/media/media.service.js'
+import { initializeMediaPersistence } from '../../src/modules/media/media.persistence.js'
+import { mediaModel } from '../../src/modules/media/media.model.js'
+import { fakeMediaProvider, imageFile, mediaPolicy } from '../helpers/media.js'
+import { returnLifecycleService } from '../../src/modules/returns/return-lifecycle.service.js'
+import {
+  claimReviewQuantityAccess,
+  claimEligibilityOrderAccess,
+} from '../../src/modules/orders/order.service.js'
+import { returnEligibilityService } from '../../src/modules/returns/return-eligibility.service.js'
 import { returnService } from '../../src/modules/returns/return.service.js'
 import {
   initializeReturnPersistence,
@@ -7,6 +17,7 @@ import { returnModel } from '../../src/modules/returns/return.model.js'
 import { claimQuantityAccess } from '../../src/modules/orders/order.service.js'
 import { spawnSync } from 'node:child_process'
 import { Types } from 'mongoose'
+import { claimEvidenceMetadataAccess } from '../../src/modules/media/claim-evidence.service.js'
 import { afterAll, beforeAll, beforeEach, expect, it } from 'vitest'
 import { isolatedDatabase } from '../helpers/database.js'
 import { testEnvironment } from '../helpers/environment.js'
@@ -143,6 +154,7 @@ beforeEach(async () => {
     'checkoutQuotes',
     'checkoutIntents',
     'auditLogs',
+    'mediaAssets',
     'products',
     'storeSettings',
   ])
@@ -500,7 +512,7 @@ async function claimFixture() {
       { orderItemId: balance.orderItemId.toHexString(), quantity, reason: 'Synthetic fixture' },
     ],
   })
-  return { proof, balance, service, command }
+  return { proof, balance, service, command, authority }
 }
 it('claim foundation: parallel physical and shortage requests share one exact ordinal capacity', async () => {
   const f = await claimFixture()
@@ -693,4 +705,382 @@ it('claim foundation: compiled bootstrap preserves requests and refuses deployed
     timeout: 10000,
   })
   expect(deployed.status).not.toBe(0)
+})
+
+async function lifecycleClaimFixture(kind: 'physical_return' | 'shortage' = 'physical_return') {
+  const f = await claimFixture(),
+    body = f.command(kind, 2)
+  await inTransaction(db.connection, (session) => f.service.create(session, body))
+  const actorId = new Types.ObjectId().toHexString()
+  let tick = Date.now() + 10000
+  // Synthetic private admin capability only; no HTTP/session acceptance is implied.
+  const admin = {
+    async owned<T>(
+      token: string | undefined,
+      work: (id: string, session: import('mongoose').ClientSession) => Promise<T>,
+    ) {
+      if (token !== 'synthetic-admin') throw new ApiError('FORBIDDEN')
+      return inTransaction(db.connection, (session) => work(actorId, session))
+    },
+  }
+  const service = returnLifecycleService(
+    db.connection,
+    admin,
+    claimReviewQuantityAccess(db.connection),
+    () => new Date(tick++),
+  )
+  const move = (
+    to: string,
+    approvedItems?: { orderItemId: string; quantity: number }[],
+    key = new Types.ObjectId().toHexString(),
+  ) =>
+    service.transition(
+      'synthetic-admin',
+      body.claimId,
+      { to, reason: 'Synthetic review', ...(approvedItems ? { approvedItems } : {}) },
+      key,
+    )
+  return { ...f, body, move, lifecycle: service }
+}
+it('return lifecycle local: shortage approval and completion resolve only approved units without stock or payout effects', async () => {
+  const f = await lifecycleClaimFixture('shortage')
+  await f.move('under_review')
+  await f.move('approved', [{ orderItemId: f.balance.orderItemId.toHexString(), quantity: 1 }])
+  let balance = await orderModels(db.connection).balances.findById(f.balance._id).orFail()
+  expect(balance.activeClaimQty).toBe(1)
+  expect(balance.unitCoverage[1]?.claimState).toBe('available')
+  expect(balance.unitCoverage[1]?.claimId).toBeUndefined()
+  await expect(f.move('awaiting_return')).rejects.toThrow()
+  await f.move('completed')
+  balance = await orderModels(db.connection).balances.findById(f.balance._id).orFail()
+  expect(balance.activeClaimQty).toBe(0)
+  expect(balance.resolvedClaimQty).toBe(1)
+  expect(balance.unitCoverage[0]).toMatchObject({
+    claimState: 'resolved',
+    refundHeldPoisha: 0,
+    refundCompletedPoisha: 0,
+  })
+  expect(balance.unitCoverage.every((u) => !u.restockOperationKey)).toBe(true)
+  const claim = await returnModel(db.connection).findById(f.body.claimId).orFail()
+  expect(claim.status).toBe('completed')
+  expect(claim.approvedAt).toBeInstanceOf(Date)
+  expect(claim.completedAt).toBeInstanceOf(Date)
+})
+it('return lifecycle local: physical completion cannot bypass receipt and inspection', async () => {
+  const f = await lifecycleClaimFixture()
+  await expect(
+    f.move('approved', [{ orderItemId: f.balance.orderItemId.toHexString(), quantity: 1 }]),
+  ).rejects.toThrow()
+  await f.move('under_review')
+  await f.move('approved', [{ orderItemId: f.balance.orderItemId.toHexString(), quantity: 2 }])
+  await expect(f.move('completed')).rejects.toThrow()
+  await f.move('awaiting_return')
+  await expect(f.move('completed')).rejects.toThrow()
+  expect((await orderModels(db.connection).balances.findById(f.balance._id))?.activeClaimQty).toBe(
+    2,
+  )
+})
+it('return lifecycle local: rejection releases exact claim units and preserves audited history', async () => {
+  const f = await lifecycleClaimFixture()
+  await f.move('under_review')
+  await f.move('rejected')
+  const balance = await orderModels(db.connection).balances.findById(f.balance._id).orFail()
+  expect(balance.activeClaimQty).toBe(0)
+  expect(balance.unitCoverage.every((u) => u.claimState === 'available' && !u.claimId)).toBe(true)
+  expect(
+    await db.connection.db?.collection('auditLogs').countDocuments({
+      targetId: new Types.ObjectId(f.body.claimId),
+      action: 'claim.lifecycle.transition',
+    }),
+  ).toBe(2)
+  await expect(f.move('under_review')).rejects.toThrow()
+})
+it('return lifecycle local: current authorization, strict quantities, replay and conflicting keys fail safely', async () => {
+  const f = await lifecycleClaimFixture()
+  await expect(
+    f.lifecycle.transition(
+      'wrong',
+      f.body.claimId,
+      { to: 'under_review', reason: 'Review' },
+      'key',
+    ),
+  ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+  const key = 'same-key'
+  await f.move('under_review', undefined, key)
+  expect((await f.move('under_review', undefined, key)).revision).toBe(1)
+  await expect(f.move('rejected', undefined, key)).rejects.toMatchObject({
+    code: 'IDEMPOTENCY_CONFLICT',
+  })
+  for (const items of [
+    [],
+    [{ orderItemId: f.balance.orderItemId.toHexString(), quantity: 0 }],
+    [{ orderItemId: f.balance.orderItemId.toHexString(), quantity: 3 }],
+    [{ orderItemId: new Types.ObjectId().toHexString(), quantity: 1 }],
+  ]) {
+    await expect(f.move('approved', items)).rejects.toThrow()
+  }
+  expect((await returnModel(db.connection).findById(f.body.claimId))?.status).toBe('under_review')
+})
+it('return lifecycle local: competing approve/reject decisions cannot both commit', async () => {
+  const f = await lifecycleClaimFixture()
+  await f.move('under_review')
+  const outcomes = await Promise.allSettled([
+    f.move('approved', [{ orderItemId: f.balance.orderItemId.toHexString(), quantity: 1 }]),
+    f.move('rejected'),
+  ])
+  expect(outcomes.filter((o) => o.status === 'fulfilled')).toHaveLength(1)
+  const row = await returnModel(db.connection).findById(f.body.claimId).orFail(),
+    balance = await orderModels(db.connection).balances.findById(f.balance._id).orFail()
+  expect(balance.activeClaimQty).toBe(row.status === 'approved' ? 1 : 0)
+})
+it('return lifecycle local: missing audit persistence rolls back quantity release and decision', async () => {
+  const f = await lifecycleClaimFixture()
+  await f.move('under_review')
+  await db.connection.db?.collection('auditLogs').dropIndex('audit_cause_unique')
+  try {
+    await expect(f.move('rejected')).rejects.toThrow()
+  } finally {
+    await initializeAuditPersistence(db.connection)
+  }
+  expect((await returnModel(db.connection).findById(f.body.claimId))?.status).toBe('under_review')
+  expect((await orderModels(db.connection).balances.findById(f.balance._id))?.activeClaimQty).toBe(
+    2,
+  )
+})
+it('return eligibility local: canonical pending order and wrong guest scope cannot acquire any claim capacity', async () => {
+  const f = await claimFixture(),
+    principal = {
+      kind: 'guest_order' as const,
+      orderId: f.proof.orderId,
+      guestSessionId: new Types.ObjectId().toHexString(),
+    }
+  const eligibility = returnEligibilityService(
+    claimEligibilityOrderAccess(db.connection),
+    async () => ({ policyVersion: 'synthetic' }),
+  )
+  await expect(
+    inTransaction(db.connection, (session) => eligibility(session, principal, f.command())),
+  ).rejects.toMatchObject({
+    code: 'BUSINESS_RULE_VIOLATION',
+    details: [{ field: 'orderId', code: 'NOT_DELIVERED' }],
+  })
+  await expect(
+    inTransaction(db.connection, (session) =>
+      eligibility(
+        session,
+        { ...principal, orderId: new Types.ObjectId().toHexString() },
+        f.command(),
+      ),
+    ),
+  ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+  expect((await orderModels(db.connection).orders.findById(f.proof.orderId))?.revision).toBe(0)
+})
+
+it('return lifecycle local: refund-held units cannot be released by rejection', async () => {
+  const f = await lifecycleClaimFixture()
+  await f.move('under_review')
+  await orderModels(db.connection).balances.updateOne(
+    { _id: f.balance._id },
+    { $set: { 'unitCoverage.0.refundHeldPoisha': 1 } },
+  )
+  await expect(f.move('rejected')).rejects.toThrow()
+  expect((await returnModel(db.connection).findById(f.body.claimId))?.status).toBe('under_review')
+  expect((await orderModels(db.connection).balances.findById(f.balance._id))?.activeClaimQty).toBe(
+    2,
+  )
+})
+it('return lifecycle local: raw invalid approved ordinals and physical completion are rejected by BSON validation', async () => {
+  const f = await lifecycleClaimFixture()
+  const collection = db.connection.db?.collection('returnRequests')
+  await expect(
+    collection?.updateOne(
+      { _id: new Types.ObjectId(f.body.claimId) },
+      { $set: { 'items.0.approvedUnitOrdinals': [50] } },
+    ),
+  ).rejects.toThrow()
+  await expect(
+    collection?.updateOne(
+      { _id: new Types.ObjectId(f.body.claimId) },
+      { $set: { status: 'completed' } },
+    ),
+  ).rejects.toThrow()
+})
+it('return lifecycle local: additive upgrade preserves requests, rejects drift and remains idempotent', async () => {
+  const {
+    foundationReturnValidator,
+    reviewReturnValidator,
+    returnValidator,
+    upgradeReturnLifecyclePersistence,
+  } = await import('../../src/modules/returns/return.persistence.js')
+  const f = await claimFixture(),
+    body = f.command()
+  await inTransaction(db.connection, (session) => f.service.create(session, body))
+  await db.connection.db?.command({
+    collMod: 'returnRequests',
+    validator: foundationReturnValidator,
+  })
+  await expect(verifyReturnPersistence(db.connection)).rejects.toThrow()
+  await upgradeReturnLifecyclePersistence(db.connection)
+  await upgradeReturnLifecyclePersistence(db.connection)
+  expect((await returnModel(db.connection).findById(body.claimId))?.status).toBe('requested')
+  await db.connection.db?.command({ collMod: 'returnRequests', validator: reviewReturnValidator })
+  await upgradeReturnLifecyclePersistence(db.connection)
+  expect((await returnModel(db.connection).findById(body.claimId))?.status).toBe('requested')
+  await db.connection.db?.command({ collMod: 'returnRequests', validator: {} })
+  try {
+    await expect(upgradeReturnLifecyclePersistence(db.connection)).rejects.toThrow('Unknown')
+  } finally {
+    await db.connection.db?.command({ collMod: 'returnRequests', validator: returnValidator })
+  }
+})
+
+async function evidenceClaimFixture() {
+  const f = await claimFixture()
+  await initializeMediaPersistence(db.connection)
+  const media = createMediaService(db.connection, {
+    provider: fakeMediaProvider().adapter,
+    scanner: async () => 'clean',
+    policy: mediaPolicy,
+    canDelete: async () => true,
+    access: {
+      async admin() {
+        throw new ApiError('FORBIDDEN')
+      },
+      async evidence(credential, scope) {
+        if (credential !== 'scoped-guest' || scope.orderId.toHexString() !== f.proof.orderId)
+          throw new ApiError('FORBIDDEN')
+        return { kind: 'guest_order', principalId: new Types.ObjectId(f.proof.orderId) }
+      },
+    },
+  })
+  const scope = {
+    orderId: new Types.ObjectId(f.proof.orderId),
+    claimType: 'physical_return' as const,
+    orderItemIds: [f.balance.orderItemId],
+  }
+  const uploaded = await media.uploadEvidence('scoped-guest', scope, imageFile())
+  const body = f.command()
+  const first = body.items[0]
+  if (!first) throw new Error('Missing fixture line')
+  const command = { ...body, items: [{ ...first, evidenceAssetIds: [uploaded.assetId] }] }
+  const service = returnService(
+    db.connection,
+    claimQuantityAccess(db.connection),
+    async () => f.authority,
+    () => new Date(),
+    { attach: media.attach, credential: 'scoped-guest' },
+  )
+  return { ...f, media, uploaded, evidenceCommand: command, evidenceService: service }
+}
+it('claim history local: evidence metadata requires exact private claim and item binding', async () => {
+  const f = await evidenceClaimFixture()
+  await inTransaction(db.connection, (session) =>
+    f.evidenceService.create(session, f.evidenceCommand),
+  )
+  const item = f.evidenceCommand.items[0]
+  if (!item) throw new Error('Missing fixture line')
+  const input = {
+    orderId: f.proof.orderId,
+    returnId: f.evidenceCommand.claimId,
+    claimType: 'physical_return' as const,
+    items: [{ orderItemId: item.orderItemId, assetIds: [f.uploaded.assetId] }],
+  }
+  const read = claimEvidenceMetadataAccess(db.connection)
+  const metadata = await inTransaction(db.connection, (session) => read(session, input))
+  expect(metadata).toEqual([
+    expect.objectContaining({ assetId: f.uploaded.assetId, orderItemId: item.orderItemId }),
+  ])
+  expect(Object.keys(metadata[0] ?? {}).sort()).toEqual([
+    'assetId',
+    'mimeType',
+    'orderItemId',
+    'size',
+  ])
+  await expect(
+    inTransaction(db.connection, (session) =>
+      read(session, { ...input, returnId: new Types.ObjectId().toHexString() }),
+    ),
+  ).rejects.toThrow()
+  await expect(
+    inTransaction(db.connection, (session) =>
+      read(session, { ...input, orderId: new Types.ObjectId().toHexString() }),
+    ),
+  ).rejects.toThrow()
+})
+it('return evidence local: scoped private attachment joins claim and ledger in one transaction', async () => {
+  const f = await evidenceClaimFixture()
+  await inTransaction(db.connection, (session) =>
+    f.evidenceService.create(session, f.evidenceCommand),
+  )
+  const claim = await returnModel(db.connection).findById(f.evidenceCommand.claimId).orFail(),
+    asset = await mediaModel(db.connection).findById(f.uploaded.assetId).orFail()
+  expect(claim.items[0]?.evidenceRefs.map((id) => id.toHexString())).toEqual([f.uploaded.assetId])
+  expect(asset.access).toBe('private')
+  expect(asset.status).toBe('attached')
+  expect(asset.references[0]?.targetId.toHexString()).toBe(f.evidenceCommand.claimId)
+  await expect(f.media.privateUrl('wrong', f.uploaded.assetId)).rejects.toThrow()
+  expect(await f.media.privateUrl('scoped-guest', f.uploaded.assetId)).toHaveProperty('url')
+})
+it('return evidence local: failed claim audit rolls back asset reference and ordinal protection', async () => {
+  const f = await evidenceClaimFixture()
+  await db.connection.db?.collection('auditLogs').dropIndex('audit_cause_unique')
+  try {
+    await expect(
+      inTransaction(db.connection, (session) =>
+        f.evidenceService.create(session, f.evidenceCommand),
+      ),
+    ).rejects.toThrow()
+  } finally {
+    await initializeAuditPersistence(db.connection)
+  }
+  expect((await mediaModel(db.connection).findById(f.uploaded.assetId))?.status).toBe('temporary')
+  expect((await orderModels(db.connection).balances.findById(f.balance._id))?.activeClaimQty).toBe(
+    0,
+  )
+  expect(await returnModel(db.connection).countDocuments()).toBe(0)
+})
+it('return evidence local: missing adapter, duplicate asset and mismatched claim scope cannot attach', async () => {
+  const f = await evidenceClaimFixture()
+  await expect(
+    inTransaction(db.connection, (session) => f.service.create(session, f.evidenceCommand)),
+  ).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' })
+  const first = f.evidenceCommand.items[0]
+  if (!first) throw new Error('Missing fixture line')
+  await expect(
+    inTransaction(db.connection, (session) =>
+      f.evidenceService.create(session, {
+        ...f.evidenceCommand,
+        items: [{ ...first, evidenceAssetIds: [f.uploaded.assetId, f.uploaded.assetId] }],
+      }),
+    ),
+  ).rejects.toThrow()
+  await expect(
+    inTransaction(db.connection, (session) =>
+      f.evidenceService.create(session, { ...f.evidenceCommand, claimType: 'shortage' }),
+    ),
+  ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+  expect((await mediaModel(db.connection).findById(f.uploaded.assetId))?.status).toBe('temporary')
+})
+
+it('return eligibility local: request timestamp rechecks expiry before committing selected units', async () => {
+  const f = await claimFixture()
+  const service = returnService(
+    db.connection,
+    claimQuantityAccess(db.connection),
+    async () => ({
+      ...f.authority,
+      eligibilitySnapshot: {
+        policyVersion: 'synthetic',
+        deliveredAt: new Date('2026-10-01'),
+        requestDeadlineAt: new Date('2026-10-08'),
+      },
+    }),
+    () => orderTestTime,
+  )
+  await expect(
+    inTransaction(db.connection, (session) => service.create(session, f.command())),
+  ).rejects.toMatchObject({ code: 'BUSINESS_RULE_VIOLATION' })
+  expect((await orderModels(db.connection).balances.findById(f.balance._id))?.activeClaimQty).toBe(
+    0,
+  )
 })

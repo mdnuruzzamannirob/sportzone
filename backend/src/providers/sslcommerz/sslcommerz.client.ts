@@ -5,6 +5,10 @@ import {
   bdtDecimal,
   initiationInput,
   providerRecord,
+  refundInitiationInput,
+  refundInitiationResponse,
+  refundStatusQuery,
+  refundStatusResponse,
   sessionAcceptance,
   sessionFailure,
   sessionQuery,
@@ -104,6 +108,71 @@ export function createSslcommerzAdapter(
     ...(record.risk_title ? { riskTitle: record.risk_title } : {}),
   })
   return {
+    // This is a redacted provider report, not a payout decision or a retry authorization.
+    async queryRefund(raw: unknown) {
+      assertOutsideTransaction()
+      const parsed = refundStatusQuery.safeParse(raw)
+      if (!parsed.success) return invalid
+      const params = credentials()
+      params.set('refund_ref_id', parsed.data.refundRefId)
+      try {
+        const response = await request(
+          '/validator/api/merchantTransIDvalidationAPI.php',
+          params,
+          'GET',
+        )
+        const result = refundStatusResponse.safeParse(response.raw)
+        if (
+          !result.success ||
+          result.data.refund_ref_id !== parsed.data.refundRefId ||
+          result.data.bank_tran_id !== parsed.data.bankTranId ||
+          (result.data.store_id !== undefined && result.data.store_id !== options.storeId) ||
+          (result.data.status === 'refunded' && !result.data.refunded_on)
+        )
+          return uncertain
+        return {
+          kind: 'refund_report' as const,
+          status: result.data.status,
+          refundRefId: result.data.refund_ref_id,
+          bankTranId: result.data.bank_tran_id,
+          ...(result.data.refunded_on ? { providerRefundedAt: result.data.refunded_on } : {}),
+          merchantAccountKey,
+          evidenceDigest: response.digest,
+        }
+      } catch {
+        return uncertain
+      }
+    },
+    // Transport only: the caller must already have persisted a reserved obligation and attempt
+    // identity. A provider acceptance is not a verified disbursement. No retries occur here.
+    async initiateRefund(raw: unknown) {
+      assertOutsideTransaction()
+      const parsed = refundInitiationInput.safeParse(raw)
+      if (!parsed.success) return invalid
+      const input = parsed.data,
+        params = credentials()
+      params.set('bank_tran_id', input.bankTranId)
+      params.set('refund_trans_id', input.refundTransId)
+      params.set('refund_amount', bdtDecimal(input.amountPoisha))
+      params.set('refund_remarks', input.remarks)
+      if (input.referenceId) params.set('refe_id', input.referenceId)
+      try {
+        const response = await request(
+          '/validator/api/merchantTransIDvalidationAPI.php',
+          params,
+          'GET',
+        )
+        const result = refundInitiationResponse.safeParse(response.raw)
+        if (!result.success || result.data.bank_tran_id !== input.bankTranId) return uncertain
+        return {
+          kind: 'accepted' as const,
+          refundRefId: result.data.refund_ref_id,
+          evidenceDigest: response.digest,
+        }
+      } catch {
+        return uncertain
+      }
+    },
     async initiate(raw: unknown) {
       assertOutsideTransaction()
       const parsed = initiationInput.safeParse(raw)
