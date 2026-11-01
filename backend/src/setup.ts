@@ -1,4 +1,11 @@
 import { orderMessageService } from './modules/notifications/order-message.service.js'
+import { reviewModerationReceiptAccess } from './modules/audit/audit.service.js'
+import { reviewPurchaseEligibilityAccess } from './modules/orders/order.service.js'
+import { catalogReviewVisibility } from './modules/catalog/catalog.service.js'
+import { productReviewAccess } from './modules/catalog/products/product.service.js'
+import { reviewQueryService } from './modules/reviews/review-query.service.js'
+import { createReviewService } from './modules/reviews/review.service.js'
+import { reviewRoutes } from './modules/reviews/review.routes.js'
 import { orderNotificationAccess } from './modules/orders/order-notification.service.js'
 import { orderReadRoutes } from './modules/orders/order-read.routes.js'
 import { orderReadService } from './modules/orders/order-read.service.js'
@@ -132,6 +139,41 @@ import { ApiError } from './shared/errors/app-error.js'
 import type { Logger } from './shared/logger.js'
 
 // Only the root composition coordinates independent domain routers and capabilities.
+export function composeLocalReviewRoutes(
+  connection: Connection,
+  environment: RuntimeConfig['APP_ENV'],
+  auth: Pick<
+    Awaited<ReturnType<typeof createAuthRuntime>>,
+    'customerAccounts' | 'adminAccounts' | 'adminTransaction' | 'sessions' | 'security'
+  >,
+  clock: () => Date = () => new Date(),
+) {
+  if (!['local', 'test'].includes(environment)) throw new ApiError('SERVICE_UNAVAILABLE')
+  const reviews = createReviewService(
+    connection,
+    {
+      accounts: auth.customerAccounts,
+      catalog: productReviewAccess(connection),
+      eligibility: reviewPurchaseEligibilityAccess(connection),
+      audit: createAuditWriter(connection),
+      moderator: auth.adminTransaction,
+      moderationReceipt: reviewModerationReceiptAccess(connection),
+    },
+    clock,
+  )
+  return reviewRoutes(
+    reviewQueryService(
+      connection,
+      auth.customerAccounts,
+      auth.adminAccounts,
+      catalogReviewVisibility(connection),
+    ),
+    reviews,
+    auth.security,
+    auth.sessions,
+  )
+}
+
 export async function composeIdentityRoutes(
   connection: Connection,
   config: RuntimeConfig,

@@ -378,6 +378,24 @@ test('REPORT-BOUNDARY-01: reporting cannot import foreign private persistence', 
   }
 })
 
+test('BLOCKED-AUDIT-BOUNDARY-01: customer routes and reviews retain auth and audit persistence privacy', (t) => {
+  const { root, put } = fixture(t)
+  for (const [consumer, owner] of [
+    ['customers/customer-admin.routes', 'auth/auth'],
+    ['reviews/review.service', 'auth/auth'],
+    ['reviews/review.service', 'audit/audit'],
+  ]) {
+    put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
+    put(`backend/src/modules/${consumer}.ts`, `import "../${owner}.model.js"`)
+    assert.ok(
+      checkBoundaries(root).errors.some(
+        (e) => e.includes('private persistence') || e.includes('controller'),
+      ),
+    )
+    put(`backend/src/modules/${consumer}.ts`, 'export const consumer = 1')
+  }
+})
+
 test('BACKEND-BOUNDARY-03: shared technical helpers cannot import domain/configuration via barrels', (t) => {
   const { root, put } = fixture(t)
   put('backend/src/modules/orders/order.service.ts', 'export const service = 1')

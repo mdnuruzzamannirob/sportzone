@@ -31,7 +31,7 @@ import {
   transportOperations,
 } from '../../contracts/registry.js'
 import { createApp } from '../../src/app.js'
-import { localReadRouters, registeredOperations, registeredRouter } from './routes.fixture.js'
+import { localOnlyRouters, registeredOperations, registeredRouter } from './routes.fixture.js'
 
 const markdown = readFileSync(resolve('../docs/API.md'), 'utf8')
 const artifacts = generateArtifacts(markdown)
@@ -118,6 +118,7 @@ describe('executable API contract registry', () => {
         'cart/wishlist.routes.ts',
         'checkout/checkout.routes.ts',
         'customers/customer.routes.ts',
+        'customers/customer-admin.routes.ts',
         'delivery/delivery.routes.ts',
         'health/health.routes.ts',
         'inventory/inventory-admin.routes.ts',
@@ -136,8 +137,8 @@ describe('executable API contract registry', () => {
       ].sort(),
     )
   })
-  it('keeps local-only history and review routes aligned with planned API paths', () => {
-    const actual = localReadRouters()
+  it('keeps local-only domain routes aligned with planned API paths', () => {
+    const actual = localOnlyRouters()
       .flatMap((router) => registeredOperations(router))
       .filter((op) => !['HEAD', 'OPTIONS'].includes(op.method))
     const expected = [
@@ -147,6 +148,9 @@ describe('executable API contract registry', () => {
       'GET /admin/claims/{claimId}',
       'GET /admin/complaints',
       'GET /admin/audit-logs',
+      'GET /admin/customers',
+      'GET /admin/customers/{customerId}',
+      'POST /admin/customers/{customerId}/status-decisions',
       'GET /products/{productId}/reviews',
       'GET /me/reviews',
       'POST /products/{productId}/reviews',

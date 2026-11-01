@@ -86,6 +86,38 @@ export function auditOperationReader(connection: Connection) {
   }
 }
 
+// Reviews receive only their own durable moderation identity for replay validation.
+export function reviewModerationReceiptAccess(connection: Connection) {
+  const model = auditModel(connection)
+  return async (
+    session: ClientSession,
+    identity: { actorId: string; reviewId: string; operationKey: string },
+  ) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyAuditPersistence(connection)
+    const row = await model
+      .findOne({
+        actorType: 'admin',
+        actorId: new Types.ObjectId(identity.actorId),
+        targetType: 'review',
+        targetId: new Types.ObjectId(identity.reviewId),
+        operationKey: identity.operationKey,
+        action: { $in: ['review.approve', 'review.reject', 'review.hide'] },
+      })
+      .session(session)
+    return row
+      ? {
+          actorType: row.actorType,
+          actorId: row.actorId?.toHexString(),
+          targetId: row.targetId?.toHexString(),
+          operationKey: row.operationKey,
+          action: row.action,
+          reason: row.reason,
+        }
+      : null
+  }
+}
+
 // Payment monitors receive only event identity/status facts, never free-form reasons or request data.
 export function paymentAuditAccess(connection: Connection) {
   return async (session: ClientSession, paymentId: string, offset: number, limit: number) => {

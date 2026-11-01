@@ -856,7 +856,9 @@ A per-customer-limited coupon cannot be used by a guest even if a checkout email
 Reviews require a delivered qualifying purchase, exactly one active customer/product review, proper ownership and moderation; approved reviews alone affect public ratings.
 Do not accept a client-controlled `isVerifiedPurchase`, `status`, or `reviewedBy` field. The private local
 qualification capability fences the selected delivered customer order/item against concurrent return
-and refund changes; it is not yet wired to public review operations.
+and refund changes. An explicit local/test composition connects this capability to review HTTP
+operations with real Catalog visibility, current-admin authorization and durable moderation receipts;
+ordinary deployed activation and prerequisite acceptance remain gated.
 
 ### 10.4 Shopping DTO examples
 
@@ -1708,6 +1710,15 @@ conflict boundary, preventing overselling or stale CAS even across different adm
 | `POST` | `/admin/customers/{customerId}/status-decisions`    | `{to:enum(active,suspended),reason} + Idempotency-Key → {status}`                                             | 27  |
 | `GET`  | `/admin/reviews`                                    | `status?,productId?,page? → AdminReview[]`                                                                    | 31  |
 | `POST` | `/admin/reviews/{reviewId}/moderation`              | `{decision:enum(approve,reject,hide),reason} + Idempotency-Key → AdminReview`                                 | 31  |
+
+Customer administration returns masked identity fields and excludes admin principals. Search text
+is a bounded literal name/email prefix, never caller-controlled regular-expression syntax. Status
+decisions affect only `active`/`suspended` customers; deletion-pending and deactivated states cannot
+be reactivated through this route. Decisions require current admin, Origin/CSRF and a keyed reason,
+then atomically update security revision, revoke customer sessions and retain exact transition audit.
+Reactivation never restores revoked sessions. A historical identical decision key returns current
+status without repeating the effect; a changed payload conflicts. These capabilities currently have
+explicit local/test composition only; full histories, deletion review and ordinary activation remain gated.
 
 Private delivery/support foundation records admin delay/failed-attempt/final-non-delivery cases with
 keyed replay and bounded contact outcomes. Failed-attempt and delay resolution leave Shipped/status

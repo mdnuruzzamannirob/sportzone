@@ -3,7 +3,7 @@ import { guestSessionService } from './guest-access/guest-session.service.js'
 import { guestAccessService } from './guest-access/guest-access.service.js'
 import { guestAccessRoutes } from './guest-access/guest-access.routes.js'
 import { guestProofDelivery } from './guest-access/guest-proof-delivery.service.js'
-import { createAdminAccountAccess } from './admin-account.service.js'
+import { adminTransactionAccess, createAdminAccountAccess } from './admin-account.service.js'
 import { Router } from 'express'
 import type { Connection } from 'mongoose'
 import type { IdentityConfig, RuntimeConfig } from '../../config/env.js'
@@ -146,6 +146,7 @@ export async function createAuthRuntime(
     security,
     throttle,
     adminAccounts: createAdminAccountAccess(connection, models, sessions),
+    adminTransaction: adminTransactionAccess(models, sessions),
     customerAccounts: createCustomerAccountAccess(connection, models, sessions),
     mediaAdmin: createMediaAdminAccess(models, sessions),
     // Session minting stays inside auth; business consumers receive owned scope only.

@@ -293,6 +293,12 @@ intake. Supplied email/role/status/credential/security fields are never written.
 is preserved; read-only or expired scopes cannot save. Customers owns validation/coverage and profile operations,
 with no foreign user model or duplicated schema. The coordinating transaction is retained across the capability.
 
+Administrative customer status decisions remain Auth-owned: guard customer role, current status and
+security revision, then update only active/suspended status, increment security revision, revoke
+customer sessions and append keyed decision/transition audit in the same transaction. Reactivation
+cannot restore old credentials or override deletion-pending/deactivated states. Idempotent replay
+does not repeat revocation or apply an older status decision again.
+
 Composition wires narrow public operations, never a second mutable schema for the same collection or unrestricted foreign-model access. Public capabilities accept the coordinating transaction session; participants must not start nested transactions or parallel operations in the same session. Preserve ObjectIds, snapshots, integer-poisha arithmetic, unique identities, BSON validation and all existing indexes. Raw model, validator and bootstrap path moves require updated tooling and parity tests; a filename change is not permission to change durable data or mark a migration executed.
 
 ### 4.3 Atomic allocation and verified-payment flow

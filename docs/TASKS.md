@@ -1025,7 +1025,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P08-016`\
   **Deliverable:** Expose approved public ratings/reviews, customer-owned history and eligible submit/edit, and protected moderation queues/actions with reasons and audit history.\
   **Acceptance:** Eligibility, one active review, moderation-after-edit and public allowlists are verified through HTTP; administrators cannot attribute altered rating values to customers.\
-  **Evidence:** [Local scope, checks and blockers](./evidence/P05-016-P08-019-local-reads.md). P08-016 acceptance and integrated runtime remain pending.
+  **Evidence:** [Local scope, checks and blockers](./evidence/P05-016-P08-019-local-reads.md). P08-016 acceptance and integrated runtime remain pending.\
+  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P05-017 — Implement admin review moderation controls**\
   **Status:** `Not Started` · **Area:** Admin\
@@ -1066,7 +1067,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Deliverable:** Display the applicable deadline rule/status and estimated date from approved configuration/verified law. Preserve the checkout rule basis; calculate a confirmation-based absolute deadline only after actual confirmation (Database §7.2; API §11.3).\
   **Acceptance:** 14-day planning target cannot override shorter applicable requirements; uncertain policy blocks final publication.\
   **Evidence:** [Verified local boundary, commands and missing sign-off](./evidence/P06-003-delivery-deadline-boundary.md). Project owner accepted the local implementation on 26 October 2026: “done koro”; [technical acceptance record](./evidence/P06-003-delivery-deadline-boundary.md#owner-review-of-local-implementation). Required qualified sign-off remains missing.
-  **Blocked:** Store owner/authorized policy approver must supply the exact approved deadline rule and qualified current compliance sign-off (EXT-07/EXT-08). Local synthetic checks do not establish legal applicability. Missing review blocks new basis capture and affected acceptance/confirmation; actual order/API integration remains with its owning tasks.
+  **Blocked:** Store owner/authorized policy approver must supply the exact approved deadline rule and qualified current compliance sign-off (EXT-07/EXT-08). Local synthetic checks do not establish legal applicability. Missing review blocks new basis capture and affected acceptance/confirmation; actual order/API integration remains with its owning tasks.\
+  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [x] **P06-004 — Implement authoritative checkout quote and validation**\
   **Status:** `Done` · **Area:** Backend/checkout · **Owner:** Codex\
@@ -1139,7 +1141,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Deliverable:** Enforce Pending/Confirmed/Processing/Shipped/Delivered/Cancelled transitions and shipment decrement of physical+committed.\
   **Acceptance:** Admin cannot skip forbidden transitions; shipping/failed delivery retains event history.\
   **Evidence:** [Local transition/stock tests, recorded checks and remaining acceptance](./evidence/P06-011-012-local-lifecycle-cod.md). Local implementation/tests explicitly authorized by owner; no full task acceptance.\
-  **Blocked:** P06-003 qualified rule/sign-off remains absent. Ordinary confirmation/runtime HTTP integration stays disabled; cancellation/final non-delivery and notifications remain their owning tasks.
+  **Blocked:** P06-003 qualified rule/sign-off remains absent. Ordinary confirmation/runtime HTTP integration stays disabled; cancellation/final non-delivery and notifications remain their owning tasks.\
+  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P06-012 — Implement authorized COD collection confirmation**\
   **Status:** `Blocked` · **Area:** Backend/payments\
@@ -1149,7 +1152,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Deliverable:** Record collected COD only on authorized confirmation with ledger and audit reference.\
   **Acceptance:** Delivery alone never marks COD Paid; duplicate confirmation has single effect.\
   **Evidence:** [Local COD source/audit/concurrency tests and remaining acceptance](./evidence/P06-011-012-local-lifecycle-cod.md). Local implementation/tests explicitly authorized by owner; no full task acceptance.\
-  **Blocked:** P06-011 remains unaccepted; a real protected original-cash evidence verifier/source and HTTP/root authorization/CSRF integration are not supplied or activated.
+  **Blocked:** P06-011 remains unaccepted; a real protected original-cash evidence verifier/source and HTTP/root authorization/CSRF integration are not supplied or activated.\
+  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P06-013 — Implement pre-shipment cancellation and exactly-once release**\
   **Status:** `Blocked` · **Area:** Backend/orders\
@@ -1159,7 +1163,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Deliverable:** Require administrator approval/rejection of every customer cancellation request; atomically recheck eligibility and dispatch status, retain reasons, release eligible allocation once, and create collected-payment refund obligations. Unpaid online cancellations keep provider reconciliation active for any later collection.\
   **Acceptance:** Shipped orders cannot use ordinary cancellation; uncollected COD has no monetary refund.\
   **Evidence:** [Local request/review/release, replay/race checks and remaining gates](./evidence/P06-013-014-cancellation-owned-reads.md). Local safe implementation verified; no full task acceptance.\
-  **Blocked:** P06-011 remains unaccepted; paid cancellation requires a real source-backed merchandise refund-obligation implementation and cancellation HTTP/admin transport remains unactivated. Missing planner denies approval without changing funds or allocation.
+  **Blocked:** P06-011 remains unaccepted; paid cancellation requires a real source-backed merchandise refund-obligation implementation and cancellation HTTP/admin transport remains unactivated. Missing planner denies approval without changing funds or allocation.\
+  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P06-014 — Implement authenticated customer order history/detail API**\
   **Status:** `Blocked` · **Area:** Backend/storefront\
@@ -1169,7 +1174,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Deliverable:** Expose own orders and independent fulfillment/payment history with pending/returned states where available.\
   **Acceptance:** Cross-account access denied; order totals use historical snapshots.\
   **Evidence:** [Implemented scoped read APIs, historical snapshot checks and verification](./evidence/P06-013-014-cancellation-owned-reads.md). Explicit local/test read-only activation, default off.\
-  **Blocked:** Declared P06-011 prerequisite remains unaccepted. No legal/staging/backend-stage acceptance inferred from local read APIs; independent full task acceptance pending.
+  **Blocked:** Declared P06-011 prerequisite remains unaccepted. No legal/staging/backend-stage acceptance inferred from local read APIs; independent full task acceptance pending.\
+  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [x] **P06-015 — Implement secure guest order lookup and scoped proof**\
   **Status:** `Done` · **Area:** Backend/guest-access · **Owner:** Codex\
@@ -1188,7 +1194,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Deliverable:** Persist accurate order reference/status events with reliable independent delivery and retry.\
   **Acceptance:** Repeated transitions do not email duplicate customer updates; mail failure cannot reverse orders.\
   **Evidence:** [Local commerce outbox/template/dedup/retry verification and remaining gates](./evidence/P06-016-017-commerce-delivery-support.md). Actual placement/transition causes, canonical recipient/history verification and explicit local/test worker activation.\
-  **Blocked:** P06-013 remains unaccepted; deployed sender/inbox/template qualification and independent full acceptance are not supplied by local provider doubles.
+  **Blocked:** P06-013 remains unaccepted; deployed sender/inbox/template qualification and independent full acceptance are not supplied by local provider doubles.\
+  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P06-017 — Implement failed delivery, delay and complaints foundations**\
   **Status:** `Blocked` · **Area:** Backend/admin\
@@ -1198,7 +1205,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Deliverable:** Track failed attempts and retry while Shipped; final non-delivery closure requires authorized custody/disposition for all shipped quantities. Close exceptionally as Cancelled, resolve eligible collected refunds, and restock only physically recovered inspected resellable units without re-running pre-shipment release. Track contacts, complaints, and resolution with scoped access.\
   **Acceptance:** Failure leads to documented retry/resolution; deadlines and customer updates remain accurate.\
   **Evidence:** [Local exception/custody/recovery/complaint checks and remaining gates](./evidence/P06-016-017-commerce-delivery-support.md). Private order-associated capabilities; no public/admin exception or anonymous complaint HTTP activation.\
-  **Blocked:** P06-011 remains unaccepted; real protected disposition/inspection authority, paid-refund integration, support HTTP security/public abuse controls and qualified response policy remain unavailable. Missing capabilities deny unsafe closure.
+  **Blocked:** P06-011 remains unaccepted; real protected disposition/inspection authority, paid-refund integration, support HTTP security/public abuse controls and qualified response policy remain unavailable. Missing capabilities deny unsafe closure.\
+  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P06-018 — Implement accessible checkout and order confirmation UI**\
   **Status:** `Not Started` · **Area:** Storefront/checkout\
@@ -1431,7 +1439,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P08-001`, `P06-011`\
   **Deliverable:** Enforce delivered status, development-baseline seven-day window and legally protected exceptions via approved policy.\
   **Acceptance:** Unsupported blanket rejection cannot override applicable rights; ineligible claims have clear reasons.\
-  **Evidence:** [Separate local scope, actual checks and remaining gates](./evidence/P08-002-003-local-return-eligibility-lifecycle.md). Owner authorized local implementation/tests; full prerequisite, HTTP/policy and physical lifecycle integrations remain blocked. No task acceptance is inferred.
+  **Evidence:** [Separate local scope, actual checks and remaining gates](./evidence/P08-002-003-local-return-eligibility-lifecycle.md). Owner authorized local implementation/tests; full prerequisite, HTTP/policy and physical lifecycle integrations remain blocked. No task acceptance is inferred.\
+  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P08-003 — Implement separate return lifecycle with admin review**\
   **Status:** `Blocked` · **Area:** Backend/returns\
@@ -1440,7 +1449,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P08-002`, `P06-015`\
   **Deliverable:** Implement Requested/Under Review/Approved/Awaiting Return/Received/Inspected/Completed, rejection history and customer-scoped supporting-image upload using a separately authorized media path.\
   **Acceptance:** Invalid transitions and unauthorized approval are blocked; physical returns cannot skip receipt/inspection; approved missing-item/shortage claims have a non-physical path without receipt/inspection/restock; optional evidence enforces type/size checks, verified customer or scoped guest authorization, private retrieval and safe orphan/retention cleanup.\
-  **Evidence:** [Separate local scope, actual checks and remaining gates](./evidence/P08-002-003-local-return-eligibility-lifecycle.md). Owner authorized local implementation/tests; full prerequisite, HTTP/policy and physical lifecycle integrations remain blocked. No task acceptance is inferred.
+  **Evidence:** [Separate local scope, actual checks and remaining gates](./evidence/P08-002-003-local-return-eligibility-lifecycle.md). Owner authorized local implementation/tests; full prerequisite, HTTP/policy and physical lifecycle integrations remain blocked. No task acceptance is inferred.\
+  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P08-004 — Record receipt/inspection and resellable stock restoration**\
   **Status:** `Blocked` · **Area:** Backend/inventory\
@@ -1449,7 +1459,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P08-003`\
   **Deliverable:** Require inspection to mark resellable quantities and atomically add physical stock.\
   **Acceptance:** Request/approval alone never restocks; duplicate receipt cannot double-add stock.\
-  **Evidence:** [Local receipt/inspection, stock and verification](./evidence/P08-003-004-local-return-inspection.md). Blocked on P08-003 acceptance, partial-receipt follow-up and integrated access; independent acceptance remains pending.
+  **Evidence:** [Local receipt/inspection, stock and verification](./evidence/P08-003-004-local-return-inspection.md). Blocked on P08-003 acceptance, partial-receipt follow-up and integrated access; independent acceptance remains pending.\
+  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P08-005 — Model refund obligations, attempts and commitments**\
   **Status:** `Blocked` · **Area:** Backend/refunds\
@@ -1458,7 +1469,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P07-002`, `P06-013`, `P08-003`\
   **Deliverable:** Separate refunds from returns and store approval/payout attempts, status and source collection.\
   **Acceptance:** Original order fulfillment history remains immutable; pending vs completed are distinct.\
-  **Evidence:** [Local advisory/state validation, actual tests and remaining work](./evidence/P08-005-006-local-refund-advisory.md). Prerequisites and independent acceptance remain pending; no reservation, attempt writer or payout enabled.
+  **Evidence:** [Local advisory/state validation, actual tests and remaining work](./evidence/P08-005-006-local-refund-advisory.md). Prerequisites and independent acceptance remain pending; no reservation, attempt writer or payout enabled.\
+  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P08-006 — Calculate item-level partial/full refundable balance**\
   **Status:** `Blocked` · **Area:** Backend/refunds\
@@ -1467,7 +1479,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P08-005`\
   **Deliverable:** Use purchase-time item/allocated coupon amounts, physical-return/shortage quantity limits, delivery-charge policy and prior commitments. Payment corrections consume source-collection financial capacity independently of merchandise-return quantities.\
   **Acceptance:** No current-catalog price used; deterministic rounding; no refund for uncollected COD.\
-  **Evidence:** [Local advisory/state validation](./evidence/P08-005-006-local-refund-advisory.md) and [correction-source follow-up](./evidence/P08-007-008-local-refund-planning-provider.md#1-november-2026--correction-advisory-follow-up-p08-006--p08-007). Prerequisites and independent acceptance remain pending; no reservation, attempt writer or payout enabled.
+  **Evidence:** [Local advisory/state validation](./evidence/P08-005-006-local-refund-advisory.md) and [correction-source follow-up](./evidence/P08-007-008-local-refund-planning-provider.md#1-november-2026--correction-advisory-follow-up-p08-006--p08-007). Prerequisites and independent acceptance remain pending; no reservation, attempt writer or payout enabled.\
+  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P08-007 — Atomically reserve eligible collected refund balance**\
   **Status:** `Blocked` · **Area:** Backend/refunds\
@@ -1476,7 +1489,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P08-006`\
   **Deliverable:** Reserve refundable capacity before payout and guard against concurrent attempts.\
   **Acceptance:** Pending+completed commitments never exceed independently verified collections at either source-collection or order level; duplicate-collection refunds do not consume merchandise quantity entitlement.\
-  **Evidence:** [Separate local planning/transport, correction-source follow-up, tests and outstanding prerequisites](./evidence/P08-007-008-local-refund-planning-provider.md). No reservation, durable payout attempt, executor or sandbox acceptance is implied.
+  **Evidence:** [Separate local planning/transport, correction-source follow-up, tests and outstanding prerequisites](./evidence/P08-007-008-local-refund-planning-provider.md). No reservation, durable payout attempt, executor or sandbox acceptance is implied.\
+  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P08-008 — Implement supported gateway payout requests and references**\
   **Status:** `Blocked` · **Area:** Backend/refunds\
@@ -1485,7 +1499,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P08-007`, `P07-001`\
   **Deliverable:** Use original bank_tran_id and supported provider API; record refund identifiers and attempt states.\
   **Acceptance:** Provider acceptance leaves refund Processing until independently verified payout.\
-  **Evidence:** [Separate local planning/transport, tests and outstanding prerequisites](./evidence/P08-007-008-local-refund-planning-provider.md). No reservation, durable payout attempt, executor or sandbox acceptance is implied.
+  **Evidence:** [Separate local planning/transport, tests and outstanding prerequisites](./evidence/P08-007-008-local-refund-planning-provider.md). No reservation, durable payout attempt, executor or sandbox acceptance is implied.\
+  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P08-009 — Implement refund-status verification/retry/investigation**\
   **Status:** `Blocked` · **Area:** Backend/jobs\
@@ -1494,7 +1509,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P08-008`\
   **Deliverable:** Query supported status, reconcile uncertainty and guard authorized retry without duplicate payout.\
   **Acceptance:** Unknown result never marked Completed; duplicate callbacks and job restarts are safe.\
-  **Evidence:** [Local status/retry assessment and manual evidence verification](./evidence/P08-009-010-local-refund-evidence.md). Durable attempts, real source/consent verification and transactional completion remain unavailable; prerequisites and independent acceptance remain pending.
+  **Evidence:** [Local status/retry assessment and manual evidence verification](./evidence/P08-009-010-local-refund-evidence.md). Durable attempts, real source/consent verification and transactional completion remain unavailable; prerequisites and independent acceptance remain pending.\
+  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P08-010 — Implement controlled COD/manual payout evidence**\
   **Status:** `Blocked` · **Area:** Backend/refunds\
@@ -1503,7 +1519,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P08-007`, `P06-012`\
   **Deliverable:** Record consent where required, verified transfer and admin confirmation for COD/bank/mobile wallet.\
   **Acceptance:** Uncollected COD cannot be refunded; no Completed state without payout evidence.\
-  **Evidence:** [Local status/retry assessment and manual evidence verification](./evidence/P08-009-010-local-refund-evidence.md). Durable attempts, real source/consent verification and transactional completion remain unavailable; prerequisites and independent acceptance remain pending.
+  **Evidence:** [Local status/retry assessment and manual evidence verification](./evidence/P08-009-010-local-refund-evidence.md). Durable attempts, real source/consent verification and transactional completion remain unavailable; prerequisites and independent acceptance remain pending.\
+  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P08-011 — Persist return and refund decisions and notifications**\
   **Status:** `Blocked` · **Area:** Backend/notifications\
@@ -1512,7 +1529,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P08-009`, `P08-010`\
   **Deliverable:** Record approvals, rejection reasons, retry/failure and accurate customer status email.\
   **Acceptance:** Return completion never sends unverified refund-completed claim; notifications deduplicate.\
-  **Evidence:** [Local return notifications, review qualification and actual checks](./evidence/P08-011-016-return-notifications-review.md). Required refund prerequisites, production composition and independent acceptance remain outstanding.
+  **Evidence:** [Local return notifications, review qualification and actual checks](./evidence/P08-011-016-return-notifications-review.md). Required refund prerequisites, production composition and independent acceptance remain outstanding.\
+  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P08-012 — Implement request/history and evidence UX**\
   **Status:** `Not Started` · **Area:** Storefront/returns\
@@ -1557,7 +1575,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P05-009`, `P08-005`\
   **Deliverable:** Require qualifying delivered purchase and block new verification after fully returned/refunded purchase unless another qualifies.\
   **Acceptance:** Legitimate prior reviews are not auto-deleted solely by refund; edited reviews return to moderation when required.\
-  **Evidence:** [Local return notifications, review qualification and actual checks](./evidence/P08-011-016-return-notifications-review.md). Required refund prerequisites, production composition and independent acceptance remain outstanding.
+  **Evidence:** [Local return notifications, review qualification and actual checks](./evidence/P08-011-016-return-notifications-review.md). Required refund prerequisites, production composition and independent acceptance remain outstanding.\
+  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P08-017 — Enable verified customer review submission and editing UI**\
   **Status:** `Not Started` · **Area:** Storefront/reviews\
@@ -1584,7 +1603,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P08-011`\
   **Deliverable:** Complete customer/guest and admin claim/refund list/detail/decision surfaces, evidence access and safe timelines using return/refund services; include timing snapshots and investigation status.\
   **Acceptance:** Nested ownership, guest proof scope, private image retrieval, quantity/source caps and verified payout status are proven by API tests; missing policy timing never produces a guessed deadline.\
-  **Evidence:** [Local scope, checks and blockers](./evidence/P05-016-P08-019-local-reads.md). P08-011 acceptance and remaining history/refund surfaces remain pending.
+  **Evidence:** [Local scope, checks and blockers](./evidence/P05-016-P08-019-local-reads.md). P08-011 acceptance and remaining history/refund surfaces remain pending.\
+  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 ### Phase 09 — Admin management and reports
 
@@ -1606,7 +1626,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P06-012`, `P08-005`\
   **Deliverable:** Calculate gross merchandise, sale/coupon discounts, verified paid collections, outstanding COD, pending/completed refunds and net collected revenue.\
   **Acceptance:** Uncollected COD does not inflate collected revenue; refund and duplicate attempt aggregates remain accurate.\
-  **Evidence:** [Private arithmetic and remaining source/cutoff work](./evidence/P09-002-015-local-report-customer.md). Accepted COD/refund prerequisites, authoritative ledger adapters and independent acceptance remain pending.
+  **Evidence:** [Private arithmetic and remaining source/cutoff work](./evidence/P09-002-015-local-report-customer.md). Accepted COD/refund prerequisites, authoritative ledger adapters and independent acceptance remain pending.\
+  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P09-003 — Complete admin customer search, history and suspension workflow**\
   **Status:** `Not Started` · **Area:** Admin/customers\
@@ -1724,7 +1745,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P03-008`, `P06-014`, `P08-019`\
   **Deliverable:** Implement customer search, authorized history, suspension/reactivation and verified deletion-request review with retention/legal-hold-safe decisions.\
   **Acceptance:** Suspension revokes relevant sessions; foreign access and unsafe deletion fail; required order/financial/audit history remains and sensitive data is minimized.\
-  **Evidence:** [Local masked customer read and remaining scope](./evidence/P09-002-015-local-report-customer.md). P06-014/P08-019, full operations and independent acceptance remain pending.
+  **Evidence:** [Local masked customer read and remaining scope](./evidence/P09-002-015-local-report-customer.md). P06-014/P08-019, full operations and independent acceptance remain pending.\
+  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P09-016 — Expose support and complaint operations APIs**\
   **Status:** `Blocked` · **Area:** Backend\
@@ -1733,7 +1755,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P06-017`\
   **Deliverable:** Expose public/scoped complaint intake and admin search/contact/status/resolution with order context, deadline policy and durable customer-response events.\
   **Acceptance:** Anonymous inputs require contactName/contactEmail; authenticated defaults use verified own data only; replay/throttle/access tests preserve history and notification truth.\
-  **Evidence:** [Local complaint and audit read work](./evidence/P09-016-017-local-support-audit.md). P06-017, remaining intake/response integration and independent acceptance remain pending.
+  **Evidence:** [Local complaint and audit read work](./evidence/P09-016-017-local-support-audit.md). P06-017, remaining intake/response integration and independent acceptance remain pending.\
+  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P09-017 — Expose audit and operational exception APIs**\
   **Status:** `Blocked` · **Area:** Backend\
@@ -1742,7 +1765,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P07-018`, `P08-019`, `P04-018`, `P09-002`\
   **Deliverable:** Expose bounded sanitized audit/history and stock, payment, refund and reconciliation exception queues; domain services retain mutation authority.\
   **Acceptance:** Restricted queries enforce admin access and safe pagination; immutable actor/action/time history remains; no operational screen is needed to prove the backend contract.\
-  **Evidence:** [Local complaint and audit read work](./evidence/P09-016-017-local-support-audit.md). Prerequisite acceptance, bounded query profiles, operational queues and independent acceptance remain pending.
+  **Evidence:** [Local complaint and audit read work](./evidence/P09-016-017-local-support-audit.md). Prerequisite acceptance, bounded query profiles, operational queues and independent acceptance remain pending.\
+  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P09-018 — Expose bounded business report queries**\
   **Status:** `Not Started` · **Area:** Backend\
@@ -2582,3 +2606,5 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **1 November 2026 — P09-016/P09-017 local reads:** Each Not Started → In Progress → Blocked. Added locally composed admin complaint queue and redacted audit history. [Tests, limitations and outstanding gates](./evidence/P09-016-017-local-support-audit.md). Overall: 210 tasks, 107 Done, 79 Not Started, 22 Blocked, 2 Deferred. No independent acceptance or milestone approval inferred.
 
 **1 November 2026 — P09-002/P09-015 local foundation:** Each Not Started → In Progress → Blocked. Added non-authoritative financial arithmetic and an admin-scoped masked customer detail reader. [Tests, limits and dependencies](./evidence/P09-002-015-local-report-customer.md). Overall: 210 tasks, 107 Done, 77 Not Started, 24 Blocked, 2 Deferred. Full task implementation and independent acceptance remain outstanding.
+
+**1 November 2026 — all blocked tasks reviewed:** Reviewed every Blocked task and linked its [individual finding, accountable owner and next action](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Fixed real review HTTP composition and extended local customer status/search operations with transaction, revocation, replay and rollback checks. Baseline regression and affected follow-ups are recorded in that review. No full deliverable with accepted prerequisites and independent acceptance was established; counts remain 107 Done, 77 Not Started, 24 Blocked and 2 Deferred.

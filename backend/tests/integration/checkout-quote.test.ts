@@ -73,6 +73,7 @@ import { codCollectionOrderAccess } from '../../src/modules/orders/order.service
 import { paymentMonitorRoutes } from '../../src/modules/payments/payment-monitor.routes.js'
 import { paymentMonitorService } from '../../src/modules/payments/payment-monitor.service.js'
 import { composeNotificationWorker } from '../../src/setup.js'
+import { composeLocalReviewRoutes } from '../../src/setup.js'
 import { paymentMessageService } from '../../src/modules/notifications/payment-message.service.js'
 import { paymentNotificationAccess } from '../../src/modules/payments/payment-notification.service.js'
 import { createNotificationDeliveryService } from '../../src/modules/notifications/notification-delivery.service.js'
@@ -82,8 +83,12 @@ import { paymentReconciliationJob } from '../../src/jobs/reconcile-payments.job.
 import { paymentRiskRoutes } from '../../src/modules/payments/payment-risk.routes.js'
 import { paymentRiskService } from '../../src/modules/payments/payment-risk.service.js'
 import { paymentSettlementService } from '../../src/modules/payments/payment-settlement.service.js'
-import { createAdminAccountAccess } from '../../src/modules/auth/admin-account.service.js'
-import { customerAdminQueryService } from '../../src/modules/auth/customer-admin-query.service.js'
+import {
+  adminTransactionAccess,
+  createAdminAccountAccess,
+} from '../../src/modules/auth/admin-account.service.js'
+import { customerAdminService } from '../../src/modules/auth/customer-admin.service.js'
+import { customerAdminRoutes } from '../../src/modules/customers/customer-admin.routes.js'
 import { initializeCorrectionPersistence } from '../../src/modules/refunds/refund.persistence.js'
 import { createAuditWriter } from '../../src/modules/audit/audit.service.js'
 import { paymentProcessingService } from '../../src/modules/payments/payment-processing.service.js'
@@ -5104,7 +5109,7 @@ it('customer admin local: detail requires active admin and returns masked custom
   const who = await customer(),
     admin = await customer('admin'),
     other = await customer()
-  const service = customerAdminQueryService(
+  const service = customerAdminService(
     db.connection,
     identities,
     createAdminAccountAccess(db.connection, identities, sessions),
@@ -5132,6 +5137,144 @@ it('customer admin local: detail requires active admin and returns masked custom
   await expect(
     service.detail(admin.credentials.customerToken, who.user._id.toHexString()),
   ).rejects.toThrow()
+})
+it('blocked customer audit: HTTP search/detail enforce admin and status decisions require CSRF, key and strict input', async () => {
+  const who = await customer(),
+    administrator = await customer('admin')
+  const administration = customerAdminService(
+    db.connection,
+    identities,
+    createAdminAccountAccess(db.connection, identities, sessions),
+  )
+  const root = createApp({ apiRouter: customerAdminRoutes(administration, security, sessions) })
+  const path = `/api/v1/admin/customers/${who.user._id}`
+  await request(root).get(path).set('Cookie', who.cookie).expect(401)
+  const detail = await request(root).get(path).set('Cookie', administrator.cookie).expect(200)
+  expect(JSON.stringify(detail.body.data)).not.toContain(who.user.emailNormalized)
+  const searched = await request(root)
+    .get('/api/v1/admin/customers')
+    .query({ q: who.user.emailNormalized, pageSize: '1' })
+    .set('Cookie', administrator.cookie)
+    .expect(200)
+  expect(searched.body.data.map((row: { id: string }) => row.id)).toEqual([
+    who.user._id.toHexString(),
+  ])
+  expect(searched.body.meta).toMatchObject({ totalItems: 1, pageSize: 1 })
+  expect(
+    (
+      await request(root)
+        .get('/api/v1/admin/customers?q=.*')
+        .set('Cookie', administrator.cookie)
+        .expect(200)
+    ).body.data,
+  ).toEqual([])
+  await request(root)
+    .post(`${path}/status-decisions`)
+    .set('Origin', 'http://localhost:5173')
+    .set('Cookie', administrator.cookie)
+    .send({ to: 'suspended', reason: 'Synthetic review' })
+    .expect(403)
+  await request(root)
+    .post(`${path}/status-decisions`)
+    .set('Origin', 'http://localhost:5173')
+    .set('Cookie', administrator.cookie)
+    .set('X-CSRF-Token', administrator.csrf)
+    .send({ to: 'suspended', reason: 'Synthetic review' })
+    .expect(400)
+  await request(root)
+    .post(`${path}/status-decisions`)
+    .set('Origin', 'http://localhost:5173')
+    .set('Cookie', administrator.cookie)
+    .set('X-CSRF-Token', administrator.csrf)
+    .set('Idempotency-Key', 'bad-input')
+    .send({ to: 'suspended', reason: 'Synthetic review', role: 'admin' })
+    .expect(400)
+  expect((await identities.users.findById(who.user._id))?.status).toBe('active')
+})
+it('blocked customer audit: suspension revokes every customer session and old retries cannot undo reactivation', async () => {
+  const who = await customer(),
+    administrator = await customer('admin')
+  const second = await sessions.issue('customer', who.user._id)
+  const administration = customerAdminService(
+    db.connection,
+    identities,
+    createAdminAccountAccess(db.connection, identities, sessions),
+  )
+  const root = createApp({ apiRouter: customerAdminRoutes(administration, security, sessions) })
+  const path = `/api/v1/admin/customers/${who.user._id}/status-decisions`
+  const post = (to: string, key: string) =>
+    request(root)
+      .post(path)
+      .set('Origin', 'http://localhost:5173')
+      .set('Cookie', administrator.cookie)
+      .set('X-CSRF-Token', administrator.csrf)
+      .set('Idempotency-Key', key)
+      .send({ to, reason: 'Synthetic authorized status review' })
+  await post('suspended', 'suspend').expect(200)
+  expect(
+    await db.connection
+      .collection('auditLogs')
+      .countDocuments({ targetId: who.user._id, action: 'customer.status.active.suspended' }),
+  ).toBe(1)
+  await expect(sessions.authenticate('customer', who.credentials.customerToken)).rejects.toThrow()
+  await expect(sessions.authenticate('customer', second.token)).rejects.toThrow()
+  await post('active', 'reactivate').expect(200)
+  expect((await post('suspended', 'suspend').expect(200)).body.data.status).toBe('active')
+  await expect(sessions.authenticate('customer', second.token)).rejects.toThrow()
+  await post('active', 'suspend').expect(409)
+  expect(
+    await db.connection
+      .collection('auditLogs')
+      .countDocuments({ targetId: who.user._id, action: 'customer.status.decision' }),
+  ).toBe(2)
+  await identities.users.updateOne({ _id: who.user._id }, { $set: { status: 'deletion_pending' } })
+  await post('active', 'unsafe-reactivation').expect(409)
+})
+it('blocked customer audit: concurrent duplicate decisions have one effect and transaction failure rolls back sessions and audit', async () => {
+  const who = await customer(),
+    administrator = await customer('admin')
+  const admins = createAdminAccountAccess(db.connection, identities, sessions)
+  const administration = customerAdminService(db.connection, identities, admins)
+  const id = who.user._id.toHexString(),
+    command = { to: 'suspended', reason: 'Synthetic concurrent review' }
+  await Promise.all([
+    administration.decideStatus(administrator.credentials.customerToken, id, command, 'concurrent'),
+    administration.decideStatus(administrator.credentials.customerToken, id, command, 'concurrent'),
+  ])
+  expect(
+    await db.connection
+      .collection('auditLogs')
+      .countDocuments({ targetId: who.user._id, action: 'customer.status.decision' }),
+  ).toBe(1)
+  const other = await customer()
+  const failing: Parameters<typeof customerAdminService>[2] = {
+    owned: (token, work, mutating) =>
+      admins.owned(
+        token,
+        async (actor, transaction) => {
+          await work(actor, transaction)
+          throw new Error('Synthetic failure after actual status, session and audit writes')
+        },
+        mutating,
+      ),
+  }
+  await expect(
+    customerAdminService(db.connection, identities, failing).decideStatus(
+      administrator.credentials.customerToken,
+      other.user._id.toHexString(),
+      command,
+      'rollback',
+    ),
+  ).rejects.toThrow()
+  expect((await identities.users.findById(other.user._id))?.status).toBe('active')
+  await expect(
+    sessions.authenticate('customer', other.credentials.customerToken),
+  ).resolves.toBeDefined()
+  expect(
+    await db.connection
+      .collection('auditLogs')
+      .countDocuments({ targetId: other.user._id, action: 'customer.status.decision' }),
+  ).toBe(0)
 })
 it('commerce/exception batch: actual lifecycle commits one order email event per cause and delivery remains financially independent', async () => {
   const f = await lifecycleFixture()
@@ -6896,6 +7039,101 @@ async function deliveredReviewFixture(deliver = true) {
   })
   return { buyer, selected, orderId, selection, eligibility, reviews }
 }
+function localReviewAuth() {
+  return {
+    customerAccounts: createCustomerAccountAccess(db.connection, identities, sessions),
+    adminAccounts: createAdminAccountAccess(db.connection, identities, sessions),
+    adminTransaction: adminTransactionAccess(identities, sessions),
+    sessions,
+    security,
+  }
+}
+it('blocked review audit: composed real purchase, visibility, admin fences and audit receipts survive moderation replay', async () => {
+  const f = await deliveredReviewFixture(),
+    administrator = await customer('admin')
+  const root = createApp({
+    apiRouter: composeLocalReviewRoutes(db.connection, 'test', localReviewAuth(), () => now),
+  })
+  const input = {
+    rating: 2,
+    comment: 'Authentic synthetic purchase review',
+    qualifyingOrderItemId: f.selection.qualifyingOrderItemId,
+  }
+  const productPath = `/api/v1/products/${f.selection.productId}/reviews`
+  const created = await request(root)
+    .post(productPath)
+    .set('Origin', origin)
+    .set('Cookie', f.buyer.cookie)
+    .set('X-CSRF-Token', f.buyer.csrf)
+    .send(input)
+    .expect(201)
+  const id = created.body.data.id,
+    moderatePath = `/api/v1/admin/reviews/${id}/moderation`
+  const approve = () =>
+    request(root)
+      .post(moderatePath)
+      .set('Origin', 'http://localhost:5173')
+      .set('Cookie', administrator.cookie)
+      .set('X-CSRF-Token', administrator.csrf)
+      .set('Idempotency-Key', 'real-review-approval')
+      .send({ decision: 'approve', reason: 'Verified actual purchase facts' })
+  await approve().expect(200)
+  expect((await request(root).get(productPath).expect(200)).body.data).toHaveLength(1)
+  await request(root)
+    .patch(`/api/v1/reviews/${id}`)
+    .set('Origin', origin)
+    .set('Cookie', f.buyer.cookie)
+    .set('X-CSRF-Token', f.buyer.csrf)
+    .send({ comment: 'Edited authentic review' })
+    .expect(200)
+  await approve().expect(200)
+  expect((await request(root).get(productPath).expect(200)).body.data).toEqual([])
+  expect(
+    await db.connection
+      .collection('auditLogs')
+      .countDocuments({ targetId: new Types.ObjectId(id), action: 'review.approve' }),
+  ).toBe(1)
+  await identities.users.updateOne(
+    { _id: administrator.user._id },
+    { $set: { status: 'suspended' } },
+  )
+  await approve().expect(403)
+  expect(() => composeLocalReviewRoutes(db.connection, 'production', localReviewAuth())).toThrow()
+})
+it('blocked review audit: composed review API denies undelivered purchase, foreign proof and missing CSRF', async () => {
+  const f = await deliveredReviewFixture(false),
+    foreign = await customer()
+  const root = createApp({
+    apiRouter: composeLocalReviewRoutes(db.connection, 'test', localReviewAuth(), () => now),
+  })
+  const input = {
+    rating: 5,
+    comment: 'Synthetic invalid proof',
+    qualifyingOrderItemId: f.selection.qualifyingOrderItemId,
+  }
+  const path = `/api/v1/products/${f.selection.productId}/reviews`
+  await request(root)
+    .post(path)
+    .set('Origin', origin)
+    .set('Cookie', f.buyer.cookie)
+    .set('X-CSRF-Token', f.buyer.csrf)
+    .send(input)
+    .expect(422)
+  await request(root)
+    .post(path)
+    .set('Origin', origin)
+    .set('Cookie', foreign.cookie)
+    .set('X-CSRF-Token', foreign.csrf)
+    .send(input)
+    .expect(422)
+  await request(root)
+    .post(path)
+    .set('Origin', origin)
+    .set('Cookie', f.buyer.cookie)
+    .send(input)
+    .expect(403)
+  expect(await reviewModel(db.connection).countDocuments()).toBe(0)
+})
 it('claim history local: customer ownership is enforced on list and nested detail', async () => {
   await initializeReturnPersistence(db.connection)
   const f = await deliveredReviewFixture(),

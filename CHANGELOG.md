@@ -8,6 +8,13 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 1 November 2026 — Blocked backend task review
+
+- Reviewed all 24 blocked tasks against current code, dependencies and acceptance evidence; retained explicit incomplete code and external approval blockers.
+- Added real local review composition with delivered purchase, catalog visibility, admin fences and durable moderation replay.
+- Added local customer search/detail and audited suspension/reactivation with atomic session revocation and rollback checks.
+- Full task acceptance and external gates remain unresolved.
+
 ## 1 November 2026 — Private reporting and customer read foundation
 
 - Added non-authoritative financial report arithmetic and an admin-scoped masked customer detail capability.
