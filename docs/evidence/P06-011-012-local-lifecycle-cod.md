@@ -199,3 +199,82 @@ and the remaining decision fields are retained in the
 [P06-003 evidence](./P06-003-delivery-deadline-boundary.md#package-a-owner-response-and-configuration-check--1-november-2026).
 No qualified finding, actual cash receipt, sign-off or admission was invented. This follow-up resolves
 the input question as "not available"; it does not clear any acceptance gate.
+
+## Protected authorities and configured startup — 1 November 2026
+
+The owner requested completion without further input requests and delegated Bangladesh-context
+research/development. This follow-up implements concrete authority adapters; it does not invent
+actual receipts, qualified review or acceptance. Existing staged work was preserved. During work,
+the earlier Package A changes appeared in owner-created commit `2158e05`; the executor did not
+create or publish that commit. The new authority delta below is relative to that revision.
+
+### Implemented
+
+- Payments verifies operator-controlled original receipt sources and actual artifact bytes against
+  SHA-256. It binds payment, original reference, amount, evidence reference and event time. Duplicate
+  source identities, future/reversed times, changed bytes, missing/oversized/shared-readable files and
+  symlink leaves deny. Browser evidenceRef never supplies a filesystem path. No default data exists.
+- Shared bounded protected-file IO has two consumers (configuration and Payments); it imports only
+  Node technical modules. File permission/ownership checks precede bounded reads. Proof IO stays
+  outside transactions; the existing cash service reauthorizes and atomically commits canonical data.
+- Orders verifies confirmation snapshots against the independently configured immutable rule/review
+  registry, including timing/digest. A caller cannot relabel a tampered snapshot with another reviewer.
+- Explicit local/test startup uses ORDER_OPERATIONS_ENABLED plus protected deadline, COD-source and
+  cancellation-authority files. Configured sources are required; wrong environment, auth/read admission,
+  future/ambiguous approvals and unavailable source files fail redacted startup. Off remains default.
+- Request-bound cancellation policy is loaded before transactions, copied at composition, and matched
+  by canonical order/request. Unknown pairs fail closed. Canonical cancellation/refund reservation
+  services retain responsibility for funding, policy/consent guards, unit caps and exactly-once effects.
+- Refund approval validation moved to an owning pure schema consumed by configuration and both refund
+  services, with a compatibility export preserved. No collection, business API or dependency was added.
+- Server startup now invokes the real loader/builder, rather than relying only on manually injected
+  callbacks. Actual startup on an isolated replica DB with synthetic protected files is verified through
+  real HTTP; host provider configuration is excluded from that test and restored afterward.
+
+Operations owns file formats, permissions, restart/revocation and recovery procedure. Env examples
+contain blank references and default-off activation only. Actual .env/.env.staging and deployed flags
+were not changed; no actual customer/store receipt or third-party system was touched. No expiry,
+retention, provider acceptance or actual cash fact is inferred from an integrity check.
+
+### Verification
+
+Local Node/npm; isolated MongoDB 8.0.16 replica sets and actual HTTP. All original receipts, operators
+and approvals in tests are labeled synthetic. This validates code behavior, not real cash or legal facts.
+
+| Command | Observed result |
+| --- | --- |
+| `npm run build --workspace=backend`, `npm run typecheck --workspace=backend` | Passed. Final test additions separately typechecked. |
+| `cd backend && ../node_modules/.bin/vitest run tests/unit/cod-evidence.test.ts tests/unit/delivery-deadline.test.ts tests/unit/order-operations-config.test.ts --reporter=dot` | Passed: 26 affected unit cases / 3 files. |
+| `npm run test:unit --workspace=backend -- --reporter=dot --reporter=json --outputFile=../test-results/package-a-authorities-unit.json` | Passed: 792 cases / 46 files, with listener/subprocess permission. |
+| `cd backend && ../node_modules/.bin/vitest run --config vitest.integration.config.ts checkout-quote.test.ts orders.test.ts payment-records.test.ts payment-correction-migration.test.ts --reporter=dot --reporter=json --outputFile=../test-results/package-a-authorities-regression.json` | Passed: 331 cases / 4 files, including original-receipt HTTP. |
+| `cd backend && ../node_modules/.bin/vitest run --config vitest.integration.config.ts checkout-quote.test.ts -t 'Package A protected authorities: real server startup' --reporter=dot --reporter=json --outputFile=../test-results/package-a-startup-authorities.json` | Passed: one later-added actual-startup case; unavailable credentials/default adapters are not substituted. |
+| `cd backend && ../node_modules/.bin/vitest run --config vitest.integration.config.ts checkout-quote.test.ts -t 'Package A protected authorities: cancellation policy' --reporter=dot --reporter=json --outputFile=../test-results/package-a-cancellation-authorities.json` | Passed: one later-added configured cancellation case; wrong request rolls back, correct authority reserves once and replay has one effect. |
+| `npm run test:contract --workspace=backend` | Passed: 112 cases; four generated artifacts current. |
+| `npm run lint --workspace=backend`, `npm run lint:boundaries` | Passed: 434 linted files; 395 source files, zero boundary errors. |
+| `npm run test:smoke --workspace=backend` | Passed: compiled real DB startup, redacted failure, restricted readiness and graceful shutdown. |
+
+No business behavior changed after the 331-case regression; the two later integration cases were added
+and verified separately instead of rerunning unchanged inputs. Together 333 affected integration
+cases are covered; this is not a claim that one 333-case command was executed.
+
+Source/test/tooling delta relative to `2158e05`: 13 sorted changed/untracked paths under backend/src,
+backend/tests and tests/tooling, path + NUL + bytes + NUL; SHA-256
+`1f12bffb019aa43e68d50384cd21a28e487828735e84918427e0ef830a961e0a`.
+Env examples/docs are outside that hash. JSON reports are ignored replaceable local artifacts.
+
+Final `npm run test:security` Passed. Repository checks Passed (773 files, 1547 links),
+`git diff --check` Passed, and `npm run format:check` Passed (599 files). The first final formatting
+check detected two new files needing normalization; only whitespace was corrected and the check
+rerun passed. The recorded hash includes that final normalization. No unchanged domain regression
+was repeated for formatting-only edits.
+
+
+### Remaining full-task acceptance
+
+No real protected receipt or qualified applicability record exists in the supplied setup. Research
+can locate official rules and inform implementation, but cannot establish receipt of cash, manufacture
+a qualified reviewer or independently accept the executor's own task. The source-mapping issue in
+P06-003 and reviewed deployed admission remain unresolved. No task/milestone is marked Done.
+Earlier descriptions of missing concrete verifier/root wiring are superseded by this follow-up;
+real qualification and full acceptance are still outstanding. No repeat request is made for the
+records the owner already confirmed unavailable.

@@ -246,3 +246,19 @@ replaced by the commercial planning target.
 No extra admin role or second-admin requirement is introduced. No activation manifest/env value,
 financial record, real receipt or reviewer identity was manufactured. P06-003 and Package A remain
 unaccepted; policy preparation and operational procedure are delivered within the owner's delegation.
+
+
+## Configured approval authority follow-up — 1 November 2026
+
+The Package A follow-up implements `deliveryDeadlineApprovalAccess`: confirmation must find an exact
+normalized rule and review tuple in the independent configured registry. It checks the captured-time
+window, digest and transaction; invented review identities, altered rules and future snapshots deny.
+The registry is copied on composition. A protected file's digest/metadata integrity is still distinct
+from actual qualified applicability. The previously recorded full-payment/hourly-handover mapping
+issue is not silently encoded as another event. No signed/legal manifest is manufactured.
+
+[Configured authority code and observed verification](./P06-011-012-local-lifecycle-cod.md#protected-authorities-and-configured-startup--1-november-2026)
+supersedes earlier statements that the concrete cash verifier/startup adapter did not exist. Those
+adapters are now implemented; real originals, qualified applicability and independent acceptance are
+not supplied by synthetic local tests. The owner is not asked again to provide records already
+confirmed unavailable.

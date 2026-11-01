@@ -1718,6 +1718,12 @@ conflict boundary, preventing overselling or stale CAS even across different adm
 | `GET`  | `/admin/reviews`                                    | `status?,productId?,page? → AdminReview[]`                                                                    | 31  |
 | `POST` | `/admin/reviews/{reviewId}/moderation`              | `{decision:enum(approve,reject,hide),reason} + Idempotency-Key → AdminReview`                                 | 31  |
 
+Configured local/test order operations may load protected reviewed deadline, original COD receipt
+and request-bound cancellation authorities at server composition. No browser route installs these
+sources. Receipt-byte integrity, binding and current admin checks precede collection; missing,
+ambiguous, tampered or unavailable originals deny a new write. An identical previously committed
+collection replay does not require resubmitting evidence or create another financial source.
+
 Admin order list/detail and fulfillment/COD mutations use current admin sessions; browser mutations
 require the exact admin Origin, CSRF and Idempotency-Key. Fulfillment mutation returns the current
 `AdminOrderDetail` after the guarded command, including on an identical historical replay; changed

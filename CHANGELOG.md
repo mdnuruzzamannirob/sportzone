@@ -8,6 +8,12 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 1 November 2026 — Protected order-operation authorities
+
+- Implemented protected original-receipt integrity/binding verification and configured deadline-registry checks.
+- Wired explicit local/test server activation and request-bound funded-cancellation authorities without default financial evidence or review records.
+- Added configuration, privacy/tamper, real server startup and cancellation replay/rollback coverage; real policy/cash qualification and full task acceptance remain outstanding.
+
 ## 1 November 2026 — Bangladesh policy preparation
 
 - Inspected official Bangladesh digital-commerce sources and prepared Bangla order/delivery/COD policy text plus an original-receipt verification procedure.

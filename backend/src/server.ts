@@ -1,3 +1,5 @@
+import { loadOrderOperationsOptions } from './config/order-operations.js'
+import { configuredOrderOperations } from './setup.js'
 import { loadPaymentCallbackOptions, loadPaymentProcessingOptions } from './config/payments.js'
 import { createSslcommerzAdapter } from './providers/sslcommerz/sslcommerz.client.js'
 import { initiationInput } from './providers/sslcommerz/sslcommerz.schema.js'
@@ -39,6 +41,7 @@ export async function startServer(
       : undefined
     const callbackOptions = loadPaymentCallbackOptions(process.env)
     const processingOptions = loadPaymentProcessingOptions(process.env)
+    const orderOperations = await loadOrderOperationsOptions(process.env)
     app = await composeApplication(
       connection,
       config,
@@ -63,6 +66,7 @@ export async function startServer(
               : {}),
           }
         : undefined,
+      orderOperations ? configuredOrderOperations(connection, orderOperations) : undefined,
     )
   } catch (error) {
     await connection.destroy()

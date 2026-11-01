@@ -1,3 +1,8 @@
+import { startServer } from '../../src/server.js'
+import { mkdtemp, writeFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { configuredOrderOperations } from '../../src/setup.js'
 import { ApiError } from '../../src/shared/errors/app-error.js'
 import { composeOrderOperationsRoutes } from '../../src/setup.js'
 import { createApiRouter } from '../../src/routes.js'
@@ -8604,4 +8609,191 @@ it('Package A HTTP: cash evidence binding failure, invalid body and customer cre
       paymentId: f.payment._id,
     }),
   ).toBe(0)
+})
+
+it('Package A protected authorities: configured original receipt verifies through composed COD HTTP', async () => {
+  const f = await lifecycleFixture(),
+    root = await mkdtemp(join(tmpdir(), 'sportzone-http-proof-'))
+  try {
+    const artifactPath = join(root, 'original.txt'),
+      cashReceiptFile = join(root, 'receipts.json')
+    const bytes = 'SYNTHETIC LOCAL RECEIPT - NOT ACTUAL CASH'
+    await writeFile(artifactPath, bytes, { mode: 0o600 })
+    const row = {
+      paymentId: f.payment._id.toHexString(),
+      amountPoisha: f.payment.expectedPoisha,
+      collectionReference: 'protected-original',
+      evidenceRef: 'synthetic:protected-original',
+      collectedAt: now.toISOString(),
+      verifiedAt: now.toISOString(),
+      verifiedBy: 'Synthetic operator',
+      artifactPath,
+      digest: createHash('sha256').update(bytes).digest('hex'),
+    }
+    await writeFile(cashReceiptFile, JSON.stringify({ version: 1, receipts: [row] }), {
+      mode: 0o600,
+    })
+    const captured = deadline().snapshotForCheckout(),
+      { capturedAt, ...manifest } = captured
+    void capturedAt
+    const dependencies = configuredOrderOperations(
+      db.connection,
+      { deadline: manifest, cashReceiptFile, cancellationAuthorizations: [] },
+      () => now,
+    )
+    const routers = composeOrderOperationsRoutes(
+      db.connection,
+      { ...localReviewAuth(), guestAccounts: undefined },
+      origin,
+      dependencies,
+      () => now,
+    )
+    const app = createApp({ apiRouter: createApiRouter(undefined, routers) })
+    await packageAPost(app, f, 'confirmed').expect(200)
+    const input = {
+      amountPoisha: row.amountPoisha,
+      collectionReference: row.collectionReference,
+      evidenceRef: row.evidenceRef,
+      reason: 'Synthetic operator original verification',
+    }
+    const post = () =>
+      request(app)
+        .post(`/api/v1/admin/payments/${f.payment._id}/cod-collections`)
+        .set('Origin', 'http://localhost:5173')
+        .set('Cookie', f.admin.cookie)
+        .set('X-CSRF-Token', f.admin.csrf)
+        .set('Idempotency-Key', 'protected-source')
+        .send(input)
+    const first = await post().expect(200)
+    expect(first.body.data.amountPoisha).toBe(row.amountPoisha)
+    await rm(artifactPath)
+    // Replay returns the immutable prior collection without reopening or resubmitting evidence.
+    await post().expect(200)
+    expect(
+      await paymentRecordModels(db.connection).collections.countDocuments({
+        paymentId: f.payment._id,
+      }),
+    ).toBe(1)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it('Package A protected authorities: real server startup loads operator configuration and protects runtime HTTP', async () => {
+  const f = await lifecycleFixture(),
+    root = await mkdtemp(join(tmpdir(), 'sportzone-startup-authority-'))
+  const originalEnvironment = process.env
+  let runtime: Awaited<ReturnType<typeof startServer>> | undefined
+  try {
+    const cash = join(root, 'cash.json'),
+      policy = join(root, 'policy.json'),
+      delivery = join(root, 'delivery.json')
+    const { capturedAt, ...manifest } = deadline().snapshotForCheckout()
+    void capturedAt
+    await writeFile(cash, JSON.stringify({ version: 1, receipts: [] }), { mode: 0o600 })
+    await writeFile(policy, JSON.stringify({ version: 1, authorizations: [] }), { mode: 0o600 })
+    await writeFile(delivery, JSON.stringify(manifest), { mode: 0o600 })
+    const env = {
+      ...identityEnvironment(),
+      SESSION_SECRET: authSecret,
+      MONGODB_URI: db.replica.getUri(),
+      MONGODB_DB_NAME: db.connection.name,
+      CUSTOMER_ORDER_READ_ENABLED: 'true',
+      ORDER_OPERATIONS_ENABLED: 'true',
+      DELIVERY_DEADLINE_POLICY_FILE: delivery,
+      COD_COLLECTION_EVIDENCE_FILE: cash,
+      CANCELLATION_REFUND_AUTHORIZATIONS_FILE: policy,
+    }
+    // Only synthetic local configuration is visible to this startup; no host provider settings.
+    process.env = { ...env }
+    const config = { ...loadEnvironment(env), PORT: 0 }
+    runtime = await startServer(
+      config,
+      createLogger(config, () => {}),
+    )
+    await request(runtime.server).get('/api/v1/admin/orders').expect(401)
+    await request(runtime.server)
+      .get(`/api/v1/admin/orders/${f.id}`)
+      .set('Cookie', f.admin.cookie)
+      .expect(200)
+    await request(runtime.server)
+      .post(`/api/v1/admin/orders/${f.id}/fulfillment-transitions`)
+      .set('Origin', 'https://admin.example.test')
+      .set('Cookie', f.admin.cookie)
+      .set('X-CSRF-Token', f.admin.csrf)
+      .set('Idempotency-Key', 'startup-confirm')
+      .send({ to: 'confirmed', reason: 'Synthetic configured registry proof' })
+      .expect(200)
+  } finally {
+    await runtime?.close()
+    process.env = originalEnvironment
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it('Package A protected authorities: cancellation policy is request-bound and reserves funded liability once', async () => {
+  const f = await fundedCancellationFixture(),
+    asked = await f.ask()
+  const directory = await mkdtemp(join(tmpdir(), 'sportzone-cancel-authority-'))
+  try {
+    const cashReceiptFile = join(directory, 'cash.json')
+    await writeFile(cashReceiptFile, JSON.stringify({ version: 1, receipts: [] }), { mode: 0o600 })
+    const { capturedAt, ...manifest } = deadline().snapshotForCheckout()
+    void capturedAt
+    const root = (requestId: string) =>
+      createApp({
+        apiRouter: createApiRouter(
+          undefined,
+          composeOrderOperationsRoutes(
+            db.connection,
+            { ...localReviewAuth(), guestAccounts: undefined },
+            origin,
+            configuredOrderOperations(
+              db.connection,
+              {
+                deadline: manifest,
+                cashReceiptFile,
+                cancellationAuthorizations: [
+                  {
+                    orderId: f.id,
+                    requestId,
+                    evidenceRef: 'synthetic:request-policy',
+                    approvedBy: 'Synthetic operator',
+                    approvedAt: now.toISOString(),
+                    approval: {
+                      policyVersion: 'synthetic-cancellation',
+                      method: 'manual_bank',
+                      consentRequired: false,
+                      deliveryApproved: true,
+                    },
+                  },
+                ],
+              },
+              () => now,
+            ),
+            () => now,
+          ),
+        ),
+      })
+    const post = (app: ReturnType<typeof createApp>) =>
+      request(app)
+        .post(`/api/v1/admin/cancellation-requests/${asked.id}/decision`)
+        .set('Origin', 'http://localhost:5173')
+        .set('Cookie', f.admin.cookie)
+        .set('X-CSRF-Token', f.admin.csrf)
+        .set('Idempotency-Key', 'configured-cancellation')
+        .send({ decision: 'approve', reason: 'Synthetic approved original policy' })
+    await post(root('0'.repeat(24))).expect(503)
+    expect(await refundModel(db.connection).countDocuments({ orderId: f.id })).toBe(0)
+    const active = root(asked.id)
+    await post(active).expect(200)
+    await post(active).expect(200)
+    expect(await refundModel(db.connection).countDocuments({ orderId: f.id })).toBe(1)
+    expect(
+      (await paymentModel(db.connection).findById(f.payment._id).orFail())
+        .merchandiseRefundHeldPoisha,
+    ).toBe(f.amount)
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
 })

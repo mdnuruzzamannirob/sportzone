@@ -3,6 +3,7 @@ import {
   createDeliveryDeadlineService,
   deliveryDeadlineDigest,
   addDeliveryCalendarDays,
+  deliveryDeadlineApprovalAccess,
 } from '../../src/modules/orders/delivery-deadline.service.js'
 import {
   deliveryDeadlineRule,
@@ -237,5 +238,30 @@ it('preserves the reviewed preview when the read capability is passed independen
     status: 'awaiting_start',
     startEvent: 'confirmedAt',
     ruleVersion: 'synthetic-v1',
+  })
+})
+
+it('confirmation authority binds an immutable snapshot to the independent configured registry', async () => {
+  const policy = manifest(),
+    capturedAt = '2026-02-01T00:00:00Z'
+  const authority = deliveryDeadlineApprovalAccess([policy], () => new Date('2026-03-01T00:00:00Z'))
+  const session = { inTransaction: () => true },
+    basis = { ...structuredClone(policy), capturedAt }
+  await expect(authority(session, basis)).resolves.toBeUndefined()
+  policy.rule.target.calendarDays = 100
+  await expect(authority(session, basis)).resolves.toBeUndefined()
+  for (const candidate of [
+    { ...basis, review: { ...basis.review, approvedBy: 'Invented reviewer' } },
+    { ...basis, rule: { ...basis.rule, target: { ...basis.rule.target, calendarDays: 100 } } },
+    { ...basis, capturedAt: '2027-01-01T00:00:00Z' },
+  ])
+    await expect(authority(session, candidate)).rejects.toMatchObject({
+      code: 'SERVICE_UNAVAILABLE',
+    })
+  await expect(authority({ inTransaction: () => false }, basis)).rejects.toMatchObject({
+    code: 'STATE_CONFLICT',
+  })
+  await expect(deliveryDeadlineApprovalAccess([])(session, basis)).rejects.toMatchObject({
+    code: 'SERVICE_UNAVAILABLE',
   })
 })

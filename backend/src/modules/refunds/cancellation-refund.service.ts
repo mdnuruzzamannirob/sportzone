@@ -14,7 +14,8 @@ import { refundAttemptModel } from './refund-attempt.model.js'
 import { verifyCorrectionPersistence } from './refund.persistence.js'
 import { verifyRefundAttemptPersistence } from './refund-attempt.persistence.js'
 import { planMultiSourceMerchandiseRefund } from './refund-calculation.service.js'
-import { refundApproval, type refundReservationService } from './refund-reservation.service.js'
+import type { refundReservationService } from './refund-reservation.service.js'
+import { refundApproval } from './refund-reservation.schema.js'
 
 const id = z.string().regex(/^[a-f0-9]{24}$/)
 const command = z.strictObject({

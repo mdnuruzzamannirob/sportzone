@@ -186,14 +186,33 @@ reference, validation, rotation and verification evidence for each deployed key.
 - Configuration changes affecting delivery, policy, payments or access are versioned/approved and audited, not
   performed as undocumented runtime edits.
 
-Order operations are composed through the explicit `OrderOperationsDependencies` root argument,
-not an environment-only activation switch. Require protected approved-deadline, original-cash-evidence
-and cancellation-refund capabilities together with customer/admin auth and customer order-read
-admission. Current order-read admission remains local/test only. Ordinary server startup supplies no
-such authority and therefore installs no admin lifecycle/COD/cancellation mutations. The root never
+Order operations use `ORDER_OPERATIONS_ENABLED=false` by default. Explicit local/test startup can
+load `DELIVERY_DEADLINE_POLICY_FILE`, `COD_COLLECTION_EVIDENCE_FILE` and
+`CANCELLATION_REFUND_AUTHORIZATIONS_FILE` through the protected loader and root composition.
+Customer/admin authentication and customer order-read admission are mandatory; deployed activation
+is refused. No environment boolean supplies policy review or proof of cash by itself. The root never
 creates collections or indexes: verify the owning order/allocation/payment/cancellation/refund/attempt,
-audit and notification setup before admission. Preserve submitted refund identities and financial
-holds during recovery; do not replace an unavailable verifier with a request-body assertion.
+audit and notification setup before admission.
+
+The receipt-source JSON is `{version:1,receipts:[...]}`. Each entry contains the existing
+codCollectionProof fields, with collectedAt as ISO date, plus verifiedAt, verifiedBy and an absolute
+artifactPath. The original artifact's SHA-256 must equal digest. Sources and original artifacts must
+be regular, current-process-owned files with no group/world access; symlink leaves and oversized
+files are refused. Browser evidenceRef never supplies a path. Verify original cash/settlement evidence
+before writing a record; these integrity checks do not decide whether fabricated documents are true.
+Receipt reference and evidence reference must each be unique in the source. Proof IO occurs outside
+transactions after authorization, and the service reauthorizes before committing.
+
+Cancellation authority JSON is `{version:1,authorizations:[{orderId,requestId,approval,evidenceRef,
+approvedBy,approvedAt}]}`; approval is the existing policyVersion/method/consentRequired/
+deliveryApproved/optional-consentEvidenceRef allowlist. Each order/request pair is unique. Approval
+is explicitly bound to that cancellation request; unknown pairs fail closed. Keep original policy and
+consent evidence in the protected operator store. The loader rejects future timestamps, missing or
+public-readable files and malformed configuration with redacted errors. Cancellation authorities and
+deadline registry are frozen at composition; a reviewed change/revocation requires a restart. Receipt
+sources are reread for a fresh collection; historical keyed replay uses its already committed receipt.
+Preserve these authority records, source evidence, submitted refund identities and financial holds
+during recovery. Never manufacture originals, reviewer identity or legal applicability to enable a feature.
 
 ### 3.3 Change classes
 
@@ -2719,6 +2738,7 @@ the template and runtime validator determine which exact keys are currently supp
 
 | Configuration category     | Identifiers / contents                                                                              | Exposure / validation                                                                                                                                                |
 | -------------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Order operations | `ORDER_OPERATIONS_ENABLED`, `COD_COLLECTION_EVIDENCE_FILE`, `CANCELLATION_REFUND_AUTHORIZATIONS_FILE` | Server-only; explicit local/test activation with auth/read admission and protected original evidence; no default authority or deployed activation. |
 | Runtime                    | `NODE_ENV`, `APP_ENV`, `PORT`, `API_BIND_HOST`, `RELEASE_ID`                                        | Server runtime, allowlisted env and valid port                                                                                                                       |
 | Backend URL/origins        | `API_PUBLIC_ORIGIN`, `STOREFRONT_ORIGIN`, `ADMIN_ORIGIN`, `CORS_ALLOWED_ORIGINS`                    | Server, exact HTTPS origins in prod; avoid wildcard credentials                                                                                                      |
 | MongoDB                    | `MONGODB_URI`, `MONGODB_DB_NAME`, optional TLS/CA path                                              | **Secret** URI; replica set and transaction capability checks                                                                                                        |

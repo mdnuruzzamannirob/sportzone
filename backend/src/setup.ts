@@ -1,3 +1,12 @@
+import type { OrderOperationsOptions } from './config/order-operations.js'
+import { deliveryDeadlineApprovalAccess } from './modules/orders/delivery-deadline.service.js'
+import { cancellationRefundService } from './modules/refunds/cancellation-refund.service.js'
+import {
+  cancellationRefundSnapshotAccess,
+  refundUnitReservationAccess,
+} from './modules/orders/order.service.js'
+import { refundFundingAccess } from './modules/payments/payment.service.js'
+import { protectedCodCollectionEvidence } from './modules/payments/cod-evidence.service.js'
 import { orderAdminRoutes } from './modules/orders/order-admin.routes.js'
 import { orderLifecycleService } from './modules/orders/order-lifecycle.service.js'
 import { codCollectionService } from './modules/payments/cod-collection.service.js'
@@ -154,8 +163,34 @@ import type { Logger } from './shared/logger.js'
 
 export type OrderOperationsDependencies = {
   approvedDeadline: NonNullable<Parameters<typeof orderLifecycleService>[4]>
-  cashEvidence: NonNullable<Parameters<typeof codCollectionService>[3]>
+  cashEvidence: NonNullable<Parameters<typeof codCollectionService>[3]> | { receiptFile: string }
   cancellationRefund: NonNullable<Parameters<typeof cancellationService>[5]>
+}
+
+export function configuredOrderOperations(
+  connection: Connection,
+  options: OrderOperationsOptions,
+  clock: () => Date = () => new Date(),
+): OrderOperationsDependencies {
+  const authorizations = structuredClone(options.cancellationAuthorizations)
+  return {
+    approvedDeadline: deliveryDeadlineApprovalAccess([options.deadline], clock),
+    cashEvidence: { receiptFile: options.cashReceiptFile },
+    cancellationRefund: cancellationRefundService(
+      connection,
+      cancellationRefundSnapshotAccess(connection),
+      refundUnitReservationAccess(connection),
+      refundFundingAccess(connection),
+      async (_session, input) => {
+        const entry = authorizations.find(
+          (row) => row.orderId === input.orderId && row.requestId === input.basisRefId,
+        )
+        if (!entry || input.basis !== 'cancellation') throw new ApiError('SERVICE_UNAVAILABLE')
+        return entry.approval
+      },
+      clock,
+    ),
+  }
 }
 
 // No default policy, cash proof or refund stand-in: the caller supplies protected authorities.
@@ -207,7 +242,9 @@ export function composeOrderOperationsRoutes(
     connection,
     auth.adminAccounts,
     codCollectionOrderAccess(connection),
-    dependencies.cashEvidence,
+    typeof dependencies.cashEvidence === 'function'
+      ? dependencies.cashEvidence
+      : protectedCodCollectionEvidence(dependencies.cashEvidence.receiptFile, clock),
     clock,
   )
   const cancellation = cancellationService(

@@ -1144,6 +1144,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence:** [Local transition/stock tests, recorded checks and remaining acceptance](./evidence/P06-011-012-local-lifecycle-cod.md). Local implementation/tests explicitly authorized by owner; no full task acceptance.\
   **Blocked:** P06-003 qualified rule/sign-off remains absent. Admin lifecycle/list/detail HTTP and explicit root composition are implemented and verified in Package A; ordinary deployment stays disabled pending approved authority. Final non-delivery and notifications remain their owning tasks.\
   **Package A:** [Admin HTTP, shared root composition, funded cancellation/history regression and exact remaining gates](./evidence/P06-011-012-local-lifecycle-cod.md#package-a-http-and-root-composition--1-november-2026). Local integration is verified; no full task acceptance is recorded.\
+  **Configured authorities:** [Protected original receipts, deadline registry, request-bound cancellation policy and actual local server startup verification](./evidence/P06-011-012-local-lifecycle-cod.md#protected-authorities-and-configured-startup--1-november-2026). Real applicability/cash qualification and full-task acceptance remain pending.\
   **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P06-012 — Implement authorized COD collection confirmation**\
@@ -1154,8 +1155,9 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Deliverable:** Record collected COD only on authorized confirmation with ledger and audit reference.\
   **Acceptance:** Delivery alone never marks COD Paid; duplicate confirmation has single effect.\
   **Evidence:** [Local COD source/audit/concurrency tests and remaining acceptance](./evidence/P06-011-012-local-lifecycle-cod.md). Local implementation/tests explicitly authorized by owner; no full task acceptance.\
-  **Blocked:** P06-011 remains unaccepted; HTTP/root authorization/CSRF and canonical collection projections are verified in Package A; a real protected original-cash evidence verifier/source, deployed activation and independent acceptance remain absent.\
+  **Blocked:** P06-011 remains unaccepted; HTTP/root authorization/CSRF and canonical collection projections are verified in Package A; a concrete protected receipt-file verifier and configured local/test startup now exist; actual operator receipt qualification, deployed activation and independent acceptance remain absent.\
   **Package A:** [Admin HTTP, shared root composition, funded cancellation/history regression and exact remaining gates](./evidence/P06-011-012-local-lifecycle-cod.md#package-a-http-and-root-composition--1-november-2026). Local integration is verified; no full task acceptance is recorded.\
+  **Configured authorities:** [Protected original receipts, deadline registry, request-bound cancellation policy and actual local server startup verification](./evidence/P06-011-012-local-lifecycle-cod.md#protected-authorities-and-configured-startup--1-november-2026). Real applicability/cash qualification and full-task acceptance remain pending.\
   **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P06-013 — Implement pre-shipment cancellation and exactly-once release**\
@@ -1168,6 +1170,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence:** [Durable funded cancellation and HTTP verification](./evidence/P06-013-P08-005-008-durable-reservations.md). Source-funded obligations/attempts and paid/partial-COD cancellation now commit atomically in explicit local composition; P06-011, qualified policy/cash evidence, ordinary activation and independent acceptance remain pending.\
   **Blocked:** P06-011 and qualified cash/policy acceptance remain unresolved. The funded-cancellation capability now has shared explicit root composition and HTTP verification; ordinary deployment and independent full task acceptance remain pending.\
   **Package A:** [Admin HTTP, shared root composition, funded cancellation/history regression and exact remaining gates](./evidence/P06-011-012-local-lifecycle-cod.md#package-a-http-and-root-composition--1-november-2026). Local integration is verified; no full task acceptance is recorded.\
+  **Configured authorities:** [Protected original receipts, deadline registry, request-bound cancellation policy and actual local server startup verification](./evidence/P06-011-012-local-lifecycle-cod.md#protected-authorities-and-configured-startup--1-november-2026). Real applicability/cash qualification and full-task acceptance remain pending.\
   **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P06-014 — Implement authenticated customer order history/detail API**\
@@ -1180,6 +1183,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence:** [Implemented scoped read APIs, historical snapshot checks and verification](./evidence/P06-013-014-cancellation-owned-reads.md). Explicit local/test read-only activation, default off.\
   **Blocked:** Declared P06-011 prerequisite remains unaccepted. No legal/staging/backend-stage acceptance inferred from local read APIs; independent full task acceptance pending.\
   **Package A:** [Admin HTTP, shared root composition, funded cancellation/history regression and exact remaining gates](./evidence/P06-011-012-local-lifecycle-cod.md#package-a-http-and-root-composition--1-november-2026). Local integration is verified; no full task acceptance is recorded.\
+  **Configured authorities:** [Protected original receipts, deadline registry, request-bound cancellation policy and actual local server startup verification](./evidence/P06-011-012-local-lifecycle-cod.md#protected-authorities-and-configured-startup--1-november-2026). Real applicability/cash qualification and full-task acceptance remain pending.\
   **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [x] **P06-015 — Implement secure guest order lookup and scoped proof**\

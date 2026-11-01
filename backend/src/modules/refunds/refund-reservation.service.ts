@@ -1,3 +1,5 @@
+import { refundApproval } from './refund-reservation.schema.js'
+export { refundApproval } from './refund-reservation.schema.js'
 import { createHash } from 'node:crypto'
 import { Types, type ClientSession, type Connection } from 'mongoose'
 import { z } from 'zod'
@@ -39,13 +41,7 @@ const command = z.strictObject({
   correctionCollectionId: id.optional(),
   reason: text,
 })
-export const refundApproval = z.strictObject({
-  policyVersion: z.string().trim().min(1).max(100),
-  method: z.enum(['gateway', 'manual_bkash', 'manual_nagad', 'manual_rocket', 'manual_bank']),
-  consentRequired: z.boolean(),
-  deliveryApproved: z.boolean().default(false),
-  consentEvidenceRef: z.string().trim().min(1).max(256).optional(),
-})
+
 const hash = (s: string) => createHash('sha256').update(s).digest('hex')
 type Item = {
   orderItemId: string

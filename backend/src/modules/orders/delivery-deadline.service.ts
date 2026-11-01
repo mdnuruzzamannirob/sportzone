@@ -1,3 +1,4 @@
+import type { ClientSession } from 'mongoose'
 import { createHash } from 'node:crypto'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
@@ -180,5 +181,33 @@ export function createDeliveryDeadlineService(
       if (result.status !== 'calculated') throw new ApiError('BUSINESS_RULE_VIOLATION')
       return result
     },
+  }
+}
+
+// Protect confirmation against fabricated/tampered order snapshots. The registry is supplied
+// only by the operator's reviewed configuration, never by browser input or a default rule.
+export function deliveryDeadlineApprovalAccess(
+  manifests: readonly DeliveryDeadlineManifest[],
+  clock: () => Date = () => new Date(),
+) {
+  const approved = manifests.map((value) => deliveryDeadlineManifest.parse(structuredClone(value)))
+  if (new Set(approved.map((value) => value.rule.version)).size !== approved.length)
+    throw new ApiError('SERVICE_UNAVAILABLE')
+  return async (session: Pick<ClientSession, 'inTransaction'>, raw: unknown) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    const parsed = deliveryDeadlineBasis.safeParse(raw),
+      now = clock().getTime()
+    if (!parsed.success || !Number.isFinite(now)) throw new ApiError('SERVICE_UNAVAILABLE')
+    const basis = parsed.data,
+      captured = new Date(basis.capturedAt)
+    const policy = approved.find((value) => value.rule.version === basis.rule.version)
+    if (
+      !policy ||
+      captured.getTime() > now ||
+      !active(basis, captured) ||
+      deliveryDeadlineDigest(policy.rule) !== deliveryDeadlineDigest(basis.rule) ||
+      JSON.stringify(policy.review) !== JSON.stringify(basis.review)
+    )
+      throw new ApiError('SERVICE_UNAVAILABLE')
   }
 }
