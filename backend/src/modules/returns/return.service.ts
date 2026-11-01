@@ -125,11 +125,14 @@ export function refundClaimSnapshotAccess(connection: Connection) {
     orderId: string,
     claimId: string,
     requested: { orderItemId: string; quantity: number }[],
+    expectedType?: 'physical_return' | 'shortage',
   ) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
     await verifyReturnPersistence(connection)
     const row = await model.findOne({ _id: claimId, orderId }).session(session)
     if (!row) throw new ApiError('NOT_FOUND')
+    if (expectedType && row.claimType !== expectedType)
+      throw new ApiError('BUSINESS_RULE_VIOLATION')
     if (
       (row.claimType === 'physical_return' && !['inspected', 'completed'].includes(row.status)) ||
       (row.claimType === 'shortage' && !['approved', 'completed'].includes(row.status))

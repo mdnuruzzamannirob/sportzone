@@ -1843,6 +1843,28 @@ provider `refunded` report or syntactically valid manual evidence still requires
 verification and transaction that binds the reserved obligation, source, attempt and payout evidence.
 A `cancelled` report or an unknown outcome remains under investigation; never retry on this report alone.
 
+#### Private refund reservation and attempt bootstrap
+
+After backend build, run `node --env-file=.env backend/scripts/bootstrap-refunds.mjs` only against
+an owned local/test database. The explicit migration recognizes the exact correction-only predecessor,
+checks existing rows against the new validator, adds indexes and preserves historical intents. It
+creates strict `refundAttempts` persistence with one open attempt per obligation and no TTL. Unknown
+validator drift fails closed; ordinary startup never repairs it. Existing databases must complete this
+step before running a new binary/payment-initiation bootstrap that verifies the extended refund schema.
+
+This command enables no HTTP route, policy authority or payout dispatcher. Private reservation tests
+use injected policy/cash evidence. Actual activation still requires qualified policy, consent/method,
+merchant and operator acceptance. Reservation creates an approved source-funded obligation and a
+created attempt, with no inferred payout. The private gateway dispatcher changes intent to submitted
+before its one external call; accepted/unknown outcomes retain held funds. A crash after submission
+must be investigated using the original bank/merchant identity; never reset to created or blindly resend.
+
+Back up and restore refunds, attempts, source/aggregate/unit/delivery counters, cancellation/allocation
+history and audit consistently. An older correction-only binary cannot verify or process the extended
+schema. Roll back application code only to a compatible build; retain financial records and reconcile
+external effects. Reconciliation, verified completion/release and ordinary scheduler/API activation
+remain separate capabilities and must not be simulated by manual database edits.
+
 #### Private claim persistence bootstrap
 
 After backend build, run `node --env-file=.env backend/scripts/bootstrap-returns.mjs` only against an
@@ -1897,9 +1919,11 @@ and /orders/{id}/status only when enabled. All are no-store; no browser mutation
 flag. Missing/contradictory historical PolicyRefs in consumed quotes fail detail closed, never fall
 back to current policy; assess retained history before cleanup/restore or enabling reads.
 
-Cancellation mutation services remain private until accepted P06-011 and their browser/admin Origin,
-CSRF, rate/access and DTO integration. Missing real source-backed merchandise refund capability blocks
-paid approvals; the correction-only refund model is not a substitute. Unpaid online cancellation does
+Cancellation has an explicitly composed local/test request/history/admin queue/decision router with
+Origin, CSRF, ownership and replay guards. Ordinary startup remains gated on accepted P06-011,
+qualified policy/evidence and deployment/rate controls. The private paid-decision coordinator can
+reserve source-funded obligations/attempts atomically with release and cancellation; a missing policy
+or refund capability still blocks paid approval. Unpaid online cancellation does
 not remove attempts or disable merchant reconciliation; later verified funds remain correction-only.
 
 #### Delivery exception and complaint foundation

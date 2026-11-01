@@ -20,6 +20,8 @@ import { verifyCancellationPersistence } from './cancellation.persistence.js'
 import { cancellationInput, cancellationDecision, cancellationView } from './cancellation.schema.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
+import { paginationSchema, pageMeta } from '../../shared/pagination.js'
+import { z } from 'zod'
 const hash = (s: string) => createHash('sha256').update(s).digest('hex')
 export function cancellationService(
   connection: Connection,
@@ -29,7 +31,13 @@ export function cancellationService(
   payment: ReturnType<typeof cancellationPaymentAccess>,
   refunds?: (
     session: ClientSession,
-    input: { orderId: string; paymentId: string; requestId: string },
+    input: {
+      orderId: string
+      paymentId: string
+      requestId: string
+      actorId: string
+      reason: string
+    },
   ) => Promise<void>,
   clock: () => Date = () => new Date(),
 ) {
@@ -51,6 +59,47 @@ export function cancellationService(
     await verifyCancellationPersistence(connection)
   }
   return {
+    async list(credentials: PaymentInitiationCredentials, rawId: unknown) {
+      const id = parseInput(orderId, rawId)
+      return scope.owned(credentials, id, async (principal, session) => {
+        await ready()
+        if (!(await orders.exists(orderOwnerFilter(id, principal)).session(session)))
+          throw new ApiError('NOT_FOUND')
+        const rows = await requests
+          .find({ orderId: id })
+          .sort({ createdAt: -1, _id: -1 })
+          .limit(101)
+          .session(session)
+        if (rows.length > 100) throw new ApiError('SERVICE_UNAVAILABLE')
+        return rows.map(view)
+      })
+    },
+    async adminList(token: string | undefined, raw: unknown) {
+      const query = parseInput(
+        paginationSchema.safeExtend({
+          status: z.enum(['requested', 'approved', 'rejected']).optional(),
+        }),
+        raw,
+      )
+      return admin.owned(
+        token,
+        async (_actor, session) => {
+          await ready()
+          const filter = query.status ? { status: query.status } : {}
+          const rows = await requests
+            .find(filter)
+            .sort({ createdAt: -1, _id: -1 })
+            .skip((query.page - 1) * query.pageSize)
+            .limit(query.pageSize)
+            .session(session)
+          return {
+            items: rows.map(view),
+            pagination: pageMeta(query, await requests.countDocuments(filter).session(session)),
+          }
+        },
+        false,
+      )
+    },
     async request(
       credentials: PaymentInitiationCredentials,
       rawId: unknown,
@@ -195,6 +244,8 @@ export function cancellationService(
               orderId: order._id.toHexString(),
               paymentId: funds.paymentId,
               requestId: id,
+              actorId,
+              reason: input.reason,
             })
           }
           await release(session, orderAllocationBinding(order, 1))

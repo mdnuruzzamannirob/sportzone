@@ -80,6 +80,141 @@ export function correctionPaymentSnapshotAccess(connection: Connection) {
     }
   }
 }
+
+// Refunds receive detached verified funding and guarded class-specific reservation operations.
+export function refundFundingAccess(connection: Connection) {
+  const payments = paymentModel(connection),
+    { collections } = paymentRecordModels(connection)
+  const money = z.int().nonnegative().max(Number.MAX_SAFE_INTEGER)
+  const capacity = z.strictObject({
+    allocatedPoisha: money,
+    heldPoisha: money,
+    completedPoisha: money,
+  })
+  async function read(session: ClientSession, orderId: string) {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyPaymentPersistence(connection)
+    await verifyPaymentRecordPersistence(connection)
+    const payment = await payments.findOne({ orderId }).session(session)
+    if (!payment) throw new ApiError('NOT_FOUND')
+    return payment
+  }
+  const amounts = (allocatedPoisha: unknown, heldPoisha: unknown, completedPoisha: unknown) => {
+    const value = parseInput(capacity, { allocatedPoisha, heldPoisha, completedPoisha })
+    if (BigInt(value.heldPoisha) + BigInt(value.completedPoisha) > BigInt(value.allocatedPoisha))
+      throw new ApiError('STATE_CONFLICT')
+    return value
+  }
+  return {
+    async list(
+      session: ClientSession,
+      orderId: string,
+      classification: 'merchandise' | 'payment_correction',
+    ) {
+      const payment = await read(session, orderId)
+      const rows = await collections
+        .find({ orderId, paymentId: payment._id })
+        .sort({ _id: 1 })
+        .limit(51)
+        .session(session)
+      if (rows.length > 50) throw new ApiError('SERVICE_UNAVAILABLE')
+      const correction = classification === 'payment_correction'
+      return {
+        paymentId: payment._id.toHexString(),
+        order: amounts(
+          correction ? payment.correctionCollectedPoisha : payment.merchandiseFundedPoisha,
+          correction ? payment.correctionRefundHeldPoisha : payment.merchandiseRefundHeldPoisha,
+          correction
+            ? payment.correctionRefundCompletedPoisha
+            : payment.merchandiseRefundCompletedPoisha,
+        ),
+        delivery: {
+          heldPoisha: payment.deliveryRefundHeldPoisha,
+          completedPoisha: payment.deliveryRefundCompletedPoisha,
+        },
+        sources: rows.map((row) => ({
+          sourceCollectionId: row._id.toHexString(),
+          provider: row.provider,
+          ...(row.bankTranId ? { bankTranId: row.bankTranId } : {}),
+          collectedAt: row.collectedAt,
+          verifiedAt: row.verifiedAt,
+          ...amounts(
+            row.get(correction ? 'correctionAllocatedPoisha' : 'merchandiseAllocatedPoisha'),
+            row.get(correction ? 'correctionRefundHeldPoisha' : 'merchandiseRefundHeldPoisha'),
+            row.get(
+              correction ? 'correctionRefundCompletedPoisha' : 'merchandiseRefundCompletedPoisha',
+            ),
+          ),
+        })),
+      }
+    },
+    async reserve(session: ClientSession, raw: unknown) {
+      const input = parseInput(
+        z.strictObject({
+          orderId: z.string().regex(/^[a-f0-9]{24}$/),
+          sourceCollectionId: z.string().regex(/^[a-f0-9]{24}$/),
+          classification: z.enum(['merchandise', 'payment_correction']),
+          amountPoisha: money.refine((n) => n > 0),
+          deliveryAmountPoisha: money,
+          deliveryChargePoisha: money,
+        }),
+        raw,
+      )
+      const payment = await read(session, input.orderId)
+      const row = await collections
+        .findOne({ _id: input.sourceCollectionId, orderId: input.orderId, paymentId: payment._id })
+        .session(session)
+      if (!row) throw new ApiError('NOT_FOUND')
+      const correction = input.classification === 'payment_correction'
+      const allocated = correction ? 'correctionAllocatedPoisha' : 'merchandiseAllocatedPoisha'
+      const held = correction ? 'correctionRefundHeldPoisha' : 'merchandiseRefundHeldPoisha'
+      const completed = correction
+        ? 'correctionRefundCompletedPoisha'
+        : 'merchandiseRefundCompletedPoisha'
+      const source = amounts(row.get(allocated), row.get(held), row.get(completed))
+      const order = amounts(
+        correction ? payment.correctionCollectedPoisha : payment.merchandiseFundedPoisha,
+        payment[held],
+        payment[completed],
+      )
+      if (
+        input.deliveryAmountPoisha > input.amountPoisha ||
+        (correction && input.deliveryAmountPoisha) ||
+        input.amountPoisha > source.allocatedPoisha - source.heldPoisha - source.completedPoisha ||
+        input.amountPoisha > order.allocatedPoisha - order.heldPoisha - order.completedPoisha ||
+        (!correction &&
+          BigInt(payment.deliveryRefundHeldPoisha) +
+            BigInt(payment.deliveryRefundCompletedPoisha) +
+            BigInt(input.deliveryAmountPoisha) >
+            BigInt(input.deliveryChargePoisha))
+      )
+        throw new ApiError('REFUND_BALANCE_EXCEEDED')
+      if (
+        payment.revision >= Number.MAX_SAFE_INTEGER ||
+        row.get('revision') >= Number.MAX_SAFE_INTEGER
+      )
+        throw new ApiError('STATE_CONFLICT')
+      const changed = await collections.updateOne(
+        { _id: row._id, revision: row.get('revision') },
+        { $inc: { [held]: input.amountPoisha, revision: 1 } },
+        { session },
+      )
+      const aggregate = await payments.updateOne(
+        { _id: payment._id, revision: payment.revision },
+        {
+          $inc: {
+            [held]: input.amountPoisha,
+            deliveryRefundHeldPoisha: input.deliveryAmountPoisha,
+            revision: 1,
+          },
+        },
+        { session },
+      )
+      if (changed.modifiedCount !== 1 || aggregate.modifiedCount !== 1)
+        throw new ApiError('STATE_CONFLICT')
+    },
+  }
+}
 // Trusted checkout capability only; owning coordinator binds these facts to the canonical order.
 // No collection/attempt or Paid transition exists in this service.
 export function checkoutPaymentAccess(connection: Connection) {

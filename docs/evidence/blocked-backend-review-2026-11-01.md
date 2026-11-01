@@ -14,6 +14,11 @@ are excluded from that source/test identity.
 
 ## Task-by-task review
 
+This table records the review before the later
+[durable refund/funded-cancellation implementation](./P06-013-P08-005-008-durable-reservations.md).
+That follow-up supersedes the correction-only/no-reservation/no-attempt findings for P06-013 and
+P08-005–009; full-task and external acceptance remain unresolved. Tasks contains current evidence.
+
 All rows remain **Blocked**. Passing local checks do not replace an incomplete deliverable or an
 unaccepted prerequisite. Existing task evidence contains earlier detailed procedures; this record
 reconciles it with the actual code and current verification.

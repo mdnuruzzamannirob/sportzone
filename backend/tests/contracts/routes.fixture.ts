@@ -1,6 +1,7 @@
 import { orderReadRoutes } from '../../src/modules/orders/order-read.routes.js'
 import { supportReadRoutes } from '../../src/modules/support/support-read.routes.js'
 import { customerAdminRoutes } from '../../src/modules/customers/customer-admin.routes.js'
+import { cancellationRoutes } from '../../src/modules/orders/cancellation.routes.js'
 import { returnHistoryRoutes } from '../../src/modules/returns/return-history.routes.js'
 import { reviewRoutes } from '../../src/modules/reviews/review.routes.js'
 import { paymentMonitorRoutes } from '../../src/modules/payments/payment-monitor.routes.js'
@@ -91,6 +92,12 @@ const media = {
 // These routers are locally composed only and are deliberately excluded from live registry parity.
 export function localOnlyRouters() {
   return [
+    cancellationRoutes(
+      { request: unused, decide: unused, list: unused, adminList: unused },
+      security,
+      sessions,
+      'https://shop.example.test',
+    ),
     customerAdminRoutes({ list: unused, detail: unused, decideStatus: unused }, security, sessions),
     supportReadRoutes({ adminList: unused }, { list: unused }, security, sessions),
     returnHistoryRoutes(

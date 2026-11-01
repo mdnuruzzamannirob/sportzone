@@ -396,6 +396,25 @@ test('BLOCKED-AUDIT-BOUNDARY-01: customer routes and reviews retain auth and aud
   }
 })
 
+test('REFUND-DURABLE-BOUNDARY-01: reservation, cancellation and controllers cannot bypass owning financial persistence', (t) => {
+  const { root, put } = fixture(t)
+  for (const [consumer, owner] of [
+    ['refunds/refund-reservation.service', 'orders/order'],
+    ['refunds/refund-dispatch.service', 'payments/payment-record'],
+    ['refunds/cancellation-refund.service', 'orders/cancellation'],
+    ['orders/cancellation.routes', 'refunds/refund'],
+  ]) {
+    put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
+    put(`backend/src/modules/${consumer}.ts`, `import "../${owner}.model.js"`)
+    assert.ok(
+      checkBoundaries(root).errors.some(
+        (e) => e.includes('private persistence') || e.includes('controller'),
+      ),
+    )
+    put(`backend/src/modules/${consumer}.ts`, 'export const consumer = 1')
+  }
+})
+
 test('BACKEND-BOUNDARY-03: shared technical helpers cannot import domain/configuration via barrels', (t) => {
   const { root, put } = fixture(t)
   put('backend/src/modules/orders/order.service.ts', 'export const service = 1')

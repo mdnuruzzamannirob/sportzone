@@ -8,6 +8,13 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 1 November 2026 — Durable refund reservations and funded cancellation
+
+- Added source/order/unit/delivery reservations, durable obligations/attempts and explicit additive local migration.
+- Joined paid and partially collected COD cancellation with refund intents, allocation release and audit atomically; added explicit local cancellation HTTP.
+- Added one-shot gateway dispatch that preserves held funds and original identity on uncertainty; corrected payment-monitor classification.
+- Verified payout completion, reconciliation, real policy/provider evidence and full task acceptance remain outstanding.
+
 ## 1 November 2026 — Blocked backend task review
 
 - Reviewed all 24 blocked tasks against current code, dependencies and acceptance evidence; retained explicit incomplete code and external approval blockers.

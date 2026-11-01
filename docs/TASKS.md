@@ -1162,8 +1162,8 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P06-011`\
   **Deliverable:** Require administrator approval/rejection of every customer cancellation request; atomically recheck eligibility and dispatch status, retain reasons, release eligible allocation once, and create collected-payment refund obligations. Unpaid online cancellations keep provider reconciliation active for any later collection.\
   **Acceptance:** Shipped orders cannot use ordinary cancellation; uncollected COD has no monetary refund.\
-  **Evidence:** [Local request/review/release, replay/race checks and remaining gates](./evidence/P06-013-014-cancellation-owned-reads.md). Local safe implementation verified; no full task acceptance.\
-  **Blocked:** P06-011 remains unaccepted; paid cancellation requires a real source-backed merchandise refund-obligation implementation and cancellation HTTP/admin transport remains unactivated. Missing planner denies approval without changing funds or allocation.\
+  **Evidence:** [Durable funded cancellation and HTTP verification](./evidence/P06-013-P08-005-008-durable-reservations.md). Source-funded obligations/attempts and paid/partial-COD cancellation now commit atomically in explicit local composition; P06-011, qualified policy/cash evidence, ordinary activation and independent acceptance remain pending.\
+  **Blocked:** P06-011 and qualified cash/policy acceptance remain unresolved. The funded-cancellation capability is explicitly composed only in local tests; ordinary deployment and independent full task acceptance remain pending.\
   **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P06-014 — Implement authenticated customer order history/detail API**\
@@ -1469,7 +1469,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P07-002`, `P06-013`, `P08-003`\
   **Deliverable:** Separate refunds from returns and store approval/payout attempts, status and source collection.\
   **Acceptance:** Original order fulfillment history remains immutable; pending vs completed are distinct.\
-  **Evidence:** [Local advisory/state validation, actual tests and remaining work](./evidence/P08-005-006-local-refund-advisory.md). Prerequisites and independent acceptance remain pending; no reservation, attempt writer or payout enabled.\
+  **Evidence:** [Durable obligation/attempt schema, migration and tests](./evidence/P06-013-P08-005-008-durable-reservations.md). Approved/reserved obligations and created/submitted/uncertain intents now persist; verified completion/release/retry workflow, accepted prerequisites and independent acceptance remain pending.\
   **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P08-006 — Calculate item-level partial/full refundable balance**\
@@ -1479,7 +1479,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P08-005`\
   **Deliverable:** Use purchase-time item/allocated coupon amounts, physical-return/shortage quantity limits, delivery-charge policy and prior commitments. Payment corrections consume source-collection financial capacity independently of merchandise-return quantities.\
   **Acceptance:** No current-catalog price used; deterministic rounding; no refund for uncollected COD.\
-  **Evidence:** [Local advisory/state validation](./evidence/P08-005-006-local-refund-advisory.md) and [correction-source follow-up](./evidence/P08-007-008-local-refund-planning-provider.md#1-november-2026--correction-advisory-follow-up-p08-006--p08-007). Prerequisites and independent acceptance remain pending; no reservation, attempt writer or payout enabled.\
+  **Evidence:** [Historical arithmetic/advisory](./evidence/P08-005-006-local-refund-advisory.md) and [durable reservation consumers](./evidence/P06-013-P08-005-008-durable-reservations.md). Protected policy and verified source/unit balances feed private reservations; full prerequisite and independent acceptance remain pending.\
   **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P08-007 — Atomically reserve eligible collected refund balance**\
@@ -1489,7 +1489,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P08-006`\
   **Deliverable:** Reserve refundable capacity before payout and guard against concurrent attempts.\
   **Acceptance:** Pending+completed commitments never exceed independently verified collections at either source-collection or order level; duplicate-collection refunds do not consume merchandise quantity entitlement.\
-  **Evidence:** [Separate local planning/transport, correction-source follow-up, tests and outstanding prerequisites](./evidence/P08-007-008-local-refund-planning-provider.md). No reservation, durable payout attempt, executor or sandbox acceptance is implied.\
+  **Evidence:** [Atomic source/order/unit/delivery reservation and races](./evidence/P06-013-P08-005-008-durable-reservations.md). Durable group/obligation/attempt/audit writes now join the same transaction; completion/release recovery, full workflow activation, accepted prerequisites and independent acceptance remain pending.\
   **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P08-008 — Implement supported gateway payout requests and references**\
@@ -1499,7 +1499,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P08-007`, `P07-001`\
   **Deliverable:** Use original bank_tran_id and supported provider API; record refund identifiers and attempt states.\
   **Acceptance:** Provider acceptance leaves refund Processing until independently verified payout.\
-  **Evidence:** [Separate local planning/transport, tests and outstanding prerequisites](./evidence/P08-007-008-local-refund-planning-provider.md). No reservation, durable payout attempt, executor or sandbox acceptance is implied.\
+  **Evidence:** [Durable original references and one-shot dispatch tests](./evidence/P06-013-P08-005-008-durable-reservations.md). Private dispatch persists intent before transport and retains holds on uncertainty; real merchant sandbox, qualified reconciliation/completion and independent acceptance remain pending.\
   **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P08-009 — Implement refund-status verification/retry/investigation**\
@@ -1509,7 +1509,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P08-008`\
   **Deliverable:** Query supported status, reconcile uncertainty and guard authorized retry without duplicate payout.\
   **Acceptance:** Unknown result never marked Completed; duplicate callbacks and job restarts are safe.\
-  **Evidence:** [Local status/retry assessment and manual evidence verification](./evidence/P08-009-010-local-refund-evidence.md). Durable attempts, real source/consent verification and transactional completion remain unavailable; prerequisites and independent acceptance remain pending.\
+  **Evidence:** [Original investigation checks](./evidence/P08-009-010-local-refund-evidence.md) and [durable dispatch follow-up](./evidence/P06-013-P08-005-008-durable-reservations.md). Attempts now persist through submission/uncertainty; independent payout proof, completion/release/retry transactions, durable worker and accepted prerequisites remain pending.\
   **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P08-010 — Implement controlled COD/manual payout evidence**\
@@ -1519,7 +1519,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P08-007`, `P06-012`\
   **Deliverable:** Record consent where required, verified transfer and admin confirmation for COD/bank/mobile wallet.\
   **Acceptance:** Uncollected COD cannot be refunded; no Completed state without payout evidence.\
-  **Evidence:** [Local status/retry assessment and manual evidence verification](./evidence/P08-009-010-local-refund-evidence.md). Durable attempts, real source/consent verification and transactional completion remain unavailable; prerequisites and independent acceptance remain pending.\
+  **Evidence:** [Local manual evidence verification](./evidence/P08-009-010-local-refund-evidence.md) and [durable attempt foundation](./evidence/P06-013-P08-005-008-durable-reservations.md). Attempts now persist; real transfer/consent verification, canonical manual-confirmation integration, transactional completion and prerequisite acceptance remain pending.\
   **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P08-011 — Persist return and refund decisions and notifications**\
@@ -2608,3 +2608,5 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **1 November 2026 — P09-002/P09-015 local foundation:** Each Not Started → In Progress → Blocked. Added non-authoritative financial arithmetic and an admin-scoped masked customer detail reader. [Tests, limits and dependencies](./evidence/P09-002-015-local-report-customer.md). Overall: 210 tasks, 107 Done, 77 Not Started, 24 Blocked, 2 Deferred. Full task implementation and independent acceptance remain outstanding.
 
 **1 November 2026 — all blocked tasks reviewed:** Reviewed every Blocked task and linked its [individual finding, accountable owner and next action](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Fixed real review HTTP composition and extended local customer status/search operations with transaction, revocation, replay and rollback checks. Baseline regression and affected follow-ups are recorded in that review. No full deliverable with accepted prerequisites and independent acceptance was established; counts remain 107 Done, 77 Not Started, 24 Blocked and 2 Deferred.
+
+**1 November 2026 — funded cancellation/refund foundation:** Added durable obligations/attempts, atomic source/order/unit/delivery reservations, funded/partial-COD cancellation and one-shot gateway dispatch with uncertainty retention. [Actual migration, race, rollback, HTTP and regression evidence](./evidence/P06-013-P08-005-008-durable-reservations.md). Verified completion/reconciliation/manual/notification flows and qualified external acceptance remain unfinished. Statuses and counts unchanged; no full task or milestone acceptance inferred.

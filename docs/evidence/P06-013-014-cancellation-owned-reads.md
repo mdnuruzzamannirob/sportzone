@@ -4,6 +4,10 @@ Date: 30 October 2026 (Asia/Dhaka). Executor: Codex. Base revision: `eb2586c`.
 Status: **Blocked** for full task acceptance; safe local work and verification completed.
 No task checkbox, prerequisite, legal/provider gate or milestone is accepted by this record.
 
+Later [durable funded cancellation and local HTTP verification](./P06-013-P08-005-008-durable-reservations.md)
+supersedes this revision's missing merchandise-obligation/cancellation-HTTP implementation. Qualified
+policy/cash evidence, prerequisite acceptance and ordinary deployment remain unresolved.
+
 ## Scope and decisions
 
 The owner requested the next two tasks after authorizing local implementation/tests despite the

@@ -1,5 +1,9 @@
 # P08-007 / P08-008 — Local multi-source planning and refund transport
 
+The later [durable reservation and one-shot dispatch implementation](./P06-013-P08-005-008-durable-reservations.md)
+supersedes this record's no-reservation/no-durable-attempt limitation. Historical transport/planner
+checks remain below; real merchant qualification and complete financial lifecycle acceptance remain pending.
+
 ## 1 November 2026 — correction advisory follow-up (P08-006 / P08-007)
 
 Payments now provides a private, transaction-scoped snapshot of correction balances for a verified

@@ -1021,6 +1021,11 @@ requires explicit dispatch-not-started verification. Unpaid stock/coupon release
 audit commit once. Collected orders require a real transaction-bound refund-obligation capability;
 without one approval is blocked and all changes roll back. Payment attempts/reconciliation history
 remain intact after cancellation. These local capabilities do not waive P06-011 acceptance.
+Explicit local cancellation HTTP composition supports scoped request/history and protected admin
+queue/decision. Its paid-decision capability reserves source-funded obligations and created attempts
+with the cancellation transaction, including partial collected COD; it does not mark a payout complete.
+Customer/guest mutations require exact storefront Origin and their current scope-bound CSRF proof;
+admin decisions require admin Origin/CSRF. Ordinary activation and operator/policy evidence remain gated.
 
 ### 11.2 Price, hold and order response rules
 
@@ -1455,12 +1460,14 @@ a refund basis without return receipt. Completing a claim **never** asserts a pa
 | `POST` | `/admin/refunds/{refundId}/reconcile`            | A      | `{reason} + Idempotency-Key → {status,attemptState}`                                            | 33  |
 | `POST` | `/admin/refunds/{refundId}/manual-confirmations` | A      | `{transferReference,evidenceRef,reason} + Idempotency-Key → Refund`                             | 33  |
 
-The private local refund advisory is not an HTTP operation or obligation. It reads selected linked
-verified collections and canonical claim/order snapshots in one transaction, and can deterministically
-plan unit amounts across sources. Public authorization, atomic reservation, durable attempt intent and
-execution remain separate work. The local SSLCOMMERZ initiation transport returns provider acceptance
-or uncertainty; neither establishes verified payout and no application executor is wired. Its private
-status query emits only a matched, redacted provider report; `refunded` still needs qualified durable
+The private local refund advisory reads linked verified collections and canonical claim/order snapshots
+in one transaction. A separately protected reservation coordinator now commits source/aggregate/unit/
+delivery holds, approved obligations, created attempts and audit atomically. It derives a natural business
+group so changed request keys cannot duplicate the same request. A private one-shot gateway dispatcher
+persists submitted intent before calling the provider outside the transaction; replay or uncertainty
+never resends automatically. Acceptance remains Processing and held funds remain reserved. Ordinary
+refund HTTP/root activation, reconciliation/completion and provider/operator acceptance remain gated.
+The private status query emits only a matched, redacted provider report; `refunded` still needs qualified durable
 identity/amount/time verification, and `cancelled` remains under investigation. Manual evidence
 verification is likewise a private, read-only gate and does not record a completed payout.
 

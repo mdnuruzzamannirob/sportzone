@@ -27,6 +27,8 @@ export function correctionObligationService(connection: Connection) {
         .session(session)
       if (existing) {
         if (
+          existing.classification !== 'payment_correction' ||
+          existing.basis !== 'payment_correction' ||
           existing.paymentId.toHexString() !== input.paymentId ||
           existing.sourceCollectionId.toHexString() !== input.sourceCollectionId ||
           existing.amountPoisha !== input.amountPoisha
@@ -76,7 +78,7 @@ export function correctionMonitoringAccess(connection: Connection) {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
     await verifyCorrectionPersistence(connection)
     const model = refundModel(connection),
-      filter = { paymentId }
+      filter = { paymentId, classification: 'payment_correction' as const }
     const rows = await model
       .find(filter)
       .sort({ createdAt: -1, _id: -1 })

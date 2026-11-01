@@ -17,8 +17,17 @@ import {
 } from '../../src/modules/refunds/refund-advisory.service.js'
 import { refundOrderSnapshotAccess } from '../../src/modules/orders/order.service.js'
 import { refundClaimSnapshotAccess } from '../../src/modules/returns/return.service.js'
+import { refundReservationService } from '../../src/modules/refunds/refund-reservation.service.js'
+import { refundDispatchService } from '../../src/modules/refunds/refund-dispatch.service.js'
+import { cancellationRefundService } from '../../src/modules/refunds/cancellation-refund.service.js'
+import { refundAttemptModel } from '../../src/modules/refunds/refund-attempt.model.js'
+import { initializeRefundAttemptPersistence } from '../../src/modules/refunds/refund-attempt.persistence.js'
+import { refundModel } from '../../src/modules/refunds/refund.model.js'
+import { refundUnitReservationAccess } from '../../src/modules/orders/order.service.js'
+import { cancellationRefundSnapshotAccess } from '../../src/modules/orders/order.service.js'
 import {
   correctionPaymentSnapshotAccess,
+  refundFundingAccess,
   refundPaymentSnapshotAccess,
 } from '../../src/modules/payments/payment.service.js'
 import { returnPhysicalService } from '../../src/modules/returns/return-physical.service.js'
@@ -35,7 +44,7 @@ import {
   claimRestockAccess,
 } from '../../src/modules/orders/order.service.js'
 import { returnReceiptService } from '../../src/modules/inventory/return-receipt.service.js'
-import { inTransaction } from '../../src/shared/database/transaction.js'
+import { assertOutsideTransaction, inTransaction } from '../../src/shared/database/transaction.js'
 import { orderMessageService } from '../../src/modules/notifications/order-message.service.js'
 import { orderNotificationAccess } from '../../src/modules/orders/order-notification.service.js'
 import { paymentNotificationValidator } from '../../src/modules/notifications/notification.persistence.js'
@@ -58,6 +67,7 @@ import {
 } from '../../src/modules/payments/payment.service.js'
 import { orderPolicySnapshotAccess } from '../../src/modules/checkout/checkout-quote.service.js'
 import { cancellationService } from '../../src/modules/orders/cancellation.service.js'
+import { cancellationRoutes } from '../../src/modules/orders/cancellation.routes.js'
 import {
   initializeCancellationPersistence,
   verifyCancellationPersistence,
@@ -416,6 +426,7 @@ beforeEach(async () => {
     'providerReceiptIntake',
     'paymentCollections',
     'refunds',
+    'refundAttempts',
     'inventoryReservations',
     'inventoryMovements',
     'notifications',
@@ -4677,6 +4688,340 @@ it('cancellation/read local: collected cash blocks approval until a real refund 
     (await productModels(db.connection).variants.findById(f.selected.row._id))?.stock.committed,
   ).toBe(2)
 })
+async function fundedCancellationFixture(partial = false) {
+  await initializeRefundAttemptPersistence(db.connection)
+  const f = await cancellationReadFixture(),
+    admins = createAdminAccountAccess(db.connection, identities, sessions)
+  const lifecycle = orderLifecycleService(
+    db.connection,
+    admins,
+    fulfillmentPaymentAccess(db.connection),
+    fulfillmentAllocationService(db.connection, () => now),
+    async () => {},
+    () => now,
+  )
+  await lifecycle.transition(
+    f.admin.credentials.customerToken,
+    f.id,
+    { to: 'confirmed', reason: 'Synthetic qualified confirmation' },
+    'confirmed',
+  )
+  const payment = await paymentModel(db.connection).findOne({ orderId: f.id }).orFail()
+  const receipt = codCollectionService(
+    db.connection,
+    admins,
+    codCollectionOrderAccess(db.connection),
+    async (data) => ({
+      paymentId: data.paymentId,
+      amountPoisha: data.amountPoisha,
+      collectionReference: data.collectionReference,
+      evidenceRef: data.evidenceRef,
+      collectedAt: now,
+      digest: 'a'.repeat(64),
+    }),
+    () => now,
+  )
+  const amount = partial ? 1 : payment.expectedPoisha
+  await receipt.collect(
+    f.admin.credentials.customerToken,
+    payment._id.toHexString(),
+    {
+      amountPoisha: amount,
+      collectionReference: 'funded-cancellation',
+      evidenceRef: 'synthetic:cash-evidence',
+      reason: 'Synthetic verified receipt',
+    },
+    'cash',
+  )
+  const refund = cancellationRefundService(
+    db.connection,
+    cancellationRefundSnapshotAccess(db.connection),
+    refundUnitReservationAccess(db.connection),
+    refundFundingAccess(db.connection),
+    async () => ({
+      policyVersion: 'synthetic-cancellation-policy',
+      method: 'manual_bank',
+      consentRequired: false,
+      deliveryApproved: true,
+    }),
+  )
+  const release = cancellationAllocationService(db.connection, () => now)
+  const scope = orderScopeAccess(
+    createCustomerAccountAccess(db.connection, identities, sessions),
+    sessions,
+  )
+  const cancellation = cancellationService(
+    db.connection,
+    scope,
+    admins,
+    release,
+    cancellationPaymentAccess(db.connection),
+    refund,
+    () => now,
+  )
+  return { ...f, admins, payment, amount, lifecycle, refund, release, scope, cancellation }
+}
+it('funded cancellation: approval reserves every collected poisha with durable intents and releases stock exactly once', async () => {
+  const f = await fundedCancellationFixture(),
+    asked = await f.ask()
+  const input = { decision: 'approve', reason: 'Synthetic approved cancellation' }
+  const first = await f.cancellation.decide(
+    f.admin.credentials.customerToken,
+    asked.id,
+    input,
+    'approve-funded',
+  )
+  expect(first.status).toBe('approved')
+  expect(
+    await f.cancellation.decide(
+      f.admin.credentials.customerToken,
+      asked.id,
+      input,
+      'approve-funded',
+    ),
+  ).toEqual(first)
+  const refunds = await refundModel(db.connection).find({ orderId: f.id })
+  expect(refunds.reduce((sum, r) => sum + r.amountPoisha, 0)).toBe(f.amount)
+  expect(refunds.every((r) => r.basis === 'cancellation' && r.capacityStatus === 'reserved')).toBe(
+    true,
+  )
+  expect(await refundAttemptModel(db.connection).countDocuments()).toBe(refunds.length)
+  expect((await orderModels(db.connection).orders.findById(f.id).orFail()).fulfillmentStatus).toBe(
+    'cancelled',
+  )
+  expect(
+    (await productModels(db.connection).variants.findById(f.selected.row._id).orFail()).stock
+      .committed,
+  ).toBe(0)
+  const payment = await paymentModel(db.connection).findById(f.payment._id).orFail()
+  expect(payment.merchandiseRefundHeldPoisha).toBe(f.amount)
+  expect(payment.merchandiseRefundCompletedPoisha).toBe(0)
+  expect(payment.paymentStatus).toBe('paid')
+  const monitoring = await paymentMonitorService(db.connection, f.admins).detail(
+    f.admin.credentials.customerToken,
+    f.payment._id.toHexString(),
+    {},
+  )
+  expect(monitoring.corrections).toEqual([])
+  expect(monitoring.pagination.corrections.totalItems).toBe(0)
+})
+it('funded cancellation: partially collected COD creates only the verified amount of refund liability', async () => {
+  const f = await fundedCancellationFixture(true),
+    asked = await f.ask()
+  await f.cancellation.decide(
+    f.admin.credentials.customerToken,
+    asked.id,
+    { decision: 'approve', reason: 'Synthetic partial cash cancellation' },
+    'partial-cancel',
+  )
+  const rows = await refundModel(db.connection).find({ orderId: f.id })
+  expect(rows.reduce((sum, r) => sum + r.amountPoisha, 0)).toBe(1)
+  expect(
+    (await paymentModel(db.connection).findById(f.payment._id).orFail()).verifiedCollectedPoisha,
+  ).toBe(1)
+  expect((await orderModels(db.connection).orders.findById(f.id).orFail()).fulfillmentStatus).toBe(
+    'cancelled',
+  )
+})
+it('funded cancellation: downstream allocation failure rolls back the refund holds, attempts and cancellation together', async () => {
+  const f = await fundedCancellationFixture(),
+    asked = await f.ask()
+  const failing = cancellationService(
+    db.connection,
+    f.scope,
+    f.admins,
+    async (session, binding) => {
+      await f.release(session, binding)
+      throw new Error('Synthetic release failure after durable refund writes')
+    },
+    cancellationPaymentAccess(db.connection),
+    f.refund,
+    () => now,
+  )
+  await expect(
+    failing.decide(
+      f.admin.credentials.customerToken,
+      asked.id,
+      { decision: 'approve', reason: 'Synthetic rollback' },
+      'rollback',
+    ),
+  ).rejects.toThrow()
+  expect(await refundModel(db.connection).countDocuments({ orderId: f.id })).toBe(0)
+  expect(await refundAttemptModel(db.connection).countDocuments()).toBe(0)
+  expect(
+    (await paymentModel(db.connection).findById(f.payment._id).orFail())
+      .merchandiseRefundHeldPoisha,
+  ).toBe(0)
+  expect((await cancellationModel(db.connection).findById(asked.id).orFail()).status).toBe(
+    'requested',
+  )
+  expect((await orderModels(db.connection).orders.findById(f.id).orFail()).fulfillmentStatus).toBe(
+    'confirmed',
+  )
+  expect(
+    (await productModels(db.connection).variants.findById(f.selected.row._id).orFail()).stock
+      .committed,
+  ).toBe(2)
+})
+it('funded cancellation: concurrent shipment and paid cancellation across admins have one whole-order winner', async () => {
+  const f = await fundedCancellationFixture(),
+    other = await customer('admin')
+  await f.lifecycle.transition(
+    f.admin.credentials.customerToken,
+    f.id,
+    { to: 'processing', reason: 'Synthetic processing' },
+    'process-funded',
+  )
+  const asked = await f.ask()
+  const outcomes = await Promise.allSettled([
+    f.cancellation.decide(
+      f.admin.credentials.customerToken,
+      asked.id,
+      {
+        decision: 'approve',
+        reason: 'Synthetic no-dispatch proof',
+        dispatchNotStartedConfirmed: true,
+      },
+      'race-cancel',
+    ),
+    f.lifecycle.transition(
+      other.credentials.customerToken,
+      f.id,
+      { to: 'shipped', reason: 'Synthetic shipment', dispatchReference: 'funded-race-dispatch' },
+      'race-ship',
+    ),
+  ])
+  expect(outcomes.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
+  const order = await orderModels(db.connection).orders.findById(f.id).orFail()
+  const payment = await paymentModel(db.connection).findById(f.payment._id).orFail()
+  expect(payment.merchandiseRefundHeldPoisha).toBe(
+    order.fulfillmentStatus === 'cancelled' ? f.amount : 0,
+  )
+  expect(await refundModel(db.connection).countDocuments({ orderId: f.id })).toBe(
+    order.fulfillmentStatus === 'cancelled' ? 1 : 0,
+  )
+})
+it('cancellation HTTP: scoped request and protected paid decision use real reservation and remain replay-safe', async () => {
+  const f = await fundedCancellationFixture(),
+    other = await customer()
+  const root = createApp({
+    apiRouter: cancellationRoutes(f.cancellation, security, sessions, origin),
+  })
+  const path = `/api/v1/orders/${f.id}/cancellation-requests`
+  await request(root)
+    .post(path)
+    .set('Origin', origin)
+    .set('Cookie', f.who.cookie)
+    .set('X-CSRF-Token', f.who.csrf)
+    .send({ reason: 'Request without key' })
+    .expect(400)
+  const created = await request(root)
+    .post(path)
+    .set('Origin', origin)
+    .set('Cookie', f.who.cookie)
+    .set('X-CSRF-Token', f.who.csrf)
+    .set('Idempotency-Key', 'http-request')
+    .send({ reason: 'Synthetic customer request' })
+    .expect(201)
+  await request(root).get(path).set('Cookie', other.cookie).expect(404)
+  expect(
+    (await request(root).get(path).set('Cookie', f.who.cookie).expect(200)).body.data,
+  ).toHaveLength(1)
+  const queue = await request(root)
+    .get('/api/v1/admin/cancellation-requests?status=requested&pageSize=1')
+    .set('Cookie', f.admin.cookie)
+    .expect(200)
+  expect(queue.body.data[0].id).toBe(created.body.data.id)
+  const decisionPath = `/api/v1/admin/cancellation-requests/${created.body.data.id}/decision`
+  await request(root)
+    .post(decisionPath)
+    .set('Origin', 'http://localhost:5173')
+    .set('Cookie', f.admin.cookie)
+    .send({ decision: 'approve', reason: 'Missing CSRF' })
+    .expect(403)
+  const approve = () =>
+    request(root)
+      .post(decisionPath)
+      .set('Origin', 'http://localhost:5173')
+      .set('Cookie', f.admin.cookie)
+      .set('X-CSRF-Token', f.admin.csrf)
+      .set('Idempotency-Key', 'http-approve')
+      .send({ decision: 'approve', reason: 'Synthetic authorized approval' })
+  await approve().expect(200)
+  await approve().expect(200)
+  expect((await orderModels(db.connection).orders.findById(f.id).orFail()).fulfillmentStatus).toBe(
+    'cancelled',
+  )
+  expect(
+    (await paymentModel(db.connection).findById(f.payment._id).orFail())
+      .merchandiseRefundHeldPoisha,
+  ).toBe(f.amount)
+  expect(await refundAttemptModel(db.connection).countDocuments()).toBe(1)
+})
+it('cancellation HTTP: verified guest scope and CSRF are exact and invalid customer cookies never downgrade', async () => {
+  const held = await heldOrder()
+  await initializeCancellationPersistence(db.connection)
+  const guests = guestSessionService(
+    db.connection,
+    identities,
+    {
+      secret: authSecret,
+      customerTtlSeconds: 600,
+      adminTtlSeconds: 300,
+      sameSite: 'lax',
+      appEnvironment: 'test',
+      apiOrigin: 'https://api.example.test',
+    },
+    600,
+    guestOrderAccess(db.connection).verify,
+    () => now,
+  )
+  const proof = await inTransaction(db.connection, (session) =>
+    guests.issueAfterProof(session, held.result.id),
+  )
+  const scope = orderScopeAccess(
+    createCustomerAccountAccess(db.connection, identities, sessions),
+    sessions,
+    guests,
+  )
+  const service = cancellationService(
+    db.connection,
+    scope,
+    createAdminAccountAccess(db.connection, identities, sessions),
+    cancellationAllocationService(db.connection, () => now),
+    cancellationPaymentAccess(db.connection),
+    undefined,
+    () => now,
+  )
+  const root = createApp({ apiRouter: cancellationRoutes(service, security, sessions, origin) })
+  const path = `/api/v1/orders/${held.result.id}/cancellation-requests`,
+    cookie = `sz_guest_order_sid=${proof.token}`
+  await request(root)
+    .post(path)
+    .set('Cookie', cookie)
+    .set('X-CSRF-Token', proof.csrfToken)
+    .set('Idempotency-Key', 'missing-origin')
+    .send({ reason: 'No origin' })
+    .expect(403)
+  await request(root)
+    .post(path)
+    .set('Origin', origin)
+    .set('Cookie', cookie)
+    .set('X-CSRF-Token', 'bad')
+    .set('Idempotency-Key', 'bad-csrf')
+    .send({ reason: 'Wrong CSRF' })
+    .expect(403)
+  await request(root)
+    .post(path)
+    .set('Origin', origin)
+    .set('Cookie', cookie)
+    .set('X-CSRF-Token', proof.csrfToken)
+    .set('Idempotency-Key', 'guest-cancel')
+    .send({ reason: 'Verified guest request' })
+    .expect(201)
+  await request(root).get(path).set('Cookie', `${cookie}; sz_customer_sid=invalid`).expect(401)
+  await request(root).get(path).set('Cookie', cookie).expect(200)
+})
 it('cancellation/read local: audit readiness failure leaves request/order/stock recoverable with the same decision key', async () => {
   const f = await cancellationReadFixture(),
     asked = await f.ask()
@@ -6365,6 +6710,391 @@ function refundAdvisory(policy?: Parameters<typeof refundAdvisoryService>[3]) {
     policy,
   )
 }
+function reservations(
+  admins = createAdminAccountAccess(db.connection, identities, sessions),
+  policy: Parameters<typeof refundReservationService>[6] = async () => ({
+    policyVersion: 'synthetic-reservation-policy',
+    method: 'manual_bank',
+    consentRequired: false,
+  }),
+) {
+  return refundReservationService(
+    db.connection,
+    admins,
+    refundClaimSnapshotAccess(db.connection),
+    refundOrderSnapshotAccess(db.connection),
+    refundUnitReservationAccess(db.connection),
+    refundFundingAccess(db.connection),
+    policy,
+  )
+}
+async function reservationFixture(collected = true) {
+  await initializeRefundAttemptPersistence(db.connection)
+  const f = await physicalReturnFixture('shortage')
+  if (collected) await f.cash()
+  const input = {
+    orderId: f.id,
+    basis: 'shortage',
+    basisRefId: f.claimId,
+    classification: 'merchandise',
+    requestedItems: [{ orderItemId: f.itemId, quantity: 1 }],
+    reason: 'Synthetic reservation review',
+  }
+  return { ...f, input, service: reservations() }
+}
+it('refund reservation: durable obligation, attempt and source/order/unit holds commit once across different replay keys', async () => {
+  const f = await reservationFixture()
+  const first = await f.service.reserve(f.token, f.input, 'reserve')
+  expect(first.refunds).toHaveLength(1)
+  expect(first.refunds[0]).toMatchObject({ status: 'approved', capacityStatus: 'reserved' })
+  expect(await f.service.reserve(f.token, f.input, 'reserve')).toEqual(first)
+  expect(
+    await f.service.reserve(
+      f.token,
+      { ...f.input, reason: 'Another authorized review' },
+      'changed-key',
+    ),
+  ).toEqual(first)
+  await expect(
+    f.service.reserve(f.token, { ...f.input, reason: 'Changed payload' }, 'reserve'),
+  ).rejects.toMatchObject({ code: 'IDEMPOTENCY_CONFLICT' })
+  const row = await refundModel(db.connection).findOne({ orderId: f.id }).orFail()
+  const attempt = await refundAttemptModel(db.connection).findOne({ refundId: row._id }).orFail()
+  expect(attempt.status).toBe('created')
+  expect(attempt.amountPoisha).toBe(row.amountPoisha)
+  expect(attempt.toObject()).not.toHaveProperty('confirmedAt')
+  expect(row.timingSnapshot).toMatchObject({ status: 'under_review' })
+  expect(row.timingSnapshot?.targetAt).toBeUndefined()
+  const source = await paymentRecordModels(db.connection)
+    .collections.findById(row.sourceCollectionId)
+    .orFail()
+  const payment = await paymentModel(db.connection).findById(row.paymentId).orFail()
+  const balance = await orderModels(db.connection).balances.findOne({ orderId: f.id }).orFail()
+  expect(source.get('merchandiseRefundHeldPoisha')).toBe(row.amountPoisha)
+  expect(payment.merchandiseRefundHeldPoisha).toBe(row.amountPoisha)
+  expect(balance.unitCoverage.reduce((sum, unit) => sum + unit.refundHeldPoisha, 0)).toBe(
+    row.amountPoisha,
+  )
+  expect(await refundModel(db.connection).countDocuments()).toBe(1)
+  expect(await refundAttemptModel(db.connection).countDocuments()).toBe(1)
+})
+it('refund reservation: different admins and keys converge on one natural business request', async () => {
+  const f = await reservationFixture(),
+    other = await customer('admin')
+  const results = await Promise.all([
+    f.service.reserve(f.token, f.input, 'first'),
+    f.service.reserve(other.credentials.customerToken, f.input, 'second'),
+  ])
+  expect(results[0]).toEqual(results[1])
+  expect(await refundModel(db.connection).countDocuments()).toBe(1)
+  expect(await refundAttemptModel(db.connection).countDocuments()).toBe(1)
+})
+it('refund reservation: competing quantities cannot reserve an original ordinal twice', async () => {
+  const f = await reservationFixture(),
+    other = await customer('admin')
+  const results = await Promise.allSettled([
+    f.service.reserve(f.token, f.input, 'one'),
+    f.service.reserve(
+      other.credentials.customerToken,
+      { ...f.input, requestedItems: [{ orderItemId: f.itemId, quantity: 2 }] },
+      'two',
+    ),
+  ])
+  expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
+  const balance = await orderModels(db.connection).balances.findOne({ orderId: f.id }).orFail()
+  expect(
+    balance.unitCoverage.every(
+      (u) => u.refundHeldPoisha + u.refundCompletedPoisha <= u.netEntitlementPoisha,
+    ),
+  ).toBe(true)
+})
+it('refund reservation: failure after actual financial, obligation, attempt and audit writes rolls everything back', async () => {
+  const f = await reservationFixture(),
+    admins = createAdminAccountAccess(db.connection, identities, sessions)
+  const fail: typeof admins = {
+    owned: (token, work, mutating) =>
+      admins.owned(
+        token,
+        async (actor, session) => {
+          await work(actor, session)
+          throw new Error('Synthetic post-reservation failure')
+        },
+        mutating,
+      ),
+  }
+  await expect(reservations(fail).reserve(f.token, f.input, 'fail')).rejects.toThrow()
+  expect(await refundModel(db.connection).countDocuments()).toBe(0)
+  expect(await refundAttemptModel(db.connection).countDocuments()).toBe(0)
+  expect(
+    (await paymentModel(db.connection).findOne({ orderId: f.id }).orFail())
+      .merchandiseRefundHeldPoisha,
+  ).toBe(0)
+  expect(
+    (
+      await orderModels(db.connection).balances.findOne({ orderId: f.id }).orFail()
+    ).unitCoverage.every((u) => u.refundHeldPoisha === 0),
+  ).toBe(true)
+  expect(
+    await db.connection.collection('auditLogs').countDocuments({ action: 'refund.group.reserve' }),
+  ).toBe(0)
+})
+it('refund reservation: uncollected COD, wrong basis, absent policy and unsupported gateway fail closed', async () => {
+  const f = await reservationFixture(false)
+  await expect(f.service.reserve(f.token, f.input, 'unfunded')).rejects.toMatchObject({
+    code: 'REFUND_BALANCE_EXCEEDED',
+  })
+  await f.cash()
+  await expect(
+    f.service.reserve(f.token, { ...f.input, basis: 'physical_return' }, 'wrong-basis'),
+  ).rejects.toMatchObject({ code: 'BUSINESS_RULE_VIOLATION' })
+  const missing = refundReservationService(
+    db.connection,
+    f.adminAccess,
+    refundClaimSnapshotAccess(db.connection),
+    refundOrderSnapshotAccess(db.connection),
+    refundUnitReservationAccess(db.connection),
+    refundFundingAccess(db.connection),
+  )
+  await expect(missing.reserve(f.token, f.input, 'no-policy')).rejects.toMatchObject({
+    code: 'SERVICE_UNAVAILABLE',
+  })
+  await expect(
+    reservations(f.adminAccess, async () => ({
+      policyVersion: 'synthetic',
+      method: 'gateway',
+      consentRequired: false,
+    })).reserve(f.token, f.input, 'bad-method'),
+  ).rejects.toMatchObject({ code: 'BUSINESS_RULE_VIOLATION' })
+  expect(await refundModel(db.connection).countDocuments()).toBe(0)
+})
+it('refund reservation: two verified sources split one original unit and retain separate durable intents', async () => {
+  const f = await reservationFixture(false)
+  await f.cash(1, 'first-source')
+  await f.cash(f.payment.expectedPoisha - 1, 'second-source')
+  const result = await f.service.reserve(f.token, f.input, 'multi-source')
+  expect(result.refunds).toHaveLength(2)
+  expect(await refundAttemptModel(db.connection).countDocuments()).toBe(2)
+  const balance = await orderModels(db.connection).balances.findOne({ orderId: f.id }).orFail()
+  const amount = result.refunds.reduce((sum, row) => sum + row.amountPoisha, 0)
+  expect(balance.unitCoverage[0]?.refundHeldPoisha).toBe(amount)
+  expect(new Set(result.refunds.map((row) => row.sourceCollectionId)).size).toBe(2)
+})
+it('refund reservation: existing correction intent advances once without consuming merchandise and persists gateway identity before dispatch', async () => {
+  await initializeRefundAttemptPersistence(db.connection)
+  const f = await processingFixture()
+  expect(await f.processor().process(f.claim)).toBe('committed')
+  f.change({
+    bank_tran_id: 'reservation-correction-bank',
+    val_id: 'reservation-correction-validation',
+  })
+  expect(
+    await f.processor().process({ ...f.claim, validationId: 'reservation-correction-validation' }),
+  ).toBe('committed')
+  const old = await refundModel(db.connection).findOne({ orderId: f.result.id }).orFail()
+  const before = await paymentModel(db.connection).findById(f.attempt.paymentId).orFail()
+  const admin = await customer('admin')
+  const service = reservations(
+    createAdminAccountAccess(db.connection, identities, sessions),
+    async () => ({
+      policyVersion: 'synthetic-qualified-gateway-policy',
+      method: 'gateway',
+      consentRequired: false,
+    }),
+  )
+  const command = {
+    orderId: f.result.id,
+    basis: 'payment_correction',
+    classification: 'payment_correction',
+    correctionCollectionId: old.sourceCollectionId.toHexString(),
+    reason: 'Synthetic correction review',
+  }
+  const result = await service.reserve(admin.credentials.customerToken, command, 'correction')
+  expect(result.refunds[0]?.id).toBe(old._id.toHexString())
+  expect(await refundModel(db.connection).countDocuments()).toBe(1)
+  const attempt = await refundAttemptModel(db.connection).findOne().orFail()
+  expect(attempt.status).toBe('created')
+  expect(attempt.originalBankTranId).toBe('reservation-correction-bank')
+  expect(attempt.refundTransId).toHaveLength(30)
+  expect(attempt.refundRefId).toBeUndefined()
+  const after = await paymentModel(db.connection).findById(f.attempt.paymentId).orFail()
+  expect(after.correctionRefundHeldPoisha).toBe(old.amountPoisha)
+  expect(after.merchandiseRefundHeldPoisha).toBe(0)
+  expect(after.merchandiseFundedPoisha).toBe(before.merchandiseFundedPoisha)
+  expect(after.paymentStatus).toBe('paid')
+})
+it('refund reservation: fallback consent and delivery authority cannot be supplied by the request body', async () => {
+  const f = await reservationFixture()
+  const consent = reservations(f.adminAccess, async () => ({
+    policyVersion: 'synthetic',
+    method: 'manual_bank',
+    consentRequired: true,
+  }))
+  await expect(consent.reserve(f.token, f.input, 'no-consent')).rejects.toMatchObject({
+    code: 'BUSINESS_RULE_VIOLATION',
+  })
+  await expect(
+    f.service.reserve(
+      f.token,
+      { ...f.input, deliveryChargeRequestedPoisha: 1 },
+      'no-delivery-policy',
+    ),
+  ).rejects.toMatchObject({ code: 'BUSINESS_RULE_VIOLATION' })
+  const authorized = reservations(f.adminAccess, async () => ({
+    policyVersion: 'synthetic',
+    method: 'manual_bank',
+    consentRequired: true,
+    consentEvidenceRef: 'synthetic-protected-consent',
+    deliveryApproved: true,
+  }))
+  const original = (await orderModels(db.connection).orders.findById(f.id).orFail()).pricingSnapshot
+    .deliveryChargePoisha
+  await expect(
+    authorized.reserve(
+      f.token,
+      { ...f.input, deliveryChargeRequestedPoisha: original + 1 },
+      'excess-delivery',
+    ),
+  ).rejects.toMatchObject({ code: 'REFUND_BALANCE_EXCEEDED' })
+  await authorized.reserve(
+    f.token,
+    { ...f.input, deliveryChargeRequestedPoisha: original },
+    'approved-delivery',
+  )
+  expect(
+    (await paymentModel(db.connection).findOne({ orderId: f.id }).orFail())
+      .deliveryRefundHeldPoisha,
+  ).toBe(original)
+  expect((await refundModel(db.connection).findOne().orFail()).consentEvidenceRef).toBe(
+    'synthetic-protected-consent',
+  )
+})
+async function reservedGatewayFixture() {
+  await initializeRefundAttemptPersistence(db.connection)
+  const f = await processingFixture()
+  expect(await f.processor().process(f.claim)).toBe('committed')
+  f.change({ bank_tran_id: 'dispatch-bank', val_id: 'dispatch-validation' })
+  expect(await f.processor().process({ ...f.claim, validationId: 'dispatch-validation' })).toBe(
+    'committed',
+  )
+  const obligation = await refundModel(db.connection).findOne({ orderId: f.result.id }).orFail(),
+    admin = await customer('admin')
+  const admins = createAdminAccountAccess(db.connection, identities, sessions)
+  const service = reservations(admins, async () => ({
+    policyVersion: 'synthetic-gateway',
+    method: 'gateway',
+    consentRequired: false,
+  }))
+  await service.reserve(
+    admin.credentials.customerToken,
+    {
+      orderId: f.result.id,
+      basis: 'payment_correction',
+      classification: 'payment_correction',
+      correctionCollectionId: obligation.sourceCollectionId.toHexString(),
+      reason: 'Synthetic approval',
+    },
+    'reserve-dispatch',
+  )
+  return { ...f, obligation, admin, admins }
+}
+it('refund dispatch: concurrent requests submit one persisted identity outside the transaction and acceptance remains processing', async () => {
+  const f = await reservedGatewayFixture()
+  const initiateRefund = vi
+    .fn<ReturnType<typeof createSslcommerzAdapter>['initiateRefund']>()
+    .mockImplementation(async () => {
+      assertOutsideTransaction()
+      expect((await refundAttemptModel(db.connection).findOne().orFail()).status).toBe('submitted')
+      expect((await refundModel(db.connection).findById(f.obligation._id).orFail()).status).toBe(
+        'processing',
+      )
+      return {
+        kind: 'accepted',
+        refundRefId: 'synthetic-provider-refund',
+        evidenceDigest: 'a'.repeat(64),
+      }
+    })
+  const service = refundDispatchService(
+    db.connection,
+    f.admins,
+    refundFundingAccess(db.connection),
+    { initiateRefund },
+  )
+  const command = { method: 'gateway', reason: 'Synthetic dispatch review' }
+  const result = await Promise.all([
+    service.dispatch(
+      f.admin.credentials.customerToken,
+      f.obligation._id.toHexString(),
+      command,
+      'send',
+    ),
+    service.dispatch(
+      f.admin.credentials.customerToken,
+      f.obligation._id.toHexString(),
+      command,
+      'send',
+    ),
+  ])
+  expect(result.every((r) => r.state === 'submitted')).toBe(true)
+  expect(initiateRefund).toHaveBeenCalledTimes(1)
+  const attempt = await refundAttemptModel(db.connection).findOne().orFail()
+  expect(attempt.refundRefId).toBe('synthetic-provider-refund')
+  expect(attempt.confirmedAt).toBeUndefined()
+  const payment = await paymentModel(db.connection).findById(f.attempt.paymentId).orFail()
+  expect(payment.correctionRefundHeldPoisha).toBe(f.obligation.amountPoisha)
+  expect(payment.correctionRefundCompletedPoisha).toBe(0)
+})
+it('refund dispatch: timeout preserves held funds and stable identity without automatic redispatch', async () => {
+  const f = await reservedGatewayFixture()
+  const initiateRefund = vi
+    .fn<ReturnType<typeof createSslcommerzAdapter>['initiateRefund']>()
+    .mockRejectedValue(new Error('Synthetic ambiguous external timeout'))
+  const service = refundDispatchService(
+    db.connection,
+    f.admins,
+    refundFundingAccess(db.connection),
+    { initiateRefund },
+  )
+  const command = { method: 'gateway', reason: 'Synthetic dispatch review' }
+  const result = await service.dispatch(
+    f.admin.credentials.customerToken,
+    f.obligation._id.toHexString(),
+    command,
+    'uncertain',
+  )
+  expect(result.state).toBe('uncertain')
+  expect(
+    (
+      await service.dispatch(
+        f.admin.credentials.customerToken,
+        f.obligation._id.toHexString(),
+        command,
+        'different-key',
+      )
+    ).state,
+  ).toBe('uncertain')
+  expect(initiateRefund).toHaveBeenCalledTimes(1)
+  await expect(
+    service.dispatch(
+      f.admin.credentials.customerToken,
+      f.obligation._id.toHexString(),
+      { ...command, reason: 'Changed' },
+      'uncertain',
+    ),
+  ).rejects.toMatchObject({ code: 'IDEMPOTENCY_CONFLICT' })
+  expect(
+    (await refundModel(db.connection).findById(f.obligation._id).orFail()).capacityStatus,
+  ).toBe('reserved')
+  await expect(
+    inTransaction(db.connection, () =>
+      service.dispatch(
+        f.admin.credentials.customerToken,
+        f.obligation._id.toHexString(),
+        command,
+        'inside-transaction',
+      ),
+    ),
+  ).rejects.toThrow()
+})
 it('correction advisory local: linked verified excess is class-isolated, bounded and read-only', async () => {
   const f = await processingFixture()
   expect(await f.processor().process(f.claim)).toBe('committed')

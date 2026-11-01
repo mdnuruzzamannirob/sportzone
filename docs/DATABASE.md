@@ -1500,12 +1500,26 @@ Correction advisory arithmetic is isolated from merchandise ordinals. A private 
 planner can bind correction capacities to verified collections linked to the same order/payment and
 allocate a requested amount deterministically across distinct sources, subject to source and aggregate
 correction counters. This is a nonbinding snapshot: approval requires separate authorization and
-atomic revalidation/reservation. No new `refundAttempts` writer, status transition, collection or
-provider interaction is enabled by this advisory.
+atomic revalidation/reservation. The advisory itself does not create obligations, attempts or provider effects.
+
+The private reservation coordinator separately reauthorizes an administrator and protected policy,
+binds approved shortage or inspected physical-return quantities, and commits source-class, aggregate,
+unit and delivery holds with approved obligations, created attempts and audit. Distinct source slices
+share a deterministic business group; changing request keys or reason cannot reserve the same natural
+request again. Correction reservation advances its existing unreserved intent rather than duplicating
+it. Method/policy/consent approval is mandatory. Without a qualified calendar, approval records timing
+under review and no target date. No payout is inferred from a reservation.
+
+The cancellation-decision coordinator can invoke the private cancellation reservation capability in
+its existing transaction. Orders rechecks the pending request and original pre-dispatch unit facts;
+only the verified collected amount is reserved, including partial COD. Any required delivery component
+needs protected policy authority. Refunds, attempts, balances, stock/coupon release, cancellation
+history, audit and notification either commit together or roll back. This does not enable ordinary
+startup, bypass qualified confirmation policy or establish a real original-cash verifier.
 
 `requestedAt` in the API maps to immutable refund `createdAt`. The public timeline is a bounded projection of durable status/audit events; retain approval/completion facts separately so history truncation cannot remove timing authority. Timing basis corrections require audited domain updates, preserve approvedAt, and must not delay an otherwise authorized payout.
 
-**Indexes:** unique `{orderId:1,decisionKey:1}`; `{sourceCollectionId:1,status:1}`; `{orderId:1,classification:1,createdAt:-1}`.
+**Indexes:** unique `{orderId:1,decisionKey:1}`; `{sourceCollectionId:1,status:1}`; `{orderId:1,classification:1,createdAt:-1}`; `{refundGroupKey:1,createdAt:1}`.
 
 **Rules:** a multi-collection refund uses separate source-funded obligations with exact `unitAmounts[]`, one shared
 `refundGroupKey`/business `basisRefId` when applicable, and a **distinct unique `decisionKey` per source-funded slice**.
@@ -1530,10 +1544,12 @@ ordinal can receive another source-funded payment only for its exact remaining n
 | `lastCheckedAt`? / `confirmedAt`? | Date | Verification timestamps |
 | `manualEvidence`? | embedded | `{destinationMasked,transferReference,evidenceDigest,confirmedBy?,confirmedAt?}`; access restricted |
 | `failureCode`? / `lastOperationKey`? | string | Safe failure metadata and unique causal reference |
+| `revision`! | int | Safe-integer CAS revision; generic model edits/deletes remain prohibited |
 
 **Indexes:** unique `{refundId:1,attemptNumber:1}`; unique `{provider:1,idempotencyKey:1}`; partial unique
 `{provider:1,refundTransId:1}` and `{provider:1,refundRefId:1}` **where the field is a string**, after account-level
-semantics are verified; `{status:1,lastCheckedAt:1}`. Use one merchant `refundTransId` for replay/reconciliation of the
+semantics are verified; `{status:1,lastCheckedAt:1}`; partial unique `{refundId:1}` for
+`created/submitted/uncertain` prevents two simultaneously open attempts. Use one merchant `refundTransId` for replay/reconciliation of the
 **same uncertain gateway request**. A new ID represents a new payout attempt only after independent confirmation that the
 previous attempt cannot pay. Never regenerate an ID merely because an HTTP request timed out.
 
