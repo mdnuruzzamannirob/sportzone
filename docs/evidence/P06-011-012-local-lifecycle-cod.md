@@ -278,3 +278,14 @@ P06-003 and reviewed deployed admission remain unresolved. No task/milestone is 
 Earlier descriptions of missing concrete verifier/root wiring are superseded by this follow-up;
 real qualification and full acceptance are still outstanding. No repeat request is made for the
 records the owner already confirmed unavailable.
+
+## Prepaid mapping follow-up — 1 November 2026
+
+The [prepaid timing implementation](./P06-003-delivery-deadline-boundary.md#prepaid-timing-mapping-implementation--1-november-2026)
+now closes the previously recorded software full-payment/hourly-handover mapping gap. Canonical source
+reconstruction, frozen confirmation event, quote/order/owner projections and exact-predecessor additive
+migration are implemented. Latest backend evidence: 795 unit, 360 affected integration and 112 contract
+cases Passed, with a final focused missing-proof rollback assertion. These results supersede earlier
+implementation counts for the affected revision, not historical observations or acceptance decisions.
+Qualified applicability, actual original-cash qualification, deployed admission and independent full-task
+acceptance remain separate factual events; no checkbox or milestone is self-approved.

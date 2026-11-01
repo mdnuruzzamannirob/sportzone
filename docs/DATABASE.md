@@ -874,6 +874,14 @@ current order projection even after `replayUntil`; that field cannot expire the 
 
 ### 7.2 `orders` — `checkout` / `orders`
 
+Optional reviewed deadline-basis `rule.prepaid` stores ruleRef, handoverHours (elapsed hours) and
+deliveryCalendarDays (Asia/Dhaka calendar days). It applies to online orders only. The operational
+commitment may additionally freeze fullyPaidAt, derived inside confirmation's transaction from the
+bounded canonical verified source collections reaching original expected merchandise funding.
+This is an event snapshot, not permission to mark a payment Paid. Existing snapshots remain valid;
+use the explicit additive local/test validator migration before admitting new rules. Do not rewrite
+historical timing or infer a cash event from order/fulfillment timestamps.
+
 | Field | Type | Constraints / notes |
 | --- | --- | --- |
 | `orderNumber`! | string | Unique public reference; never an access credential |

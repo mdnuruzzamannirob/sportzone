@@ -226,13 +226,22 @@ const recipient = {
   street: 'Synthetic street',
   postalCode: '1000',
 }
-function deadline(version = 'synthetic-v1') {
+function deadline(version = 'synthetic-v1', prepaid = false) {
   const rule = deliveryDeadlineRule.parse({
     version,
     timezone: 'Asia/Dhaka',
     effectiveFrom: '2026-01-01T00:00:00Z',
     target: { startEvent: 'confirmedAt', calendarDays: 14 },
     legalCaps: [],
+    ...(prepaid
+      ? {
+          prepaid: {
+            ruleRef: 'synthetic:prepaid-scope',
+            handoverHours: 48,
+            deliveryCalendarDays: 5,
+          },
+        }
+      : {}),
   })
   return createDeliveryDeadlineService(
     {
@@ -2058,6 +2067,7 @@ async function initiationApp(
 async function customerHeldOrder(
   withCoupon = false,
   existingVariant?: Awaited<ReturnType<typeof variant>>,
+  prepaid = false,
 ) {
   const who = await customer(),
     selected = existingVariant ?? (await variant(2000, 1500))
@@ -2066,6 +2076,7 @@ async function customerHeldOrder(
     { $set: { 'paymentChannels.bkashEnabled': true } },
   )
   const quotes = makeService({
+    ...(prepaid ? { deadline: deadline('synthetic-prepaid-v1', true) } : {}),
     methods: paymentEligibility(async () => [
       { channel: 'bkash', active: true, minPoisha: 1, maxPoisha: 1000000 },
     ]),
@@ -2340,8 +2351,9 @@ it('hosted-init replay withholds a historical URL after channel disablement, ris
 async function processingFixture(
   withCoupon = false,
   existingVariant?: Awaited<ReturnType<typeof variant>>,
+  prepaid = false,
 ) {
-  const held = await customerHeldOrder(withCoupon, existingVariant),
+  const held = await customerHeldOrder(withCoupon, existingVariant, prepaid),
     { root } = await initiationApp()
   await request(root)
     .post(`/api/v1/orders/${held.result.id}/payment-attempts`)
@@ -8796,4 +8808,67 @@ it('Package A protected authorities: cancellation policy is request-bound and re
   } finally {
     await rm(directory, { recursive: true, force: true })
   }
+})
+
+it('Package A prepaid timing: actual verified collection anchors confirmation commitment and customer handover projection', async () => {
+  const f = await processingFixture(false, undefined, true)
+  now = new Date(now.getTime() + 1000)
+  f.change({ tran_date: now.toISOString() })
+  await f.processor().process(f.claim)
+  const fullyPaidAt = now.toISOString()
+  now = new Date(now.getTime() + 1000)
+  const admin = await customer('admin')
+  const lifecycle = orderLifecycleService(
+    db.connection,
+    createAdminAccountAccess(db.connection, identities, sessions),
+    fulfillmentPaymentAccess(db.connection, () => now),
+    fulfillmentAllocationService(db.connection, () => now),
+    async () => {},
+    () => now,
+  )
+  const collections = paymentRecordModels(db.connection).collections
+  const original = await collections.findOne({ orderId: f.result.id }).lean().orFail()
+  const beforeRevision = (await paymentModel(db.connection).findById(f.attempt.paymentId).orFail())
+    .revision
+  await collections.collection.deleteOne({ _id: original._id })
+  await expect(
+    lifecycle.transition(
+      admin.credentials.customerToken,
+      f.result.id,
+      { to: 'confirmed', reason: 'Synthetic verified prepaid rule' },
+      'prepaid-confirm',
+    ),
+  ).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' })
+  expect(
+    (await orderModels(db.connection).orders.findById(f.result.id).orFail()).fulfillmentStatus,
+  ).toBe('pending')
+  expect((await paymentModel(db.connection).findById(f.attempt.paymentId).orFail()).revision).toBe(
+    beforeRevision,
+  )
+  await collections.collection.insertOne(original)
+  await lifecycle.transition(
+    admin.credentials.customerToken,
+    f.result.id,
+    { to: 'confirmed', reason: 'Synthetic verified prepaid rule' },
+    'prepaid-confirm',
+  )
+  const order = await orderModels(db.connection).orders.findById(f.result.id).orFail()
+  expect(order.deliveryCommitment.fullyPaidAt?.toISOString()).toBe(fullyPaidAt)
+  expect(order.deliveryCommitment.effectiveDeadlineAt?.toISOString()).toBe(
+    new Date(order.placedAt.getTime() + 5 * 86400000).toISOString(),
+  )
+  const customers = createCustomerAccountAccess(db.connection, identities, sessions)
+  const reads = orderReadService(
+    db.connection,
+    customers,
+    orderScopeAccess(customers, sessions),
+    customerPaymentSummaryAccess(db.connection),
+    orderPolicySnapshotAccess(db.connection),
+    () => now,
+  )
+  const detail = await reads.read(f.who.credentials, f.result.id)
+  expect(detail.deliveryDeadline).toMatchObject({
+    handoverStatus: 'pending',
+    handoverDeadlineAt: new Date(Date.parse(fullyPaidAt) + 48 * 3600000).toISOString(),
+  })
 })

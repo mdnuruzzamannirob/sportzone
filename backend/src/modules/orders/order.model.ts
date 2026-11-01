@@ -62,6 +62,7 @@ export type Order = {
     targetDeadlineAt?: Date
     legalDeadlineAt?: Date
     effectiveDeadlineAt?: Date
+    fullyPaidAt?: Date
     calculatedAt?: Date
     revision: number
   }
@@ -145,6 +146,17 @@ const basis = new Schema(
           effectiveTo: String,
           target: { type: timing, required: true },
           estimate: { type: timing, default: undefined },
+          prepaid: {
+            type: new Schema(
+              {
+                ruleRef: text(2000),
+                handoverHours: { ...integerField(1), required: true, max: 8760 },
+                deliveryCalendarDays: { ...integerField(1), required: true, max: 3660 },
+              },
+              embedded,
+            ),
+            default: undefined,
+          },
           legalCaps: {
             type: [
               new Schema(
@@ -247,6 +259,7 @@ const orderSchema = new Schema<Order>(
           targetDeadlineAt: instant,
           legalDeadlineAt: instant,
           effectiveDeadlineAt: instant,
+          fullyPaidAt: instant,
           calculatedAt: instant,
           revision: number,
         },

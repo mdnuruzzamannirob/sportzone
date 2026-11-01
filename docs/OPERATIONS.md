@@ -214,6 +214,23 @@ sources are reread for a fresh collection; historical keyed replay uses its alre
 Preserve these authority records, source evidence, submitted refund identities and financial holds
 during recovery. Never manufacture originals, reviewer identity or legal applicability to enable a feature.
 
+Reviewed prepaid rules may optionally configure `rule.prepaid` with ruleRef, handoverHours and
+deliveryCalendarDays. This is not automatically inferred from a country name or payment secret.
+Before admitting new rules, run the explicit local/test order bootstrap on the reviewed target:
+`node --env-file=.env backend/scripts/bootstrap-orders.mjs`. It recognizes only the exact current
+or known predecessor order validators and additively admits prepaid timing/frozen fullyPaidAt;
+unknown drift stops. The existing explicit postal migration delegates to the same known-schema
+upgrade. No records are rewritten, no indices dropped and no DDL runs at server startup. Deployed
+rollout still requires its owning target-plan review. Keep a compatible binary for rollback because
+an older strict validator/model cannot accept newly written prepaid snapshots.
+
+Full-payment time is reconstructed from at most 100 canonical verified online source collections,
+ordered by actual collectedAt, reaching original merchandise funding. Aggregate/source mismatch or
+missing proof blocks confirmation atomically. Confirmation freezes that event in the operational
+commitment. Handover is elapsed hours from that payment, while delivery cap is Dhaka calendar days
+from placement. COD ignores prepaid rules. Late handover remains visible as overdue rather than
+preventing recovery shipment or pretending the delivery was on time.
+
 ### 3.3 Change classes
 
 | Change                                                | Approval/review requirement                                | Release implication                                      |

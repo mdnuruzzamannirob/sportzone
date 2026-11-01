@@ -41,9 +41,12 @@ export function orderReadService(
 ) {
   const { orders } = orderModels(connection),
     deadline = createDeliveryDeadlineService(undefined, clock)
-  const timing = (row: HydratedDocument<Order>) =>
+  const timing = (row: HydratedDocument<Order>, fullyPaidAt?: string) =>
     deadline.projectTiming(row.toObject({ flattenMaps: true }).deliverySnapshot.deadlineBasis, {
       placedAt: row.placedAt.toISOString(),
+      paymentMethod: row.paymentMethod,
+      ...(row.shippedAt ? { shippedAt: row.shippedAt.toISOString() } : {}),
+      ...(fullyPaidAt ? { fullyPaidAt } : {}),
       ...(row.confirmedAt ? { confirmedAt: row.confirmedAt.toISOString() } : {}),
     })
   const summary = (row: HydratedDocument<Order>, paymentStatus: string) =>
@@ -60,8 +63,13 @@ export function orderReadService(
     })
   async function detail(session: ClientSession, row: HydratedDocument<Order>, statusOnly = false) {
     const id = row._id.toHexString()
-    const pay = await payment(session, id),
-      dates = timing(row)
+    const pay = await payment(session, id)
+    const fullyPaidAt =
+      row.deliveryCommitment.fullyPaidAt?.toISOString() ??
+      (row.paymentMethod === 'online' && row.deliverySnapshot.deadlineBasis.rule.prepaid
+        ? await payment.fundedAt(session, id)
+        : undefined)
+    const dates = timing(row, fullyPaidAt)
     if (pay.expectedPoisha !== row.pricingSnapshot.finalTotalPoisha)
       throw new ApiError('SERVICE_UNAVAILABLE')
     if (statusOnly)

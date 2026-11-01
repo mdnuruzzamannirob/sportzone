@@ -8,6 +8,13 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 1 November 2026 — Prepaid delivery timing mapping
+
+- Added optional reviewed prepaid delivery caps and separate courier-handover milestones, using canonical verified full-payment events rather than fulfillment timestamps.
+- Propagated rules through quote/order snapshots, froze confirmation's funding event, and exposed current handover status through protected order projections.
+- Added exact-predecessor additive local/test validator migration, schema/API compatibility and real payment/confirmation rollback coverage.
+- No qualified policy review, actual cash receipt, deployed activation or independent task acceptance is inferred from automated verification.
+
 ## 1 November 2026 — Protected order-operation authorities
 
 - Implemented protected original-receipt integrity/binding verification and configured deadline-registry checks.

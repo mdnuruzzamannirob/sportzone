@@ -1,9 +1,9 @@
-import { paymentRecordModels } from './payment-record.model.js'
-import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
 import { Types, type ClientSession, type Connection } from 'mongoose'
 import { z } from 'zod'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
+import { paymentRecordModels } from './payment-record.model.js'
+import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
 import { paymentAmounts, paymentModel, type Payment } from './payment.model.js'
 import { verifyPaymentPersistence } from './payment.persistence.js'
 const input = z.strictObject({
@@ -100,7 +100,11 @@ export function refundFundingAccess(connection: Connection) {
     return payment
   }
   const amounts = (allocatedPoisha: unknown, heldPoisha: unknown, completedPoisha: unknown) => {
-    const value = parseInput(capacity, { allocatedPoisha, heldPoisha, completedPoisha })
+    const value = parseInput(capacity, {
+      allocatedPoisha,
+      heldPoisha,
+      completedPoisha,
+    })
     if (BigInt(value.heldPoisha) + BigInt(value.completedPoisha) > BigInt(value.allocatedPoisha))
       throw new ApiError('STATE_CONFLICT')
     return value
@@ -162,7 +166,11 @@ export function refundFundingAccess(connection: Connection) {
       )
       const payment = await read(session, input.orderId)
       const row = await collections
-        .findOne({ _id: input.sourceCollectionId, orderId: input.orderId, paymentId: payment._id })
+        .findOne({
+          _id: input.sourceCollectionId,
+          orderId: input.orderId,
+          paymentId: payment._id,
+        })
         .session(session)
       if (!row) throw new ApiError('NOT_FOUND')
       const correction = input.classification === 'payment_correction'
@@ -316,18 +324,28 @@ export function paymentInitiationEligibilityAccess(connection: Connection) {
     if (
       !payment ||
       (await attempts
-        .exists({ orderId, state: { $in: ['created', 'initiated', 'pending', 'uncertain'] } })
+        .exists({
+          orderId,
+          state: { $in: ['created', 'initiated', 'pending', 'uncertain'] },
+        })
         .session(session))
     )
       throw new ApiError('STATE_CONFLICT')
   }
 }
 
-export function fulfillmentPaymentAccess(connection: Connection) {
+export function fulfillmentPaymentAccess(
+  connection: Connection,
+  clock: () => Date = () => new Date(),
+) {
   const payments = paymentModel(connection)
-  return async (
+  const access = async (
     session: ClientSession,
-    input: { orderId: string; method: 'cod' | 'online'; expectedPoisha: number },
+    input: {
+      orderId: string
+      method: 'cod' | 'online'
+      expectedPoisha: number
+    },
   ) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
     await verifyPaymentPersistence(connection)
@@ -351,9 +369,15 @@ export function fulfillmentPaymentAccess(connection: Connection) {
     )
     if (changed.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
   }
+  return Object.assign(access, {
+    fundedAt: verifiedFullPaymentTimeAccess(connection, clock),
+  })
 }
 
-export function customerPaymentSummaryAccess(connection: Connection) {
+export function customerPaymentSummaryAccess(
+  connection: Connection,
+  clock: () => Date = () => new Date(),
+) {
   const project = (row: Payment) => ({
     status: row.paymentStatus,
     fundingContext:
@@ -388,14 +412,18 @@ export function customerPaymentSummaryAccess(connection: Connection) {
       if (!result) throw new ApiError('SERVICE_UNAVAILABLE')
       return result
     },
-    { many },
+    { many, fundedAt: verifiedFullPaymentTimeAccess(connection, clock) },
   )
 }
 
 export function cancellationPaymentAccess(connection: Connection) {
   return async (
     session: ClientSession,
-    input: { orderId: string; expectedPoisha: number; method: 'cod' | 'online' },
+    input: {
+      orderId: string
+      expectedPoisha: number
+      method: 'cod' | 'online'
+    },
   ) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
     await verifyPaymentRecordPersistence(connection)
@@ -415,5 +443,53 @@ export function cancellationPaymentAccess(connection: Connection) {
       paymentId: row._id.toHexString(),
       verifiedCollectedPoisha: row.verifiedCollectedPoisha,
     }
+  }
+}
+
+// Reconstruct the actual full-funding event from canonical verified sources, never fulfillment time.
+export function verifiedFullPaymentTimeAccess(
+  connection: Connection,
+  clock: () => Date = () => new Date(),
+) {
+  return async (session: ClientSession, orderId: string) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyPaymentPersistence(connection)
+    await verifyPaymentRecordPersistence(connection)
+    const payment = await paymentModel(connection).findOne({ orderId }).session(session)
+    if (!payment) throw new ApiError('NOT_FOUND')
+    if (payment.method !== 'online' || payment.merchandiseFundedPoisha < payment.expectedPoisha)
+      return undefined
+    if (payment.expectedPoisha <= 0 || payment.merchandiseFundedPoisha !== payment.expectedPoisha)
+      throw new ApiError('SERVICE_UNAVAILABLE')
+    const rows = await paymentRecordModels(connection)
+      .collections.find({ paymentId: payment._id, orderId })
+      .sort({ collectedAt: 1, _id: 1 })
+      .limit(101)
+      .session(session)
+    if (rows.length > 100) throw new ApiError('SERVICE_UNAVAILABLE')
+    const at = clock()
+    if (!Number.isFinite(at.getTime())) throw new ApiError('SERVICE_UNAVAILABLE')
+    let sum = 0n,
+      fullyPaidAt: string | undefined
+    for (const row of rows) {
+      const amount = parseInput(
+        z.int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+        row.get('merchandiseAllocatedPoisha'),
+      )
+      if (
+        row.provider !== 'sslcommerz' ||
+        !Number.isFinite(row.collectedAt.getTime()) ||
+        !Number.isFinite(row.verifiedAt.getTime()) ||
+        row.collectedAt > at ||
+        row.verifiedAt > at
+      )
+        throw new ApiError('SERVICE_UNAVAILABLE')
+      sum += BigInt(amount)
+      if (!fullyPaidAt && sum >= BigInt(payment.expectedPoisha))
+        fullyPaidAt = row.collectedAt.toISOString()
+    }
+    if (sum !== BigInt(payment.merchandiseFundedPoisha) || !fullyPaidAt)
+      throw new ApiError('SERVICE_UNAVAILABLE')
+    return fullyPaidAt
   }
 }

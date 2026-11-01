@@ -210,7 +210,7 @@ export function composeOrderOperationsRoutes(
     connection,
     auth.customerAccounts,
     scope,
-    customerPaymentSummaryAccess(connection),
+    customerPaymentSummaryAccess(connection, clock),
     orderPolicySnapshotAccess(connection),
     clock,
     {
@@ -233,7 +233,7 @@ export function composeOrderOperationsRoutes(
   const lifecycle = orderLifecycleService(
     connection,
     auth.adminAccounts,
-    fulfillmentPaymentAccess(connection),
+    fulfillmentPaymentAccess(connection, clock),
     fulfillmentAllocationService(connection, clock),
     dependencies.approvedDeadline,
     clock,

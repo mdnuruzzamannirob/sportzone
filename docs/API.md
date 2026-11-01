@@ -1047,6 +1047,14 @@ recovered through same-key context replay or verified guest proof, not order-num
 
 ### 11.3 Cancellation, fulfillment and shipment
 
+A reviewed deadline rule may include optional `prepaid:{ruleRef,handoverHours,deliveryCalendarDays}`.
+This applies only to online orders with independently verified full merchandise funding. Its delivery
+cap starts at order placement; its separate handover milestone starts at the actual full-payment
+collection event. Never substitute confirmation for payment or conflate courier handover with final
+delivery. Deadline projections may return handoverDeadlineAt and handoverStatus
+(awaiting_payment/pending/met/overdue); COD excludes prepaid rules. Confirmation freezes verified
+fullyPaidAt in the operational commitment. Missing/mismatched funding evidence fails closed.
+
 Customer cancellations are **requests**, not direct order-state updates.
 The admin accepts/rejects after checking `pending/confirmed`, or `processing` with explicit not-dispatched verification; stock and coupons release exactly once in transaction.
 `shipped → cancelled` exists only for the **separate final non-delivery** exception after custody/disposition of all shipped quantities, never via ordinary customer cancellation.

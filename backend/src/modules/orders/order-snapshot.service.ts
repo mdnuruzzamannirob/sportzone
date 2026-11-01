@@ -105,6 +105,7 @@ export function buildOrderSnapshot(raw: unknown, placedAt: Date) {
   const deadline = createDeliveryDeadlineService(undefined, () => placedAt)
   const timing = deadline.projectTiming(snapshot.deadlineBasis, {
     placedAt: placedAt.toISOString(),
+    paymentMethod: snapshot.draft.method === 'cod' ? 'cod' : 'online',
   })
   if (timing.deliveryDeadline.status === 'under_review')
     throw new ApiError('BUSINESS_RULE_VIOLATION')

@@ -18,6 +18,13 @@ export const deliveryDeadlineRule = z
         calendarDays: days,
       })
       .optional(),
+    prepaid: z
+      .strictObject({
+        ruleRef: text(2000),
+        handoverHours: z.int().min(1).max(8760),
+        deliveryCalendarDays: days,
+      })
+      .optional(),
     // Empty means an explicit reviewed determination that no additional cap applies;
     // it must never be inferred from a missing or unreviewed configuration.
     legalCaps: z
@@ -51,6 +58,9 @@ export const deliveryDeadlineBasis = deliveryDeadlineManifest.extend({
 export const deliveryDeadlineEvents = z.strictObject({
   placedAt: date.optional(),
   confirmedAt: date.optional(),
+  fullyPaidAt: date.optional(),
+  shippedAt: date.optional(),
+  paymentMethod: z.enum(['online', 'cod']).optional(),
 })
 export const deliveryDeadline = z.strictObject({
   status: z.enum(['awaiting_start', 'calculated', 'under_review']),
@@ -60,6 +70,8 @@ export const deliveryDeadline = z.strictObject({
   targetDeadlineAt: date.optional(),
   legalCapAt: date.optional(),
   effectiveAt: date.optional(),
+  handoverDeadlineAt: date.optional(),
+  handoverStatus: z.enum(['awaiting_payment', 'pending', 'met', 'overdue']).optional(),
 })
 export type DeliveryDeadlineManifest = z.infer<typeof deliveryDeadlineManifest>
 export type DeliveryDeadlineBasis = z.infer<typeof deliveryDeadlineBasis>

@@ -75,6 +75,7 @@ function freezeBasis(basis: DeliveryDeadlineBasis) {
   for (const cap of basis.rule.legalCaps) Object.freeze(cap)
   Object.freeze(basis.rule.legalCaps)
   if (basis.rule.estimate) Object.freeze(basis.rule.estimate)
+  if (basis.rule.prepaid) Object.freeze(basis.rule.prepaid)
   Object.freeze(basis.rule.target)
   Object.freeze(basis.rule)
   Object.freeze(basis.review)
@@ -108,6 +109,15 @@ export function createDeliveryDeadlineService(
     if (!events.success) return fallback(basis.rule.version)
     const placed = events.data.placedAt ? new Date(events.data.placedAt) : undefined
     const confirmed = events.data.confirmedAt ? new Date(events.data.confirmedAt) : undefined
+    const paid = events.data.fullyPaidAt ? new Date(events.data.fullyPaidAt) : undefined
+    const shipped = events.data.shippedAt ? new Date(events.data.shippedAt) : undefined
+    if (
+      (basis.rule.prepaid && !events.data.paymentMethod) ||
+      (paid && (!placed || paid < placed || paid > at)) ||
+      (paid && confirmed && events.data.paymentMethod === 'online' && paid > confirmed) ||
+      (shipped && (!confirmed || shipped < confirmed || shipped > at))
+    )
+      return fallback(basis.rule.version)
     if (
       (placed && (placed > at || placed < capturedAt)) ||
       (confirmed && (!placed || confirmed < placed || confirmed > at))
@@ -121,15 +131,37 @@ export function createDeliveryDeadlineService(
         const start = cap.startEvent === 'placedAt' ? placed : confirmed
         return start ? addDeliveryCalendarDays(start.toISOString(), cap.calendarDays) : undefined
       })
+      const prepaid = events.data.paymentMethod === 'online' ? basis.rule.prepaid : undefined
+      if (prepaid && paid && placed)
+        caps.push(addDeliveryCalendarDays(placed.toISOString(), prepaid.deliveryCalendarDays))
+      const handover =
+        prepaid && paid ? new Date(paid.getTime() + prepaid.handoverHours * 3600000) : undefined
       const capDates = caps.filter((value): value is string => value !== undefined)
       const legal = capDates.length
         ? capDates.reduce((a, b) => (Date.parse(a) < Date.parse(b) ? a : b))
         : undefined
-      const complete = target !== undefined && caps.every((value) => value !== undefined)
+      const complete =
+        target !== undefined &&
+        caps.every((value) => value !== undefined) &&
+        (!prepaid || paid !== undefined)
       return parseInput(deliveryDeadline, {
         status: complete ? 'calculated' : 'awaiting_start',
         startEvent: 'confirmedAt',
         ruleVersion: basis.rule.version,
+        ...(prepaid
+          ? {
+              handoverStatus: !handover
+                ? 'awaiting_payment'
+                : shipped
+                  ? shipped <= handover
+                    ? 'met'
+                    : 'overdue'
+                  : at > handover
+                    ? 'overdue'
+                    : 'pending',
+            }
+          : {}),
+        ...(handover ? { handoverDeadlineAt: handover.toISOString() } : {}),
         ...(confirmed ? { startEventAt: confirmed.toISOString() } : {}),
         ...(target ? { targetDeadlineAt: target } : {}),
         ...(legal ? { legalCapAt: legal } : {}),
@@ -154,7 +186,7 @@ export function createDeliveryDeadlineService(
     project,
     preview() {
       try {
-        return project(snapshotForCheckout(), {})
+        return project(snapshotForCheckout(), { paymentMethod: 'online' })
       } catch {
         return fallback()
       }
