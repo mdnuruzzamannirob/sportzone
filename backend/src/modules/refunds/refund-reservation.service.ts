@@ -219,6 +219,17 @@ export function refundReservationService(
             BigInt(deliveryChargePoisha)
           )
             throw new ApiError('REFUND_BALANCE_EXCEEDED')
+          if (
+            snapshot.lines.some(
+              (line) =>
+                line.units.filter(
+                  (unit) =>
+                    unit.eligible &&
+                    unit.netEntitlementPoisha > unit.refundHeldPoisha + unit.refundCompletedPoisha,
+                ).length < line.quantity,
+            )
+          )
+            throw new ApiError('REFUND_BALANCE_EXCEEDED')
           const plan = planMultiSourceMerchandiseRefund({
             lines: snapshot.lines,
             sources: facts.sources.map((s) => ({

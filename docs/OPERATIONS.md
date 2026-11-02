@@ -1904,35 +1904,66 @@ creates strict `refundAttempts` persistence with one open attempt per obligation
 validator drift fails closed; ordinary startup never repairs it. Existing databases must complete this
 step before running a new binary/payment-initiation bootstrap that verifies the extended refund schema.
 
-This command enables no HTTP route, policy authority or payout dispatcher. Private reservation tests
-use injected policy/cash evidence. Actual activation still requires qualified policy, consent/method,
-merchant and operator acceptance. Reservation creates an approved source-funded obligation and a
-created attempt, with no inferred payout. The private gateway dispatcher changes intent to submitted
-before its one external call; accepted/unknown outcomes retain held funds. A crash after submission
-must be investigated using the original bank/merchant identity; never reset to created or blindly resend.
+This bootstrap enables no HTTP route or payout dispatcher. To compose refund foundation operations in
+local/test, set `REFUND_OPERATIONS_ENABLED=true` with administrator authentication enabled. Default
+startup omits the routes; staging/production activation is refused. Admin group creation approves and
+reserves qualified source-funded obligations and one created intent per slice; it does not send money.
+Read list/detail through the current administrator identity, with bounded source capacities and safe
+attempt references. Request keys, original bank references and consent/transfer proof remain private.
+
+The owner-delegated development policy uses `sportzone-refunds-v1`, prefers the original gateway and
+requires protected consent for manual fallback. Delivery charge approval is off by default. Optional
+`REFUND_POLICY_FILE` is an owner-only regular JSON file containing
+`{ "policyVersion": "...", "authorizations": [{ "orderId": "<24hex>", "basis": "shortage",
+"basisRefId": "<claimId>", "approval": { "policyVersion": "...", "method": "manual_bank",
+"consentRequired": true, "consentEvidenceRef": "<protected consent reference>", "deliveryApproved": false } }] }`.
+Physical-return and shortage entries require the exact claim reference; correction entries omit it.
+Duplicate identities, unknown fields and unsafe files fail startup. This register records protected
+business authority; it never proves consent merely because a string exists. Update through the
+operator-controlled file and restart; existing approvedAt/timing snapshots do not reset on replay.
+Real applicability/publication and consent qualification remain in the owning release checks.
+
+Gateway dispatch additionally requires `SSLCOMMERZ_ADAPTER_ENABLED=true` and the canonical sandbox
+settings (§17). The server binds configured merchant account to the original verified collection.
+Without an adapter, admission returns 503 before changing a created intent. The private dispatcher
+changes intent to submitted before its one external call; accepted/unknown outcomes retain held funds.
+A crash after submission must be investigated using the original bank/merchant identity; never reset
+to created or blindly resend. Dispatch replay with another key records an alias with the original
+payload fingerprint, so that alias cannot later authorize a changed payload. Acknowledgment is not
+verified disbursement. Never exercise real payout on a developer's behalf without its existing authority.
 
 Back up and restore refunds, attempts, source/aggregate/unit/delivery counters, cancellation/allocation
 history and audit consistently. An older correction-only binary cannot verify or process the extended
 schema. Roll back application code only to a compatible build; retain financial records and reconcile
-external effects. Reconciliation, verified completion/release and ordinary scheduler/API activation
-remain separate capabilities and must not be simulated by manual database edits.
+external effects. Reconciliation, verified completion/release, safe retry and ordinary scheduler activation
+remain separate outcome/recovery capabilities and must not be simulated by manual database edits.
 
 #### Private claim persistence bootstrap
 
 After backend build, run `node --env-file=.env backend/scripts/bootstrap-returns.mjs` only against an
 owned local/test database. It creates the current private claim validator and declared indexes,
 refuses unknown drift and deployed environments, and enables no HTTP route. For an existing exact
-requested-only foundation or review-only validator, explicitly run the same command with `--lifecycle`; this additive
+requested-only foundation, review-only or single-receipt validator, explicitly run the same command with `--lifecycle`; this additive
 upgrade verifies indexes, preserves requests and can be repeated. Unknown drift requires investigation,
 not validator replacement. No command seeds policy sign-off or enables a public submission/approval route.
+
+For local/test HTTP set `RETURN_OPERATIONS_ENABLED=true` with customer/admin authentication enabled.
+The owner-delegated PRD development baseline uses `sportzone-returns-v1`, a seven-calendar-day physical
+window and a separate shortage path. Optional `RETURN_POLICY_FILE` is an owner-only regular JSON file
+with `{ "policyVersion": "...", "exceptions": [{ "orderId": "<24hex>", "claimType": "physical_return",
+"exceptionBasis": "protected decision reference" }] }`; duplicate order/type rows or unknown fields
+fail startup. Exceptions are server configuration, never client overrides. Updating the file requires
+restart; existing claims retain their eligibility snapshot. This is development policy, not published
+legal sign-off (P11-007). Default startup omits return routes. Without configured Media, optional
+uploads/private URL requests fail unavailable; text-only claims remain usable.
 
 Preserve return requests, order-item ordinal coverage, Media references and audit together during
 restore. Do not delete claims or reset ordinal coverage to release capacity. Review releases only
 unapproved units with zero refund commitments; shortages resolve without stock/payout effects.
-Private receipt/inspection can atomically record a single partial/full receipt and resellable-only stock
-movement in local tests; complete a physical claim only when every approved unit has been received
-and accepted. Additional receipt batches, partial-case resolution and public activation remain disabled
-pending the owning integration. Reconcile claim ordinals, movement and variant stock together. Keep
+Receipt quantities are per-parcel additions within remaining approved units. Inspection consumes only
+received-but-uninspected units, accumulating accepted/resellable ordinals. Complete a physical claim
+when every approved unit has been received and inspected; accepted units resolve, rejected units release
+without stock/refund effects. Distinct parcel references and idempotency keys protect additional batches. Reconcile claim ordinals, movement and variant stock together. Keep
 attached private evidence under existing Media retention/legal-hold rules; orphan maintenance must
 never delete referenced assets. An older requested-only or review-only binary cannot safely process upgraded
 lifecycle records: retain the upgraded validator/data and restore a compatible binary, rather than
@@ -2470,8 +2501,12 @@ and verify strict validators/indexes. Existing drift requires a reviewed additiv
 startup repair or TTL cleanup occurs. Pass validated policy, Cloudinary/ClamAV adapters, current admin
 access and an approved `canDelete` retention capability into the typed media composition. Account/
 environment isolation and protected references require operator evidence, not just config strings.
-Standard `startServer` has no media activation hook. Wire a reviewed operator composition/deployment only after EXT-04 approval/evidence. P08-012
-must supply current customer/guest order/claim access before private evidence HTTP is registered.
+Local/test `startServer` composes the existing Cloudinary/ClamAV adapters when both
+`RETURN_OPERATIONS_ENABLED=true` and `MEDIA_ENABLED=true`; it requires the settings above and both
+customer/admin authentication. Evidence access is reauthorized against current exact order/item scope
+inside each ledger transaction. The development retention capability permits only expired unreferenced
+private claim evidence, subject to the canonical legal-hold/retainUntil guards. Staging/production
+activation remains in EXT-04/P11-008 qualification; these flags do not approve an account or scanner.
 
 Invoke `maintenanceBatch(1..100)` only from the restricted durable scheduled-job/operator boundary.
 It performs sequential, bounded reconciliation/cleanup and returns examined/deleted/reconciled/

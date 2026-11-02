@@ -10,6 +10,7 @@ export const claimCommand = z.strictObject({
   claimId,
   orderId: claimId,
   claimType: z.enum(['physical_return', 'shortage']),
+  description: claimText.optional(),
   items: z
     .array(
       z.strictObject({

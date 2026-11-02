@@ -79,7 +79,8 @@ export function createApp({
     if (
       mediaUploadsEnabled &&
       req.method === 'POST' &&
-      req.path === '/api/v1/admin/media/uploads' &&
+      (req.path === '/api/v1/admin/media/uploads' ||
+        /^\/api\/v1\/orders\/[a-f0-9]{24}\/claims\/evidence-uploads$/.test(req.path)) &&
       req.is('multipart/form-data')
     ) {
       next()

@@ -2,6 +2,8 @@
 
 **Subsequent development disposition:** P06-003/011/012/013/014 are now Done under the
 [owner-approved engineering/release separation](./P06-011-012-local-lifecycle-cod.md#engineering-completion-and-release-gate-separation--1-november-2026).
+Package B P08-002/003/004 are also Done after [full engineering completion](./P08-003-004-local-return-inspection.md#package-b-completion).
+Package C P08-005/006/007/008 are also Done after [consolidated engineering verification](./P06-013-P08-005-008-durable-reservations.md#package-c-completion).
 The 24-task audit below retains its historical review scope; Tasks is authoritative for current status.
 No live qualification or milestone acceptance is inferred.
 

@@ -1,5 +1,9 @@
+import { createHash } from 'node:crypto'
+import { loadRefundOperationsOptions } from './config/refunds.js'
+import { loadSslcommerzOptions } from './config/payments.js'
+import { loadReturnOperationsOptions } from './config/returns.js'
 import { loadOrderOperationsOptions } from './config/order-operations.js'
-import { configuredOrderOperations } from './setup.js'
+import { configuredOrderOperations, configuredReturnMedia } from './setup.js'
 import { loadPaymentCallbackOptions, loadPaymentProcessingOptions } from './config/payments.js'
 import { createSslcommerzAdapter } from './providers/sslcommerz/sslcommerz.client.js'
 import { initiationInput } from './providers/sslcommerz/sslcommerz.schema.js'
@@ -42,12 +46,15 @@ export async function startServer(
     const callbackOptions = loadPaymentCallbackOptions(process.env)
     const processingOptions = loadPaymentProcessingOptions(process.env)
     const orderOperations = await loadOrderOperationsOptions(process.env)
+    const refundOptions = await loadRefundOperationsOptions(process.env)
+    const refundGateway = refundOptions ? loadSslcommerzOptions(process.env) : undefined
+    const returnOptions = await loadReturnOperationsOptions(process.env)
     app = await composeApplication(
       connection,
       config,
       health,
       logger,
-      undefined,
+      returnOptions ? configuredReturnMedia(process.env) : undefined,
       await loadPolicyApprovals(process.env),
       await loadCheckoutOptions(process.env),
       await loadPaymentChannelApprovals(process.env),
@@ -67,6 +74,22 @@ export async function startServer(
           }
         : undefined,
       orderOperations ? configuredOrderOperations(connection, orderOperations) : undefined,
+      returnOptions,
+      refundOptions
+        ? {
+            options: refundOptions,
+            ...(refundGateway
+              ? {
+                  gateway: {
+                    client: createSslcommerzAdapter(refundGateway),
+                    merchantAccountKey: createHash('sha256')
+                      .update(`${refundGateway.mode}\0${refundGateway.storeId}`)
+                      .digest('hex'),
+                  },
+                }
+              : {}),
+          }
+        : undefined,
     )
   } catch (error) {
     await connection.destroy()

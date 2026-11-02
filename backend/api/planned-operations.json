@@ -514,6 +514,20 @@
     },
     {
       "method": "GET",
+      "path": "/orders/{orderId}/claims/evidence/{assetId}",
+      "success": "200",
+      "operationId": "get_orders_orderId_claims_evidence_assetId",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/claims/{claimId}/evidence/{assetId}",
+      "success": "200",
+      "operationId": "get_admin_claims_claimId_evidence_assetId",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
       "path": "/me/claims",
       "success": "200",
       "operationId": "get_me_claims",

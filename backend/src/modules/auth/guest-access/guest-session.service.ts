@@ -88,6 +88,17 @@ export function guestSessionService(
       }).save({ session })
       return { token, csrfToken, orderId, expiresAt }
     },
+    async authorizeInSession(
+      token: string | undefined,
+      orderId: string,
+      transaction: ClientSession,
+      csrf?: string,
+    ) {
+      if (!transaction.inTransaction()) throw new ApiError('GUEST_PROOF_REQUIRED')
+      const row = await resolve(transaction, token, csrf)
+      if (row.orderId?.toHexString() !== orderId) throw new ApiError('GUEST_PROOF_REQUIRED')
+      return { orderId, sessionId: row._id.toHexString() }
+    },
     async owned<T>(
       token: string | undefined,
       orderId: string | undefined,

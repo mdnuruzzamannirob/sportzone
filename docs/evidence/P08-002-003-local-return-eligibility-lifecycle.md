@@ -1,5 +1,10 @@
 # P08-002 / P08-003 — Private return eligibility, review and evidence
 
+**Current status: P08-002/003 Done.** [Package B completion, APIs, migration and final verification](./P08-003-004-local-return-inspection.md#package-b-completion) supersede the historical limits below.
+
+The initial record below is historical for its stated revision.
+
+
 Date: 31 October 2026 (Asia/Dhaka). Executor: Codex. Base revision: `bb1ec51`.
 Status: **Blocked** for full task acceptance; the safe local subset below is implemented and verified.
 No task, application stage, policy, provider or milestone acceptance is claimed.

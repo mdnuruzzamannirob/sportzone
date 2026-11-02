@@ -1432,13 +1432,15 @@ the caller to the claim/cancellation workflow; **do not** invent a standalone `r
 refund. Customers cannot select `sourceCollectionId`, refund amount, payout method or internal unit ordinals. A physical
 return must still be inspected before refund approval.
 
-Private local claim composition validates delivered ownership, the standard physical window and
-protected policy exceptions, and attaches scoped private Media ledger assets transactionally. Private
-local receipt/inspection records a single partial or full receipt and atomically restores only inspected
-resellable units; full physical completion requires all approved units received and accepted. The API
-remains inactive, and partial-case follow-up is not yet implemented.
-These capabilities do not activate the planned HTTP operations above. Current session/guest proof,
-CSRF, canonical DTO/idempotency integration and prerequisite acceptance must precede public activation.
+Claim operations use current customer/exact guest scope, strict Origin/CSRF and mandatory request
+keys. Identical keyed submission returns the current original claim; a changed body conflicts.
+Eligibility projects bounded historical item/claimable quantities and configured policy; shortage
+has no physical-return deadline. Expired physical requests require a protected policy exception.
+Receipt quantities are per-batch additions, bounded by approved units not yet received. Inspection
+quantities apply to the newly received/uninspected batch; prior decisions are immutable. Additional
+receipt/inspection rounds retain cumulative ordinal coverage and append-only audit. Completion
+requires all approved physical units received and inspected; accepted units resolve and rejected
+units are released without refund/restock. Only inspected resellable units create stock movements.
 
 ### 13.2 Admin claim and return processing
 
@@ -1447,7 +1449,7 @@ CSRF, canonical DTO/idempotency integration and prerequisite acceptance must pre
 | `GET`  | `/admin/claims`                      | A      | `claimType?,status?,page? → Claim[]`                                                        | 32  |
 | `GET`  | `/admin/claims/{claimId}`            | A      | `— → Claim + redacted evidence and eligibility`                                             | 32  |
 | `POST` | `/admin/claims/{claimId}/review`     | A      | `{decision:enum(approve,reject),approvedItems?,reason} + Idempotency-Key → Claim`           | 32  |
-| `POST` | `/admin/claims/{claimId}/receipt`    | A      | `{receivedItems,receiptReference,notes?} + Idempotency-Key → Claim`                         | 32  |
+| `POST` | `/admin/claims/{claimId}/receipt`    | A      | `{receivedItems:[{orderItemId,quantity}],receiptReference,notes?} + Idempotency-Key → Claim`                         | 32  |
 | `POST` | `/admin/claims/{claimId}/inspection` | A      | `{items:[{orderItemId,acceptedQty,resellableQty,reason}],notes?} + Idempotency-Key → Claim` | 32  |
 | `POST` | `/admin/claims/{claimId}/complete`   | A      | `{reason?} + Idempotency-Key → Claim`                                                       | 32  |
 
@@ -1468,16 +1470,22 @@ a refund basis without return receipt. Completing a claim **never** asserts a pa
 | `POST` | `/admin/refunds/{refundId}/reconcile`            | A      | `{reason} + Idempotency-Key → {status,attemptState}`                                            | 33  |
 | `POST` | `/admin/refunds/{refundId}/manual-confirmations` | A      | `{transferReference,evidenceRef,reason} + Idempotency-Key → Refund`                             | 33  |
 
-The private local refund advisory reads linked verified collections and canonical claim/order snapshots
-in one transaction. A separately protected reservation coordinator now commits source/aggregate/unit/
-delivery holds, approved obligations, created attempts and audit atomically. It derives a natural business
-group so changed request keys cannot duplicate the same request. A private one-shot gateway dispatcher
-persists submitted intent before calling the provider outside the transaction; replay or uncertainty
-never resends automatically. Acceptance remains Processing and held funds remain reserved. Ordinary
-refund HTTP/root activation, reconciliation/completion and provider/operator acceptance remain gated.
-The private status query emits only a matched, redacted provider report; `refunded` still needs qualified durable
-identity/amount/time verification, and `cancelled` remains under investigation. Manual evidence
-verification is likewise a private, read-only gate and does not record a completed payout.
+Refund foundation composition exposes admin group creation, list/detail and gateway attempt dispatch
+under explicit local/test `REFUND_OPERATIONS_ENABLED` with current admin authorization and browser
+Origin/CSRF guards. Group creation atomically approves and reserves an already-qualified basis using
+server policy; it does not dispatch money. Replays converge on the same source-funded obligations even
+with another key. Amounts come from immutable order snapshots and verified source capacity. Missing
+persistence returns unavailable without repair. The original gateway method is the development baseline;
+a manual fallback requires protected consent authority. Delivery charges require explicit protected
+approval. Without a configured gateway, payout admission returns unavailable without consuming intent.
+The dispatcher binds the original collection to the configured merchant, persists a unique intent before
+transport and sends at most once; acknowledgment/timeout leaves processing and reserved funds. Verified
+outcome/release/retry/manual confirmation remain the separate outcome/recovery workflow (§13.5).
+Private status reports and manual verification alone never record Completed. Admin projections add
+`basisRefId?`, component amounts and, in detail/group responses, current `sourceCapacity`, `orderCapacity`
+and bounded safe attempt identities/states/provider references. They exclude original bank references,
+request keys, consent/transfer proof and unmasked destinations. `requestedAt` maps immutable createdAt;
+the bounded timeline exposes only recorded status/approval/completion facts, never invented prior states.
 
 **RefundGroupInput (admin):**
 `{orderId,basis,basisRefId?,classification,requestedItems?:[{orderItemId,quantity}],deliveryChargeRequestedPoisha?,correctionCollectionId?,reason}`.
@@ -2067,6 +2075,8 @@ Provider reference: [SSLCOMMERZ developer documentation v4](https://developer.ss
 | -------- | ------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `POST`   | `/admin/media/uploads`                      | A                                       | Approved `multipart/form-data` product/store asset → `{assetId,publicId,url,alt?,mimeType,size}`        |
 | `POST`   | `/orders/{orderId}/claims/evidence-uploads` | C owner or G-scoped to that exact order | `multipart/form-data {file,claimType,orderItemIds[]}` → `{assetId,orderId,status:'private',expiresAt?}` |
+| `GET` | `/orders/{orderId}/claims/evidence/{assetId}` | C owner or exact G | Short-lived private delivery `{url}` for the owned order asset |
+| `GET` | `/admin/claims/{claimId}/evidence/{assetId}` | A | Short-lived private delivery `{url}` for an asset attached to this exact claim |
 | `DELETE` | `/admin/media/{assetId}`                    | A                                       | Safe deletion only if unreferenced/policy permits → `204`                                               |
 
 Validate file type, extension, true content type, maximum size, malware/security scanning policy and server-generated object identifiers; never accept arbitrary external URLs as approved Cloudinary files.
@@ -2075,14 +2085,15 @@ Return an **opaque** private evidence identifier; no public Cloudinary URL to co
 `assetId` is the opaque ID of `mediaAssets` (Database §6.7), mapping one server-generated Cloudinary identity to owner/order/item scope, access, validation state and transactional attachment references (Database §6.7). Create upload intent before the external call; return attachable references only after validation. Attach and target update commit together under asset CAS. Cleanup atomically claims expired unreferenced assets as `deleting`, excluding concurrent attachment; reconcile unknown provider outcomes. Private evidence retrieval requires current C/G ownership or A permission and short-lived authorized delivery. No separate generic `assets` collection is implied.
 Cleanup of unreferenced uploads is asynchronous and must not delete assets attached to immutable order/claim/audit evidence.
 
-**Media activation boundary:** optional typed media composition exposes the two admin routes
-above only with verified ledger persistence, active admin identity, scanner/provider and retention
-capabilities. Default HTTP startup does not activate media; `MEDIA_ENABLED` is not automatic account
-approval or route activation. The multipart route accepts exactly one `file`, rejects other fields,
-query parameters, compression and unsupported content, and bounds encoded input to the approved
-file limit plus 16 KiB framing. Origin/session/CSRF and a separate media throttle run before parsing
-(10 admissions/minute/network, within the existing 60/minute shared admin network cap; credential
-budgets remain separate). Other routes retain their JSON-only admission rules.
+**Media activation boundary:** optional typed composition exposes admin media and the separately
+authorized return-evidence routes only with verified ledger persistence, current identity and
+scanner/provider/retention capabilities. Explicit local/test return startup can compose these adapters
+with both `RETURN_OPERATIONS_ENABLED=true` and `MEDIA_ENABLED=true`; default startup omits them.
+Configuration does not establish provider qualification. Admin multipart accepts exactly one `file`;
+claim multipart additionally requires `claimType` and one or more `orderItemIds[]`, with no unknown
+fields, queries or compression. Encoded input is bounded to the configured file limit plus 16 KiB
+framing. Origin/current-session/CSRF and the media throttle precede parsing (10 admissions/minute/network
+within the shared network cap); other routes retain JSON-only admission.
 
 Known upload success returns the table's allowlisted DTO only after clean validation and provider
 metadata agreement. Unknown/quarantined provider outcomes return `SERVICE_UNAVAILABLE` with durable
@@ -2404,7 +2415,7 @@ The following field allowlists define client inputs and server responses. `*Inpu
 | `CustomerAdminDetail`      | `id!,name!,emailMasked!,phoneMasked?,status!,emailVerified!,createdAt:date!`                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Historic orders/claims/refunds via paginated scoped subroutes; not embedded                                                                                      |
 | `AdminOrderDetail`         | `OrderDetail` plus `customerContactMasked?,allocationSummary,fulfillmentActions[],auditRefs[]`                                                                                                                                                                                                                                                                                                                                                                                                                                  | Fields operationally necessary only; protected admin view                                                                                                        |
 | `ClaimInput`               | `claimType:enum(physical_return,shortage)!,items:[{orderItemId:id!,quantity:int!,reason:string!,evidenceAssetIds:id[]?}]!,description?`                                                                                                                                                                                                                                                                                                                                                                                         | Reject overlapping protected item ordinals; backend owns amounts/ordinal selection                                                                               |
-| `Claim`                    | `id!,orderId!,claimType!,items:[{orderItemId,requestedQty,approvedQty?,reason}]!,status!,requestedAt:date!,evidence[]`                                                                                                                                                                                                                                                                                                                                                                                                          | Claim evidence private; only masked metadata/authorized links                                                                                                    |
+| `Claim`                    | `id!,orderId!,claimType!,items:[{orderItemId,requestedQty,approvedQty?,receivedQty?,inspectedQty?,acceptedQty?,resellableQty?,reason}]!,description?,status!,requestedAt:date!,evidence[]`                                                                                                                                                                                                                                                                                                                                                                                                          | Claim evidence private; only masked metadata/authorized links                                                                                                    |
 | `Refund`                   | `id!,orderId!,refundGroupKey:string?,classification:enum(merchandise,payment_correction)!,basis!,sourceCollectionId!,amountPoisha!,method?,status!,capacityStatus!,requestedAt:date!,approvedAt:date?,completedAt:date?,items:[{orderItemId,amountPoisha}]!,timing:RefundTiming!,timeline:RefundStatusEvent[]!`                                                                                                                                                                                                                 | Source caps enforced; item totals reconcile; timing from approval snapshot, timeline max 40 public status facts                                                  |
 | `RefundStatusEvent`        | `status:enum(requested,under_review,approved,processing,completed,failed,rejected)!,at:date!,reasonCode:string?`                                                                                                                                                                                                                                                                                                                                                                                                                | Public status fact only; no actor identifiers, internal notes or transfer evidence                                                                               |
 | `RefundTiming`             | `status:enum(awaiting_approval,calculated,under_review)!,targetBusinessDays:int!,timezone:enum(Asia/Dhaka)!,policyVersion:string?,calendarVersion:string?,targetAt:date?`                                                                                                                                                                                                                                                                                                                                                       | Standard target 7 business days; approved shorter rule prevails; absent date when basis missing                                                                  |
@@ -2520,6 +2531,8 @@ Any difference between this matrix and the route's own explicitly stated `201`/`
 | `GET`    | `/admin/provider-receipts`                           | `200`              | Base + OWN + MONEY                   |
 | `POST`   | `/admin/provider-receipts/{intakeId}/link`           | `200`              | Base + OWN + MONEY + REPLAY          |
 | `POST`   | `/admin/payment-collections/{collectionId}/allocate` | `200`              | Base + OWN + CAS + MONEY + REPLAY    |
+| `GET` | `/orders/{orderId}/claims/evidence/{assetId}` | `200` | Base + OWN |
+| `GET` | `/admin/claims/{claimId}/evidence/{assetId}` | `200` | Base + OWN |
 | `GET`    | `/me/claims`                                         | `200`              | Base + OWN                           |
 | `GET`    | `/me/refunds`                                        | `200`              | Base + OWN + REFUND                  |
 | `GET`    | `/orders/{orderId}/claim-eligibility`                | `200`              | Base + OWN                           |

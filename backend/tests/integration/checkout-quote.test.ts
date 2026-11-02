@@ -1,3 +1,8 @@
+import { composeRefundOperationsRoutes } from '../../src/setup.js'
+import { initializeMediaPersistence } from '../../src/modules/media/media.persistence.js'
+import { fakeMediaProvider } from '../helpers/media.js'
+import { composeReturnOperationsRoutes } from '../../src/setup.js'
+import { mediaPolicy, png } from '../helpers/media.js'
 import { startServer } from '../../src/server.js'
 import { mkdtemp, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -8871,4 +8876,929 @@ it('Package A prepaid timing: actual verified collection anchors confirmation co
     handoverStatus: 'pending',
     handoverDeadlineAt: new Date(Date.parse(fullyPaidAt) + 48 * 3600000).toISOString(),
   })
+})
+
+function packageCRoot(
+  options: Parameters<typeof composeRefundOperationsRoutes>[2],
+  clock = () => new Date(Date.now() + 30000),
+) {
+  return createApp({
+    apiRouter: createApiRouter(undefined, [
+      composeRefundOperationsRoutes(db.connection, localReviewAuth(), options, clock),
+    ]),
+  })
+}
+function packageCPost(
+  root: ReturnType<typeof createApp>,
+  admin: Awaited<ReturnType<typeof customer>>,
+  path: string,
+  input: object,
+  key = 'package-c',
+) {
+  return request(root)
+    .post(`/api/v1${path}`)
+    .set('Origin', 'http://localhost:5173')
+    .set('Cookie', admin.cookie)
+    .set('X-CSRF-Token', admin.csrf)
+    .set('Idempotency-Key', key)
+    .send(input)
+}
+const refundDevelopmentPolicy = { policyVersion: 'sportzone-refunds-v1', authorizations: [] }
+function codRefundPolicy(f: Awaited<ReturnType<typeof reservationFixture>>) {
+  return {
+    policyVersion: 'sportzone-refunds-v1',
+    authorizations: [
+      {
+        orderId: f.id,
+        basis: 'shortage' as const,
+        basisRefId: f.claimId,
+        approval: {
+          policyVersion: 'synthetic-consented-policy',
+          method: 'manual_bank' as const,
+          consentRequired: true,
+          consentEvidenceRef: 'synthetic:verified-consent',
+          deliveryApproved: false,
+        },
+      },
+    ],
+  }
+}
+it('Package C HTTP: canonical group, list/detail and natural replay reserve one obligation and redact protected proof', async () => {
+  const f = await reservationFixture(),
+    root = packageCRoot({ options: codRefundPolicy(f) })
+  const before = await orderModels(db.connection).orders.findById(f.id).orFail()
+  const first = await packageCPost(root, f.admin, '/admin/refund-groups', f.input).expect(200)
+  const group = first.body.data
+  expect(group.status).toBe('approved')
+  expect(group.refunds[0]).toMatchObject({
+    classification: 'merchandise',
+    status: 'approved',
+    capacityStatus: 'reserved',
+  })
+  expect(group.refunds[0].timing).toMatchObject({
+    status: 'under_review',
+    timezone: 'Asia/Dhaka',
+    targetBusinessDays: 7,
+  })
+  expect(group.refunds[0].timing.targetAt).toBeUndefined()
+  const replay = await packageCPost(
+    root,
+    f.admin,
+    '/admin/refund-groups',
+    { ...f.input, reason: 'Reviewed again' },
+    'another-key',
+  ).expect(200)
+  expect(replay.body.data.refundGroupKey).toBe(group.refundGroupKey)
+  expect(replay.body.data.refunds[0].id).toBe(group.refunds[0].id)
+  await packageCPost(
+    root,
+    f.admin,
+    '/admin/refund-groups',
+    { ...f.input, reason: 'Changed' },
+    'package-c',
+  ).expect(409)
+  const detail = await request(root)
+    .get(`/api/v1/admin/refunds/${group.refunds[0].id}`)
+    .set('Cookie', f.admin.cookie)
+    .expect(200)
+  expect(detail.body.data.attempts[0].state).toBe('created')
+  expect(JSON.stringify(detail.body)).not.toContain('synthetic:verified-consent')
+  for (const field of ['originalBankTranId', 'idempotencyKey', 'manualEvidence'])
+    expect(detail.body.data.attempts[0]).not.toHaveProperty(field)
+  const list = await request(root)
+    .get(`/api/v1/admin/refunds?status=approved&classification=merchandise&pageSize=1`)
+    .set('Cookie', f.admin.cookie)
+    .expect(200)
+  expect(list.body.data).toHaveLength(1)
+  expect(list.body.meta.totalItems).toBe(1)
+  expect((await orderModels(db.connection).orders.findById(f.id).orFail()).toObject()).toEqual(
+    before.toObject(),
+  )
+  expect(await refundAttemptModel(db.connection).countDocuments()).toBe(1)
+})
+it('Package C HTTP: current admin, exact Origin/CSRF, keys and strict financial DTOs gate every mutation', async () => {
+  const f = await reservationFixture(),
+    root = packageCRoot({ options: codRefundPolicy(f) }),
+    buyer = await customer()
+  await request(root).get('/api/v1/admin/refunds').expect(401)
+  await request(root).get('/api/v1/admin/refunds').set('Cookie', buyer.cookie).expect(401)
+  await request(root)
+    .post('/api/v1/admin/refund-groups')
+    .set('Origin', 'http://localhost:5173')
+    .set('Cookie', f.admin.cookie)
+    .set('Idempotency-Key', 'no-csrf')
+    .send(f.input)
+    .expect(403)
+  await request(root)
+    .post('/api/v1/admin/refund-groups')
+    .set('Origin', 'https://evil.example.test')
+    .set('Cookie', f.admin.cookie)
+    .set('X-CSRF-Token', f.admin.csrf)
+    .set('Idempotency-Key', 'wrong-origin')
+    .send(f.input)
+    .expect(403)
+  await request(root)
+    .post('/api/v1/admin/refund-groups')
+    .set('Origin', 'http://localhost:5173')
+    .set('Cookie', f.admin.cookie)
+    .set('X-CSRF-Token', f.admin.csrf)
+    .send(f.input)
+    .expect(400)
+  await packageCPost(root, f.admin, '/admin/refund-groups', { ...f.input, amountPoisha: 1 }).expect(
+    400,
+  )
+  await request(root).get('/api/v1/admin/refunds?page=0').set('Cookie', f.admin.cookie).expect(400)
+  await request(root)
+    .get('/api/v1/admin/refunds?sourceCollectionId=bad')
+    .set('Cookie', f.admin.cookie)
+    .expect(400)
+  await request(root)
+    .get(`/api/v1/admin/refunds/${new Types.ObjectId()}`)
+    .set('Cookie', f.admin.cookie)
+    .expect(404)
+  expect(await refundModel(db.connection).countDocuments()).toBe(0)
+})
+it('Package C HTTP: uncollected COD, absent fallback consent, client policy and premature physical basis fail without holds', async () => {
+  const f = await reservationFixture(false),
+    root = packageCRoot({ options: codRefundPolicy(f) })
+  await packageCPost(root, f.admin, '/admin/refund-groups', f.input).expect(409)
+  await f.cash()
+  await packageCPost(
+    packageCRoot({ options: refundDevelopmentPolicy }),
+    f.admin,
+    '/admin/refund-groups',
+    f.input,
+  ).expect(422)
+  await packageCPost(root, f.admin, '/admin/refund-groups', {
+    ...f.input,
+    consentEvidenceRef: 'client-proof',
+  }).expect(400)
+  const physical = await physicalReturnFixture()
+  await physical.cash(undefined, 'separate-physical-receipt')
+  const policy = {
+    policyVersion: 'synthetic',
+    authorizations: [
+      {
+        orderId: physical.id,
+        basis: 'physical_return' as const,
+        basisRefId: physical.claimId,
+        approval: {
+          policyVersion: 'synthetic',
+          method: 'manual_bank' as const,
+          consentRequired: false,
+          deliveryApproved: false,
+        },
+      },
+    ],
+  }
+  await packageCPost(packageCRoot({ options: policy }), physical.admin, '/admin/refund-groups', {
+    orderId: physical.id,
+    basis: 'physical_return',
+    basisRefId: physical.claimId,
+    classification: 'merchandise',
+    requestedItems: [{ orderItemId: physical.itemId, quantity: 1 }],
+    reason: 'Premature',
+  }).expect(422)
+  expect(await refundModel(db.connection).countDocuments()).toBe(0)
+})
+it('Package C HTTP: concurrent natural reservations converge and competing quantities cannot exceed unit entitlement', async () => {
+  const f = await reservationFixture(),
+    root = packageCRoot({ options: codRefundPolicy(f) })
+  const results = await Promise.all(
+    ['a', 'b'].map((key) => packageCPost(root, f.admin, '/admin/refund-groups', f.input, key)),
+  )
+  expect(results.map((r) => r.status)).toEqual([200, 200])
+  expect(results[0]?.body.data.refunds[0].id).toBe(results[1]?.body.data.refunds[0].id)
+  await packageCPost(
+    root,
+    f.admin,
+    '/admin/refund-groups',
+    { ...f.input, requestedItems: [{ orderItemId: f.itemId, quantity: 2 }] },
+    'overlap',
+  ).expect(409)
+  expect(await refundModel(db.connection).countDocuments()).toBe(1)
+  expect(await refundAttemptModel(db.connection).countDocuments()).toBe(1)
+})
+it('Package C HTTP: gateway acceptance persists references, leaves processing, and changed-key replay never redispatches', async () => {
+  const f = await reservedGatewayFixture()
+  const initiateRefund = vi
+    .fn<ReturnType<typeof createSslcommerzAdapter>['initiateRefund']>()
+    .mockResolvedValue({
+      kind: 'accepted',
+      refundRefId: 'synthetic-refund-ref',
+      evidenceDigest: 'a'.repeat(64),
+    })
+  const root = packageCRoot({
+    options: refundDevelopmentPolicy,
+    gateway: {
+      client: { initiateRefund },
+      merchantAccountKey: createHash('sha256').update('sandbox\0synthetic-store').digest('hex'),
+    },
+  })
+  const path = `/admin/refunds/${f.obligation._id}/payout-attempts`,
+    body = { method: 'gateway', reason: 'Synthetic authorized dispatch' }
+  const results = await Promise.all(
+    ['one', 'two'].map((key) => packageCPost(root, f.admin, path, body, key)),
+  )
+  expect(results.map((r) => r.status)).toEqual([200, 200])
+  expect(initiateRefund).toHaveBeenCalledTimes(1)
+  await packageCPost(root, f.admin, path, body, 'alias').expect(200)
+  await packageCPost(root, f.admin, path, { ...body, reason: 'Changed' }, 'alias').expect(409)
+  const detail = await request(root)
+    .get(`/api/v1/admin/refunds/${f.obligation._id}`)
+    .set('Cookie', f.admin.cookie)
+    .expect(200)
+  expect(detail.body.data.status).toBe('processing')
+  expect(detail.body.data.capacityStatus).toBe('reserved')
+  expect(detail.body.data.attempts[0].refundRefId).toBe('synthetic-refund-ref')
+  expect(detail.body.data.completedAt).toBeUndefined()
+  expect(
+    (await paymentModel(db.connection).findById(f.attempt.paymentId).orFail())
+      .correctionRefundCompletedPoisha,
+  ).toBe(0)
+})
+it('Package C HTTP: missing transport, merchant mismatch and timeout preserve source capacity and one stable intent', async () => {
+  const f = await reservedGatewayFixture(),
+    path = `/admin/refunds/${f.obligation._id}/payout-attempts`,
+    body = { method: 'gateway', reason: 'Synthetic dispatch' }
+  await packageCPost(
+    packageCRoot({ options: refundDevelopmentPolicy }),
+    f.admin,
+    path,
+    body,
+  ).expect(503)
+  const initiateRefund = vi
+    .fn<ReturnType<typeof createSslcommerzAdapter>['initiateRefund']>()
+    .mockRejectedValue(new Error('Synthetic timeout'))
+  await packageCPost(
+    packageCRoot({
+      options: refundDevelopmentPolicy,
+      gateway: { client: { initiateRefund }, merchantAccountKey: 'f'.repeat(64) },
+    }),
+    f.admin,
+    path,
+    body,
+    'mismatch',
+  ).expect(409)
+  expect(initiateRefund).not.toHaveBeenCalled()
+  const root = packageCRoot({
+    options: refundDevelopmentPolicy,
+    gateway: {
+      client: { initiateRefund },
+      merchantAccountKey: createHash('sha256').update('sandbox\0synthetic-store').digest('hex'),
+    },
+  })
+  const result = await packageCPost(root, f.admin, path, body, 'uncertain').expect(200)
+  expect(result.body.data.state).toBe('uncertain')
+  await packageCPost(root, f.admin, path, body, 'restart-key').expect(200)
+  expect(initiateRefund).toHaveBeenCalledTimes(1)
+  expect(
+    (await refundModel(db.connection).findById(f.obligation._id).orFail()).capacityStatus,
+  ).toBe('reserved')
+})
+it('Package C HTTP: suspended admin and missing persistence cannot create obligations or repair schema', async () => {
+  const f = await reservationFixture(),
+    root = packageCRoot({ options: codRefundPolicy(f) })
+  await identities.users.updateOne({ _id: f.admin.user._id }, { $set: { status: 'suspended' } })
+  await packageCPost(root, f.admin, '/admin/refund-groups', f.input).expect(403)
+  await identities.users.updateOne({ _id: f.admin.user._id }, { $set: { status: 'active' } })
+  await db.connection.db?.command({ collMod: 'refundAttempts', validator: {} })
+  try {
+    await packageCPost(root, f.admin, '/admin/refund-groups', f.input, 'unready').expect(503)
+    expect(await refundModel(db.connection).countDocuments()).toBe(0)
+  } finally {
+    const { refundAttemptValidator } = await import(
+      '../../src/modules/refunds/refund-attempt.persistence.js'
+    )
+    await db.connection.db?.command({
+      collMod: 'refundAttempts',
+      validator: refundAttemptValidator,
+    })
+  }
+})
+
+it('Package C HTTP: default gateway policy approves the existing verified correction intent without merchandise effects', async () => {
+  await initializeRefundAttemptPersistence(db.connection)
+  const f = await processingFixture()
+  expect(await f.processor().process(f.claim)).toBe('committed')
+  f.change({ bank_tran_id: 'package-c-correction-bank', val_id: 'package-c-correction-validation' })
+  expect(
+    await f.processor().process({ ...f.claim, validationId: 'package-c-correction-validation' }),
+  ).toBe('committed')
+  const intent = await refundModel(db.connection).findOne({ orderId: f.result.id }).orFail(),
+    admin = await customer('admin')
+  const root = packageCRoot({ options: refundDevelopmentPolicy })
+  const result = await packageCPost(root, admin, '/admin/refund-groups', {
+    orderId: f.result.id,
+    basis: 'payment_correction',
+    classification: 'payment_correction',
+    correctionCollectionId: intent.sourceCollectionId.toHexString(),
+    reason: 'Verified duplicate collection',
+  }).expect(200)
+  expect(result.body.data.refunds[0]).toMatchObject({
+    id: intent._id.toHexString(),
+    method: 'gateway',
+    status: 'approved',
+    classification: 'payment_correction',
+    items: [],
+  })
+  expect(await refundModel(db.connection).countDocuments()).toBe(1)
+  const attempt = await refundAttemptModel(db.connection).findOne().orFail()
+  expect(attempt.originalBankTranId).toBe('package-c-correction-bank')
+  expect(attempt.refundTransId).toHaveLength(30)
+  const payment = await paymentModel(db.connection).findById(f.attempt.paymentId).orFail()
+  expect(payment.merchandiseRefundHeldPoisha).toBe(0)
+  expect(payment.correctionRefundHeldPoisha).toBe(intent.amountPoisha)
+  expect(payment.paymentStatus).toBe('paid')
+})
+it('Package C HTTP: actual server startup loads protected policy and default startup omits refund operations', async () => {
+  const f = await reservationFixture(),
+    directory = await mkdtemp(join(tmpdir(), 'sportzone-refund-startup-'))
+  const originalEnvironment = process.env
+  let runtime: Awaited<ReturnType<typeof startServer>> | undefined
+  try {
+    const path = join(directory, 'policy.json')
+    await writeFile(path, JSON.stringify(codRefundPolicy(f)), { mode: 0o600 })
+    const env = {
+      ...identityEnvironment(),
+      SESSION_SECRET: authSecret,
+      MONGODB_URI: db.replica.getUri(),
+      MONGODB_DB_NAME: db.connection.name,
+    }
+    process.env = { ...env }
+    let config = { ...loadEnvironment(env), PORT: 0 }
+    runtime = await startServer(
+      config,
+      createLogger(config, () => {}),
+    )
+    await request(runtime.server).get('/api/v1/admin/refunds').expect(404)
+    await runtime.close()
+    process.env = { ...env, REFUND_OPERATIONS_ENABLED: 'true', REFUND_POLICY_FILE: path }
+    config = { ...loadEnvironment(process.env), PORT: 0 }
+    runtime = await startServer(
+      config,
+      createLogger(config, () => {}),
+    )
+    await request(runtime.server).get('/api/v1/admin/refunds').expect(401)
+    const created = await request(runtime.server)
+      .post('/api/v1/admin/refund-groups')
+      .set('Origin', 'https://admin.example.test')
+      .set('Cookie', f.admin.cookie)
+      .set('X-CSRF-Token', f.admin.csrf)
+      .set('Idempotency-Key', 'startup-refund')
+      .send(f.input)
+      .expect(200)
+    await request(runtime.server)
+      .get(`/api/v1/admin/refunds/${created.body.data.refunds[0].id}`)
+      .set('Cookie', f.admin.cookie)
+      .expect(200)
+  } finally {
+    await runtime?.close()
+    process.env = originalEnvironment
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+async function packageBFixture(deliver = true) {
+  await initializeReturnPersistence(db.connection)
+  await initializeMediaPersistence(db.connection)
+  const f = await deliveredReviewFixture(deliver),
+    administrator = await customer('admin')
+  now = new Date(Date.now() + 1000)
+  const provider = fakeMediaProvider()
+  const make = (
+    exceptions: {
+      orderId: string
+      claimType: 'physical_return' | 'shortage'
+      exceptionBasis: string
+    }[] = [],
+  ) => {
+    const auth = {
+      ...localReviewAuth(),
+      guestAccounts: undefined,
+      throttle: createAuthThrottle(createAuthQuotaStore(db.connection), authSecret),
+    }
+    const routers = composeReturnOperationsRoutes(
+      db.connection,
+      auth,
+      origin,
+      { policyVersion: 'sportzone-returns-v1', exceptions },
+      {
+        provider: provider.adapter,
+        scanner: async () => 'clean',
+        policy: mediaPolicy,
+        canDelete: async () => true,
+      },
+      () => now,
+    )
+    return createApp({ apiRouter: createApiRouter(undefined, routers), mediaUploadsEnabled: true })
+  }
+  const root = make(),
+    orderItemId = f.selection.qualifyingOrderItemId
+  const body = (claimType: 'physical_return' | 'shortage' = 'physical_return', quantity = 2) => ({
+    claimType,
+    description: 'Synthetic claim description',
+    items: [{ orderItemId, quantity, reason: 'Synthetic wrong/damaged item' }],
+  })
+  const submit = (input: object = body(), key = 'package-b-request') =>
+    request(root)
+      .post(`/api/v1/orders/${f.orderId}/claims`)
+      .set('Origin', origin)
+      .set('Cookie', f.buyer.cookie)
+      .set('X-CSRF-Token', f.buyer.csrf)
+      .set('Idempotency-Key', key)
+      .send(input)
+  const admin = (id: string, operation: string, input: object, key = operation) =>
+    request(root)
+      .post(`/api/v1/admin/claims/${id}/${operation}`)
+      .set('Origin', 'http://localhost:5173')
+      .set('Cookie', administrator.cookie)
+      .set('X-CSRF-Token', administrator.csrf)
+      .set('Idempotency-Key', key)
+      .send(input)
+  const approve = (id: string) =>
+    admin(id, 'review', {
+      decision: 'approve',
+      approvedItems: [{ orderItemId, quantity: 2 }],
+      reason: 'Synthetic approve',
+    })
+  const upload = (cookie = f.buyer.cookie, csrf = f.buyer.csrf, item = orderItemId) =>
+    request(root)
+      .post(`/api/v1/orders/${f.orderId}/claims/evidence-uploads`)
+      .set('Origin', origin)
+      .set('Cookie', cookie)
+      .set('X-CSRF-Token', csrf)
+      .field('claimType', 'physical_return')
+      .field('orderItemIds[]', item)
+      .attach('file', png, { filename: 'synthetic.png', contentType: 'image/png' })
+  return {
+    ...f,
+    root,
+    make,
+    provider,
+    administrator,
+    orderItemId,
+    body,
+    submit,
+    admin,
+    approve,
+    upload,
+  }
+}
+it('Package B HTTP: eligibility, canonical submission and historical replay preserve one claim', async () => {
+  const f = await packageBFixture()
+  const eligibility = await request(f.root)
+    .get(`/api/v1/orders/${f.orderId}/claim-eligibility`)
+    .set('Cookie', f.buyer.cookie)
+    .expect(200)
+  expect(eligibility.body.data.eligibleTypes).toEqual(['physical_return', 'shortage'])
+  expect(eligibility.body.data.policyVersion).toBe('sportzone-returns-v1')
+  const first = await f.submit().expect(201),
+    repeated = await f.submit().expect(201)
+  expect(repeated.body.data.id).toBe(first.body.data.id)
+  expect(first.body.data.description).toBe('Synthetic claim description')
+  await f.submit(f.body('shortage')).expect(409)
+  await f.submit(f.body(), 'different-key').expect(422)
+  expect(await returnModel(db.connection).countDocuments({ orderId: f.orderId })).toBe(1)
+})
+it('Package B HTTP: current owner, Origin/CSRF, strict body and request keys gate claims', async () => {
+  const f = await packageBFixture(),
+    other = await customer()
+  await request(f.root)
+    .get(`/api/v1/orders/${f.orderId}/claim-eligibility`)
+    .set('Cookie', other.cookie)
+    .expect(404)
+  await request(f.root)
+    .post(`/api/v1/orders/${f.orderId}/claims`)
+    .set('Origin', origin)
+    .set('Cookie', f.buyer.cookie)
+    .set('Idempotency-Key', 'csrf-check')
+    .send(f.body())
+    .expect(403)
+  await request(f.root)
+    .post(`/api/v1/orders/${f.orderId}/claims`)
+    .set('Origin', origin)
+    .set('Cookie', f.buyer.cookie)
+    .set('X-CSRF-Token', f.buyer.csrf)
+    .send(f.body())
+    .expect(400)
+  await f.submit({ ...f.body(), amountPoisha: 1 }).expect(400)
+  expect(await returnModel(db.connection).countDocuments()).toBe(0)
+})
+it('Package B HTTP: undelivered, expired standard return and protected exception have distinct results', async () => {
+  const undelivered = await packageBFixture(false)
+  await undelivered.submit().expect(422)
+  const f = await packageBFixture()
+  now = new Date(now.getTime() + 8 * 86400000)
+  await f.submit().expect(422)
+  const root = f.make([
+    {
+      orderId: f.orderId,
+      claimType: 'physical_return',
+      exceptionBasis: 'Synthetic protected rights review',
+    },
+  ])
+  await request(root)
+    .post(`/api/v1/orders/${f.orderId}/claims`)
+    .set('Origin', origin)
+    .set('Cookie', f.buyer.cookie)
+    .set('X-CSRF-Token', f.buyer.csrf)
+    .set('Idempotency-Key', 'exception')
+    .send(f.body())
+    .expect(201)
+})
+it('Package B HTTP: multiple partial receipts/inspections restore each resellable ordinal once', async () => {
+  const f = await packageBFixture(),
+    created = await f.submit().expect(201),
+    id = created.body.data.id
+  await f.approve(id).expect(200)
+  const base = (await productModels(db.connection).variants.findById(f.selected.row._id).orFail())
+    .stock.physical
+  const receive = (reference: string, key: string) =>
+    f.admin(
+      id,
+      'receipt',
+      { receivedItems: [{ orderItemId: f.orderItemId, quantity: 1 }], receiptReference: reference },
+      key,
+    )
+  const inspect = (key: string) =>
+    f.admin(
+      id,
+      'inspection',
+      {
+        items: [
+          {
+            orderItemId: f.orderItemId,
+            acceptedQty: 1,
+            resellableQty: 1,
+            reason: 'Synthetic resellable',
+          },
+        ],
+      },
+      key,
+    )
+  await receive('parcel-1', 'receipt-1').expect(200)
+  await receive('parcel-1', 'different-receipt-key').expect(200)
+  await receive('changed-parcel', 'different-receipt-key').expect(409)
+  expect(
+    (await productModels(db.connection).variants.findById(f.selected.row._id).orFail()).stock
+      .physical,
+  ).toBe(base)
+  await inspect('inspect-1').expect(200)
+  await f.admin(id, 'complete', {}).expect(422)
+  await receive('parcel-2', 'receipt-2').expect(200)
+  await inspect('inspect-2').expect(200)
+  await inspect('inspect-2').expect(200)
+  const done = await f.admin(id, 'complete', {}).expect(200)
+  expect(done.body.data.items[0]).toMatchObject({
+    receivedQty: 2,
+    inspectedQty: 2,
+    acceptedQty: 2,
+    resellableQty: 2,
+  })
+  expect(
+    (await productModels(db.connection).variants.findById(f.selected.row._id).orFail()).stock
+      .physical,
+  ).toBe(base + 2)
+  expect(
+    (await orderModels(db.connection).balances.findOne({ orderId: f.orderId }).orFail())
+      .resolvedClaimQty,
+  ).toBe(2)
+})
+it('Package B HTTP: rejected inspected units release safely and shortage never receives physical stock', async () => {
+  const f = await packageBFixture(),
+    created = await f.submit().expect(201),
+    id = created.body.data.id
+  await f.approve(id).expect(200)
+  await f
+    .admin(id, 'receipt', {
+      receivedItems: [{ orderItemId: f.orderItemId, quantity: 2 }],
+      receiptReference: 'parcel',
+    })
+    .expect(200)
+  await f
+    .admin(id, 'inspection', {
+      items: [
+        {
+          orderItemId: f.orderItemId,
+          acceptedQty: 1,
+          resellableQty: 0,
+          reason: 'One not accepted',
+        },
+      ],
+    })
+    .expect(200)
+  await f.admin(id, 'complete', {}).expect(200)
+  const balance = await orderModels(db.connection).balances.findOne({ orderId: f.orderId }).orFail()
+  expect(balance.activeClaimQty).toBe(0)
+  expect(balance.resolvedClaimQty).toBe(1)
+  const shortage = await f.submit(f.body('shortage', 1), 'shortage').expect(201),
+    sid = shortage.body.data.id
+  await f
+    .admin(sid, 'review', {
+      decision: 'approve',
+      approvedItems: [{ orderItemId: f.orderItemId, quantity: 1 }],
+      reason: 'Synthetic shortage review',
+    })
+    .expect(200)
+  await f
+    .admin(sid, 'receipt', {
+      receivedItems: [{ orderItemId: f.orderItemId, quantity: 1 }],
+      receiptReference: 'invalid',
+    })
+    .expect(409)
+  await f.admin(sid, 'complete', {}).expect(200)
+})
+it('Package B HTTP: customer evidence is private, scope-bound and attached transactionally', async () => {
+  const f = await packageBFixture(),
+    other = await customer()
+  await f.upload(other.cookie, other.csrf).expect(404)
+  expect(f.provider.state.uploads).toBe(0)
+  const uploaded = await f.upload().expect(200),
+    assetId = uploaded.body.data.assetId
+  expect(uploaded.body.data).not.toHaveProperty('url')
+  const input = f.body()
+  const evidenceInput = { ...input, items: [{ ...input.items[0], evidenceAssetIds: [assetId] }] }
+  const claim = await f.submit(evidenceInput).expect(201),
+    id = claim.body.data.id
+  expect(claim.body.data.evidence[0].assetId).toBe(assetId)
+  await request(f.root)
+    .get(`/api/v1/orders/${f.orderId}/claims/evidence/${assetId}`)
+    .set('Cookie', f.buyer.cookie)
+    .expect(200)
+  await request(f.root)
+    .get(`/api/v1/orders/${f.orderId}/claims/evidence/${assetId}`)
+    .set('Cookie', other.cookie)
+    .expect(404)
+  await request(f.root)
+    .get(`/api/v1/admin/claims/${id}/evidence/${assetId}`)
+    .set('Cookie', f.administrator.cookie)
+    .expect(200)
+  await request(f.root)
+    .get(`/api/v1/admin/claims/${id}/evidence/${new Types.ObjectId()}`)
+    .set('Cookie', f.administrator.cookie)
+    .expect(404)
+})
+
+it('Package B HTTP: concurrent claims, receipts and inspections never overlap units or double-add stock', async () => {
+  const f = await packageBFixture()
+  const created = await Promise.all([f.submit(), f.submit()])
+  expect(created.map((r) => r.status)).toEqual([201, 201])
+  expect(created[0]?.body.data.id).toBe(created[1]?.body.data.id)
+  const id = created[0]?.body.data.id
+  await f.approve(id).expect(200)
+  const received = await Promise.all(
+    ['a', 'b'].map((key) =>
+      f.admin(
+        id,
+        'receipt',
+        {
+          receiptReference: 'same-original',
+          receivedItems: [{ orderItemId: f.orderItemId, quantity: 2 }],
+        },
+        key,
+      ),
+    ),
+  )
+  expect(received.map((r) => r.status)).toEqual([200, 200])
+  const base = (await productModels(db.connection).variants.findById(f.selected.row._id).orFail())
+    .stock.physical
+  const inspected = await Promise.all(
+    ['inspect-a', 'inspect-b'].map((key) =>
+      f.admin(
+        id,
+        'inspection',
+        {
+          items: [
+            {
+              orderItemId: f.orderItemId,
+              acceptedQty: 2,
+              resellableQty: 2,
+              reason: 'Synthetic batch',
+            },
+          ],
+        },
+        key,
+      ),
+    ),
+  )
+  expect(inspected.filter((r) => r.status === 200)).toHaveLength(1)
+  expect(inspected.filter((r) => r.status === 409)).toHaveLength(1)
+  expect(
+    (await productModels(db.connection).variants.findById(f.selected.row._id).orFail()).stock
+      .physical,
+  ).toBe(base + 2)
+})
+it('Package B HTTP: unauthorized upload, unsupported file, scope substitution and temporary expiry deny exposure', async () => {
+  const f = await packageBFixture()
+  await f.upload(f.buyer.cookie, 'invalid').expect(403)
+  await f.upload(f.buyer.cookie, f.buyer.csrf, new Types.ObjectId().toHexString()).expect(422)
+  await request(f.root)
+    .post(`/api/v1/orders/${f.orderId}/claims/evidence-uploads`)
+    .set('Origin', origin)
+    .set('Cookie', f.buyer.cookie)
+    .set('X-CSRF-Token', f.buyer.csrf)
+    .field('claimType', 'physical_return')
+    .field('orderItemIds[]', f.orderItemId)
+    .attach('file', Buffer.from('not a PNG'), { filename: 'bad.png', contentType: 'image/png' })
+    .expect(400)
+  const uploaded = await f.upload().expect(200),
+    assetId = uploaded.body.data.assetId
+  const otherOrder = await deliveredReviewFixture()
+  await request(f.root)
+    .get(`/api/v1/orders/${otherOrder.orderId}/claims/evidence/${assetId}`)
+    .set('Cookie', otherOrder.buyer.cookie)
+    .expect(403)
+  now = new Date(now.getTime() + 61000)
+  await request(f.root)
+    .get(`/api/v1/orders/${f.orderId}/claims/evidence/${assetId}`)
+    .set('Cookie', f.buyer.cookie)
+    .expect(403)
+})
+it('Package B HTTP: exact guest proof supports claims and private evidence without customer fallback', async () => {
+  await initializeReturnPersistence(db.connection)
+  await initializeMediaPersistence(db.connection)
+  const f = await lifecycleFixture()
+  for (const status of ['confirmed', 'processing', 'shipped', 'delivered']) await f.move(status)
+  now = new Date(Date.now() + 1000)
+  const guests = guestSessionService(
+    db.connection,
+    identities,
+    {
+      secret: authSecret,
+      customerTtlSeconds: 600,
+      adminTtlSeconds: 300,
+      sameSite: 'lax',
+      appEnvironment: 'test',
+      apiOrigin: 'http://localhost:4000',
+    },
+    600,
+    guestOrderAccess(db.connection).verify,
+    () => now,
+  )
+  const proof = await inTransaction(db.connection, (session) =>
+    guests.issueAfterProof(session, f.id),
+  )
+  const provider = fakeMediaProvider(),
+    auth = {
+      ...localReviewAuth(),
+      guestAccounts: guests,
+      throttle: createAuthThrottle(createAuthQuotaStore(db.connection), authSecret),
+    }
+  const root = createApp({
+    apiRouter: createApiRouter(
+      undefined,
+      composeReturnOperationsRoutes(
+        db.connection,
+        auth,
+        origin,
+        { policyVersion: 'sportzone-returns-v1', exceptions: [] },
+        {
+          provider: provider.adapter,
+          scanner: async () => 'clean',
+          policy: mediaPolicy,
+          canDelete: async () => true,
+        },
+        () => now,
+      ),
+    ),
+    mediaUploadsEnabled: true,
+  })
+  const cookie = `sz_guest_order_sid=${proof.token}`
+  const order = await orderModels(db.connection).orders.findById(f.id).orFail(),
+    orderItemId = order.items[0]?.id.toHexString()
+  await request(root)
+    .get(`/api/v1/orders/${f.id}/claim-eligibility`)
+    .set('Cookie', cookie)
+    .expect(200)
+  await request(root)
+    .get(`/api/v1/orders/${new Types.ObjectId()}/claim-eligibility`)
+    .set('Cookie', cookie)
+    .expect(401)
+  await request(root)
+    .get(`/api/v1/orders/${f.id}/claim-eligibility`)
+    .set('Cookie', `${cookie}; sz_customer_sid=invalid`)
+    .expect(401)
+  const uploaded = await request(root)
+    .post(`/api/v1/orders/${f.id}/claims/evidence-uploads`)
+    .set('Origin', origin)
+    .set('Cookie', cookie)
+    .set('X-CSRF-Token', proof.csrfToken)
+    .field('claimType', 'physical_return')
+    .field('orderItemIds[]', orderItemId ?? '')
+    .attach('file', png, { filename: 'guest.png', contentType: 'image/png' })
+    .expect(200)
+  await request(root)
+    .post(`/api/v1/orders/${f.id}/claims`)
+    .set('Origin', origin)
+    .set('Cookie', cookie)
+    .set('X-CSRF-Token', proof.csrfToken)
+    .set('Idempotency-Key', 'guest-claim')
+    .send({
+      claimType: 'physical_return',
+      items: [
+        {
+          orderItemId,
+          quantity: 1,
+          reason: 'Guest claim',
+          evidenceAssetIds: [uploaded.body.data.assetId],
+        },
+      ],
+    })
+    .expect(201)
+  await guests.logout(proof.token)
+  await request(root)
+    .get(`/api/v1/orders/${f.id}/claims/evidence/${uploaded.body.data.assetId}`)
+    .set('Cookie', cookie)
+    .expect(401)
+})
+it('Package B HTTP: suspended customers/admins cannot mutate or retrieve private claim evidence', async () => {
+  const f = await packageBFixture(),
+    created = await f.submit().expect(201),
+    id = created.body.data.id
+  await identities.users.updateOne(
+    { _id: f.administrator.user._id },
+    { $set: { status: 'suspended' } },
+  )
+  await f.approve(id).expect(403)
+  await identities.users.updateOne({ _id: f.buyer.user._id }, { $set: { status: 'suspended' } })
+  await request(f.root)
+    .get(`/api/v1/orders/${f.orderId}/claims`)
+    .set('Cookie', f.buyer.cookie)
+    .expect(401)
+  expect((await returnModel(db.connection).findById(id).orFail()).status).toBe('requested')
+})
+
+it('Package B HTTP: real server startup activates configured claims while default startup keeps them absent', async () => {
+  const f = await packageBFixture()
+  const originalEnvironment = process.env
+  let runtime: Awaited<ReturnType<typeof startServer>> | undefined
+  try {
+    const env = {
+      ...identityEnvironment(),
+      SESSION_SECRET: authSecret,
+      MONGODB_URI: db.replica.getUri(),
+      MONGODB_DB_NAME: db.connection.name,
+    }
+    process.env = { ...env }
+    let config = { ...loadEnvironment(env), PORT: 0 }
+    runtime = await startServer(
+      config,
+      createLogger(config, () => {}),
+    )
+    await request(runtime.server).get(`/api/v1/orders/${f.orderId}/claim-eligibility`).expect(404)
+    await runtime.close()
+    const { temporaryTtlSeconds, ...policy } = mediaPolicy
+    process.env = {
+      ...env,
+      RETURN_OPERATIONS_ENABLED: 'true',
+      MEDIA_ENABLED: 'true',
+      MEDIA_SCANNER: 'clamav',
+      MEDIA_SCANNER_HOST: '127.0.0.1',
+      MEDIA_SCANNER_PORT: '3310',
+      MEDIA_SCANNER_TIMEOUT_MS: '1000',
+      MEDIA_POLICY_JSON: JSON.stringify(policy),
+      MEDIA_TEMP_TTL_SECONDS: String(temporaryTtlSeconds),
+      CLOUDINARY_CLOUD_NAME: 'synthetic',
+      CLOUDINARY_API_KEY: '12345',
+      CLOUDINARY_API_SECRET: 'synthetic-secret',
+      MEDIA_PROVIDER_TIMEOUT_MS: '1000',
+    }
+
+    config = { ...loadEnvironment(process.env), PORT: 0 }
+    runtime = await startServer(
+      config,
+      createLogger(config, () => {}),
+    )
+    await request(runtime.server).get(`/api/v1/orders/${f.orderId}/claim-eligibility`).expect(401)
+    await request(runtime.server)
+      .get(`/api/v1/orders/${f.orderId}/claim-eligibility`)
+      .set('Cookie', f.buyer.cookie)
+      .expect(200)
+    // File validation rejects before scanner/provider I/O; no live credentials or calls.
+    await request(runtime.server)
+      .post(`/api/v1/orders/${f.orderId}/claims/evidence-uploads`)
+      .set('Origin', 'https://shop.example.test')
+      .set('Cookie', f.buyer.cookie)
+      .set('X-CSRF-Token', f.buyer.csrf)
+      .field('claimType', 'physical_return')
+      .field('orderItemIds[]', f.orderItemId)
+      .attach('file', Buffer.from('invalid'), { filename: 'bad.png', contentType: 'image/png' })
+      .expect(400)
+    await request(runtime.server)
+      .get(`/api/v1/orders/${f.orderId}/claims/evidence/${new Types.ObjectId()}`)
+      .set('Cookie', f.buyer.cookie)
+      .expect(404)
+    await request(runtime.server)
+      .post(`/api/v1/orders/${f.orderId}/claims`)
+      .set('Origin', 'https://shop.example.test')
+      .set('Cookie', f.buyer.cookie)
+      .set('X-CSRF-Token', f.buyer.csrf)
+      .set('Idempotency-Key', 'startup-return')
+      .send(f.body())
+      .expect(201)
+  } finally {
+    await runtime?.close()
+    process.env = originalEnvironment
+  }
 })

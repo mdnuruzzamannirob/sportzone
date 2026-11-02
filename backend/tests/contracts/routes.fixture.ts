@@ -1,3 +1,5 @@
+import { refundRoutes } from '../../src/modules/refunds/refund.routes.js'
+import { returnRoutes } from '../../src/modules/returns/return.routes.js'
 import { orderAdminRoutes } from '../../src/modules/orders/order-admin.routes.js'
 import { orderReadRoutes } from '../../src/modules/orders/order-read.routes.js'
 import { supportReadRoutes } from '../../src/modules/support/support-read.routes.js'
@@ -93,6 +95,31 @@ const media = {
 // These routers are locally composed only and are deliberately excluded from live registry parity.
 export function localOnlyRouters() {
   return [
+    refundRoutes(
+      { list: unused, detail: unused, group: unused, payout: unused },
+      security,
+      sessions,
+    ),
+    returnRoutes(
+      {
+        authorize: unused,
+        eligibility: unused,
+        submit: unused,
+        upload: unused,
+        privateEvidence: unused,
+        review: unused,
+        receive: unused,
+      },
+      { transition: unused },
+      { receive: unused, inspect: unused },
+      { adminList: unused, adminDetail: unused, list: unused, detail: unused },
+      security,
+      sessions,
+      'https://shop.example.test',
+      1024,
+      guard,
+      unused,
+    ),
     orderAdminRoutes(
       { adminRead: unused, adminList: unused },
       { transition: unused },
@@ -139,6 +166,7 @@ export function registeredRouter() {
       { request: unused, exchange: unused },
       {
         issueAfterProof: unused,
+        authorizeInSession: unused,
         owned: unused,
         refresh: unused,
         verify: unused,

@@ -1048,3 +1048,42 @@ export function complaintOrderAccess(connection: Connection) {
     }
   }
 }
+
+// Narrow delivered-order/item availability projection; no persistence object crosses the boundary.
+export function claimEligibilitySnapshotAccess(connection: Connection) {
+  const { orders, balances } = orderModels(connection)
+  return async (
+    session: ClientSession,
+    orderId: string,
+    principal: import('../auth/checkout-access.service.js').OrderPrincipal,
+  ) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyOrderPersistence(connection)
+    if (principal.kind === 'guest_order' && principal.orderId !== orderId)
+      throw new ApiError('NOT_FOUND')
+    const row = await orders
+      .findOne({ _id: orderId, userId: principal.kind === 'customer' ? principal.userId : null })
+      .session(session)
+    if (!row) throw new ApiError('NOT_FOUND')
+    const coverage = await balances.find({ orderId }).session(session)
+    return {
+      status: row.fulfillmentStatus,
+      deliveredAt: row.deliveredAt,
+      items: row.items.map((item) => {
+        const balance = coverage.find((b) => b.orderItemId.equals(item.id))
+        if (!balance) throw new ApiError('SERVICE_UNAVAILABLE')
+        return {
+          orderItemId: item.id.toHexString(),
+          quantity: item.quantity,
+          claimableQty: balance.unitCoverage.filter(
+            (unit) =>
+              unit.claimState === 'available' &&
+              !unit.refundHeldPoisha &&
+              !unit.refundCompletedPoisha &&
+              !unit.restockOperationKey,
+          ).length,
+        }
+      }),
+    }
+  }
+}

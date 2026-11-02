@@ -139,6 +139,7 @@ export function refundFundingAccess(connection: Connection) {
         sources: rows.map((row) => ({
           sourceCollectionId: row._id.toHexString(),
           provider: row.provider,
+          merchantAccountKey: row.merchantAccountKey,
           ...(row.bankTranId ? { bankTranId: row.bankTranId } : {}),
           collectedAt: row.collectedAt,
           verifiedAt: row.verifiedAt,

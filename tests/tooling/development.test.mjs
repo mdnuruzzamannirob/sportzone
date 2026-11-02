@@ -747,3 +747,43 @@ test('ORDER-OPERATIONS-BOUNDARY-01: admin HTTP and order projections cannot impo
     put(`backend/src/modules/${consumer}.ts`, 'export const consumer = 1')
   }
 })
+
+test('REFUND-OPERATIONS-BOUNDARY-01: refund HTTP and orchestration cannot bypass private persistence', (t) => {
+  const { root, put } = fixture(t)
+  for (const [consumer, owner] of [
+    ['refunds/refund.routes', 'refunds/refund'],
+    ['refunds/refund.routes', 'payments/payment'],
+    ['refunds/refund-operations.service', 'orders/order'],
+    ['refunds/refund-operations.service', 'payments/payment-record'],
+  ]) {
+    put(`backend/src/modules/${owner}.model.ts`, 'export const model=1')
+    const from = owner.startsWith('refunds/') ? './refund.model.js' : `../${owner}.model.js`
+    put(`backend/src/modules/${consumer}.ts`, `import "${from}"`)
+    assert.ok(
+      checkBoundaries(root).errors.some(
+        (e) => e.includes('private persistence') || e.includes('controller'),
+      ),
+    )
+    put(`backend/src/modules/${consumer}.ts`, 'export const consumer=1')
+  }
+})
+
+test('RETURN-OPERATIONS-BOUNDARY-01: claim HTTP and orchestration cannot access foreign persistence', (t) => {
+  const { root, put } = fixture(t)
+  for (const [consumer, owner] of [
+    ['returns/return.routes', 'returns/return'],
+    ['returns/return.routes', 'orders/order'],
+    ['returns/return-operations.service', 'media/media'],
+    ['returns/return-operations.service', 'inventory/inventory'],
+  ]) {
+    put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
+    const from = owner.startsWith('returns/') ? './return.model.js' : `../${owner}.model.js`
+    put(`backend/src/modules/${consumer}.ts`, `import "${from}"`)
+    assert.ok(
+      checkBoundaries(root).errors.some(
+        (e) => e.includes('private persistence') || e.includes('controller'),
+      ),
+    )
+    put(`backend/src/modules/${consumer}.ts`, 'export const consumer = 1')
+  }
+})

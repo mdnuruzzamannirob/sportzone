@@ -1410,6 +1410,14 @@ no retry of an uncertain external transaction is presumed safe.
 
 ## 9. Returns and refund collections
 
+Physical return receipt/inspection may proceed in multiple audited batches. Ordinal arrays are
+cumulative sets: received ⊆ approved, inspected ⊆ received, accepted ⊆ inspected, resellable ⊆ accepted.
+Completed physical claims require inspected = approved, preserving rejected inspection facts;
+accepted units resolve while rejected units release without refund or restock. Each later resellable
+batch has its own deterministic movement identity and each ordinal still has a once-only restock fence.
+Original receipt references and batch decisions remain in append-only audit; latest receipt/inspection
+timestamps are projections. Upgrade only known return validator predecessors via explicit bootstrap.
+
 ### 9.1 `returnRequests` — `returns`
 
 | Field | Type | Constraints / notes |
@@ -1517,6 +1525,13 @@ share a deterministic business group; changing request keys or reason cannot res
 request again. Correction reservation advances its existing unreserved intent rather than duplicating
 it. Method/policy/consent approval is mandatory. Without a qualified calendar, approval records timing
 under review and no target date. No payout is inferred from a reservation.
+The protected admin group API uses this same coordinator; it does not write an alternative refund
+ledger. Quantity capacity exhaustion is reported as REFUND_BALANCE_EXCEEDED before planning; an
+unqualified/uninspected claim remains an eligibility failure. The dispatcher additionally compares
+source merchant identity with configured transport identity before advancing a created attempt.
+Replays of a submitted/uncertain attempt may append a command-key audit alias but never create a
+second intent or reset its status/approval time. These guards do not change the collection schema;
+existing exact-predecessor refund migration and attempt provisioning remain authoritative.
 
 The cancellation-decision coordinator can invoke the private cancellation reservation capability in
 its existing transaction. Orders rechecks the pending request and original pre-dispatch unit facts;

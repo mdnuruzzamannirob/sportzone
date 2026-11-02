@@ -13,6 +13,10 @@ const command = z.strictObject({
   variantId: id,
   actorId: id,
   quantity: z.int().min(1).max(50),
+  batchKey: z
+    .string()
+    .regex(/^[a-f0-9]{64}$/)
+    .optional(),
 })
 // Only the return inspection coordinator calls this inside its fenced transaction.
 export function returnReceiptService(connection: Connection, clock: () => Date = () => new Date()) {
@@ -21,7 +25,7 @@ export function returnReceiptService(connection: Connection, clock: () => Date =
   return async (session: ClientSession, raw: unknown) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
     const input = command.parse(raw),
-      operationKey = `return:${input.claimId}:${input.orderItemId}`
+      operationKey = `return:${input.claimId}:${input.orderItemId}${input.batchKey ? `:${input.batchKey}` : ''}`
     await verifyInventoryPersistence(connection)
     if (
       await movements

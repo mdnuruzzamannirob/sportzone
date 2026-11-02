@@ -8,6 +8,20 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 2 November 2026 — Package C refund foundation and dispatch
+
+- Completed P08-005/006/007/008 with protected local/test policy configuration and canonical admin refund group/list/detail/gateway-attempt APIs.
+- Bound gateway dispatch to the verified source merchant, retained payload conflicts across replay aliases and mapped exhausted unit capacity to the canonical refund-balance error.
+- Combined the existing Package B prerequisite commit into main's working tree, preserving C changes and prior returnOptions compatibility; consolidated tests cover both packages.
+- Recorded 802 unit, 396 integration, 112 contract and 79 tooling passes in [Package C evidence](docs/evidence/P06-013-P08-005-008-durable-reservations.md#package-c-completion). Counts: 119 Done, 12 Blocked, 77 Not Started, 2 Deferred. Outcome/recovery and live qualification retain their owning tasks.
+
+## 1 November 2026 — Package B returns completion
+
+- Completed P08-002/003/004: scoped eligibility/submission/private evidence and protected admin review, receipt, inspection and completion APIs.
+- Added cumulative physical batches, parcel/key replay protection, accepted/rejected-unit resolution and atomic resellable-only stock restoration.
+- Wired explicit local/test return and Cloudinary/ClamAV startup, protected exception configuration and additive exact-predecessor validator upgrade; synchronized API/database/testing/operations contracts.
+- Recorded passing backend verification and executor review in [Package B evidence](docs/evidence/P08-003-004-local-return-inspection.md#package-b-completion). Counts: 115 Done, 16 Blocked, 77 Not Started, 2 Deferred. Live qualification and milestones retain their own gates.
+
 ## 1 November 2026 — Package A development closeout
 
 - Owner approved separating ordinary development completion from live-release qualification; aligned the owning completion/testing instructions.

@@ -32,7 +32,7 @@ const inspectInput = z.strictObject({
 })
 const hash = (text: string) => createHash('sha256').update(text).digest('hex')
 
-// Private local capability. The composition is not installed in HTTP/root wiring.
+// Returns owns cumulative physical batches; root composition supplies current-admin access.
 export function returnPhysicalService(
   connection: Connection,
   admin: AdminAccountAccess,
@@ -70,10 +70,32 @@ export function returnPhysicalService(
         if (previous.afterDigest !== digest) throw new ApiError('IDEMPOTENCY_CONFLICT')
         return { id, status: row.status, revision: row.revision }
       }
+      if (kind === 'receive') {
+        const ref = parseInput(receiveInput, raw).receiptReference
+        const original = await lookup(session, {
+          ...cause,
+          action: 'claim.receipt.reference',
+          operationKey: hash(`receipt:${id}:${ref}`),
+        })
+        if (original) {
+          if (original.afterDigest !== digest) throw new ApiError('IDEMPOTENCY_CONFLICT')
+          await audit(session, {
+            ...cause,
+            actorType: 'admin',
+            actorId,
+            afterDigest: digest,
+            reason: input.reason,
+            occurredAt: clock(),
+          })
+          return { id, status: row.status, revision: row.revision }
+        }
+      }
       const now = clock()
       if (
         row.claimType !== 'physical_return' ||
-        row.status !== (kind === 'receive' ? 'awaiting_return' : 'received') ||
+        !(
+          kind === 'receive' ? ['awaiting_return', 'received', 'inspected'] : ['received']
+        ).includes(row.status) ||
         !Number.isFinite(now.getTime()) ||
         now < row.updatedAt ||
         row.revision >= Number.MAX_SAFE_INTEGER
@@ -99,35 +121,59 @@ export function returnPhysicalService(
         set.receiptReference = value.receiptReference
         row.items.forEach((item, index) => {
           const line = value.items.find((i) => i.orderItemId === item.orderItemId.toHexString())
-          if (!line || line.quantity > item.approvedUnitOrdinals.length)
-            throw new ApiError('BUSINESS_RULE_VIOLATION')
-          set[`items.${index}.receivedUnitOrdinals`] = item.approvedUnitOrdinals.slice(
-            0,
-            line.quantity,
-          )
+          const previous = item.receivedUnitOrdinals ?? []
+          const pending = item.approvedUnitOrdinals.filter((n) => !previous.includes(n))
+          if (!line || line.quantity > pending.length) throw new ApiError('BUSINESS_RULE_VIOLATION')
+          set[`items.${index}.receivedUnitOrdinals`] = [
+            ...previous,
+            ...pending.slice(0, line.quantity),
+          ]
         })
       } else {
         const value = parseInput(inspectInput, raw)
         if (!row.receivedAt || !row.receiptReference) throw new ApiError('STATE_CONFLICT')
         set.inspectedAt = now
+        let newlyInspected = 0
         for (const [index, item] of row.items.entries()) {
           const line = value.items.find((i) => i.orderItemId === item.orderItemId.toHexString()),
-            received = item.receivedUnitOrdinals
+            received = item.receivedUnitOrdinals,
+            priorInspected = item.inspectedUnitOrdinals ?? [],
+            pending = (received ?? []).filter((n) => !priorInspected.includes(n))
           if (
             !line ||
             !received ||
-            line.acceptedQty > received.length ||
+            line.acceptedQty > pending.length ||
             line.resellableQty > line.acceptedQty
           )
             throw new ApiError('BUSINESS_RULE_VIOLATION')
-          const accepted = received.slice(0, line.acceptedQty),
+          newlyInspected += pending.length
+          const accepted = pending.slice(0, line.acceptedQty),
             resellable = accepted.slice(0, line.resellableQty)
           set[`items.${index}.inspectedUnitOrdinals`] = received
-          set[`items.${index}.acceptedUnitOrdinals`] = accepted
-          set[`items.${index}.resellableUnitOrdinals`] = resellable
-          set[`items.${index}.inspectionReason`] = line.reason
+          set[`items.${index}.acceptedUnitOrdinals`] = [
+            ...(item.acceptedUnitOrdinals ?? []),
+            ...accepted,
+          ]
+          set[`items.${index}.resellableUnitOrdinals`] = [
+            ...(item.resellableUnitOrdinals ?? []),
+            ...resellable,
+          ]
+          if (pending.length) {
+            set[`items.${index}.inspectionReason`] = line.reason
+            await audit(session, {
+              ...cause,
+              action: 'claim.inspection.item',
+              operationKey: hash(`${operationKey}:${item.orderItemId}`),
+              actorType: 'admin',
+              actorId,
+              afterDigest: hash(JSON.stringify({ pending, accepted, resellable })),
+              reason: line.reason,
+              occurredAt: now,
+            })
+          }
           if (resellable.length) {
-            const key = `return:${id}:${item.orderItemId.toHexString()}`
+            const batchKey = priorInspected.length ? operationKey : undefined
+            const key = `return:${id}:${item.orderItemId.toHexString()}${batchKey ? `:${batchKey}` : ''}`
             const binding = await restock(session, {
               orderId: row.orderId.toHexString(),
               claimId: id,
@@ -142,9 +188,11 @@ export function returnPhysicalService(
               variantId: binding.variantId,
               actorId,
               quantity: resellable.length,
+              ...(batchKey ? { batchKey } : {}),
             })
           }
         }
+        if (!newlyInspected) throw new ApiError('STATE_CONFLICT')
       }
       const result = await model.collection.updateOne(
         { _id: row._id, revision: row.revision, status: row.status },
@@ -160,6 +208,17 @@ export function returnPhysicalService(
         reason: input.reason,
         occurredAt: now,
       })
+      if (kind === 'receive')
+        await audit(session, {
+          ...cause,
+          action: 'claim.receipt.reference',
+          operationKey: hash(`receipt:${id}:${parseInput(receiveInput, raw).receiptReference}`),
+          actorType: 'admin',
+          actorId,
+          afterDigest: digest,
+          reason: parseInput(receiveInput, raw).receiptReference,
+          occurredAt: now,
+        })
       return {
         id,
         status: kind === 'receive' ? ('received' as const) : ('inspected' as const),

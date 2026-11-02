@@ -86,6 +86,7 @@ export function returnService(
         ...authority,
         claimType: input.claimType,
         status: 'requested',
+        ...(input.description ? { description: input.description } : {}),
         requestedAt: now,
         revision: 0,
         items: input.items.map((item, index) => ({
@@ -100,7 +101,8 @@ export function returnService(
       })
       await row.save({ session })
       await audit(session, {
-        actorType: 'system',
+        actorType: authority.requestedBy.type === 'customer' ? 'customer' : 'guest_order',
+        actorId: authority.requestedBy.id,
         action: 'claim.request.create',
         targetType: 'return_request',
         targetId: input.claimId,

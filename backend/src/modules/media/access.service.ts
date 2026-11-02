@@ -41,7 +41,8 @@ export function createMediaAccess(context: MediaContext) {
     async privateUrl(credential: string | undefined, assetId: string, admin = false) {
       assertOutsideTransaction()
       const asset = await inTransaction(connection, async (session) => {
-        const saved = await model.findById(key(assetId)).session(session).orFail()
+        const saved = await model.findById(key(assetId)).session(session)
+        if (!saved) throw new ApiError('NOT_FOUND')
         await authorized(credential, saved, session, admin)
         if (
           saved.access !== 'private' ||

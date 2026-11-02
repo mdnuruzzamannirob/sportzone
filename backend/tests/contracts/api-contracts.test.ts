@@ -133,6 +133,8 @@ describe('executable API contract registry', () => {
         'payments/payment-monitor.routes.ts',
         'promotions/coupon-admin.routes.ts',
         'returns/return-history.routes.ts',
+        'refunds/refund.routes.ts',
+        'returns/return.routes.ts',
         'reviews/review.routes.ts',
         'settings/settings.routes.ts',
         'support/support-read.routes.ts',
@@ -144,6 +146,19 @@ describe('executable API contract registry', () => {
       .flatMap((router) => registeredOperations(router))
       .filter((op) => !['HEAD', 'OPTIONS'].includes(op.method))
     const expected = [
+      'GET /admin/refunds',
+      'GET /admin/refunds/{refundId}',
+      'POST /admin/refund-groups',
+      'POST /admin/refunds/{refundId}/payout-attempts',
+      'GET /orders/{orderId}/claim-eligibility',
+      'POST /orders/{orderId}/claims',
+      'POST /orders/{orderId}/claims/evidence-uploads',
+      'GET /orders/{orderId}/claims/evidence/{assetId}',
+      'POST /admin/claims/{claimId}/review',
+      'POST /admin/claims/{claimId}/receipt',
+      'POST /admin/claims/{claimId}/inspection',
+      'POST /admin/claims/{claimId}/complete',
+      'GET /admin/claims/{claimId}/evidence/{assetId}',
       'GET /admin/orders',
       'GET /admin/orders/{orderId}',
       'POST /admin/orders/{orderId}/fulfillment-transitions',
@@ -221,8 +236,8 @@ describe('executable API contract registry', () => {
     })
   it('keeps planned contracts non-executable and environment values blank', () => {
     const rows = artifacts['planned-operations.json'].operations
-    expect(rows).toHaveLength(164)
-    expect(rows.filter((op) => op.implementation === 'planned')).toHaveLength(66)
+    expect(rows).toHaveLength(166)
+    expect(rows.filter((op) => op.implementation === 'planned')).toHaveLength(68)
     expect(openapi.paths['/orders/{orderId}/payment-attempts']).toMatchObject({
       post: {
         security: [

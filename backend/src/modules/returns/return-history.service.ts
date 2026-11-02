@@ -58,11 +58,16 @@ export function returnHistoryService(
       claimType: row.claimType,
       status: row.status,
       requestedAt: row.requestedAt.toISOString(),
+      ...(row.description ? { description: row.description } : {}),
       items: row.items.map((item) => ({
         orderItemId: item.orderItemId.toHexString(),
         requestedQty: item.requestedQty,
         ...(row.approvedAt ? { approvedQty: item.approvedUnitOrdinals.length } : {}),
         reason: item.reason,
+        receivedQty: item.receivedUnitOrdinals?.length ?? 0,
+        inspectedQty: item.inspectedUnitOrdinals?.length ?? 0,
+        acceptedQty: item.acceptedUnitOrdinals?.length ?? 0,
+        resellableQty: item.resellableUnitOrdinals?.length ?? 0,
       })),
       evidence: refs,
     }

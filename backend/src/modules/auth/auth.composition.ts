@@ -150,7 +150,9 @@ export async function createAuthRuntime(
     customerAccounts: createCustomerAccountAccess(connection, models, sessions),
     mediaAdmin: createMediaAdminAccess(models, sessions),
     // Session minting stays inside auth; business consumers receive owned scope only.
-    guestAccounts: guestSessions ? { owned: guestSessions.owned } : undefined,
+    guestAccounts: guestSessions
+      ? { owned: guestSessions.owned, authorizeInSession: guestSessions.authorizeInSession }
+      : undefined,
   }
 }
 

@@ -27,7 +27,7 @@ const ordinals = {
   uniqueItems: true,
   items: { ...integer, minimum: 1, maximum: 50 },
 }
-function validator(lifecycle: boolean, physical = false) {
+function validator(lifecycle: boolean, physical = false, batches = false) {
   return {
     $expr: {
       $and: [
@@ -69,7 +69,14 @@ function validator(lifecycle: boolean, physical = false) {
                                     in: {
                                       $setEquals: [
                                         '$$i.approvedUnitOrdinals',
-                                        { $ifNull: ['$$i.acceptedUnitOrdinals', []] },
+                                        {
+                                          $ifNull: [
+                                            batches
+                                              ? '$$i.inspectedUnitOrdinals'
+                                              : '$$i.acceptedUnitOrdinals',
+                                            [],
+                                          ],
+                                        },
                                       ],
                                     },
                                   },
@@ -316,6 +323,7 @@ function validator(lifecycle: boolean, physical = false) {
         ...(lifecycle
           ? {
               approvedAt: date,
+              ...(batches ? { description: text(2000) } : {}),
               completedAt: date,
               reviewedBy: oid,
               decisionReason: text(2000),
@@ -356,7 +364,8 @@ function validator(lifecycle: boolean, physical = false) {
 }
 export const foundationReturnValidator = validator(false)
 export const reviewReturnValidator = validator(true)
-export const returnValidator = validator(true, true)
+export const singleReceiptReturnValidator = validator(true, true)
+export const returnValidator = validator(true, true, true)
 export async function verifyReturnPersistence(connection: Connection) {
   const row = await connection.db
     ?.listCollections({ name: 'returnRequests' }, { nameOnly: false })
@@ -405,7 +414,8 @@ export async function upgradeReturnLifecyclePersistence(connection: Connection) 
   }
   if (
     !isDeepStrictEqual(row.options?.validator, foundationReturnValidator) &&
-    !isDeepStrictEqual(row.options?.validator, reviewReturnValidator)
+    !isDeepStrictEqual(row.options?.validator, reviewReturnValidator) &&
+    !isDeepStrictEqual(row.options?.validator, singleReceiptReturnValidator)
   )
     throw new Error('Unknown return validator')
   await verifyDeclaredIndexes(returnModel(connection))
