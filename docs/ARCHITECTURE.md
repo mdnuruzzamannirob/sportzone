@@ -614,6 +614,10 @@ of private models, services and routers; domain implementation/contracts never i
 Keep internal dependency types with their service/context when a separate file adds no boundary.
 Configuration may import owning validation schemas or public types, not domain-service implementations;
 move reusable validation/crypto mechanics to an appropriate pure owner instead of executing workflows from config.
+Session/browser option validation and raw environment adapters belong in config/security.ts. Shared
+crypto owns byte encryption/keyring and exact JSON hashing; auth owns proof formats, purpose/audience
+binding and authenticated context. Configuration constructs a technical keyring; auth services wrap it
+with their proof codec. A caller owns JSON normalization/field order before hashing.
 A job performs actual scheduling/coordination and delegates business decisions to domain services;
 operator scripts may call those services directly.
 

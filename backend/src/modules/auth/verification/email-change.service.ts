@@ -12,10 +12,10 @@ import { authorizeAccount } from '../sessions/authorization.service.js'
 import { ChallengeUnavailableError, consumeUserChallenge } from '../sessions/session.persistence.js'
 import type { SessionService } from '../sessions/session.service.js'
 import { confirmInput, requestInput } from './email-change.schema.js'
-import { proofHash } from './proof.crypto.js'
+import { createProofCodec, proofHash } from './proof.crypto.js'
 
 type User = InstanceType<IdentityModels['users']>
-export function createEmailChangeService(
+function createEmailChangeService(
   connection: Connection,
   models: IdentityModels,
   sessions: SessionService,
@@ -23,6 +23,7 @@ export function createEmailChangeService(
   options: RecoveryOptions,
   clock: () => Date = () => new Date(),
 ) {
+  const encryption = createProofCodec(options.encryption)
   async function owned<T>(
     token: string | undefined,
     work: (user: User, session: ClientSession) => Promise<T>,
@@ -81,7 +82,7 @@ export function createEmailChangeService(
             { $set: { invalidatedAt: now }, $unset: { deliveryEnvelope: 1 } },
             { session },
           )
-          const envelope = options.encryption.encrypt(secret, {
+          const envelope = encryption.encrypt(secret, {
             id: id.toHexString(),
             userId: user._id.toHexString(),
             email: user.emailNormalized,
@@ -212,4 +213,7 @@ export function createEmailChangeService(
     },
   }
 }
-export type EmailChangeService = ReturnType<typeof createEmailChangeService>
+type EmailChangeService = ReturnType<typeof createEmailChangeService>
+
+export { createEmailChangeService }
+export type { EmailChangeService }

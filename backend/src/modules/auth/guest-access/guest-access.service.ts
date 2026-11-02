@@ -9,9 +9,9 @@ import type { GuestSessions } from './guest-session.service.js'
 import type { GuestAccessOptions } from '../../../config/security.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
-import { proofHash } from '../verification/proof.crypto.js'
+import { createProofCodec, proofHash } from '../verification/proof.crypto.js'
 import { guestChallengeInput, guestExchangeInput } from './guest-access.schema.js'
-export function guestAccessService(
+function guestAccessService(
   models: IdentityModels,
   security: BrowserSecurity,
   sessions: GuestSessions,
@@ -20,6 +20,7 @@ export function guestAccessService(
   options: GuestAccessOptions,
   clock: () => Date = () => new Date(),
 ) {
+  const encryption = createProofCodec(options.encryption)
   return {
     async request(raw: unknown, context: string, csrf: string) {
       const input = parseInput(guestChallengeInput, raw),
@@ -66,7 +67,7 @@ export function guestAccessService(
             deliveryNotificationId: notificationId,
             createdAt: now,
             updatedAt: now,
-            deliveryEnvelope: options.encryption.encrypt(proof, {
+            deliveryEnvelope: encryption.encrypt(proof, {
               id: id.toHexString(),
               purpose: 'guest_order_access',
               orderId: order.id,
@@ -134,3 +135,5 @@ export function guestAccessService(
     },
   }
 }
+
+export { guestAccessService }

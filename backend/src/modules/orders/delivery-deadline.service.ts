@@ -1,5 +1,5 @@
 import type { ClientSession } from 'mongoose'
-import { createHash } from 'node:crypto'
+import { jsonDigest } from '../../shared/crypto.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import {
@@ -13,9 +13,9 @@ import {
 } from './delivery-deadline.schema.js'
 
 // Fixed field order from the owning validator, including explicit legal-cap order.
-export function deliveryDeadlineDigest(raw: unknown) {
+function deliveryDeadlineDigest(raw: unknown) {
   const rule = parseInput(deliveryDeadlineRule, raw)
-  return createHash('sha256').update(JSON.stringify(rule)).digest('hex')
+  return jsonDigest(rule)
 }
 const formatter = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'Asia/Dhaka',
@@ -38,7 +38,7 @@ function wallTime(value: Date) {
 }
 // Calendar-day arithmetic preserves Dhaka wall-clock time, including month/year/leap boundaries.
 // If a historical timezone transition has no unambiguous local result, fail closed.
-export function addDeliveryCalendarDays(raw: string, calendarDays: number) {
+function addDeliveryCalendarDays(raw: string, calendarDays: number) {
   if (!Number.isSafeInteger(calendarDays) || calendarDays < 1 || calendarDays > 3660)
     throw new ApiError('BUSINESS_RULE_VIOLATION')
   const instant = new Date(raw)
@@ -81,7 +81,7 @@ function freezeBasis(basis: DeliveryDeadlineBasis) {
   Object.freeze(basis.review)
   return Object.freeze(basis)
 }
-export function createDeliveryDeadlineService(
+function createDeliveryDeadlineService(
   manifest?: DeliveryDeadlineManifest,
   clock: () => Date = () => new Date(),
 ) {
@@ -218,7 +218,7 @@ export function createDeliveryDeadlineService(
 
 // Protect confirmation against fabricated/tampered order snapshots. The registry is supplied
 // only by the operator's reviewed configuration, never by browser input or a default rule.
-export function deliveryDeadlineApprovalAccess(
+function deliveryDeadlineApprovalAccess(
   manifests: readonly DeliveryDeadlineManifest[],
   clock: () => Date = () => new Date(),
 ) {
@@ -242,4 +242,11 @@ export function deliveryDeadlineApprovalAccess(
     )
       throw new ApiError('SERVICE_UNAVAILABLE')
   }
+}
+
+export {
+  deliveryDeadlineDigest,
+  addDeliveryCalendarDays,
+  createDeliveryDeadlineService,
+  deliveryDeadlineApprovalAccess,
 }

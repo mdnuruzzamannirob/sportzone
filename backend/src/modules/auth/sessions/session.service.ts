@@ -1,104 +1,26 @@
+import { validateSessionOptions, type SessionOptions } from '../../../config/security.js'
 import type { Types, Connection, ClientSession } from 'mongoose'
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
-import { z } from 'zod'
-import { ConfigurationError } from '../../../shared/errors/configuration-error.js'
 import { inTransaction } from '../../../shared/database/transaction.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import type { IdentityModels } from '../auth.model.js'
 import { findActiveUserSession } from './session.persistence.js'
 
-export type SessionKind = 'customer' | 'admin'
+type SessionKind = 'customer' | 'admin'
 const tokenPattern = /^[A-Za-z0-9_-]{43}$/
-const ttl = z
-  .int()
-  .positive()
-  .max(Math.floor(Number.MAX_SAFE_INTEGER / 1000))
-const optionsSchema = z
-  .strictObject({
-    secret: z
-      .string()
-      .regex(/^[a-f0-9]{64}$/)
-      .refine((value) => !/^(.)\1+$/.test(value)),
-    customerTtlSeconds: ttl,
-    adminTtlSeconds: ttl,
-    sameSite: z.enum(['lax', 'strict']),
-    appEnvironment: z.enum(['local', 'test', 'staging', 'production']),
-    apiOrigin: z.string().refine((value) => {
-      try {
-        const url = new URL(value)
-        return ['https:', 'http:'].includes(url.protocol) && url.origin === value
-      } catch {
-        return false
-      }
-    }),
-  })
-  .superRefine((value, ctx) => {
-    try {
-      const url = new URL(value.apiOrigin)
-      const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)
-      if (
-        (url.protocol === 'http:' &&
-          (!loopback || !['local', 'test'].includes(value.appEnvironment))) ||
-        (['staging', 'production'].includes(value.appEnvironment) && loopback)
-      )
-        ctx.addIssue({
-          code: 'custom',
-          path: ['apiOrigin'],
-          message: 'Secure API origin required',
-        })
-    } catch {
-      /* The field refinement reports malformed origins without values. */
-    }
-  })
-export type SessionOptions = z.infer<typeof optionsSchema>
-const fields: Record<string, string> = {
-  secret: 'SESSION_SECRET',
-  customerTtlSeconds: 'CUSTOMER_SESSION_TTL_SECONDS',
-  adminTtlSeconds: 'ADMIN_SESSION_TTL_SECONDS',
-  sameSite: 'SESSION_COOKIE_SAME_SITE',
-  appEnvironment: 'APP_ENV',
-  apiOrigin: 'API_PUBLIC_ORIGIN',
-}
-export function validateSessionOptions(value: unknown): SessionOptions {
-  const parsed = optionsSchema.safeParse(value)
-  if (!parsed.success)
-    throw new ConfigurationError(
-      [
-        ...new Set(
-          parsed.error.issues.map(
-            (issue) => fields[String(issue.path[0])] ?? 'session_configuration',
-          ),
-        ),
-      ].sort(),
-    )
-  return parsed.data
-}
-// Raw-boundary adapter for isolated callers; the runtime consumes prevalidated typed options.
-export function loadSessionOptions(environment: NodeJS.ProcessEnv): SessionOptions {
-  const seconds = (value: string | undefined) =>
-    value && /^[1-9]\d*$/.test(value) ? Number(value) : NaN
-  return validateSessionOptions({
-    secret: environment.SESSION_SECRET,
-    customerTtlSeconds: seconds(environment.CUSTOMER_SESSION_TTL_SECONDS),
-    adminTtlSeconds: seconds(environment.ADMIN_SESSION_TTL_SECONDS),
-    sameSite: environment.SESSION_COOKIE_SAME_SITE,
-    appEnvironment: environment.APP_ENV,
-    apiOrigin: environment.API_PUBLIC_ORIGIN,
-  })
-}
-export type SessionIdentity = {
+type SessionIdentity = {
   sessionId: Types.ObjectId
   userId: Types.ObjectId
   kind: SessionKind
   expiresAt: Date
 }
-export type IssuedSession = {
+type IssuedSession = {
   token: string
   csrfToken: string
   kind: SessionKind
   expiresAt: Date
 }
-export function createSessionService(
+function createSessionService(
   connection: Connection,
   models: IdentityModels,
   settings: SessionOptions,
@@ -329,4 +251,8 @@ export function createSessionService(
     },
   }
 }
-export type SessionService = ReturnType<typeof createSessionService>
+type SessionService = ReturnType<typeof createSessionService>
+
+export { loadSessionOptions } from '../../../config/security.js'
+export { createSessionService, validateSessionOptions }
+export type { SessionKind, SessionIdentity, IssuedSession, SessionService, SessionOptions }

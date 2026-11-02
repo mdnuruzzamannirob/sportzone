@@ -8,6 +8,15 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 3 November 2026 — Backend technical foundation refactor
+
+- Moved session/browser option validation into existing configuration ownership; extracted reusable
+  encryption/keyring and JSON digest mechanics while retaining auth-owned proof binding.
+- Replaced service-derived operations configuration typing with an explicit orders public contract;
+  removed five legacy allowances. No environment, API or persistence contract changed.
+- Recorded [WP02/P03-026 checks and review](docs/evidence/P03-021-backend-refactor.md#p03-026--wp02-technical-foundation-3-november-2026):
+  219 unit and 155 isolated integration cases plus compiled smoke passed; stage acceptance remains separate.
+
 ## 3 November 2026 — Backend refactor contracts and boundary enforcement
 
 - Reconciled the selected module/file/dependency target in Architecture, Database, API, Implementation Plan

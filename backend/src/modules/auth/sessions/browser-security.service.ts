@@ -1,21 +1,24 @@
+import {
+  validateBrowserSecurityOptions,
+  type BrowserSecurityOptions,
+} from '../../../config/security.js'
 import type { RequestHandler } from 'express'
 import type { ClientSession, Connection } from 'mongoose'
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
 import { inTransaction } from '../../../shared/database/transaction.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
-import { ConfigurationError } from '../../../shared/errors/configuration-error.js'
 import type { IdentityModels } from '../auth.model.js'
 import { readSessionCookie } from './session.http.js'
 import type { SessionKind, SessionService } from './session.service.js'
 
-export type BrowserAudience = 'storefront' | 'admin'
+type BrowserAudience = 'storefront' | 'admin'
 const opaque = /^[A-Za-z0-9_-]{43}$/
 const contextNames = {
   storefront: 'sz_browser_ctx',
   admin: 'sz_admin_browser_ctx',
 } as const
 const denied = () => new ApiError('CSRF_INVALID')
-export function readContextCookie(header: string | undefined, audience: BrowserAudience) {
+function readContextCookie(header: string | undefined, audience: BrowserAudience) {
   const matches = (header ?? '')
     .split(';')
     .map((part) => part.trim())
@@ -23,69 +26,7 @@ export function readContextCookie(header: string | undefined, audience: BrowserA
   const token = matches.length === 1 ? matches[0]?.slice(matches[0].indexOf('=') + 1) : undefined
   return token && opaque.test(token) ? token : undefined
 }
-export type BrowserSecurityOptions = {
-  secret: string
-  contextTtlSeconds: number
-  storefrontOrigin: string
-  adminOrigin: string
-}
-export function validateBrowserSecurityOptions(input: BrowserSecurityOptions, secure: boolean) {
-  if (
-    !/^[a-f0-9]{64}$/.test(input.secret) ||
-    /^(.)\1+$/.test(input.secret) ||
-    !Number.isSafeInteger(input.contextTtlSeconds) ||
-    input.contextTtlSeconds < 1 ||
-    input.contextTtlSeconds > 1800
-  )
-    throw new Error('Invalid browser security configuration.')
-  for (const origin of [input.storefrontOrigin, input.adminOrigin]) {
-    let url: URL
-    try {
-      url = new URL(origin)
-    } catch {
-      throw new Error('Invalid browser security origin.')
-    }
-    if (
-      url.origin !== origin ||
-      !['https:', 'http:'].includes(url.protocol) ||
-      (url.protocol === 'http:' &&
-        (secure || !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)))
-    )
-      throw new Error('Invalid browser security origin.')
-  }
-  if (input.storefrontOrigin === input.adminOrigin)
-    throw new Error('Browser origins must be distinct.')
-  return Object.freeze({ ...input })
-}
-export function loadBrowserSecurityOptions(
-  environment: NodeJS.ProcessEnv,
-  secure: boolean,
-): BrowserSecurityOptions {
-  try {
-    const allowed = (environment.CORS_ALLOWED_ORIGINS ?? '').split(',')
-    if (
-      allowed.length !== 2 ||
-      new Set(allowed).size !== 2 ||
-      !allowed.includes(environment.STOREFRONT_ORIGIN ?? '') ||
-      !allowed.includes(environment.ADMIN_ORIGIN ?? '')
-    )
-      throw new Error('Invalid origin allowlist.')
-    return validateBrowserSecurityOptions(
-      {
-        secret: environment.SESSION_SECRET ?? '',
-        contextTtlSeconds: /^[1-9]\d*$/.test(environment.BROWSER_CONTEXT_TTL_SECONDS ?? '')
-          ? Number(environment.BROWSER_CONTEXT_TTL_SECONDS)
-          : NaN,
-        storefrontOrigin: environment.STOREFRONT_ORIGIN ?? '',
-        adminOrigin: environment.ADMIN_ORIGIN ?? '',
-      },
-      secure,
-    )
-  } catch {
-    throw new ConfigurationError(['browser_security_configuration'])
-  }
-}
-export function createBrowserSecurity(
+function createBrowserSecurity(
   connection: Connection,
   models: IdentityModels,
   sessions: SessionService,
@@ -290,4 +231,8 @@ export function createBrowserSecurity(
     },
   }
 }
-export type BrowserSecurity = ReturnType<typeof createBrowserSecurity>
+type BrowserSecurity = ReturnType<typeof createBrowserSecurity>
+
+export { loadBrowserSecurityOptions } from '../../../config/security.js'
+export { readContextCookie, createBrowserSecurity, validateBrowserSecurityOptions }
+export type { BrowserAudience, BrowserSecurity, BrowserSecurityOptions }

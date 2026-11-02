@@ -1,8 +1,13 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto'
+import { createHash } from 'node:crypto'
+import {
+  createEncryptionKeyring,
+  type EncryptionKeyring,
+  type EncryptedEnvelope,
+} from '../../../shared/crypto.js'
 import { ConfigurationError } from '../../../shared/errors/configuration-error.js'
 
-export const proofPattern = /^[A-Za-z0-9_-]{43}$/
-export const proofHash = (
+const proofPattern = /^[A-Za-z0-9_-]{43}$/
+const proofHash = (
   proof: string,
   purpose:
     | 'password_reset'
@@ -16,7 +21,7 @@ export const proofHash = (
       `sportzone:${purpose === 'password_reset' ? 'password-reset' : purpose === 'email_verify' ? 'email-verify' : purpose === 'email_change' ? 'email-change' : purpose === 'guest_order_access' ? 'guest-order-access' : 'admin-password-reset'}:v1:${proof}`,
     )
     .digest('hex')
-export type ProofBinding = {
+type ProofBinding = {
   id: string
   email: string
   expiresAt: Date
@@ -31,34 +36,10 @@ export type ProofBinding = {
     }
   | { userId?: never; orderId: string; purpose: 'guest_order_access' }
 )
-export type ProofEnvelope = {
-  algorithm: 'AES-256-GCM'
-  keyVersion: string
-  nonce: Buffer
-  ciphertext: Buffer
-  authTag: Buffer
-}
-export function createProofEncryption(
-  activeVersion: string,
-  keys: Readonly<Record<string, string>>,
-) {
-  if (
-    !/^[A-Za-z0-9_-]{1,32}$/.test(activeVersion) ||
-    !Object.hasOwn(keys, activeVersion) ||
-    Object.keys(keys).length > 8 ||
-    Object.keys(keys).length < 1 ||
-    Object.entries(keys).some(
-      ([version, key]) =>
-        !/^[A-Za-z0-9_-]{1,32}$/.test(version) ||
-        !/^[a-f0-9]{64}$/.test(key) ||
-        /^(.)\1+$/.test(key),
-    ) ||
-    new Set(Object.values(keys)).size !== Object.keys(keys).length
-  )
-    throw new ConfigurationError(['proof_encryption_keys'])
-  const ring = new Map(
-    Object.entries(keys).map(([version, key]) => [version, Buffer.from(key, 'hex')]),
-  )
+type ProofEnvelope = EncryptedEnvelope
+
+// Binding and proof validation stay auth-owned; the shared keyring only implements AEAD mechanics.
+function createProofCodec(keyring: EncryptionKeyring) {
   const aad = (binding: ProofBinding, version: string) => {
     if (binding.purpose === 'email_change' && !binding.targetEmail)
       throw new Error('Invalid proof binding.')
@@ -79,42 +60,13 @@ export function createProofEncryption(
   return {
     encrypt(proof: string, binding: ProofBinding): ProofEnvelope {
       if (!proofPattern.test(proof)) throw new Error('Invalid proof material.')
-      const key = ring.get(activeVersion)
-      if (!key) throw new Error('Proof key unavailable.')
-      const nonce = randomBytes(12)
-      const cipher = createCipheriv('aes-256-gcm', key, nonce, {
-        authTagLength: 16,
-      })
-      cipher.setAAD(aad(binding, activeVersion))
-      return {
-        algorithm: 'AES-256-GCM',
-        keyVersion: activeVersion,
-        nonce,
-        ciphertext: Buffer.concat([cipher.update(proof, 'utf8'), cipher.final()]),
-        authTag: cipher.getAuthTag(),
-      }
+      return keyring.seal(Buffer.from(proof, 'utf8'), (version) => aad(binding, version))
     },
     decrypt(envelope: ProofEnvelope, binding: ProofBinding) {
       // All errors deliberately hide key IDs, ciphertext, destination and proof material.
       try {
-        const key = ring.get(envelope.keyVersion)
-        if (
-          !key ||
-          envelope.algorithm !== 'AES-256-GCM' ||
-          envelope.nonce.length !== 12 ||
-          envelope.authTag.length !== 16 ||
-          envelope.ciphertext.length !== 43
-        )
-          throw new Error()
-        const decipher = createDecipheriv('aes-256-gcm', key, envelope.nonce, {
-          authTagLength: 16,
-        })
-        decipher.setAAD(aad(binding, envelope.keyVersion))
-        decipher.setAuthTag(envelope.authTag)
-        const proof = Buffer.concat([
-          decipher.update(envelope.ciphertext),
-          decipher.final(),
-        ]).toString('utf8')
+        if (envelope.ciphertext.length !== 43) throw new Error()
+        const proof = keyring.open(envelope, (version) => aad(binding, version)).toString('utf8')
         if (!proofPattern.test(proof)) throw new Error()
         return proof
       } catch {
@@ -123,4 +75,19 @@ export function createProofEncryption(
     },
   }
 }
-export type ProofEncryption = ReturnType<typeof createProofEncryption>
+
+// Retain the existing isolated-caller factory; runtime configuration supplies the keyring directly.
+function createProofEncryption(activeVersion: string, keys: Readonly<Record<string, string>>) {
+  let keyring: EncryptionKeyring
+  try {
+    keyring = createEncryptionKeyring(activeVersion, keys)
+  } catch {
+    throw new ConfigurationError(['proof_encryption_keys'])
+  }
+  return { ...keyring, ...createProofCodec(keyring) }
+}
+
+type ProofEncryption = ReturnType<typeof createProofEncryption>
+
+export { proofPattern, proofHash, createProofCodec, createProofEncryption }
+export type { ProofBinding, ProofEnvelope, ProofEncryption }

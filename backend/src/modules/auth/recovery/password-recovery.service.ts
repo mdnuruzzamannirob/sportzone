@@ -4,11 +4,6 @@ import { type ClientSession, type Connection, Types } from 'mongoose'
 import type { RecoveryOptions } from '../../../config/security.js'
 import { changeInput, confirmation, issuance } from './password-recovery.schema.js'
 
-export {
-  loadRecoveryOptions,
-  type RecoveryOptions,
-} from '../../../config/security.js'
-
 import { inTransaction } from '../../../shared/database/transaction.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
@@ -18,9 +13,9 @@ import { hashPassword, verifyPassword } from '../credentials/password.service.js
 import type { BrowserSecurity } from '../sessions/browser-security.service.js'
 import { ChallengeUnavailableError, consumeUserChallenge } from '../sessions/session.persistence.js'
 import type { SessionKind, SessionService } from '../sessions/session.service.js'
-import { proofHash } from '../verification/proof.crypto.js'
+import { createProofCodec, proofHash } from '../verification/proof.crypto.js'
 
-export function createRecoveryService(
+function createRecoveryService(
   connection: Connection,
   models: IdentityModels,
   sessions: SessionService,
@@ -30,6 +25,7 @@ export function createRecoveryService(
   clock: () => Date = () => new Date(),
   kind: SessionKind = 'customer',
 ) {
+  const encryption = createProofCodec(options.encryption)
   const audience = kind === 'admin' ? 'admin' : 'storefront'
   const hashPurpose = kind === 'admin' ? 'admin_password_reset' : 'password_reset'
   async function invalidate(userId: Types.ObjectId, session: ClientSession, allIdentity = false) {
@@ -101,7 +97,7 @@ export function createRecoveryService(
           const now = clock(),
             expiresAt = new Date(now.getTime() + options.ttlSeconds * 1000)
           const revision = updated.challengeRevisions.password_reset
-          const deliveryEnvelope = options.encryption.encrypt(proof, {
+          const deliveryEnvelope = encryption.encrypt(proof, {
             id: id.toHexString(),
             userId: user._id.toHexString(),
             email: input.email,
@@ -250,4 +246,11 @@ export function createRecoveryService(
     },
   }
 }
-export type RecoveryService = ReturnType<typeof createRecoveryService>
+type RecoveryService = ReturnType<typeof createRecoveryService>
+
+export {
+  loadRecoveryOptions,
+  type RecoveryOptions,
+} from '../../../config/security.js'
+export { createRecoveryService }
+export type { RecoveryService }

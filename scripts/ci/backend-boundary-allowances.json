@@ -1,11 +1,6 @@
 {
   "version": 1,
   "imports": {
-    "config/delivery.ts -> modules/orders/delivery-deadline.service.ts (runtime; import; deliveryDeadlineDigest)": "WP02",
-    "config/env.ts -> modules/auth/sessions/browser-security.service.ts (runtime; import; validateBrowserSecurityOptions)": "WP02",
-    "config/env.ts -> modules/auth/sessions/session.service.ts (runtime; import; validateSessionOptions)": "WP02",
-    "config/operations.ts -> modules/orders/delivery-exception.service.ts (type; import; deliveryExceptionService)": "WP02",
-    "config/security.ts -> modules/auth/verification/proof.crypto.ts (runtime; import; ProofEncryption:type,createProofEncryption)": "WP02",
     "modules/audit/audit-query.service.ts -> modules/auth/admin-account.service.ts (type; import; AdminAccountAccess)": "WP05",
     "modules/auth/auth.composition.ts -> modules/notifications/notification.service.ts (type; import; RegistrationNotifications)": "WP04",
     "modules/auth/auth.composition.ts -> modules/orders/order.service.ts (runtime; import; guestOrderAccess)": "WP04",

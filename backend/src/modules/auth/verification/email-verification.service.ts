@@ -12,8 +12,8 @@ import type { RegistrationNotifications } from '../../notifications/notification
 import type { IdentityModels } from '../auth.model.js'
 import type { BrowserSecurity } from '../sessions/browser-security.service.js'
 import { consumeUserChallenge, ChallengeUnavailableError } from '../sessions/session.persistence.js'
-import { proofHash } from './proof.crypto.js'
-export function createEmailVerificationService(
+import { createProofCodec, proofHash } from './proof.crypto.js'
+function createEmailVerificationService(
   connection: Connection,
   models: IdentityModels,
   security: BrowserSecurity,
@@ -21,6 +21,7 @@ export function createEmailVerificationService(
   options: RecoveryOptions,
   clock: () => Date = () => new Date(),
 ) {
+  const encryption = createProofCodec(options.encryption)
   return {
     async request(raw: unknown, context: string, csrf: string) {
       const input = parseInput(emailVerificationInput, raw),
@@ -86,7 +87,7 @@ export function createEmailVerificationService(
             scopeRevisionAtIssue: revision,
             expiresAt,
             deliveryNotificationId: notificationId,
-            deliveryEnvelope: options.encryption.encrypt(proof, {
+            deliveryEnvelope: encryption.encrypt(proof, {
               id: id.toHexString(),
               userId: user._id.toHexString(),
               email: input.email,
@@ -147,3 +148,5 @@ export function createEmailVerificationService(
     },
   }
 }
+
+export { createEmailVerificationService }

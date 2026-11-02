@@ -1,6 +1,6 @@
 import type { Types } from 'mongoose'
 import type { IdentityModels } from '../auth.model.js'
-import { proofHash, type ProofEnvelope } from './proof.crypto.js'
+import { createProofCodec, proofHash, type ProofEnvelope } from './proof.crypto.js'
 import type { RecoveryOptions } from '../recovery/password-recovery.service.js'
 
 function createDelivery(
@@ -10,6 +10,7 @@ function createDelivery(
   purpose: 'password_reset' | 'email_change' | 'email_verify',
   kind: 'customer' | 'admin' = 'customer',
 ) {
+  const encryption = createProofCodec(options.encryption)
   if (
     new URL(options.storefrontOrigin).protocol !== 'https:' ||
     new URL(options.storefrontOrigin).origin !== options.storefrontOrigin
@@ -85,7 +86,7 @@ function createDelivery(
         ciphertext: Buffer.from(challenge.deliveryEnvelope.ciphertext),
         authTag: Buffer.from(challenge.deliveryEnvelope.authTag),
       }
-      const proof = options.encryption.decrypt(envelope, binding)
+      const proof = encryption.decrypt(envelope, binding)
       if (
         proofHash(proof, kind === 'admin' ? 'admin_password_reset' : purpose) !==
         challenge.secretHash
@@ -114,26 +115,34 @@ function createDelivery(
     },
   }
 }
-export const createResetDelivery = (
+const createResetDelivery = (
   models: IdentityModels,
   options: RecoveryOptions,
   clock: () => Date = () => new Date(),
 ) => createDelivery(models, options, clock, 'password_reset')
-export const createEmailChangeDelivery = (
+const createEmailChangeDelivery = (
   models: IdentityModels,
   options: RecoveryOptions,
   clock: () => Date = () => new Date(),
 ) => createDelivery(models, options, clock, 'email_change')
-export type ResetDelivery = ReturnType<typeof createResetDelivery>
+type ResetDelivery = ReturnType<typeof createResetDelivery>
 
-export const createAdminResetDelivery = (
+const createAdminResetDelivery = (
   models: IdentityModels,
   options: RecoveryOptions,
   clock: () => Date = () => new Date(),
 ) => createDelivery(models, options, clock, 'password_reset', 'admin')
 
-export const createEmailVerificationDelivery = (
+const createEmailVerificationDelivery = (
   models: IdentityModels,
   options: RecoveryOptions,
   clock: () => Date = () => new Date(),
 ) => createDelivery(models, options, clock, 'email_verify')
+
+export {
+  createResetDelivery,
+  createEmailChangeDelivery,
+  createAdminResetDelivery,
+  createEmailVerificationDelivery,
+}
+export type { ResetDelivery }

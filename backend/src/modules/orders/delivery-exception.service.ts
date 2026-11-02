@@ -1,3 +1,4 @@
+import type { DeliveryDispositionVerifier } from './order.public.js'
 import { createHash } from 'node:crypto'
 import { Types, type ClientSession, type Connection } from 'mongoose'
 import { z } from 'zod'
@@ -16,20 +17,12 @@ import { exceptionInput, exceptionResolution, exceptionView } from './delivery-e
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 const hash = (s: string) => createHash('sha256').update(s).digest('hex')
-export function deliveryExceptionService(
+function deliveryExceptionService(
   connection: Connection,
   admin: AdminAccountAccess,
   payment: ReturnType<typeof cancellationPaymentAccess>,
   restore: ReturnType<typeof recoveryReceiptService>,
-  verifyDisposition?: (
-    session: ClientSession,
-    input: {
-      orderId: string
-      exceptionId: string
-      shippedAt: Date
-      disposition: NonNullable<ReturnType<typeof exceptionResolution.parse>['disposition']>
-    },
-  ) => Promise<unknown>,
+  verifyDisposition?: DeliveryDispositionVerifier,
   refunds?: (
     session: ClientSession,
     input: {
@@ -320,3 +313,5 @@ export function deliveryExceptionService(
     },
   }
 }
+
+export { deliveryExceptionService }

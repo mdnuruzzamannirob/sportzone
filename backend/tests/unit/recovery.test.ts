@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
+  createProofCodec,
   createProofEncryption,
   proofHash,
   type ProofBinding,
@@ -38,6 +39,69 @@ const environment = () => ({
   AUTH_PROOF_KEYS_JSON: JSON.stringify(keys),
 })
 describe('reset proof encryption and explicit configuration', () => {
+  // Produced by the pre-refactor codec, not by the implementation under test.
+  const persisted: {
+    name: string
+    binding: ProofBinding
+    nonce: string
+    ciphertext: string
+    authTag: string
+  }[] = [
+    {
+      name: 'admin reset',
+      binding: { ...binding, audience: 'admin' },
+      nonce: '101b09e68041550dfa8dd26f',
+      ciphertext:
+        '868982427e7507bd65c6ab4297ca13898039fd77b3a07ecae9b30e865ced3749b5a3d2eeb18827dbc1ca46',
+      authTag: 'f6080d1f1d2f9629f8e1320188987add',
+    },
+    {
+      name: 'email change',
+      binding: { ...binding, purpose: 'email_change', targetEmail: 'updated@example.test' },
+      nonce: 'f6479efe82091d99db3855f9',
+      ciphertext:
+        '57a242be11bd0d67f65b37a1fb6425c17e2383aedd35d408cf22addc1c7126c9bafd3874893f0969f8ef61',
+      authTag: '00ebbb52c6fbab06bb0271369bce846f',
+    },
+    {
+      name: 'guest access',
+      binding: {
+        id: binding.id,
+        email: binding.email,
+        expiresAt: binding.expiresAt,
+        revision: binding.revision,
+        orderId: 'c'.repeat(24),
+        purpose: 'guest_order_access',
+      },
+      nonce: '7849402d963ee7d24bdce0ea',
+      ciphertext:
+        '438717af30b8980dfac8bd15b5f22eca649eb3d2041bf161df73a8ad869134814078e669c23931f29bd3b5',
+      authTag: '0f2c01c9243bd4fc5948901c9a6a706a',
+    },
+  ]
+  it.each(persisted)('opens persisted $name material through the configured keyring', (vector) => {
+    const key = Array.from({ length: 32 }, (_, index) => index.toString(16).padStart(2, '0')).join(
+      '',
+    )
+    const options = loadRecoveryOptions({
+      ...environment(),
+      AUTH_PROOF_ACTIVE_KEY_VERSION: 'legacy',
+      AUTH_PROOF_KEYS_JSON: JSON.stringify({ legacy: key }),
+    })
+    const codec = createProofCodec(options.encryption)
+    expect(
+      codec.decrypt(
+        {
+          algorithm: 'AES-256-GCM',
+          keyVersion: 'legacy',
+          nonce: Buffer.from(vector.nonce, 'hex'),
+          ciphertext: Buffer.from(vector.ciphertext, 'hex'),
+          authTag: Buffer.from(vector.authTag, 'hex'),
+        },
+        vector.binding,
+      ),
+    ).toBe('P'.repeat(43))
+  })
   it('round trips random proofs with fresh 96-bit nonces and 128-bit tags', () => {
     const first = encryption.encrypt(proof, binding),
       second = encryption.encrypt(proof, binding)

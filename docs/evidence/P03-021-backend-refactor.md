@@ -392,3 +392,81 @@ Executor/reviewer: Codex. Reviewed exact import signatures/removal ownership, th
 fixtures, composition/helper and inline-type bypasses, runtime-cycle denial, canonical-source parity,
 owning-doc consistency and actual diff. P03-025 completes WP01 under Tasks §2 only; next is WP02
 technical foundation/reuse. P03-022 and external/application/milestone acceptance remain unchanged.
+
+## P03-026 — WP02 technical foundation, 3 November 2026
+
+Scope: Backend Refactor Plan WP02; input revision `fbced280ce7cc0c060d019bbfeb56b513dd3e81b`
+plus preserved owner changes. Executor/reviewer: Codex. This is an existing-backend refactor,
+not feature activation or application-stage acceptance.
+
+### Ownership and reuse review
+
+- Existing `config/security.ts` now owns session/browser option validators and raw environment adapters.
+  Original auth loader/validator exports remain available for existing isolated callers. Validation,
+  error mapping, defaults, origins and cookies are preserved; services still validate typed options.
+- New `shared/crypto.ts` owns AES-256-GCM byte encryption, validated/captured keyrings and exact JSON
+  SHA-256. It knows no identity purpose, proof format, email, order or audience. Auth retains proof
+  validation, namespaced hashes, authenticated binding and sanitized decryption errors.
+- Configuration captures a technical keyring; six auth consumers wrap it with the owning proof codec.
+  Existing `createProofEncryption` retains encrypt/decrypt for isolated consumers. Its internal return
+  also exposes the technical keyring methods; no HTTP or persisted envelope changed.
+- Delivery configuration validates its owning rule schema and uses the shared digest. Normalized JSON
+  field order remains unchanged; the existing order helper retains its exported behavior.
+- New `orders/order.public.ts` defines the actually consumed disposition verifier contract, replacing
+  config's type dependency on the private service constructor. No runtime public barrel was introduced.
+- Reviewed existing transaction/external-effect guards, validation, pagination, errors/responses,
+  protected logging/files and job leases. Their existing responsibilities remain coherent; retained
+  them instead of creating parallel helpers, base services, repositories or speculative classes.
+- Touched source files use explicit named exports at the bottom. The two new source files above have
+  distinct consumers. No extra test file, dependency, collection, worker or operator command was added.
+
+Removed all five WP02 legacy import allowances; **352 remain** (351 import signatures and one type
+cycle) for their later owners. Boundary checks enforce this reduction without adding exemptions.
+Architecture §6.2 describes the concrete configuration/crypto ownership. API/Database/Operations
+contracts need no revision: routes, DTOs, keys, schemas, provider protocol and operational commands
+are unchanged. The existing recovery unit suite received three historical ciphertext vectors.
+
+### Observed verification
+
+Node v24.20.0/npm 11.19.0. Loopback-dependent tests ran outside the sandbox on isolated MongoDB
+8.0.16 with `MONGOMS_DISTRO=ubuntu-24.04`; no developer/production database or live provider was used.
+
+| Command/check | Result |
+| --- | --- |
+| `npm run typecheck --workspace=backend` | Passed |
+| `npm run build --workspace=backend` | Passed |
+| `npm run lint --workspace=backend` | Passed: 482 files |
+| `npm run lint:boundaries` | Passed: 429 source files, zero errors, 352 exact allowances |
+| `npm run api:check --workspace=backend` | Passed: all four artifacts fresh |
+| `npm run test:smoke --workspace=backend` | Passed: compiled invalid-config redaction, startup/live/restricted-ready/shutdown |
+| `npm run test:unit --workspace=backend -- <affected files below> --reporter=default --reporter=json --outputFile=../test-results/backend-refactor/wp02-unit.json` | Passed: 219 cases / 12 files |
+| `MONGOMS_DISTRO=ubuntu-24.04 npm exec --workspace=backend -- vitest run --config vitest.integration.config.ts --reporter=default --reporter=json --outputFile=../test-results/backend-refactor/wp02-integration.json <affected files below>` | Passed: 155 cases / 9 files |
+| Old/new compiled proof codecs | Passed: six bidirectional checks across admin reset, email change and guest binding; retained key and active-key rotation; unchanged envelope fields |
+| WP00 preservation fingerprints | Passed: all 59 model/persistence/API-artifact/backend-manifest files identical |
+
+Unit file arguments (under `backend/tests/unit/`): `sessions.test.ts`, `browser-security.test.ts`,
+`recovery.test.ts`, `email-change.test.ts`, `guest-access.test.ts`, `composition.test.ts`,
+`operations.test.ts`, `app.test.ts`, `operations-config.test.ts`, `order-operations-config.test.ts`,
+`delivery-deadline.test.ts`, `auth-rate-limit.test.ts`.
+Integration arguments (under `backend/tests/integration/`): `database.test.ts`, `sessions.test.ts`,
+`recovery.test.ts`, `guest-access.test.ts`, `email-change.test.ts`, `email-verification.test.ts`,
+`composition.test.ts`, `delivery-deadline.test.ts`, `admin-auth.test.ts`.
+
+The actual CLI arguments use the full `tests/unit/` or `tests/integration/` prefixes. Existing cases
+cover invalid configuration, tampering, identity/proof binding, concurrent/replayed auth operations,
+transaction safeguards, delivery normalization and real composition/worker configuration. Historical
+vectors were generated from the original codec using synthetic data, then consumed by the new codec;
+a separate one-off comparison verified both ciphertext directions without adding a repository tool.
+
+Artifacts: [unit results](../../test-results/backend-refactor/wp02-unit.json),
+[integration results](../../test-results/backend-refactor/wp02-integration.json),
+[proof compatibility](../../test-results/backend-refactor/wp02-proof-compatibility.json),
+[preservation fingerprints](../../test-results/backend-refactor/wp02-preservation.json).
+These local artifacts are ignored test output, not additional project documents.
+
+Final executor review checked the actual diff, retained exports, error mapping, normalized hash order,
+proof authenticated context and key rotation, private model ownership and absence of new external
+side effects. Final backend format, repository documentation/link lint and whitespace checks are
+recorded with this handoff. Full backend regression, frontend/browser suites, live providers,
+deployment and external qualification were Not Run for this scoped package. P03-026 completes WP02
+under Tasks §2; next is WP03 delivery pilot. P03-022 and stage/milestone acceptance remain unchanged.

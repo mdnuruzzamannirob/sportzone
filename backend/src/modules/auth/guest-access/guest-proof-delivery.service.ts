@@ -2,13 +2,14 @@ import type { Types } from 'mongoose'
 import type { IdentityModels } from '../auth.model.js'
 import type { GuestAccessOptions } from '../../../config/security.js'
 import type { guestOrderAccess } from '../../orders/order.service.js'
-import { proofHash, type ProofEnvelope } from '../verification/proof.crypto.js'
-export function guestProofDelivery(
+import { createProofCodec, proofHash, type ProofEnvelope } from '../verification/proof.crypto.js'
+function guestProofDelivery(
   models: IdentityModels,
   orders: ReturnType<typeof guestOrderAccess>,
   options: GuestAccessOptions,
   clock: () => Date = () => new Date(),
 ) {
+  const encryption = createProofCodec(options.encryption)
   if (
     new URL(options.storefrontOrigin).protocol !== 'https:' ||
     new URL(options.storefrontOrigin).origin !== options.storefrontOrigin
@@ -70,7 +71,7 @@ export function guestProofDelivery(
         ciphertext: Buffer.from(challenge.deliveryEnvelope.ciphertext),
         authTag: Buffer.from(challenge.deliveryEnvelope.authTag),
       }
-      const proof = options.encryption.decrypt(envelope, {
+      const proof = encryption.decrypt(envelope, {
         id: challenge._id.toHexString(),
         purpose: 'guest_order_access',
         orderId: challenge.orderId.toHexString(),
@@ -97,4 +98,7 @@ export function guestProofDelivery(
     },
   }
 }
-export type GuestProofDelivery = ReturnType<typeof guestProofDelivery>
+type GuestProofDelivery = ReturnType<typeof guestProofDelivery>
+
+export { guestProofDelivery }
+export type { GuestProofDelivery }
