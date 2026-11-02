@@ -7,7 +7,7 @@ function createDelivery(
   models: IdentityModels,
   options: RecoveryOptions,
   clock: () => Date,
-  purpose: 'password_reset' | 'email_change',
+  purpose: 'password_reset' | 'email_change' | 'email_verify',
   kind: 'customer' | 'admin' = 'customer',
 ) {
   if (
@@ -53,7 +53,7 @@ function createDelivery(
           _id: claim.challengeId,
           purpose,
           userId: claim.userId,
-          ...(purpose === 'password_reset'
+          ...(purpose !== 'email_change'
             ? { emailNormalized: claim.recipient }
             : { targetEmailNormalized: claim.recipient }),
           deliveryNotificationId: claim.id,
@@ -72,7 +72,11 @@ function createDelivery(
         expiresAt: challenge.expiresAt,
         revision: challenge.scopeRevisionAtIssue,
         ...(kind === 'admin' ? { audience: 'admin' as const } : {}),
-        ...(purpose === 'email_change' ? { purpose, targetEmail: claim.recipient } : {}),
+        ...(purpose === 'email_change'
+          ? { purpose, targetEmail: claim.recipient }
+          : purpose === 'email_verify'
+            ? { purpose }
+            : {}),
       }
       const envelope: ProofEnvelope = {
         algorithm: 'AES-256-GCM',
@@ -102,8 +106,10 @@ function createDelivery(
         subject:
           purpose === 'password_reset'
             ? 'Reset your SportZone password'
-            : 'Verify your new SportZone email',
-        text: `${purpose === 'password_reset' ? 'Reset your password' : 'Verify your new email'} using this single-use link:\n${options.storefrontOrigin}${purpose === 'password_reset' ? '/reset-password' : '/account/email-change'}#token=${proof}\nThis link expires at ${challenge.expiresAt.toISOString()}. If you did not request it, ignore this email.`,
+            : purpose === 'email_verify'
+              ? 'Verify your SportZone email'
+              : 'Verify your new SportZone email',
+        text: `${purpose === 'password_reset' ? 'Reset your password' : purpose === 'email_verify' ? 'Verify your email' : 'Verify your new email'} using this single-use link:\n${options.storefrontOrigin}${purpose === 'password_reset' ? '/reset-password' : purpose === 'email_verify' ? '/verify-email' : '/account/email-change'}#token=${proof}\nThis link expires at ${challenge.expiresAt.toISOString()}. If you did not request it, ignore this email.`,
       }
     },
   }
@@ -125,3 +131,9 @@ export const createAdminResetDelivery = (
   options: RecoveryOptions,
   clock: () => Date = () => new Date(),
 ) => createDelivery(models, options, clock, 'password_reset', 'admin')
+
+export const createEmailVerificationDelivery = (
+  models: IdentityModels,
+  options: RecoveryOptions,
+  clock: () => Date = () => new Date(),
+) => createDelivery(models, options, clock, 'email_verify')

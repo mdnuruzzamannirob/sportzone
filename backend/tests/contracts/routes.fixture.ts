@@ -1,3 +1,7 @@
+import { refundRequestRoutes } from '../../src/modules/refunds/refund-request.routes.js'
+import { paymentMatchingRoutes } from '../../src/modules/payments/payment-matching.routes.js'
+import { emailVerificationRoutes } from '../../src/modules/auth/verification/email-verification.routes.js'
+import { couponPreviewRoutes } from '../../src/modules/promotions/coupon-preview.routes.js'
 import { supportRoutes } from '../../src/modules/support/support.routes.js'
 import { reportRoutes } from '../../src/modules/reports/report.routes.js'
 import { refundHistoryRoutes } from '../../src/modules/refunds/refund-history.routes.js'
@@ -211,6 +215,9 @@ export function localOnlyRouters() {
 }
 export function registeredRouter() {
   return createApiRouter({ isReady: async () => true }, [
+    couponPreviewRoutes({ preview: unused }, security),
+    refundRequestRoutes({ request: unused }, security, guard, 'https://shop.example.test'),
+    paymentMatchingRoutes({ link: unused, allocate: unused }, security, sessions),
     paymentCallbackRoutes(
       { malformed: unused, receive: unused, redirect: () => 'https://shop.example.test/result' },
       guard,
@@ -238,6 +245,7 @@ export function registeredRouter() {
       guard,
     ),
     customerRoutes(credentials, security, sessions),
+    emailVerificationRoutes({ request: unused, confirm: unused }, security, guard),
     adminRoutes(credentials, recovery, security, sessions),
     recoveryRoutes(recovery, security, sessions),
     emailChangeRoutes(recovery, security, sessions),
@@ -293,8 +301,15 @@ export function registeredRouter() {
     ),
     settingsPublicRoutes({ contact: unused }, { publicPolicy: unused }, []),
     inventoryAdminRoutes({ list: unused, history: unused, adjust: unused }, security, sessions),
-    paymentMonitorRoutes({ list: unused, detail: unused, reconcile: unused }, security, sessions),
-    orderReadRoutes({ list: unused, read: unused }, security),
+    paymentMonitorRoutes(
+      { list: unused, detail: unused, reconcile: unused, receipts: unused },
+      security,
+      sessions,
+    ),
+    orderReadRoutes(
+      { list: unused, read: unused, deliveryEvents: unused, payments: unused },
+      security,
+    ),
     paymentRiskRoutes({ decide: unused }, security, sessions),
     couponAdminRoutes(
       { create: unused, update: unused, deactivate: unused, list: unused, history: unused },

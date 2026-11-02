@@ -130,13 +130,13 @@ retain their own approver, environment, artifacts, blockers and explicit decisio
 
 ## 3. Project progress dashboard
 
-The register contains 210 tasks across twelve requirement groups. Application-stage execution is defined in §1; accepted IDs and evidence remain historical. Update totals when tasks are added or statuses change.
+The register contains 211 tasks across twelve requirement groups. Application-stage execution is defined in §1; accepted IDs and evidence remain historical. Update totals when tasks are added or statuses change.
 
 | Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |    Done | Deferred |
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | ------: | -------: |
 | 01 — Requirements Finalization and Planning   |      24 |           0 |     0 |           0 |       0 |         0 |      24 |        0 |
 | 02 — UI/UX Design                             |      17 |           1 |     0 |           0 |       0 |         0 |      16 |        0 |
-| 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |      21 |        0 |
+| 03 — Authentication and Core Backend          |      23 |           0 |     0 |           1 |       0 |         0 |      22 |        0 |
 | 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       0 |         0 |      12 |        1 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           8 |     0 |           0 |       0 |         0 |       9 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |           6 |     0 |           0 |       0 |         0 |      16 |        0 |
@@ -146,7 +146,7 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |       0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |       0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |       0 |        0 |
-| **Total**                                     | **210** |      **75** | **0** |       **0** |   **0** |     **0** | **133** |    **2** |
+| **Total**                                     | **211** |      **74** | **0** |       **1** |   **0** |     **0** | **134** |    **2** |
 
 ## 4. Milestone tracker
 
@@ -531,7 +531,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
 
 ### Phase 03 — Authentication and core backend
 
-**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 03. **Associated gate:** M1. **Tasks:** 22.
+**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 03. **Associated gate:** M1. **Tasks:** 23.
 
 - [x] **P03-001 — Bootstrap modular Express API and shared middleware**\
   **Status:** `Done` · **Area:** Backend/core · **Owner:** Codex\
@@ -705,10 +705,19 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Status:** `In Progress` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-01–FR-34 backend surfaces; Plan §3.1; Testing §15\
-  **Depends on:** `P04-003`, `P09-011`, `P05-004`, `P06-016`, `P07-016`, `P08-004`, `P04-017`, `P04-019`, `P05-014`, `P05-015`, `P05-016`, `P09-014`, `P09-016`, `P09-017`, `P09-018`\
+  **Depends on:** `P03-023`, `P04-003`, `P09-011`, `P05-004`, `P06-016`, `P07-016`, `P08-004`, `P04-017`, `P04-019`, `P05-014`, `P05-015`, `P05-016`, `P09-014`, `P09-016`, `P09-017`, `P09-018`\
   **Deliverable:** Consolidate all customer/admin API, validator/index, transaction/race/replay, job/recovery, secret/privacy and required real provider evidence against one backend revision. Reconcile generated OpenAPI/Postman and operator procedures.\
   **Acceptance:** All backend-stage dependencies and applicable provider gates pass; no frontend server/build/test or browser engine is required. API scenario tests prove guest/customer/admin workflows. Independent owner acceptance permits admin stage; M1–M8 product gates remain separate.\
-  **Evidence:** [Package G verification and remaining external/stage acceptance](./evidence/P09-011-staging-runtime.md#package-g-verification). Consolidated backend regression and scoped repair performed; P04-003/P09-011 and independent owner closeout remain outstanding.
+  **Evidence:** [Whole-backend implementation audit and gap closure](./evidence/P03-022-backend-completion.md); [Package G verification and remaining external/stage acceptance](./evidence/P09-011-staging-runtime.md#package-g-verification). Technical development and consolidated backend verification completed: all 170 operations have real runtime registration and owning generated contracts; 811 unit, 186 contract and 1,258 integration cases Passed. There are no unfinished ordinary Backend-stage development tasks. P04-003/P09-011 and independent owner closeout remain outstanding.
+
+- [x] **P03-023 — Complete remaining specified backend API surfaces**\
+  **Status:** `Done` · **Area:** Backend · **Owner:** Codex\
+  **Stage:** `Backend`\
+  **Sources:** FR-01/09/12/16/18/19/29; API §§9/11/12/13/18.3; Database §§8–9\
+  **Depends on:** `P03-021`, `P05-006`, `P06-014`, `P07-012`, `P08-008`\
+  **Deliverable:** Close the nine specified API operations absent from runtime at whole-backend audit; preserve current canonical identity, collection, order and refund authorities. Include real HTTP composition, strict DTO/auth/CSRF/idempotency/CAS, transaction/race/recovery tests and generated artifacts.\
+  **Acceptance:** All nine operations implemented with positive/negative evidence; receipt linking/allocation cannot create unverified money or bypass source/refund caps; customer refund submission cannot approve or dispatch payout; email verification is purpose-bound, expiring, replay-safe and delivered through the protected outbox. No stub, fake admin or unsafe gate bypass.\
+  **Evidence:** [All nine gap closures, runtime inventory and verification](./evidence/P03-022-backend-completion.md). Final backend CI Passed: 811 unit, 186 contract, 1,258 integration and 83 tooling cases; build/smoke/types/lint/boundaries/format, security and documentation checks Passed. Executor diff review completed under Tasks §2. All existing local-only DTOs are also promoted under P03-022 technical verification; stage/external acceptance remains separate.
 
 ### Phase 04 — Product catalog and inventory
 
@@ -2643,3 +2652,6 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 
 
 **2 November 2026 — Package G hosting constraint reaffirmed:** Owner answered “Free-only সীমা বজায় রাখো”. Retain the existing free-only limit; no billable hosting is authorized. P04-003/P09-011 remain Deferred and P03-022 remains In Progress; technical verification and real hosted acceptance remain separately recorded in the [Package G evidence](./evidence/P09-011-staging-runtime.md#package-g-verification). No task counts or acceptance gates changed.
+
+
+**2 November 2026 — Whole-backend implementation audit:** Input revision `5fbf8e1` consolidated backend CI Passed (811 unit, 112 contract, 1,234 integration), but full specification/runtime comparison found nine absent operations. P03-023 In Progress → Done after implementing all nine with owning contracts and actual HTTP/domain tests; all 170 specified operations now have runtime registration. Final backend CI Passed: 811 unit, 186 contract, 1,258 integration and 83 tooling cases, build/smoke/static checks; security/documentation checks Passed and executor diff review completed. P03-022 also promotes all 63 existing local-only DTOs: generated contracts now cover all 170 operations. Final post-promotion backend CI Passed (811 unit, 186 contract, 1,258 integration, 83 tooling); actual stage/external acceptance remains separate. [Inventory, observed checks and acceptance boundaries](./evidence/P03-022-backend-completion.md). Overall: 211 tasks, 134 Done, 74 Not Started, 1 In Progress, 2 Deferred. No backend-stage or milestone acceptance is self-approved.

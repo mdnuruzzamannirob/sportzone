@@ -1246,6 +1246,19 @@ All FR rows below refer to planned scenario outlines and/or suite aliases, not e
 identifiers during implementation. `FX-*` identifies fixtures; `OPV-*` identifies operation coverage slots. Scenario
 outlines define expected behavior; link them to executable tests and run evidence before reporting results.
 
+Backend stage composition is additionally checked by
+`backend/tests/integration/backend-completion.test.ts`: run the actual local/test bootstrap
+entry points on one isolated replica set, compose all optional domain modules in one application,
+check duplicate/missing registrations against active and local-only inventories, enforce current
+customer/admin isolation and assemble the qualified notification worker without external effects.
+This test proves composition, not real provider or deployed acceptance. Checkout integration also
+covers scoped delivery/payment history and coupon preview pricing/CSRF/no-capacity-write behavior.
+The whole specification inventory must be audited separately: route parity against implemented
+registries alone cannot establish that every specified operation has been implemented.
+Commerce/review HTTP scenarios use a test-only response interceptor to validate actual successful
+payloads/statuses/pagination against those same owning DTOs. A mismatch fails the scenario without
+logging payload contents. Schema-compilation tests alone do not prove real response parity.
+
 ### 16.3 Nonfunctional and source coverage
 
 | PRD source                                   | Test focus                             | Mandatory evidence                                                    |

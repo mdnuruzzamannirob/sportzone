@@ -1,11 +1,32 @@
+import { localDomainOperations } from './local-domain-registry.js'
+import {
+  customerRefundRequestInput,
+  customerRefundRequestResult,
+} from '../src/modules/refunds/refund-request.schema.js'
+import {
+  receiptLinkInput,
+  collectionAllocationInput,
+  linkedReceipt,
+  collectionSummary,
+  matchingId,
+} from '../src/modules/payments/payment-matching.schema.js'
+import {
+  emailVerificationInput,
+  emailVerificationConfirmation,
+} from '../src/modules/auth/verification/email-verification.schema.js'
+import { couponPreviewInput, couponPreviewResult } from '../src/modules/promotions/coupon.schema.js'
 import {
   orderReadQuery,
   orderReadSummary,
   customerOrderDetail,
+  customerDeliveryEvents,
+  customerPaymentHistory,
   orderStatusView,
 } from '../src/modules/orders/order-read.schema.js'
 import {
   paymentMonitorQuery,
+  providerReceipt,
+  providerReceiptQuery,
   paymentMonitorPage,
   paymentMonitorList,
   paymentMonitorDetail,
@@ -182,6 +203,8 @@ export type Operation = {
   access:
     | 'public'
     | 'public_csrf'
+    | 'customer_or_context'
+    | 'customer_guest_or_context'
     | 'customer'
     | 'admin'
     | 'monitor'
@@ -208,6 +231,8 @@ export type Operation = {
 }
 const empty = z.strictObject({})
 const runtimeInputs: Record<string, z.ZodType> = {
+  'POST /auth/email-verifications': emailVerificationInput,
+  'POST /auth/email-verifications/confirm': emailVerificationConfirmation,
   'POST /auth/register': registrationInput,
   'POST /auth/login': loginInput,
   'POST /admin/auth/login': loginInput,
@@ -224,6 +249,8 @@ const runtimeInputs: Record<string, z.ZodType> = {
   'POST /me/deletion-requests': deletionInput,
 }
 const identityActivation = (path: string) => {
+  if (path.startsWith('/auth/email-verifications'))
+    return 'CUSTOMER_AUTH_ENABLED and EMAIL_VERIFICATION_ENABLED with protected proof delivery configuration'
   if (path.endsWith('/auth/csrf'))
     return 'CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest selection additionally requires GUEST_ACCESS_ENABLED and a verified guest session'
   if (path.startsWith('/admin/'))
@@ -233,23 +260,102 @@ const identityActivation = (path: string) => {
   if (path.includes('email-changes')) return 'CUSTOMER_AUTH_ENABLED and EMAIL_CHANGE_ENABLED'
   return 'CUSTOMER_AUTH_ENABLED'
 }
-const identities: Operation[] = identity.operations
-  .filter((op) => !op.path.startsWith('/auth/email-verifications'))
-  .map((op) => ({
-    ...op,
-    request: runtimeInputs[`${op.method} ${op.path}`] ?? op.request,
-    activation: identityActivation(op.path),
-    query: op.path.endsWith('/auth/csrf')
-      ? z.strictObject({
-          sessionKind: (op.namespace === 'admin'
-            ? z.literal('context')
-            : z.enum(['context', 'customer', 'guest'])
-          ).optional(),
-        })
-      : op.query,
-  }))
+const identities: Operation[] = identity.operations.map((op) => ({
+  ...op,
+  request: runtimeInputs[`${op.method} ${op.path}`] ?? op.request,
+  activation: identityActivation(op.path),
+  query: op.path.endsWith('/auth/csrf')
+    ? z.strictObject({
+        sessionKind: (op.namespace === 'admin'
+          ? z.literal('context')
+          : z.enum(['context', 'customer', 'guest'])
+        ).optional(),
+      })
+    : op.query,
+}))
 
 export const operations: readonly Operation[] = [
+  ...localDomainOperations,
+  {
+    method: 'POST',
+    path: '/orders/{orderId}/refund-requests',
+    namespace: 'storefront',
+    access: 'customer_or_guest',
+    params: paymentInitiationParams,
+    query: empty,
+    request: customerRefundRequestInput,
+    response: customerRefundRequestResult,
+    status: 200,
+    csrf: true,
+    idempotency: true,
+    replay:
+      'Exact body/key; canonical source/unit reservations prevent new-key duplicates; no approval or payout',
+    activation:
+      'CUSTOMER_AUTH_ENABLED with REFUND_OPERATIONS_ENABLED and RETURN_OPERATIONS_ENABLED; local/test only',
+  },
+  {
+    method: 'POST',
+    path: '/admin/provider-receipts/{intakeId}/link',
+    namespace: 'admin',
+    access: 'admin',
+    params: z.strictObject({ intakeId: matchingId }),
+    query: empty,
+    request: receiptLinkInput,
+    response: linkedReceipt,
+    status: 200,
+    csrf: true,
+    idempotency: true,
+    replay: 'Exact source identity and payload; no second collection on replay',
+    activation:
+      'ADMIN_AUTH_ENABLED; local/test only; protected PAYMENT_MATCHING_EVIDENCE_FILE authority required',
+  },
+  {
+    method: 'POST',
+    path: '/admin/payment-collections/{collectionId}/allocate',
+    namespace: 'admin',
+    access: 'admin',
+    params: z.strictObject({ collectionId: matchingId }),
+    query: empty,
+    request: collectionAllocationInput,
+    response: collectionSummary,
+    status: 200,
+    csrf: true,
+    idempotency: true,
+    ifMatch: true,
+    etag: true,
+    replay:
+      'Original If-Match and payload bind the key; source face amounts and existing refund floors preserved',
+    activation:
+      'ADMIN_AUTH_ENABLED; local/test only; protected PAYMENT_MATCHING_EVIDENCE_FILE authority required',
+  },
+  {
+    method: 'GET',
+    path: '/admin/provider-receipts',
+    namespace: 'admin',
+    access: 'admin',
+    params: empty,
+    query: providerReceiptQuery,
+    response: z.array(providerReceipt),
+    status: 200,
+    paginated: true,
+    csrf: false,
+    replay: 'Read-only redacted independently verified intake history',
+    activation: 'ADMIN_AUTH_ENABLED; local/test only; reviewed payment-record persistence',
+  },
+  {
+    method: 'POST',
+    path: '/coupons/preview',
+    access: 'customer_or_context',
+    namespace: 'storefront',
+    params: empty,
+    query: empty,
+    request: couponPreviewInput,
+    response: couponPreviewResult,
+    status: 200,
+    csrf: true,
+    replay: 'Read-only pricing advisory; no coupon capacity reserved',
+    activation: 'CUSTOMER_AUTH_ENABLED; local/test only; customer session or guest browser context',
+  },
   ...identities,
   {
     method: 'GET',
@@ -430,6 +536,22 @@ export const operations: readonly Operation[] = [
     activation:
       'CUSTOMER_ORDER_READ_ENABLED plus customer auth; guest proof requires GUEST_ACCESS_ENABLED; local/test only',
   },
+  ...[
+    { path: '/orders/{orderId}/delivery-events', response: customerDeliveryEvents },
+    { path: '/orders/{orderId}/payments', response: customerPaymentHistory },
+  ].map((op) => ({
+    ...op,
+    method: 'GET',
+    namespace: 'storefront' as const,
+    access: 'customer_or_guest' as const,
+    params: paymentInitiationParams,
+    query: empty,
+    status: 200,
+    csrf: false,
+    replay: 'Read-only owned projection; no funding or fulfillment mutation',
+    activation:
+      'CUSTOMER_ORDER_READ_ENABLED with current customer/exact guest scope; local/test only',
+  })),
   {
     method: 'GET',
     path: '/orders/{orderId}/status',

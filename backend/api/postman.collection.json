@@ -6,6 +6,51 @@
   },
   "item": [
     {
+      "name": "get_admin_audit_logs",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/audit-logs",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "targetType",
+              "value": "{{targetType}}",
+              "disabled": true
+            },
+            {
+              "key": "targetId",
+              "value": "{{targetId}}",
+              "disabled": true
+            },
+            {
+              "key": "from",
+              "value": "{{from}}",
+              "disabled": true
+            },
+            {
+              "key": "to",
+              "value": "{{to}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_audit_logs. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
       "name": "get_admin_auth_csrf",
       "description": "Activation: CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest selection additionally requires GUEST_ACCESS_ENABLED and a verified guest session. Replay: read. No automatic mutation retry.",
       "request": {
@@ -189,6 +234,76 @@
       "response": []
     },
     {
+      "name": "get_admin_cancellation_requests",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/cancellation-requests",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "status",
+              "value": "{{status}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_cancellation_requests. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_cancellation_requests_requestId_decision",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/cancellation-requests/{{requestId}}/decision",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_cancellation_requests_requestId_decision. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_cancellation_requests_requestId_decisionBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
       "name": "get_admin_categories",
       "description": "Activation: ADMIN_AUTH_ENABLED; reviewed category indexes and audit persistence. Image writes additionally require explicit verified media composition; no provider activation implied.. Replay: Revision CAS for edits/deactivation; guarded ancestry and transactional image references/audit. No automatic mutation retry.",
       "request": {
@@ -325,6 +440,323 @@
         "body": {
           "mode": "raw",
           "raw": "{{post_admin_categories_categoryId_deactivateBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_claims",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/claims",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "claimType",
+              "value": "{{claimType}}",
+              "disabled": true
+            },
+            {
+              "key": "status",
+              "value": "{{status}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_claims. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_claims_claimId",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/claims/{{claimId}}",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_claims_claimId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_claims_claimId_complete",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/claims/{{claimId}}/complete",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_claims_claimId_complete. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_claims_claimId_completeBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_claims_claimId_evidence_assetId",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/claims/{{claimId}}/evidence/{{assetId}}",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_claims_claimId_evidence_assetId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_claims_claimId_inspection",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/claims/{{claimId}}/inspection",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_claims_claimId_inspection. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_claims_claimId_inspectionBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_claims_claimId_receipt",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/claims/{{claimId}}/receipt",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_claims_claimId_receipt. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_claims_claimId_receiptBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_claims_claimId_review",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/claims/{{claimId}}/review",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_claims_claimId_review. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_claims_claimId_reviewBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_complaints",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/complaints",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "status",
+              "value": "{{status}}",
+              "disabled": true
+            },
+            {
+              "key": "orderId",
+              "value": "{{orderId}}",
+              "disabled": true
+            },
+            {
+              "key": "q",
+              "value": "{{q}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_complaints. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_complaints_complaintId",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/complaints/{{complaintId}}",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_complaints_complaintId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_complaints_complaintId_resolve",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/complaints/{{complaintId}}/resolve",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_complaints_complaintId_resolve. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_complaints_complaintId_resolveBody}}",
           "options": {
             "raw": {
               "language": "json"
@@ -502,6 +934,329 @@
         },
         "header": [],
         "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; reviewed promotion and audit persistence bootstrap required. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_coupons_couponId_redemptions. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_customers",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/customers",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "q",
+              "value": "{{q}}",
+              "disabled": true
+            },
+            {
+              "key": "status",
+              "value": "{{status}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_customers. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_customers_customerId",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/customers/{{customerId}}",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_customers_customerId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_customers_customerId_claims",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/customers/{{customerId}}/claims",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "claimType",
+              "value": "{{claimType}}",
+              "disabled": true
+            },
+            {
+              "key": "status",
+              "value": "{{status}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_customers_customerId_claims. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_customers_customerId_deletion_decisions",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/customers/{{customerId}}/deletion-decisions",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_customers_customerId_deletion_decisions. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_customers_customerId_deletion_decisionsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_customers_customerId_deletion_request",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/customers/{{customerId}}/deletion-request",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_customers_customerId_deletion_request. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_customers_customerId_orders",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/customers/{{customerId}}/orders",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "status",
+              "value": "{{status}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_customers_customerId_orders. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_customers_customerId_refunds",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/customers/{{customerId}}/refunds",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "status",
+              "value": "{{status}}",
+              "disabled": true
+            },
+            {
+              "key": "classification",
+              "value": "{{classification}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_customers_customerId_refunds. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_customers_customerId_status_decisions",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/customers/{{customerId}}/status-decisions",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_customers_customerId_status_decisions. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_customers_customerId_status_decisionsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_dashboard",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/dashboard",
+          "query": [
+            {
+              "key": "from",
+              "value": "{{from}}",
+              "disabled": true
+            },
+            {
+              "key": "to",
+              "value": "{{to}}",
+              "disabled": true
+            },
+            {
+              "key": "asOf",
+              "value": "{{asOf}}",
+              "disabled": true
+            },
+            {
+              "key": "groupBy",
+              "value": "{{groupBy}}",
+              "disabled": true
+            },
+            {
+              "key": "classification",
+              "value": "{{classification}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_dashboard. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_delivery_exceptions_exceptionId_resolve",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/delivery-exceptions/{{exceptionId}}/resolve",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_delivery_exceptions_exceptionId_resolve. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_delivery_exceptions_exceptionId_resolveBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
       },
       "response": []
     },
@@ -976,6 +1731,308 @@
       "response": []
     },
     {
+      "name": "get_admin_notifications",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/notifications",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "status",
+              "value": "{{status}}",
+              "disabled": true
+            },
+            {
+              "key": "eventType",
+              "value": "{{eventType}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_notifications. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_notifications_notificationId_retry",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/notifications/{{notificationId}}/retry",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_notifications_notificationId_retry. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_notifications_notificationId_retryBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_operational_exceptions",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/operational-exceptions",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "kind",
+              "value": "{{kind}}",
+              "disabled": false
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_operational_exceptions. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_orders",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/orders",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "orderNumber",
+              "value": "{{orderNumber}}",
+              "disabled": true
+            },
+            {
+              "key": "customerId",
+              "value": "{{customerId}}",
+              "disabled": true
+            },
+            {
+              "key": "fulfillmentStatus",
+              "value": "{{fulfillmentStatus}}",
+              "disabled": true
+            },
+            {
+              "key": "paymentStatus",
+              "value": "{{paymentStatus}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_orders. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_orders_orderId",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/orders/{{orderId}}",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_orders_orderId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_orders_orderId_delivery_exceptions",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/orders/{{orderId}}/delivery-exceptions",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_orders_orderId_delivery_exceptions. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_orders_orderId_delivery_exceptions",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/orders/{{orderId}}/delivery-exceptions",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_orders_orderId_delivery_exceptions. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_orders_orderId_delivery_exceptionsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_orders_orderId_fulfillment_transitions",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/orders/{{orderId}}/fulfillment-transitions",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_orders_orderId_fulfillment_transitions. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_orders_orderId_fulfillment_transitionsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_payment_collections_collectionId_allocate",
+      "description": "Activation: ADMIN_AUTH_ENABLED; local/test only; protected PAYMENT_MATCHING_EVIDENCE_FILE authority required. Replay: Original If-Match and payload bind the key; source face amounts and existing refund floors preserved. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/payment-collections/{{collectionId}}/allocate",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{ifMatch}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; local/test only; protected PAYMENT_MATCHING_EVIDENCE_FILE authority required. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_payment_collections_collectionId_allocate. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_payment_collections_collectionId_allocateBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
       "name": "get_admin_payments",
       "description": "Activation: ADMIN_AUTH_ENABLED; local/test only pending deployed qualification. Replay: Read only current authorized monitoring projection. No automatic mutation retry.",
       "request": {
@@ -1057,6 +2114,46 @@
         },
         "header": [],
         "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; local/test only pending deployed qualification. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_payments_paymentId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_payments_paymentId_cod_collections",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/payments/{{paymentId}}/cod-collections",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_payments_paymentId_cod_collections. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_payments_paymentId_cod_collectionsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
       },
       "response": []
     },
@@ -1332,6 +2429,525 @@
         "body": {
           "mode": "raw",
           "raw": "{{post_admin_products_productId_variantsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_provider_receipts",
+      "description": "Activation: ADMIN_AUTH_ENABLED; local/test only; reviewed payment-record persistence. Replay: Read-only redacted independently verified intake history. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/provider-receipts",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "matchingStatus",
+              "value": "{{matchingStatus}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; local/test only; reviewed payment-record persistence. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_provider_receipts. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_provider_receipts_intakeId_link",
+      "description": "Activation: ADMIN_AUTH_ENABLED; local/test only; protected PAYMENT_MATCHING_EVIDENCE_FILE authority required. Replay: Exact source identity and payload; no second collection on replay. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/provider-receipts/{{intakeId}}/link",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: ADMIN_AUTH_ENABLED; local/test only; protected PAYMENT_MATCHING_EVIDENCE_FILE authority required. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_provider_receipts_intakeId_link. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_provider_receipts_intakeId_linkBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_refund_groups",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/refund-groups",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_refund_groups. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_refund_groupsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_refunds",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/refunds",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "status",
+              "value": "{{status}}",
+              "disabled": true
+            },
+            {
+              "key": "classification",
+              "value": "{{classification}}",
+              "disabled": true
+            },
+            {
+              "key": "sourceCollectionId",
+              "value": "{{sourceCollectionId}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_refunds. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_refunds_refundId",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/refunds/{{refundId}}",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_refunds_refundId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_refunds_refundId_manual_confirmations",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/refunds/{{refundId}}/manual-confirmations",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_refunds_refundId_manual_confirmations. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_refunds_refundId_manual_confirmationsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_refunds_refundId_payout_attempts",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/refunds/{{refundId}}/payout-attempts",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_refunds_refundId_payout_attempts. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_refunds_refundId_payout_attemptsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_refunds_refundId_reconcile",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/refunds/{{refundId}}/reconcile",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_refunds_refundId_reconcile. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_refunds_refundId_reconcileBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_refunds_refundId_review",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/refunds/{{refundId}}/review",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_refunds_refundId_review. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_refunds_refundId_reviewBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_reports_collections",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/reports/collections",
+          "query": [
+            {
+              "key": "from",
+              "value": "{{from}}",
+              "disabled": true
+            },
+            {
+              "key": "to",
+              "value": "{{to}}",
+              "disabled": true
+            },
+            {
+              "key": "asOf",
+              "value": "{{asOf}}",
+              "disabled": true
+            },
+            {
+              "key": "groupBy",
+              "value": "{{groupBy}}",
+              "disabled": true
+            },
+            {
+              "key": "classification",
+              "value": "{{classification}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_reports_collections. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_reports_refunds",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/reports/refunds",
+          "query": [
+            {
+              "key": "from",
+              "value": "{{from}}",
+              "disabled": true
+            },
+            {
+              "key": "to",
+              "value": "{{to}}",
+              "disabled": true
+            },
+            {
+              "key": "asOf",
+              "value": "{{asOf}}",
+              "disabled": true
+            },
+            {
+              "key": "groupBy",
+              "value": "{{groupBy}}",
+              "disabled": true
+            },
+            {
+              "key": "classification",
+              "value": "{{classification}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_reports_refunds. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_reports_sales",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/reports/sales",
+          "query": [
+            {
+              "key": "from",
+              "value": "{{from}}",
+              "disabled": true
+            },
+            {
+              "key": "to",
+              "value": "{{to}}",
+              "disabled": true
+            },
+            {
+              "key": "asOf",
+              "value": "{{asOf}}",
+              "disabled": true
+            },
+            {
+              "key": "groupBy",
+              "value": "{{groupBy}}",
+              "disabled": true
+            },
+            {
+              "key": "classification",
+              "value": "{{classification}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_reports_sales. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_admin_reviews",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/admin/reviews",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "status",
+              "value": "{{status}}",
+              "disabled": true
+            },
+            {
+              "key": "productId",
+              "value": "{{productId}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_admin_reviews. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_admin_reviews_reviewId_moderation",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/admin/reviews/{{reviewId}}/moderation",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{adminOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{adminCsrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_admin_reviews_reviewId_moderation. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_admin_reviews_reviewId_moderationBody}}",
           "options": {
             "raw": {
               "language": "json"
@@ -1710,6 +3326,78 @@
           }
         ],
         "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest selection additionally requires GUEST_ACCESS_ENABLED and a verified guest session. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_auth_csrf. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_auth_email_verifications",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED and EMAIL_VERIFICATION_ENABLED with protected proof delivery configuration. Replay: ordinary. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/auth/email-verifications",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED and EMAIL_VERIFICATION_ENABLED with protected proof delivery configuration. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_auth_email_verifications. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_auth_email_verificationsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_auth_email_verifications_confirm",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED and EMAIL_VERIFICATION_ENABLED with protected proof delivery configuration. Replay: single_use. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/auth/email-verifications/confirm",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED and EMAIL_VERIFICATION_ENABLED with protected proof delivery configuration. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_auth_email_verifications_confirm. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_auth_email_verifications_confirmBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
       },
       "response": []
     },
@@ -2162,6 +3850,92 @@
       "response": []
     },
     {
+      "name": "get_claims_claimId",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/claims/{{claimId}}",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_claims_claimId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_complaints",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/complaints",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_complaints. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_complaintsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_coupons_preview",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED; local/test only; customer session or guest browser context. Replay: Read-only pricing advisory; no coupon capacity reserved. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/coupons/preview",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED; local/test only; customer session or guest browser context. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_coupons_preview. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_coupons_previewBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
       "name": "get_delivery_areas",
       "description": "Activation: Reviewed delivery indexes and operator-configured currently active coverage; no quote/fulfillment guarantee.. Replay: Read-only bounded coverage projection; actual destination is revalidated at quote and submission.. No automatic mutation retry.",
       "request": {
@@ -2545,6 +4319,66 @@
       "response": []
     },
     {
+      "name": "get_me_claims",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/me/claims",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "claimType",
+              "value": "{{claimType}}",
+              "disabled": true
+            },
+            {
+              "key": "status",
+              "value": "{{status}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_me_claims. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_me_complaints",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/me/complaints",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_me_complaints. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
       "name": "post_me_deletion_requests",
       "description": "Activation: CUSTOMER_AUTH_ENABLED. Replay: ordinary. No automatic mutation retry.",
       "request": {
@@ -2689,6 +4523,66 @@
       "response": []
     },
     {
+      "name": "get_me_refunds",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/me/refunds",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            },
+            {
+              "key": "status",
+              "value": "{{status}}",
+              "disabled": true
+            },
+            {
+              "key": "classification",
+              "value": "{{classification}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_me_refunds. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_me_reviews",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/me/reviews",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_me_reviews. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
       "name": "get_orders",
       "description": "Activation: CUSTOMER_ORDER_READ_ENABLED plus customer auth; local/test only. Replay: Read-only stable own-order history; totals use immutable snapshots. No automatic mutation retry.",
       "request": {
@@ -2729,6 +4623,203 @@
         },
         "header": [],
         "description": "Implemented conditionally: CUSTOMER_ORDER_READ_ENABLED plus customer auth; guest proof requires GUEST_ACCESS_ENABLED; local/test only. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_orders_orderId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_orders_orderId_cancellation_requests",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/orders/{{orderId}}/cancellation-requests",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_orders_orderId_cancellation_requests. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_orders_orderId_cancellation_requests",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/orders/{{orderId}}/cancellation-requests",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_orders_orderId_cancellation_requests. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_orders_orderId_cancellation_requestsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_orders_orderId_claim_eligibility",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/orders/{{orderId}}/claim-eligibility",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_orders_orderId_claim_eligibility. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_orders_orderId_claims",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/orders/{{orderId}}/claims",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_orders_orderId_claims. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_orders_orderId_claims",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/orders/{{orderId}}/claims",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_orders_orderId_claims. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_orders_orderId_claimsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post_orders_orderId_claims_evidence_uploads",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/orders/{{orderId}}/claims/evidence-uploads",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_orders_orderId_claims_evidence_uploads. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": []
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_orders_orderId_claims_evidence_assetId",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/orders/{{orderId}}/claims/evidence/{{assetId}}",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_orders_orderId_claims_evidence_assetId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_orders_orderId_complaints",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/orders/{{orderId}}/complaints",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_orders_orderId_complaints. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_orders_orderId_delivery_events",
+      "description": "Activation: CUSTOMER_ORDER_READ_ENABLED with current customer/exact guest scope; local/test only. Replay: Read-only owned projection; no funding or fulfillment mutation. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/orders/{{orderId}}/delivery-events",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: CUSTOMER_ORDER_READ_ENABLED with current customer/exact guest scope; local/test only. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_orders_orderId_delivery_events. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
       },
       "response": []
     },
@@ -2783,6 +4874,74 @@
         },
         "header": [],
         "description": "Implemented conditionally: Same reviewed local/test initiation composition; authenticated order owner or proven guest order scope on every read.. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_orders_orderId_payment_attempts_attemptId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_orders_orderId_payments",
+      "description": "Activation: CUSTOMER_ORDER_READ_ENABLED with current customer/exact guest scope; local/test only. Replay: Read-only owned projection; no funding or fulfillment mutation. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/orders/{{orderId}}/payments",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: CUSTOMER_ORDER_READ_ENABLED with current customer/exact guest scope; local/test only. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_orders_orderId_payments. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_orders_orderId_refund_requests",
+      "description": "Activation: CUSTOMER_AUTH_ENABLED with REFUND_OPERATIONS_ENABLED and RETURN_OPERATIONS_ENABLED; local/test only. Replay: Exact body/key; canonical source/unit reservations prevent new-key duplicates; no approval or payout. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/orders/{{orderId}}/refund-requests",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: CUSTOMER_AUTH_ENABLED with REFUND_OPERATIONS_ENABLED and RETURN_OPERATIONS_ENABLED; local/test only. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_orders_orderId_refund_requests. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_orders_orderId_refund_requestsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_orders_orderId_refunds",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/orders/{{orderId}}/refunds",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_orders_orderId_refunds. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
       },
       "response": []
     },
@@ -2893,6 +5052,67 @@
       "response": []
     },
     {
+      "name": "get_products_productId_reviews",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/products/{{productId}}/reviews",
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}",
+              "disabled": true
+            },
+            {
+              "key": "pageSize",
+              "value": "{{pageSize}}",
+              "disabled": true
+            }
+          ]
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_products_productId_reviews. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "post_products_productId_reviews",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/products/{{productId}}/reviews",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation post_products_productId_reviews. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{post_products_productId_reviewsBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
       "name": "get_products_slug",
       "description": "Activation: Always registered; required indexes/visibility/media checks must pass. Replay: read. No automatic mutation retry.",
       "request": {
@@ -2903,6 +5123,56 @@
         },
         "header": [],
         "description": "Implemented conditionally: Always registered; required indexes/visibility/media checks must pass. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_products_slug. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "get_refunds_refundId",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Read-only current authorized projection. No automatic mutation retry.",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/refunds/{{refundId}}",
+          "query": []
+        },
+        "header": [],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation get_refunds_refundId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually."
+      },
+      "response": []
+    },
+    {
+      "name": "patch_reviews_reviewId",
+      "description": "Activation: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Replay: Use the owning command replay rules; never automatically retry financial mutations. No automatic mutation retry.",
+      "request": {
+        "method": "PATCH",
+        "url": {
+          "raw": "{{baseUrl}}/reviews/{{reviewId}}",
+          "query": []
+        },
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{storefrontOrigin}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Implemented conditionally: Explicit owning local/test composition with required current sessions, persistence and protected domain authorities; staging/production admission remains gated. Query parameters and exact request/response schemas are in the companion OpenAPI operation patch_reviews_reviewId. Cookies use Postman's jar; obtain the correct namespace CSRF bootstrap manually.",
+        "body": {
+          "mode": "raw",
+          "raw": "{{patch_reviews_reviewIdBody}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
       },
       "response": []
     },

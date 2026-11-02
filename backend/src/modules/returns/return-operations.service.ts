@@ -1,9 +1,8 @@
+import { claimReviewInput, claimReceiptInput, claimUploadInput } from './return.schema.js'
 import type { returnLifecycleService } from './return-lifecycle.service.js'
 import type { returnPhysicalService } from './return-physical.service.js'
-import { claimText } from './return.schema.js'
 import { createHash } from 'node:crypto'
 import { Types, type Connection } from 'mongoose'
-import { z } from 'zod'
 import type {
   orderScopeAccess,
   PaymentInitiationCredentials,
@@ -50,23 +49,7 @@ export function returnOperationsService(
   return {
     async review(token: string | undefined, id: string, raw: unknown, rawKey: unknown) {
       if (!dependencies.administration) throw new ApiError('SERVICE_UNAVAILABLE')
-      const input = parseInput(
-        z
-          .strictObject({
-            decision: z.enum(['approve', 'reject']),
-            approvedItems: z
-              .array(z.strictObject({ orderItemId: claimId, quantity: z.int().min(0).max(50) }))
-              .min(1)
-              .max(50)
-              .refine(
-                (items) => new Set(items.map((item) => item.orderItemId)).size === items.length,
-              )
-              .optional(),
-            reason: claimText,
-          })
-          .refine((input) => (input.decision === 'approve') === Boolean(input.approvedItems)),
-        raw,
-      )
+      const input = parseInput(claimReviewInput, raw)
       const key = parseInput(paymentInitiationKey, rawKey),
         current = await dependencies.history.adminDetail(token, id)
       if (current.status === 'requested') {
@@ -97,17 +80,7 @@ export function returnOperationsService(
     },
     async receive(token: string | undefined, id: string, raw: unknown, rawKey: unknown) {
       if (!dependencies.administration) throw new ApiError('SERVICE_UNAVAILABLE')
-      const input = parseInput(
-        z.strictObject({
-          receivedItems: z
-            .array(z.strictObject({ orderItemId: claimId, quantity: z.int().min(0).max(50) }))
-            .min(1)
-            .max(50),
-          receiptReference: claimText,
-          notes: claimText.optional(),
-        }),
-        raw,
-      )
+      const input = parseInput(claimReceiptInput, raw)
       const key = parseInput(paymentInitiationKey, rawKey),
         current = await dependencies.history.adminDetail(token, id)
       if (current.status === 'approved') {
@@ -238,17 +211,7 @@ export function returnOperationsService(
       file: MediaFile,
     ) {
       const orderId = parseInput(claimId, rawId),
-        scope = parseInput(
-          z.strictObject({
-            claimType: claimCommand.shape.claimType,
-            orderItemIds: z
-              .array(claimId)
-              .min(1)
-              .max(40)
-              .refine((ids) => new Set(ids).size === ids.length),
-          }),
-          raw,
-        )
+        scope = parseInput(claimUploadInput, raw)
       await dependencies.scope.owned(
         credentials,
         orderId,

@@ -52,6 +52,7 @@ export function refundRoutes(
       respond(
         res,
         await service.group(token(req.get('Cookie')), req.body, req.get('Idempotency-Key')),
+        201,
       )
     },
   )

@@ -1,3 +1,9 @@
+import { customerAdminView, customerPrivacyView } from './customer-admin.schema.js'
+import {
+  customerAdminQuery as querySchema,
+  customerStatusDecision as decisionSchema,
+  customerPrivacyDecision,
+} from './customer-admin.schema.js'
 import { createIdentityModels } from './auth.model.js'
 import type { Connection } from 'mongoose'
 import { z } from 'zod'
@@ -8,22 +14,9 @@ import { parseInput } from '../../shared/middleware/validate.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { createHash } from 'node:crypto'
 import { createAuditWriter, auditOperationReader } from '../audit/audit.service.js'
-import { paginationSchema, pageMeta } from '../../shared/pagination.js'
+import { pageMeta } from '../../shared/pagination.js'
 
 const id = z.string().regex(/^[a-f0-9]{24}$/)
-const querySchema = paginationSchema.safeExtend({
-  q: z.string().trim().min(1).max(120).optional(),
-  status: z.enum(['active', 'suspended', 'deletion_pending', 'deactivated']).optional(),
-})
-const decisionSchema = z.strictObject({
-  to: z.enum(['active', 'suspended']),
-  reason: z
-    .string()
-    .trim()
-    .min(1)
-    .max(2000)
-    .refine((v) => [...v].every((c) => c.charCodeAt(0) >= 32 && c.charCodeAt(0) !== 127)),
-})
 const keySchema = z
   .string()
   .min(1)
@@ -51,15 +44,16 @@ export function customerAdminService(
 ) {
   const audit = createAuditWriter(connection),
     lookup = auditOperationReader(connection)
-  const view = (row: InstanceType<IdentityModels['users']>) => ({
-    id: row._id.toHexString(),
-    name: row.name,
-    emailMasked: maskedEmail(row.emailNormalized),
-    ...(row.phone ? { phoneMasked: `***${row.phone.slice(-2)}` } : {}),
-    status: row.status,
-    emailVerified: !!row.emailVerifiedAt,
-    createdAt: row.createdAt.toISOString(),
-  })
+  const view = (row: InstanceType<IdentityModels['users']>) =>
+    customerAdminView.parse({
+      id: row._id.toHexString(),
+      name: row.name,
+      emailMasked: maskedEmail(row.emailNormalized),
+      ...(row.phone ? { phoneMasked: `***${row.phone.slice(-2)}` } : {}),
+      status: row.status,
+      emailVerified: !!row.emailVerifiedAt,
+      createdAt: row.createdAt.toISOString(),
+    })
   return {
     async history(
       token: string | undefined,
@@ -90,7 +84,7 @@ export function customerAdminService(
             .session(session)
           if (!row) throw new ApiError('NOT_FOUND')
           const request = row.deletionRequest
-          return {
+          return customerPrivacyView.parse({
             customerId,
             request: request
               ? {
@@ -102,20 +96,14 @@ export function customerAdminService(
                 }
               : null,
             retention: 'required_order_financial_audit_and_legal_hold_records_retained',
-          }
+          })
         },
         false,
       )
     },
     async decidePrivacy(token: string | undefined, rawId: unknown, raw: unknown, rawKey: unknown) {
       const customerId = parseInput(id, rawId),
-        input = parseInput(
-          z.strictObject({
-            decision: z.enum(['under_review', 'approve_deactivation', 'reject']),
-            reason: decisionSchema.shape.reason,
-          }),
-          raw,
-        ),
+        input = parseInput(customerPrivacyDecision, raw),
         key = parseInput(keySchema, rawKey),
         digest = createHash('sha256').update(JSON.stringify(input)).digest('hex')
       return admins.owned(token, async (actorId, session) => {

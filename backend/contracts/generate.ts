@@ -1,3 +1,4 @@
+import { localOperations } from './local-operations.js'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -67,6 +68,14 @@ const errorEnvelope = (codes = Object.keys(errorDefinitions)) =>
 function security(op: Operation) {
   if (op.access === 'monitor') return [{ MonitorBearer: [] }]
   if (op.access === 'public' || op.access === 'provider_callback') return []
+  if (op.access === 'customer_or_context' || op.access === 'customer_guest_or_context')
+    return [
+      { BrowserContext: [], CsrfHeader: [] },
+      { CustomerSession: [], CsrfHeader: [] },
+      ...(op.access === 'customer_guest_or_context'
+        ? [{ GuestOrderSession: [], CsrfHeader: [] }]
+        : []),
+    ]
   if (op.access === 'customer_or_guest')
     return [
       { CustomerSession: [], ...(op.csrf ? { CsrfHeader: [] } : {}) },
@@ -402,13 +411,15 @@ export function generateArtifacts(apiMarkdown: string) {
     },
     'planned-operations.json': {
       description:
-        'Specification inventory only; not a runnable collection or proof of availability. DTO/access/header definitions remain in docs/API.md until implemented in the registry.',
+        'Complete specification inventory reconciled with executable typed contracts. Activation conditions, including local/test-only admission, remain mandatory; generated contracts are not proof of deployed availability.',
       operations: documented.map((op) => ({
         ...op,
         operationId: operationId(op),
         implementation: operations.some((row) => row.method === op.method && row.path === op.path)
           ? 'implemented-conditional'
-          : 'planned',
+          : localOperations.some((row) => row.method === op.method && row.path === op.path)
+            ? 'implemented-local-only'
+            : 'planned',
       })),
     },
   }

@@ -1,3 +1,5 @@
+import { complaintAdminDetail } from './complaint.schema.js'
+import { complaintAdminQuery as adminQuery, complaintIntakeInput } from './complaint.schema.js'
 import type { checkoutAccess, CheckoutCredentials } from '../auth/checkout-access.service.js'
 import { randomUUID } from 'node:crypto'
 import { createHash } from 'node:crypto'
@@ -17,13 +19,7 @@ import { verifyComplaintPersistence } from './complaint.persistence.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { paginationSchema, pageMeta } from '../../shared/pagination.js'
-import { z } from 'zod'
 const hash = (s: string) => createHash('sha256').update(s).digest('hex')
-const adminQuery = paginationSchema.safeExtend({
-  status: z.enum(['open', 'in_review', 'resolved', 'closed']).optional(),
-  orderId: orderId.optional(),
-  q: z.string().trim().min(1).max(120).optional(),
-})
 export function complaintService(
   connection: Connection,
   scope: ReturnType<typeof orderScopeAccess>,
@@ -52,7 +48,7 @@ export function complaintService(
       raw: unknown,
       rawKey?: unknown,
     ) {
-      const input = parseInput(complaintInput.safeExtend({ orderId: orderId.optional() }), raw)
+      const input = parseInput(complaintIntakeInput, raw)
       const key = rawKey === undefined ? randomUUID() : parseInput(paymentInitiationKey, rawKey)
       const run = async () => {
         const save = async (
@@ -211,7 +207,7 @@ export function complaintService(
           await verifyComplaintPersistence(connection)
           const row = await model.findById(id).select('+issue +contact').session(session)
           if (!row) throw new ApiError('NOT_FOUND')
-          return {
+          return complaintAdminDetail.parse({
             ...view(row),
             contact: {
               name: row.contact.name,
@@ -223,7 +219,7 @@ export function complaintService(
               outcome: event.outcome,
             })),
             responsePolicy: { status: 'under_review' },
-          }
+          })
         },
         false,
       )

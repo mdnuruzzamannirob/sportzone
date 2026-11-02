@@ -15,6 +15,7 @@ import {
   reviewModeration,
   moderationKey,
   moderationReceipt,
+  reviewView,
 } from './review.schema.js'
 
 export type ReviewAudit = {
@@ -56,15 +57,16 @@ const digest = (row: HydratedDocument<ReviewRecord>) =>
       }),
     )
     .digest('hex')
-const dto = (row: HydratedDocument<ReviewRecord>) => ({
-  id: row._id.toHexString(),
-  productId: row.productId.toHexString(),
-  rating: row.rating,
-  comment: row.comment,
-  status: row.status,
-  createdAt: row.createdAt.toISOString(),
-  verifiedPurchase: true,
-})
+const dto = (row: HydratedDocument<ReviewRecord>) =>
+  reviewView.parse({
+    id: row._id.toHexString(),
+    productId: row.productId.toHexString(),
+    rating: row.rating,
+    comment: row.comment,
+    status: row.status,
+    createdAt: row.createdAt.toISOString(),
+    verifiedPurchase: true,
+  })
 export function createReviewService(
   connection: Connection,
   dependencies: Dependencies,

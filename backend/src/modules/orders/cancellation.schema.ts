@@ -1,3 +1,4 @@
+import { paginationSchema } from '../../shared/pagination.js'
 import { z } from 'zod'
 import { lifecycleText } from './order-lifecycle.schema.js'
 import { orderId } from './order.schema.js'
@@ -14,4 +15,7 @@ export const cancellationView = z.strictObject({
   reason: lifecycleText,
   requestedAt: z.iso.datetime(),
   reviewedAt: z.iso.datetime().optional(),
+})
+export const cancellationQuery = paginationSchema.safeExtend({
+  status: cancellationView.shape.status.optional(),
 })

@@ -1,6 +1,6 @@
-import { paginationSchema } from '../../shared/pagination.js'
+import { reportViews, operationalItem } from './report.schema.js'
+import { reportQuery as query, operationalQuery } from './report.schema.js'
 import type { ClientSession } from 'mongoose'
-import { z } from 'zod'
 import type { AdminAccountAccess } from '../auth/admin-account.service.js'
 import type { orderReportAccess } from '../orders/order.service.js'
 import type {
@@ -12,14 +12,6 @@ import type { catalogReportAccess } from '../catalog/products/product.service.js
 import { calculateFinancialReport } from './report-calculation.service.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { ApiError } from '../../shared/errors/app-error.js'
-const instant = z.union([z.iso.datetime({ offset: true }), z.iso.date()])
-const query = z.strictObject({
-  from: instant.optional(),
-  to: instant.optional(),
-  asOf: instant.optional(),
-  groupBy: z.enum(['day', 'month']).optional(),
-  classification: z.enum(['merchandise', 'payment_correction']).optional(),
-})
 const date = (s: string) => new Date(s.length === 10 ? `${s}T00:00:00+06:00` : s)
 const safeMoney = (n: number) => {
   if (!Number.isSafeInteger(n) || n < 0) throw new ApiError('SERVICE_UNAVAILABLE')
@@ -53,7 +45,7 @@ export function reportService(
         (input.classification && !['collections', 'refunds'].includes(kind))
       )
         throw new ApiError('BUSINESS_RULE_VIOLATION')
-      return admins.owned(
+      const result = await admins.owned(
         token,
         async (_actor, session) => {
           const asOf = clock(),
@@ -190,6 +182,7 @@ export function reportService(
         },
         false,
       )
+      return reportViews[kind].parse(result)
     },
   }
 }
@@ -206,13 +199,15 @@ export function operationalQueueService(
 ) {
   return {
     async list(token: string | undefined, raw: unknown) {
-      const input = parseInput(
-        paginationSchema.safeExtend({
-          kind: z.enum(['stock', 'payments', 'refunds', 'reconciliation']),
-        }),
-        raw,
+      const input = parseInput(operationalQuery, raw)
+      return admins.owned(
+        token,
+        async (_actor, session) => {
+          const result = await readers[input.kind](session, input)
+          return { ...result, items: operationalItem.array().parse(result.items) }
+        },
+        false,
       )
-      return admins.owned(token, (_actor, session) => readers[input.kind](session, input), false)
     },
   }
 }

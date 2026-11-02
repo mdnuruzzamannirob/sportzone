@@ -201,3 +201,36 @@ export function returnReportAccess(connection: Connection) {
       .session(session)
   }
 }
+
+// Customer request preparation exposes accepted quantities only, never private claim persistence.
+export function refundClaimSelectionAccess(connection: Connection) {
+  return async (
+    session: ClientSession,
+    orderId: string,
+    claimId: string,
+    kind: 'physical_return' | 'shortage',
+  ) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyReturnPersistence(connection)
+    const row = await returnModel(connection)
+      .findOne({ _id: claimId, orderId, claimType: kind })
+      .session(session)
+    if (
+      !row ||
+      (kind === 'physical_return'
+        ? !['inspected', 'completed'].includes(row.status)
+        : !['approved', 'completed'].includes(row.status))
+    )
+      throw new ApiError('BUSINESS_RULE_VIOLATION')
+    const items = row.items
+      .map((item) => ({
+        orderItemId: item.orderItemId.toHexString(),
+        quantity:
+          (kind === 'shortage' ? item.approvedUnitOrdinals : item.acceptedUnitOrdinals)?.length ??
+          0,
+      }))
+      .filter((item) => item.quantity > 0)
+    if (!items.length) throw new ApiError('BUSINESS_RULE_VIOLATION')
+    return items
+  }
+}

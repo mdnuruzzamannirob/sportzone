@@ -82,7 +82,13 @@ export function auditOperationReader(connection: Connection) {
       })
       .parse(raw)
     const row = await model.findOne(input).session(session)
-    return row ? { afterDigest: row.afterDigest, occurredAt: row.occurredAt } : undefined
+    return row
+      ? {
+          afterDigest: row.afterDigest,
+          occurredAt: row.occurredAt,
+          ...(row.beforeDigest ? { beforeDigest: row.beforeDigest } : {}),
+        }
+      : undefined
   }
 }
 

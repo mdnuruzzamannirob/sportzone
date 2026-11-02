@@ -17,6 +17,8 @@ import {
   orderReadSummary,
   orderStatusView,
   customerOrderDetail,
+  customerDeliveryEvents,
+  customerPaymentHistory,
 } from './order-read.schema.js'
 import { createDeliveryDeadlineService } from './delivery-deadline.service.js'
 import { pageMeta } from '../../shared/pagination.js'
@@ -257,6 +259,24 @@ export function orderReadService(
         },
         false,
       )
+    },
+    async deliveryEvents(credentials: PaymentInitiationCredentials, rawId: unknown) {
+      const full = customerOrderDetail.parse(await this.read(credentials, rawId))
+      return customerDeliveryEvents.parse({
+        status: full.fulfillmentStatus,
+        ...(full.deliveryEstimate ? { estimate: full.deliveryEstimate } : {}),
+        deadline: full.deliveryDeadline,
+        events: full.statusHistory,
+      })
+    },
+    async payments(credentials: PaymentInitiationCredentials, rawId: unknown) {
+      const id = parseInput(orderId, rawId)
+      return access.owned(credentials, id, async (principal, session) => {
+        await verifyOrderPersistence(connection)
+        if (!(await orders.exists(orderOwnerFilter(id, principal)).session(session)))
+          throw new ApiError('NOT_FOUND')
+        return customerPaymentHistory.parse(await payment.history(session, id))
+      })
     },
     async read(credentials: PaymentInitiationCredentials, rawId: unknown, statusOnly = false) {
       const id = parseInput(orderId, rawId)

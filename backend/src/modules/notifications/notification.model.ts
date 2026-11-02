@@ -26,6 +26,7 @@ const schema = new Schema(
         'registration',
         'password_reset',
         'email_change',
+        'email_verification',
         'order_received',
         'guest_order_access',
       ],

@@ -8,7 +8,10 @@ import { orderId } from './order.schema.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { respond } from '../../shared/responses.js'
 export function orderReadRoutes(
-  service: Pick<ReturnType<typeof orderReadService>, 'list' | 'read'>,
+  service: Pick<
+    ReturnType<typeof orderReadService>,
+    'list' | 'read' | 'deliveryEvents' | 'payments'
+  >,
   security: BrowserSecurity,
 ) {
   const router = Router(),
@@ -20,7 +23,13 @@ export function orderReadRoutes(
     customerToken: readSessionCookie(req.get('Cookie'), 'customer'),
     guestToken: readGuestCookie(req.get('Cookie')),
   })
-  for (const path of ['/orders', '/orders/:orderId', '/orders/:orderId/status'])
+  for (const path of [
+    '/orders',
+    '/orders/:orderId',
+    '/orders/:orderId/status',
+    '/orders/:orderId/delivery-events',
+    '/orders/:orderId/payments',
+  ])
     router.options(path, cors)
   router.get('/orders', cors, async (req, res) => {
     parseInput(z.undefined(), req.body)
@@ -40,6 +49,16 @@ export function orderReadRoutes(
       parseInput(z.strictObject({}), req.query)
       const params = parseInput(z.strictObject({ orderId }), req.params)
       respond(res, await service.read(credentials(req), params.orderId, status))
+    })
+  for (const [path, method] of [
+    ['/orders/:orderId/delivery-events', 'deliveryEvents'],
+    ['/orders/:orderId/payments', 'payments'],
+  ] as const)
+    router.get(path, cors, async (req, res) => {
+      parseInput(z.undefined(), req.body)
+      parseInput(z.strictObject({}), req.query)
+      const params = parseInput(z.strictObject({ orderId }), req.params)
+      respond(res, await service[method](credentials(req), params.orderId))
     })
   return router
 }

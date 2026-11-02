@@ -53,5 +53,19 @@ export function paymentMonitorRoutes(
       )
     },
   )
+  router.options('/admin/provider-receipts', security.cors('admin'))
+  router.get(
+    '/admin/provider-receipts',
+    security.cors('admin'),
+    http.require('admin'),
+    async (req, res) => {
+      parseInput(z.undefined(), req.body)
+      const result = await service.receipts(
+        readSessionCookie(req.get('Cookie'), 'admin'),
+        req.query,
+      )
+      respond(res, result.items, 200, result.pagination)
+    },
+  )
   return router
 }

@@ -640,6 +640,15 @@ Administrator credentials use only the listed `/admin/auth/login`, `/session`, `
 
 Admin reset uses the existing password_reset challenge purpose bound to the admin user, with an independent admin verifier domain, admin-bound AEAD and admin-password-reset-v1 delivery template. A customer-issued proof cannot become an admin proof after a role change. Confirmation consumes context/proof and updates password/security revisions/revokes admin sessions atomically; it grants no new session. Responses remain ambiguous about account existence. Admin recovery has independent TTL/cooldown/response-floor configuration and a fixed HTTPS ADMIN_ORIGIN reset link. ADMIN_AUTH_ENABLED defaults false, independently of CUSTOMER_AUTH_ENABLED; active admin configuration requires explicit session/context and ADMIN_PASSWORD_RESET policy plus protected proof keys. Existing shared-ingress/security audit/release gates remain separately owned.
 
+Initial email verification is explicitly admitted by `EMAIL_VERIFICATION_ENABLED` with customer auth
+and independent bounded proof policy/key/origin settings. Issuance consumes browser context and returns
+the same accepted response for unknown, administrative, suspended, verified and cooldown accounts.
+The worker decrypts only a current purpose/email/revision-bound encrypted envelope and sends a fragment
+link. Confirmation atomically consumes the exact expiring proof and marks the current customer email
+verified; it creates no session and accepts neither password-reset nor email-change proofs. Proofs,
+raw envelopes and encryption keys never appear in HTTP responses/logs. Email verification does not add
+a new login/purchase prerequisite beyond the existing PRD.
+
 ### 9.2 Verified guest access
 
 | Method | Path                       | Access                      | Request → response                                                                     |
@@ -850,6 +859,14 @@ mutations require Origin and session CSRF. Stock and cart state are never change
 | `PATCH` | `/reviews/{reviewId}`           | C owner          | `{rating?,comment?} → Review` (moderation reset when needed)                         | 10     |
 | `GET`   | `/me/reviews`                   | C                | `page?,pageSize? → Review[]`                                                         | 02, 10 |
 
+Coupon preview is advisory and creates no holds/redemptions. Its explicit local/test customer-auth
+composition accepts a current customer session or guest browser context with Origin/CSRF checks.
+`items` contains 1–40 distinct `{variantId,quantity}` selections (quantity 1–50); optional
+`deliveryArea` is `{districtKey,areaKey}`. Prices, availability and eligible scope come from canonical
+catalog/coupon data; a supplied delivery area is resolved through current coverage. No client amount
+is accepted. An unavailable/ineligible coupon returns `{eligible:false,discountPoisha:0,
+reasonCode:"COUPON_UNAVAILABLE"}`; missing persistence and invalid stock/coverage remain errors.
+
 Coupon preview **does not consume quota** or lock price/stock; final checkout evaluates current terms, overall and per-customer capacity, and one coupon per order.
 `code` is normalized case-insensitively, percentage uses integer basis points and line allocation from Database §§2.3, 8.1–8.3.
 A per-customer-limited coupon cannot be used by a guest even if a checkout email matches an account.
@@ -995,7 +1012,14 @@ hosted payment session.
 
 Send the `CheckoutSubmitInput` body with a separate `Idempotency-Key` header. Example identifiers, contact details, coupon and policy versions are illustrative; resolve actual values from the configured environment.
 
-`CUSTOMER_ORDER_READ_ENABLED` defaults false and requires customer auth in local/test. The three
+The same scoped read composition serves `/orders/{orderId}/delivery-events` and
+`/orders/{orderId}/payments`. Delivery events project the immutable fulfillment history and
+current derived deadline; payment history returns the current canonical payment summary plus
+at most the latest 50 attempts, ordered newest first. Attempt projections contain only the
+`PaymentAttemptPublic` allowlist, never gateway redirect/session, raw provider or matching evidence.
+Both reject unexpected query/body fields and recheck current customer/exact guest ownership.
+
+`CUSTOMER_ORDER_READ_ENABLED` defaults false and requires customer auth in local/test. The five
 read routes do not activate cancellation mutations, legal approval or an order lifecycle writer.
 OrderSummary matches Appendix D.2; detail omits internal review basis, identifiers/hashes and actor
 identities/reasons while retaining owned recipient/address, line amounts, public timing and consent.
@@ -1166,6 +1190,24 @@ confirmation. The existing merchant worker independently verifies provider outco
 proof timestamps are not rewritten to manufacture eligibility. Same key/body replays without another
 intent, changed body conflicts; concurrent equal commands converge. Risk decisions remain the existing
 audited API and cannot bypass funding/capacity. Staging/production activation remains separately gated.
+
+Supervised matching exposes the redacted paginated `/admin/provider-receipts` list under current
+admin authorization; filters are `matchingStatus?,page?,pageSize?` (maximum 100). Local/test linking
+and allocation additionally require a protected `PAYMENT_MATCHING_EVIDENCE_FILE` record binding the
+exact source proof/face amount, target order and requested action. Caller evidence references alone
+cannot establish ownership or cash. Linking preserves immutable verified provenance, initially places
+non-cancelled amounts in unassigned review, and classifies cancelled late receipts as corrections.
+A bound settled attempt may become verified-paid with its actual partial/excess disposition; this does
+not mark an incompletely funded order Paid. Risk review remains separate from financial receipt truth.
+
+Allocation requires both Idempotency-Key and original strong If-Match. Face amounts remain conserved;
+source/aggregate refund floors and order entitlement apply. This operation does not reduce merchandise
+funding without its separately required compensating order/capacity transition. Corrections receive
+canonical review intents, never automatic payouts. Replay returns current source state without another
+allocation; changed payload/original revision conflicts. `CollectionSummary` and admin payment-detail
+collection entries expose `revision`; allocation returns its strong ETag. Mutations reauthorize after
+protected evidence verification and commit classification/projection/audit together. Configuration,
+matching evidence, original provider references and raw receipts remain private.
 
 ### 12.2 Hosted initiation, retries and uncertain state
 
@@ -1431,14 +1473,25 @@ physical returns, normal request window is 7 calendar days after delivery **subj
 exceptions**; short delivery/missing-item claims use the non-physical `shortage` flow, with no invented return shipment or
 restock.
 
-**`refund-requests`** is an eligibility submission, **not a money transfer**. For an already-qualified basis (approved
-cancellation, inspected return, approved shortage, resolved delivery exception, or documented payment correction) **and
-verified source funds**, it creates or returns `requested` source-funded `refunds` obligations from Database §9.2. The
-backend deduplicates by qualifying basis, source capacity and protected unit/delivery entitlements, even if a caller
-changes idempotency keys. If eligibility or source funds do not yet exist, return `422 BUSINESS_RULE_VIOLATION` and direct
-the caller to the claim/cancellation workflow; **do not** invent a standalone `refundRequests` collection or an unfunded
-refund. Customers cannot select `sourceCollectionId`, refund amount, payout method or internal unit ordinals. A physical
-return must still be inspected before refund approval.
+**`refund-requests`** is an eligibility submission, not a money transfer or administrator approval.
+It accepts only `{basis,basisRefId?,reason}`; the basis reference is required except for payment correction.
+Current customer/exact guest ownership, Origin/CSRF and Idempotency-Key are mandatory. The response
+`{requestStatus:'recorded',refundGroupKey?}` acknowledges a durable request/reference, never a payout.
+For a qualified inspected physical return or approved shortage and verified source funds, create canonical
+`requested/not_reserved` obligations with exact source/unit amounts. No financial hold, approval time,
+notification of approval or payout-attempt identity is created by submission. Pending requests are counted
+in subsequent request planning, and exact unit coverage/natural identities deduplicate even changed keys;
+additional newly accepted units remain a separate auditable request. Original bodies bind command keys.
+Already provisioned cancellation, resolved-delivery-exception or payment-correction obligations are
+referenced after current qualification/ownership checks. Missing eligibility/funds returns
+`422 BUSINESS_RULE_VIOLATION`; no separate `refundRequests` collection or unfunded placeholder is created.
+
+Administrator review separately rechecks protected policy/consent, current verified source balances and
+unit/delivery caps, then atomically reserves capacity, records actual approval and creates the first
+provider-ready attempt. A competing reservation can make approval fail without changing the pending
+request or moving money. Rejection before approval changes only the request/audit state; it releases no
+unheld cash and creates no failed fictional attempt. Customers cannot select source, amount, payout
+method or unit ordinals. Claim inspection remains mandatory before physical-refund qualification.
 
 Claim operations use current customer/exact guest scope, strict Origin/CSRF and mandatory request
 keys. Identical keyed submission returns the current original claim; a changed body conflicts.
@@ -2307,6 +2360,21 @@ runtime request/DTO schemas. `npm run api:generate --workspace=backend` produces
 Postman 2.1 collection contain implemented capabilities with explicit activation conditions; planned
 operations remain a separate non-executable specification inventory. Explicit HEAD/OPTIONS transport
 behavior is distinguished from the business operation inventory.
+
+All specified business operations have owning typed request/response schemas in the executable
+registry, including the explicitly local/test-admitted domain operations assembled by
+`backend/contracts/local-domain-registry.ts`. Their activation conditions remain mandatory;
+generating a client contract does not admit a financial or operational feature into hosted startup.
+The independent registration inventory `backend/contracts/local-operations.ts`, actual router fixtures
+and full application composition detect missing/duplicate registrations. The specification inventory
+distinguishes implemented conditional capabilities from absent planned work; tests require every
+specified business operation to have a real runtime implementation and generated wire contract.
+
+Refund-group creation returns `201` as required by Appendix D.3, including natural replays which
+return the existing group without another reservation. Payment/refund mutations never gain automatic
+client retries from generated examples. Initial verification messages are identity proofs: admin
+notification retry excludes them, like password-reset/email-change/guest-access messages; users use
+the bounded purpose-specific issuance flow instead.
 
 `npm run api:check --workspace=backend` verifies artifact freshness without rewriting files.
 `npm run test:contract --workspace=backend` additionally verifies actual router registration, response/status

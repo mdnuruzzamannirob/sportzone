@@ -8,6 +8,13 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 2 November 2026 — Whole-backend implementation audit and API gap closure
+
+- Audited all 170 specified operations against runtime; identified nine missing surfaces despite earlier task completion records.
+- Implemented all nine missing operations: purpose-bound initial email verification, scoped delivery/payment histories, read-only coupon preview, protected receipt matching/allocation and customer refund submission. Added their owning typed contracts and regenerated OpenAPI/Postman.
+- Customer requests retain unapproved plans without financial/unit holds or attempts; protected approval atomically rechecks and reserves actual capacity. Closed cancellation/delivery obligations use separate post-closure qualification. Added the exact-predecessor notification validator migration and safe activation procedures.
+- Added all-170-operation runtime parity and complete application/worker/bootstrap verification. P03-023 tracks these gap closures; Promoted the 63 existing local-only operations to owning typed contracts, covering all 170 operations; actual HTTP scenarios validate response DTO/status/pagination parity. Corrected refund-group creation to specified HTTP 201 and excluded initial-verification identity proofs from admin resend. P03-022 retains real external/stage acceptance. No stage or external gate is self-approved.
+
 ## 2 November 2026 — Package G backend verification preparation
 
 - Added explicitly admitted, leased media maintenance with retention/legal-hold safeguards and restart/uncertain-delete regression; composed standalone local/test public media independently of returns.

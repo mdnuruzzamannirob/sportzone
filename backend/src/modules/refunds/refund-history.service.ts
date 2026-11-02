@@ -1,3 +1,4 @@
+import { refundHistoryQuery as query, refundHistoryView } from './refund-api.schema.js'
 import type { Connection, ClientSession } from 'mongoose'
 import { z } from 'zod'
 import type {
@@ -12,23 +13,9 @@ import { verifyRefundAttemptPersistence } from './refund-attempt.persistence.js'
 import { verifyCorrectionPersistence } from './refund.persistence.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
-import { pageMeta, paginationSchema } from '../../shared/pagination.js'
+import { pageMeta } from '../../shared/pagination.js'
 
 const id = z.string().regex(/^[a-f0-9]{24}$/)
-const query = paginationSchema.safeExtend({
-  status: z
-    .enum([
-      'requested',
-      'under_review',
-      'approved',
-      'processing',
-      'completed',
-      'failed',
-      'rejected',
-    ])
-    .optional(),
-  classification: z.enum(['merchandise', 'payment_correction']).optional(),
-})
 export function refundHistoryService(
   connection: Connection,
   scope: ReturnType<typeof orderScopeAccess>,
@@ -70,7 +57,7 @@ export function refundHistoryService(
     ]
     const seen = new Set<string>()
     // An allowlist deliberately excludes consent, actors, destinations, evidence and provider references.
-    return {
+    return refundHistoryView.parse({
       id: row._id.toHexString(),
       orderId: row.orderId.toHexString(),
       sourceCollectionId: row.sourceCollectionId.toHexString(),
@@ -112,7 +99,7 @@ export function refundHistoryService(
           return true
         })
         .slice(-40),
-    }
+    })
   }
   return {
     async forCustomer(session: ClientSession, userId: string, raw: unknown) {

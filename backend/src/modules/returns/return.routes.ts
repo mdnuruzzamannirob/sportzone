@@ -1,3 +1,4 @@
+import { claimInspectionInput, claimCompleteInput } from './return.schema.js'
 import { Router, type Request, type RequestHandler } from 'express'
 import { z } from 'zod'
 import { ApiError } from '../../shared/errors/app-error.js'
@@ -12,7 +13,7 @@ import type { returnHistoryService } from './return-history.service.js'
 import type { returnLifecycleService } from './return-lifecycle.service.js'
 import type { returnOperationsService } from './return-operations.service.js'
 import type { returnPhysicalService } from './return-physical.service.js'
-import { claimId, claimText } from './return.schema.js'
+import { claimId } from './return.schema.js'
 export function returnRoutes(
   operations: ReturnType<typeof returnOperationsService>,
   lifecycle: ReturnType<typeof returnLifecycleService>,
@@ -131,23 +132,7 @@ export function returnRoutes(
     http.require('admin'),
     async (req, res) => {
       emptyQuery(req)
-      const input = parseInput(
-        z.strictObject({
-          items: z
-            .array(
-              z.strictObject({
-                orderItemId: claimId,
-                acceptedQty: z.int().min(0).max(50),
-                resellableQty: z.int().min(0).max(50),
-                reason: claimText,
-              }),
-            )
-            .min(1)
-            .max(50),
-          notes: claimText.optional(),
-        }),
-        req.body,
-      )
+      const input = parseInput(claimInspectionInput, req.body)
       const id = claim(req)
       await physical.inspect(
         actor(req),
@@ -165,7 +150,7 @@ export function returnRoutes(
     http.require('admin'),
     async (req, res) => {
       emptyQuery(req)
-      const input = parseInput(z.strictObject({ reason: claimText.optional() }), req.body),
+      const input = parseInput(claimCompleteInput, req.body),
         id = claim(req)
       await lifecycle.transition(
         actor(req),

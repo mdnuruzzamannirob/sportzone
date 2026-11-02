@@ -1,3 +1,16 @@
+import {
+  refundRequestOrderAccess,
+  closedRefundRequestAccess,
+} from './modules/orders/order.service.js'
+import { refundRequestRoutes } from './modules/refunds/refund-request.routes.js'
+import { refundClaimSelectionAccess } from './modules/returns/return.service.js'
+import { paymentMatchingRoutes } from './modules/payments/payment-matching.routes.js'
+import {
+  paymentMatchingService,
+  protectedPaymentMatchingEvidence,
+} from './modules/payments/payment-matching.service.js'
+import { couponPreviewRoutes } from './modules/promotions/coupon-preview.routes.js'
+import { couponPreviewService } from './modules/promotions/coupon.service.js'
 import type { OperationsOptions } from './config/operations.js'
 import { reportService, operationalQueueService } from './modules/reports/report.service.js'
 import { reportRoutes } from './modules/reports/report.routes.js'
@@ -792,6 +805,11 @@ export function composeRefundOperationsRoutes(
   >,
   dependencies: RefundOperationsDependencies,
   clock: () => Date = () => new Date(),
+  requestOptions?: {
+    access: NonNullable<Parameters<typeof refundReservationService>[9]>
+    throttle: import('express').RequestHandler
+    origin: string
+  },
 ) {
   const options = structuredClone(refundOperationsOptions.parse(dependencies.options))
   if (dependencies.gateway && !/^[a-f0-9]{64}$/.test(dependencies.gateway.merchantAccountKey))
@@ -835,6 +853,7 @@ export function composeRefundOperationsRoutes(
     },
     clock,
     notify,
+    requestOptions?.access,
   )
   const dispatch = dependencies.gateway
     ? refundDispatchService(
@@ -848,7 +867,7 @@ export function composeRefundOperationsRoutes(
       )
     : undefined
   const recovery = composeRefundRecovery(connection, auth.adminAccounts, dependencies, clock)
-  return refundRoutes(
+  const router = refundRoutes(
     refundOperationsService(
       connection,
       auth.adminAccounts,
@@ -860,6 +879,16 @@ export function composeRefundOperationsRoutes(
     auth.security,
     auth.sessions,
   )
+  if (requestOptions)
+    router.use(
+      refundRequestRoutes(
+        reservation,
+        auth.security,
+        requestOptions.throttle,
+        requestOptions.origin,
+      ),
+    )
+  return router
 }
 
 export async function composeIdentityRoutes(
@@ -900,7 +929,26 @@ export async function composeIdentityRoutes(
   if (refunds) {
     if (!config.ADMIN_AUTH_ENABLED || !['local', 'test'].includes(config.APP_ENV))
       throw new ApiError('SERVICE_UNAVAILABLE')
-    auth.router.use(composeRefundOperationsRoutes(connection, auth, refunds))
+    auth.router.use(
+      composeRefundOperationsRoutes(
+        connection,
+        auth,
+        refunds,
+        undefined,
+        config.CUSTOMER_AUTH_ENABLED && returnOptions
+          ? {
+              access: {
+                ownedOrder: refundRequestOrderAccess(connection),
+                scope: orderScopeAccess(auth.customerAccounts, auth.sessions, auth.guestAccounts),
+                claimSelection: refundClaimSelectionAccess(connection),
+                qualifiedClosed: closedRefundRequestAccess(connection),
+              },
+              throttle: auth.throttle.middleware('customer', 'checkout'),
+              origin: config.STOREFRONT_ORIGIN,
+            }
+          : undefined,
+      ),
+    )
   }
   if (returnOptions) {
     if (
@@ -954,6 +1002,18 @@ export async function composeIdentityRoutes(
         auth.sessions,
       ),
     )
+  if (config.CUSTOMER_AUTH_ENABLED && ['local', 'test'].includes(config.APP_ENV))
+    auth.router.use(
+      couponPreviewRoutes(
+        couponPreviewService(
+          connection,
+          checkoutAccess(auth.customerAccounts, auth.security),
+          catalogCheckoutAccess(connection),
+          checkoutDeliveryAccess(connection),
+        ),
+        auth.security,
+      ),
+    )
   if (config.CUSTOMER_AUTH_ENABLED)
     auth.router.use(
       cartRoutes(
@@ -1002,6 +1062,21 @@ export async function composeIdentityRoutes(
       ),
     )
   if (config.ADMIN_AUTH_ENABLED && ['local', 'test'].includes(config.APP_ENV)) {
+    auth.router.use(
+      paymentMatchingRoutes(
+        paymentMatchingService(
+          connection,
+          auth.adminAccounts,
+          verifiedFundingOrderAccess(connection),
+          verifiedAllocationService(connection),
+          config.PAYMENT_MATCHING_EVIDENCE_FILE
+            ? protectedPaymentMatchingEvidence(config.PAYMENT_MATCHING_EVIDENCE_FILE)
+            : undefined,
+        ),
+        auth.security,
+        auth.sessions,
+      ),
+    )
     auth.router.use(
       paymentMonitorRoutes(
         paymentMonitorService(connection, auth.adminAccounts),
@@ -1398,5 +1473,6 @@ export async function composeNotificationWorker(
           refundNotificationProofAccess(connection, returnNotificationOrderAccess(connection)),
         )
       : undefined,
+    delivery.verify,
   )
 }

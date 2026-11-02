@@ -486,7 +486,40 @@ export function customerPaymentSummaryAccess(
       if (!result) throw new ApiError('SERVICE_UNAVAILABLE')
       return result
     },
-    { many, fundedAt: verifiedFullPaymentTimeAccess(connection, clock) },
+    {
+      many,
+      fundedAt: verifiedFullPaymentTimeAccess(connection, clock),
+      async history(session: ClientSession, orderId: string) {
+        if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+        try {
+          await verifyPaymentRecordPersistence(connection)
+        } catch {
+          throw new ApiError('SERVICE_UNAVAILABLE')
+        }
+        const payment = (await many(session, [orderId])).get(orderId)
+        if (!payment) throw new ApiError('SERVICE_UNAVAILABLE')
+        const rows = await paymentRecordModels(connection)
+          .attempts.find({ orderId })
+          .sort({ createdAt: -1, _id: -1 })
+          .limit(50)
+          .session(session)
+        return {
+          payment,
+          attempts: rows.map((row) => ({
+            id: row._id.toHexString(),
+            state: row.state,
+            expectedAmountPoisha: row.expectedAmountPoisha,
+            ...(row.verifiedReceiptAmountPoisha !== undefined
+              ? { verifiedReceiptAmountPoisha: row.verifiedReceiptAmountPoisha }
+              : {}),
+            amountDisposition: row.amountDisposition,
+            riskStatus: payment.riskStatus,
+            ...(row.expiresAt ? { expiresAt: row.expiresAt.toISOString() } : {}),
+            ...(row.lastCheckedAt ? { lastCheckedAt: row.lastCheckedAt.toISOString() } : {}),
+          })),
+        }
+      },
+    },
   )
 }
 

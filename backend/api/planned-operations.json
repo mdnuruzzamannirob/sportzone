@@ -1,5 +1,5 @@
 {
-  "description": "Specification inventory only; not a runnable collection or proof of availability. DTO/access/header definitions remain in docs/API.md until implemented in the registry.",
+  "description": "Complete specification inventory reconciled with executable typed contracts. Activation conditions, including local/test-only admission, remain mandatory; generated contracts are not proof of deployed availability.",
   "operations": [
     {
       "method": "GET",
@@ -41,14 +41,14 @@
       "path": "/auth/email-verifications",
       "success": "200",
       "operationId": "post_auth_email_verifications",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/auth/email-verifications/confirm",
       "success": "200",
       "operationId": "post_auth_email_verifications_confirm",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
@@ -251,7 +251,7 @@
       "path": "/products/{productId}/reviews",
       "success": "200",
       "operationId": "get_products_productId_reviews",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
@@ -321,28 +321,28 @@
       "path": "/coupons/preview",
       "success": "200",
       "operationId": "post_coupons_preview",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/products/{productId}/reviews",
       "success": "201",
       "operationId": "post_products_productId_reviews",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "PATCH",
       "path": "/reviews/{reviewId}",
       "success": "200",
       "operationId": "patch_reviews_reviewId",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/me/reviews",
       "success": "200",
       "operationId": "get_me_reviews",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
@@ -391,21 +391,21 @@
       "path": "/orders/{orderId}/cancellation-requests",
       "success": "201",
       "operationId": "post_orders_orderId_cancellation_requests",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/orders/{orderId}/cancellation-requests",
       "success": "200",
       "operationId": "get_orders_orderId_cancellation_requests",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/orders/{orderId}/delivery-events",
       "success": "200",
       "operationId": "get_orders_orderId_delivery_events",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
@@ -419,7 +419,7 @@
       "path": "/orders/{orderId}/payments",
       "success": "200",
       "operationId": "get_orders_orderId_payments",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
@@ -489,196 +489,196 @@
       "path": "/admin/payments/{paymentId}/cod-collections",
       "success": "200",
       "operationId": "post_admin_payments_paymentId_cod_collections",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/provider-receipts",
       "success": "200",
       "operationId": "get_admin_provider_receipts",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/provider-receipts/{intakeId}/link",
       "success": "200",
       "operationId": "post_admin_provider_receipts_intakeId_link",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/payment-collections/{collectionId}/allocate",
       "success": "200",
       "operationId": "post_admin_payment_collections_collectionId_allocate",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/orders/{orderId}/claims/evidence/{assetId}",
       "success": "200",
       "operationId": "get_orders_orderId_claims_evidence_assetId",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/claims/{claimId}/evidence/{assetId}",
       "success": "200",
       "operationId": "get_admin_claims_claimId_evidence_assetId",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/me/claims",
       "success": "200",
       "operationId": "get_me_claims",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/me/refunds",
       "success": "200",
       "operationId": "get_me_refunds",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/orders/{orderId}/claim-eligibility",
       "success": "200",
       "operationId": "get_orders_orderId_claim_eligibility",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/orders/{orderId}/claims",
       "success": "201",
       "operationId": "post_orders_orderId_claims",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/orders/{orderId}/claims",
       "success": "200",
       "operationId": "get_orders_orderId_claims",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/claims/{claimId}",
       "success": "200",
       "operationId": "get_claims_claimId",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/orders/{orderId}/refunds",
       "success": "200",
       "operationId": "get_orders_orderId_refunds",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/orders/{orderId}/refund-requests",
       "success": "200",
       "operationId": "post_orders_orderId_refund_requests",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/refunds/{refundId}",
       "success": "200",
       "operationId": "get_refunds_refundId",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/claims",
       "success": "200",
       "operationId": "get_admin_claims",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/claims/{claimId}",
       "success": "200",
       "operationId": "get_admin_claims_claimId",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/claims/{claimId}/review",
       "success": "200",
       "operationId": "post_admin_claims_claimId_review",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/claims/{claimId}/receipt",
       "success": "200",
       "operationId": "post_admin_claims_claimId_receipt",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/claims/{claimId}/inspection",
       "success": "200",
       "operationId": "post_admin_claims_claimId_inspection",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/claims/{claimId}/complete",
       "success": "200",
       "operationId": "post_admin_claims_claimId_complete",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/refunds",
       "success": "200",
       "operationId": "get_admin_refunds",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/refunds/{refundId}",
       "success": "200",
       "operationId": "get_admin_refunds_refundId",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/refund-groups",
       "success": "201",
       "operationId": "post_admin_refund_groups",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/refunds/{refundId}/review",
       "success": "200",
       "operationId": "post_admin_refunds_refundId_review",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/refunds/{refundId}/payout-attempts",
       "success": "200 / 202",
       "operationId": "post_admin_refunds_refundId_payout_attempts",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/refunds/{refundId}/reconcile",
       "success": "200 / 202",
       "operationId": "post_admin_refunds_refundId_reconcile",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/refunds/{refundId}/manual-confirmations",
       "success": "200",
       "operationId": "post_admin_refunds_refundId_manual_confirmations",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
@@ -790,133 +790,133 @@
       "path": "/admin/orders",
       "success": "200",
       "operationId": "get_admin_orders",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/orders/{orderId}",
       "success": "200",
       "operationId": "get_admin_orders_orderId",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/orders/{orderId}/fulfillment-transitions",
       "success": "200",
       "operationId": "post_admin_orders_orderId_fulfillment_transitions",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/cancellation-requests",
       "success": "200",
       "operationId": "get_admin_cancellation_requests",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/cancellation-requests/{requestId}/decision",
       "success": "200",
       "operationId": "post_admin_cancellation_requests_requestId_decision",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/orders/{orderId}/delivery-exceptions",
       "success": "200",
       "operationId": "get_admin_orders_orderId_delivery_exceptions",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/orders/{orderId}/delivery-exceptions",
       "success": "201",
       "operationId": "post_admin_orders_orderId_delivery_exceptions",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/delivery-exceptions/{exceptionId}/resolve",
       "success": "200",
       "operationId": "post_admin_delivery_exceptions_exceptionId_resolve",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/customers",
       "success": "200",
       "operationId": "get_admin_customers",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/customers/{customerId}",
       "success": "200",
       "operationId": "get_admin_customers_customerId",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/customers/{customerId}/orders",
       "success": "200",
       "operationId": "get_admin_customers_customerId_orders",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/customers/{customerId}/claims",
       "success": "200",
       "operationId": "get_admin_customers_customerId_claims",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/customers/{customerId}/refunds",
       "success": "200",
       "operationId": "get_admin_customers_customerId_refunds",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/customers/{customerId}/status-decisions",
       "success": "200",
       "operationId": "post_admin_customers_customerId_status_decisions",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/customers/{customerId}/deletion-request",
       "success": "200",
       "operationId": "get_admin_customers_customerId_deletion_request",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/customers/{customerId}/deletion-decisions",
       "success": "200",
       "operationId": "post_admin_customers_customerId_deletion_decisions",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/operational-exceptions",
       "success": "200",
       "operationId": "get_admin_operational_exceptions",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/reviews",
       "success": "200",
       "operationId": "get_admin_reviews",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/reviews/{reviewId}/moderation",
       "success": "200",
       "operationId": "post_admin_reviews_reviewId_moderation",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
@@ -1070,91 +1070,91 @@
       "path": "/admin/dashboard",
       "success": "200",
       "operationId": "get_admin_dashboard",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/reports/sales",
       "success": "200",
       "operationId": "get_admin_reports_sales",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/reports/collections",
       "success": "200",
       "operationId": "get_admin_reports_collections",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/reports/refunds",
       "success": "200",
       "operationId": "get_admin_reports_refunds",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/complaints",
       "success": "201",
       "operationId": "post_complaints",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/me/complaints",
       "success": "200",
       "operationId": "get_me_complaints",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/orders/{orderId}/complaints",
       "success": "200",
       "operationId": "get_orders_orderId_complaints",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/complaints/{complaintId}",
       "success": "200",
       "operationId": "get_admin_complaints_complaintId",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/complaints",
       "success": "200",
       "operationId": "get_admin_complaints",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/complaints/{complaintId}/resolve",
       "success": "200",
       "operationId": "post_admin_complaints_complaintId_resolve",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/audit-logs",
       "success": "200",
       "operationId": "get_admin_audit_logs",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "GET",
       "path": "/admin/notifications",
       "success": "200",
       "operationId": "get_admin_notifications",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
       "path": "/admin/notifications/{notificationId}/retry",
       "success": "200",
       "operationId": "post_admin_notifications_notificationId_retry",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "POST",
@@ -1168,7 +1168,7 @@
       "path": "/orders/{orderId}/claims/evidence-uploads",
       "success": "200",
       "operationId": "post_orders_orderId_claims_evidence_uploads",
-      "implementation": "planned"
+      "implementation": "implemented-conditional"
     },
     {
       "method": "DELETE",

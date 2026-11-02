@@ -1376,3 +1376,61 @@ export function stockExceptionQueueAccess(connection: Connection) {
     }
   }
 }
+
+// Closed-state qualification is separate from the pre-closure reservation snapshot.
+export function closedRefundRequestAccess(connection: Connection) {
+  const { orders } = orderModels(connection)
+  return async (
+    session: ClientSession,
+    orderId: string,
+    basis: 'cancellation' | 'delivery_exception',
+    reference: string,
+  ) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyOrderPersistence(connection)
+    const order = await orders
+      .findOne({ _id: orderId, fulfillmentStatus: 'cancelled', cancelledAt: { $type: 'date' } })
+      .session(session)
+    if (!order) throw new ApiError('STATE_CONFLICT')
+    if (basis === 'cancellation') {
+      await verifyCancellationPersistence(connection)
+      if (
+        !(await cancellationModel(connection)
+          .exists({ _id: reference, orderId, status: 'approved', reviewedAt: { $type: 'date' } })
+          .session(session))
+      )
+        throw new ApiError('STATE_CONFLICT')
+    } else {
+      await verifyDeliveryExceptionPersistence(connection)
+      if (
+        !(await deliveryExceptionModel(connection)
+          .exists({
+            _id: reference,
+            orderId,
+            type: 'final_non_delivery',
+            status: 'resolved',
+            resolvedAt: { $type: 'date' },
+            dispositionDigest: { $type: 'string' },
+          })
+          .session(session))
+      )
+        throw new ApiError('STATE_CONFLICT')
+    }
+  }
+}
+
+// Owning order fence for customer refund submissions; no contact or persistence escapes.
+export function refundRequestOrderAccess(connection: Connection) {
+  const { orders } = orderModels(connection)
+  return async (session: ClientSession, orderId: string) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyOrderPersistence(connection)
+    const row = await orders.findOneAndUpdate(
+      { _id: orderId, revision: { $lt: Number.MAX_SAFE_INTEGER } },
+      { $inc: { revision: 1 } },
+      { session, returnDocument: 'after' },
+    )
+    if (!row) throw new ApiError('NOT_FOUND')
+    return { ...(row.userId ? { customerId: row.userId.toHexString() } : {}) }
+  }
+}

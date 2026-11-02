@@ -1,3 +1,11 @@
+import {
+  refundAdminQuery as query,
+  refundAdminView,
+  refundAdminDetail,
+  refundReasonInput,
+  refundReviewInput,
+  refundPayoutInput,
+} from './refund-api.schema.js'
 import { refundStatusTimelineAccess } from '../audit/audit.service.js'
 import type { refundRecoveryService } from './refund-recovery.service.js'
 import { createHash } from 'node:crypto'
@@ -13,23 +21,9 @@ import { verifyCorrectionPersistence } from './refund.persistence.js'
 import { verifyRefundAttemptPersistence } from './refund-attempt.persistence.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { ApiError } from '../../shared/errors/app-error.js'
-import { paginationSchema, pageMeta } from '../../shared/pagination.js'
+import { pageMeta } from '../../shared/pagination.js'
 
 const id = z.string().regex(/^[a-f0-9]{24}$/)
-const status = z.enum([
-  'requested',
-  'under_review',
-  'approved',
-  'processing',
-  'completed',
-  'failed',
-  'rejected',
-])
-const query = paginationSchema.safeExtend({
-  status: status.optional(),
-  classification: z.enum(['merchandise', 'payment_correction']).optional(),
-  sourceCollectionId: id.optional(),
-})
 export function refundOperationsService(
   connection: Connection,
   admins: AdminAccountAccess,
@@ -50,7 +44,7 @@ export function refundOperationsService(
     }
   }
   function view(row: InstanceType<typeof refunds>) {
-    return {
+    return refundAdminView.parse({
       id: row._id.toHexString(),
       orderId: row.orderId.toHexString(),
       classification: row.classification,
@@ -94,7 +88,7 @@ export function refundOperationsService(
           ? { targetAt: row.timingSnapshot.targetAt.toISOString() }
           : {}),
       },
-    }
+    })
   }
   async function historyView(session: ClientSession, row: InstanceType<typeof refunds>) {
     const current = view(row),
@@ -127,7 +121,7 @@ export function refundOperationsService(
       .sort({ attemptNumber: -1 })
       .limit(50)
       .session(session)
-    return {
+    return refundAdminDetail.parse({
       ...(await historyView(session, row)),
       sourceCapacity: {
         allocatedPoisha: source.allocatedPoisha,
@@ -147,7 +141,7 @@ export function refundOperationsService(
         ...(attempt.refundRefId ? { refundRefId: attempt.refundRefId } : {}),
         ...(attempt.lastCheckedAt ? { lastCheckedAt: attempt.lastCheckedAt.toISOString() } : {}),
       })),
-    }
+    })
   }
   return {
     async list(token: string | undefined, raw: unknown) {
@@ -208,7 +202,7 @@ export function refundOperationsService(
     },
     async reconcile(token: string | undefined, rawId: unknown, raw: unknown, key: unknown) {
       if (!recovery) throw new ApiError('SERVICE_UNAVAILABLE')
-      const input = parseInput(z.strictObject({ reason: z.string().trim().min(1).max(2000) }), raw)
+      const input = parseInput(refundReasonInput, raw)
       return recovery.reconcile(
         token,
         parseInput(id, rawId),
@@ -228,17 +222,7 @@ export function refundOperationsService(
     },
     async review(token: string | undefined, rawId: unknown, raw: unknown, key: unknown) {
       if (!recovery) throw new ApiError('SERVICE_UNAVAILABLE')
-      const input = parseInput(
-          z.strictObject({
-            decision: z.enum(['approve', 'reject']),
-            reason: z.string().trim().min(1).max(2000),
-            method: z
-              .enum(['gateway', 'manual_bkash', 'manual_nagad', 'manual_rocket', 'manual_bank'])
-              .optional(),
-            consentEvidenceRef: z.string().min(1).max(256).optional(),
-          }),
-          raw,
-        ),
+      const input = parseInput(refundReviewInput, raw),
         refundId = parseInput(id, rawId),
         commandKey = parseInput(z.string().min(1).max(128), key)
       if (input.decision === 'reject')
@@ -272,19 +256,7 @@ export function refundOperationsService(
     },
     async payout(token: string | undefined, rawId: unknown, raw: unknown, key: unknown) {
       await admins.owned(token, async () => ready(), false)
-      const input = parseInput(
-        z.strictObject({
-          method: z.enum([
-            'gateway',
-            'manual_bkash',
-            'manual_nagad',
-            'manual_rocket',
-            'manual_bank',
-          ]),
-          reason: z.string().trim().min(1).max(2000),
-        }),
-        raw,
-      )
+      const input = parseInput(refundPayoutInput, raw)
       if (input.method === 'gateway' && !dispatch) throw new ApiError('SERVICE_UNAVAILABLE')
       if (recovery)
         await recovery.prepare(

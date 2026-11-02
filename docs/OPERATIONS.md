@@ -2229,6 +2229,22 @@ is assumed approved.
 | 8. Exception decisions        | Classify missing provider/local receipt, pending merchant validation, excess, incorrect mapping, duplicate COD, payout unknown, time-boundary difference or genuine unreconstructable cash proof                      | No arbitrary balancing entry; named owner and review deadline on every unresolved exception                       |
 | 9. Close or hold              | Reviewer confirms permitted variance thresholds **only if explicitly approved**, signs control totals, unresolved liabilities and restricted remediation. Material unaccepted difference blocks close                 | Signed, immutable report version, UTC time, source extracts and independent approval                              |
 
+Supervised receipt matching requires an operator-controlled `PAYMENT_MATCHING_EVIDENCE_FILE`;
+absence denies mutations. Its strict JSON shape is `{version:1,records:[...]}`. Each record contains
+`operation:'link'|'allocate'`, `targetId`, `orderId`, `amountPoisha`, original `evidenceDigest`,
+`matchingEvidenceRef` and `verifiedAt`; link may bind `attemptId`, while allocation binds all three
+`merchandisePoisha/correctionPoisha/unassignedPoisha` values. References must be unique for each
+operation/target, times must not be future, and the manifest is bounded to 1,000 records / 1 MB.
+Store it outside source control, restrict ownership/permissions and derive it from independently
+reviewed original matching/settlement evidence. A customer body or admin statement is not that evidence.
+The API verifies the protected artifact outside DB transactions, then reauthorizes and uses canonical
+CAS/audit writes. Exact accepted-key replay remains readable after retiring the original artifact.
+Review unassigned/risk queues after linking, obtain current collection revisions through admin payment
+detail and explicitly allocate with If-Match/idempotency. Never clear risk, change historical receipt
+facts or resend a provider payment/refund to make a queue disappear. Disable matching by removing the
+file reference for rollback, preserving source/projection/audit history. These HTTP mutations remain
+local/test-admitted; they do not authorize real production financial changes.
+
 **Required control totals (integer poisha; run separately for each relevant receipt/provider and period):**
 
 ```text
@@ -2375,6 +2391,17 @@ The configured worker additionally delivers eligible password-reset challenges a
 Key rotation: distribute the new active key plus still-needed old versions to all API/worker processes before switching issuance. Retain old versions only until outstanding envelopes expire or are invalidated and cleaned; never reuse key bytes or reset versions. Key loss blocks delivery, not hash-based confirmation of already received proofs. After a restore, disable recovery/worker first, revoke restored sessions/challenges through the reviewed incident process, reconcile uncertain email records, remove inactive envelopes and provision a new active key before reopening. Do not replay restored intents or downgrade validators destructively. Disabling recovery leaves authenticated password-change routes unavailable while recovery is disabled; retain sessions and business records and use a compatible rollback build. Live sender, deployed timing/ingress, secret-store custody and storefront reset-screen acceptance are separate gates.
 
 #### Verified email-change activation and recovery
+
+Initial email verification separately defaults off via `EMAIL_VERIFICATION_ENABLED=false`. Enabling
+requires customer authentication, the protected proof key ring and HTTPS storefront origin plus
+`EMAIL_VERIFICATION_TTL_SECONDS` (60–1800), `EMAIL_VERIFICATION_COOLDOWN_SECONDS` (60–3600) and
+`EMAIL_VERIFICATION_RESPONSE_FLOOR_MS` (100–5000). Size the floor above measured issuance latency.
+After building, explicitly run the existing local/test `migrate-notifications.mjs` command before
+admission; it accepts the exact refund-notification predecessor and refuses unknown drift. Supply
+matching activation/key/origin settings to the one-batch worker. Unknown/rejected/uncertain email
+outcomes retain the existing durable retry/reconciliation rules. Rollback disables admission and
+uses a compatible build while preserving pending intents/envelopes; do not downgrade the validator or
+erase new events to start an old binary. No live email or sender qualification is implied by a flag.
 
 EMAIL_CHANGE_ENABLED defaults false and requires CUSTOMER_AUTH_ENABLED plus the existing protected proof key ring and approved HTTPS storefront origin. Explicit EMAIL_CHANGE_TTL_SECONDS (60–1800), EMAIL_CHANGE_COOLDOWN_SECONDS (60–3600) and EMAIL_CHANGE_RESPONSE_FLOOR_MS (100–5000) are independent of password-reset policy. Size the floor above measured issuance latency and enforce shared ingress limits; local process limits are foundation protection. Password recovery may remain disabled while email change is enabled, and vice versa. The separate notification worker must use matching activation/key/origin settings; only enabled event types are claimed.
 

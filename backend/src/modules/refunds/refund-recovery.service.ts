@@ -1,4 +1,5 @@
 import { refundApproval } from './refund-reservation.schema.js'
+import { refundManualInput } from './refund-api.schema.js'
 import type { refundReservationService } from './refund-reservation.service.js'
 import { createHash } from 'node:crypto'
 import { Types, type ClientSession, type Connection } from 'mongoose'
@@ -421,6 +422,131 @@ export function refundRecoveryService(
       throw error
     }
   }
+  async function approveRequested(
+    session: ClientSession,
+    actorId: string,
+    r: InstanceType<typeof refunds>,
+    input: {
+      decision: 'approve'
+      reason: string
+      method?: string | undefined
+      consentEvidenceRef?: string | undefined
+    },
+    key: string,
+  ) {
+    if (!methodPolicy) throw new ApiError('SERVICE_UNAVAILABLE')
+    const approved = parseInput(
+      refundApproval,
+      await methodPolicy(session, {
+        orderId: r.orderId.toHexString(),
+        basis: r.basis,
+        ...(r.basisRefId ? { basisRefId: r.basisRefId.toHexString() } : {}),
+        actorId,
+        deliveryRequestedPoisha: r.deliveryAmountPoisha,
+      }),
+    )
+    if (
+      (approved.consentRequired && !approved.consentEvidenceRef) ||
+      (input.method && input.method !== approved.method) ||
+      (input.consentEvidenceRef && input.consentEvidenceRef !== approved.consentEvidenceRef) ||
+      (r.deliveryAmountPoisha > 0 && !approved.deliveryApproved)
+    )
+      throw new ApiError('BUSINESS_RULE_VIOLATION')
+    const now = clock()
+    if (!Number.isFinite(now.getTime()) || now < r.createdAt) throw new ApiError('STATE_CONFLICT')
+    const facts = await funding.list(session, r.orderId.toHexString(), r.classification),
+      source = facts.sources.find(
+        (s) => s.sourceCollectionId === r.sourceCollectionId.toHexString(),
+      )
+    if (
+      !source ||
+      (approved.method === 'gateway' && (source.provider !== 'sslcommerz' || !source.bankTranId))
+    )
+      throw new ApiError('BUSINESS_RULE_VIOLATION')
+    const snapshot = await units(session, {
+      orderId: r.orderId.toHexString(),
+      action: 'reserve',
+      items: r.items.map((item) => ({
+        orderItemId: item.orderItemId.toHexString(),
+        unitAmounts: item.unitAmounts.map((unit) => ({
+          ordinal: unit.ordinal,
+          amountPoisha: unit.amountPoisha,
+        })),
+      })),
+    })
+    await funding.reserve(session, {
+      orderId: r.orderId.toHexString(),
+      sourceCollectionId: r.sourceCollectionId.toHexString(),
+      classification: r.classification,
+      amountPoisha: r.amountPoisha,
+      deliveryAmountPoisha: r.deliveryAmountPoisha,
+      deliveryChargePoisha: snapshot.deliveryChargePoisha,
+    })
+    const attempt = new attempts({
+      refundId: r._id,
+      attemptNumber: 1,
+      idempotencyKey: hash(`refund-attempt:${r._id}:1`),
+      provider: approved.method === 'gateway' ? 'sslcommerz' : 'manual',
+      ...(approved.method === 'gateway'
+        ? {
+            originalBankTranId: source.bankTranId,
+            refundTransId: `szr_${hash(`${r._id}:1`).slice(0, 26)}`,
+          }
+        : {}),
+      amountPoisha: r.amountPoisha,
+      status: 'created',
+      initiatedAt: now,
+      revision: 0,
+      createdAt: now,
+      updatedAt: now,
+    })
+    await attempt.save({ session, timestamps: false })
+    const changed = await refunds.collection.updateOne(
+      { _id: r._id, revision: r.revision, status: 'requested', capacityStatus: 'not_reserved' },
+      {
+        $inc: { revision: 1 },
+        $set: {
+          status: 'approved',
+          capacityStatus: 'reserved',
+          approvedBy: new Types.ObjectId(actorId),
+          approvedAt: now,
+          updatedAt: now,
+          method: approved.method,
+          policyVersion: approved.policyVersion,
+          ...(approved.consentEvidenceRef
+            ? { consentEvidenceRef: approved.consentEvidenceRef }
+            : {}),
+          timingSnapshot: {
+            policyVersion: approved.policyVersion,
+            timezone: 'Asia/Dhaka',
+            targetBusinessDays: 7,
+            status: 'under_review',
+          },
+        },
+        ...(!approved.consentEvidenceRef ? { $unset: { consentEvidenceRef: 1 } } : {}),
+      },
+      { session },
+    )
+    if (changed.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
+    const operationKey = hash(`approve:${r._id}:${parseInput(keySchema, key)}`)
+    await audit(session, {
+      action: 'refund.review.approve',
+      targetType: 'refund',
+      targetId: r._id.toHexString(),
+      operationKey,
+      actorType: 'admin',
+      actorId,
+      afterDigest: hash(JSON.stringify(input)),
+      reason: input.reason,
+      occurredAt: now,
+    })
+    await event(session, r, 'approved', operationKey, now)
+    return {
+      status: 'approved' as const,
+      attemptState: attempt.status,
+      attemptId: attempt._id.toHexString(),
+    }
+  }
   return {
     reconcile: (token: string | undefined, refundId: string, reason: string, key: string) =>
       reconcile(refundId, { token }, undefined, reason, key),
@@ -445,6 +571,16 @@ export function refundRecoveryService(
         raw,
       )
       return admins.owned(token, async (actorId, session) => {
+        await ready()
+        const pending = await refunds
+          .findOne({
+            _id: parseInput(id, refundId),
+            status: 'requested',
+            capacityStatus: 'not_reserved',
+          })
+          .session(session)
+        if (pending) return approveRequested(session, actorId, pending, input, key)
+
         const { refund: r, attempt: a } = await read(session, parseInput(id, refundId))
         const operationKey = hash(`approve:${refundId}:${parseInput(keySchema, key)}`),
           digest = hash(JSON.stringify(input)),
@@ -542,10 +678,7 @@ export function refundRecoveryService(
       })
     },
     async confirmManual(token: string | undefined, refundId: string, raw: unknown, key: string) {
-      const input = parseInput(
-        z.strictObject({ transferReference: text, evidenceRef: text, reason: text }),
-        raw,
-      )
+      const input = parseInput(refundManualInput, raw)
       return reconcile(
         refundId,
         { token },
@@ -683,6 +816,75 @@ export function refundRecoveryService(
     },
     async reject(token: string | undefined, refundId: string, reason: string, key: string) {
       return admins.owned(token, async (actorId, session) => {
+        await ready()
+        const rejected = await refunds
+          .findOne({
+            _id: parseInput(id, refundId),
+            status: 'rejected',
+            capacityStatus: 'released',
+          })
+          .session(session)
+        if (rejected && !(await attempts.exists({ refundId: rejected._id }).session(session))) {
+          const operationKey = hash(`reject:${refundId}:${parseInput(keySchema, key)}`),
+            prior = await lookup(session, {
+              action: 'refund.review.reject',
+              targetType: 'refund',
+              targetId: refundId,
+              operationKey,
+            })
+          if (!prior) throw new ApiError('STATE_CONFLICT')
+          if (prior.afterDigest !== hash(parseInput(text, reason)))
+            throw new ApiError('IDEMPOTENCY_CONFLICT')
+          return {
+            status: 'rejected' as const,
+            attemptState: 'not_created' as const,
+            attemptId: undefined,
+          }
+        }
+
+        const pending = await refunds
+          .findOne({
+            _id: parseInput(id, refundId),
+            status: 'requested',
+            capacityStatus: 'not_reserved',
+          })
+          .session(session)
+        if (pending) {
+          const operationKey = hash(`reject:${refundId}:${parseInput(keySchema, key)}`),
+            now = clock()
+          const changed = await refunds.collection.updateOne(
+            {
+              _id: pending._id,
+              revision: pending.revision,
+              status: 'requested',
+              capacityStatus: 'not_reserved',
+            },
+            {
+              $set: { status: 'rejected', capacityStatus: 'released', updatedAt: now },
+              $inc: { revision: 1 },
+            },
+            { session },
+          )
+          if (changed.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
+          await audit(session, {
+            action: 'refund.review.reject',
+            targetType: 'refund',
+            targetId: refundId,
+            operationKey,
+            actorType: 'admin',
+            actorId,
+            afterDigest: hash(parseInput(text, reason)),
+            reason,
+            occurredAt: now,
+          })
+          await event(session, pending, 'rejected', operationKey, now)
+          return {
+            status: 'rejected' as const,
+            attemptState: 'not_created' as const,
+            attemptId: undefined,
+          }
+        }
+
         const { refund: r, attempt: a } = await read(session, parseInput(id, refundId)),
           operationKey = hash(`reject:${refundId}:${parseInput(keySchema, key)}`),
           digest = hash(parseInput(text, reason)),

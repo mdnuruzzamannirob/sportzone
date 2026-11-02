@@ -269,6 +269,30 @@ export function createRegistrationNotifications(
         nextAttemptAt: clock(),
       }).save({ session })
     },
+    async enqueueEmailVerification(
+      input: {
+        id: Types.ObjectId
+        challengeId: Types.ObjectId
+        userId: Types.ObjectId
+        email: string
+      },
+      session: ClientSession,
+    ) {
+      if (!session.inTransaction())
+        throw new Error('Notification intent requires business transaction.')
+      await new model({
+        _id: input.id,
+        eventKey: `email_verify:${input.challengeId.toHexString()}:v1`,
+        userId: input.userId,
+        recipient: { emailNormalized: input.email },
+        eventType: 'email_verification',
+        templateVersion: 'email-verification-v1',
+        payload: { challengeId: input.challengeId },
+        status: 'queued',
+        attemptCount: 0,
+        nextAttemptAt: clock(),
+      }).save({ session })
+    },
     async enqueueEmailChange(
       input: {
         id: Types.ObjectId
@@ -305,6 +329,7 @@ export function createRegistrationNotifications(
       includeCommerce = false,
       includeReturns = false,
       includeRefunds = false,
+      includeEmailVerification = false,
     ) {
       const claimId = randomUUID()
       const row = await model
@@ -312,6 +337,14 @@ export function createRegistrationNotifications(
           {
             $or: [
               { eventType: 'registration', templateVersion: 'registration-v1' },
+              ...(includeEmailVerification
+                ? [
+                    {
+                      eventType: 'email_verification' as const,
+                      templateVersion: 'email-verification-v1',
+                    },
+                  ]
+                : []),
               ...(includeRefunds
                 ? [{ eventType: 'refund_update' as const, templateVersion: 'refund-update-v1' }]
                 : []),

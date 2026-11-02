@@ -1,3 +1,4 @@
+import { claimHistoryQuery as adminQuery, claimHistoryView } from './return.schema.js'
 import type { Connection, HydratedDocument, ClientSession } from 'mongoose'
 import type {
   orderScopeAccess,
@@ -7,8 +8,7 @@ import type {
 import type { complaintOrderAccess, customerOrderHistoryAccess } from '../orders/order.service.js'
 import type { claimEvidenceMetadataAccess } from '../media/claim-evidence.service.js'
 import type { AdminAccountAccess } from '../auth/admin-account.service.js'
-import { z } from 'zod'
-import { paginationSchema, pageMeta } from '../../shared/pagination.js'
+import { pageMeta } from '../../shared/pagination.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { returnModel } from './return.model.js'
@@ -18,21 +18,6 @@ import { claimId } from './return.schema.js'
 type Row = HydratedDocument<
   import('mongoose').InferSchemaType<ReturnType<typeof returnModel>['schema']>
 >
-const adminQuery = paginationSchema.safeExtend({
-  claimType: z.enum(['physical_return', 'shortage']).optional(),
-  status: z
-    .enum([
-      'requested',
-      'under_review',
-      'approved',
-      'awaiting_return',
-      'received',
-      'inspected',
-      'completed',
-      'rejected',
-    ])
-    .optional(),
-})
 // Local-only read composition: scope and order ownership are both checked server-side.
 export function returnHistoryService(
   connection: Connection,
@@ -53,7 +38,7 @@ export function returnHistoryService(
         assetIds: item.evidenceRefs.map((id) => id.toHexString()),
       })),
     })
-    return {
+    return claimHistoryView.parse({
       id: row._id.toHexString(),
       orderId: row.orderId.toHexString(),
       claimType: row.claimType,
@@ -71,7 +56,7 @@ export function returnHistoryService(
         resellableQty: item.resellableUnitOrdinals?.length ?? 0,
       })),
       evidence: refs,
-    }
+    })
   }
   async function authorize(session: ClientSession, principal: OrderPrincipal, orderId: string) {
     await order(session, orderId, principal)

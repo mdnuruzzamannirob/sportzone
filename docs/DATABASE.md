@@ -1518,6 +1518,15 @@ allocate a requested amount deterministically across distinct sources, subject t
 correction counters. This is a nonbinding snapshot: approval requires separate authorization and
 atomic revalidation/reservation. The advisory itself does not create obligations, attempts or provider effects.
 
+Customer refund submission creates only `requested/not_reserved` source-linked records after current
+qualified-basis and verified-capacity checks. Exact pending unit/source plans are deduplicated and
+included in subsequent request planning under an owning order revision fence. They are unapproved
+requests, not monetary reservations: held counters, approvedAt/approvedBy, timing and refundAttempts
+remain absent until actual administrator approval. Approval revalidates and atomically reserves source,
+aggregate, unit and delivery capacity before creating the first provider-ready attempt; rejection of an
+unreserved request changes no capacity counters. The existing approval requirement for reserved and
+completed states is unchanged. No new collection or weakened validator is introduced.
+
 The private reservation coordinator separately reauthorizes an administrator and protected policy,
 binds approved shortage or inspected physical-return quantities, and commits source-class, aggregate,
 unit and delivery holds with approved obligations, created attempts and audit. Distinct source slices
@@ -1680,6 +1689,13 @@ reset delivery state or silently accept another schema. Local/test bootstrap can
 rollout remains operator-controlled. Old binaries with exact prior-validator readiness checks require a compatible rollback
 build; never remove new lease/receipt data to make a prior validator pass. Other event payloads and secret-bearing proof
 renderers remain disabled until their owning tasks expand the contracts safely.
+
+Initial email-verification outbox intents use `email_verification`, `email-verification-v1` and a
+reference-only `{challengeId}` payload. The encrypted proof remains only on its existing `email_verify`
+auth challenge, bound to current normalized email and purpose revision. Notification provisioning is
+an additive exact-predecessor migration from the refund-notification validator; unknown schema drift
+is refused. Existing events remain valid. Workers without the verified renderer do not claim this type;
+confirmation/expiry strips the delivery envelope and never manufactures a login session.
 
 ### 10.2 `complaints` — `support`
 

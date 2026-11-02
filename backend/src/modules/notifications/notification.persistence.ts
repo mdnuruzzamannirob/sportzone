@@ -53,7 +53,8 @@ export function createNotificationPersistence(connection: Connection, model: Not
           !isDeepStrictEqual(existing.options?.validator, guestNotificationValidator) &&
           !isDeepStrictEqual(existing.options?.validator, paymentNotificationValidator) &&
           !isDeepStrictEqual(existing.options?.validator, commerceNotificationValidator) &&
-          !isDeepStrictEqual(existing.options?.validator, returnNotificationValidator)
+          !isDeepStrictEqual(existing.options?.validator, returnNotificationValidator) &&
+          !isDeepStrictEqual(existing.options?.validator, refundNotificationValidator)
         )
           throw new Error('Notification collection requires reviewed migration.')
         await connection.db.command({
@@ -643,7 +644,7 @@ export const returnNotificationValidator = {
 } as const
 
 // Additive successor; exact prior return schema remains an accepted migration predecessor.
-export const registrationNotificationValidator = {
+export const refundNotificationValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -703,6 +704,34 @@ export const registrationNotificationValidator = {
             ].map((k) => [`payload.${k}`, { $exists: false }]),
           ),
         },
+      ],
+    },
+  ],
+}
+
+// Exact additive proof-notification successor; historical event shapes stay unchanged.
+export const registrationNotificationValidator = {
+  $or: [
+    refundNotificationValidator,
+    {
+      $and: [
+        {
+          $jsonSchema: {
+            ...foundationNotificationValidator.$jsonSchema,
+            properties: {
+              ...foundationNotificationValidator.$jsonSchema.properties,
+              eventType: { enum: ['email_verification'] },
+              templateVersion: { enum: ['email-verification-v1'] },
+              payload: {
+                bsonType: 'object',
+                additionalProperties: false,
+                required: ['challengeId'],
+                properties: { challengeId: { bsonType: 'objectId' } },
+              },
+            },
+          },
+        },
+        { userId: { $type: 'objectId' }, orderId: { $exists: false } },
       ],
     },
   ],

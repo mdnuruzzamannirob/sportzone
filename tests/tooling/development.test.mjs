@@ -841,3 +841,25 @@ test('REFUND-RECOVERY-BOUNDARY-01: payout recovery, notifications and job retain
     put(`backend/src/${consumer}.ts`, 'export const consumer=1')
   }
 })
+
+test('BACKEND-COMPLETION-BOUNDARY: customer requests and supervised matching cannot import foreign private persistence', (t) => {
+  const { root, put } = fixture(t)
+  for (const [consumer, owner] of [
+    ['refunds/refund-request.routes', 'refunds/refund'],
+    ['payments/payment-matching.routes', 'payments/payment-record'],
+    ['refunds/refund-reservation.service', 'orders/order'],
+    ['payments/payment-matching.service', 'orders/order'],
+  ]) {
+    put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
+    const path = consumer.endsWith('.routes')
+      ? `./${owner.split('/')[1]}.model.js`
+      : `../${owner}.model.js`
+    put(`backend/src/modules/${consumer}.ts`, `import "${path}"`)
+    assert.ok(
+      checkBoundaries(root).errors.some(
+        (e) => e.includes('private persistence') || e.includes('controller'),
+      ),
+    )
+    put(`backend/src/modules/${consumer}.ts`, 'export const consumer = 1')
+  }
+})

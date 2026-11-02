@@ -1,3 +1,5 @@
+import { notificationAdminView } from './notification.schema.js'
+import { notificationAdminQuery, notificationRetryInput } from './notification.schema.js'
 import { createHash } from 'node:crypto'
 import type { Connection } from 'mongoose'
 import { z } from 'zod'
@@ -5,7 +7,7 @@ import type { AdminAccountAccess } from '../auth/admin-account.service.js'
 import { createNotificationModel } from './notification.model.js'
 import { createNotificationPersistence } from './notification.persistence.js'
 import { createAuditWriter, auditOperationReader } from '../audit/audit.service.js'
-import { paginationSchema, pageMeta } from '../../shared/pagination.js'
+import { pageMeta } from '../../shared/pagination.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 export function notificationAdminService(
@@ -18,32 +20,7 @@ export function notificationAdminService(
     lookup = auditOperationReader(connection)
   return {
     async list(token: string | undefined, raw: unknown) {
-      const input = parseInput(
-        paginationSchema.safeExtend({
-          status: z
-            .enum(['queued', 'sending', 'sent', 'retry_wait', 'failed', 'delivery_uncertain'])
-            .optional(),
-          eventType: z
-            .enum([
-              'registration',
-              'password_reset',
-              'email_change',
-              'guest_order_access',
-              'order_received',
-              'order_confirmation',
-              'order_cancellation',
-              'shipment_update',
-              'delivery_completion',
-              'payment_success',
-              'payment_failure',
-              'payment_pending',
-              'return_update',
-              'refund_update',
-            ])
-            .optional(),
-        }),
-        raw,
-      )
+      const input = parseInput(notificationAdminQuery, raw)
       return admins.owned(
         token,
         async (_actor, session) => {
@@ -61,14 +38,16 @@ export function notificationAdminService(
             .maxTimeMS(5000)
             .session(session)
           return {
-            items: rows.map((row) => ({
-              id: row._id.toHexString(),
-              eventType: row.eventType,
-              status: row.status,
-              attemptCount: row.attemptCount,
-              createdAt: row.createdAt.toISOString(),
-              ...(row.sentAt ? { sentAt: row.sentAt.toISOString() } : {}),
-            })),
+            items: rows.map((row) =>
+              notificationAdminView.parse({
+                id: row._id.toHexString(),
+                eventType: row.eventType,
+                status: row.status,
+                attemptCount: row.attemptCount,
+                createdAt: row.createdAt.toISOString(),
+                ...(row.sentAt ? { sentAt: row.sentAt.toISOString() } : {}),
+              }),
+            ),
             pagination: pageMeta(input, await model.countDocuments(filter).session(session)),
           }
         },
@@ -77,7 +56,7 @@ export function notificationAdminService(
     },
     async retry(token: string | undefined, rawId: unknown, raw: unknown, rawKey: unknown) {
       const id = parseInput(z.string().regex(/^[a-f0-9]{24}$/), rawId),
-        input = parseInput(z.strictObject({ reason: z.string().trim().min(1).max(2000) }), raw),
+        input = parseInput(notificationRetryInput, raw),
         key = parseInput(z.string().min(1).max(128), rawKey),
         digest = createHash('sha256').update(JSON.stringify(input)).digest('hex')
       return admins.owned(token, async (actorId, session) => {
@@ -100,9 +79,13 @@ export function notificationAdminService(
           !['PROVIDER_RATE_LIMIT', 'PROVIDER_REJECTED', 'RETRIES_EXHAUSTED'].includes(
             row.lastErrorCode ?? '',
           ) ||
-          ['registration', 'password_reset', 'email_change', 'guest_order_access'].includes(
-            row.eventType,
-          )
+          [
+            'registration',
+            'password_reset',
+            'email_verification',
+            'email_change',
+            'guest_order_access',
+          ].includes(row.eventType)
         )
           throw new ApiError('BUSINESS_RULE_VIOLATION')
         const changed = await model.updateOne(
