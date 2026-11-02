@@ -6,7 +6,15 @@ import { ApiError } from '../../../shared/errors/app-error.js'
 import type { QuotaStore } from './auth-throttle.persistence.js'
 
 type Audience = 'customer' | 'admin'
-type Group = 'credentials' | 'recovery' | 'email' | 'bootstrap' | 'media' | 'checkout' | 'guest'
+type Group =
+  | 'credentials'
+  | 'recovery'
+  | 'email'
+  | 'bootstrap'
+  | 'media'
+  | 'checkout'
+  | 'guest'
+  | 'complaint'
 export function createAuthThrottle(store: QuotaStore, secret: string, clock = Date.now) {
   if (!/^[a-f0-9]{64}$/.test(secret)) throw new Error('Invalid auth throttle configuration.')
   async function consume(audience: Audience, group: Group, network: string, target?: string) {
@@ -40,7 +48,7 @@ export function createAuthThrottle(store: QuotaStore, secret: string, clock = Da
     consume,
     middleware(audience: Audience, group: Group): RequestHandler {
       return async (req, res, next) => {
-        const raw: unknown = req.body?.email ?? req.body?.newEmail
+        const raw: unknown = req.body?.email ?? req.body?.newEmail ?? req.body?.contactEmail
         const target =
           typeof raw === 'string' &&
           raw.length <= 1024 &&

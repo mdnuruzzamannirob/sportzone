@@ -11,7 +11,7 @@ try {
   connection = await openDatabase(config.MONGODB_URI, config.MONGODB_DB_NAME)
   if (process.argv.includes('--lifecycle')) await upgradeReturnLifecyclePersistence(connection)
   else await initializeReturnPersistence(connection)
-  console.log('Private return persistence ready; public submission remains disabled.')
+  console.log('Return persistence ready; HTTP activation remains an explicit server configuration.')
 } catch {
   console.error('Return bootstrap failed; verify protected configuration and reviewed persistence.')
   process.exitCode = 1

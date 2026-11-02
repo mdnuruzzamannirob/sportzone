@@ -26,12 +26,19 @@ export function deliveryExceptionService(
     input: {
       orderId: string
       exceptionId: string
+      shippedAt: Date
       disposition: NonNullable<ReturnType<typeof exceptionResolution.parse>['disposition']>
     },
   ) => Promise<unknown>,
   refunds?: (
     session: ClientSession,
-    input: { orderId: string; paymentId: string; exceptionId: string },
+    input: {
+      orderId: string
+      paymentId: string
+      exceptionId: string
+      actorId: string
+      reason: string
+    },
   ) => Promise<void>,
   clock: () => Date = () => new Date(),
 ) {
@@ -56,6 +63,24 @@ export function deliveryExceptionService(
     await verifyDeliveryExceptionPersistence(connection)
   }
   return {
+    async list(token: string | undefined, rawId: unknown) {
+      const id = parseInput(orderId, rawId)
+      return admin.owned(
+        token,
+        async (_actor, session) => {
+          await ready()
+          if (!(await orders.exists({ _id: id }).session(session))) throw new ApiError('NOT_FOUND')
+          const rows = await model
+            .find({ orderId: id })
+            .sort({ createdAt: -1, _id: -1 })
+            .limit(201)
+            .session(session)
+          if (rows.length > 200) throw new ApiError('BUSINESS_RULE_VIOLATION')
+          return rows.map(view)
+        },
+        false,
+      )
+    },
     async create(token: string | undefined, rawId: unknown, raw: unknown, key: unknown) {
       const id = parseInput(orderId, rawId),
         input = parseInput(exceptionInput, raw),
@@ -181,6 +206,7 @@ export function deliveryExceptionService(
               await verifyDisposition(session, {
                 orderId: row._id.toHexString(),
                 exceptionId: id,
+                shippedAt: row.shippedAt,
                 disposition: input.disposition,
               }),
             )
@@ -195,6 +221,8 @@ export function deliveryExceptionService(
               orderId: row._id.toHexString(),
               paymentId: funds.paymentId,
               exceptionId: id,
+              actorId,
+              reason: input.resolution,
             })
           }
           for (const item of row.items) {

@@ -59,6 +59,7 @@ const schema = new Schema(
       ],
       required: true,
     },
+    description: { type: String, maxlength: 2000 },
     approvedAt: Date,
     receivedAt: Date,
     inspectedAt: Date,

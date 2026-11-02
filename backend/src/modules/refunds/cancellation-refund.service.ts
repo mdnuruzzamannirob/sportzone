@@ -1,3 +1,4 @@
+import type { RefundNotifier } from './refund-recovery.service.js'
 import { createHash } from 'node:crypto'
 import { Types, type Connection, type ClientSession } from 'mongoose'
 import { z } from 'zod'
@@ -35,6 +36,8 @@ export function cancellationRefundService(
   funding: ReturnType<typeof refundFundingAccess>,
   policy?: Parameters<typeof refundReservationService>[6],
   clock: () => Date = () => new Date(),
+  notify?: RefundNotifier,
+  basis: 'cancellation' | 'delivery_exception' = 'cancellation',
 ) {
   const refunds = refundModel(connection),
     attempts = refundAttemptModel(connection),
@@ -45,7 +48,7 @@ export function cancellationRefundService(
     await verifyCorrectionPersistence(connection)
     await verifyRefundAttemptPersistence(connection)
     const order = await snapshot(session, input.orderId, input.requestId)
-    const group = hash(`cancellation:${input.orderId}:${input.requestId}`)
+    const group = hash(`${basis}:${input.orderId}:${input.requestId}`)
     if (await refunds.exists({ orderId: input.orderId, refundGroupKey: group }).session(session))
       return
     if (!policy) throw new ApiError('SERVICE_UNAVAILABLE')
@@ -53,7 +56,7 @@ export function cancellationRefundService(
       refundApproval,
       await policy(session, {
         orderId: input.orderId,
-        basis: 'cancellation',
+        basis,
         basisRefId: input.requestId,
         actorId: input.actorId,
         deliveryRequestedPoisha: order.deliveryChargePoisha,
@@ -141,14 +144,16 @@ export function cancellationRefundService(
       })
       await units(session, {
         orderId: input.orderId,
-        cancellationRequestId: input.requestId,
+        ...(basis === 'cancellation'
+          ? { cancellationRequestId: input.requestId }
+          : { deliveryExceptionId: input.requestId }),
         items: slice.items.map((i) => ({ orderItemId: i.orderItemId, unitAmounts: i.unitAmounts })),
       })
       const row = new refunds({
         orderId: new Types.ObjectId(input.orderId),
         paymentId: new Types.ObjectId(input.paymentId),
         sourceCollectionId: new Types.ObjectId(slice.sourceCollectionId),
-        basis: 'cancellation',
+        basis,
         basisRefId: new Types.ObjectId(input.requestId),
         refundGroupKey: group,
         classification: 'merchandise',
@@ -194,11 +199,18 @@ export function cancellationRefundService(
         createdAt: now,
         updatedAt: now,
       }).save({ session, timestamps: false })
+      await notify?.(session, {
+        refundId: row._id.toHexString(),
+        orderId: input.orderId,
+        status: 'approved',
+        operationKey: hash(`approved:${row._id}`),
+        occurredAt: now,
+      })
     }
     await audit(session, {
       actorType: 'admin',
       actorId: input.actorId,
-      action: 'refund.cancellation.reserve',
+      action: `refund.${basis}.reserve`,
       targetType: 'order',
       targetId: input.orderId,
       operationKey: group,

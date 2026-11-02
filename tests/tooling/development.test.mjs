@@ -342,6 +342,9 @@ test('HISTORY-BOUNDARY-01: review and claim readers cannot import foreign privat
     ['reviews/review-query', 'catalog/products/product'],
     ['returns/return-history', 'orders/order'],
     ['returns/return-history', 'media/media'],
+    ['refunds/refund-history', 'orders/order'],
+    ['refunds/refund-history', 'payments/payment'],
+    ['refunds/refund-history', 'audit/audit'],
   ]) {
     put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
     const relative = `../${owner}.model.js`
@@ -365,6 +368,13 @@ test('SUPPORT-BOUNDARY-01: support routes cannot import audit or complaint persi
   }
 })
 
+test('MEDIA-WORKER-BOUNDARY: scheduled maintenance cannot import foreign private media persistence', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/modules/media/media.model.ts', 'export const model = 1')
+  put('backend/src/jobs/media-maintenance.job.ts', 'import "../modules/media/media.model.js"')
+  assert.ok(checkBoundaries(root).errors.some((error) => error.includes('private persistence')))
+})
+
 test('REPORT-BOUNDARY-01: reporting cannot import foreign private persistence', (t) => {
   const { root, put } = fixture(t)
   for (const owner of ['orders/order', 'payments/payment', 'refunds/refund']) {
@@ -375,6 +385,27 @@ test('REPORT-BOUNDARY-01: reporting cannot import foreign private persistence', 
     )
     assert.ok(checkBoundaries(root).errors.some((e) => e.includes('private persistence')))
     put('backend/src/modules/reports/report-calculation.service.ts', 'export const calculate = 1')
+  }
+})
+
+test('OPERATIONS-BOUNDARY-01: support/report routes and readers retain private source ownership', (t) => {
+  const { root, put } = fixture(t)
+  for (const [reader, owner] of [
+    ['reports/report.service', 'orders/order'],
+    ['reports/report.service', 'payments/payment'],
+    ['reports/report.service', 'refunds/refund'],
+    ['support/support.routes', 'support/complaint'],
+    ['notifications/notification-admin.service', 'auth/auth'],
+    ['customers/customer-admin.routes', 'orders/order'],
+  ]) {
+    put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
+    put(`backend/src/modules/${reader}.ts`, `import "../${owner}.model.js"`)
+    assert.ok(
+      checkBoundaries(root).errors.some(
+        (error) => error.includes('private persistence') || error.includes('controller'),
+      ),
+    )
+    put(`backend/src/modules/${reader}.ts`, 'export const reader = 1')
   }
 })
 
@@ -739,6 +770,91 @@ test('ORDER-OPERATIONS-BOUNDARY-01: admin HTTP and order projections cannot impo
         ? './order.model.js'
         : `../${owner}.model.js`
     put(`backend/src/modules/${consumer}.ts`, `import "${from}"`)
+    assert.ok(
+      checkBoundaries(root).errors.some(
+        (e) => e.includes('private persistence') || e.includes('controller'),
+      ),
+    )
+    put(`backend/src/modules/${consumer}.ts`, 'export const consumer = 1')
+  }
+})
+
+test('REFUND-OPERATIONS-BOUNDARY-01: refund HTTP and orchestration cannot bypass private persistence', (t) => {
+  const { root, put } = fixture(t)
+  for (const [consumer, owner] of [
+    ['refunds/refund.routes', 'refunds/refund'],
+    ['refunds/refund.routes', 'payments/payment'],
+    ['refunds/refund-operations.service', 'orders/order'],
+    ['refunds/refund-operations.service', 'payments/payment-record'],
+  ]) {
+    put(`backend/src/modules/${owner}.model.ts`, 'export const model=1')
+    const from = owner.startsWith('refunds/') ? './refund.model.js' : `../${owner}.model.js`
+    put(`backend/src/modules/${consumer}.ts`, `import "${from}"`)
+    assert.ok(
+      checkBoundaries(root).errors.some(
+        (e) => e.includes('private persistence') || e.includes('controller'),
+      ),
+    )
+    put(`backend/src/modules/${consumer}.ts`, 'export const consumer=1')
+  }
+})
+
+test('RETURN-OPERATIONS-BOUNDARY-01: claim HTTP and orchestration cannot access foreign persistence', (t) => {
+  const { root, put } = fixture(t)
+  for (const [consumer, owner] of [
+    ['returns/return.routes', 'returns/return'],
+    ['returns/return.routes', 'orders/order'],
+    ['returns/return-operations.service', 'media/media'],
+    ['returns/return-operations.service', 'inventory/inventory'],
+  ]) {
+    put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
+    const from = owner.startsWith('returns/') ? './return.model.js' : `../${owner}.model.js`
+    put(`backend/src/modules/${consumer}.ts`, `import "${from}"`)
+    assert.ok(
+      checkBoundaries(root).errors.some(
+        (e) => e.includes('private persistence') || e.includes('controller'),
+      ),
+    )
+    put(`backend/src/modules/${consumer}.ts`, 'export const consumer = 1')
+  }
+})
+
+test('REFUND-RECOVERY-BOUNDARY-01: payout recovery, notifications and job retain private owner persistence', (t) => {
+  const { root, put } = fixture(t)
+  for (const [consumer, owner] of [
+    ['modules/refunds/refund-recovery.service', 'modules/payments/payment'],
+    ['modules/refunds/refund-recovery.service', 'modules/orders/order'],
+    ['modules/refunds/refund-recovery.service', 'modules/notifications/notification'],
+    ['modules/notifications/refund-message.service', 'modules/refunds/refund'],
+    ['jobs/reconcile-refunds.job', 'modules/refunds/refund'],
+  ]) {
+    put(`backend/src/${owner}.model.ts`, 'export const model=1')
+    const from = consumer.startsWith('jobs/')
+      ? '../modules/refunds/refund.model.js'
+      : `../${owner.slice('modules/'.length)}.model.js`
+    put(`backend/src/${consumer}.ts`, `import "${from}"`)
+    assert.ok(
+      checkBoundaries(root).errors.some(
+        (e) => e.includes('private persistence') || e.includes('jobs must delegate persistence'),
+      ),
+    )
+    put(`backend/src/${consumer}.ts`, 'export const consumer=1')
+  }
+})
+
+test('BACKEND-COMPLETION-BOUNDARY: customer requests and supervised matching cannot import foreign private persistence', (t) => {
+  const { root, put } = fixture(t)
+  for (const [consumer, owner] of [
+    ['refunds/refund-request.routes', 'refunds/refund'],
+    ['payments/payment-matching.routes', 'payments/payment-record'],
+    ['refunds/refund-reservation.service', 'orders/order'],
+    ['payments/payment-matching.service', 'orders/order'],
+  ]) {
+    put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
+    const path = consumer.endsWith('.routes')
+      ? `./${owner.split('/')[1]}.model.js`
+      : `../${owner}.model.js`
+    put(`backend/src/modules/${consumer}.ts`, `import "${path}"`)
     assert.ok(
       checkBoundaries(root).errors.some(
         (e) => e.includes('private persistence') || e.includes('controller'),

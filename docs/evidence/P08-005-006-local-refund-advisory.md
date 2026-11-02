@@ -1,5 +1,8 @@
 # P08-005 / P08-006 — Private refund advisory and attempt facts
 
+**Current status: P08-005/006 Done.** [Package C integration and final verification](./P06-013-P08-005-008-durable-reservations.md#package-c-completion) supersede the historical local-only limits below.
+
+
 The later [durable obligation/attempt and reservation implementation](./P06-013-P08-005-008-durable-reservations.md)
 supersedes this revision's transient-only attempt/no-writer limitation. The original checks below
 remain historical; verified completion/reconciliation, external qualification and full acceptance are still pending.

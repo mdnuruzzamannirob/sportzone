@@ -12,7 +12,7 @@ import {
   catalogService,
 } from '../../src/modules/catalog/catalog.service.js'
 import { catalogRoutes } from '../../src/modules/catalog/catalog.routes.js'
-import { createApp } from '../../src/app.js'
+import { createContractCheckedApp as createApp } from '../helpers/contracts.js'
 import { createDeclaredIndexes } from '../../src/shared/database/indexes.js'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { Types, type ClientSession } from 'mongoose'

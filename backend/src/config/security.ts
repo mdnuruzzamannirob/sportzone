@@ -14,7 +14,12 @@ export type RecoveryOptions = {
 }
 function loadProofOptions(
   environment: NodeJS.ProcessEnv,
-  prefix: 'PASSWORD_RESET' | 'EMAIL_CHANGE' | 'ADMIN_PASSWORD_RESET' | 'GUEST_ORDER_ACCESS',
+  prefix:
+    | 'EMAIL_VERIFICATION'
+    | 'PASSWORD_RESET'
+    | 'EMAIL_CHANGE'
+    | 'ADMIN_PASSWORD_RESET'
+    | 'GUEST_ORDER_ACCESS',
 ): RecoveryOptions {
   try {
     const integer = (key: string, min: number, max: number) => {
@@ -51,13 +56,15 @@ function loadProofOptions(
     }
   } catch {
     throw new ConfigurationError([
-      prefix === 'PASSWORD_RESET'
-        ? 'password_recovery_configuration'
-        : prefix === 'EMAIL_CHANGE'
-          ? 'email_change_configuration'
-          : prefix === 'ADMIN_PASSWORD_RESET'
-            ? 'admin_recovery_configuration'
-            : 'guest_access_configuration',
+      prefix === 'EMAIL_VERIFICATION'
+        ? 'email_verification_configuration'
+        : prefix === 'PASSWORD_RESET'
+          ? 'password_recovery_configuration'
+          : prefix === 'EMAIL_CHANGE'
+            ? 'email_change_configuration'
+            : prefix === 'ADMIN_PASSWORD_RESET'
+              ? 'admin_recovery_configuration'
+              : 'guest_access_configuration',
     ])
   }
 }
@@ -84,3 +91,6 @@ export function loadGuestAccessOptions(environment: NodeJS.ProcessEnv): GuestAcc
     throw new ConfigurationError(['guest_session_configuration'])
   return { ...proof, sessionTtlSeconds }
 }
+
+export const loadEmailVerificationOptions = (environment: NodeJS.ProcessEnv) =>
+  loadProofOptions(environment, 'EMAIL_VERIFICATION')

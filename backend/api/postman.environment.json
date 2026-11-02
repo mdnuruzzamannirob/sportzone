@@ -26,6 +26,12 @@
       "type": "default"
     },
     {
+      "key": "asOf",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "assetId",
       "value": "",
       "enabled": true,
@@ -62,7 +68,31 @@
       "type": "default"
     },
     {
+      "key": "claimId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "claimType",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "classification",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "collectionId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "complaintId",
       "value": "",
       "enabled": true,
       "type": "default"
@@ -80,6 +110,12 @@
       "type": "secret"
     },
     {
+      "key": "customerId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "delete_me_addresses_addressIdBody",
       "value": "",
       "enabled": true,
@@ -92,7 +128,31 @@
       "type": "default"
     },
     {
+      "key": "eventType",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "exceptionId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "from",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "fulfillmentStatus",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "groupBy",
       "value": "",
       "enabled": true,
       "type": "default"
@@ -116,7 +176,25 @@
       "type": "default"
     },
     {
+      "key": "intakeId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "kind",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "lowStock",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "matchingStatus",
       "value": "",
       "enabled": true,
       "type": "default"
@@ -146,7 +224,19 @@
       "type": "secret"
     },
     {
+      "key": "notificationId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "orderId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "orderNumber",
       "value": "",
       "enabled": true,
       "type": "default"
@@ -224,6 +314,12 @@
       "type": "secret"
     },
     {
+      "key": "patch_reviews_reviewIdBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
       "key": "paymentId",
       "value": "",
       "enabled": true,
@@ -266,6 +362,12 @@
       "type": "secret"
     },
     {
+      "key": "post_admin_cancellation_requests_requestId_decisionBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
       "key": "post_admin_categoriesBody",
       "value": "",
       "enabled": true,
@@ -278,6 +380,36 @@
       "type": "secret"
     },
     {
+      "key": "post_admin_claims_claimId_completeBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_claims_claimId_inspectionBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_claims_claimId_receiptBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_claims_claimId_reviewBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_complaints_complaintId_resolveBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
       "key": "post_admin_couponsBody",
       "value": "",
       "enabled": true,
@@ -285,6 +417,18 @@
     },
     {
       "key": "post_admin_coupons_couponId_deactivateBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_customers_customerId_deletion_decisionsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_customers_customerId_status_decisionsBody",
       "value": "",
       "enabled": true,
       "type": "secret"
@@ -314,6 +458,12 @@
       "type": "secret"
     },
     {
+      "key": "post_admin_delivery_exceptions_exceptionId_resolveBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
       "key": "post_admin_delivery_zonesBody",
       "value": "",
       "enabled": true,
@@ -321,6 +471,36 @@
     },
     {
       "key": "post_admin_inventory_variantId_adjustmentsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_notifications_notificationId_retryBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_orders_orderId_delivery_exceptionsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_orders_orderId_fulfillment_transitionsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_payment_collections_collectionId_allocateBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_payments_paymentId_cod_collectionsBody",
       "value": "",
       "enabled": true,
       "type": "secret"
@@ -356,6 +536,48 @@
       "type": "secret"
     },
     {
+      "key": "post_admin_provider_receipts_intakeId_linkBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_refund_groupsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_refunds_refundId_manual_confirmationsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_refunds_refundId_payout_attemptsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_refunds_refundId_reconcileBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_refunds_refundId_reviewBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_admin_reviews_reviewId_moderationBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
       "key": "post_admin_settings_policiesBody",
       "value": "",
       "enabled": true,
@@ -375,6 +597,18 @@
     },
     {
       "key": "post_admin_variants_variantId_deactivateBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_auth_email_verificationsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_auth_email_verifications_confirmBody",
       "value": "",
       "enabled": true,
       "type": "secret"
@@ -423,6 +657,18 @@
     },
     {
       "key": "post_checkout_quotesBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_complaintsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_coupons_previewBody",
       "value": "",
       "enabled": true,
       "type": "secret"
@@ -482,7 +728,31 @@
       "type": "secret"
     },
     {
+      "key": "post_orders_orderId_cancellation_requestsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_orders_orderId_claimsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
       "key": "post_orders_orderId_payment_attemptsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_orders_orderId_refund_requestsBody",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "post_products_productId_reviewsBody",
       "value": "",
       "enabled": true,
       "type": "secret"
@@ -674,7 +944,25 @@
       "type": "default"
     },
     {
+      "key": "refundId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "requestId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "result",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "reviewId",
       "value": "",
       "enabled": true,
       "type": "default"
@@ -704,6 +992,12 @@
       "type": "default"
     },
     {
+      "key": "sourceCollectionId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
       "key": "status",
       "value": "",
       "enabled": true,
@@ -711,6 +1005,18 @@
     },
     {
       "key": "storefrontOrigin",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "targetId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "targetType",
       "value": "",
       "enabled": true,
       "type": "default"

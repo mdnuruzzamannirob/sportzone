@@ -6,13 +6,14 @@ export const proofHash = (
   proof: string,
   purpose:
     | 'password_reset'
+    | 'email_verify'
     | 'email_change'
     | 'admin_password_reset'
     | 'guest_order_access' = 'password_reset',
 ) =>
   createHash('sha256')
     .update(
-      `sportzone:${purpose === 'password_reset' ? 'password-reset' : purpose === 'email_change' ? 'email-change' : purpose === 'guest_order_access' ? 'guest-order-access' : 'admin-password-reset'}:v1:${proof}`,
+      `sportzone:${purpose === 'password_reset' ? 'password-reset' : purpose === 'email_verify' ? 'email-verify' : purpose === 'email_change' ? 'email-change' : purpose === 'guest_order_access' ? 'guest-order-access' : 'admin-password-reset'}:v1:${proof}`,
     )
     .digest('hex')
 export type ProofBinding = {
@@ -23,7 +24,11 @@ export type ProofBinding = {
   targetEmail?: string
   audience?: 'admin'
 } & (
-  | { userId: string; purpose?: 'password_reset' | 'email_change'; orderId?: never }
+  | {
+      userId: string
+      purpose?: 'password_reset' | 'email_change' | 'email_verify'
+      orderId?: never
+    }
   | { userId?: never; orderId: string; purpose: 'guest_order_access' }
 )
 export type ProofEnvelope = {

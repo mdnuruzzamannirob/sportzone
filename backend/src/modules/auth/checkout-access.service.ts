@@ -45,7 +45,7 @@ export function checkoutAccess(customers: CustomerAccountAccess, security: Brows
 }
 
 export function paymentMethodAccess(
-  customers: CustomerAccountAccess,
+  customers: Pick<CustomerAccountAccess, 'owned'>,
   guests?: Pick<import('./guest-access/guest-session.service.js').GuestSessions, 'owned'>,
 ) {
   return {
@@ -153,9 +153,43 @@ export type OrderPrincipal =
 export function orderScopeAccess(
   customers: CustomerAccountAccess,
   sessions: import('./sessions/session.service.js').SessionService,
-  guests?: Pick<import('./guest-access/guest-session.service.js').GuestSessions, 'owned'>,
+  guests?: Pick<import('./guest-access/guest-session.service.js').GuestSessions, 'owned'> &
+    Partial<
+      Pick<import('./guest-access/guest-session.service.js').GuestSessions, 'authorizeInSession'>
+    >,
 ) {
   return {
+    async inSession(
+      credentials: PaymentInitiationCredentials,
+      orderId: string,
+      session: ClientSession,
+      mutating = false,
+    ): Promise<OrderPrincipal> {
+      if (credentials.customerPresent) {
+        if (
+          mutating &&
+          !(await sessions.verifyCsrfMaterial(
+            'customer',
+            credentials.customerToken,
+            credentials.csrfToken,
+          ))
+        )
+          throw new ApiError('CSRF_INVALID')
+        return {
+          kind: 'customer',
+          userId: await customers.authorizeInSession(credentials.customerToken, session, mutating),
+        }
+      }
+      if (!guests?.authorizeInSession) throw new ApiError('GUEST_PROOF_REQUIRED')
+      if (mutating && !credentials.csrfToken) throw new ApiError('CSRF_INVALID')
+      const owner = await guests.authorizeInSession(
+        credentials.guestToken,
+        orderId,
+        session,
+        mutating ? credentials.csrfToken : undefined,
+      )
+      return { kind: 'guest_order', orderId: owner.orderId, guestSessionId: owner.sessionId }
+    },
     // For nested resources, authenticate first, then resolve the resource's order in the same
     // transaction; the owning domain must still verify customer/guest order ownership.
     async ownedAny<T>(

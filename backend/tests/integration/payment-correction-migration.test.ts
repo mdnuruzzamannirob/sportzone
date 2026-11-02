@@ -230,3 +230,81 @@ it('runs refund bootstrap additively against local/test history and refuses depl
   })
   expect(refused.status).not.toBe(0)
 })
+
+it('Package D migration: exact return notification predecessor upgrades additively and manual-reference index is provisioned', async () => {
+  const { createRegistrationNotifications } = await import(
+    '../../src/modules/notifications/notification.service.js'
+  )
+  const { returnNotificationValidator, registrationNotificationValidator } = await import(
+    '../../src/modules/notifications/notification.persistence.js'
+  )
+  const store = createRegistrationNotifications(db.connection)
+  await store.initialize()
+  await db.connection.db?.command({
+    collMod: 'notifications',
+    validator: returnNotificationValidator,
+  })
+  await expect(store.verifyIndexes()).rejects.toThrow('Notification validator')
+  await store.migrateFoundation()
+  await store.migrateFoundation()
+  await store.verifyIndexes()
+  const collection = await db.connection.db
+    ?.listCollections({ name: 'notifications' }, { nameOnly: false })
+    .next()
+  expect(collection?.options?.validator).toEqual(registrationNotificationValidator)
+  await initializeRefundAttemptPersistence(db.connection)
+  expect(
+    (await refundAttemptModel(db.connection).collection.indexes()).find(
+      (i) => i.name === 'refund_manual_transfer_unique',
+    )?.unique,
+  ).toBe(true)
+})
+it('Package D runner: compiled reconciliation refuses deployed configuration without provider effects', () => {
+  const result = spawnSync(process.execPath, ['scripts/reconcile-refunds.mjs'], {
+    env: {
+      ...identityEnvironment(),
+      APP_ENV: 'production',
+      NODE_ENV: 'production',
+      REFUND_RECONCILIATION_ENABLED: 'true',
+    },
+    encoding: 'utf8',
+    timeout: 10000,
+  })
+  expect(result.status).not.toBe(0)
+  expect(result.stderr).toContain('Refund reconciliation failed')
+})
+
+it('Package D runner: compiled local worker acquires and releases its durable lease with an empty due queue', async () => {
+  const { initializeJobLeases } = await import('../../src/shared/jobs/job-lease.model.js')
+  await initializeJobLeases(db.connection)
+  await initializeRefundAttemptPersistence(db.connection)
+  const result = spawnSync(process.execPath, ['scripts/reconcile-refunds.mjs'], {
+    env: {
+      ...identityEnvironment(),
+      MONGODB_URI: db.replica.getUri(),
+      MONGODB_DB_NAME: db.connection.name,
+      REFUND_RECONCILIATION_ENABLED: 'true',
+      REFUND_RECONCILIATION_BATCH_SIZE: '10',
+      REFUND_RECONCILIATION_LEASE_MS: '60000',
+      REFUND_RECONCILIATION_POLL_MS: '60000',
+      SSLCOMMERZ_ADAPTER_ENABLED: 'true',
+      SSLCOMMERZ_MODE: 'sandbox',
+      SSLCOMMERZ_STORE_ID: 'synthetic-store',
+      SSLCOMMERZ_STORE_PASSWORD: 'synthetic-password',
+      SSLCOMMERZ_CALLBACK_ORIGIN: 'https://api.example.test',
+      SSLCOMMERZ_TIMEOUT_MS: '1000',
+    },
+    encoding: 'utf8',
+    timeout: 10000,
+  })
+  expect(result.status, result.stderr).toBe(0)
+  expect(JSON.parse(result.stdout)).toMatchObject({
+    event: 'refund_reconciliation',
+    acquired: true,
+    scanned: 0,
+  })
+  expect(
+    (await db.connection.collection('jobLeases').findOne({ jobKey: 'refund-reconciliation' }))
+      ?.leaseOwner,
+  ).toBeUndefined()
+})

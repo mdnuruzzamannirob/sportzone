@@ -923,7 +923,7 @@ historical timing or infer a cash event from order/fulfillment timestamps.
 effectiveUnit × quantity − couponAllocated`. Sum line values into `pricingSnapshot`; do not recalculate refunds from
 current product prices. Line identifiers and unit ordinals are stable across claims.
 
-**Indexes:** unique `{orderNumber:1}`, unique `{checkoutIntentId:1}`; `{userId:1,placedAt:-1}`, `{fulfillmentStatus:1,placedAt:-1}`, `{customerSnapshot.emailNormalized:1,orderNumber:1}` (internal lookup only).
+**Indexes:** unique `{orderNumber:1}`, unique `{checkoutIntentId:1}`; `{userId:1,placedAt:-1}`, `{fulfillmentStatus:1,placedAt:-1}`, `{customerSnapshot.emailNormalized:1,orderNumber:1}` (internal lookup only); `{placedAt:1,_id:1}` for period reporting; `{fulfillmentHold:1,placedAt:-1,_id:-1}` for operational hold queues.
 
 **Deadline basis representation:** the immutable `deliverySnapshot.deadlineBasis` is
 `{rule,review,capturedAt}`. `rule` contains `{version,timezone:'Asia/Dhaka',effectiveFrom,effectiveTo?,
@@ -1336,7 +1336,7 @@ Historical unassigned receipts are not automatically reclassified; supervised re
 
 **Indexes:** unique `{provider:1,merchantAccountKey:1,providerCollectionRef:1}` (COD uses a stable
 `merchantAccountKey='internal'`); partial unique `{intakeId:1}` when ObjectId; `{attemptId:1,collectedAt:1}` **nonunique**;
-`{orderId:1,collectedAt:-1}`. Every online linked receipt must reference one intake entry; link creation and intake status
+`{orderId:1,collectedAt:-1}`; `{collectedAt:1,_id:1}` for bounded receipt reporting. Every online linked receipt must reference one intake entry; link creation and intake status
 change occur atomically. If SSLCOMMERZ evidence cannot establish distinct collection identity, **quarantine and reconcile**
 rather than assert a second charge or block a genuinely distinct charge with attempt-level uniqueness.
 
@@ -1409,6 +1409,14 @@ entitlement (§§7.3, 9.2, 12.5). Verified provider status is independent of pro
 no retry of an uncertain external transaction is presumed safe.
 
 ## 9. Returns and refund collections
+
+Physical return receipt/inspection may proceed in multiple audited batches. Ordinal arrays are
+cumulative sets: received ⊆ approved, inspected ⊆ received, accepted ⊆ inspected, resellable ⊆ accepted.
+Completed physical claims require inspected = approved, preserving rejected inspection facts;
+accepted units resolve while rejected units release without refund or restock. Each later resellable
+batch has its own deterministic movement identity and each ordinal still has a once-only restock fence.
+Original receipt references and batch decisions remain in append-only audit; latest receipt/inspection
+timestamps are projections. Upgrade only known return validator predecessors via explicit bootstrap.
 
 ### 9.1 `returnRequests` — `returns`
 
@@ -1510,6 +1518,15 @@ allocate a requested amount deterministically across distinct sources, subject t
 correction counters. This is a nonbinding snapshot: approval requires separate authorization and
 atomic revalidation/reservation. The advisory itself does not create obligations, attempts or provider effects.
 
+Customer refund submission creates only `requested/not_reserved` source-linked records after current
+qualified-basis and verified-capacity checks. Exact pending unit/source plans are deduplicated and
+included in subsequent request planning under an owning order revision fence. They are unapproved
+requests, not monetary reservations: held counters, approvedAt/approvedBy, timing and refundAttempts
+remain absent until actual administrator approval. Approval revalidates and atomically reserves source,
+aggregate, unit and delivery capacity before creating the first provider-ready attempt; rejection of an
+unreserved request changes no capacity counters. The existing approval requirement for reserved and
+completed states is unchanged. No new collection or weakened validator is introduced.
+
 The private reservation coordinator separately reauthorizes an administrator and protected policy,
 binds approved shortage or inspected physical-return quantities, and commits source-class, aggregate,
 unit and delivery holds with approved obligations, created attempts and audit. Distinct source slices
@@ -1517,6 +1534,13 @@ share a deterministic business group; changing request keys or reason cannot res
 request again. Correction reservation advances its existing unreserved intent rather than duplicating
 it. Method/policy/consent approval is mandatory. Without a qualified calendar, approval records timing
 under review and no target date. No payout is inferred from a reservation.
+The protected admin group API uses this same coordinator; it does not write an alternative refund
+ledger. Quantity capacity exhaustion is reported as REFUND_BALANCE_EXCEEDED before planning; an
+unqualified/uninspected claim remains an eligibility failure. The dispatcher additionally compares
+source merchant identity with configured transport identity before advancing a created attempt.
+Replays of a submitted/uncertain attempt may append a command-key audit alias but never create a
+second intent or reset its status/approval time. These guards do not change the collection schema;
+existing exact-predecessor refund migration and attempt provisioning remain authoritative.
 
 The cancellation-decision coordinator can invoke the private cancellation reservation capability in
 its existing transaction. Orders rechecks the pending request and original pre-dispatch unit facts;
@@ -1527,7 +1551,7 @@ startup, bypass qualified confirmation policy or establish a real original-cash 
 
 `requestedAt` in the API maps to immutable refund `createdAt`. The public timeline is a bounded projection of durable status/audit events; retain approval/completion facts separately so history truncation cannot remove timing authority. Timing basis corrections require audited domain updates, preserve approvedAt, and must not delay an otherwise authorized payout.
 
-**Indexes:** unique `{orderId:1,decisionKey:1}`; `{sourceCollectionId:1,status:1}`; `{orderId:1,classification:1,createdAt:-1}`; `{refundGroupKey:1,createdAt:1}`.
+**Indexes:** unique `{orderId:1,decisionKey:1}`; `{sourceCollectionId:1,status:1}`; `{orderId:1,classification:1,createdAt:-1}`; `{refundGroupKey:1,createdAt:1}`; `{status:1,completedAt:1,_id:1}` for completed payout reporting; `{capacityStatus:1,createdAt:1}` for held-liability reads.
 
 **Rules:** a multi-collection refund uses separate source-funded obligations with exact `unitAmounts[]`, one shared
 `refundGroupKey`/business `basisRefId` when applicable, and a **distinct unique `decisionKey` per source-funded slice**.
@@ -1536,6 +1560,13 @@ Reserve class-specific source balance **and** per-ordinal/per-delivery entitleme
 refunds cannot consume payment-correction-only collections unless explicitly classed as corrections. Refund unit amounts
 and ordinals are bounded by original immutable order lines and `orderItemBalances.unitCoverage`; a partially refunded
 ordinal can receive another source-funded payment only for its exact remaining net amount.
+
+Outcome settlement decrements exact held source/order/unit/delivery counters and increments completed
+counters only for independently verified disbursement. Confirmed merchandise units update the bounded
+refunded quantity; correction completion never changes merchandise progress. Verified no-payout releases
+holds and retains failed attempt evidence. An authorized retry reacquires capacity before opening the
+next numbered identity, preserving approval/timing and all old attempts. Financial settlement, attempt/
+refund CAS, causal audit and outbox intent are one transaction; external verification is outside it.
 
 ### 9.3 `refundAttempts` — `refunds`
 
@@ -1546,7 +1577,7 @@ ordinal can receive another source-funded payment only for its exact remaining n
 | `provider`! | enum(`sslcommerz`,`manual`) | Authorized payout channel |
 | `originalBankTranId`? | string | **Required for gateway initiation**; original verified collection's bank transaction ID |
 | `refundTransId`? | string | **Required for gateway initiation**: unique **merchant-generated** `refund_trans_id` (maximum 30 characters), persisted **before** sending the request |
-| `refundRefId`? | string | Optional **provider-issued** `refund_ref_id` (maximum 50 characters); populated on successful initiation acknowledgment |
+| `refundRefId`? | string | Optional **provider-issued** `refund_ref_id` (maximum 50 characters); populated on successful initiation acknowledgment or qualified independent recovery, after original-attempt binding and provider status verification |
 | `status`! | enum(`created`,`submitted`,`uncertain`,`confirmed`,`failed`) | Acknowledgment/submission is not completed payout |
 | `amountPoisha`! / `initiatedAt`! | int / Date | Must equal a source-reserved refund obligation |
 | `lastCheckedAt`? / `confirmedAt`? | Date | Verification timestamps |
@@ -1554,7 +1585,7 @@ ordinal can receive another source-funded payment only for its exact remaining n
 | `failureCode`? / `lastOperationKey`? | string | Safe failure metadata and unique causal reference |
 | `revision`! | int | Safe-integer CAS revision; generic model edits/deletes remain prohibited |
 
-**Indexes:** unique `{refundId:1,attemptNumber:1}`; unique `{provider:1,idempotencyKey:1}`; partial unique
+**Indexes:** partial unique `{provider:1,"manualEvidence.transferReference":1}` where the transfer reference is a string (original provider/account-qualified manual reference); unique `{refundId:1,attemptNumber:1}`; unique `{provider:1,idempotencyKey:1}`; partial unique
 `{provider:1,refundTransId:1}` and `{provider:1,refundRefId:1}` **where the field is a string**, after account-level
 semantics are verified; `{status:1,lastCheckedAt:1}`; partial unique `{refundId:1}` for
 `created/submitted/uncertain` prevents two simultaneously open attempts. Use one merchant `refundTransId` for replay/reconciliation of the
@@ -1577,7 +1608,7 @@ authorization and applicable consent; a 7-business-day target is a policy target
 | `eventKey`! | string | Unique event + recipient + template purpose; prevents duplicate intent |
 | `orderId`? / `userId`? | ObjectId | Optional source reference |
 | `recipient`! | embedded | `{emailNormalized,displayName?}`; restricted |
-| `eventType`! | enum | `registration`, `email_verification`, `email_change`, `password_reset`, `guest_order_access`, `order_received`, `order_confirmation`, `payment_success`, `payment_failure`, `payment_pending`, `order_cancellation`, `shipment_update`, `delivery_completion`, `return_update`, `refund_approval`, `refund_rejection`, `refund_completion` (PRD FR-20) |
+| `eventType`! | enum | `registration`, `email_verification`, `email_change`, `password_reset`, `guest_order_access`, `order_received`, `order_confirmation`, `payment_success`, `payment_failure`, `payment_pending`, `order_cancellation`, `shipment_update`, `delivery_completion`, `return_update`, `refund_update` with explicit approved/processing/completed/failed/rejected status (PRD FR-20) |
 | `templateVersion`! / `payload`! | string / embedded | Minimal redacted template data; no secrets |
 | `status`! | enum(`queued`,`sending`,`delivery_uncertain`,`sent`,`retry_wait`,`failed`) | Delivery state independent of business success |
 | `attemptCount`! / `nextAttemptAt`? | int / Date | Bounded backoff |
@@ -1630,8 +1661,16 @@ stored in the outbox. Approval, rejection and completion intents commit in the s
 claim change and audit. Delivery rechecks the immutable matching transition audit, order ownership and
 snapshotted recipient before rendering. A completion message explicitly does not claim refund payout.
 The exact commerce validator is an additive migration predecessor and its records/leases are preserved.
-The sender remains disabled unless explicitly composed in a controlled local/test worker; no ordinary
-runtime activation or refund-completion notification is implied.
+The standard local/test worker explicitly enables return and refund rendering with
+`AFTER_SALES_NOTIFICATIONS_ENABLED`; default workers skip both. No provider qualification follows.
+
+Refund status events use `refund_update`/`refund-update-v1` with `{refundId,refundStatus,operationKey,
+occurredAt}` only. Unique `refund_update:refundId:refundStatus:operationKey:v1` keys allow distinct
+approval and processing events from a retry while deduplicating each one. Financial transition, causal
+audit and intent commit together. Delivery requires the matching immutable status audit, exact order
+recipient, and, for completed messages, a completed refund and matching confirmed payout attempt.
+Original bank references, transfer proofs/destinations and internal reasons are absent from payloads.
+The exact prior return validator is an additive migration predecessor; records/leases are retained.
 
 Other notification event types require an explicit backward-compatible validator/model expansion before activation.
 Existing validators are checked, never silently replaced by startup or local bootstrap.
@@ -1651,6 +1690,13 @@ rollout remains operator-controlled. Old binaries with exact prior-validator rea
 build; never remove new lease/receipt data to make a prior validator pass. Other event payloads and secret-bearing proof
 renderers remain disabled until their owning tasks expand the contracts safely.
 
+Initial email-verification outbox intents use `email_verification`, `email-verification-v1` and a
+reference-only `{challengeId}` payload. The encrypted proof remains only on its existing `email_verify`
+auth challenge, bound to current normalized email and purpose revision. Notification provisioning is
+an additive exact-predecessor migration from the refund-notification validator; unknown schema drift
+is refused. Existing events remain valid. Workers without the verified renderer do not claim this type;
+confirmation/expiry strips the delivery envelope and never manufactures a login session.
+
 ### 10.2 `complaints` — `support`
 
 | Field | Type | Constraints / notes |
@@ -1662,14 +1708,17 @@ renderers remain disabled until their owning tasks expand the contracts safely.
 | `resolution`? / `respondedAt`? / `resolvedAt`? | string / Date / Date | Document action and response |
 | `assignedTo`? | ObjectId | Authorized administrator |
 
-**Indexes:** `{status:1,createdAt:-1}`; `{orderId:1,createdAt:-1}`.
+**Indexes:** `{status:1,createdAt:-1}`; `{orderId:1,createdAt:-1,_id:-1}`; `{userId:1,createdAt:-1,_id:-1}` for owned global/order complaint history.
 
-The order-associated private foundation requires orderId, adds revision and bounded contactHistory
-`[{at,outcome}]` (maximum 40), and uses stable ID sorting within order history. Contact and issue are
+Complaints retain optional orderId/userId, revision and bounded contactHistory
+`[{at,outcome}]` (maximum 40), and use stable ID sorting within order history. Contact and issue are
 restricted fields; owner views omit contact/reporter identity. Omitted contact resolves from the
 verified order's immutable customer snapshot; supplied contact is never ownership proof. Names retain
-up to 120 Unicode code points. Current customer or exact guest scope is required on every submission
-and read. Anonymous/global support transport remains its separate API task.
+up to 120 Unicode code points. Current customer or exact guest scope is required on every order-associated submission/read. Anonymous complaints require validated name/email and have no invented order reference.
+Global registered complaints bind userId through current customer authorization. Intake with a key derives one opaque
+complaint identity and audited input digest from the authenticated/browser scope and key; retries preserve the first
+record and changed input conflicts. The additive exact-predecessor complaint migration removes only the old required
+orderId constraint; it preserves records, indexes, contact protection and strict validation. Normal startup never migrates.
 
 Administrator progression is Open → In Review/Resolved → Closed; resolving requires a recorded
 contact outcome. First respondedAt and original resolvedAt survive later closure. CAS/current admin
@@ -1763,6 +1812,12 @@ financial state and repeated command replay never refreshes its request time.
 **Indexes:** unique `{jobKey:1}`; `{leaseUntil:1}`.
 
 **Rules:** process reservation expiry, payment uncertainty, refund verification and notification retries through idempotent domain services. A lease alone does not make a job's financial side effects idempotent.
+
+Media maintenance uses jobKey `media-maintenance` with the existing unique lease identity. It fences
+before each bounded asset operation and before success; an expired owner cannot checkpoint. Asset CAS
+and durable upload/delete intent remain the effect authority across lease takeover. Private evidence
+without explicit elapsed `retainUntil`, held assets and referenced assets cannot be deleted by this
+worker. No new collection or automatic ledger TTL is introduced.
 
 The reservation-expiry partition uses jobKey `reservation-expiry`, a random owner per acquisition and
 a bounded reservation-ID cursor. A live lease cannot be stolen; every business transaction checks the

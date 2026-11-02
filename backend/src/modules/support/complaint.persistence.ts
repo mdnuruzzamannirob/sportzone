@@ -17,7 +17,7 @@ const object = (properties: Record<string, unknown>, required: string[]) => ({
   properties,
   required,
 })
-export const complaintValidator = {
+const complaintShape = (orderRequired: boolean) => ({
   $and: [
     {
       $jsonSchema: object(
@@ -50,7 +50,7 @@ export const complaintValidator = {
         },
         [
           '_id',
-          'orderId',
+          ...(orderRequired ? ['orderId'] : []),
           'contact',
           'issue',
           'status',
@@ -73,7 +73,9 @@ export const complaintValidator = {
       ],
     },
   ],
-}
+})
+export const orderComplaintValidator = complaintShape(true)
+export const complaintValidator = complaintShape(false)
 async function shape(connection: Connection) {
   const row = await connection.db
     ?.listCollections({ name: 'complaints' }, { nameOnly: false })
@@ -106,5 +108,31 @@ export async function initializeComplaintPersistence(connection: Connection) {
     })
   await shape(connection)
   await createDeclaredIndexes(complaintModel(connection))
+  await verifyComplaintPersistence(connection)
+}
+
+// Explicit additive migration; never run by startup or silently replace unknown validators.
+export async function upgradeComplaintPersistence(connection: Connection) {
+  if (!connection.db) throw new Error('Database unavailable')
+  const row = await connection.db
+    .listCollections({ name: 'complaints' }, { nameOnly: false })
+    .next()
+  if (isDeepStrictEqual(row?.options?.validator, complaintValidator)) {
+    await createDeclaredIndexes(complaintModel(connection))
+    return verifyComplaintPersistence(connection)
+  }
+  if (
+    !isDeepStrictEqual(row?.options?.validator, orderComplaintValidator) ||
+    row?.options?.validationLevel !== 'strict' ||
+    row?.options?.validationAction !== 'error'
+  )
+    throw new Error('Unknown complaint validator')
+  await createDeclaredIndexes(complaintModel(connection))
+  await connection.db.command({
+    collMod: 'complaints',
+    validator: complaintValidator,
+    validationLevel: 'strict',
+    validationAction: 'error',
+  })
   await verifyComplaintPersistence(connection)
 }

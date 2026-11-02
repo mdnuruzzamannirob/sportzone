@@ -1,3 +1,7 @@
+import { complaintAdminDetail } from './complaint.schema.js'
+import { complaintAdminQuery as adminQuery, complaintIntakeInput } from './complaint.schema.js'
+import type { checkoutAccess, CheckoutCredentials } from '../auth/checkout-access.service.js'
+import { randomUUID } from 'node:crypto'
 import { createHash } from 'node:crypto'
 import { Types, type Connection } from 'mongoose'
 import type {
@@ -15,17 +19,14 @@ import { verifyComplaintPersistence } from './complaint.persistence.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { paginationSchema, pageMeta } from '../../shared/pagination.js'
-import { z } from 'zod'
 const hash = (s: string) => createHash('sha256').update(s).digest('hex')
-const adminQuery = paginationSchema.safeExtend({
-  status: z.enum(['open', 'in_review', 'resolved', 'closed']).optional(),
-})
 export function complaintService(
   connection: Connection,
   scope: ReturnType<typeof orderScopeAccess>,
   orders: ReturnType<typeof complaintOrderAccess>,
   admin: AdminAccountAccess,
   clock: () => Date = () => new Date(),
+  publicAccess?: ReturnType<typeof checkoutAccess>,
 ) {
   const model = complaintModel(connection),
     audit = createAuditWriter(connection),
@@ -33,7 +34,7 @@ export function complaintService(
   const view = (row: InstanceType<typeof model>) =>
     complaintView.parse({
       id: row._id.toHexString(),
-      orderId: row.orderId.toHexString(),
+      ...(row.orderId ? { orderId: row.orderId.toHexString() } : {}),
       status: row.status,
       issue: row.issue,
       createdAt: row.createdAt.toISOString(),
@@ -42,23 +43,213 @@ export function complaintService(
       ...(row.resolution ? { resolution: row.resolution } : {}),
     })
   return {
+    async intake(
+      credentials: PaymentInitiationCredentials & CheckoutCredentials & { guestPresent?: boolean },
+      raw: unknown,
+      rawKey?: unknown,
+    ) {
+      const input = parseInput(complaintIntakeInput, raw)
+      const key = rawKey === undefined ? randomUUID() : parseInput(paymentInitiationKey, rawKey)
+      const run = async () => {
+        const save = async (
+          session: import('mongoose').ClientSession,
+          actor: {
+            scope: string
+            userId?: string
+            orderId?: string
+            name?: string
+            email?: string
+            phone?: string
+          },
+        ) => {
+          await verifyComplaintPersistence(connection)
+          const { orderId: _orderId, ...content } = input
+          const resolved = parseInput(
+            complaintInput.required({ contactName: true, contactEmail: true }),
+            {
+              ...content,
+              contactName: input.contactName ?? actor.name,
+              contactEmail: input.contactEmail ?? actor.email,
+              ...((input.contactPhone ?? actor.phone)
+                ? { contactPhone: input.contactPhone ?? actor.phone }
+                : {}),
+            },
+          )
+          const operationKey = hash(`complaint-intake:${actor.scope}:${key}`),
+            complaintId = new Types.ObjectId(operationKey.slice(0, 24)),
+            digest = hash(JSON.stringify({ ...resolved, orderId: actor.orderId ?? null }))
+          const cause = {
+            action: 'complaint.intake',
+            targetType: 'complaint',
+            targetId: complaintId.toHexString(),
+            operationKey,
+          }
+          const prior = await lookup(session, cause)
+          if (prior) {
+            if (prior.afterDigest !== digest) throw new ApiError('IDEMPOTENCY_CONFLICT')
+            return { reference: complaintId.toHexString(), status: 'open' as const }
+          }
+          const now = clock()
+          if (!Number.isFinite(now.getTime())) throw new ApiError('STATE_CONFLICT')
+          await new model({
+            _id: complaintId,
+            ...(actor.orderId ? { orderId: new Types.ObjectId(actor.orderId) } : {}),
+            ...(actor.userId ? { userId: new Types.ObjectId(actor.userId) } : {}),
+            contact: {
+              name: resolved.contactName,
+              emailNormalized: resolved.contactEmail.toLowerCase(),
+              ...(resolved.contactPhone ? { phone: resolved.contactPhone } : {}),
+            },
+            issue: resolved.issue,
+            status: 'open',
+            contactHistory: [],
+            revision: 0,
+            createdAt: now,
+            updatedAt: now,
+          }).save({ session, timestamps: false })
+          await audit(session, {
+            ...cause,
+            actorType: actor.userId ? 'customer' : 'guest_order',
+            ...(actor.userId ? { actorId: actor.userId } : {}),
+            afterDigest: digest,
+            occurredAt: now,
+          })
+          return { reference: complaintId.toHexString(), status: 'open' as const }
+        }
+        const linkedOrderId = input.orderId
+        if (linkedOrderId)
+          return scope.owned(
+            credentials,
+            linkedOrderId,
+            async (principal, session) => {
+              const target = await orders(session, linkedOrderId, principal)
+              return save(session, {
+                scope: principal.kind === 'customer' ? principal.userId : principal.guestSessionId,
+                ...(target.userId ? { userId: target.userId.toHexString() } : {}),
+                orderId: linkedOrderId,
+                name: target.contact.name,
+                email: target.contact.emailNormalized,
+                phone: target.contact.phone,
+              })
+            },
+            true,
+          )
+        if (!credentials.customerPresent && (credentials.guestPresent || credentials.guestToken)) {
+          return scope.ownedAny(credentials, async (principal, session) => {
+            if (principal.kind !== 'guest_order') throw new ApiError('AUTH_REQUIRED')
+            await scope.inSession(credentials, principal.orderId, session, true)
+            const target = await orders(session, principal.orderId, principal)
+            return save(session, {
+              scope: principal.guestSessionId,
+              name: target.contact.name,
+              email: target.contact.emailNormalized,
+              phone: target.contact.phone,
+            })
+          })
+        }
+        if (!publicAccess) throw new ApiError('SERVICE_UNAVAILABLE')
+        return publicAccess.owned(credentials, (principal, session) =>
+          save(session, {
+            scope: principal.scopeKeyHash,
+            ...(principal.profile
+              ? {
+                  userId: principal.profile.id,
+                  name: principal.profile.name,
+                  email: principal.profile.email,
+                  ...(principal.profile.phone ? { phone: principal.profile.phone } : {}),
+                }
+              : {}),
+          }),
+        )
+      }
+      try {
+        return await run()
+      } catch (error) {
+        if (!(error && typeof error === 'object' && 'code' in error && error.code === 11000))
+          throw error
+        return run()
+      }
+    },
+    async mine(
+      token: string | undefined,
+      raw: unknown,
+      customers: import('../auth/customer-account.service.js').CustomerAccountAccess,
+    ) {
+      const input = parseInput(paginationSchema, raw)
+      return customers.owned(
+        token,
+        async (profile, { transaction: session }) => {
+          await verifyComplaintPersistence(connection)
+          const filter = { userId: profile.id },
+            rows = await model
+              .find(filter)
+              .select('+issue')
+              .sort({ createdAt: -1, _id: -1 })
+              .skip((input.page - 1) * input.pageSize)
+              .limit(input.pageSize)
+              .session(session)
+          return {
+            items: rows.map(view),
+            pagination: pageMeta(
+              input,
+              await model.countDocuments(filter).maxTimeMS(5000).session(session),
+            ),
+          }
+        },
+        false,
+      )
+    },
+    async adminDetail(token: string | undefined, rawId: unknown) {
+      const id = parseInput(orderId, rawId)
+      return admin.owned(
+        token,
+        async (_actor, session) => {
+          await verifyComplaintPersistence(connection)
+          const row = await model.findById(id).select('+issue +contact').session(session)
+          if (!row) throw new ApiError('NOT_FOUND')
+          return complaintAdminDetail.parse({
+            ...view(row),
+            contact: {
+              name: row.contact.name,
+              email: row.contact.emailNormalized,
+              ...(row.contact.phone ? { phone: row.contact.phone } : {}),
+            },
+            contactHistory: row.contactHistory.map((event) => ({
+              at: event.at.toISOString(),
+              outcome: event.outcome,
+            })),
+            responsePolicy: { status: 'under_review' },
+          })
+        },
+        false,
+      )
+    },
     async adminList(token: string | undefined, raw: unknown) {
       const query = parseInput(adminQuery, raw)
       return admin.owned(
         token,
         async (_actorId, session) => {
           await verifyComplaintPersistence(connection)
-          const filter = query.status ? { status: query.status } : {}
+          const escaped = query.q?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+          const filter = {
+            ...(query.status ? { status: query.status } : {}),
+            ...(query.orderId ? { orderId: query.orderId } : {}),
+            ...(escaped ? { issue: { $regex: `^${escaped}`, $options: 'i' } } : {}),
+          }
           const rows = await model
             .find(filter)
             .select('+issue')
             .sort({ createdAt: -1, _id: -1 })
             .skip((query.page - 1) * query.pageSize)
             .limit(query.pageSize)
+            .maxTimeMS(5000)
             .session(session)
           return {
             items: rows.map(view),
-            pagination: pageMeta(query, await model.countDocuments(filter).session(session)),
+            pagination: pageMeta(
+              query,
+              await model.countDocuments(filter).maxTimeMS(5000).session(session),
+            ),
           }
         },
         false,
@@ -117,8 +308,9 @@ export function complaintService(
           .find({ orderId: id })
           .select('+issue')
           .sort({ createdAt: -1, _id: -1 })
-          .limit(40)
+          .limit(41)
           .session(session)
+        if (rows.length > 40) throw new ApiError('BUSINESS_RULE_VIOLATION')
         return rows.map(view)
       })
     },
@@ -186,6 +378,15 @@ export function complaintService(
           reason: input.resolution,
           occurredAt: now,
         })
+        if (input.contactOutcome)
+          await audit(session, {
+            ...cause,
+            action: 'complaint.response.recorded',
+            actorType: 'admin',
+            actorId,
+            afterDigest: hash(input.contactOutcome),
+            occurredAt: now,
+          })
         return view(changed)
       })
     },

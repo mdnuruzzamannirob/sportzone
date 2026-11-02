@@ -86,6 +86,7 @@ export function returnService(
         ...authority,
         claimType: input.claimType,
         status: 'requested',
+        ...(input.description ? { description: input.description } : {}),
         requestedAt: now,
         revision: 0,
         items: input.items.map((item, index) => ({
@@ -100,7 +101,8 @@ export function returnService(
       })
       await row.save({ session })
       await audit(session, {
-        actorType: 'system',
+        actorType: authority.requestedBy.type === 'customer' ? 'customer' : 'guest_order',
+        actorId: authority.requestedBy.id,
         action: 'claim.request.create',
         targetType: 'return_request',
         targetId: input.claimId,
@@ -187,5 +189,48 @@ export function returnNotificationProofAccess(
       if (!audit || audit.occurredAt.getTime() !== data.occurredAt.getTime()) return undefined
       return { orderNumber: contact.orderNumber, recipient: contact.email }
     })
+  }
+}
+
+export function returnReportAccess(connection: Connection) {
+  return async (session: ClientSession) => {
+    await verifyReturnPersistence(connection)
+    return returnModel(connection)
+      .countDocuments({ claimType: 'physical_return', status: { $nin: ['completed', 'rejected'] } })
+      .maxTimeMS(5000)
+      .session(session)
+  }
+}
+
+// Customer request preparation exposes accepted quantities only, never private claim persistence.
+export function refundClaimSelectionAccess(connection: Connection) {
+  return async (
+    session: ClientSession,
+    orderId: string,
+    claimId: string,
+    kind: 'physical_return' | 'shortage',
+  ) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyReturnPersistence(connection)
+    const row = await returnModel(connection)
+      .findOne({ _id: claimId, orderId, claimType: kind })
+      .session(session)
+    if (
+      !row ||
+      (kind === 'physical_return'
+        ? !['inspected', 'completed'].includes(row.status)
+        : !['approved', 'completed'].includes(row.status))
+    )
+      throw new ApiError('BUSINESS_RULE_VIOLATION')
+    const items = row.items
+      .map((item) => ({
+        orderItemId: item.orderItemId.toHexString(),
+        quantity:
+          (kind === 'shortage' ? item.approvedUnitOrdinals : item.acceptedUnitOrdinals)?.length ??
+          0,
+      }))
+      .filter((item) => item.quantity > 0)
+    if (!items.length) throw new ApiError('BUSINESS_RULE_VIOLATION')
+    return items
   }
 }

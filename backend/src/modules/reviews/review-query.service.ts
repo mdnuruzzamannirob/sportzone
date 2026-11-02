@@ -1,20 +1,16 @@
+import { adminReviewView } from './review.schema.js'
 import { Types, type ClientSession, type Connection } from 'mongoose'
-import { z } from 'zod'
 import type { CustomerAccountAccess } from '../auth/customer-account.service.js'
 import type { AdminAccountAccess } from '../auth/admin-account.service.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { paginationSchema, pageMeta } from '../../shared/pagination.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { inTransaction } from '../../shared/database/transaction.js'
-import { reviewId } from './review.schema.js'
+import { reviewId, reviewAdminQuery as adminQuery, reviewView } from './review.schema.js'
 import { reviewModel } from './review.model.js'
 import { verifyReviewPersistence } from './review.persistence.js'
 
 const empty = paginationSchema
-const adminQuery = paginationSchema.safeExtend({
-  status: z.enum(['pending', 'approved', 'rejected', 'hidden']).optional(),
-  productId: reviewId.optional(),
-})
 // Explicit projection: customer/order/identity/moderation details never enter public views.
 function publicView(row: {
   _id: Types.ObjectId
@@ -24,7 +20,7 @@ function publicView(row: {
   status: string
   createdAt: Date
 }) {
-  return {
+  return reviewView.parse({
     id: row._id.toHexString(),
     productId: row.productId.toHexString(),
     rating: row.rating,
@@ -32,7 +28,7 @@ function publicView(row: {
     status: row.status,
     createdAt: row.createdAt.toISOString(),
     verifiedPurchase: true as const,
-  }
+  })
 }
 export function reviewQueryService(
   connection: Connection,
@@ -105,13 +101,15 @@ export function reviewQueryService(
             .limit(query.pageSize)
             .session(session)
           return {
-            items: rows.map((row) => ({
-              ...publicView(row),
-              userId: row.userId.toHexString(),
-              orderId: row.orderId.toHexString(),
-              ...(row.moderationReason ? { moderationReason: row.moderationReason } : {}),
-              ...(row.moderatedAt ? { moderatedAt: row.moderatedAt.toISOString() } : {}),
-            })),
+            items: rows.map((row) =>
+              adminReviewView.parse({
+                ...publicView(row),
+                userId: row.userId.toHexString(),
+                orderId: row.orderId.toHexString(),
+                ...(row.moderationReason ? { moderationReason: row.moderationReason } : {}),
+                ...(row.moderatedAt ? { moderatedAt: row.moderatedAt.toISOString() } : {}),
+              }),
+            ),
             pagination: pageMeta(query, await reviews.countDocuments(filter).session(session)),
           }
         },

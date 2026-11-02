@@ -22,6 +22,23 @@ export function createCustomerAccountAccess(
   clock: () => Date = () => new Date(),
 ) {
   return {
+    async authorizeInSession(
+      token: string | undefined,
+      transaction: ClientSession,
+      mutating = false,
+    ) {
+      if (!transaction.inTransaction()) throw new ApiError('AUTH_REQUIRED')
+      const identity = await sessions.authenticate('customer', token)
+      const user = await authorizeAccount(
+        models,
+        identity,
+        'customer',
+        transaction,
+        clock(),
+        mutating,
+      )
+      return user._id.toHexString()
+    },
     async owned<T>(
       token: string | undefined,
       work: (

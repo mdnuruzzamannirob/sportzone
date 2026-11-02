@@ -71,3 +71,25 @@ export const couponEligibilityInput = z.strictObject({
     })
     .optional(),
 })
+
+export const couponPreviewInput = z.strictObject({
+  code: couponCode,
+  items: z
+    .array(
+      z.strictObject({
+        variantId: z.string().regex(/^[a-f0-9]{24}$/),
+        quantity: z.int().min(1).max(50),
+      }),
+    )
+    .min(1)
+    .max(40)
+    .refine((items) => new Set(items.map((item) => item.variantId)).size === items.length),
+  deliveryArea: z
+    .strictObject({ districtKey: z.string().min(1).max(128), areaKey: z.string().min(1).max(128) })
+    .optional(),
+})
+export const couponPreviewResult = z.strictObject({
+  eligible: z.boolean(),
+  discountPoisha: z.int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+  reasonCode: z.literal('COUPON_UNAVAILABLE').optional(),
+})

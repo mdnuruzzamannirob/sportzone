@@ -59,14 +59,14 @@ This document decomposes the approved implementation plan into independently ver
 
 **Execution queue:** Phase numbers retain requirement ownership and historical IDs. They are not the current scheduling order. Implementation Plan §3.1 owns stage gates.
 
-| Stage              | Executable queue and closeout                                                                                                                                                                            |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Foundation         | P01-021 → P01-022 → P01-023 → P01-024.                                                                                                                                                                   |
+| Stage              | Executable queue and closeout                                                                                                                                                                                                                                                                  |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Foundation         | P01-021 → P01-022 → P01-023 → P01-024.                                                                                                                                                                                                                                                         |
 | Backend            | Every unfinished task marked Backend, in dependency order; P04-020 is the local media prerequisite for category/settings; P04-003 retains real media acceptance. P09-011 provisions staging; both remain mandatory for P03-022. Includes protected admin APIs formerly hidden inside UI tasks. |
-| Admin              | Every task marked Admin after P03-022; P09-010 closes the complete admin stage.                                                                                                                          |
-| Storefront         | Every task marked Storefront after P09-010; P02-017 closes the complete storefront stage.                                                                                                                |
-| Integrated         | Original catalog/shopping/COD/payment/after-sales gates, integrated staging and P10 release-candidate verification after P02-017.                                                                        |
-| Release / Handover | P11 production/merchant/legal/launch gates, then P12 final ownership and handover.                                                                                                                       |
+| Admin              | Every task marked Admin after P03-022; P09-010 closes the complete admin stage.                                                                                                                                                                                                                |
+| Storefront         | Every task marked Storefront after P09-010; P02-017 closes the complete storefront stage.                                                                                                                                                                                                      |
+| Integrated         | Original catalog/shopping/COD/payment/after-sales gates, integrated staging and P10 release-candidate verification after P02-017.                                                                                                                                                              |
+| Release / Handover | P11 production/merchant/legal/launch gates, then P12 final ownership and handover.                                                                                                                                                                                                             |
 
 **Dependency convention:** Each task lists its immediate prerequisites; their own prerequisites apply transitively.
 Original IDs retain their complete outcomes when backend or UI work is split into separate tasks. Stage metadata
@@ -95,15 +95,15 @@ requirements or procedures in their owning section; do not append a task-complet
 
 **Status changes:** Start each task as `Not Started`. Move to `Ready` only after dependencies and required external prerequisites are satisfied; `In Progress` indicates active work; `In Review` indicates submitted evidence awaiting verification. For ordinary development tasks, mark `Done` after applicable engineering verification, executor diff review and recorded completion under the owner-approved convention below. Explicit external qualification, application closeout and milestone tasks still require their real evidence and independent acceptance; a mock cannot clear those gates. Task metadata may be updated as execution proceeds, while source-approved requirements stay unchanged.
 
-| Status        | Required record / exit condition                                                                                                                                  |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Not Started` | No accepted implementation or task evidence is implied; keep the checkbox unchecked                                                                               |
-| `Ready`       | Declared task prerequisites are Done and required external inputs for this work are available                                                                     |
-| `In Progress` | Actual work has started; record the executor, scope and applicable verification needs                                                                             |
-| `Blocked`     | Record the failed prerequisite, accountable function, affected acceptance, evidence and next action; resume affected work only after its prerequisite is resolved |
-| `In Review`   | Deliverable and applicable observed verification results are attached; independent acceptance is pending                                                          |
-| `Done`        | Applicable engineering Definition of Done is met; record executor review, owner-authorized completion basis, date and evidence; explicit qualification/closeout gates retain independent acceptance; check the box                                              |
-| `Deferred`    | Record authorized scope/release disposition, rationale and impact; mandatory safety/launch gates cannot be waived by this status                                  |
+| Status        | Required record / exit condition                                                                                                                                                                                   |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Not Started` | No accepted implementation or task evidence is implied; keep the checkbox unchecked                                                                                                                                |
+| `Ready`       | Declared task prerequisites are Done and required external inputs for this work are available                                                                                                                      |
+| `In Progress` | Actual work has started; record the executor, scope and applicable verification needs                                                                                                                              |
+| `Blocked`     | Record the failed prerequisite, accountable function, affected acceptance, evidence and next action; resume affected work only after its prerequisite is resolved                                                  |
+| `In Review`   | Deliverable and applicable observed verification results are attached; independent acceptance is pending                                                                                                           |
+| `Done`        | Applicable engineering Definition of Done is met; record executor review, owner-authorized completion basis, date and evidence; explicit qualification/closeout gates retain independent acceptance; check the box |
+| `Deferred`    | Record authorized scope/release disposition, rationale and impact; mandatory safety/launch gates cannot be waived by this status                                                                                   |
 
 **Owner-approved development completion convention:** Ordinary code tasks complete on working
 implementation, relevant passing checks, executor review and traceable evidence. No separate human
@@ -130,23 +130,23 @@ retain their own approver, environment, artifacts, blockers and explicit decisio
 
 ## 3. Project progress dashboard
 
-The register contains 210 tasks across twelve requirement groups. Application-stage execution is defined in §1; accepted IDs and evidence remain historical. Update totals when tasks are added or statuses change.
+The register contains 211 tasks across twelve requirement groups. Application-stage execution is defined in §1; accepted IDs and evidence remain historical. Update totals when tasks are added or statuses change.
 
-| Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |   Done | Deferred |
-| --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | -----: | -------: |
-| 01 — Requirements Finalization and Planning | 24 | 0 | 0 | 0 | 0 | 0 | 24 | 0 |
-| 02 — UI/UX Design                             |      17 |           1 |     0 |           0 |       0 |         0 |     16 |        0 |
-| 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |     21 |        0 |
-| 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       0 |         0 |     12 |        1 |
-| 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           8 |     0 |           0 |       1 |         0 |      8 |        0 |
-| 06 — Checkout, Orders, and Delivery Rules | 22 | 6 | 0 | 0 | 2 | 0 | 14 | 0 |
-| 07 — Payment Integration and Verification     |      18 |           3 |     0 |           0 |       0 |         0 |     15 |        0 |
-| 08 — Returns and Refunds                      |      19 |           6 |     0 |           0 |      12 |         0 |      1 |        0 |
-| 09 — Admin Management and Reports             |      18 |          12 |     0 |           0 |       4 |         0 |      1 |        1 |
-| 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |      0 |        0 |
-| 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |      0 |        0 |
-| 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |      0 |        0 |
-| **Total** | **210** | **77** | **0** | **0** | **19** | **0** | **112** | **2** |
+| Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |    Done | Deferred |
+| --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | ------: | -------: |
+| 01 — Requirements Finalization and Planning   |      24 |           0 |     0 |           0 |       0 |         0 |      24 |        0 |
+| 02 — UI/UX Design                             |      17 |           1 |     0 |           0 |       0 |         0 |      16 |        0 |
+| 03 — Authentication and Core Backend          |      23 |           0 |     0 |           1 |       0 |         0 |      22 |        0 |
+| 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       0 |         0 |      12 |        1 |
+| 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           8 |     0 |           0 |       0 |         0 |       9 |        0 |
+| 06 — Checkout, Orders, and Delivery Rules     |      22 |           6 |     0 |           0 |       0 |         0 |      16 |        0 |
+| 07 — Payment Integration and Verification     |      18 |           3 |     0 |           0 |       0 |         0 |      15 |        0 |
+| 08 — Returns and Refunds                      |      19 |           6 |     0 |           0 |       0 |         0 |      13 |        0 |
+| 09 — Admin Management and Reports             |      18 |          10 |     0 |           0 |       0 |         0 |       7 |        1 |
+| 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |       0 |        0 |
+| 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |       0 |        0 |
+| 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |       0 |        0 |
+| **Total**                                     | **211** |      **74** | **0** |       **1** |   **0** |     **0** | **134** |    **2** |
 
 ## 4. Milestone tracker
 
@@ -531,7 +531,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
 
 ### Phase 03 — Authentication and core backend
 
-**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 03. **Associated gate:** M1. **Tasks:** 22.
+**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 03. **Associated gate:** M1. **Tasks:** 23.
 
 - [x] **P03-001 — Bootstrap modular Express API and shared middleware**\
   **Status:** `Done` · **Area:** Backend/core · **Owner:** Codex\
@@ -702,13 +702,22 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence:** [Backend target structure and parity](./evidence/P03-021-backend-refactor.md). Root setup/routes, typed config/shared, auth/catalog/media ownership, provider clients/schemas, jobs/scripts and test discovery migrated; negative boundary fixtures and clean build/format scope updated. 343 unit/contract, 327 real MongoDB integration, 40 tooling cases and 6 three-engine identity journeys passed; backend lint/types/build/smoke, boundaries, formatting and documentation checks passed. Project owner reviewed and accepted through the popup on 22 October 2026: “Review করেছি—accept করছি, Done করো”; [acceptance recorded](./evidence/P03-021-backend-refactor.md#owner-acceptance). EXT-04 and milestone gates unchanged.
 
 - [ ] **P03-022 — Verify and accept the complete backend stage**\
-  **Status:** `Not Started` · **Area:** Backend\
+  **Status:** `In Progress` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-01–FR-34 backend surfaces; Plan §3.1; Testing §15\
-  **Depends on:** `P04-003`, `P09-011`, `P05-004`, `P06-016`, `P07-016`, `P08-004`, `P04-017`, `P04-019`, `P05-014`, `P05-015`, `P05-016`, `P09-014`, `P09-016`, `P09-017`, `P09-018`\
+  **Depends on:** `P03-023`, `P04-003`, `P09-011`, `P05-004`, `P06-016`, `P07-016`, `P08-004`, `P04-017`, `P04-019`, `P05-014`, `P05-015`, `P05-016`, `P09-014`, `P09-016`, `P09-017`, `P09-018`\
   **Deliverable:** Consolidate all customer/admin API, validator/index, transaction/race/replay, job/recovery, secret/privacy and required real provider evidence against one backend revision. Reconcile generated OpenAPI/Postman and operator procedures.\
   **Acceptance:** All backend-stage dependencies and applicable provider gates pass; no frontend server/build/test or browser engine is required. API scenario tests prove guest/customer/admin workflows. Independent owner acceptance permits admin stage; M1–M8 product gates remain separate.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Whole-backend implementation audit and gap closure](./evidence/P03-022-backend-completion.md); [Package G verification and remaining external/stage acceptance](./evidence/P09-011-staging-runtime.md#package-g-verification). Technical development and consolidated backend verification completed: all 170 operations have real runtime registration and owning generated contracts; 811 unit, 186 contract and 1,258 integration cases Passed. There are no unfinished ordinary Backend-stage development tasks. P04-003/P09-011 and independent owner closeout remain outstanding.
+
+- [x] **P03-023 — Complete remaining specified backend API surfaces**\
+  **Status:** `Done` · **Area:** Backend · **Owner:** Codex\
+  **Stage:** `Backend`\
+  **Sources:** FR-01/09/12/16/18/19/29; API §§9/11/12/13/18.3; Database §§8–9\
+  **Depends on:** `P03-021`, `P05-006`, `P06-014`, `P07-012`, `P08-008`\
+  **Deliverable:** Close the nine specified API operations absent from runtime at whole-backend audit; preserve current canonical identity, collection, order and refund authorities. Include real HTTP composition, strict DTO/auth/CSRF/idempotency/CAS, transaction/race/recovery tests and generated artifacts.\
+  **Acceptance:** All nine operations implemented with positive/negative evidence; receipt linking/allocation cannot create unverified money or bypass source/refund caps; customer refund submission cannot approve or dispatch payout; email verification is purpose-bound, expiring, replay-safe and delivered through the protected outbox. No stub, fake admin or unsafe gate bypass.\
+  **Evidence:** [All nine gap closures, runtime inventory and verification](./evidence/P03-022-backend-completion.md). Final backend CI Passed: 811 unit, 186 contract, 1,258 integration and 83 tooling cases; build/smoke/types/lint/boundaries/format, security and documentation checks Passed. Executor diff review completed under Tasks §2. All existing local-only DTOs are also promoted under P03-022 technical verification; stage/external acceptance remains separate.
 
 ### Phase 04 — Product catalog and inventory
 
@@ -1027,15 +1036,15 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Invalid policy and stale edits fail; live holds retain approved quoted terms; history and quotas remain replay/concurrency safe.\
   **Evidence:** [Implementation, observed verification and recovery](./evidence/P05-015-coupon-administration.md). Accepted by project owner, 25 October 2026 — “Review করেছি—accept করছি, Done করো”.
 
-- [ ] **P05-016 — Expose review reading and moderation APIs**\
-  **Status:** `Blocked` · **Area:** Backend\
+- [x] **P05-016 — Expose review reading and moderation APIs**\
+  **Status:** `Done` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-10; FR-31; API §§10.3,14.2\
   **Depends on:** `P08-016`\
   **Deliverable:** Expose approved public ratings/reviews, customer-owned history and eligible submit/edit, and protected moderation queues/actions with reasons and audit history.\
   **Acceptance:** Eligibility, one active review, moderation-after-edit and public allowlists are verified through HTTP; administrators cannot attribute altered rating values to customers.\
-  **Evidence:** [Local scope, checks and blockers](./evidence/P05-016-P08-019-local-reads.md). P08-016 acceptance and integrated runtime remain pending.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package E completion, affected tests and runtime/recovery procedures](./evidence/P05-016-P08-019-local-reads.md#package-e-completion).\
+  **Review:** Executor implementation/diff review and engineering completion recorded 2 November 2026 under Tasks §2; explicit release/stage gates remain separate.
 
 - [ ] **P05-017 — Implement admin review moderation controls**\
   **Status:** `Not Started` · **Area:** Admin\
@@ -1195,27 +1204,25 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Non-enumerating rate-limited lookup and order-scoped eligible actions; no access by lookup text alone.\
   **Evidence:** [Expiry/guest implementation, per-task checks and operational limits](./evidence/P06-010-015-expiry-guest-access.md). Verified locally; project-owner independent acceptance recorded on 30 October 2026. Live provider/email/staging, frontend and qualified compliance gates remain separate.
 
-- [ ] **P06-016 — Implement order, cancellation, shipment and delivery email intents**\
-  **Status:** `Blocked` · **Area:** Backend/notifications\
+- [x] **P06-016 — Implement order, cancellation, shipment and delivery email intents**\
+  **Status:** `Done` · **Area:** Backend/notifications\
   **Stage:** `Backend`\
   **Sources:** FR-20\
   **Depends on:** `P06-013`\
   **Deliverable:** Persist accurate order reference/status events with reliable independent delivery and retry.\
   **Acceptance:** Repeated transitions do not email duplicate customer updates; mail failure cannot reverse orders.\
-  **Evidence:** [Local commerce outbox/template/dedup/retry verification and remaining gates](./evidence/P06-016-017-commerce-delivery-support.md). Actual placement/transition causes, canonical recipient/history verification and explicit local/test worker activation.\
-  **Blocked:** P06-013 development prerequisite is Done; this notification task still needs its own completion review and deployed sender/inbox/template qualification and independent full acceptance are not supplied by local provider doubles.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package F completion, affected verification, rollout/recovery and executor review](./evidence/P06-016-017-commerce-delivery-support.md#package-f-completion).\
+  **Review:** Engineering completion recorded 2 November 2026 under Tasks §2; external qualification, backend closeout and milestone acceptance remain separate.
 
-- [ ] **P06-017 — Implement failed delivery, delay and complaints foundations**\
-  **Status:** `Blocked` · **Area:** Backend/admin\
+- [x] **P06-017 — Implement failed delivery, delay and complaints foundations**\
+  **Status:** `Done` · **Area:** Backend/admin\
   **Stage:** `Backend`\
   **Sources:** FR-16; FR-26; FR-34\
   **Depends on:** `P06-011`\
   **Deliverable:** Track failed attempts and retry while Shipped; final non-delivery closure requires authorized custody/disposition for all shipped quantities. Close exceptionally as Cancelled, resolve eligible collected refunds, and restock only physically recovered inspected resellable units without re-running pre-shipment release. Track contacts, complaints, and resolution with scoped access.\
   **Acceptance:** Failure leads to documented retry/resolution; deadlines and customer updates remain accurate.\
-  **Evidence:** [Local exception/custody/recovery/complaint checks and remaining gates](./evidence/P06-016-017-commerce-delivery-support.md). Private order-associated capabilities; no public/admin exception or anonymous complaint HTTP activation.\
-  **Blocked:** P06-011 remains unaccepted; real protected disposition/inspection authority, paid-refund integration, support HTTP security/public abuse controls and qualified response policy remain unavailable. Missing capabilities deny unsafe closure.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package F completion, affected verification, rollout/recovery and executor review](./evidence/P06-016-017-commerce-delivery-support.md#package-f-completion).\
+  **Review:** Engineering completion recorded 2 November 2026 under Tasks §2; external qualification, backend closeout and milestone acceptance remain separate.
 
 - [ ] **P06-018 — Implement accessible checkout and order confirmation UI**\
   **Status:** `Not Started` · **Area:** Storefront/checkout\
@@ -1441,105 +1448,105 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Parallel physical-return and shortage claims together cannot exceed eligible unclaimed item quantity, including previously resolved/refunded merchandise.\
   **Evidence:** [Separate acceptance checklist, ordinal races, rollback and bootstrap checks](./evidence/P07-018-P08-001-monitoring-claim-foundation.md). Private requested-claim foundation only; eligibility/lifecycle/media activation remain owning later tasks. Project-owner independent acceptance recorded on 30 October 2026.
 
-- [ ] **P08-002 — Validate delivered-order return eligibility and policy windows**\
-  **Status:** `Blocked` · **Area:** Backend/returns\
+- [x] **P08-002 — Validate delivered-order return eligibility and policy windows**\
+  **Status:** `Done` · **Area:** Backend/returns\
   **Stage:** `Backend`\
   **Sources:** FR-17\
   **Depends on:** `P08-001`, `P06-011`\
   **Deliverable:** Enforce delivered status, development-baseline seven-day window and legally protected exceptions via approved policy.\
   **Acceptance:** Unsupported blanket rejection cannot override applicable rights; ineligible claims have clear reasons.\
-  **Evidence:** [Separate local scope, actual checks and remaining gates](./evidence/P08-002-003-local-return-eligibility-lifecycle.md). Owner authorized local implementation/tests; full prerequisite, HTTP/policy and physical lifecycle integrations remain blocked. No task acceptance is inferred.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package B completion, API/access workflows, partial batches, migration and observed verification](./evidence/P08-003-004-local-return-inspection.md#package-b-completion). 381 affected integration, 798 unit regression, 112 contract tests Passed; final 11 HTTP, 19 Media and 12 configuration/protocol checks Passed after localized changes.\
+  **Completion:** Implemented and reviewed by Codex under the owner-approved engineering convention (Tasks §2). Live policy/Media qualification remains in P11-007/P04-003/P11-008; application and milestone gates are unchanged.
 
-- [ ] **P08-003 — Implement separate return lifecycle with admin review**\
-  **Status:** `Blocked` · **Area:** Backend/returns\
+- [x] **P08-003 — Implement separate return lifecycle with admin review**\
+  **Status:** `Done` · **Area:** Backend/returns\
   **Stage:** `Backend`\
   **Sources:** FR-17; FR-32\
   **Depends on:** `P08-002`, `P06-015`\
   **Deliverable:** Implement Requested/Under Review/Approved/Awaiting Return/Received/Inspected/Completed, rejection history and customer-scoped supporting-image upload using a separately authorized media path.\
   **Acceptance:** Invalid transitions and unauthorized approval are blocked; physical returns cannot skip receipt/inspection; approved missing-item/shortage claims have a non-physical path without receipt/inspection/restock; optional evidence enforces type/size checks, verified customer or scoped guest authorization, private retrieval and safe orphan/retention cleanup.\
-  **Evidence:** [Separate local scope, actual checks and remaining gates](./evidence/P08-002-003-local-return-eligibility-lifecycle.md). Owner authorized local implementation/tests; full prerequisite, HTTP/policy and physical lifecycle integrations remain blocked. No task acceptance is inferred.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package B completion, API/access workflows, partial batches, migration and observed verification](./evidence/P08-003-004-local-return-inspection.md#package-b-completion). 381 affected integration, 798 unit regression, 112 contract tests Passed; final 11 HTTP, 19 Media and 12 configuration/protocol checks Passed after localized changes.\
+  **Completion:** Implemented and reviewed by Codex under the owner-approved engineering convention (Tasks §2). Live policy/Media qualification remains in P11-007/P04-003/P11-008; application and milestone gates are unchanged.
 
-- [ ] **P08-004 — Record receipt/inspection and resellable stock restoration**\
-  **Status:** `Blocked` · **Area:** Backend/inventory\
+- [x] **P08-004 — Record receipt/inspection and resellable stock restoration**\
+  **Status:** `Done` · **Area:** Backend/inventory\
   **Stage:** `Backend`\
   **Sources:** FR-17; FR-13; FR-32\
   **Depends on:** `P08-003`\
   **Deliverable:** Require inspection to mark resellable quantities and atomically add physical stock.\
   **Acceptance:** Request/approval alone never restocks; duplicate receipt cannot double-add stock.\
-  **Evidence:** [Local receipt/inspection, stock and verification](./evidence/P08-003-004-local-return-inspection.md). Blocked on P08-003 acceptance, partial-receipt follow-up and integrated access; independent acceptance remains pending.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package B completion, API/access workflows, partial batches, migration and observed verification](./evidence/P08-003-004-local-return-inspection.md#package-b-completion). 381 affected integration, 798 unit regression, 112 contract tests Passed; final 11 HTTP, 19 Media and 12 configuration/protocol checks Passed after localized changes.\
+  **Completion:** Implemented and reviewed by Codex under the owner-approved engineering convention (Tasks §2). Live policy/Media qualification remains in P11-007/P04-003/P11-008; application and milestone gates are unchanged.
 
-- [ ] **P08-005 — Model refund obligations, attempts and commitments**\
-  **Status:** `Blocked` · **Area:** Backend/refunds\
+- [x] **P08-005 — Model refund obligations, attempts and commitments**\
+  **Status:** `Done` · **Area:** Backend/refunds\
   **Stage:** `Backend`\
   **Sources:** FR-18; FR-33\
   **Depends on:** `P07-002`, `P06-013`, `P08-003`\
   **Deliverable:** Separate refunds from returns and store approval/payout attempts, status and source collection.\
   **Acceptance:** Original order fulfillment history remains immutable; pending vs completed are distinct.\
-  **Evidence:** [Durable obligation/attempt schema, migration and tests](./evidence/P06-013-P08-005-008-durable-reservations.md). Approved/reserved obligations and created/submitted/uncertain intents now persist; verified completion/release/retry workflow, accepted prerequisites and independent acceptance remain pending.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package C completion, protected policy/HTTP/dispatch integration and consolidated verification](./evidence/P06-013-P08-005-008-durable-reservations.md#package-c-completion). 802 unit, 396 affected replica-set integration, 112 contract and 79 tooling cases Passed; build/types/lint/boundaries/smoke/security Passed.\
+  **Completion:** Codex implementation and diff review under Tasks §2. Package B prerequisite commit is combined into this checkout and retested. Verified payout/release/retry/manual notification remain Package D; actual merchant/legal/deployed qualification retains its release gates.
 
-- [ ] **P08-006 — Calculate item-level partial/full refundable balance**\
-  **Status:** `Blocked` · **Area:** Backend/refunds\
+- [x] **P08-006 — Calculate item-level partial/full refundable balance**\
+  **Status:** `Done` · **Area:** Backend/refunds\
   **Stage:** `Backend`\
   **Sources:** FR-18; FR-33\
   **Depends on:** `P08-005`\
   **Deliverable:** Use purchase-time item/allocated coupon amounts, physical-return/shortage quantity limits, delivery-charge policy and prior commitments. Payment corrections consume source-collection financial capacity independently of merchandise-return quantities.\
   **Acceptance:** No current-catalog price used; deterministic rounding; no refund for uncollected COD.\
-  **Evidence:** [Historical arithmetic/advisory](./evidence/P08-005-006-local-refund-advisory.md) and [durable reservation consumers](./evidence/P06-013-P08-005-008-durable-reservations.md). Protected policy and verified source/unit balances feed private reservations; full prerequisite and independent acceptance remain pending.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package C completion, protected policy/HTTP/dispatch integration and consolidated verification](./evidence/P06-013-P08-005-008-durable-reservations.md#package-c-completion). 802 unit, 396 affected replica-set integration, 112 contract and 79 tooling cases Passed; build/types/lint/boundaries/smoke/security Passed.\
+  **Completion:** Codex implementation and diff review under Tasks §2. Package B prerequisite commit is combined into this checkout and retested. Verified payout/release/retry/manual notification remain Package D; actual merchant/legal/deployed qualification retains its release gates.
 
-- [ ] **P08-007 — Atomically reserve eligible collected refund balance**\
-  **Status:** `Blocked` · **Area:** Backend/refunds\
+- [x] **P08-007 — Atomically reserve eligible collected refund balance**\
+  **Status:** `Done` · **Area:** Backend/refunds\
   **Stage:** `Backend`\
   **Sources:** FR-18\
   **Depends on:** `P08-006`\
   **Deliverable:** Reserve refundable capacity before payout and guard against concurrent attempts.\
   **Acceptance:** Pending+completed commitments never exceed independently verified collections at either source-collection or order level; duplicate-collection refunds do not consume merchandise quantity entitlement.\
-  **Evidence:** [Atomic source/order/unit/delivery reservation and races](./evidence/P06-013-P08-005-008-durable-reservations.md). Durable group/obligation/attempt/audit writes now join the same transaction; completion/release recovery, full workflow activation, accepted prerequisites and independent acceptance remain pending.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package C completion, protected policy/HTTP/dispatch integration and consolidated verification](./evidence/P06-013-P08-005-008-durable-reservations.md#package-c-completion). 802 unit, 396 affected replica-set integration, 112 contract and 79 tooling cases Passed; build/types/lint/boundaries/smoke/security Passed.\
+  **Completion:** Codex implementation and diff review under Tasks §2. Package B prerequisite commit is combined into this checkout and retested. Verified payout/release/retry/manual notification remain Package D; actual merchant/legal/deployed qualification retains its release gates.
 
-- [ ] **P08-008 — Implement supported gateway payout requests and references**\
-  **Status:** `Blocked` · **Area:** Backend/refunds\
+- [x] **P08-008 — Implement supported gateway payout requests and references**\
+  **Status:** `Done` · **Area:** Backend/refunds\
   **Stage:** `Backend`\
   **Sources:** FR-18; FR-33\
   **Depends on:** `P08-007`, `P07-001`\
   **Deliverable:** Use original bank_tran_id and supported provider API; record refund identifiers and attempt states.\
   **Acceptance:** Provider acceptance leaves refund Processing until independently verified payout.\
-  **Evidence:** [Durable original references and one-shot dispatch tests](./evidence/P06-013-P08-005-008-durable-reservations.md). Private dispatch persists intent before transport and retains holds on uncertainty; real merchant sandbox, qualified reconciliation/completion and independent acceptance remain pending.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package C completion, protected policy/HTTP/dispatch integration and consolidated verification](./evidence/P06-013-P08-005-008-durable-reservations.md#package-c-completion). 802 unit, 396 affected replica-set integration, 112 contract and 79 tooling cases Passed; build/types/lint/boundaries/smoke/security Passed.\
+  **Completion:** Codex implementation and diff review under Tasks §2. Package B prerequisite commit is combined into this checkout and retested. Verified payout/release/retry/manual notification remain Package D; actual merchant/legal/deployed qualification retains its release gates.
 
-- [ ] **P08-009 — Implement refund-status verification/retry/investigation**\
-  **Status:** `Blocked` · **Area:** Backend/jobs\
+- [x] **P08-009 — Implement refund-status verification/retry/investigation**\
+  **Status:** `Done` · **Area:** Backend/jobs\
   **Stage:** `Backend`\
   **Sources:** FR-18; FR-33\
   **Depends on:** `P08-008`\
   **Deliverable:** Query supported status, reconcile uncertainty and guard authorized retry without duplicate payout.\
   **Acceptance:** Unknown result never marked Completed; duplicate callbacks and job restarts are safe.\
-  **Evidence:** [Original investigation checks](./evidence/P08-009-010-local-refund-evidence.md) and [durable dispatch follow-up](./evidence/P06-013-P08-005-008-durable-reservations.md). Attempts now persist through submission/uncertainty; independent payout proof, completion/release/retry transactions, durable worker and accepted prerequisites remain pending.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package D completion, atomic outcome/retry/manual verification, worker and notification integration](./evidence/P08-009-010-local-refund-evidence.md#package-d-completion). 806 final unit, 446 affected integration regression, 313 checkout rerun, 23 final recovery cases, 112 contract and 80 tooling cases Passed; build/types/lint/boundaries/smoke/security Passed.\
+  **Completion:** Codex implementation and actual diff review under Tasks §2. Proof qualification, source/merchant/sender deployment and launch retain their release owners; no real transfer/email/payout, application closeout or milestone acceptance is inferred.
 
-- [ ] **P08-010 — Implement controlled COD/manual payout evidence**\
-  **Status:** `Blocked` · **Area:** Backend/refunds\
+- [x] **P08-010 — Implement controlled COD/manual payout evidence**\
+  **Status:** `Done` · **Area:** Backend/refunds\
   **Stage:** `Backend`\
   **Sources:** FR-18; FR-33\
   **Depends on:** `P08-007`, `P06-012`\
   **Deliverable:** Record consent where required, verified transfer and admin confirmation for COD/bank/mobile wallet.\
   **Acceptance:** Uncollected COD cannot be refunded; no Completed state without payout evidence.\
-  **Evidence:** [Local manual evidence verification](./evidence/P08-009-010-local-refund-evidence.md) and [durable attempt foundation](./evidence/P06-013-P08-005-008-durable-reservations.md). Attempts now persist; real transfer/consent verification, canonical manual-confirmation integration, transactional completion and prerequisite acceptance remain pending.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package D completion, atomic outcome/retry/manual verification, worker and notification integration](./evidence/P08-009-010-local-refund-evidence.md#package-d-completion). 806 final unit, 446 affected integration regression, 313 checkout rerun, 23 final recovery cases, 112 contract and 80 tooling cases Passed; build/types/lint/boundaries/smoke/security Passed.\
+  **Completion:** Codex implementation and actual diff review under Tasks §2. Proof qualification, source/merchant/sender deployment and launch retain their release owners; no real transfer/email/payout, application closeout or milestone acceptance is inferred.
 
-- [ ] **P08-011 — Persist return and refund decisions and notifications**\
-  **Status:** `Blocked` · **Area:** Backend/notifications\
+- [x] **P08-011 — Persist return and refund decisions and notifications**\
+  **Status:** `Done` · **Area:** Backend/notifications\
   **Stage:** `Backend`\
   **Sources:** FR-20; FR-17; FR-18\
   **Depends on:** `P08-009`, `P08-010`\
   **Deliverable:** Record approvals, rejection reasons, retry/failure and accurate customer status email.\
   **Acceptance:** Return completion never sends unverified refund-completed claim; notifications deduplicate.\
-  **Evidence:** [Local return notifications, review qualification and actual checks](./evidence/P08-011-016-return-notifications-review.md). Required refund prerequisites, production composition and independent acceptance remain outstanding.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package D completion, atomic outcome/retry/manual verification, worker and notification integration](./evidence/P08-009-010-local-refund-evidence.md#package-d-completion). 806 final unit, 446 affected integration regression, 313 checkout rerun, 23 final recovery cases, 112 contract and 80 tooling cases Passed; build/types/lint/boundaries/smoke/security Passed.\
+  **Completion:** Codex implementation and actual diff review under Tasks §2. Proof qualification, source/merchant/sender deployment and launch retain their release owners; no real transfer/email/payout, application closeout or milestone acceptance is inferred.
 
 - [ ] **P08-012 — Implement request/history and evidence UX**\
   **Status:** `Not Started` · **Area:** Storefront/returns\
@@ -1577,15 +1584,15 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** No optimistic Completed and every financial action needs authorization/confirmation/audit.\
   **Evidence to attach:** Admin refund E2E.
 
-- [ ] **P08-016 — Complete delivered-purchase and full-return review eligibility**\
-  **Status:** `Blocked` · **Area:** Backend/reviews\
+- [x] **P08-016 — Complete delivered-purchase and full-return review eligibility**\
+  **Status:** `Done` · **Area:** Backend/reviews\
   **Stage:** `Backend`\
   **Sources:** FR-10; FR-31\
   **Depends on:** `P05-009`, `P08-005`\
   **Deliverable:** Require qualifying delivered purchase and block new verification after fully returned/refunded purchase unless another qualifies.\
   **Acceptance:** Legitimate prior reviews are not auto-deleted solely by refund; edited reviews return to moderation when required.\
-  **Evidence:** [Local return notifications, review qualification and actual checks](./evidence/P08-011-016-return-notifications-review.md). Required refund prerequisites, production composition and independent acceptance remain outstanding.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package E completion, affected tests and runtime/recovery procedures](./evidence/P05-016-P08-019-local-reads.md#package-e-completion).\
+  **Review:** Executor implementation/diff review and engineering completion recorded 2 November 2026 under Tasks §2; explicit release/stage gates remain separate.
 
 - [ ] **P08-017 — Enable verified customer review submission and editing UI**\
   **Status:** `Not Started` · **Area:** Storefront/reviews\
@@ -1605,15 +1612,15 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** M5 safety gates pass; every Completed refund has verified payout proof.\
   **Evidence to attach:** M5 after-sales test report.
 
-- [ ] **P08-019 — Expose scoped claim and refund history APIs**\
-  **Status:** `Blocked` · **Area:** Backend\
+- [x] **P08-019 — Expose scoped claim and refund history APIs**\
+  **Status:** `Done` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-17; FR-18; FR-19; API §13\
   **Depends on:** `P08-011`\
   **Deliverable:** Complete customer/guest and admin claim/refund list/detail/decision surfaces, evidence access and safe timelines using return/refund services; include timing snapshots and investigation status.\
   **Acceptance:** Nested ownership, guest proof scope, private image retrieval, quantity/source caps and verified payout status are proven by API tests; missing policy timing never produces a guessed deadline.\
-  **Evidence:** [Local scope, checks and blockers](./evidence/P05-016-P08-019-local-reads.md). P08-011 acceptance and remaining history/refund surfaces remain pending.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package E completion, affected tests and runtime/recovery procedures](./evidence/P05-016-P08-019-local-reads.md#package-e-completion).\
+  **Review:** Executor implementation/diff review and engineering completion recorded 2 November 2026 under Tasks §2; explicit release/stage gates remain separate.
 
 ### Phase 09 — Admin management and reports
 
@@ -1628,15 +1635,15 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Statistics correspond to authoritative API; access restricted to administrator.\
   **Evidence to attach:** Dashboard dataset/route tests.
 
-- [ ] **P09-002 — Implement separated gross/discount/paid/COD/refund/net reporting**\
-  **Status:** `Blocked` · **Area:** Backend/reports\
+- [x] **P09-002 — Implement separated gross/discount/paid/COD/refund/net reporting**\
+  **Status:** `Done` · **Area:** Backend/reports\
   **Stage:** `Backend`\
   **Sources:** FR-22; FR-29\
   **Depends on:** `P06-012`, `P08-005`\
   **Deliverable:** Calculate gross merchandise, sale/coupon discounts, verified paid collections, outstanding COD, pending/completed refunds and net collected revenue.\
   **Acceptance:** Uncollected COD does not inflate collected revenue; refund and duplicate attempt aggregates remain accurate.\
-  **Evidence:** [Private arithmetic and remaining source/cutoff work](./evidence/P09-002-015-local-report-customer.md). Accepted COD/refund prerequisites, authoritative ledger adapters and independent acceptance remain pending.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package F completion, affected verification, rollout/recovery and executor review](./evidence/P06-016-017-commerce-delivery-support.md#package-f-completion).\
+  **Review:** Engineering completion recorded 2 November 2026 under Tasks §2; external qualification, backend closeout and milestone acceptance remain separate.
 
 - [ ] **P09-003 — Complete admin customer search, history and suspension workflow**\
   **Status:** `Not Started` · **Area:** Admin/customers\
@@ -1738,53 +1745,55 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Unapproved policy placeholders never publish; stale writes fail; contact/policy projections exclude private configuration and media references are validated. Delivery settings reuse the same canonical singleton.\
   **Evidence:** [Feature implementation, observed checks and recovery](./evidence/P09-013-settings-public-content.md). Project owner accepted on 26 October 2026: “done koro”. [Acceptance record](./evidence/P09-013-settings-public-content.md#independent-acceptance). Real policy/provider/staging gates remain separate.
 
-- [ ] **P09-014 — Expose dashboard metrics APIs**\
-  **Status:** `Not Started` · **Area:** Backend\
+- [x] **P09-014 — Expose dashboard metrics APIs**\
+  **Status:** `Done` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-22; API §14.4\
   **Depends on:** `P09-002`, `P04-018`\
   **Deliverable:** Expose canonical DashboardMetrics/DashboardCounts, financial summaries, bounded recentOrders/lowStockItems and Asia/Dhaka cutoff/date basis.\
   **Acceptance:** Metrics reconcile to authoritative collections, discounts, COD and refunds; admin-only access and bounded query profiles pass. No dashboard screen is required.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Package F completion, affected verification, rollout/recovery and executor review](./evidence/P06-016-017-commerce-delivery-support.md#package-f-completion).\
+  **Review:** Engineering completion recorded 2 November 2026 under Tasks §2; external qualification, backend closeout and milestone acceptance remain separate.
 
-- [ ] **P09-015 — Expose customer administration and privacy review APIs**\
-  **Status:** `Blocked` · **Area:** Backend\
+- [x] **P09-015 — Expose customer administration and privacy review APIs**\
+  **Status:** `Done` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-27; PRD §10.2; API §14.2\
   **Depends on:** `P03-008`, `P06-014`, `P08-019`\
   **Deliverable:** Implement customer search, authorized history, suspension/reactivation and verified deletion-request review with retention/legal-hold-safe decisions.\
   **Acceptance:** Suspension revokes relevant sessions; foreign access and unsafe deletion fail; required order/financial/audit history remains and sensitive data is minimized.\
-  **Evidence:** [Local masked customer read and remaining scope](./evidence/P09-002-015-local-report-customer.md). P06-014 development prerequisite is Done; P08-019 and full customer operations remain pending.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package F completion, affected verification, rollout/recovery and executor review](./evidence/P06-016-017-commerce-delivery-support.md#package-f-completion).\
+  **Review:** Engineering completion recorded 2 November 2026 under Tasks §2; external qualification, backend closeout and milestone acceptance remain separate.
 
-- [ ] **P09-016 — Expose support and complaint operations APIs**\
-  **Status:** `Blocked` · **Area:** Backend\
+- [x] **P09-016 — Expose support and complaint operations APIs**\
+  **Status:** `Done` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-16; FR-26; FR-34; API §14.4\
   **Depends on:** `P06-017`\
   **Deliverable:** Expose public/scoped complaint intake and admin search/contact/status/resolution with order context, deadline policy and durable customer-response events.\
   **Acceptance:** Anonymous inputs require contactName/contactEmail; authenticated defaults use verified own data only; replay/throttle/access tests preserve history and notification truth.\
-  **Evidence:** [Local complaint and audit read work](./evidence/P09-016-017-local-support-audit.md). P06-017, remaining intake/response integration and independent acceptance remain pending.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package F completion, affected verification, rollout/recovery and executor review](./evidence/P06-016-017-commerce-delivery-support.md#package-f-completion).\
+  **Review:** Engineering completion recorded 2 November 2026 under Tasks §2; external qualification, backend closeout and milestone acceptance remain separate.
 
-- [ ] **P09-017 — Expose audit and operational exception APIs**\
-  **Status:** `Blocked` · **Area:** Backend\
+- [x] **P09-017 — Expose audit and operational exception APIs**\
+  **Status:** `Done` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-25; FR-26; FR-29; FR-33; API §14.4\
   **Depends on:** `P07-018`, `P08-019`, `P04-018`, `P09-002`\
   **Deliverable:** Expose bounded sanitized audit/history and stock, payment, refund and reconciliation exception queues; domain services retain mutation authority.\
   **Acceptance:** Restricted queries enforce admin access and safe pagination; immutable actor/action/time history remains; no operational screen is needed to prove the backend contract.\
-  **Evidence:** [Local complaint and audit read work](./evidence/P09-016-017-local-support-audit.md). Prerequisite acceptance, bounded query profiles, operational queues and independent acceptance remain pending.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package F completion, affected verification, rollout/recovery and executor review](./evidence/P06-016-017-commerce-delivery-support.md#package-f-completion).\
+  **Review:** Engineering completion recorded 2 November 2026 under Tasks §2; external qualification, backend closeout and milestone acceptance remain separate.
 
-- [ ] **P09-018 — Expose bounded business report queries**\
-  **Status:** `Not Started` · **Area:** Backend\
+- [x] **P09-018 — Expose bounded business report queries**\
+  **Status:** `Done` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-22; FR-27; API §14.4\
   **Depends on:** `P09-002`, `P09-015`\
   **Deliverable:** Expose documented period/filter/pagination reports with explicit timezone/cutoff and collected-versus-outstanding monetary labels.\
   **Acceptance:** Bounded query/index profiles and synthetic ledger reconciliations pass; no advanced BI scope, duplicate collection inflation or private leakage.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Package F completion, affected verification, rollout/recovery and executor review](./evidence/P06-016-017-commerce-delivery-support.md#package-f-completion).\
+  **Review:** Engineering completion recorded 2 November 2026 under Tasks §2; external qualification, backend closeout and milestone acceptance remain separate.
 
 ### Phase 10 — Testing, security review, and bug fixing
 
@@ -2151,7 +2160,7 @@ owners and includes additional cross-domain owners identified by that mapping.
 | FR-02           | `P03-004`, `P03-008`, `P03-010`, `P03-011`, `P03-013`, `P03-015`, `P03-016`, `P06-014`, `P05-004`, `P05-012`, `P08-012`, `P06-005`, `P08-013`                                                                                                                                     |
 | FR-03           | `P04-012`, `P04-015`, `P09-008`, `P11-006`, `P02-006`, `P09-005`                                                                                                                                                                                                                  |
 | FR-04           | `P04-001`, `P04-009`, `P04-011`, `P04-013`, `P04-015`, `P10-009`, `P04-002`                                                                                                                                                                                                       |
-| FR-05           | `P04-002`, `P04-003`, `P04-020`, `P04-010`, `P04-011`, `P04-014`, `P04-015`, `P10-009`, `P05-001`, `P05-004`, `P05-010`, `P06-004`                                                                                                                                                           |
+| FR-05           | `P04-002`, `P04-003`, `P04-020`, `P04-010`, `P04-011`, `P04-014`, `P04-015`, `P10-009`, `P05-001`, `P05-004`, `P05-010`, `P06-004`                                                                                                                                                |
 | FR-06           | `P04-002`, `P04-005`, `P04-010`, `P04-014`, `P04-015`, `P04-006`, `P06-005`                                                                                                                                                                                                       |
 | FR-07           | `P05-001`, `P05-002`, `P05-003`, `P05-011`, `P05-013`, `P06-004`                                                                                                                                                                                                                  |
 | FR-08           | `P05-004`, `P05-012`, `P05-013`                                                                                                                                                                                                                                                   |
@@ -2169,7 +2178,7 @@ owners and includes additional cross-domain owners identified by that mapping.
 | FR-20           | `P03-009`, `P03-010`, `P06-016`, `P06-020`, `P07-016`, `P08-011`, `P10-010`, `P11-004`                                                                                                                                                                                            |
 | FR-21           | `P03-004`, `P03-005`, `P03-012`, `P03-013`, `P03-014`, `P03-015`, `P03-016`, `P09-010`, `P10-005`, `P11-003`, `P11-008`                                                                                                                                                           |
 | FR-22           | `P09-001`, `P09-002`, `P09-009`, `P09-010`                                                                                                                                                                                                                                        |
-| FR-23           | `P04-002`, `P04-003`, `P04-020`, `P04-005`, `P04-015`, `P09-010`, `P11-006`                                                                                                                                                                                                                  |
+| FR-23           | `P04-002`, `P04-003`, `P04-020`, `P04-005`, `P04-015`, `P09-010`, `P11-006`                                                                                                                                                                                                       |
 | FR-24           | `P04-001`, `P04-004`, `P04-015`, `P09-010`, `P04-003`                                                                                                                                                                                                                             |
 | FR-25           | `P04-006`, `P04-007`, `P04-015`, `P09-007`, `P09-010`, `P08-004`                                                                                                                                                                                                                  |
 | FR-26           | `P06-003`, `P06-011`, `P06-012`, `P06-013`, `P06-017`, `P06-019`, `P06-020`, `P09-004`, `P09-007`, `P09-010`, `P11-008`, `P12-004`, `P07-015`, `P08-015`                                                                                                                          |
@@ -2624,3 +2633,25 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 
 
 **1 November 2026 — owner-approved engineering completion / Package A:** The owner approved separating ordinary development Done from live qualification. P06-003/011/012/013/014 move Blocked → Done after verified implementation, tests and executor review under that convention. [Decision, preserved evidence and release checklist mapping](./evidence/P06-011-012-local-lifecycle-cod.md#engineering-completion-and-release-gate-separation--1-november-2026). Policy applicability/publication and actual original-cash qualification remain explicitly in P11-007/P11-008; no external fact, application closeout or milestone is accepted. Overall: 210 tasks, 112 Done, 77 Not Started, 19 Blocked, 2 Deferred.
+
+
+**1 November 2026 — Package B completion:** P08-002/003/004 Blocked → In Progress → Done under the owner-approved engineering convention. Completed scoped eligibility/submission/private evidence, full admin lifecycle, partial/additional-case resolution and cumulative duplicate-safe receipt/inspection/restock; actual local/test startup and exact-predecessor additive migration are verified. [Implementation review, commands/results and separate release checks](./evidence/P08-003-004-local-return-inspection.md#package-b-completion). Executor/reviewer: Codex. Overall: 210 tasks, 115 Done, 16 Blocked, 77 Not Started, 2 Deferred; no other task, application closeout or milestone accepted.
+
+**2 November 2026 — Package C completion:** P08-005/006/007/008 Blocked → In Progress → Done under Tasks §2. Completed protected policy and canonical admin group/list/detail/dispatch integration, source merchant binding, command alias replay protection and actual local/test startup. Existing Package B commit `9a7d0b2`, absent from main, was combined without discarding C work; final combined verification passed 802 unit, 396 integration, 112 contract and 79 tooling cases. [Task-by-task outcomes, migration/activation, review and release scope](./evidence/P06-013-P08-005-008-durable-reservations.md#package-c-completion). Executor/reviewer: Codex. Counts: 119 Done, 12 Blocked, 77 Not Started, 2 Deferred (210 total); D/E and milestones remain unchanged.
+
+**2 November 2026 — Package D completion:** P08-009/010/011 Blocked → In Progress → Done under Tasks §2. Implemented qualified payout/release transactions, original-reference recovery, explicit safe retry and consented manual fallback, protected manual confirmation, durable fenced reconciliation and verified return/refund outbox delivery. Existing C work appeared in owner commit `cc58fd4` during execution and was retained. [Actual commands/results, owner boundaries, migration/activation and release limits](./evidence/P08-009-010-local-refund-evidence.md#package-d-completion). Executor/reviewer: Codex. Overall: 122 Done, 9 Blocked, 77 Not Started, 2 Deferred; Package E/F/G and milestones unchanged.
+
+
+**2 November 2026 — Package E completion:** P05-016/P08-016/P08-019 Blocked → In Progress → Done under Tasks §2. Connected canonical delivered/refunded purchase eligibility to review HTTP, completed cross-order customer claim/refund history, exact guest/customer private refund reads, safe timing/investigation/payout timelines and explicit actual server composition. Existing claim decisions/private evidence and refund source caps/verified payout are retained and covered by affected regression. [Actual commands/results and executor diff review](./evidence/P05-016-P08-019-local-reads.md#package-e-completion). Executor/reviewer: Codex. Overall: 125 Done, 6 Blocked, 77 Not Started, 2 Deferred. No milestone or application-stage closeout is self-approved.
+
+
+**2 November 2026 — Package F completion:** P06-016/017 and P09-002/015/016/017 Blocked → In Progress → Done; P09-014/018 Not Started → In Progress → Done under Tasks §2. Completed authoritative financial/dashboard/report projections, scoped support/contact/response and customer history/privacy HTTP, protected paid final-delivery closure with once-only stock recovery and verified payout path, sanitized operational queues and safe known-nonacceptance notification retry. Added exact-predecessor complaint migration, additive indexes and actual server configuration/recovery procedures. [Observed runs, source snapshot and executor review](./evidence/P06-016-017-commerce-delivery-support.md#package-f-completion). Executor/reviewer: Codex. Overall: 133 Done, 0 Blocked, 75 Not Started, 2 Deferred. Backend P03-022, application/milestone and explicit external qualification tasks remain independently tracked.
+
+
+**2 November 2026 — Package G verification started:** P03-022 Not Started → In Progress. Completed leased media maintenance/operator entry, standalone local/test public media composition, runtime worker/context packaging and payment-bootstrap test correction. Consolidated backend checks plus final affected regression cover 1,234 integration cases with passing observations; the original full pipeline retained one failure subsequently repaired and rerun. Tooling 82 Passed; security, types, formatting and documentation checks Passed. [Revision/environment, exact commands and remaining acceptance](./evidence/P09-011-staging-runtime.md#package-g-verification). P04-003/P09-011 remain Deferred under the recorded free-only decision: live target is an older restricted catalog revision, no configured scanner or current-image/hosted-worker acceptance. Independent P03-022 acceptance is not claimed. Overall: 133 Done, 74 Not Started, 1 In Progress, 2 Deferred (210 total).
+
+
+**2 November 2026 — Package G hosting constraint reaffirmed:** Owner answered “Free-only সীমা বজায় রাখো”. Retain the existing free-only limit; no billable hosting is authorized. P04-003/P09-011 remain Deferred and P03-022 remains In Progress; technical verification and real hosted acceptance remain separately recorded in the [Package G evidence](./evidence/P09-011-staging-runtime.md#package-g-verification). No task counts or acceptance gates changed.
+
+
+**2 November 2026 — Whole-backend implementation audit:** Input revision `5fbf8e1` consolidated backend CI Passed (811 unit, 112 contract, 1,234 integration), but full specification/runtime comparison found nine absent operations. P03-023 In Progress → Done after implementing all nine with owning contracts and actual HTTP/domain tests; all 170 specified operations now have runtime registration. Final backend CI Passed: 811 unit, 186 contract, 1,258 integration and 83 tooling cases, build/smoke/static checks; security/documentation checks Passed and executor diff review completed. P03-022 also promotes all 63 existing local-only DTOs: generated contracts now cover all 170 operations. Final post-promotion backend CI Passed (811 unit, 186 contract, 1,258 integration, 83 tooling); actual stage/external acceptance remains separate. [Inventory, observed checks and acceptance boundaries](./evidence/P03-022-backend-completion.md). Overall: 211 tasks, 134 Done, 74 Not Started, 1 In Progress, 2 Deferred. No backend-stage or milestone acceptance is self-approved.

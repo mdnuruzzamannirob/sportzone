@@ -1,3 +1,4 @@
+import { pageMeta } from '../../shared/pagination.js'
 import { Types, type ClientSession, type Connection } from 'mongoose'
 import { z } from 'zod'
 import { ApiError } from '../../shared/errors/app-error.js'
@@ -139,6 +140,7 @@ export function refundFundingAccess(connection: Connection) {
         sources: rows.map((row) => ({
           sourceCollectionId: row._id.toHexString(),
           provider: row.provider,
+          merchantAccountKey: row.merchantAccountKey,
           ...(row.bankTranId ? { bankTranId: row.bankTranId } : {}),
           collectedAt: row.collectedAt,
           verifiedAt: row.verifiedAt,
@@ -151,6 +153,78 @@ export function refundFundingAccess(connection: Connection) {
           ),
         })),
       }
+    },
+    async settle(session: ClientSession, raw: unknown) {
+      const input = parseInput(
+        z.strictObject({
+          orderId: z.string().regex(/^[a-f0-9]{24}$/),
+          sourceCollectionId: z.string().regex(/^[a-f0-9]{24}$/),
+          classification: z.enum(['merchandise', 'payment_correction']),
+          amountPoisha: money.refine((n) => n > 0),
+          deliveryAmountPoisha: money,
+          complete: z.boolean(),
+          occurredAt: z.date(),
+        }),
+        raw,
+      )
+      const payment = await read(session, input.orderId)
+      const row = await collections
+        .findOne({ _id: input.sourceCollectionId, orderId: input.orderId, paymentId: payment._id })
+        .session(session)
+      const correction = input.classification === 'payment_correction'
+      const held = correction ? 'correctionRefundHeldPoisha' : 'merchandiseRefundHeldPoisha'
+      const completed = correction
+        ? 'correctionRefundCompletedPoisha'
+        : 'merchandiseRefundCompletedPoisha'
+      if (
+        !row ||
+        row.get(held) < input.amountPoisha ||
+        payment[held] < input.amountPoisha ||
+        payment.deliveryRefundHeldPoisha < input.deliveryAmountPoisha ||
+        (correction && input.deliveryAmountPoisha) ||
+        input.deliveryAmountPoisha > input.amountPoisha ||
+        payment.revision >= Number.MAX_SAFE_INTEGER ||
+        row.get('revision') >= Number.MAX_SAFE_INTEGER
+      )
+        throw new ApiError('STATE_CONFLICT')
+      const inc = {
+        [held]: -input.amountPoisha,
+        ...(input.complete ? { [completed]: input.amountPoisha } : {}),
+        revision: 1,
+      }
+      const source = await collections.collection.updateOne(
+        { _id: row._id, revision: row.get('revision') },
+        { $inc: inc, $set: { updatedAt: input.occurredAt } },
+        { session },
+      )
+      const refunded =
+        payment.merchandiseRefundCompletedPoisha +
+        (!correction && input.complete ? input.amountPoisha : 0)
+      const paymentStatus =
+        !correction &&
+        input.complete &&
+        payment.expectedPoisha > 0 &&
+        payment.merchandiseFundedPoisha === payment.expectedPoisha
+          ? refunded >= payment.merchandiseFundedPoisha
+            ? 'refunded'
+            : 'partially_refunded'
+          : payment.paymentStatus
+      const aggregate = await payments.collection.updateOne(
+        { _id: payment._id, revision: payment.revision },
+        {
+          $inc: {
+            ...inc,
+            deliveryRefundHeldPoisha: -input.deliveryAmountPoisha,
+            ...(input.complete
+              ? { deliveryRefundCompletedPoisha: input.deliveryAmountPoisha }
+              : {}),
+          },
+          $set: { paymentStatus, updatedAt: input.occurredAt },
+        },
+        { session },
+      )
+      if (source.modifiedCount !== 1 || aggregate.modifiedCount !== 1)
+        throw new ApiError('STATE_CONFLICT')
     },
     async reserve(session: ClientSession, raw: unknown) {
       const input = parseInput(
@@ -412,7 +486,40 @@ export function customerPaymentSummaryAccess(
       if (!result) throw new ApiError('SERVICE_UNAVAILABLE')
       return result
     },
-    { many, fundedAt: verifiedFullPaymentTimeAccess(connection, clock) },
+    {
+      many,
+      fundedAt: verifiedFullPaymentTimeAccess(connection, clock),
+      async history(session: ClientSession, orderId: string) {
+        if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+        try {
+          await verifyPaymentRecordPersistence(connection)
+        } catch {
+          throw new ApiError('SERVICE_UNAVAILABLE')
+        }
+        const payment = (await many(session, [orderId])).get(orderId)
+        if (!payment) throw new ApiError('SERVICE_UNAVAILABLE')
+        const rows = await paymentRecordModels(connection)
+          .attempts.find({ orderId })
+          .sort({ createdAt: -1, _id: -1 })
+          .limit(50)
+          .session(session)
+        return {
+          payment,
+          attempts: rows.map((row) => ({
+            id: row._id.toHexString(),
+            state: row.state,
+            expectedAmountPoisha: row.expectedAmountPoisha,
+            ...(row.verifiedReceiptAmountPoisha !== undefined
+              ? { verifiedReceiptAmountPoisha: row.verifiedReceiptAmountPoisha }
+              : {}),
+            amountDisposition: row.amountDisposition,
+            riskStatus: payment.riskStatus,
+            ...(row.expiresAt ? { expiresAt: row.expiresAt.toISOString() } : {}),
+            ...(row.lastCheckedAt ? { lastCheckedAt: row.lastCheckedAt.toISOString() } : {}),
+          })),
+        }
+      },
+    },
   )
 }
 
@@ -491,5 +598,129 @@ export function verifiedFullPaymentTimeAccess(
     if (sum !== BigInt(payment.merchandiseFundedPoisha) || !fullyPaidAt)
       throw new ApiError('SERVICE_UNAVAILABLE')
     return fullyPaidAt
+  }
+}
+
+export function paymentReportAccess(connection: Connection) {
+  const { collections, intake } = paymentRecordModels(connection),
+    payments = paymentModel(connection)
+  return async (
+    session: ClientSession,
+    period: { from: Date; to: Date; asOf: Date },
+    codOrderIds: string[],
+  ) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyPaymentRecordPersistence(connection)
+    await verifyPaymentPersistence(connection)
+    const rows = await collections
+      .find({
+        collectedAt: { $gte: period.from, $lt: period.to },
+        verifiedAt: { $lte: period.asOf },
+      })
+      .select(
+        'amountPoisha collectedAt provider merchandiseAllocatedPoisha correctionAllocatedPoisha unassignedAllocatedPoisha',
+      )
+      .limit(5001)
+      .maxTimeMS(5000)
+      .session(session)
+    const cod = await payments
+      .find({ orderId: { $in: codOrderIds } })
+      .select('expectedPoisha verifiedCollectedPoisha')
+      .limit(5001)
+      .maxTimeMS(5000)
+      .session(session)
+    const unmatched = await intake
+      .aggregate<{ amount: number }>([
+        {
+          $match: {
+            matchingStatus: 'unmatched',
+            verifiedAt: { $lte: period.asOf },
+            collectedAt: { $gte: period.from, $lt: period.to },
+          },
+        },
+        { $group: { _id: null, amount: { $sum: '$amountPoisha' } } },
+      ])
+      .option({ maxTimeMS: 5000 })
+      .session(session)
+    const balances = await collections
+      .aggregate<{ unassigned: number }>([
+        { $match: { verifiedAt: { $lte: period.asOf } } },
+        { $group: { _id: null, unassigned: { $sum: '$unassignedAllocatedPoisha' } } },
+      ])
+      .option({ maxTimeMS: 5000 })
+      .session(session)
+    if (rows.length > 5000 || cod.length > 5000) throw new ApiError('BUSINESS_RULE_VIOLATION')
+    return {
+      collections: rows.map((row) => ({
+        id: row._id.toHexString(),
+        amountPoisha: row.amountPoisha,
+        collectedAt: row.collectedAt.toISOString(),
+        sourceKind: row.provider,
+        merchandisePoisha: z.int().nonnegative().parse(row.get('merchandiseAllocatedPoisha')),
+        correctionPoisha: z.int().nonnegative().parse(row.get('correctionAllocatedPoisha')),
+        unassignedPoisha: z.int().nonnegative().parse(row.get('unassignedAllocatedPoisha')),
+      })),
+      codBalances: cod.map((row) => ({
+        id: row._id.toHexString(),
+        expectedPoisha: row.expectedPoisha,
+        verifiedCollectedPoisha: row.verifiedCollectedPoisha,
+      })),
+      unattributedProviderCashPoisha: unmatched[0]?.amount ?? 0,
+      unassignedLinkedCashPoisha: balances[0]?.unassigned ?? 0,
+    }
+  }
+}
+
+export function paymentExceptionQueueAccess(connection: Connection) {
+  const payments = paymentModel(connection),
+    { attempts } = paymentRecordModels(connection)
+  return async (
+    session: ClientSession,
+    input: { page: number; pageSize: number },
+    reconciliation: boolean,
+  ) => {
+    await verifyPaymentPersistence(connection)
+    await verifyPaymentRecordPersistence(connection)
+    const offset = (input.page - 1) * input.pageSize
+    if (reconciliation) {
+      const filter = { state: { $in: ['initiated', 'pending', 'uncertain'] as const } }
+      const rows = await attempts
+        .find(filter)
+        .select('orderId state')
+        .sort({ createdAt: -1, _id: -1 })
+        .skip(offset)
+        .limit(input.pageSize)
+        .maxTimeMS(5000)
+        .session(session)
+      return {
+        items: rows.map((row) => ({
+          id: row._id.toHexString(),
+          orderId: row.orderId.toHexString(),
+          status: row.state,
+          reasonCode: 'PAYMENT_RECONCILIATION',
+        })),
+        pagination: pageMeta(input, await attempts.countDocuments(filter).session(session)),
+      }
+    }
+    const filter = {
+      $or: [{ riskStatus: { $ne: 'clear' as const } }, { unassignedCollectedPoisha: { $gt: 0 } }],
+    }
+    const rows = await payments
+      .find(filter)
+      .select('orderId paymentStatus')
+      .sort({ createdAt: -1, _id: -1 })
+      .skip(offset)
+      .limit(input.pageSize)
+      .maxTimeMS(5000)
+      .session(session)
+    return {
+      items: rows.map((row) => ({
+        id: row._id.toHexString(),
+        orderId: row.orderId.toHexString(),
+        status: row.paymentStatus,
+        reasonCode: 'PAYMENT_REVIEW',
+      })),
+      pagination: pageMeta(input, await payments.countDocuments(filter).session(session)),
+    }
   }
 }

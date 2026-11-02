@@ -8,7 +8,7 @@ import { parseInput } from '../../shared/middleware/validate.js'
 import { respond } from '../../shared/responses.js'
 import type { returnHistoryService } from './return-history.service.js'
 import { claimId } from './return.schema.js'
-// Explicit local/test composition only; full history/refund operations remain gated.
+// Shared current-session reads; root composition owns environment admission.
 export function returnHistoryRoutes(
   service: ReturnType<typeof returnHistoryService>,
   security: BrowserSecurity,
@@ -25,8 +25,14 @@ export function returnHistoryRoutes(
     customerToken: readSessionCookie(req.get('Cookie'), 'customer'),
     guestToken: readGuestCookie(req.get('Cookie')),
   })
-  for (const path of ['/orders/:orderId/claims', '/claims/:claimId']) router.options(path, cors)
+  for (const path of ['/me/claims', '/orders/:orderId/claims', '/claims/:claimId'])
+    router.options(path, cors)
   for (const path of ['/admin/claims', '/admin/claims/:claimId']) router.options(path, adminCors)
+  router.get('/me/claims', cors, async (req, res) => {
+    parseInput(z.undefined(), req.body)
+    const result = await service.mine(credentials(req), req.query)
+    respond(res, result.items, 200, result.pagination)
+  })
   router.get('/admin/claims', adminCors, http.require('admin'), async (req, res) => {
     parseInput(z.undefined(), req.body)
     const result = await service.adminList(readSessionCookie(req.get('Cookie'), 'admin'), req.query)

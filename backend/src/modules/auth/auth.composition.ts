@@ -1,3 +1,6 @@
+import { emailVerificationRoutes } from './verification/email-verification.routes.js'
+import { createEmailVerificationService } from './verification/email-verification.service.js'
+import { createEmailVerificationDelivery } from './verification/proof-delivery.service.js'
 import { guestOrderAccess } from '../orders/order.service.js'
 import { guestSessionService } from './guest-access/guest-session.service.js'
 import { guestAccessService } from './guest-access/guest-access.service.js'
@@ -92,6 +95,20 @@ export async function createAuthRuntime(
         throttle.middleware('customer', 'credentials'),
       ),
     )
+  if (options.emailVerification)
+    router.use(
+      emailVerificationRoutes(
+        createEmailVerificationService(
+          connection,
+          models,
+          security,
+          notifications,
+          options.emailVerification,
+        ),
+        security,
+        throttle.middleware('customer', 'email'),
+      ),
+    )
   if (options.recovery)
     router.use(
       recoveryRoutes(
@@ -150,7 +167,9 @@ export async function createAuthRuntime(
     customerAccounts: createCustomerAccountAccess(connection, models, sessions),
     mediaAdmin: createMediaAdminAccess(models, sessions),
     // Session minting stays inside auth; business consumers receive owned scope only.
-    guestAccounts: guestSessions ? { owned: guestSessions.owned } : undefined,
+    guestAccounts: guestSessions
+      ? { owned: guestSessions.owned, authorizeInSession: guestSessions.authorizeInSession }
+      : undefined,
   }
 }
 
@@ -161,6 +180,9 @@ export function composeProofDeliveries(
 ) {
   const models = createIdentityModels(connection)
   return {
+    verify: options?.emailVerification
+      ? createEmailVerificationDelivery(models, options.emailVerification)
+      : undefined,
     guest: options?.guest
       ? guestProofDelivery(models, guestOrderAccess(connection), options.guest)
       : undefined,

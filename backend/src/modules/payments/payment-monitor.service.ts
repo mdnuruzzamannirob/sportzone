@@ -13,6 +13,8 @@ import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
 import { paymentInitiationKey } from './payment-initiation.schema.js'
 import {
   paymentMonitorQuery,
+  providerReceipt,
+  providerReceiptQuery,
   paymentMonitorPage,
   paymentMonitorList,
   paymentMonitorDetail,
@@ -52,6 +54,39 @@ export function paymentMonitorService(connection: Connection, access: AdminAccou
     }
   }
   return {
+    async receipts(token: string | undefined, raw: unknown) {
+      const q = parseInput(providerReceiptQuery, raw)
+      return access.owned(
+        token,
+        async (_actor, session) => {
+          await ready()
+          const filter = q.matchingStatus ? { matchingStatus: q.matchingStatus } : {}
+          const rows = await intake
+            .find(filter)
+            .sort({ verifiedAt: -1, _id: -1 })
+            .skip((q.page - 1) * q.pageSize)
+            .limit(q.pageSize)
+            .session(session)
+          return {
+            items: rows.map((row) =>
+              providerReceipt.parse({
+                id: row._id.toHexString(),
+                amountPoisha: row.amountPoisha,
+                currency: row.currency,
+                matchingStatus: row.matchingStatus,
+                collectedAt: row.collectedAt.toISOString(),
+                verifiedAt: row.verifiedAt.toISOString(),
+                ...(row.linkedCollectionId
+                  ? { linkedCollectionId: row.linkedCollectionId.toHexString() }
+                  : {}),
+              }),
+            ),
+            pagination: pageMeta(q, await intake.countDocuments(filter).session(session)),
+          }
+        },
+        false,
+      )
+    },
     async list(token: string | undefined, raw: unknown) {
       const q = parseInput(paymentMonitorQuery, raw),
         offset = (q.page - 1) * q.pageSize
@@ -164,6 +199,7 @@ export function paymentMonitorService(connection: Connection, access: AdminAccou
               ...(r.expiresAt ? { expiresAt: r.expiresAt.toISOString() } : {}),
             })),
             collections: c.map((r) => ({
+              revision: r.revision,
               id: r._id.toHexString(),
               ...(r.attemptId ? { attemptId: r.attemptId.toHexString() } : {}),
               ...(r.intakeId ? { intakeId: r.intakeId.toHexString() } : {}),

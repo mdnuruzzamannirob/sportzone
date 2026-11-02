@@ -166,6 +166,21 @@ describe('server-only email adapter and policy', () => {
     }
     expect(loadNotificationWorker(env).settings.maxAttempts).toBe(3)
     expect(loadNotificationWorker(env).commerceEnabled).toBe(false)
+    expect(loadNotificationWorker(env).afterSalesEnabled).toBe(false)
+    expect(
+      loadNotificationWorker({ ...env, AFTER_SALES_NOTIFICATIONS_ENABLED: 'true' })
+        .afterSalesEnabled,
+    ).toBe(true)
+    expect(() =>
+      loadNotificationWorker({
+        ...env,
+        AFTER_SALES_NOTIFICATIONS_ENABLED: 'true',
+        APP_ENV: 'staging',
+      }),
+    ).toThrow()
+    expect(() =>
+      loadNotificationWorker({ ...env, AFTER_SALES_NOTIFICATIONS_ENABLED: 'invalid' }),
+    ).toThrow()
     expect(
       loadNotificationWorker({ ...env, ORDER_NOTIFICATIONS_ENABLED: 'true' }).commerceEnabled,
     ).toBe(true)

@@ -1529,12 +1529,15 @@ worker readiness, build and explicitly run `migrate-notifications.mjs` or the lo
 leases, accepted sends and uncertainty. Old binaries need a schema-compatible rollback build rather
 than deletion or a validator downgrade. Provider acceptance remains distinct from inbox delivery.
 
-Return-decision outbox events extend the known commerce validator; before upgraded readiness, use
-`migrate-notifications.mjs` in local/test to upgrade only an exact recognized predecessor. Preserve
-queued/sent/uncertain rows and audit/order/claim facts together; do not downgrade validators or delete
-outbox records to roll back. The local return sender requires explicit composition and is not enabled
-by ordinary worker configuration. Real sender/provider qualification and refund-completion delivery
-remain separate gates.
+Return/refund outbox events require the known additive notification successor. Before upgraded
+readiness, run `migrate-notifications.mjs` or `bootstrap-refunds.mjs` in local/test; only exact known
+predecessors migrate. Set `AFTER_SALES_NOTIFICATIONS_ENABLED=true` on the separately scheduled
+`notification-worker.mjs` to compose both protected renderers. Keep the test-recipient override,
+accepted-send/uncertain recovery and provider/sender safeguards. The worker validates causal audit,
+original recipient and confirmed payout before refund-completed wording. A return-completed message
+explicitly does not assert payout. Default workers skip these intents. Staging/production qualification
+remains its existing release gate. Preserve outbox, leases and original audit/order/refund facts together;
+never delete them or downgrade validators to force rollback.
 
 Policy bounds: 1–10 attempts; 1–100 claims per batch; base delay 100–3600000 ms; maximum delay at least the base and at most
 86400000 ms; lease 1000–3600000 ms; HTTP timeout 1–60000 ms. Require lease strictly greater than timeout plus 1000 ms.
@@ -1900,39 +1903,137 @@ A `cancelled` report or an unknown outcome remains under investigation; never re
 After backend build, run `node --env-file=.env backend/scripts/bootstrap-refunds.mjs` only against
 an owned local/test database. The explicit migration recognizes the exact correction-only predecessor,
 checks existing rows against the new validator, adds indexes and preserves historical intents. It
-creates strict `refundAttempts` persistence with one open attempt per obligation and no TTL. Unknown
+creates strict `refundAttempts` persistence with one open attempt per obligation and no TTL; adds the
+unique manual transfer-reference index, migrates the exact known notification predecessor and provisions
+existing durable job leases. Pre-existing duplicate transfer references stop index creation: investigate
+original proofs, never delete financial history to force activation. Unknown
 validator drift fails closed; ordinary startup never repairs it. Existing databases must complete this
 step before running a new binary/payment-initiation bootstrap that verifies the extended refund schema.
 
-This command enables no HTTP route, policy authority or payout dispatcher. Private reservation tests
-use injected policy/cash evidence. Actual activation still requires qualified policy, consent/method,
-merchant and operator acceptance. Reservation creates an approved source-funded obligation and a
-created attempt, with no inferred payout. The private gateway dispatcher changes intent to submitted
-before its one external call; accepted/unknown outcomes retain held funds. A crash after submission
-must be investigated using the original bank/merchant identity; never reset to created or blindly resend.
+This bootstrap enables no HTTP route or payout dispatcher. To compose refund foundation operations in
+local/test, set `REFUND_OPERATIONS_ENABLED=true` with administrator authentication enabled. Default
+startup omits the routes; staging/production activation is refused. Admin group creation approves and
+reserves qualified source-funded obligations and one created intent per slice; it does not send money.
+Read list/detail through the current administrator identity, with bounded source capacities and safe
+attempt references. Request keys, original bank references and consent/transfer proof remain private.
+
+The owner-delegated development policy uses `sportzone-refunds-v1`, prefers the original gateway and
+requires protected consent for manual fallback. Delivery charge approval is off by default. Optional
+`REFUND_POLICY_FILE` is an owner-only regular JSON file containing
+`{ "policyVersion": "...", "authorizations": [{ "orderId": "<24hex>", "basis": "shortage",
+"basisRefId": "<claimId>", "approval": { "policyVersion": "...", "method": "manual_bank",
+"consentRequired": true, "consentEvidenceRef": "<protected consent reference>", "deliveryApproved": false } }] }`.
+Physical-return and shortage entries require the exact claim reference; correction entries omit it.
+Duplicate identities, unknown fields and unsafe files fail startup. This register records protected
+business authority; it never proves consent merely because a string exists. Update through the
+operator-controlled file and restart; existing approvedAt/timing snapshots do not reset on replay.
+Real applicability/publication and consent qualification remain in the owning release checks.
+
+Gateway dispatch additionally requires `SSLCOMMERZ_ADAPTER_ENABLED=true` and the canonical sandbox
+settings (§17). The server binds configured merchant account to the original verified collection.
+Without an adapter, admission returns 503 before changing a created intent. The private dispatcher
+changes intent to submitted before its one external call; accepted/unknown outcomes retain held funds.
+A crash after submission must be investigated using the original bank/merchant identity; never reset
+to created or blindly resend. Dispatch replay with another key records an alias with the original
+payload fingerprint, so that alias cannot later authorize a changed payload. Acknowledgment is not
+verified disbursement. Never exercise real payout on a developer's behalf without its existing authority.
 
 Back up and restore refunds, attempts, source/aggregate/unit/delivery counters, cancellation/allocation
 history and audit consistently. An older correction-only binary cannot verify or process the extended
 schema. Roll back application code only to a compatible build; retain financial records and reconcile
-external effects. Reconciliation, verified completion/release and ordinary scheduler/API activation
-remain separate capabilities and must not be simulated by manual database edits.
+external effects. Never use manual database edits to simulate outcome or retry authority.
+
+**Outcome evidence:** Configure `REFUND_PAYOUT_EVIDENCE_FILE` to an owner-only regular JSON manifest:
+`{ "version": 1, "entries": [{ "refundId": "<id>", "attemptId": "<id>", "artifactFile":
+"original-settlement.json", "evidenceDigest": "<SHA-256 of original artifact bytes>" }] }`.
+Artifact paths resolve relative to the protected manifest; both files must be owner-controlled regular
+files with no group/other permissions or symlinks. Duplicate refund/attempt entries and digest drift
+fail closed. The artifact is independently qualified settlement/no-payout evidence, not an uploaded
+screenshot or HTTP assertion. It binds refundId, orderId, sourceCollectionId, attemptId, amountPoisha,
+method, provider, outcome (`paid`/`no_payout`), checkedAt and, for paid, paidAt. ISO timestamps must
+include UTC/offset. Gateway proof also binds merchantAccountKey, original bankTranId, refundTransId
+and known/recovered refundRefId; matching provider status remains necessary when a provider reference
+exists. A missing-reference no-payout statement must independently establish terminal nonpayment
+against the original merchant request. A lost acceptance response is never a retry authorization.
+
+For manual confirmation include the exact transferReference/evidenceRef, a masked destination and,
+where the approved refund has consentEvidenceRef, that same reference plus consentDigest and consentAt
+not later than payment. Keep source originals, qualification provenance and retention controls with the
+protected operator/finance evidence. The manifest string or digest alone does not make a transfer true.
+Manual payout admission records intent first; the operator performs the authorized actual transfer
+outside the backend, qualifies its original evidence and then calls manual-confirmations. No bank or
+wallet money-transfer API is invented. Use provider/account-qualified original references; a reference
+already used for a confirmed manual attempt conflicts and must be investigated, not renamed to force
+success. One administrator may maintain this explicit, audited approval/confirmation trail.
+
+Reconcile is a fresh investigation command with a new Idempotency-Key; replaying the same command
+returns current durable state without another verification/payout. Proof must be no earlier than its
+original durable dispatch; a later read-only poll does not erase that causal timestamp. Completion/
+release settles exact source/order/unit/delivery holds, status, proof, audit and outbox atomically.
+Underfunded COD refunds remain Pending in payment projections, correction refunds do not alter
+merchandise progress, and fulfillment history is retained. An explicit payout-attempt request can
+retry only a VERIFIED_NO_PAYOUT failed/released attempt, reacquiring original capacity before a new
+number/identity. Original approval/timing and all old attempts remain.
+A gateway-to-manual fallback after verified nonpayment requires an exact protected authorization
+(order/basis/reference, original policyVersion, manual method and consent reference). Review can
+record that method decision while the obligation remains failed/released; then explicit manual
+admission reacquires capacity and retains the old gateway attempt. It does not reset approval or target
+time. An unqualified client-selected fallback is denied. Cancellation/delivery-exception authorizations
+bind their exact original basis reference; no new financial basis is created by this method review. Created undispatched intent
+can be rejected/released; submitted/uncertain intent cannot. Unknown remains reserved.
+
+**Scheduled recovery:** Set `REFUND_RECONCILIATION_ENABLED=true`, bounded batch/lease/poll values from
+the sanitized environment template, and the canonical original-merchant SSLCOMMERZ sandbox settings.
+Run `node --env-file=.env backend/scripts/reconcile-refunds.mjs` from the operator scheduler in local/test.
+Each invocation uses durable due-attempt timestamps, a resumable ID cursor and the shared lease with
+transactional owner/expiry fences. It performs status/proof investigation only, never payout dispatch.
+Use a lease covering expected network/proof calls or smaller batches; an expired owner cannot settle.
+Malformed/unavailable proof is deferred with INVESTIGATION_REQUIRED so other rows can progress;
+unknown cases remain held. Unknown outcomes also receive that marker after 24 hours from initiation
+(an operational escalation default, not a payout SLA). Inspect aging unknowns/that marker, source caps
+and audit. Qualified recovery
+clears the marker on completion. Scheduler and deployed sender/provider qualification retain their
+existing release checks. After restore, reconcile external effects before authorizing any retry.
 
 #### Private claim persistence bootstrap
 
 After backend build, run `node --env-file=.env backend/scripts/bootstrap-returns.mjs` only against an
 owned local/test database. It creates the current private claim validator and declared indexes,
 refuses unknown drift and deployed environments, and enables no HTTP route. For an existing exact
-requested-only foundation or review-only validator, explicitly run the same command with `--lifecycle`; this additive
+requested-only foundation, review-only or single-receipt validator, explicitly run the same command with `--lifecycle`; this additive
 upgrade verifies indexes, preserves requests and can be repeated. Unknown drift requires investigation,
 not validator replacement. No command seeds policy sign-off or enables a public submission/approval route.
+
+For local/test HTTP set `RETURN_OPERATIONS_ENABLED=true` with customer/admin authentication enabled.
+The owner-delegated PRD development baseline uses `sportzone-returns-v1`, a seven-calendar-day physical
+window and a separate shortage path. Optional `RETURN_POLICY_FILE` is an owner-only regular JSON file
+with `{ "policyVersion": "...", "exceptions": [{ "orderId": "<24hex>", "claimType": "physical_return",
+"exceptionBasis": "protected decision reference" }] }`; duplicate order/type rows or unknown fields
+fail startup. Exceptions are server configuration, never client overrides. Updating the file requires
+restart; existing claims retain their eligibility snapshot. This is development policy, not published
+legal sign-off (P11-007). Default startup omits return routes. Without configured Media, optional
+uploads/private URL requests fail unavailable; text-only claims remain usable.
+
+For customer after-sales histories and review HTTP in local/test, additionally set
+`AFTER_SALES_HISTORY_ENABLED=true`. It requires `RETURN_OPERATIONS_ENABLED=true` and both auth audiences;
+malformed flags or deployed activation fail startup. Build first and run the existing identity, catalog,
+orders, payment/refund/attempt, audit, Media and return bootstraps against the same owned database;
+`node --env-file=.env backend/scripts/bootstrap-reviews.mjs` additively initializes review validation/indexes.
+There is no startup DDL or owner/evidence backfill. Re-running initialization preserves existing reviews.
+The flag composes public approved reviews, owned submit/edit/history, protected admin moderation,
+customer cross-order claims/refunds and customer/exact-guest order refund detail/history. Return routes
+continue to own claim decisions and protected evidence URL retrieval; refund operations retain their
+separate mutation flag and proof requirements. Disabling history omits its routes without deleting data.
+Do not downgrade persistence or erase review/refund/audit history on rollback. Inspect `investigationStatus`
+and current payout state together; missing calendar timing never becomes an invented target date.
 
 Preserve return requests, order-item ordinal coverage, Media references and audit together during
 restore. Do not delete claims or reset ordinal coverage to release capacity. Review releases only
 unapproved units with zero refund commitments; shortages resolve without stock/payout effects.
-Private receipt/inspection can atomically record a single partial/full receipt and resellable-only stock
-movement in local tests; complete a physical claim only when every approved unit has been received
-and accepted. Additional receipt batches, partial-case resolution and public activation remain disabled
-pending the owning integration. Reconcile claim ordinals, movement and variant stock together. Keep
+Receipt quantities are per-parcel additions within remaining approved units. Inspection consumes only
+received-but-uninspected units, accumulating accepted/resellable ordinals. Complete a physical claim
+when every approved unit has been received and inspected; accepted units resolve, rejected units release
+without stock/refund effects. Distinct parcel references and idempotency keys protect additional batches. Reconcile claim ordinals, movement and variant stock together. Keep
 attached private evidence under existing Media retention/legal-hold rules; orphan maintenance must
 never delete referenced assets. An older requested-only or review-only binary cannot safely process upgraded
 lifecycle records: retain the upgraded validator/data and restore a compatible binary, rather than
@@ -1978,22 +2079,60 @@ reserve source-funded obligations/attempts atomically with release and cancellat
 or refund capability still blocks paid approval. Unpaid online cancellation does
 not remove attempts or disable merchant reconciliation; later verified funds remain correction-only.
 
-#### Delivery exception and complaint foundation
+#### Delivery exception, customer privacy, support and reporting operations
 
-After build, explicit local/test `node --env-file=.env backend/scripts/bootstrap-delivery-support.mjs`
-creates strict exception/complaint persistence and applies the known notification migration. It does
-not open HTTP support/closure APIs, start workers or seed approvals/contacts/financial effects.
-Unknown drift and deployed configuration are refused. Keep order/exception/complaint/audit evidence,
-source collections, recovery movements and notification records together across restores.
+After backend build, `node --env-file=.env backend/scripts/bootstrap-operations.mjs --complaints` runs
+only against an owned local/test database. Existing identity/catalog/settings/returns/audit/notification
+bootstraps remain prerequisites. It adds the declared order placement/hold, receipt-period, refund
+completion/capacity and customer-complaint indexes, verifies current financial validators and applies
+only the exact predecessor complaint migration making orderId optional. Current records and all
+financial/audit histories remain intact; unknown validator drift and deployed execution are refused.
+For a fresh database the normal owning bootstraps initialize current validators first. The existing
+`bootstrap-delivery-support.mjs --complaints` also supports the exact complaint predecessor upgrade.
+No bootstrap opens routes, starts a worker, seeds policy/inspection consent or creates financial effects.
 
-Final non-delivery requires a protected custody/inspection authority and per-shipped-item full
-accounting. No real verifier is installed by default. Missing source-backed refund obligations block
-paid closure; recovered resale stock changes only after verified inspection, with a globally stable
-receipt per original order item. Never rerun pre-shipment release or reset a recovery identity.
-Uncertain collection and payout outcomes remain subject to their independent reconciliation.
-Complaints/contact outcomes are restricted operational data; anonymous transport, public rate/spam
-controls, support HTTP security and legally qualified response windows require their owning acceptance.
-No hardcoded legal deadline or change to an existing order's deadline/estimate is implied by case resolution.
+`BACKEND_OPERATIONS_ENABLED=true` explicitly composes local/test reports/dashboard, sanitized operational
+queues, customer status/history/privacy review, support intake/admin response and delivery exception HTTP.
+Both auth audiences are required. Default startup omits these routes; malformed/deployed admission fails.
+Browser mutations retain exact Origin/CSRF/current scope; anonymous intake requires valid contact and
+browser context and shares network/target quotas. Optional intake Idempotency-Key preserves one request;
+without it a submission is distinct. Protected admin complaint detail supplies necessary contact and
+bounded response history; other views omit contact. Contact records establish a recorded response,
+not independently verified email delivery or an invented legal deadline. Approved complaint policy and
+published response periods retain P11-007 qualification.
+
+Final non-delivery requires per-shipped-item full custody accounting and protected inspection evidence.
+Optional `DELIVERY_DISPOSITION_FILE` is an absolute owner-only regular JSON file (no symlink) containing
+at most 1,000 records `{orderId,exceptionId,disposition:[{orderItemId,quantity,custody,inspectedResellableQty}],
+inspectionRef,verifiedAt}`. The exact incident/disposition must match once, with verification after shipment
+and no future timestamp; invalid/missing originals deny closure. The source digest is retained. A paid
+closure additionally needs a matching `delivery_exception` basis authorization/consent in the existing
+protected refund policy. It atomically reserves canonical source-funded obligations/attempts; this is not
+payout completion. The existing Package D protected outcome/reconciliation path establishes completion.
+Recovered inspected resale stock enters once; lost/damaged units never restock and pre-shipment release
+never runs again. Failed attempts/delay resolutions retain Shipped and immutable deadlines. Restore
+orders/exceptions, source funds/refunds, movements, complaint/contact, audit and notification records together.
+
+Privacy approval is explicitly account deactivation, not physical erasure: a verified outstanding request,
+current admin and keyed reason are required; customer sessions/security revision are revoked atomically.
+Review/rejection retains normal account access. Required records, saved addresses and legal-hold data are
+retained until an authorized retention process can decide erasure; APIs never erase financial/audit history.
+Admin profile/history views expose masked/minimal data and separately paginated domain-owned histories.
+
+Reports use API §14.4's current transaction snapshot and actual cutoff with 93-day/5,000-fact profiles,
+5-second source reads and Dhaka day/month groups. Historical asOf is rejected rather than relabeling live
+balances. Original sales, verified linked cash, unmatched/unassigned cash, COD outstanding, held liabilities
+and confirmed-attempt-matched payout completions remain separate. Report failure does not repair source
+facts. Investigate mismatched completion proof, missing indexes and timeout instead of editing ledgers.
+Queues are read-only; financial retries remain with their owning verified domain services. Notification
+admin retry admits only known non-acceptance commerce/after-sales intents to the durable outbox; uncertainty,
+sent/sending and identity-proof intents are refused. Existing independent worker activation/recipient override,
+canonical message qualification and stable provider keys remain required; HTTP never sends email directly.
+
+Disable the operations flag to withdraw routes while preserving data. Additive indexes may remain.
+An order-required old complaint binary cannot process new global complaints; roll back to a compatible
+binary, never downgrade validators or delete records. Reconcile any external collection/payout after restore.
+External sender/operator/production qualification and backend stage acceptance keep their existing tasks.
 
 ### 12.2 Gateway receipt reconciliation (OP-FIN-01)
 
@@ -2089,6 +2228,22 @@ is assumed approved.
 | 7. Independent reconciliation | Compare source amount/count by provider/channel, merchant account, transaction ID and period against local intake, linked allocations, COD, refund status and settlement timing                                       | Unmatched/partial/excess/late cases have case IDs; settled deposit timing distinguished from original collectedAt |
 | 8. Exception decisions        | Classify missing provider/local receipt, pending merchant validation, excess, incorrect mapping, duplicate COD, payout unknown, time-boundary difference or genuine unreconstructable cash proof                      | No arbitrary balancing entry; named owner and review deadline on every unresolved exception                       |
 | 9. Close or hold              | Reviewer confirms permitted variance thresholds **only if explicitly approved**, signs control totals, unresolved liabilities and restricted remediation. Material unaccepted difference blocks close                 | Signed, immutable report version, UTC time, source extracts and independent approval                              |
+
+Supervised receipt matching requires an operator-controlled `PAYMENT_MATCHING_EVIDENCE_FILE`;
+absence denies mutations. Its strict JSON shape is `{version:1,records:[...]}`. Each record contains
+`operation:'link'|'allocate'`, `targetId`, `orderId`, `amountPoisha`, original `evidenceDigest`,
+`matchingEvidenceRef` and `verifiedAt`; link may bind `attemptId`, while allocation binds all three
+`merchandisePoisha/correctionPoisha/unassignedPoisha` values. References must be unique for each
+operation/target, times must not be future, and the manifest is bounded to 1,000 records / 1 MB.
+Store it outside source control, restrict ownership/permissions and derive it from independently
+reviewed original matching/settlement evidence. A customer body or admin statement is not that evidence.
+The API verifies the protected artifact outside DB transactions, then reauthorizes and uses canonical
+CAS/audit writes. Exact accepted-key replay remains readable after retiring the original artifact.
+Review unassigned/risk queues after linking, obtain current collection revisions through admin payment
+detail and explicitly allocate with If-Match/idempotency. Never clear risk, change historical receipt
+facts or resend a provider payment/refund to make a queue disappear. Disable matching by removing the
+file reference for rollback, preserving source/projection/audit history. These HTTP mutations remain
+local/test-admitted; they do not authorize real production financial changes.
 
 **Required control totals (integer poisha; run separately for each relevant receipt/provider and period):**
 
@@ -2236,6 +2391,17 @@ The configured worker additionally delivers eligible password-reset challenges a
 Key rotation: distribute the new active key plus still-needed old versions to all API/worker processes before switching issuance. Retain old versions only until outstanding envelopes expire or are invalidated and cleaned; never reuse key bytes or reset versions. Key loss blocks delivery, not hash-based confirmation of already received proofs. After a restore, disable recovery/worker first, revoke restored sessions/challenges through the reviewed incident process, reconcile uncertain email records, remove inactive envelopes and provision a new active key before reopening. Do not replay restored intents or downgrade validators destructively. Disabling recovery leaves authenticated password-change routes unavailable while recovery is disabled; retain sessions and business records and use a compatible rollback build. Live sender, deployed timing/ingress, secret-store custody and storefront reset-screen acceptance are separate gates.
 
 #### Verified email-change activation and recovery
+
+Initial email verification separately defaults off via `EMAIL_VERIFICATION_ENABLED=false`. Enabling
+requires customer authentication, the protected proof key ring and HTTPS storefront origin plus
+`EMAIL_VERIFICATION_TTL_SECONDS` (60–1800), `EMAIL_VERIFICATION_COOLDOWN_SECONDS` (60–3600) and
+`EMAIL_VERIFICATION_RESPONSE_FLOOR_MS` (100–5000). Size the floor above measured issuance latency.
+After building, explicitly run the existing local/test `migrate-notifications.mjs` command before
+admission; it accepts the exact refund-notification predecessor and refuses unknown drift. Supply
+matching activation/key/origin settings to the one-batch worker. Unknown/rejected/uncertain email
+outcomes retain the existing durable retry/reconciliation rules. Rollback disables admission and
+uses a compatible build while preserving pending intents/envelopes; do not downgrade the validator or
+erase new events to start an old binary. No live email or sender qualification is implied by a flag.
 
 EMAIL_CHANGE_ENABLED defaults false and requires CUSTOMER_AUTH_ENABLED plus the existing protected proof key ring and approved HTTPS storefront origin. Explicit EMAIL_CHANGE_TTL_SECONDS (60–1800), EMAIL_CHANGE_COOLDOWN_SECONDS (60–3600) and EMAIL_CHANGE_RESPONSE_FLOOR_MS (100–5000) are independent of password-reset policy. Size the floor above measured issuance latency and enforce shared ingress limits; local process limits are foundation protection. Password recovery may remain disabled while email change is enabled, and vice versa. The separate notification worker must use matching activation/key/origin settings; only enabled event types are claimed.
 
@@ -2470,8 +2636,31 @@ and verify strict validators/indexes. Existing drift requires a reviewed additiv
 startup repair or TTL cleanup occurs. Pass validated policy, Cloudinary/ClamAV adapters, current admin
 access and an approved `canDelete` retention capability into the typed media composition. Account/
 environment isolation and protected references require operator evidence, not just config strings.
-Standard `startServer` has no media activation hook. Wire a reviewed operator composition/deployment only after EXT-04 approval/evidence. P08-012
-must supply current customer/guest order/claim access before private evidence HTTP is registered.
+Local/test `startServer` composes the existing Cloudinary/ClamAV adapters when both
+`RETURN_OPERATIONS_ENABLED=true` and `MEDIA_ENABLED=true`; it requires the settings above and both
+customer/admin authentication. Evidence access is reauthorized against current exact order/item scope
+inside each ledger transaction. The development retention capability permits only expired unreferenced
+private claim evidence, subject to the canonical legal-hold/retainUntil guards. Staging/production
+activation remains in EXT-04/P11-008 qualification; these flags do not approve an account or scanner.
+
+For standalone local/test public media, `MEDIA_ENABLED=true` also works without return admission;
+admin authentication, the real provider/scanner and validated policy remain mandatory. Bootstrap a
+new isolated local/test ledger and job leases explicitly with
+`node --env-file=.env backend/scripts/bootstrap-media.mjs` after the backend build. This command
+refuses deployed environments and does not activate uploads or provider effects.
+
+The one-shot scheduled entry is `node --env-file=.env.staging backend/scripts/media-maintenance.mjs`.
+It defaults off; explicit nonproduction admission requires `MEDIA_MAINTENANCE_ENABLED=true`,
+`MEDIA_MAINTENANCE_BATCH_SIZE=20`, `MEDIA_MAINTENANCE_LEASE_MS=60000`, validated media policy and
+protected Cloudinary configuration. Provision/verify the ledger and shared leases through the reviewed
+target procedure first; the worker never repairs persistence on startup. Upload/scanner/browser access
+is unavailable in this process. The `media-maintenance` lease fences each candidate and final checkpoint;
+expired owners stop admission and cannot report success. Choose a lease longer than the bounded batch,
+monitor blocked/pending counts and reconcile uncertain provider outcomes before retrying. Private
+claim evidence additionally requires explicit elapsed `retainUntil`; missing retention never authorizes
+a maintenance deletion. All legal holds and live references still prevent deletion. Stop scheduling
+and disable the flag for rollback, retaining the ledger and provider identities. Shipping this entry
+in the image does not establish a running hosted scheduler or EXT-04 acceptance.
 
 Invoke `maintenanceBatch(1..100)` only from the restricted durable scheduled-job/operator boundary.
 It performs sequential, bounded reconciliation/cleanup and returns examined/deleted/reconciled/

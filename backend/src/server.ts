@@ -1,5 +1,11 @@
+import { loadOperationsOptions } from './config/operations.js'
+import { protectedRefundEvidence } from './modules/refunds/refund-evidence.service.js'
+import { createHash } from 'node:crypto'
+import { loadRefundOperationsOptions } from './config/refunds.js'
+import { loadSslcommerzOptions } from './config/payments.js'
+import { loadReturnOperationsOptions, loadAfterSalesHistory } from './config/returns.js'
 import { loadOrderOperationsOptions } from './config/order-operations.js'
-import { configuredOrderOperations } from './setup.js'
+import { configuredOrderOperations, configuredReturnMedia, configuredPublicMedia } from './setup.js'
 import { loadPaymentCallbackOptions, loadPaymentProcessingOptions } from './config/payments.js'
 import { createSslcommerzAdapter } from './providers/sslcommerz/sslcommerz.client.js'
 import { initiationInput } from './providers/sslcommerz/sslcommerz.schema.js'
@@ -42,12 +48,15 @@ export async function startServer(
     const callbackOptions = loadPaymentCallbackOptions(process.env)
     const processingOptions = loadPaymentProcessingOptions(process.env)
     const orderOperations = await loadOrderOperationsOptions(process.env)
+    const refundOptions = await loadRefundOperationsOptions(process.env)
+    const refundGateway = refundOptions ? loadSslcommerzOptions(process.env) : undefined
+    const returnOptions = await loadReturnOperationsOptions(process.env)
     app = await composeApplication(
       connection,
       config,
       health,
       logger,
-      undefined,
+      returnOptions ? configuredReturnMedia(process.env) : configuredPublicMedia(process.env),
       await loadPolicyApprovals(process.env),
       await loadCheckoutOptions(process.env),
       await loadPaymentChannelApprovals(process.env),
@@ -67,6 +76,27 @@ export async function startServer(
           }
         : undefined,
       orderOperations ? configuredOrderOperations(connection, orderOperations) : undefined,
+      returnOptions,
+      refundOptions
+        ? {
+            options: refundOptions,
+            ...(process.env.REFUND_PAYOUT_EVIDENCE_FILE
+              ? { verifyEvidence: protectedRefundEvidence(process.env.REFUND_PAYOUT_EVIDENCE_FILE) }
+              : {}),
+            ...(refundGateway
+              ? {
+                  gateway: {
+                    client: createSslcommerzAdapter(refundGateway),
+                    merchantAccountKey: createHash('sha256')
+                      .update(`${refundGateway.mode}\0${refundGateway.storeId}`)
+                      .digest('hex'),
+                  },
+                }
+              : {}),
+          }
+        : undefined,
+      loadAfterSalesHistory(process.env),
+      loadOperationsOptions(process.env),
     )
   } catch (error) {
     await connection.destroy()

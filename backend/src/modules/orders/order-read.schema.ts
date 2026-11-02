@@ -1,3 +1,4 @@
+import { publicPaymentAttempt } from '../payments/payment-initiation.schema.js'
 import { z } from 'zod'
 import { paginationSchema } from '../../shared/pagination.js'
 import { checkoutOrderSummary } from '../checkout/checkout-intent.schema.js'
@@ -90,4 +91,25 @@ export const adminOrderDetail = customerOrderDetail.safeExtend({
   }),
   fulfillmentActions: z.array(fulfillmentStatus).max(4),
   auditRefs: z.array(z.string().regex(/^[a-f0-9]{24}$/)).max(40),
+})
+
+export const customerDeliveryEvents = z.strictObject({
+  status: fulfillmentStatus,
+  estimate: date.optional(),
+  deadline: deliveryDeadline,
+  events: customerOrderDetail.shape.statusHistory,
+})
+
+export const customerPaymentHistory = z.strictObject({
+  payment: customerPaymentSummary,
+  attempts: z.array(publicPaymentAttempt).max(50),
+})
+export const customerAdminOrderSummary = z.strictObject({
+  id: z.string().regex(/^[a-f0-9]{24}$/),
+  orderNumber: z.string(),
+  paymentStatus: checkoutOrderSummary.shape.paymentStatus,
+  fulfillmentStatus,
+  placedAt: date,
+  finalTotalPoisha: money,
+  currency: z.literal('BDT'),
 })

@@ -71,3 +71,14 @@ export function inspectFile(file: MediaFile, policy: MediaPolicy) {
     digest: createHash('sha256').update(bytes).digest('hex'),
   }
 }
+
+// Multipart field names on the wire; the controller separately validates the binary File.
+export const claimEvidenceForm = z.strictObject({
+  file: z.string().meta({ format: 'binary' }),
+  claimType: z.enum(['physical_return', 'shortage']),
+  'orderItemIds[]': z
+    .array(z.string().regex(/^[a-f0-9]{24}$/))
+    .min(1)
+    .max(40),
+})
+import { z } from 'zod'

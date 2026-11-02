@@ -8,6 +8,58 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 2 November 2026 — Whole-backend implementation audit and API gap closure
+
+- Audited all 170 specified operations against runtime; identified nine missing surfaces despite earlier task completion records.
+- Implemented all nine missing operations: purpose-bound initial email verification, scoped delivery/payment histories, read-only coupon preview, protected receipt matching/allocation and customer refund submission. Added their owning typed contracts and regenerated OpenAPI/Postman.
+- Customer requests retain unapproved plans without financial/unit holds or attempts; protected approval atomically rechecks and reserves actual capacity. Closed cancellation/delivery obligations use separate post-closure qualification. Added the exact-predecessor notification validator migration and safe activation procedures.
+- Added all-170-operation runtime parity and complete application/worker/bootstrap verification. P03-023 tracks these gap closures; Promoted the 63 existing local-only operations to owning typed contracts, covering all 170 operations; actual HTTP scenarios validate response DTO/status/pagination parity. Corrected refund-group creation to specified HTTP 201 and excluded initial-verification identity proofs from admin resend. P03-022 retains real external/stage acceptance. No stage or external gate is self-approved.
+
+## 2 November 2026 — Package G backend verification preparation
+
+- Added explicitly admitted, leased media maintenance with retention/legal-hold safeguards and restart/uncertain-delete regression; composed standalone local/test public media independently of returns.
+- Included payment/refund reconciliation and media worker entries plus reviewed staging scripts in the restricted runtime image context.
+- Fixed the payment-bootstrap test's blocking child-process invocation; retained protected static bootstrap stage diagnostics.
+- Started backend closeout verification; [current evidence and external acceptance limits](docs/evidence/P09-011-staging-runtime.md#package-g-verification). No hosted staging, media-policy approval or independent backend acceptance is claimed.
+
+## 2 November 2026 — Package F backend operations completion
+
+- Completed authoritative financial reports/dashboard and bounded sanitized operational queues using domain-owned source projections and explicit current cutoff/event dates.
+- Added anonymous/scoped complaint intake and protected contact/response, customer histories/privacy decisions, safe notification retry admission and actual server composition.
+- Connected protected final-delivery custody, one-time stock recovery and canonical source-funded refund through verified payout; added additive complaint/index rollout and recovery procedures.
+- Recorded P06-016/017 and P09-002/014/015/016/017/018 engineering completion with [affected verification and review](docs/evidence/P06-016-017-commerce-delivery-support.md#package-f-completion). No external qualification, backend closeout or release claim.
+
+## 2 November 2026 — Package E development completion
+
+- Completed customer cross-order claim/refund history, exact guest/customer private refund reads,
+  safe status/investigation timelines, separate merchandise/correction totals and explicit server activation.
+- Connected review HTTP to canonical purchase/refund facts; resolved zero-price units without inventing payout,
+  preserved historical reviews and retained moderation/auth/CSRF/privacy protections.
+- Recorded P05-016/P08-016/P08-019 Done with affected replica-set/API regression and executor review;
+  [evidence](docs/evidence/P05-016-P08-019-local-reads.md#package-e-completion). No deployed release or milestone claim.
+
+## 2 November 2026 — Package D refund outcome and recovery
+
+- Completed P08-009/010/011 with independently bound payout proof, atomic source/order/unit/delivery settlement and guarded review/reconcile/manual-confirmation APIs.
+- Added explicit safe retry, qualified lost-reference recovery, consented manual fallback, original-transfer uniqueness and a durable lease/cursor reconciliation runner.
+- Added transactional status-specific refund intents and verified return/refund worker composition; migrated only known notification predecessors and retained all history.
+- Verified final 806 unit and 23 focused recovery cases, 446-case integration regression plus 313 checkout rerun, 112 contracts and 80 tooling cases. [Evidence and release scope](docs/evidence/P08-009-010-local-refund-evidence.md#package-d-completion).
+- Narrowly classified a known English-prose scanner false positive; same-document credential detection remains verified. Counts: 122 Done, 9 Blocked, 77 Not Started, 2 Deferred; no real payout or release/milestone qualification claimed.
+
+## 2 November 2026 — Package C refund foundation and dispatch
+
+- Completed P08-005/006/007/008 with protected local/test policy configuration and canonical admin refund group/list/detail/gateway-attempt APIs.
+- Bound gateway dispatch to the verified source merchant, retained payload conflicts across replay aliases and mapped exhausted unit capacity to the canonical refund-balance error.
+- Combined the existing Package B prerequisite commit into main's working tree, preserving C changes and prior returnOptions compatibility; consolidated tests cover both packages.
+- Recorded 802 unit, 396 integration, 112 contract and 79 tooling passes in [Package C evidence](docs/evidence/P06-013-P08-005-008-durable-reservations.md#package-c-completion). Counts: 119 Done, 12 Blocked, 77 Not Started, 2 Deferred. Outcome/recovery and live qualification retain their owning tasks.
+
+## 1 November 2026 — Package B returns completion
+
+- Completed P08-002/003/004: scoped eligibility/submission/private evidence and protected admin review, receipt, inspection and completion APIs.
+- Added cumulative physical batches, parcel/key replay protection, accepted/rejected-unit resolution and atomic resellable-only stock restoration.
+- Wired explicit local/test return and Cloudinary/ClamAV startup, protected exception configuration and additive exact-predecessor validator upgrade; synchronized API/database/testing/operations contracts.
+- Recorded passing backend verification and executor review in [Package B evidence](docs/evidence/P08-003-004-local-return-inspection.md#package-b-completion). Counts: 115 Done, 16 Blocked, 77 Not Started, 2 Deferred. Live qualification and milestones retain their own gates.
+
 ## 1 November 2026 — Package A development closeout
 
 - Owner approved separating ordinary development completion from live-release qualification; aligned the owning completion/testing instructions.

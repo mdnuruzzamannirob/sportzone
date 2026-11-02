@@ -2,6 +2,7 @@ import { validateSessionOptions } from '../modules/auth/sessions/session.service
 import { validateBrowserSecurityOptions } from '../modules/auth/sessions/browser-security.service.js'
 import {
   loadRecoveryOptions,
+  loadEmailVerificationOptions,
   loadEmailChangeOptions,
   loadAdminRecoveryOptions,
   loadGuestAccessOptions,
@@ -75,6 +76,14 @@ const schema = z
       .enum(['true', 'false'])
       .default('false')
       .transform((value) => value === 'true'),
+    PAYMENT_MATCHING_EVIDENCE_FILE: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.string().min(1).max(4096).optional(),
+    ),
+    EMAIL_VERIFICATION_ENABLED: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((value) => value === 'true'),
     EMAIL_CHANGE_ENABLED: z
       .enum(['true', 'false'])
       .default('false')
@@ -116,6 +125,12 @@ const schema = z
         code: 'custom',
         path: ['GUEST_ACCESS_ENABLED'],
         message: 'Customer auth infrastructure required',
+      })
+    if (value.EMAIL_VERIFICATION_ENABLED && !value.CUSTOMER_AUTH_ENABLED)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['EMAIL_VERIFICATION_ENABLED'],
+        message: 'Customer authentication required',
       })
     if (value.PASSWORD_RECOVERY_ENABLED) {
       if (!value.CUSTOMER_AUTH_ENABLED)
@@ -205,6 +220,7 @@ export type IdentityConfig = Readonly<{
   sessions: ReturnType<typeof validateSessionOptions>
   browser: ReturnType<typeof validateBrowserSecurityOptions>
   recovery?: ReturnType<typeof loadRecoveryOptions>
+  emailVerification?: ReturnType<typeof loadEmailVerificationOptions>
   emailChange?: ReturnType<typeof loadEmailChangeOptions>
   adminRecovery?: ReturnType<typeof loadAdminRecoveryOptions>
   guest?: ReturnType<typeof loadGuestAccessOptions>
@@ -257,6 +273,9 @@ export function loadEnvironment(environment: NodeJS.ProcessEnv): RuntimeConfig {
     ...(config.GUEST_ACCESS_ENABLED ? { guest: Object.freeze(loadGuestAccessOptions(input)) } : {}),
     ...(config.PASSWORD_RECOVERY_ENABLED
       ? { recovery: Object.freeze(loadRecoveryOptions(input)) }
+      : {}),
+    ...(config.EMAIL_VERIFICATION_ENABLED
+      ? { emailVerification: Object.freeze(loadEmailVerificationOptions(input)) }
       : {}),
     ...(config.EMAIL_CHANGE_ENABLED
       ? { emailChange: Object.freeze(loadEmailChangeOptions(input)) }

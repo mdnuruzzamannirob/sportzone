@@ -44,7 +44,7 @@ export const paymentMonitorSummary = z.strictObject({
   currency: z.literal('BDT'),
   revision: money,
 })
-const receipt = z.strictObject({
+export const providerReceipt = z.strictObject({
   id,
   amountPoisha: money,
   currency: z.literal('BDT'),
@@ -55,7 +55,7 @@ const receipt = z.strictObject({
 })
 export const paymentMonitorList = z.strictObject({
   items: z.array(paymentMonitorSummary),
-  intake: z.array(receipt),
+  intake: z.array(providerReceipt),
   pagination: meta,
 })
 export const paymentMonitorDetail = z.strictObject({
@@ -75,6 +75,7 @@ export const paymentMonitorDetail = z.strictObject({
       id,
       attemptId: id.optional(),
       intakeId: id.optional(),
+      revision: money,
       amountPoisha: money,
       merchandiseAllocatedPoisha: money,
       correctionAllocatedPoisha: money,
@@ -95,4 +96,8 @@ export const paymentMonitorDetail = z.strictObject({
     z.strictObject({ id, action: z.string(), occurredAt: date, actorType: z.string() }),
   ),
   pagination: z.strictObject({ attempts: meta, collections: meta, corrections: meta, audit: meta }),
+})
+
+export const providerReceiptQuery = paginationSchema.safeExtend({
+  matchingStatus: z.enum(['linked', 'unmatched', 'quarantined']).optional(),
 })

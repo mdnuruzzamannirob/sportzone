@@ -40,3 +40,20 @@ export const paymentAttemptStatus = z.strictObject({
   riskStatus: z.enum(['clear', 'review', 'rejected']).optional(),
   lastCheckedAt: z.iso.datetime({ offset: true }).optional(),
 })
+
+export const publicPaymentAttempt = z.strictObject({
+  id: attemptId,
+  state: paymentAttemptStatus.shape.state,
+  expectedAmountPoisha: z.int().positive().max(Number.MAX_SAFE_INTEGER),
+  verifiedReceiptAmountPoisha: z.int().nonnegative().max(Number.MAX_SAFE_INTEGER).optional(),
+  amountDisposition: z.enum([
+    'not_checked',
+    'matched',
+    'under_collected',
+    'over_collected',
+    'quarantined',
+  ]),
+  riskStatus: z.enum(['clear', 'review', 'rejected']).optional(),
+  lastCheckedAt: z.iso.datetime({ offset: true }).optional(),
+  expiresAt: z.iso.datetime({ offset: true }).optional(),
+})

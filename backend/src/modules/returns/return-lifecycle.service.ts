@@ -23,8 +23,7 @@ const command = z.strictObject({
 })
 const hash = (value: string) => createHash('sha256').update(value).digest('hex')
 
-// Private local composition. Receipt/inspection, private evidence and HTTP remain disabled
-// until their protected capabilities and task prerequisites are independently accepted.
+// Returns owns guarded lifecycle changes; HTTP/root composition supplies protected capabilities.
 export function returnLifecycleService(
   connection: Connection,
   admin: AdminAccountAccess,
@@ -95,8 +94,8 @@ export function returnLifecycleService(
             !row.inspectedAt ||
             row.items.some(
               (item) =>
-                !item.acceptedUnitOrdinals ||
-                item.acceptedUnitOrdinals.length !== item.approvedUnitOrdinals.length,
+                !item.inspectedUnitOrdinals ||
+                item.inspectedUnitOrdinals.length !== item.approvedUnitOrdinals.length,
             ))
         )
           throw new ApiError('BUSINESS_RULE_VIOLATION')
@@ -122,7 +121,9 @@ export function returnLifecycleService(
               ? []
               : requested
                 ? item.protectedUnitOrdinals.slice(0, requested.quantity)
-                : [...item.approvedUnitOrdinals]
+                : input.to === 'completed' && row.claimType === 'physical_return'
+                  ? [...(item.acceptedUnitOrdinals ?? [])]
+                  : [...item.approvedUnitOrdinals]
           return {
             orderItemId: item.orderItemId.toHexString(),
             protected:

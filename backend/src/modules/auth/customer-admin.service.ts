@@ -1,3 +1,10 @@
+import { customerAdminView, customerPrivacyView } from './customer-admin.schema.js'
+import {
+  customerAdminQuery as querySchema,
+  customerStatusDecision as decisionSchema,
+  customerPrivacyDecision,
+} from './customer-admin.schema.js'
+import { createIdentityModels } from './auth.model.js'
 import type { Connection } from 'mongoose'
 import { z } from 'zod'
 import type { IdentityModels } from './auth.model.js'
@@ -7,22 +14,9 @@ import { parseInput } from '../../shared/middleware/validate.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { createHash } from 'node:crypto'
 import { createAuditWriter, auditOperationReader } from '../audit/audit.service.js'
-import { paginationSchema, pageMeta } from '../../shared/pagination.js'
+import { pageMeta } from '../../shared/pagination.js'
 
 const id = z.string().regex(/^[a-f0-9]{24}$/)
-const querySchema = paginationSchema.safeExtend({
-  q: z.string().trim().min(1).max(120).optional(),
-  status: z.enum(['active', 'suspended', 'deletion_pending', 'deactivated']).optional(),
-})
-const decisionSchema = z.strictObject({
-  to: z.enum(['active', 'suspended']),
-  reason: z
-    .string()
-    .trim()
-    .min(1)
-    .max(2000)
-    .refine((v) => [...v].every((c) => c.charCodeAt(0) >= 32 && c.charCodeAt(0) !== 127)),
-})
 const keySchema = z
   .string()
   .min(1)
@@ -41,19 +35,152 @@ export function customerAdminService(
   models: IdentityModels,
   admins: AdminAccountAccess,
   clock: () => Date = () => new Date(),
+  histories?: (
+    session: import('mongoose').ClientSession,
+    customerId: string,
+    kind: 'orders' | 'claims' | 'refunds',
+    raw: unknown,
+  ) => Promise<{ items: unknown[]; pagination: ReturnType<typeof pageMeta> }>,
 ) {
   const audit = createAuditWriter(connection),
     lookup = auditOperationReader(connection)
-  const view = (row: InstanceType<IdentityModels['users']>) => ({
-    id: row._id.toHexString(),
-    name: row.name,
-    emailMasked: maskedEmail(row.emailNormalized),
-    ...(row.phone ? { phoneMasked: `***${row.phone.slice(-2)}` } : {}),
-    status: row.status,
-    emailVerified: !!row.emailVerifiedAt,
-    createdAt: row.createdAt.toISOString(),
-  })
+  const view = (row: InstanceType<IdentityModels['users']>) =>
+    customerAdminView.parse({
+      id: row._id.toHexString(),
+      name: row.name,
+      emailMasked: maskedEmail(row.emailNormalized),
+      ...(row.phone ? { phoneMasked: `***${row.phone.slice(-2)}` } : {}),
+      status: row.status,
+      emailVerified: !!row.emailVerifiedAt,
+      createdAt: row.createdAt.toISOString(),
+    })
   return {
+    async history(
+      token: string | undefined,
+      rawId: unknown,
+      kind: 'orders' | 'claims' | 'refunds',
+      raw: unknown,
+    ) {
+      const customerId = parseInput(id, rawId)
+      return admins.owned(
+        token,
+        async (_actor, session) => {
+          await verifyIdentityPersistence(connection, models)
+          if (!(await models.users.exists({ _id: customerId, role: 'customer' }).session(session)))
+            throw new ApiError('NOT_FOUND')
+          if (!histories) throw new ApiError('SERVICE_UNAVAILABLE')
+          return histories(session, customerId, kind, raw)
+        },
+        false,
+      )
+    },
+    async privacy(token: string | undefined, rawId: unknown) {
+      const customerId = parseInput(id, rawId)
+      return admins.owned(
+        token,
+        async (_actor, session) => {
+          const row = await models.users
+            .findOne({ _id: customerId, role: 'customer' })
+            .session(session)
+          if (!row) throw new ApiError('NOT_FOUND')
+          const request = row.deletionRequest
+          return customerPrivacyView.parse({
+            customerId,
+            request: request
+              ? {
+                  id: request.id.toHexString(),
+                  status: request.status,
+                  requestedAt: request.requestedAt.toISOString(),
+                  verifiedAt: request.verifiedAt.toISOString(),
+                  ...(request.decisionAt ? { decisionAt: request.decisionAt.toISOString() } : {}),
+                }
+              : null,
+            retention: 'required_order_financial_audit_and_legal_hold_records_retained',
+          })
+        },
+        false,
+      )
+    },
+    async decidePrivacy(token: string | undefined, rawId: unknown, raw: unknown, rawKey: unknown) {
+      const customerId = parseInput(id, rawId),
+        input = parseInput(customerPrivacyDecision, raw),
+        key = parseInput(keySchema, rawKey),
+        digest = createHash('sha256').update(JSON.stringify(input)).digest('hex')
+      return admins.owned(token, async (actorId, session) => {
+        await verifyIdentityPersistence(connection, models)
+        const row = await models.users
+          .findOne({ _id: customerId, role: 'customer' })
+          .select('+securityRevision')
+          .session(session)
+        if (!row) throw new ApiError('NOT_FOUND')
+        const cause = {
+          action: 'customer.privacy.decision',
+          targetType: 'customer',
+          targetId: customerId,
+          operationKey: createHash('sha256')
+            .update(`privacy:${actorId}:${customerId}:${key}`)
+            .digest('hex'),
+        }
+        const prior = await lookup(session, cause)
+        if (prior) {
+          if (prior.afterDigest !== digest) throw new ApiError('IDEMPOTENCY_CONFLICT')
+          return { status: row.deletionRequest?.status, retained: true }
+        }
+        const request = row.deletionRequest,
+          now = clock()
+        if (
+          !Number.isFinite(now.getTime()) ||
+          !request ||
+          !['requested', 'under_review'].includes(request.status) ||
+          !request.verifiedAt ||
+          request.verifiedAt < request.requestedAt ||
+          request.verifiedAt > now ||
+          now < row.createdAt ||
+          !Number.isSafeInteger(row.securityRevision) ||
+          row.securityRevision >= Number.MAX_SAFE_INTEGER
+        )
+          throw new ApiError('BUSINESS_RULE_VIOLATION')
+        const status =
+          input.decision === 'approve_deactivation'
+            ? 'approved'
+            : input.decision === 'reject'
+              ? 'rejected'
+              : 'under_review'
+        const changed = await models.users.updateOne(
+          {
+            _id: row._id,
+            securityRevision: row.securityRevision,
+            'deletionRequest.status': request.status,
+          },
+          {
+            $set: {
+              'deletionRequest.status': status,
+              'deletionRequest.decisionAt': now,
+              'deletionRequest.decisionReason': input.reason,
+              ...(input.decision === 'approve_deactivation' ? { status: 'deactivated' } : {}),
+            },
+            ...(input.decision === 'approve_deactivation' ? { $inc: { securityRevision: 1 } } : {}),
+          },
+          { session },
+        )
+        if (changed.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
+        if (input.decision === 'approve_deactivation')
+          await models.sessions.updateMany(
+            { userId: row._id, kind: 'customer', revokedAt: { $exists: false } },
+            { $set: { revokedAt: now } },
+            { session },
+          )
+        await audit(session, {
+          ...cause,
+          actorType: 'admin',
+          actorId,
+          afterDigest: digest,
+          reason: input.reason,
+          occurredAt: now,
+        })
+        return { status, retained: true }
+      })
+    },
     async list(token: string | undefined, raw: unknown) {
       const query = parseInput(querySchema, raw)
       return admins.owned(
@@ -175,5 +302,26 @@ export function customerAdminService(
         false,
       )
     },
+  }
+}
+
+export function customerReportAccess(connection: Connection, models: IdentityModels) {
+  return async (session: import('mongoose').ClientSession) => {
+    await verifyIdentityPersistence(connection, models)
+    return models.users.countDocuments({ role: 'customer' }).maxTimeMS(5000).session(session)
+  }
+}
+
+// Auth retains persistence ownership; the root receives only administration/count capabilities.
+export function customerAdministrationAccess(
+  connection: Connection,
+  admins: AdminAccountAccess,
+  clock: () => Date,
+  histories: NonNullable<Parameters<typeof customerAdminService>[4]>,
+) {
+  const models = createIdentityModels(connection)
+  return {
+    customers: customerAdminService(connection, models, admins, clock, histories),
+    registeredCustomers: customerReportAccess(connection, models),
   }
 }

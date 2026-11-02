@@ -1,3 +1,4 @@
+import { cancellationQuery } from './cancellation.schema.js'
 import { createRegistrationNotifications } from '../notifications/notification.service.js'
 import { createHash } from 'node:crypto'
 import { Types, type Connection, type ClientSession } from 'mongoose'
@@ -20,8 +21,7 @@ import { verifyCancellationPersistence } from './cancellation.persistence.js'
 import { cancellationInput, cancellationDecision, cancellationView } from './cancellation.schema.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
-import { paginationSchema, pageMeta } from '../../shared/pagination.js'
-import { z } from 'zod'
+import { pageMeta } from '../../shared/pagination.js'
 const hash = (s: string) => createHash('sha256').update(s).digest('hex')
 export function cancellationService(
   connection: Connection,
@@ -79,12 +79,7 @@ export function cancellationService(
       })
     },
     async adminList(token: string | undefined, raw: unknown) {
-      const query = parseInput(
-        paginationSchema.safeExtend({
-          status: z.enum(['requested', 'approved', 'rejected']).optional(),
-        }),
-        raw,
-      )
+      const query = parseInput(cancellationQuery, raw)
       return admin.owned(
         token,
         async (_actor, session) => {

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { paginationSchema } from '../../shared/pagination.js'
 export const reviewId = z.string().regex(/^[a-f0-9]{24}$/)
 const comment = z
   .string()
@@ -44,4 +45,23 @@ export const moderationReceipt = z.strictObject({
   operationKey: moderationKey,
   action: z.string(),
   reason: z.string(),
+})
+export const reviewAdminQuery = paginationSchema.safeExtend({
+  status: z.enum(['pending', 'approved', 'rejected', 'hidden']).optional(),
+  productId: reviewId.optional(),
+})
+export const reviewView = z.strictObject({
+  id: reviewId,
+  productId: reviewId,
+  rating: z.int().min(1).max(5),
+  comment: z.string().min(1).max(4000),
+  status: z.enum(['pending', 'approved', 'rejected', 'hidden']),
+  createdAt: z.iso.datetime(),
+  verifiedPurchase: z.literal(true),
+})
+export const adminReviewView = reviewView.extend({
+  userId: reviewId,
+  orderId: reviewId,
+  moderationReason: z.string().optional(),
+  moderatedAt: z.iso.datetime().optional(),
 })

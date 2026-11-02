@@ -1,5 +1,7 @@
 # P09-002 / P09-015 — local foundations
 
+**Current development status: Done under [Package F completion](./P06-016-017-commerce-delivery-support.md#package-f-completion).** The historical limits below are superseded by authoritative source/API integration, affected verification and executor review; external/stage gates remain separate.
+
 1 November 2026, Asia/Dhaka. Executor: Codex. Both tasks remain **Blocked**; this record is not independent acceptance.
 
 ## P09-002 — non-authoritative financial arithmetic

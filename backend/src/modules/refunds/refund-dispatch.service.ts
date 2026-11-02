@@ -1,3 +1,4 @@
+import type { RefundNotifier } from './refund-recovery.service.js'
 import { createHash } from 'node:crypto'
 import type { Connection } from 'mongoose'
 import { z } from 'zod'
@@ -31,6 +32,8 @@ export function refundDispatchService(
   funding: ReturnType<typeof refundFundingAccess>,
   gateway: Pick<ReturnType<typeof createSslcommerzAdapter>, 'initiateRefund'>,
   clock: () => Date = () => new Date(),
+  merchantAccountKey?: string,
+  notify?: RefundNotifier,
 ) {
   const refunds = refundModel(connection),
     attempts = refundAttemptModel(connection)
@@ -72,8 +75,18 @@ export function refundDispatchService(
           attempt.amountPoisha !== refund.amountPoisha
         )
           throw new ApiError('STATE_CONFLICT')
-        if (attempt.status !== 'created')
+        if (attempt.status !== 'created') {
+          if (!prior)
+            await audit(session, {
+              ...cause,
+              actorType: 'admin',
+              actorId,
+              afterDigest: digest,
+              reason: input.reason,
+              occurredAt: clock(),
+            })
           return { intent: undefined, attemptId: attempt._id.toHexString(), state: attempt.status }
+        }
         if (prior || !attempt.originalBankTranId || !attempt.refundTransId)
           throw new ApiError('STATE_CONFLICT')
         const facts = await funding.list(
@@ -87,6 +100,7 @@ export function refundDispatchService(
         if (
           !source ||
           source.bankTranId !== attempt.originalBankTranId ||
+          (merchantAccountKey !== undefined && source.merchantAccountKey !== merchantAccountKey) ||
           source.heldPoisha < refund.amountPoisha ||
           facts.order.heldPoisha < refund.amountPoisha
         )
@@ -125,6 +139,13 @@ export function refundDispatchService(
           actorId,
           afterDigest: digest,
           reason: input.reason,
+          occurredAt: now,
+        })
+        await notify?.(session, {
+          refundId,
+          orderId: refund.orderId.toHexString(),
+          status: 'processing',
+          operationKey: cause.operationKey,
           occurredAt: now,
         })
         return {

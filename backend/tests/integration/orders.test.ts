@@ -910,6 +910,7 @@ it('return lifecycle local: additive upgrade preserves requests, rejects drift a
   const {
     foundationReturnValidator,
     reviewReturnValidator,
+    singleReceiptReturnValidator,
     returnValidator,
     upgradeReturnLifecyclePersistence,
   } = await import('../../src/modules/returns/return.persistence.js')
@@ -926,6 +927,14 @@ it('return lifecycle local: additive upgrade preserves requests, rejects drift a
   expect((await returnModel(db.connection).findById(body.claimId))?.status).toBe('requested')
   await db.connection.db?.command({ collMod: 'returnRequests', validator: reviewReturnValidator })
   await upgradeReturnLifecyclePersistence(db.connection)
+  expect((await returnModel(db.connection).findById(body.claimId))?.status).toBe('requested')
+  await db.connection.db?.command({
+    collMod: 'returnRequests',
+    validator: singleReceiptReturnValidator,
+  })
+  await upgradeReturnLifecyclePersistence(db.connection)
+  await upgradeReturnLifecyclePersistence(db.connection)
+  await verifyReturnPersistence(db.connection)
   expect((await returnModel(db.connection).findById(body.claimId))?.status).toBe('requested')
   await db.connection.db?.command({ collMod: 'returnRequests', validator: {} })
   try {

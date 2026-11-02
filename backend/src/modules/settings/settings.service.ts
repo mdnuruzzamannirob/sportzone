@@ -216,3 +216,15 @@ export function storefrontSettingsAccess(
     return result.data
   }
 }
+
+export function reportThresholdAccess(connection: Connection) {
+  return async (session: ClientSession) => {
+    await verifySettingsPersistence(connection)
+    const row = await settingsModel(connection)
+      .findOne({ key: 'primary' })
+      .select('lowStockThreshold')
+      .session(session)
+    if (!row) throw new ApiError('SERVICE_UNAVAILABLE')
+    return row.lowStockThreshold
+  }
+}

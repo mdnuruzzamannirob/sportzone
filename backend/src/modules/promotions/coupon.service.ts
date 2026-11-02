@@ -1,3 +1,6 @@
+import type { checkoutAccess, CheckoutCredentials } from '../auth/checkout-access.service.js'
+import type { catalogCheckoutAccess } from '../catalog/catalog.service.js'
+import type { checkoutDeliveryAccess } from '../delivery/delivery-coverage.service.js'
 import type { Connection, ClientSession } from 'mongoose'
 import type { z } from 'zod'
 import type { pricingInput } from './pricing.schema.js'
@@ -7,7 +10,7 @@ import { isDeepStrictEqual } from 'node:util'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { calculatePricing } from './pricing.service.js'
-import { couponEligibilityInput } from './coupon.schema.js'
+import { couponEligibilityInput, couponPreviewInput, couponPreviewResult } from './coupon.schema.js'
 
 // Internal policy over authoritative, detached records and priced lines. This is not an
 // HTTP input DTO, identity check, scope resolver, quota reservation or durable hold writer.
@@ -195,5 +198,68 @@ export function couponQuoteAccess(connection: Connection) {
       couponId: row._id.toHexString(),
       eligibleSubtotalPoisha: result.pricing.couponEligibleSubtotalPoisha,
     }
+  }
+}
+
+// Advisory only: authoritative prices/eligibility, no hold or redemption write.
+export function couponPreviewService(
+  connection: Connection,
+  access: ReturnType<typeof checkoutAccess>,
+  catalog: ReturnType<typeof catalogCheckoutAccess>,
+  delivery: ReturnType<typeof checkoutDeliveryAccess>,
+  clock: () => Date = () => new Date(),
+) {
+  const quote = couponQuoteAccess(connection)
+  return {
+    async preview(credentials: CheckoutCredentials, raw: unknown) {
+      const input = parseInput(couponPreviewInput, raw)
+      return access.owned(credentials, async (principal, session) => {
+        const selections = await catalog(
+          input.items.map((item) => item.variantId),
+          session,
+        )
+        const lines = input.items.map((item) => {
+          const selected = selections.get(item.variantId)
+          if (!selected || selected.availableQty < item.quantity) throw new ApiError('OUT_OF_STOCK')
+          return {
+            id: item.variantId,
+            variantId: item.variantId,
+            quantity: item.quantity,
+            productId: selected.product.id,
+            categoryIds: selected.categoryIds,
+            couponEligible: false,
+            regularUnitPoisha: selected.product.regularPricePoisha,
+            effectiveUnitPoisha: selected.estimatedUnitPoisha,
+          }
+        })
+        const charge = input.deliveryArea
+          ? (await delivery(input.deliveryArea.districtKey, input.deliveryArea.areaKey, session))
+              .amountPoisha
+          : 0
+        try {
+          const result = await quote(
+            input.code,
+            principal.profile
+              ? { kind: 'customer', userId: principal.profile.id }
+              : { kind: 'guest' },
+            lines,
+            charge,
+            session,
+            clock(),
+          )
+          return couponPreviewResult.parse({
+            eligible: true,
+            discountPoisha: result.pricing.couponDiscountPoisha,
+          })
+        } catch (error) {
+          if (!(error instanceof ApiError) || error.code !== 'COUPON_UNAVAILABLE') throw error
+          return couponPreviewResult.parse({
+            eligible: false,
+            discountPoisha: 0,
+            reasonCode: 'COUPON_UNAVAILABLE',
+          })
+        }
+      })
+    },
   }
 }
