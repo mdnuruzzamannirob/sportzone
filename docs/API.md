@@ -1763,6 +1763,8 @@ conflict boundary, preventing overselling or stale CAS even across different adm
 | `GET`  | `/admin/customers/{customerId}/claims`              | `page?,pageSize?,status? → paginated Claim[]`                                                                 | 27  |
 | `GET`  | `/admin/customers/{customerId}/refunds`             | `page?,pageSize?,status? → paginated Refund[]` (masked payout sources)                                        | 27  |
 | `POST` | `/admin/customers/{customerId}/status-decisions`    | `{to:enum(active,suspended),reason} + Idempotency-Key → {status}`                                             | 27  |
+| `GET` | `/admin/customers/{customerId}/deletion-request` | `— → {customerId,request?,retention}`; verified privacy request metadata only | 27 |
+| `POST` | `/admin/customers/{customerId}/deletion-decisions` | `{decision:enum(under_review,approve_deactivation,reject),reason} + Idempotency-Key → {status,retained:true}` | 27 |
 | `GET`  | `/admin/reviews`                                    | `status?,productId?,page? → AdminReview[]`                                                                    | 31  |
 | `POST` | `/admin/reviews/{reviewId}/moderation`              | `{decision:enum(approve,reject,hide),reason} + Idempotency-Key → AdminReview`                                 | 31  |
 
@@ -1798,7 +1800,11 @@ be reactivated through this route. Decisions require current admin, Origin/CSRF 
 then atomically update security revision, revoke customer sessions and retain exact transition audit.
 Reactivation never restores revoked sessions. A historical identical decision key returns current
 status without repeating the effect; a changed payload conflicts. These capabilities currently have
-explicit local/test composition only; full histories, deletion review and ordinary activation remain gated.
+explicit local/test composition only. Customer order/claim/refund histories are separately paginated and use domain-owned
+ownership projections. Privacy decisions require a verified outstanding deletion request, current admin, exact Origin,
+CSRF and keyed reason; approval deactivates the account and revokes customer sessions. It does not erase addresses or other records without retention/legal-hold clearance.
+Required identity linkage, order/financial/audit and legal-hold records remain retained. No decision performs hard deletion,
+removes financial history or waives retention. Replays never repeat revocation or alter the original request decision.
 
 Private delivery/support foundation records admin delay/failed-attempt/final-non-delivery cases with
 keyed replay and bounded contact outcomes. Failed-attempt and delay resolution leave Shipped/status
@@ -1971,16 +1977,30 @@ deadline.
 | `POST` | `/complaints`                                 | Public+CSRF or C or G | `ComplaintInput → {reference,status:'open'}`                        | 20 / PRD §3 |
 | `GET`  | `/me/complaints`                              | C                     | `page? → Complaint[]` (own)                                         | 20          |
 | `GET`  | `/orders/{orderId}/complaints`                | C owner or G-scoped   | `— → Complaint[]` (exact own order)                                 | 19, 20      |
-| `GET`  | `/admin/complaints`                           | A                     | `status?,page? → Complaint[]`                                       | 20, 26      |
+| `GET`  | `/admin/complaints`                           | A                     | `status?,orderId?,q?,page?,pageSize? → Complaint[]`                                       | 20, 26      |
+| `GET` | `/admin/complaints/{complaintId}` | A | `— → ComplaintAdminDetail` (necessary contact/response history, no public lookup) | 20,26 |
 | `POST` | `/admin/complaints/{complaintId}/resolve`     | A                     | `{status,resolution,contactOutcome?} + Idempotency-Key → Complaint` | 20, 26      |
 | `GET`  | `/admin/audit-logs`                           | A                     | `targetType?,targetId?,from?,to?,page? → AdminAudit[]`              | PRD §10     |
+| `GET` | `/admin/operational-exceptions` | A | `kind:enum(stock,payments,refunds,reconciliation),page?,pageSize? → paginated sanitized operational exceptions` | 25,26,29,33 |
 | `GET`  | `/admin/notifications`                        | A                     | `status?,eventType?,page? → NotificationSummary[]`                  | 20          |
 | `POST` | `/admin/notifications/{notificationId}/retry` | A                     | `{reason} + Idempotency-Key → {status}` (send intent only)          | 20          |
 
 **Complaint access:** anonymous contact submissions require `contactName` and `contactEmail` and may omit `orderId` and must be rate-limited/spam-guarded; they receive
 a safe reference, **not** a public arbitrary-reference lookup. To link an order, the caller must have C/G ownership of that
 order. `contactName?`/`contactEmail?` omissions for C/G are resolved only from their authenticated profile or verified order customer snapshot; the submitted contact is never ownership proof. Require valid nonempty resolved name/email. Never return other reporters' contact details. PRD complaint-response deadlines require legal/operator confirmation
-before launch.
+before launch. Intake accepts an optional `Idempotency-Key` for exact scoped replay; changed payload conflicts.
+Without a key each accepted submission is a distinct report. Global anonymous complaints have no order/customer reference.
+A registered customer may submit a global complaint using their own profile; a verified guest may default contact from their exact proven order without creating an order link, using guest-session CSRF. An explicit stale guest credential never falls back to anonymous context. An order link always requires current exact C/G ownership. Intake uses the shared network/target quota and strict fields, Origin and browser/session CSRF. Public
+response contains only `{reference,status:'open'}`, never a public lookup capability. Customer own histories are paginated;
+admin contact outcomes produce immutable response audit facts. Protected admin detail alone exposes necessary reporter contact and up to 40 recorded contacts, with unresolved response-policy status; public/customer lists omit contact. Admin search uses an escaped literal issue prefix or exact order ID, strict bounded pagination and five-second reads. An admin-recorded phone/email contact is not a claim of
+verified email delivery. Missing statutory deadline remains uncalculated, with no invented date.
+
+Operational queues show allocation shortfalls, payment risk/unassigned-fund review, nonterminal payment reconciliation
+and refund review/processing/failure respectively. Safe IDs/status/reason codes only, standard pagination and no provider
+references, proof material or customer contact. Read endpoints never retry money or mutate domain state. Notification
+retry is an audited outbox admission, restricted to failed/waiting commerce/after-sales intents with recorded known non-acceptance; uncertain, sent,
+sending, credential/proof and proof-unavailable intents cannot be resent through it. Existing delivery verification and
+stable provider idempotency keys remain authoritative.
 
 **Reporting field definitions (`DashboardMetrics` and export DTOs):**
 
@@ -2013,6 +2033,17 @@ current counters as historical. A response records its actual cutoff and consist
 Every export report returns `{from,to,asOf,timezone:'Asia/Dhaka',dateBasis,filters,totals,...}` and explicitly distinguishes period sums vs as-of balances, pending vs completed refunds and correction vs merchandise.
 Report `asOf` prevents pretending concurrent cash events constitute one fully consistent snapshot unless reporting snapshot guarantees are actually implemented.
 COD without verified collection is not paid collections.
+
+Local report profiles accept UTC instants or `YYYY-MM-DD` (midnight Asia/Dhaka), `[from,to)` up to 93 days.
+Exports require both bounds; dashboard defaults to the preceding 30 days. Future ends, reversed/empty ranges and any
+explicit historical `asOf` are rejected with `422 BUSINESS_RULE_VIOLATION` because no reconstructible historical snapshots
+exist. Current report sources share one MongoDB transaction; the response states the actual cutoff/consistency basis.
+At most 5,000 order-placement facts, receipts or completed payouts and 5,000 outstanding-COD candidates are processed per
+request; an oversized selection is rejected rather than truncated. Source reads have 5-second execution bounds; groups
+are Dhaka day/month buckets, at most 93 daily buckets. No arbitrary identity/contact rows or external export file is emitted.
+Classification filters affect `classifiedCollectedPoisha`/`classifiedCompletedPoisha` and their counts; canonical `totals`
+remain explicitly labeled all-class financial totals. Held/unassigned/COD are cutoff balances, not period cash movement.
+
 Do not label `netLinkedCashFlowPoisha` as revenue or profit; report unmatched intake and correction liabilities separately.
 
 ## 15. Idempotency, concurrency & recovery
@@ -2454,6 +2485,7 @@ The following field allowlists define client inputs and server responses. `*Inpu
 | `ComplaintInput`           | `orderId:id?,issue:string!,contactName:string? (required anonymous),contactEmail:string? (required anonymous),contactPhone:string?,description:string?`                                                                                                                                                                                                                                                                                                                                                                         | Order ID only with verified owner/guest proof; anti-spam limits                                                                                                  |
 | `Complaint`                | `id!,orderId?,status!,issue!,createdAt:date!,response?,resolvedAt?`                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Customer sees only own/submitted authorized complaints                                                                                                           |
 | `Review`                   | `id!,productId!,rating:int!,comment:string!,status!,createdAt:date!,verifiedPurchase:bool!`                                                                                                                                                                                                                                                                                                                                                                                                                                     | `verifiedPurchase` server-derived from delivered qualifying order                                                                                                |
+| `ComplaintAdminDetail` | `Complaint` plus `contact:{name,email,phone?},contactHistory:[{at,outcome}],responsePolicy:{status:enum(under_review)}` | Current admin only; necessary contact for operational response, never public lookup; history max 40 |
 | `DashboardMetrics`         | `from:date!,to:date!,asOf:date!,timezone:enum(Asia/Dhaka)!,dateBasis!,counts:DashboardCounts!,recentOrders:AdminOrderSummary[]!,lowStockItems:LowStockSummary[]!,grossMerchandiseValuePoisha!,productDiscountPoisha!,couponDiscountPoisha!,netAcceptedOrderSalesPoisha!,paidCollectionsPoisha!,netLinkedCashFlowPoisha:SignedMoneyPoisha!,unattributedProviderCashPoisha!,completedMerchandiseRefundsPoisha!,completedCorrectionRefundsPoisha!,pendingRefundLiabilityPoisha!,outstandingCodPoisha!,unassignedLinkedCashPoisha!` | Counts and balances at cutoff; period cash uses event dates; lists max 20 each; all other money fields nonnegative integers                                      |
 | `DashboardCounts`          | `activeProducts:int!,registeredCustomers:int!,totalOrders:int!,pendingOrders:int!,confirmedOrders:int!,processingOrders:int!,shippedOrders:int!,deliveredOrders:int!,cancelledOrders:int!,lowStockVariants:int!,pendingReturnRequests:int!`                                                                                                                                                                                                                                                                                     | Nonnegative cutoff counts; fulfillment-status counts sum to totalOrders                                                                                          |
 | `LowStockSummary`          | `variantId:id!,productId:id!,sku:string!,available:int!,threshold:int!`                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Admin-only; nonnegative counters and approved threshold                                                                                                          |
@@ -2616,6 +2648,9 @@ Any difference between this matrix and the route's own explicitly stated `201`/`
 | `GET`    | `/admin/customers/{customerId}/claims`               | `200`              | Base + OWN                           |
 | `GET`    | `/admin/customers/{customerId}/refunds`              | `200`              | Base + OWN + REFUND                  |
 | `POST`   | `/admin/customers/{customerId}/status-decisions`     | `200`              | Base + OWN + REPLAY                  |
+| `GET` | `/admin/customers/{customerId}/deletion-request` | `200` | Base + OWN |
+| `POST` | `/admin/customers/{customerId}/deletion-decisions` | `200` | Base + OWN + STATE + REPLAY |
+| `GET` | `/admin/operational-exceptions` | `200` | Base + OWN |
 | `GET`    | `/admin/reviews`                                     | `200`              | Base + OWN                           |
 | `POST`   | `/admin/reviews/{reviewId}/moderation`               | `200`              | Base + OWN + REPLAY                  |
 | `GET`    | `/admin/delivery/zones`                              | `200`              | Base + OWN                           |
@@ -2646,6 +2681,7 @@ Any difference between this matrix and the route's own explicitly stated `201`/`
 | `POST`   | `/complaints`                                        | `201`              | Base                                 |
 | `GET`    | `/me/complaints`                                     | `200`              | Base + OWN                           |
 | `GET`    | `/orders/{orderId}/complaints`                       | `200`              | Base + OWN                           |
+| `GET` | `/admin/complaints/{complaintId}` | `200` | Base + OWN |
 | `GET`    | `/admin/complaints`                                  | `200`              | Base + OWN                           |
 | `POST`   | `/admin/complaints/{complaintId}/resolve`            | `200`              | Base + OWN + REPLAY                  |
 | `GET`    | `/admin/audit-logs`                                  | `200`              | Base + OWN                           |

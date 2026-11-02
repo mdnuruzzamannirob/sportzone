@@ -15,7 +15,7 @@ export const complaintResolution = z.strictObject({
 })
 export const complaintView = z.strictObject({
   id: orderId,
-  orderId,
+  orderId: orderId.optional(),
   status: z.enum(['open', 'in_review', 'resolved', 'closed']),
   issue: lifecycleText,
   createdAt: z.iso.datetime(),

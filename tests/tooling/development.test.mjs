@@ -381,6 +381,27 @@ test('REPORT-BOUNDARY-01: reporting cannot import foreign private persistence', 
   }
 })
 
+test('OPERATIONS-BOUNDARY-01: support/report routes and readers retain private source ownership', (t) => {
+  const { root, put } = fixture(t)
+  for (const [reader, owner] of [
+    ['reports/report.service', 'orders/order'],
+    ['reports/report.service', 'payments/payment'],
+    ['reports/report.service', 'refunds/refund'],
+    ['support/support.routes', 'support/complaint'],
+    ['notifications/notification-admin.service', 'auth/auth'],
+    ['customers/customer-admin.routes', 'orders/order'],
+  ]) {
+    put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
+    put(`backend/src/modules/${reader}.ts`, `import "../${owner}.model.js"`)
+    assert.ok(
+      checkBoundaries(root).errors.some(
+        (error) => error.includes('private persistence') || error.includes('controller'),
+      ),
+    )
+    put(`backend/src/modules/${reader}.ts`, 'export const reader = 1')
+  }
+})
+
 test('BLOCKED-AUDIT-BOUNDARY-01: customer routes and reviews retain auth and audit persistence privacy', (t) => {
   const { root, put } = fixture(t)
   for (const [consumer, owner] of [

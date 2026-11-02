@@ -4,7 +4,7 @@ import { ApiError } from '../../shared/errors/app-error.js'
 const embedded = { _id: false, strict: 'throw' } as const
 const schema = new Schema(
   {
-    orderId: { type: Schema.Types.ObjectId, required: true, immutable: true },
+    orderId: { type: Schema.Types.ObjectId, immutable: true },
     userId: { type: Schema.Types.ObjectId, immutable: true },
     contact: {
       type: new Schema(
@@ -46,6 +46,7 @@ const schema = new Schema(
   mutableSchemaOptions,
 )
 schema.index({ status: 1, createdAt: -1 }, { name: 'complaint_status_history' })
+schema.index({ userId: 1, createdAt: -1, _id: -1 }, { name: 'complaint_customer_history' })
 schema.index({ orderId: 1, createdAt: -1, _id: -1 }, { name: 'complaint_order_history' })
 schema.pre('save', function () {
   if (!this.isNew) throw new ApiError('STATE_CONFLICT')

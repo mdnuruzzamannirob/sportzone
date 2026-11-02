@@ -2079,22 +2079,60 @@ reserve source-funded obligations/attempts atomically with release and cancellat
 or refund capability still blocks paid approval. Unpaid online cancellation does
 not remove attempts or disable merchant reconciliation; later verified funds remain correction-only.
 
-#### Delivery exception and complaint foundation
+#### Delivery exception, customer privacy, support and reporting operations
 
-After build, explicit local/test `node --env-file=.env backend/scripts/bootstrap-delivery-support.mjs`
-creates strict exception/complaint persistence and applies the known notification migration. It does
-not open HTTP support/closure APIs, start workers or seed approvals/contacts/financial effects.
-Unknown drift and deployed configuration are refused. Keep order/exception/complaint/audit evidence,
-source collections, recovery movements and notification records together across restores.
+After backend build, `node --env-file=.env backend/scripts/bootstrap-operations.mjs --complaints` runs
+only against an owned local/test database. Existing identity/catalog/settings/returns/audit/notification
+bootstraps remain prerequisites. It adds the declared order placement/hold, receipt-period, refund
+completion/capacity and customer-complaint indexes, verifies current financial validators and applies
+only the exact predecessor complaint migration making orderId optional. Current records and all
+financial/audit histories remain intact; unknown validator drift and deployed execution are refused.
+For a fresh database the normal owning bootstraps initialize current validators first. The existing
+`bootstrap-delivery-support.mjs --complaints` also supports the exact complaint predecessor upgrade.
+No bootstrap opens routes, starts a worker, seeds policy/inspection consent or creates financial effects.
 
-Final non-delivery requires a protected custody/inspection authority and per-shipped-item full
-accounting. No real verifier is installed by default. Missing source-backed refund obligations block
-paid closure; recovered resale stock changes only after verified inspection, with a globally stable
-receipt per original order item. Never rerun pre-shipment release or reset a recovery identity.
-Uncertain collection and payout outcomes remain subject to their independent reconciliation.
-Complaints/contact outcomes are restricted operational data; anonymous transport, public rate/spam
-controls, support HTTP security and legally qualified response windows require their owning acceptance.
-No hardcoded legal deadline or change to an existing order's deadline/estimate is implied by case resolution.
+`BACKEND_OPERATIONS_ENABLED=true` explicitly composes local/test reports/dashboard, sanitized operational
+queues, customer status/history/privacy review, support intake/admin response and delivery exception HTTP.
+Both auth audiences are required. Default startup omits these routes; malformed/deployed admission fails.
+Browser mutations retain exact Origin/CSRF/current scope; anonymous intake requires valid contact and
+browser context and shares network/target quotas. Optional intake Idempotency-Key preserves one request;
+without it a submission is distinct. Protected admin complaint detail supplies necessary contact and
+bounded response history; other views omit contact. Contact records establish a recorded response,
+not independently verified email delivery or an invented legal deadline. Approved complaint policy and
+published response periods retain P11-007 qualification.
+
+Final non-delivery requires per-shipped-item full custody accounting and protected inspection evidence.
+Optional `DELIVERY_DISPOSITION_FILE` is an absolute owner-only regular JSON file (no symlink) containing
+at most 1,000 records `{orderId,exceptionId,disposition:[{orderItemId,quantity,custody,inspectedResellableQty}],
+inspectionRef,verifiedAt}`. The exact incident/disposition must match once, with verification after shipment
+and no future timestamp; invalid/missing originals deny closure. The source digest is retained. A paid
+closure additionally needs a matching `delivery_exception` basis authorization/consent in the existing
+protected refund policy. It atomically reserves canonical source-funded obligations/attempts; this is not
+payout completion. The existing Package D protected outcome/reconciliation path establishes completion.
+Recovered inspected resale stock enters once; lost/damaged units never restock and pre-shipment release
+never runs again. Failed attempts/delay resolutions retain Shipped and immutable deadlines. Restore
+orders/exceptions, source funds/refunds, movements, complaint/contact, audit and notification records together.
+
+Privacy approval is explicitly account deactivation, not physical erasure: a verified outstanding request,
+current admin and keyed reason are required; customer sessions/security revision are revoked atomically.
+Review/rejection retains normal account access. Required records, saved addresses and legal-hold data are
+retained until an authorized retention process can decide erasure; APIs never erase financial/audit history.
+Admin profile/history views expose masked/minimal data and separately paginated domain-owned histories.
+
+Reports use API §14.4's current transaction snapshot and actual cutoff with 93-day/5,000-fact profiles,
+5-second source reads and Dhaka day/month groups. Historical asOf is rejected rather than relabeling live
+balances. Original sales, verified linked cash, unmatched/unassigned cash, COD outstanding, held liabilities
+and confirmed-attempt-matched payout completions remain separate. Report failure does not repair source
+facts. Investigate mismatched completion proof, missing indexes and timeout instead of editing ledgers.
+Queues are read-only; financial retries remain with their owning verified domain services. Notification
+admin retry admits only known non-acceptance commerce/after-sales intents to the durable outbox; uncertainty,
+sent/sending and identity-proof intents are refused. Existing independent worker activation/recipient override,
+canonical message qualification and stable provider keys remain required; HTTP never sends email directly.
+
+Disable the operations flag to withdraw routes while preserving data. Additive indexes may remain.
+An order-required old complaint binary cannot process new global complaints; roll back to a compatible
+binary, never downgrade validators or delete records. Reconcile any external collection/payout after restore.
+External sender/operator/production qualification and backend stage acceptance keep their existing tasks.
 
 ### 12.2 Gateway receipt reconciliation (OP-FIN-01)
 

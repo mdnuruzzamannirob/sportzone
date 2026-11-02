@@ -78,6 +78,28 @@ export function returnHistoryService(
     await verifyReturnPersistence(connection)
   }
   return {
+    async forCustomer(session: ClientSession, userId: string, raw: unknown) {
+      if (!customerOrders) throw new ApiError('SERVICE_UNAVAILABLE')
+      const query = parseInput(adminQuery, raw)
+      await verifyReturnPersistence(connection)
+      const filter = {
+        orderId: { $in: await customerOrders(session, userId) },
+        ...(query.status ? { status: query.status } : {}),
+        ...(query.claimType ? { claimType: query.claimType } : {}),
+      }
+      const rows = await model
+        .find(filter)
+        .sort({ createdAt: -1, _id: -1 })
+        .skip((query.page - 1) * query.pageSize)
+        .limit(query.pageSize)
+        .session(session)
+      const items = []
+      for (const row of rows) items.push(await view(session, row))
+      return {
+        items,
+        pagination: pageMeta(query, await model.countDocuments(filter).session(session)),
+      }
+    },
     async mine(credentials: PaymentInitiationCredentials, raw: unknown) {
       if (!credentials.customerPresent) throw new ApiError('AUTH_REQUIRED')
       const query = parseInput(adminQuery, raw)

@@ -459,7 +459,7 @@ acceptance stay in owning task evidence, not a second component specification.
 
 ### 8.2 Endpoint inventory coverage procedure
 
-1. Parse **all method+path operations** from API Appendix D and canonical route tables (current planned baseline: **166 unique operations**).
+1. Parse **all method+path operations** from API Appendix D and canonical route tables (current planned baseline: **170 unique operations**).
 2. Reconcile every operation to **Appendix E** (`OPV-001` onward): method/path, role, success HTTP contract, API error-family profile, verification case and side-effect requirements. `OPV-*` are **per-route specification slots**, not runnable tests or pass evidence.
 3. Join the operation slot to the generated OpenAPI/runtime-validator operation ID and to one or more **real test IDs** before marking covered; verify every implemented Express route exists in the contract and report undeclared/missing routes distinctly.
 4. For every operation run a **valid case**, plus invalid-input and wrong-role/ownership cases when applicable; for mutations also test CSRF/Origin, unauthorized side effects and conflict/retry semantics.
@@ -1502,7 +1502,7 @@ register entries define coverage and do not substitute for run evidence.
 
 ## Appendix E — API operation coverage register
 
-This register is derived from the **166 method+path entries** in `API.md` v1.0 Appendix D. `OPV-*` is a stable **operation verification slot** (a planned parameterized contract vector), **not an existing executable test**. The named scenario column links domain-specific cases; its ranges denote the source suite to select for this operation, not a claim that every member applies. Record execution status separately in the run records, linked to the test function, operation slot and reviewed result.
+This register is derived from the **170 method+path entries** in `API.md` v1.0 Appendix D. `OPV-*` is a stable **operation verification slot** (a planned parameterized contract vector), **not an existing executable test**. The named scenario column links domain-specific cases; its ranges denote the source suite to select for this operation, not a claim that every member applies. Record execution status separately in the run records, linked to the test function, operation slot and reviewed result.
 
 **Per-slot execution recipe:** use the API Appendix D typed request/response schema, send an authorized valid request and assert the listed success status and DTO/envelope; test invalid input against D.1 failure defaults and the listed operation-specific error families; test unauthenticated/incorrect-role and cross-owner access where applicable; for browser mutations test Origin+CSRF; for CAS/replay routes test missing/stale `If-Match` and repeated/changed idempotency payload; assert both allowed and forbidden persistent side effects. Provider callbacks use their special acknowledgment matrix; liveness/readiness use deployment-defined status without privileged data. A row may be marked Covered only after executable linkage; Passed only after real evidence.
 
@@ -1675,6 +1675,12 @@ This register is derived from the **166 method+path entries** in `API.md` v1.0 A
 | `OPV-165` | `GET` | `/orders/{orderId}/claims/evidence/{assetId}` | C owner or exact G scope | `200` | Base + OWN; private short-lived URL | RET-01–06 / SEC-06 |
 | `OPV-166` | `GET` | `/admin/claims/{claimId}/evidence/{assetId}` | A; asset attached to exact claim | `200` | Base + OWN; private short-lived URL | RET-01–06 / SEC-06 |
 
+| `OPV-167` | `GET` | `/admin/customers/{customerId}/deletion-request` | A | `200` | Base + OWN | SEC-06 / privacy retention |
+| `OPV-168` | `POST` | `/admin/customers/{customerId}/deletion-decisions` | A + CSRF | `200` | Base + OWN + STATE + REPLAY | SEC-06 / verified request / retention |
+| `OPV-169` | `GET` | `/admin/operational-exceptions` | A | `200` | Base + OWN | API-08 / SEC-06 / bounded queues |
+
+| `OPV-170` | `GET` | `/admin/complaints/{complaintId}` | A | `200` | Base + OWN | SUP-01–04 / protected contact / SEC-06 |
+
 **Reconciliation rule:** Refresh this appendix from API Appendix D whenever that register changes; count and exact method/path sets must match. Operation rows with a source route lacking an explicit access profile must be reconciled against API §§4–5 and the canonical route table **before execution**. Any mismatch is `Blocked / Contract Pending`, not a passed test.
 
-**Minimum operation evidence record:** `OPV-ID`, runtime/OpenAPI `operationId`, executable test ID(s), role/owner and expected DTO, happy/negative/CSRF/replay results where applicable, request ID, side-effect snapshot, build, run artifact, environment, reviewer and disposition. No row in this edition has that evidence.
+**Minimum operation evidence record:** `OPV-ID`, runtime/OpenAPI `operationId`, executable test ID(s), role/owner and expected DTO, happy/negative/CSRF/replay results where applicable, request ID, side-effect snapshot, build, run artifact, environment, reviewer and disposition. This register defines required evidence; execution status is recorded in Tasks and linked run records.

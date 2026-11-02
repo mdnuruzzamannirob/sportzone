@@ -1,3 +1,4 @@
+import { loadOperationsOptions } from './config/operations.js'
 import { protectedRefundEvidence } from './modules/refunds/refund-evidence.service.js'
 import { createHash } from 'node:crypto'
 import { loadRefundOperationsOptions } from './config/refunds.js'
@@ -95,6 +96,7 @@ export async function startServer(
           }
         : undefined,
       loadAfterSalesHistory(process.env),
+      loadOperationsOptions(process.env),
     )
   } catch (error) {
     await connection.destroy()

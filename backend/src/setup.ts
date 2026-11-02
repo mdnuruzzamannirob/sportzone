@@ -1,3 +1,32 @@
+import type { OperationsOptions } from './config/operations.js'
+import { reportService, operationalQueueService } from './modules/reports/report.service.js'
+import { reportRoutes } from './modules/reports/report.routes.js'
+import {
+  orderReportAccess,
+  customerAdminOrderHistoryAccess,
+  stockExceptionQueueAccess,
+  deliveryExceptionRefundSnapshotAccess,
+} from './modules/orders/order.service.js'
+import {
+  paymentReportAccess,
+  paymentExceptionQueueAccess,
+} from './modules/payments/payment.service.js'
+import {
+  refundReportAccess,
+  refundExceptionQueueAccess,
+} from './modules/refunds/refund-history.service.js'
+import { catalogReportAccess } from './modules/catalog/products/product.service.js'
+import { reportThresholdAccess } from './modules/settings/settings.service.js'
+import { returnReportAccess } from './modules/returns/return.service.js'
+import { customerAdministrationAccess } from './modules/auth/customer-admin.service.js'
+import { customerAdminRoutes } from './modules/customers/customer-admin.routes.js'
+import { complaintService } from './modules/support/complaint.service.js'
+import { supportReadRoutes } from './modules/support/support-read.routes.js'
+import { supportRoutes } from './modules/support/support.routes.js'
+import { auditQueryService } from './modules/audit/audit-query.service.js'
+import { deliveryExceptionService } from './modules/orders/delivery-exception.service.js'
+import { recoveryReceiptService } from './modules/inventory/recovery-receipt.service.js'
+import { notificationAdminService } from './modules/notifications/notification-admin.service.js'
 import { refundHistoryService } from './modules/refunds/refund-history.service.js'
 import { refundHistoryRoutes } from './modules/refunds/refund-history.routes.js'
 import { customerOrderHistoryAccess } from './modules/orders/order.service.js'
@@ -539,6 +568,147 @@ export function composeAfterSalesHistoryRoutes(
   ]
 }
 
+export function composeOperationsRoutes(
+  connection: Connection,
+  environment: RuntimeConfig['APP_ENV'],
+  auth: Parameters<typeof composeReturnOperationsRoutes>[1],
+  storefrontOrigin: string,
+  options: OperationsOptions,
+  refunds?: RefundOperationsDependencies,
+  clock: () => Date = () => new Date(),
+) {
+  if (!['local', 'test'].includes(environment)) throw new ApiError('SERVICE_UNAVAILABLE')
+  const refundPolicy = refunds
+    ? structuredClone(refundOperationsOptions.parse(refunds.options))
+    : undefined
+  const scope = orderScopeAccess(auth.customerAccounts, auth.sessions, auth.guestAccounts),
+    customerOrders = customerOrderHistoryAccess(connection),
+    claims = returnHistoryService(
+      connection,
+      scope,
+      complaintOrderAccess(connection),
+      claimEvidenceMetadataAccess(connection),
+      auth.adminAccounts,
+      customerOrders,
+    ),
+    history = refundHistoryService(
+      connection,
+      scope,
+      complaintOrderAccess(connection),
+      customerOrders,
+    ),
+    orderHistory = customerAdminOrderHistoryAccess(
+      connection,
+      customerPaymentSummaryAccess(connection),
+    ),
+    administration = customerAdministrationAccess(
+      connection,
+      auth.adminAccounts,
+      clock,
+      (session, id, kind, raw) =>
+        kind === 'orders'
+          ? orderHistory(session, id, raw)
+          : kind === 'claims'
+            ? claims.forCustomer(session, id, raw)
+            : history.forCustomer(session, id, raw),
+    ),
+    complaints = complaintService(
+      connection,
+      scope,
+      complaintOrderAccess(connection),
+      auth.adminAccounts,
+      clock,
+      checkoutAccess(auth.customerAccounts, auth.security),
+    ),
+    notifications = notificationAdminService(connection, auth.adminAccounts, clock),
+    funds = refundFundingAccess(connection),
+    exceptionRefund = cancellationRefundService(
+      connection,
+      deliveryExceptionRefundSnapshotAccess(connection),
+      refundUnitReservationAccess(connection),
+      funds,
+      refunds
+        ? async (_session, input) => {
+            if (!refundPolicy) throw new ApiError('SERVICE_UNAVAILABLE')
+            const match = refundPolicy.authorizations.filter(
+              (row) =>
+                row.orderId === input.orderId &&
+                row.basis === 'delivery_exception' &&
+                row.basisRefId === input.basisRefId,
+            )
+            const selected = match[0]
+            if (match.length !== 1 || !selected) throw new ApiError('SERVICE_UNAVAILABLE')
+            return selected.approval
+          }
+        : undefined,
+      clock,
+      refundDecisionNotifier(
+        returnNotificationOrderAccess(connection),
+        createRegistrationNotifications(connection, clock),
+        createAuditWriter(connection),
+      ),
+      'delivery_exception',
+    ),
+    exceptions = deliveryExceptionService(
+      connection,
+      auth.adminAccounts,
+      cancellationPaymentAccess(connection),
+      recoveryReceiptService(connection, clock),
+      options.verifyDisposition,
+      async (session, input) =>
+        exceptionRefund(session, {
+          orderId: input.orderId,
+          paymentId: input.paymentId,
+          actorId: input.actorId,
+          reason: input.reason,
+          requestId: input.exceptionId,
+        }),
+      clock,
+    ),
+    payments = paymentExceptionQueueAccess(connection),
+    queues = operationalQueueService(auth.adminAccounts, {
+      stock: stockExceptionQueueAccess(connection),
+      refunds: refundExceptionQueueAccess(connection),
+      payments: (session, q) => payments(session, q, false),
+      reconciliation: (session, q) => payments(session, q, true),
+    })
+  return [
+    customerAdminRoutes(administration.customers, auth.security, auth.sessions),
+    supportReadRoutes(
+      complaints,
+      auditQueryService(connection, auth.adminAccounts),
+      auth.security,
+      auth.sessions,
+    ),
+    supportRoutes(
+      { complaints, exceptions, notifications, customers: auth.customerAccounts },
+      auth.security,
+      auth.sessions,
+      auth.throttle,
+      storefrontOrigin,
+    ),
+    reportRoutes(
+      reportService(
+        auth.adminAccounts,
+        {
+          paymentSummary: customerPaymentSummaryAccess(connection),
+          orders: orderReportAccess(connection),
+          payments: paymentReportAccess(connection),
+          refunds: refundReportAccess(connection),
+          catalog: catalogReportAccess(connection),
+          threshold: reportThresholdAccess(connection),
+          customers: administration.registeredCustomers,
+          pendingReturns: returnReportAccess(connection),
+        },
+        clock,
+      ),
+      auth.security,
+      auth.sessions,
+      queues,
+    ),
+  ]
+}
+
 export type RefundOperationsDependencies = {
   options: RefundOperationsOptions
   verifyEvidence?: RefundOutcomeVerifier
@@ -681,9 +851,24 @@ export async function composeIdentityRoutes(
   returnOptions?: ReturnOperationsOptions,
   refunds?: RefundOperationsDependencies,
   afterSalesHistory = false,
+  operations?: OperationsOptions,
 ) {
   const notifications = createRegistrationNotifications(connection)
   const auth = await createAuthRuntime(connection, config, notifications)
+  if (operations) {
+    if (!config.CUSTOMER_AUTH_ENABLED || !config.ADMIN_AUTH_ENABLED)
+      throw new ApiError('SERVICE_UNAVAILABLE')
+    auth.router.use(
+      ...composeOperationsRoutes(
+        connection,
+        config.APP_ENV,
+        auth,
+        config.STOREFRONT_ORIGIN,
+        operations,
+        refunds,
+      ),
+    )
+  }
   if (afterSalesHistory) {
     if (!config.CUSTOMER_AUTH_ENABLED || !config.ADMIN_AUTH_ENABLED || !returnOptions)
       throw new ApiError('SERVICE_UNAVAILABLE')
@@ -1023,7 +1208,15 @@ export async function composeApplication(
   returnOptions?: ReturnOperationsOptions,
   refunds?: RefundOperationsDependencies,
   afterSalesHistory = false,
+  operations?: OperationsOptions,
 ) {
+  if (
+    operations &&
+    (!config.CUSTOMER_AUTH_ENABLED ||
+      !config.ADMIN_AUTH_ENABLED ||
+      !['local', 'test'].includes(config.APP_ENV))
+  )
+    throw new ApiError('SERVICE_UNAVAILABLE')
   if (
     afterSalesHistory &&
     (!config.CUSTOMER_AUTH_ENABLED || !config.ADMIN_AUTH_ENABLED || !returnOptions)
@@ -1052,6 +1245,7 @@ export async function composeApplication(
           returnOptions,
           refunds,
           afterSalesHistory,
+          operations,
         )
       : undefined
   const unavailable = async (): Promise<never> => {

@@ -182,6 +182,7 @@ collectionSchema.index(
 )
 collectionSchema.index({ attemptId: 1, collectedAt: 1 }, { name: 'collection_attempt_history' })
 collectionSchema.index({ orderId: 1, collectedAt: -1 }, { name: 'collection_order_history' })
+collectionSchema.index({ collectedAt: 1, _id: 1 }, { name: 'collection_report_period' })
 // Private record writers retain immutable identity/proof. Existing records are changed only with
 // explicit narrow CAS queries by the owning verification/reconciliation service, never replacement.
 function protect(

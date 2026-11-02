@@ -115,6 +115,27 @@ export function refundHistoryService(
     }
   }
   return {
+    async forCustomer(session: ClientSession, userId: string, raw: unknown) {
+      const input = parseInput(query, raw)
+      await ready()
+      const filter = {
+        orderId: { $in: await customerOrders(session, userId) },
+        ...(input.status ? { status: input.status } : {}),
+        ...(input.classification ? { classification: input.classification } : {}),
+      }
+      const rows = await model
+        .find(filter)
+        .sort({ createdAt: -1, _id: -1 })
+        .skip((input.page - 1) * input.pageSize)
+        .limit(input.pageSize)
+        .session(session)
+      const items = []
+      for (const row of rows) items.push(await view(session, row))
+      return {
+        items,
+        pagination: pageMeta(input, await model.countDocuments(filter).session(session)),
+      }
+    },
     async mine(credentials: PaymentInitiationCredentials, raw: unknown) {
       if (!credentials.customerPresent) throw new ApiError('AUTH_REQUIRED')
       const input = parseInput(query, raw)
@@ -176,5 +197,95 @@ export function refundHistoryService(
         return view(session, row)
       })
     },
+  }
+}
+
+export function refundReportAccess(connection: Connection) {
+  const refunds = refundModel(connection)
+  return async (session: ClientSession, period: { from: Date; to: Date; asOf: Date }) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyCorrectionPersistence(connection)
+    const rows = await refunds
+      .find({
+        status: 'completed',
+        capacityStatus: 'completed',
+        completedAt: { $gte: period.from, $lt: period.to, $lte: period.asOf },
+      })
+      .select('classification amountPoisha completedAt')
+      .limit(5001)
+      .maxTimeMS(5000)
+      .session(session)
+    if (rows.length > 5000) throw new ApiError('BUSINESS_RULE_VIOLATION')
+    await verifyRefundAttemptPersistence(connection)
+    const confirmed = await refundAttemptModel(connection)
+      .find({ refundId: { $in: rows.map((row) => row._id) }, status: 'confirmed' })
+      .select('refundId amountPoisha confirmedAt')
+      .limit(5001)
+      .maxTimeMS(5000)
+      .session(session)
+    const byRefund = new Map<string, (typeof confirmed)[number]>()
+    for (const attempt of confirmed) {
+      const key = attempt.refundId.toHexString()
+      if (byRefund.has(key)) throw new ApiError('SERVICE_UNAVAILABLE')
+      byRefund.set(key, attempt)
+    }
+    if (
+      confirmed.length !== rows.length ||
+      rows.some((row) => {
+        const attempt = byRefund.get(row._id.toHexString())
+        return (
+          !attempt ||
+          attempt.amountPoisha !== row.amountPoisha ||
+          !row.completedAt ||
+          attempt.confirmedAt?.getTime() !== row.completedAt.getTime()
+        )
+      })
+    )
+      throw new ApiError('SERVICE_UNAVAILABLE')
+    const held = await refunds
+      .aggregate<{ amount: number }>([
+        { $match: { capacityStatus: 'reserved', createdAt: { $lte: period.asOf } } },
+        { $group: { _id: null, amount: { $sum: '$amountPoisha' } } },
+      ])
+      .option({ maxTimeMS: 5000 })
+      .session(session)
+    return {
+      completedRefunds: rows.map((row) => {
+        if (!row.completedAt) throw new ApiError('SERVICE_UNAVAILABLE')
+        return {
+          id: row._id.toHexString(),
+          classification: row.classification,
+          amountPoisha: row.amountPoisha,
+          completedAt: row.completedAt.toISOString(),
+        }
+      }),
+      pendingRefundLiabilityPoisha: held[0]?.amount ?? 0,
+    }
+  }
+}
+
+export function refundExceptionQueueAccess(connection: Connection) {
+  const model = refundModel(connection)
+  return async (session: ClientSession, input: { page: number; pageSize: number }) => {
+    await verifyCorrectionPersistence(connection)
+    const filter = { status: { $in: ['under_review', 'processing', 'failed'] as const } }
+    const rows = await model
+      .find(filter)
+      .select('orderId status capacityStatus')
+      .sort({ createdAt: -1, _id: -1 })
+      .skip((input.page - 1) * input.pageSize)
+      .limit(input.pageSize)
+      .maxTimeMS(5000)
+      .session(session)
+    return {
+      items: rows.map((row) => ({
+        id: row._id.toHexString(),
+        orderId: row.orderId.toHexString(),
+        status: row.status,
+        capacityStatus: row.capacityStatus,
+        reasonCode: 'REFUND_REVIEW',
+      })),
+      pagination: pageMeta(input, await model.countDocuments(filter).session(session)),
+    }
   }
 }

@@ -8,6 +8,13 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 2 November 2026 — Package F backend operations completion
+
+- Completed authoritative financial reports/dashboard and bounded sanitized operational queues using domain-owned source projections and explicit current cutoff/event dates.
+- Added anonymous/scoped complaint intake and protected contact/response, customer histories/privacy decisions, safe notification retry admission and actual server composition.
+- Connected protected final-delivery custody, one-time stock recovery and canonical source-funded refund through verified payout; added additive complaint/index rollout and recovery procedures.
+- Recorded P06-016/017 and P09-002/014/015/016/017/018 engineering completion with [affected verification and review](docs/evidence/P06-016-017-commerce-delivery-support.md#package-f-completion). No external qualification, backend closeout or release claim.
+
 ## 2 November 2026 — Package E development completion
 
 - Completed customer cross-order claim/refund history, exact guest/customer private refund reads,

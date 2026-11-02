@@ -1,3 +1,7 @@
+import type { customerPaymentSummaryAccess } from '../payments/payment.service.js'
+import { paginationSchema, pageMeta } from '../../shared/pagination.js'
+import { deliveryExceptionModel } from './delivery-exception.model.js'
+import { verifyDeliveryExceptionPersistence } from './delivery-exception.persistence.js'
 import { Types, type ClientSession, type Connection } from 'mongoose'
 import { createHash, randomBytes } from 'node:crypto'
 import { z } from 'zod'
@@ -837,6 +841,7 @@ export function refundUnitReservationAccess(connection: Connection) {
     orderId: id,
     claimId: id.optional(),
     cancellationRequestId: id.optional(),
+    deliveryExceptionId: id.optional(),
     items: z
       .array(
         z.strictObject({
@@ -857,7 +862,17 @@ export function refundUnitReservationAccess(connection: Connection) {
   return async (session: ClientSession, raw: unknown) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
     const input = parseInput(command, raw)
-    if (!!input.claimId === !!input.cancellationRequestId) throw new ApiError('VALIDATION_FAILED')
+    if (
+      [input.claimId, input.cancellationRequestId, input.deliveryExceptionId].filter(Boolean)
+        .length !== 1
+    )
+      throw new ApiError('VALIDATION_FAILED')
+    if (input.deliveryExceptionId)
+      await deliveryExceptionRefundSnapshotAccess(connection)(
+        session,
+        input.orderId,
+        input.deliveryExceptionId,
+      )
     if (input.cancellationRequestId)
       await cancellationRefundSnapshotAccess(connection)(
         session,
@@ -879,7 +894,7 @@ export function refundUnitReservationAccess(connection: Connection) {
         const unit = row.unitCoverage.find((u) => u.ordinal === amount.ordinal)
         if (
           !unit ||
-          (input.cancellationRequestId
+          (input.cancellationRequestId || input.deliveryExceptionId
             ? unit.claimState !== 'available' || !!unit.claimId
             : unit.claimId?.toHexString() !== input.claimId ||
               !['protected', 'resolved'].includes(unit.claimState))
@@ -1184,5 +1199,180 @@ export function refundUnitOutcomeAccess(connection: Connection) {
       if (changed.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
     }
     return { deliveryChargePoisha: order.pricingSnapshot.deliveryChargePoisha }
+  }
+}
+
+// Reports receive bounded, immutable purchase-time amounts and sanitized cutoff summaries only.
+export function orderReportAccess(connection: Connection) {
+  const { orders } = orderModels(connection)
+  return async (session: ClientSession, period: { from: Date; to: Date; asOf: Date }) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyOrderPersistence(connection)
+    const rows = await orders
+      .find({ placedAt: { $gte: period.from, $lt: period.to, $lte: period.asOf } })
+      .select('fulfillmentStatus pricingSnapshot placedAt')
+      .sort({ placedAt: 1, _id: 1 })
+      .limit(5001)
+      .maxTimeMS(5000)
+      .session(session)
+    const cod = await orders
+      .find({
+        paymentMethod: 'cod',
+        fulfillmentStatus: { $ne: 'cancelled' },
+        placedAt: { $lte: period.asOf },
+      })
+      .select('_id')
+      .limit(5001)
+      .maxTimeMS(5000)
+      .session(session)
+    if (rows.length > 5000 || cod.length > 5000) throw new ApiError('BUSINESS_RULE_VIOLATION')
+    const counts = await orders
+      .aggregate<{ _id: string; count: number }>([
+        { $match: { placedAt: { $lte: period.asOf } } },
+        { $group: { _id: '$fulfillmentStatus', count: { $sum: 1 } } },
+      ])
+      .option({ maxTimeMS: 5000 })
+      .session(session)
+    const recent = await orders
+      .find({ placedAt: { $lte: period.asOf } })
+      .sort({ placedAt: -1, _id: -1 })
+      .select('orderNumber fulfillmentStatus placedAt pricingSnapshot.finalTotalPoisha')
+      .limit(20)
+      .maxTimeMS(5000)
+      .session(session)
+    return {
+      orders: rows.map((row) => ({
+        id: row._id.toHexString(),
+        cancelled: row.fulfillmentStatus === 'cancelled',
+        placedAt: row.placedAt.toISOString(),
+        regularSubtotalPoisha: row.pricingSnapshot.regularSubtotalPoisha,
+        productDiscountPoisha: row.pricingSnapshot.productDiscountPoisha,
+        couponDiscountPoisha: row.pricingSnapshot.couponDiscountPoisha,
+        deliveryChargePoisha: row.pricingSnapshot.deliveryChargePoisha,
+        finalTotalPoisha: row.pricingSnapshot.finalTotalPoisha,
+      })),
+      codOrderIds: cod.map((row) => row._id.toHexString()),
+      counts: Object.fromEntries(counts.map((row) => [`${row._id}Orders`, row.count])),
+      totalOrders: counts.reduce((sum, row) => sum + row.count, 0),
+      recentOrders: recent.map((row) => ({
+        id: row._id.toHexString(),
+        orderNumber: row.orderNumber,
+        fulfillmentStatus: row.fulfillmentStatus,
+        placedAt: row.placedAt.toISOString(),
+        finalTotalPoisha: row.pricingSnapshot.finalTotalPoisha,
+        currency: 'BDT',
+      })),
+    }
+  }
+}
+
+export function customerAdminOrderHistoryAccess(
+  connection: Connection,
+  payments: ReturnType<typeof customerPaymentSummaryAccess>,
+) {
+  const { orders } = orderModels(connection)
+  const query = paginationSchema.safeExtend({
+    status: z
+      .enum(['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'])
+      .optional(),
+  })
+  return async (session: ClientSession, customerId: string, raw: unknown) => {
+    const input = parseInput(query, raw)
+    await verifyOrderPersistence(connection)
+    const filter = {
+      userId: customerId,
+      ...(input.status ? { fulfillmentStatus: input.status } : {}),
+    }
+    const rows = await orders
+      .find(filter)
+      .sort({ placedAt: -1, _id: -1 })
+      .skip((input.page - 1) * input.pageSize)
+      .limit(input.pageSize)
+      .maxTimeMS(5000)
+      .session(session)
+    const summaries = await payments.many(
+      session,
+      rows.map((row) => row._id.toHexString()),
+    )
+    return {
+      items: rows.map((row) => {
+        const summary = summaries.get(row._id.toHexString())
+        if (!summary) throw new ApiError('SERVICE_UNAVAILABLE')
+        return {
+          id: row._id.toHexString(),
+          orderNumber: row.orderNumber,
+          paymentStatus: summary.status,
+          fulfillmentStatus: row.fulfillmentStatus,
+          placedAt: row.placedAt.toISOString(),
+          finalTotalPoisha: row.pricingSnapshot.finalTotalPoisha,
+          currency: 'BDT',
+        }
+      }),
+      pagination: pageMeta(input, await orders.countDocuments(filter).session(session)),
+    }
+  }
+}
+
+export function deliveryExceptionRefundSnapshotAccess(connection: Connection) {
+  const { orders, balances } = orderModels(connection),
+    exceptions = deliveryExceptionModel(connection)
+  return async (session: ClientSession, orderId: string, exceptionId: string) => {
+    await verifyOrderPersistence(connection)
+    await verifyDeliveryExceptionPersistence(connection)
+    const exception = await exceptions
+      .findOne({ _id: exceptionId, orderId, type: 'final_non_delivery', status: 'open' })
+      .session(session)
+    const order = await orders
+      .findOne({
+        _id: orderId,
+        fulfillmentStatus: 'shipped',
+        shippedAt: { $type: 'date' },
+        cancelledAt: { $exists: false },
+        deliveredAt: { $exists: false },
+      })
+      .session(session)
+    if (!exception || !order) throw new ApiError('STATE_CONFLICT')
+    const lines = []
+    for (const item of order.items) {
+      const balance = await balances.findOne({ orderId, orderItemId: item.id }).session(session)
+      if (!balance || balance.purchasedQty !== item.quantity) throw new ApiError('STATE_CONFLICT')
+      lines.push({
+        orderItemId: item.id.toHexString(),
+        quantity: item.quantity,
+        units: balance.unitCoverage.map((unit) => ({
+          ordinal: unit.ordinal,
+          netEntitlementPoisha: unit.netEntitlementPoisha,
+          refundHeldPoisha: unit.refundHeldPoisha,
+          refundCompletedPoisha: unit.refundCompletedPoisha,
+          eligible: unit.claimState === 'available' && !unit.claimId,
+        })),
+      })
+    }
+    return { lines, deliveryChargePoisha: order.pricingSnapshot.deliveryChargePoisha }
+  }
+}
+
+export function stockExceptionQueueAccess(connection: Connection) {
+  const { orders } = orderModels(connection)
+  return async (session: ClientSession, input: { page: number; pageSize: number }) => {
+    await verifyOrderPersistence(connection)
+    const filter = { fulfillmentHold: 'allocation_shortfall' as const }
+    const rows = await orders
+      .find(filter)
+      .select('fulfillmentStatus placedAt')
+      .sort({ placedAt: -1, _id: -1 })
+      .skip((input.page - 1) * input.pageSize)
+      .limit(input.pageSize)
+      .maxTimeMS(5000)
+      .session(session)
+    return {
+      items: rows.map((row) => ({
+        id: row._id.toHexString(),
+        orderId: row._id.toHexString(),
+        status: row.fulfillmentStatus,
+        reasonCode: 'ALLOCATION_SHORTFALL',
+      })),
+      pagination: pageMeta(input, await orders.countDocuments(filter).session(session)),
+    }
   }
 }

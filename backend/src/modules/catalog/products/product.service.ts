@@ -1,3 +1,4 @@
+import { verifyProductPersistence } from './product.persistence.js'
 import type { ClientSession, Connection, Types } from 'mongoose'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { inTransaction } from '../../../shared/database/transaction.js'
@@ -93,5 +94,59 @@ export function productReviewAccess(connection: Connection) {
       )
       if (result.matchedCount !== 1) throw new ApiError('NOT_FOUND')
     },
+  }
+}
+
+export function catalogReportAccess(connection: Connection) {
+  const { products, variants } = productModels(connection)
+  return async (session: ClientSession, threshold: number) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyProductPersistence(connection)
+    const pipeline = [
+      { $match: { status: 'active' } },
+      {
+        $project: {
+          productId: 1,
+          skuNormalized: 1,
+          available: {
+            $subtract: ['$stock.physical', { $add: ['$stock.reserved', '$stock.committed'] }],
+          },
+        },
+      },
+      { $match: { available: { $lt: threshold } } },
+    ]
+    const [result] = await variants
+      .aggregate<{
+        count: { value: number }[]
+        items: {
+          _id: import('mongoose').Types.ObjectId
+          productId: import('mongoose').Types.ObjectId
+          skuNormalized: string
+          available: number
+        }[]
+      }>([
+        ...pipeline,
+        {
+          $facet: {
+            count: [{ $count: 'value' }],
+            items: [{ $sort: { available: 1, _id: 1 } }, { $limit: 20 }],
+          },
+        },
+      ])
+      .option({ maxTimeMS: 5000 })
+      .session(session)
+    return {
+      activeProducts: await products
+        .countDocuments({ status: 'active' })
+        .maxTimeMS(5000)
+        .session(session),
+      lowStockVariants: result?.count[0]?.value ?? 0,
+      lowStockItems: (result?.items ?? []).map((row) => ({
+        id: row._id.toHexString(),
+        productId: row.productId.toHexString(),
+        sku: row.skuNormalized,
+        available: row.available,
+      })),
+    }
   }
 }

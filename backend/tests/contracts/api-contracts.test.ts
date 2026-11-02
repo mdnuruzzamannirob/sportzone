@@ -139,6 +139,8 @@ describe('executable API contract registry', () => {
         'reviews/review.routes.ts',
         'settings/settings.routes.ts',
         'support/support-read.routes.ts',
+        'support/support.routes.ts',
+        'reports/report.routes.ts',
       ].sort(),
     )
   })
@@ -147,6 +149,26 @@ describe('executable API contract registry', () => {
       .flatMap((router) => registeredOperations(router))
       .filter((op) => !['HEAD', 'OPTIONS'].includes(op.method))
     const expected = [
+      'GET /admin/dashboard',
+      'GET /admin/reports/sales',
+      'GET /admin/reports/collections',
+      'GET /admin/reports/refunds',
+      'GET /admin/operational-exceptions',
+      'POST /complaints',
+      'GET /me/complaints',
+      'GET /orders/{orderId}/complaints',
+      'GET /admin/complaints/{complaintId}',
+      'POST /admin/complaints/{complaintId}/resolve',
+      'GET /admin/orders/{orderId}/delivery-exceptions',
+      'POST /admin/orders/{orderId}/delivery-exceptions',
+      'POST /admin/delivery-exceptions/{exceptionId}/resolve',
+      'GET /admin/notifications',
+      'POST /admin/notifications/{notificationId}/retry',
+      'GET /admin/customers/{customerId}/orders',
+      'GET /admin/customers/{customerId}/claims',
+      'GET /admin/customers/{customerId}/refunds',
+      'GET /admin/customers/{customerId}/deletion-request',
+      'POST /admin/customers/{customerId}/deletion-decisions',
       'GET /me/claims',
       'GET /me/refunds',
       'GET /orders/{orderId}/refunds',
@@ -244,8 +266,8 @@ describe('executable API contract registry', () => {
     })
   it('keeps planned contracts non-executable and environment values blank', () => {
     const rows = artifacts['planned-operations.json'].operations
-    expect(rows).toHaveLength(166)
-    expect(rows.filter((op) => op.implementation === 'planned')).toHaveLength(68)
+    expect(rows).toHaveLength(170)
+    expect(rows.filter((op) => op.implementation === 'planned')).toHaveLength(72)
     expect(openapi.paths['/orders/{orderId}/payment-attempts']).toMatchObject({
       post: {
         security: [

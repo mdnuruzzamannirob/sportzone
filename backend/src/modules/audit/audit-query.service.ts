@@ -47,6 +47,7 @@ export function auditQueryService(connection: Connection, admins: AdminAccountAc
             .sort({ occurredAt: -1, _id: -1 })
             .skip((q.page - 1) * q.pageSize)
             .limit(q.pageSize)
+            .maxTimeMS(5000)
             .session(session)
           return {
             items: rows.map((row) => ({
@@ -61,7 +62,10 @@ export function auditQueryService(connection: Connection, admins: AdminAccountAc
               },
               occurredAt: row.occurredAt.toISOString(),
             })),
-            pagination: pageMeta(q, await model.countDocuments(filter).session(session)),
+            pagination: pageMeta(
+              q,
+              await model.countDocuments(filter).maxTimeMS(5000).session(session),
+            ),
           }
         },
         false,

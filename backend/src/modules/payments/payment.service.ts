@@ -1,3 +1,4 @@
+import { pageMeta } from '../../shared/pagination.js'
 import { Types, type ClientSession, type Connection } from 'mongoose'
 import { z } from 'zod'
 import { ApiError } from '../../shared/errors/app-error.js'
@@ -564,5 +565,129 @@ export function verifiedFullPaymentTimeAccess(
     if (sum !== BigInt(payment.merchandiseFundedPoisha) || !fullyPaidAt)
       throw new ApiError('SERVICE_UNAVAILABLE')
     return fullyPaidAt
+  }
+}
+
+export function paymentReportAccess(connection: Connection) {
+  const { collections, intake } = paymentRecordModels(connection),
+    payments = paymentModel(connection)
+  return async (
+    session: ClientSession,
+    period: { from: Date; to: Date; asOf: Date },
+    codOrderIds: string[],
+  ) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyPaymentRecordPersistence(connection)
+    await verifyPaymentPersistence(connection)
+    const rows = await collections
+      .find({
+        collectedAt: { $gte: period.from, $lt: period.to },
+        verifiedAt: { $lte: period.asOf },
+      })
+      .select(
+        'amountPoisha collectedAt provider merchandiseAllocatedPoisha correctionAllocatedPoisha unassignedAllocatedPoisha',
+      )
+      .limit(5001)
+      .maxTimeMS(5000)
+      .session(session)
+    const cod = await payments
+      .find({ orderId: { $in: codOrderIds } })
+      .select('expectedPoisha verifiedCollectedPoisha')
+      .limit(5001)
+      .maxTimeMS(5000)
+      .session(session)
+    const unmatched = await intake
+      .aggregate<{ amount: number }>([
+        {
+          $match: {
+            matchingStatus: 'unmatched',
+            verifiedAt: { $lte: period.asOf },
+            collectedAt: { $gte: period.from, $lt: period.to },
+          },
+        },
+        { $group: { _id: null, amount: { $sum: '$amountPoisha' } } },
+      ])
+      .option({ maxTimeMS: 5000 })
+      .session(session)
+    const balances = await collections
+      .aggregate<{ unassigned: number }>([
+        { $match: { verifiedAt: { $lte: period.asOf } } },
+        { $group: { _id: null, unassigned: { $sum: '$unassignedAllocatedPoisha' } } },
+      ])
+      .option({ maxTimeMS: 5000 })
+      .session(session)
+    if (rows.length > 5000 || cod.length > 5000) throw new ApiError('BUSINESS_RULE_VIOLATION')
+    return {
+      collections: rows.map((row) => ({
+        id: row._id.toHexString(),
+        amountPoisha: row.amountPoisha,
+        collectedAt: row.collectedAt.toISOString(),
+        sourceKind: row.provider,
+        merchandisePoisha: z.int().nonnegative().parse(row.get('merchandiseAllocatedPoisha')),
+        correctionPoisha: z.int().nonnegative().parse(row.get('correctionAllocatedPoisha')),
+        unassignedPoisha: z.int().nonnegative().parse(row.get('unassignedAllocatedPoisha')),
+      })),
+      codBalances: cod.map((row) => ({
+        id: row._id.toHexString(),
+        expectedPoisha: row.expectedPoisha,
+        verifiedCollectedPoisha: row.verifiedCollectedPoisha,
+      })),
+      unattributedProviderCashPoisha: unmatched[0]?.amount ?? 0,
+      unassignedLinkedCashPoisha: balances[0]?.unassigned ?? 0,
+    }
+  }
+}
+
+export function paymentExceptionQueueAccess(connection: Connection) {
+  const payments = paymentModel(connection),
+    { attempts } = paymentRecordModels(connection)
+  return async (
+    session: ClientSession,
+    input: { page: number; pageSize: number },
+    reconciliation: boolean,
+  ) => {
+    await verifyPaymentPersistence(connection)
+    await verifyPaymentRecordPersistence(connection)
+    const offset = (input.page - 1) * input.pageSize
+    if (reconciliation) {
+      const filter = { state: { $in: ['initiated', 'pending', 'uncertain'] as const } }
+      const rows = await attempts
+        .find(filter)
+        .select('orderId state')
+        .sort({ createdAt: -1, _id: -1 })
+        .skip(offset)
+        .limit(input.pageSize)
+        .maxTimeMS(5000)
+        .session(session)
+      return {
+        items: rows.map((row) => ({
+          id: row._id.toHexString(),
+          orderId: row.orderId.toHexString(),
+          status: row.state,
+          reasonCode: 'PAYMENT_RECONCILIATION',
+        })),
+        pagination: pageMeta(input, await attempts.countDocuments(filter).session(session)),
+      }
+    }
+    const filter = {
+      $or: [{ riskStatus: { $ne: 'clear' as const } }, { unassignedCollectedPoisha: { $gt: 0 } }],
+    }
+    const rows = await payments
+      .find(filter)
+      .select('orderId paymentStatus')
+      .sort({ createdAt: -1, _id: -1 })
+      .skip(offset)
+      .limit(input.pageSize)
+      .maxTimeMS(5000)
+      .session(session)
+    return {
+      items: rows.map((row) => ({
+        id: row._id.toHexString(),
+        orderId: row.orderId.toHexString(),
+        status: row.paymentStatus,
+        reasonCode: 'PAYMENT_REVIEW',
+      })),
+      pagination: pageMeta(input, await payments.countDocuments(filter).session(session)),
+    }
   }
 }

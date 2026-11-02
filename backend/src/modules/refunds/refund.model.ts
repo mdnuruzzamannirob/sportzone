@@ -104,6 +104,8 @@ const schema = new Schema(
 )
 schema.index({ orderId: 1, decisionKey: 1 }, { unique: true, name: 'refund_decision_unique' })
 schema.index({ sourceCollectionId: 1, status: 1 }, { name: 'refund_source_status' })
+schema.index({ status: 1, completedAt: 1, _id: 1 }, { name: 'refund_report_completion' })
+schema.index({ capacityStatus: 1, createdAt: 1 }, { name: 'refund_capacity_queue' })
 schema.index(
   { orderId: 1, classification: 1, createdAt: -1 },
   { name: 'refund_order_class_history' },

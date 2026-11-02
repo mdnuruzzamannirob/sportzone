@@ -448,6 +448,8 @@ orderSchema.pre(['updateOne', 'updateMany', 'findOneAndUpdate'], function () {
 orderSchema.index({ orderNumber: 1 }, { unique: true, name: 'order_number_unique' })
 orderSchema.index({ checkoutIntentId: 1 }, { unique: true, name: 'order_intent_unique' })
 orderSchema.index({ userId: 1, placedAt: -1 }, { name: 'order_customer_history' })
+orderSchema.index({ placedAt: 1, _id: 1 }, { name: 'order_report_placement' })
+orderSchema.index({ fulfillmentHold: 1, placedAt: -1, _id: -1 }, { name: 'order_hold_queue' })
 orderSchema.index({ fulfillmentStatus: 1, placedAt: -1 }, { name: 'order_fulfillment_history' })
 orderSchema.index(
   { 'customerSnapshot.emailNormalized': 1, orderNumber: 1 },

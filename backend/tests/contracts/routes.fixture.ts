@@ -1,3 +1,5 @@
+import { supportRoutes } from '../../src/modules/support/support.routes.js'
+import { reportRoutes } from '../../src/modules/reports/report.routes.js'
 import { refundHistoryRoutes } from '../../src/modules/refunds/refund-history.routes.js'
 import { refundRoutes } from '../../src/modules/refunds/refund.routes.js'
 import { returnRoutes } from '../../src/modules/returns/return.routes.js'
@@ -96,7 +98,31 @@ const media = {
 // These routers are locally composed only and are deliberately excluded from live registry parity.
 export function localOnlyRouters() {
   return [
-    refundHistoryRoutes({ mine: unused, list: unused, detail: unused }, security),
+    reportRoutes({ read: unused }, security, sessions, { list: unused }),
+    supportRoutes(
+      {
+        complaints: {
+          adminDetail: unused,
+          intake: unused,
+          mine: unused,
+          adminList: unused,
+          submit: unused,
+          list: unused,
+          resolve: unused,
+        },
+        exceptions: { list: unused, create: unused, resolve: unused },
+        notifications: { list: unused, retry: unused },
+        customers: { owned: unused, authorizeInSession: unused },
+      },
+      security,
+      sessions,
+      { consume: unused, middleware: () => guard },
+      'https://shop.example.test',
+    ),
+    refundHistoryRoutes(
+      { mine: unused, list: unused, detail: unused, forCustomer: unused },
+      security,
+    ),
     refundRoutes(
       {
         list: unused,
@@ -122,7 +148,14 @@ export function localOnlyRouters() {
       },
       { transition: unused },
       { receive: unused, inspect: unused },
-      { adminList: unused, adminDetail: unused, list: unused, detail: unused, mine: unused },
+      {
+        adminList: unused,
+        adminDetail: unused,
+        list: unused,
+        detail: unused,
+        mine: unused,
+        forCustomer: unused,
+      },
       security,
       sessions,
       'https://shop.example.test',
@@ -143,10 +176,28 @@ export function localOnlyRouters() {
       sessions,
       'https://shop.example.test',
     ),
-    customerAdminRoutes({ list: unused, detail: unused, decideStatus: unused }, security, sessions),
+    customerAdminRoutes(
+      {
+        list: unused,
+        detail: unused,
+        decideStatus: unused,
+        history: unused,
+        privacy: unused,
+        decidePrivacy: unused,
+      },
+      security,
+      sessions,
+    ),
     supportReadRoutes({ adminList: unused }, { list: unused }, security, sessions),
     returnHistoryRoutes(
-      { list: unused, detail: unused, adminList: unused, adminDetail: unused, mine: unused },
+      {
+        list: unused,
+        detail: unused,
+        adminList: unused,
+        adminDetail: unused,
+        mine: unused,
+        forCustomer: unused,
+      },
       security,
       sessions,
     ),

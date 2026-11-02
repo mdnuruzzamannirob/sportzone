@@ -139,14 +139,14 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |      21 |        0 |
 | 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       0 |         0 |      12 |        1 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           8 |     0 |           0 |       0 |         0 |       9 |        0 |
-| 06 — Checkout, Orders, and Delivery Rules     |      22 |           6 |     0 |           0 |       2 |         0 |      14 |        0 |
+| 06 — Checkout, Orders, and Delivery Rules     |      22 |           6 |     0 |           0 |       0 |         0 |      16 |        0 |
 | 07 — Payment Integration and Verification     |      18 |           3 |     0 |           0 |       0 |         0 |      15 |        0 |
 | 08 — Returns and Refunds                      |      19 |           6 |     0 |           0 |       0 |         0 |      13 |        0 |
-| 09 — Admin Management and Reports             |      18 |          12 |     0 |           0 |       4 |         0 |       1 |        1 |
+| 09 — Admin Management and Reports             |      18 |          10 |     0 |           0 |       0 |         0 |       7 |        1 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |       0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |       0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |       0 |        0 |
-| **Total**                                     | **210** |      **77** | **0** |       **0** |   **6** |     **0** | **125** |    **2** |
+| **Total**                                     | **210** |      **75** | **0** |       **0** |   **0** |     **0** | **133** |    **2** |
 
 ## 4. Milestone tracker
 
@@ -1195,27 +1195,25 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Non-enumerating rate-limited lookup and order-scoped eligible actions; no access by lookup text alone.\
   **Evidence:** [Expiry/guest implementation, per-task checks and operational limits](./evidence/P06-010-015-expiry-guest-access.md). Verified locally; project-owner independent acceptance recorded on 30 October 2026. Live provider/email/staging, frontend and qualified compliance gates remain separate.
 
-- [ ] **P06-016 — Implement order, cancellation, shipment and delivery email intents**\
-  **Status:** `Blocked` · **Area:** Backend/notifications\
+- [x] **P06-016 — Implement order, cancellation, shipment and delivery email intents**\
+  **Status:** `Done` · **Area:** Backend/notifications\
   **Stage:** `Backend`\
   **Sources:** FR-20\
   **Depends on:** `P06-013`\
   **Deliverable:** Persist accurate order reference/status events with reliable independent delivery and retry.\
   **Acceptance:** Repeated transitions do not email duplicate customer updates; mail failure cannot reverse orders.\
-  **Evidence:** [Local commerce outbox/template/dedup/retry verification and remaining gates](./evidence/P06-016-017-commerce-delivery-support.md). Actual placement/transition causes, canonical recipient/history verification and explicit local/test worker activation.\
-  **Blocked:** P06-013 development prerequisite is Done; this notification task still needs its own completion review and deployed sender/inbox/template qualification and independent full acceptance are not supplied by local provider doubles.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package F completion, affected verification, rollout/recovery and executor review](./evidence/P06-016-017-commerce-delivery-support.md#package-f-completion).\
+  **Review:** Engineering completion recorded 2 November 2026 under Tasks §2; external qualification, backend closeout and milestone acceptance remain separate.
 
-- [ ] **P06-017 — Implement failed delivery, delay and complaints foundations**\
-  **Status:** `Blocked` · **Area:** Backend/admin\
+- [x] **P06-017 — Implement failed delivery, delay and complaints foundations**\
+  **Status:** `Done` · **Area:** Backend/admin\
   **Stage:** `Backend`\
   **Sources:** FR-16; FR-26; FR-34\
   **Depends on:** `P06-011`\
   **Deliverable:** Track failed attempts and retry while Shipped; final non-delivery closure requires authorized custody/disposition for all shipped quantities. Close exceptionally as Cancelled, resolve eligible collected refunds, and restock only physically recovered inspected resellable units without re-running pre-shipment release. Track contacts, complaints, and resolution with scoped access.\
   **Acceptance:** Failure leads to documented retry/resolution; deadlines and customer updates remain accurate.\
-  **Evidence:** [Local exception/custody/recovery/complaint checks and remaining gates](./evidence/P06-016-017-commerce-delivery-support.md). Private order-associated capabilities; no public/admin exception or anonymous complaint HTTP activation.\
-  **Blocked:** P06-011 remains unaccepted; real protected disposition/inspection authority, paid-refund integration, support HTTP security/public abuse controls and qualified response policy remain unavailable. Missing capabilities deny unsafe closure.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package F completion, affected verification, rollout/recovery and executor review](./evidence/P06-016-017-commerce-delivery-support.md#package-f-completion).\
+  **Review:** Engineering completion recorded 2 November 2026 under Tasks §2; external qualification, backend closeout and milestone acceptance remain separate.
 
 - [ ] **P06-018 — Implement accessible checkout and order confirmation UI**\
   **Status:** `Not Started` · **Area:** Storefront/checkout\
@@ -1628,15 +1626,15 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Statistics correspond to authoritative API; access restricted to administrator.\
   **Evidence to attach:** Dashboard dataset/route tests.
 
-- [ ] **P09-002 — Implement separated gross/discount/paid/COD/refund/net reporting**\
-  **Status:** `Blocked` · **Area:** Backend/reports\
+- [x] **P09-002 — Implement separated gross/discount/paid/COD/refund/net reporting**\
+  **Status:** `Done` · **Area:** Backend/reports\
   **Stage:** `Backend`\
   **Sources:** FR-22; FR-29\
   **Depends on:** `P06-012`, `P08-005`\
   **Deliverable:** Calculate gross merchandise, sale/coupon discounts, verified paid collections, outstanding COD, pending/completed refunds and net collected revenue.\
   **Acceptance:** Uncollected COD does not inflate collected revenue; refund and duplicate attempt aggregates remain accurate.\
-  **Evidence:** [Private arithmetic and remaining source/cutoff work](./evidence/P09-002-015-local-report-customer.md). Accepted COD/refund prerequisites, authoritative ledger adapters and independent acceptance remain pending.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package F completion, affected verification, rollout/recovery and executor review](./evidence/P06-016-017-commerce-delivery-support.md#package-f-completion).\
+  **Review:** Engineering completion recorded 2 November 2026 under Tasks §2; external qualification, backend closeout and milestone acceptance remain separate.
 
 - [ ] **P09-003 — Complete admin customer search, history and suspension workflow**\
   **Status:** `Not Started` · **Area:** Admin/customers\
@@ -1738,53 +1736,55 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Unapproved policy placeholders never publish; stale writes fail; contact/policy projections exclude private configuration and media references are validated. Delivery settings reuse the same canonical singleton.\
   **Evidence:** [Feature implementation, observed checks and recovery](./evidence/P09-013-settings-public-content.md). Project owner accepted on 26 October 2026: “done koro”. [Acceptance record](./evidence/P09-013-settings-public-content.md#independent-acceptance). Real policy/provider/staging gates remain separate.
 
-- [ ] **P09-014 — Expose dashboard metrics APIs**\
-  **Status:** `Not Started` · **Area:** Backend\
+- [x] **P09-014 — Expose dashboard metrics APIs**\
+  **Status:** `Done` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-22; API §14.4\
   **Depends on:** `P09-002`, `P04-018`\
   **Deliverable:** Expose canonical DashboardMetrics/DashboardCounts, financial summaries, bounded recentOrders/lowStockItems and Asia/Dhaka cutoff/date basis.\
   **Acceptance:** Metrics reconcile to authoritative collections, discounts, COD and refunds; admin-only access and bounded query profiles pass. No dashboard screen is required.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Package F completion, affected verification, rollout/recovery and executor review](./evidence/P06-016-017-commerce-delivery-support.md#package-f-completion).\
+  **Review:** Engineering completion recorded 2 November 2026 under Tasks §2; external qualification, backend closeout and milestone acceptance remain separate.
 
-- [ ] **P09-015 — Expose customer administration and privacy review APIs**\
-  **Status:** `Blocked` · **Area:** Backend\
+- [x] **P09-015 — Expose customer administration and privacy review APIs**\
+  **Status:** `Done` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-27; PRD §10.2; API §14.2\
   **Depends on:** `P03-008`, `P06-014`, `P08-019`\
   **Deliverable:** Implement customer search, authorized history, suspension/reactivation and verified deletion-request review with retention/legal-hold-safe decisions.\
   **Acceptance:** Suspension revokes relevant sessions; foreign access and unsafe deletion fail; required order/financial/audit history remains and sensitive data is minimized.\
-  **Evidence:** [Local masked customer read and remaining scope](./evidence/P09-002-015-local-report-customer.md). P06-014 and P08-019 development prerequisites are Done; full customer operations remain in Package F.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package F completion, affected verification, rollout/recovery and executor review](./evidence/P06-016-017-commerce-delivery-support.md#package-f-completion).\
+  **Review:** Engineering completion recorded 2 November 2026 under Tasks §2; external qualification, backend closeout and milestone acceptance remain separate.
 
-- [ ] **P09-016 — Expose support and complaint operations APIs**\
-  **Status:** `Blocked` · **Area:** Backend\
+- [x] **P09-016 — Expose support and complaint operations APIs**\
+  **Status:** `Done` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-16; FR-26; FR-34; API §14.4\
   **Depends on:** `P06-017`\
   **Deliverable:** Expose public/scoped complaint intake and admin search/contact/status/resolution with order context, deadline policy and durable customer-response events.\
   **Acceptance:** Anonymous inputs require contactName/contactEmail; authenticated defaults use verified own data only; replay/throttle/access tests preserve history and notification truth.\
-  **Evidence:** [Local complaint and audit read work](./evidence/P09-016-017-local-support-audit.md). P06-017, remaining intake/response integration and independent acceptance remain pending.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package F completion, affected verification, rollout/recovery and executor review](./evidence/P06-016-017-commerce-delivery-support.md#package-f-completion).\
+  **Review:** Engineering completion recorded 2 November 2026 under Tasks §2; external qualification, backend closeout and milestone acceptance remain separate.
 
-- [ ] **P09-017 — Expose audit and operational exception APIs**\
-  **Status:** `Blocked` · **Area:** Backend\
+- [x] **P09-017 — Expose audit and operational exception APIs**\
+  **Status:** `Done` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-25; FR-26; FR-29; FR-33; API §14.4\
   **Depends on:** `P07-018`, `P08-019`, `P04-018`, `P09-002`\
   **Deliverable:** Expose bounded sanitized audit/history and stock, payment, refund and reconciliation exception queues; domain services retain mutation authority.\
   **Acceptance:** Restricted queries enforce admin access and safe pagination; immutable actor/action/time history remains; no operational screen is needed to prove the backend contract.\
-  **Evidence:** [Local complaint and audit read work](./evidence/P09-016-017-local-support-audit.md). Prerequisite acceptance, bounded query profiles, operational queues and independent acceptance remain pending.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package F completion, affected verification, rollout/recovery and executor review](./evidence/P06-016-017-commerce-delivery-support.md#package-f-completion).\
+  **Review:** Engineering completion recorded 2 November 2026 under Tasks §2; external qualification, backend closeout and milestone acceptance remain separate.
 
-- [ ] **P09-018 — Expose bounded business report queries**\
-  **Status:** `Not Started` · **Area:** Backend\
+- [x] **P09-018 — Expose bounded business report queries**\
+  **Status:** `Done` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-22; FR-27; API §14.4\
   **Depends on:** `P09-002`, `P09-015`\
   **Deliverable:** Expose documented period/filter/pagination reports with explicit timezone/cutoff and collected-versus-outstanding monetary labels.\
   **Acceptance:** Bounded query/index profiles and synthetic ledger reconciliations pass; no advanced BI scope, duplicate collection inflation or private leakage.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Package F completion, affected verification, rollout/recovery and executor review](./evidence/P06-016-017-commerce-delivery-support.md#package-f-completion).\
+  **Review:** Engineering completion recorded 2 November 2026 under Tasks §2; external qualification, backend closeout and milestone acceptance remain separate.
 
 ### Phase 10 — Testing, security review, and bug fixing
 
@@ -2634,3 +2634,6 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 
 
 **2 November 2026 — Package E completion:** P05-016/P08-016/P08-019 Blocked → In Progress → Done under Tasks §2. Connected canonical delivered/refunded purchase eligibility to review HTTP, completed cross-order customer claim/refund history, exact guest/customer private refund reads, safe timing/investigation/payout timelines and explicit actual server composition. Existing claim decisions/private evidence and refund source caps/verified payout are retained and covered by affected regression. [Actual commands/results and executor diff review](./evidence/P05-016-P08-019-local-reads.md#package-e-completion). Executor/reviewer: Codex. Overall: 125 Done, 6 Blocked, 77 Not Started, 2 Deferred. No milestone or application-stage closeout is self-approved.
+
+
+**2 November 2026 — Package F completion:** P06-016/017 and P09-002/015/016/017 Blocked → In Progress → Done; P09-014/018 Not Started → In Progress → Done under Tasks §2. Completed authoritative financial/dashboard/report projections, scoped support/contact/response and customer history/privacy HTTP, protected paid final-delivery closure with once-only stock recovery and verified payout path, sanitized operational queues and safe known-nonacceptance notification retry. Added exact-predecessor complaint migration, additive indexes and actual server configuration/recovery procedures. [Observed runs, source snapshot and executor review](./evidence/P06-016-017-commerce-delivery-support.md#package-f-completion). Executor/reviewer: Codex. Overall: 133 Done, 0 Blocked, 75 Not Started, 2 Deferred. Backend P03-022, application/milestone and explicit external qualification tasks remain independently tracked.

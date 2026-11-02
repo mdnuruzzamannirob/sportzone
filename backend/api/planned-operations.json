@@ -885,6 +885,27 @@
     },
     {
       "method": "GET",
+      "path": "/admin/customers/{customerId}/deletion-request",
+      "success": "200",
+      "operationId": "get_admin_customers_customerId_deletion_request",
+      "implementation": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/customers/{customerId}/deletion-decisions",
+      "success": "200",
+      "operationId": "post_admin_customers_customerId_deletion_decisions",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/operational-exceptions",
+      "success": "200",
+      "operationId": "get_admin_operational_exceptions",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
       "path": "/admin/reviews",
       "success": "200",
       "operationId": "get_admin_reviews",
@@ -1091,6 +1112,13 @@
       "path": "/orders/{orderId}/complaints",
       "success": "200",
       "operationId": "get_orders_orderId_complaints",
+      "implementation": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/complaints/{complaintId}",
+      "success": "200",
+      "operationId": "get_admin_complaints_complaintId",
       "implementation": "planned"
     },
     {

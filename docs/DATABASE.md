@@ -923,7 +923,7 @@ historical timing or infer a cash event from order/fulfillment timestamps.
 effectiveUnit × quantity − couponAllocated`. Sum line values into `pricingSnapshot`; do not recalculate refunds from
 current product prices. Line identifiers and unit ordinals are stable across claims.
 
-**Indexes:** unique `{orderNumber:1}`, unique `{checkoutIntentId:1}`; `{userId:1,placedAt:-1}`, `{fulfillmentStatus:1,placedAt:-1}`, `{customerSnapshot.emailNormalized:1,orderNumber:1}` (internal lookup only).
+**Indexes:** unique `{orderNumber:1}`, unique `{checkoutIntentId:1}`; `{userId:1,placedAt:-1}`, `{fulfillmentStatus:1,placedAt:-1}`, `{customerSnapshot.emailNormalized:1,orderNumber:1}` (internal lookup only); `{placedAt:1,_id:1}` for period reporting; `{fulfillmentHold:1,placedAt:-1,_id:-1}` for operational hold queues.
 
 **Deadline basis representation:** the immutable `deliverySnapshot.deadlineBasis` is
 `{rule,review,capturedAt}`. `rule` contains `{version,timezone:'Asia/Dhaka',effectiveFrom,effectiveTo?,
@@ -1336,7 +1336,7 @@ Historical unassigned receipts are not automatically reclassified; supervised re
 
 **Indexes:** unique `{provider:1,merchantAccountKey:1,providerCollectionRef:1}` (COD uses a stable
 `merchantAccountKey='internal'`); partial unique `{intakeId:1}` when ObjectId; `{attemptId:1,collectedAt:1}` **nonunique**;
-`{orderId:1,collectedAt:-1}`. Every online linked receipt must reference one intake entry; link creation and intake status
+`{orderId:1,collectedAt:-1}`; `{collectedAt:1,_id:1}` for bounded receipt reporting. Every online linked receipt must reference one intake entry; link creation and intake status
 change occur atomically. If SSLCOMMERZ evidence cannot establish distinct collection identity, **quarantine and reconcile**
 rather than assert a second charge or block a genuinely distinct charge with attempt-level uniqueness.
 
@@ -1542,7 +1542,7 @@ startup, bypass qualified confirmation policy or establish a real original-cash 
 
 `requestedAt` in the API maps to immutable refund `createdAt`. The public timeline is a bounded projection of durable status/audit events; retain approval/completion facts separately so history truncation cannot remove timing authority. Timing basis corrections require audited domain updates, preserve approvedAt, and must not delay an otherwise authorized payout.
 
-**Indexes:** unique `{orderId:1,decisionKey:1}`; `{sourceCollectionId:1,status:1}`; `{orderId:1,classification:1,createdAt:-1}`; `{refundGroupKey:1,createdAt:1}`.
+**Indexes:** unique `{orderId:1,decisionKey:1}`; `{sourceCollectionId:1,status:1}`; `{orderId:1,classification:1,createdAt:-1}`; `{refundGroupKey:1,createdAt:1}`; `{status:1,completedAt:1,_id:1}` for completed payout reporting; `{capacityStatus:1,createdAt:1}` for held-liability reads.
 
 **Rules:** a multi-collection refund uses separate source-funded obligations with exact `unitAmounts[]`, one shared
 `refundGroupKey`/business `basisRefId` when applicable, and a **distinct unique `decisionKey` per source-funded slice**.
@@ -1692,14 +1692,17 @@ renderers remain disabled until their owning tasks expand the contracts safely.
 | `resolution`? / `respondedAt`? / `resolvedAt`? | string / Date / Date | Document action and response |
 | `assignedTo`? | ObjectId | Authorized administrator |
 
-**Indexes:** `{status:1,createdAt:-1}`; `{orderId:1,createdAt:-1}`.
+**Indexes:** `{status:1,createdAt:-1}`; `{orderId:1,createdAt:-1,_id:-1}`; `{userId:1,createdAt:-1,_id:-1}` for owned global/order complaint history.
 
-The order-associated private foundation requires orderId, adds revision and bounded contactHistory
-`[{at,outcome}]` (maximum 40), and uses stable ID sorting within order history. Contact and issue are
+Complaints retain optional orderId/userId, revision and bounded contactHistory
+`[{at,outcome}]` (maximum 40), and use stable ID sorting within order history. Contact and issue are
 restricted fields; owner views omit contact/reporter identity. Omitted contact resolves from the
 verified order's immutable customer snapshot; supplied contact is never ownership proof. Names retain
-up to 120 Unicode code points. Current customer or exact guest scope is required on every submission
-and read. Anonymous/global support transport remains its separate API task.
+up to 120 Unicode code points. Current customer or exact guest scope is required on every order-associated submission/read. Anonymous complaints require validated name/email and have no invented order reference.
+Global registered complaints bind userId through current customer authorization. Intake with a key derives one opaque
+complaint identity and audited input digest from the authenticated/browser scope and key; retries preserve the first
+record and changed input conflicts. The additive exact-predecessor complaint migration removes only the old required
+orderId constraint; it preserves records, indexes, contact protection and strict validation. Normal startup never migrates.
 
 Administrator progression is Open → In Review/Resolved → Closed; resolving requires a recorded
 contact outcome. First respondedAt and original resolvedAt survive later closure. CAS/current admin

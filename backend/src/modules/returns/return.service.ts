@@ -191,3 +191,13 @@ export function returnNotificationProofAccess(
     })
   }
 }
+
+export function returnReportAccess(connection: Connection) {
+  return async (session: ClientSession) => {
+    await verifyReturnPersistence(connection)
+    return returnModel(connection)
+      .countDocuments({ claimType: 'physical_return', status: { $nin: ['completed', 'rejected'] } })
+      .maxTimeMS(5000)
+      .session(session)
+  }
+}

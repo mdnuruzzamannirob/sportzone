@@ -1,3 +1,9 @@
+import {
+  complaintValidator,
+  orderComplaintValidator,
+  upgradeComplaintPersistence,
+} from '../../src/modules/support/complaint.persistence.js'
+import { composeOperationsRoutes } from '../../src/setup.js'
 import { composeAfterSalesHistoryRoutes } from '../../src/setup.js'
 import { z } from 'zod'
 import { composeRefundRecovery } from '../../src/setup.js'
@@ -11197,4 +11203,886 @@ it('Package E: zero-price delivered units qualify until a canonical claim resolu
       (unit) => unit.netEntitlementPoisha === 0 && unit.refundCompletedPoisha === 0,
     ),
   ).toBe(true)
+})
+
+// Package F mutations are exercised through the real HTTP/auth/transaction composition.
+it('Package F: anonymous complaint intake requires browser proof and contact, is keyed/replay safe and never links a foreign order', async () => {
+  const root = await packageFRoot(),
+    who = await guest(),
+    buyer = await customer()
+  const send = (body: object, key = 'f-anonymous') =>
+    request(root)
+      .post('/api/v1/complaints')
+      .set('Origin', origin)
+      .set('Cookie', who.cookie)
+      .set('X-CSRF-Token', who.csrf)
+      .set('Idempotency-Key', key)
+      .send(body)
+  const input = {
+    issue: 'Synthetic support question',
+    contactName: 'Synthetic reporter',
+    contactEmail: 'reporter@example.test',
+  }
+  await request(root).post('/api/v1/complaints').send(input).expect(403)
+  await send({ issue: 'Missing required anonymous contacts' }).expect(400)
+  const first = await send(input).expect(201),
+    replay = await send(input).expect(201)
+  expect(replay.body.data).toEqual(first.body.data)
+  expect(Object.keys(first.body.data).sort()).toEqual(['reference', 'status'])
+  expect(await complaintModel(db.connection).countDocuments()).toBe(1)
+  await send({ ...input, issue: 'Changed' }).expect(409)
+  await send({ ...input, orderId: new Types.ObjectId().toHexString() }, 'foreign-order').expect(401)
+  await request(root).get('/api/v1/me/complaints').set('Cookie', buyer.cookie).expect(200)
+})
+it('Package F: privacy review denies unsafe erasure, verifies request proof and revokes sessions while retaining orders and audit', async () => {
+  const root = await packageFRoot(),
+    buyer = await customer(),
+    admin = await customer('admin')
+  await identities.users.updateOne(
+    { _id: buyer.user._id },
+    {
+      $set: {
+        deletionRequest: {
+          id: new Types.ObjectId(),
+          requestedAt: now,
+          verifiedAt: now,
+          status: 'requested',
+        },
+      },
+    },
+  )
+  const path = `/admin/customers/${buyer.user._id}/deletion-decisions`
+  await packageCPost(
+    root,
+    admin,
+    path,
+    { decision: 'erase_all', reason: 'Unsafe' },
+    'unsafe',
+  ).expect(400)
+  await packageCPost(
+    root,
+    admin,
+    path,
+    { decision: 'approve_deactivation', reason: 'Verified review with required record retention' },
+    'review',
+  ).expect(200)
+  await request(root).get('/api/v1/me/complaints').set('Cookie', buyer.cookie).expect(401)
+  const retained = await identities.users.findById(buyer.user._id).orFail()
+  expect(retained.status).toBe('deactivated')
+  expect(retained.deletionRequest?.status).toBe('approved')
+  expect(
+    await db.connection
+      .collection('auditLogs')
+      .countDocuments({ action: 'customer.privacy.decision' }),
+  ).toBe(1)
+})
+
+async function packageFRoot(
+  options: Parameters<typeof composeOperationsRoutes>[4] = {},
+  refunds?: Parameters<typeof composeOperationsRoutes>[5],
+  clock?: () => Date,
+  guests?: ReturnType<typeof guestSessionService>,
+) {
+  await initializeComplaintPersistence(db.connection)
+  await initializeDeliveryExceptionPersistence(db.connection)
+  await initializeCorrectionPersistence(db.connection)
+  await initializeRefundAttemptPersistence(db.connection)
+  return createApp({
+    apiRouter: createApiRouter(undefined, [
+      ...composeOperationsRoutes(
+        db.connection,
+        'test',
+        packageEAuth(guests),
+        origin,
+        options,
+        refunds,
+        clock,
+      ),
+      ...(refunds
+        ? [composeRefundOperationsRoutes(db.connection, localReviewAuth(), refunds, clock)]
+        : []),
+    ]),
+  })
+}
+it('Package F: canonical financial dashboard reconciles collected cash, pending/completed merchandise refunds and uncollected COD without attempt inflation', async () => {
+  const f = await packageDFixture(),
+    unpaid = await lifecycleFixture(),
+    root = await packageFRoot({}, f.dependencies, f.clock)
+  if (!f.manual) throw new Error('Missing manual fixture')
+  const order = await orderModels(db.connection).orders.findById(f.orderId).orFail(),
+    refund = await refundModel(db.connection).findById(f.refundId).orFail()
+  const get = (path: string) => request(root).get(`/api/v1${path}`).set('Cookie', f.admin.cookie)
+  const before = await get('/admin/dashboard').expect(200)
+  expect(before.body.data).toMatchObject({
+    timezone: 'Asia/Dhaka',
+    paidCollectionsPoisha: f.manual.payment.expectedPoisha,
+    pendingRefundLiabilityPoisha: refund.amountPoisha,
+    outstandingCodPoisha: unpaid.payment.expectedPoisha,
+    completedMerchandiseRefundsPoisha: 0,
+  })
+  expect(before.body.data.counts.totalOrders).toBe(2)
+  expect(before.body.data.counts.pendingOrders + before.body.data.counts.deliveredOrders).toBe(2)
+  expect(before.body.data.grossMerchandiseValuePoisha).toBe(
+    order.pricingSnapshot.regularSubtotalPoisha * 2,
+  )
+  expect(
+    before.body.data.recentOrders.every((row: { paymentStatus?: string }) => !!row.paymentStatus),
+  ).toBe(true)
+  await f.payout().expect(200)
+  await f.setProof('paid')
+  await f
+    .post('manual-confirmations', {
+      transferReference: 'synthetic-transfer',
+      evidenceRef: 'synthetic-proof',
+      reason: 'Verified payout',
+    })
+    .expect(200)
+  // Period end is exclusive even when a deterministic clock equals the exact completion instant.
+  const atBoundary = await get('/admin/dashboard').expect(200)
+  expect(atBoundary.body.data.completedMerchandiseRefundsPoisha).toBe(0)
+  f.advance(1)
+  const after = await get('/admin/dashboard').expect(200)
+  expect(after.body.data.pendingRefundLiabilityPoisha).toBe(0)
+  expect(after.body.data.completedMerchandiseRefundsPoisha).toBe(refund.amountPoisha)
+  expect(after.body.data.netLinkedCashFlowPoisha).toBe(
+    f.manual.payment.expectedPoisha - refund.amountPoisha,
+  )
+  expect(after.body.data.outstandingCodPoisha).toBe(unpaid.payment.expectedPoisha)
+  const from = new Date(Date.now() - 86400000).toISOString(),
+    to = f.clock().toISOString()
+  for (const kind of ['sales', 'collections', 'refunds']) {
+    const result = await get(`/admin/reports/${kind}?from=${from}&to=${to}`).expect(200)
+    expect(result.body.data.totals.netLinkedCashFlowPoisha).toBe(
+      after.body.data.netLinkedCashFlowPoisha,
+    )
+    expect(JSON.stringify(result.body)).not.toContain('synthetic-transfer')
+  }
+  await request(root).get('/api/v1/admin/dashboard').expect(401)
+  const buyer = await customer()
+  await request(root).get('/api/v1/admin/dashboard').set('Cookie', buyer.cookie).expect(401)
+  for (const suffix of [
+    '?asOf=2026-01-01T00:00:00Z',
+    '?from=2020-01-01&to=2026-01-01',
+    '?from=2026-02-02&to=2026-02-01',
+  ])
+    await get(`/admin/dashboard${suffix}`).expect(422)
+  await get('/admin/dashboard?status=paid').expect(400)
+  await get('/admin/reports/sales').expect(422)
+})
+it('Package F: complaint owner/admin response workflows preserve recorded contact facts and reject foreign scope, CSRF and changed replay', async () => {
+  const f = await packageBFixture(),
+    root = await packageFRoot(),
+    other = await customer()
+  const created = await request(root)
+    .post('/api/v1/complaints')
+    .set('Origin', origin)
+    .set('Cookie', f.buyer.cookie)
+    .set('X-CSRF-Token', f.buyer.csrf)
+    .set('Idempotency-Key', 'owned-complaint')
+    .send({ orderId: f.orderId, issue: 'Synthetic delivery concern' })
+    .expect(201)
+  const id = created.body.data.reference
+  const stored = await complaintModel(db.connection).findById(id).select('+contact').orFail()
+  expect(stored.contact.emailNormalized).toBe(
+    (await orderModels(db.connection).orders.findById(f.orderId).orFail()).customerSnapshot
+      .emailNormalized,
+  )
+  const own = await request(root)
+    .get('/api/v1/me/complaints')
+    .set('Cookie', f.buyer.cookie)
+    .expect(200)
+  expect(own.body.data[0]).toMatchObject({ id, orderId: f.orderId, status: 'open' })
+  expect(own.body.data[0]).not.toHaveProperty('contact')
+  await request(root)
+    .get(`/api/v1/admin/complaints/${id}`)
+    .set('Cookie', f.buyer.cookie)
+    .expect(401)
+  const detail = await request(root)
+    .get(`/api/v1/admin/complaints/${id}`)
+    .set('Cookie', f.administrator.cookie)
+    .expect(200)
+  expect(detail.body.data.contact.email).toBe(stored.contact.emailNormalized)
+  expect(detail.body.data.responsePolicy).toEqual({ status: 'under_review' })
+  const found = await request(root)
+    .get(`/api/v1/admin/complaints?orderId=${f.orderId}&q=Synthetic&pageSize=1`)
+    .set('Cookie', f.administrator.cookie)
+    .expect(200)
+  expect(found.body.meta.totalItems).toBe(1)
+  const literal = await request(root)
+    .get('/api/v1/admin/complaints?q=.*')
+    .set('Cookie', f.administrator.cookie)
+    .expect(200)
+  expect(literal.body.meta.totalItems).toBe(0)
+
+  await request(root)
+    .get(`/api/v1/orders/${f.orderId}/complaints`)
+    .set('Cookie', other.cookie)
+    .expect(404)
+  const path = `/admin/complaints/${id}/resolve`,
+    input = {
+      status: 'resolved',
+      resolution: 'Synthetic issue addressed',
+      contactOutcome: 'Synthetic phone response recorded',
+    }
+  await request(root)
+    .post(`/api/v1${path}`)
+    .set('Cookie', f.administrator.cookie)
+    .send(input)
+    .expect(403)
+  await packageCPost(root, f.administrator, path, input, 'response').expect(200)
+  await packageCPost(root, f.administrator, path, input, 'response').expect(200)
+  await packageCPost(
+    root,
+    f.administrator,
+    path,
+    { ...input, resolution: 'Changed' },
+    'response',
+  ).expect(409)
+  expect(
+    await db.connection
+      .collection('auditLogs')
+      .countDocuments({ action: 'complaint.response.recorded' }),
+  ).toBe(1)
+  const resolved = await request(root)
+    .get('/api/v1/me/complaints')
+    .set('Cookie', f.buyer.cookie)
+    .expect(200)
+  expect(resolved.body.data[0]).toHaveProperty('respondedAt')
+  expect(resolved.body.data[0]).not.toHaveProperty('deadlineAt')
+})
+it('Package F: keyed delivery exception HTTP retains shipped retries and atomically reserves paid final-closure refunds with one recovered stock receipt', async () => {
+  const f = await exceptionFixture(),
+    payment = await paymentModel(db.connection).findOne({ orderId: f.id }).orFail()
+  const cash = codCollectionService(
+    db.connection,
+    f.adminAccess,
+    codCollectionOrderAccess(db.connection),
+    async (input) => ({
+      paymentId: input.paymentId,
+      amountPoisha: input.amountPoisha,
+      collectionReference: input.collectionReference,
+      evidenceRef: input.evidenceRef,
+      collectedAt: now,
+      digest: 'a'.repeat(64),
+    }),
+    () => now,
+  )
+  await cash.collect(
+    f.token,
+    payment._id.toHexString(),
+    {
+      amountPoisha: payment.expectedPoisha,
+      collectionReference: 'f-cash',
+      evidenceRef: 'synthetic:cash',
+      reason: 'Synthetic verified cash',
+    },
+    'f-cash',
+  )
+  let verification: RefundOutcomeProof | undefined
+  let ticks = Date.now() + 10000
+  const clock = () => new Date(ticks)
+  let options: Parameters<typeof composeOperationsRoutes>[5]
+  const draftRoot = await packageFRoot({ verifyDisposition: async () => 'a'.repeat(64) })
+  const created = await packageCPost(
+    draftRoot,
+    f.admin,
+    `/admin/orders/${f.id}/delivery-exceptions`,
+    { type: 'final_non_delivery', reason: 'Synthetic final failure' },
+    'f-exception',
+  ).expect(201)
+  const exceptionId = created.body.data.id,
+    input = { resolution: 'Verified custody closure', disposition: f.disposition }
+  await packageCPost(
+    draftRoot,
+    f.admin,
+    `/admin/delivery-exceptions/${exceptionId}/resolve`,
+    input,
+    'f-resolve',
+  ).expect(503)
+  expect((await orderModels(db.connection).orders.findById(f.id).orFail()).fulfillmentStatus).toBe(
+    'shipped',
+  )
+  options = {
+    verifyEvidence: async () => verification,
+    options: {
+      policyVersion: 'synthetic-f-refunds',
+      authorizations: [
+        {
+          orderId: f.id,
+          basis: 'delivery_exception',
+          basisRefId: exceptionId,
+          approval: {
+            policyVersion: 'synthetic-f-refunds',
+            method: 'manual_bank',
+            consentRequired: true,
+            consentEvidenceRef: 'synthetic:f-consent',
+            deliveryApproved: true,
+          },
+        },
+      ],
+    },
+  }
+  const root = await packageFRoot({ verifyDisposition: async () => 'a'.repeat(64) }, options, clock)
+  const results = await Promise.all(
+    ['a', 'b'].map((key) =>
+      packageCPost(root, f.admin, `/admin/delivery-exceptions/${exceptionId}/resolve`, input, key),
+    ),
+  )
+  expect(results.filter((row) => row.status === 200)).toHaveLength(1)
+  expect((await orderModels(db.connection).orders.findById(f.id).orFail()).fulfillmentStatus).toBe(
+    'cancelled',
+  )
+  const refunds = await refundModel(db.connection).find({ orderId: f.id })
+  expect(refunds).toHaveLength(1)
+  expect(refunds[0]).toMatchObject({
+    basis: 'delivery_exception',
+    status: 'approved',
+    capacityStatus: 'reserved',
+    amountPoisha: payment.expectedPoisha,
+  })
+  expect(
+    await inventoryMovementModel(db.connection).countDocuments({ type: 'return_receipt' }),
+  ).toBe(1)
+  expect(
+    await inventoryMovementModel(db.connection).countDocuments({ type: 'release_commit' }),
+  ).toBe(0)
+  expect((await paymentModel(db.connection).findById(payment._id).orFail()).paymentStatus).toBe(
+    'paid',
+  )
+  const obligation = refunds[0]
+  if (!obligation) throw new Error('Missing closure obligation')
+  await packageCPost(
+    root,
+    f.admin,
+    `/admin/refunds/${obligation._id}/payout-attempts`,
+    { method: 'manual_bank', reason: 'Qualified final closure payout' },
+    'closure-payout',
+  ).expect(200)
+  const attempt = await refundAttemptModel(db.connection)
+    .findOne({ refundId: obligation._id })
+    .orFail()
+  ticks += 1000
+  verification = {
+    provider: 'manual',
+    method: 'manual_bank',
+    refundId: obligation._id.toHexString(),
+    orderId: f.id,
+    sourceCollectionId: obligation.sourceCollectionId.toHexString(),
+    attemptId: attempt._id.toHexString(),
+    amountPoisha: obligation.amountPoisha,
+    outcome: 'paid',
+    checkedAt: clock(),
+    paidAt: clock(),
+    evidenceDigest: 'b'.repeat(64),
+    transferReference: 'synthetic-f-transfer',
+    evidenceRef: 'synthetic:f-payout',
+    destinationMasked: 'bank ****1234',
+    consentEvidenceRef: 'synthetic:f-consent',
+    consentDigest: 'c'.repeat(64),
+    consentAt: new Date(ticks - 500),
+  }
+  await packageCPost(
+    root,
+    f.admin,
+    `/admin/refunds/${obligation._id}/manual-confirmations`,
+    {
+      transferReference: 'synthetic-f-transfer',
+      evidenceRef: 'synthetic:f-payout',
+      reason: 'Verified original closure transfer',
+    },
+    'closure-confirm',
+  ).expect(200)
+  expect((await refundModel(db.connection).findById(obligation._id).orFail()).status).toBe(
+    'completed',
+  )
+  expect((await paymentModel(db.connection).findById(payment._id).orFail()).paymentStatus).toBe(
+    'refunded',
+  )
+  expect((await orderModels(db.connection).orders.findById(f.id).orFail()).fulfillmentStatus).toBe(
+    'cancelled',
+  )
+  expect(
+    await inventoryMovementModel(db.connection).countDocuments({ type: 'return_receipt' }),
+  ).toBe(1)
+})
+it('Package F: operational queues and customer histories are current-admin-only, bounded and private; notification retry only admits outbox work', async () => {
+  const f = await packageBFixture(),
+    root = await packageFRoot(),
+    created = await f.submit().expect(201)
+  for (const kind of ['orders', 'claims', 'refunds']) {
+    const path = `/api/v1/admin/customers/${f.buyer.user._id}/${kind}?pageSize=1`
+    await request(root).get(path).set('Cookie', f.buyer.cookie).expect(401)
+    const result = await request(root).get(path).set('Cookie', f.administrator.cookie).expect(200)
+    expect(result.body.meta.pageSize).toBe(1)
+    if (kind === 'claims') expect(result.body.data[0].id).toBe(created.body.data.id)
+    expect(JSON.stringify(result.body)).not.toContain('emailNormalized')
+  }
+  for (const kind of ['stock', 'payments', 'refunds', 'reconciliation']) {
+    const path = `/api/v1/admin/operational-exceptions?kind=${kind}&pageSize=1`
+    await request(root).get(path).expect(401)
+    const result = await request(root).get(path).set('Cookie', f.administrator.cookie).expect(200)
+    expect(result.body.meta.pageSize).toBe(1)
+  }
+  const notification = await db.connection
+    .collection('notifications')
+    .findOne({ eventType: 'order_received', orderId: new Types.ObjectId(f.orderId) })
+  if (!notification) throw new Error('Missing outbox')
+  await db.connection
+    .collection('notifications')
+    .updateOne(
+      { _id: notification._id },
+      { $set: { status: 'failed', lastErrorCode: 'PROVIDER_RATE_LIMIT' } },
+    )
+  const path = `/admin/notifications/${notification._id}/retry`
+  await packageCPost(
+    root,
+    f.administrator,
+    path,
+    { reason: 'Reviewed email retry' },
+    'retry',
+  ).expect(200)
+  await packageCPost(
+    root,
+    f.administrator,
+    path,
+    { reason: 'Reviewed email retry' },
+    'retry',
+  ).expect(200)
+  expect(
+    (await db.connection.collection('notifications').findOne({ _id: notification._id }))?.status,
+  ).toBe('queued')
+  const result = await request(root)
+    .get('/api/v1/admin/notifications?pageSize=1')
+    .set('Cookie', f.administrator.cookie)
+    .expect(200)
+  for (const field of ['recipient', 'payload', 'providerMessageId', 'eventKey'])
+    expect(result.body.data[0]).not.toHaveProperty(field)
+  await db.connection
+    .collection('notifications')
+    .updateOne(
+      { _id: notification._id },
+      { $set: { status: 'delivery_uncertain', lastErrorCode: 'PROVIDER_UNCERTAIN' } },
+    )
+  await packageCPost(
+    root,
+    f.administrator,
+    path,
+    { reason: 'Unknown outcome must remain uncertain' },
+    'unknown',
+  ).expect(422)
+  await db.connection
+    .collection('notifications')
+    .updateOne({ _id: notification._id }, { $set: { status: 'sent', sentAt: new Date() } })
+  await packageCPost(
+    root,
+    f.administrator,
+    path,
+    { reason: 'Do not resend sent mail' },
+    'sent',
+  ).expect(422)
+})
+
+it('Package F: complaint quota and failed audit cannot bypass admission or leave partial intake', async () => {
+  const root = await packageFRoot(),
+    who = await guest(),
+    input = {
+      issue: 'Synthetic general support',
+      contactName: 'Reporter',
+      contactEmail: 'reporter@example.test',
+    }
+  const send = (key: string) =>
+    request(root)
+      .post('/api/v1/complaints')
+      .set('Origin', origin)
+      .set('Cookie', who.cookie)
+      .set('X-CSRF-Token', who.csrf)
+      .set('Idempotency-Key', key)
+      .send(input)
+  await db.connection.collection('auditLogs').dropIndex('audit_cause_unique')
+  try {
+    await send('rollback').expect(503)
+  } finally {
+    await initializeAuditPersistence(db.connection)
+  }
+  expect(await complaintModel(db.connection).countDocuments()).toBe(0)
+  for (let i = 0; i < 9; i++) await send(`quota-${i}`).expect(201)
+  const limited = await send('blocked').expect(429)
+  expect(Number(limited.headers['retry-after'])).toBeGreaterThan(0)
+  expect(await complaintModel(db.connection).countDocuments()).toBe(9)
+})
+it('Package F: complaint migration and compiled additive index rollout preserve records and refuse unknown drift/deployed execution', async () => {
+  const f = await packageBFixture(),
+    root = await packageFRoot(),
+    buyer = f.buyer
+  await request(root)
+    .post('/api/v1/complaints')
+    .set('Origin', origin)
+    .set('Cookie', buyer.cookie)
+    .set('X-CSRF-Token', buyer.csrf)
+    .set('Idempotency-Key', 'retained')
+    .send({ orderId: f.orderId, issue: 'Retain synthetic order complaint' })
+    .expect(201)
+  const saved = await db.connection.collection('complaints').findOne({})
+  if (!saved) throw new Error('Missing retained complaint')
+  await db.connection.db?.command({ collMod: 'complaints', validator: orderComplaintValidator })
+  try {
+    const env = {
+      ...identityEnvironment(),
+      MONGODB_URI: db.replica.getUri(),
+      MONGODB_DB_NAME: db.connection.name,
+    }
+    for (let i = 0; i < 2; i++) {
+      const result = spawnSync(
+        process.execPath,
+        ['scripts/bootstrap-operations.mjs', '--complaints'],
+        { env, encoding: 'utf8', timeout: 15000 },
+      )
+      expect(result.status, result.stderr).toBe(0)
+    }
+    expect(await db.connection.collection('complaints').findOne({ _id: saved._id })).toEqual(saved)
+    const deployed = spawnSync(
+      process.execPath,
+      ['scripts/bootstrap-operations.mjs', '--complaints'],
+      {
+        env: { ...env, APP_ENV: 'production', NODE_ENV: 'production' },
+        encoding: 'utf8',
+        timeout: 10000,
+      },
+    )
+    expect(deployed.status).not.toBe(0)
+    await db.connection.db?.command({
+      collMod: 'complaints',
+      validator: { forbiddenFixture: { $exists: true } },
+    })
+    try {
+      await expect(upgradeComplaintPersistence(db.connection)).rejects.toThrow(
+        'Unknown complaint validator',
+      )
+    } finally {
+      await db.connection.db?.command({ collMod: 'complaints', validator: orderComplaintValidator })
+      await upgradeComplaintPersistence(db.connection)
+    }
+  } finally {
+    await db.connection.db?.command({ collMod: 'complaints', validator: complaintValidator })
+    await initializeComplaintPersistence(db.connection)
+  }
+})
+it('Package F: actual server startup admits configured operations and defaults off without external provider calls', async () => {
+  await packageFRoot()
+  await initializeReturnPersistence(db.connection)
+  const admin = await customer('admin'),
+    buyer = await customer(),
+    previous = process.env
+  let runtime: Awaited<ReturnType<typeof startServer>> | undefined
+  try {
+    const env = {
+      ...identityEnvironment(),
+      SESSION_SECRET: authSecret,
+      MONGODB_URI: db.replica.getUri(),
+      MONGODB_DB_NAME: db.connection.name,
+    }
+    process.env = { ...env }
+    let config = { ...loadEnvironment(env), PORT: 0 }
+    runtime = await startServer(
+      config,
+      createLogger(config, () => {}),
+    )
+    await request(runtime.server)
+      .get('/api/v1/admin/dashboard')
+      .set('Cookie', admin.cookie)
+      .expect(404)
+    await runtime.close()
+    process.env = { ...env, BACKEND_OPERATIONS_ENABLED: 'true' }
+    config = { ...loadEnvironment(process.env), PORT: 0 }
+    runtime = await startServer(
+      config,
+      createLogger(config, () => {}),
+    )
+    await request(runtime.server)
+      .get('/api/v1/admin/dashboard')
+      .set('Cookie', admin.cookie)
+      .expect(200)
+    await request(runtime.server)
+      .get('/api/v1/me/complaints')
+      .set('Cookie', buyer.cookie)
+      .expect(200)
+    await request(runtime.server)
+      .get('/api/v1/admin/operational-exceptions?kind=refunds')
+      .set('Cookie', admin.cookie)
+      .expect(200)
+  } finally {
+    await runtime?.close()
+    process.env = previous
+  }
+})
+it('Package F: distinct duplicate collections and completed correction payouts stay separate from merchandise sales and receipts are never attempt counts', async () => {
+  const f = await packageDFixture(true),
+    root = await packageFRoot({}, f.dependencies, f.clock)
+  const read = () => request(root).get('/api/v1/admin/dashboard').set('Cookie', f.admin.cookie)
+  const before = await read().expect(200),
+    row = await refundModel(db.connection).findById(f.refundId).orFail()
+  const collections = await paymentRecordModels(db.connection).collections.find({
+    orderId: f.orderId,
+  })
+  expect(collections).toHaveLength(2)
+  expect(before.body.data.paidCollectionsPoisha).toBe(
+    collections.reduce((sum, r) => sum + r.amountPoisha, 0),
+  )
+  expect(before.body.data.counts.totalOrders).toBe(1)
+  await f.payout().expect(200)
+  await f.setProof('paid')
+  await f.post('reconcile', { reason: 'Qualified correction' }, 'f-correction').expect(200)
+  f.advance(1)
+  const after = await read().expect(200)
+  expect(after.body.data.completedCorrectionRefundsPoisha).toBe(row.amountPoisha)
+  expect(after.body.data.completedMerchandiseRefundsPoisha).toBe(0)
+  expect(after.body.data.netAcceptedOrderSalesPoisha).toBe(
+    before.body.data.netAcceptedOrderSalesPoisha,
+  )
+  const from = new Date(Date.now() - 86400000).toISOString(),
+    to = f.clock().toISOString()
+  const report = await request(root)
+    .get(
+      `/api/v1/admin/reports/collections?from=${from}&to=${to}&classification=payment_correction`,
+    )
+    .set('Cookie', f.admin.cookie)
+    .expect(200)
+  expect(report.body.data.classifiedCollectedPoisha).toBe(row.amountPoisha)
+  expect(report.body.data.receiptCount).toBe(2)
+})
+
+it('Package F: privacy rejection retains access, missing proof denies approval, and incomplete root admission fails closed', async () => {
+  const root = await packageFRoot(),
+    buyer = await customer(),
+    admin = await customer('admin'),
+    path = `/admin/customers/${buyer.user._id}/deletion-decisions`
+  await packageCPost(
+    root,
+    admin,
+    path,
+    { decision: 'approve_deactivation', reason: 'No verified request' },
+    'missing',
+  ).expect(422)
+  await identities.users.updateOne(
+    { _id: buyer.user._id },
+    {
+      $set: {
+        deletionRequest: {
+          id: new Types.ObjectId(),
+          requestedAt: now,
+          verifiedAt: now,
+          status: 'requested',
+        },
+      },
+    },
+  )
+  await packageCPost(
+    root,
+    admin,
+    path,
+    { decision: 'under_review', reason: 'Review retention' },
+    'review',
+  ).expect(200)
+  await request(root).get('/api/v1/me/complaints').set('Cookie', buyer.cookie).expect(200)
+  await packageCPost(
+    root,
+    admin,
+    path,
+    { decision: 'reject', reason: 'Reviewed request declined' },
+    'reject',
+  ).expect(200)
+  await request(root).get('/api/v1/me/complaints').set('Cookie', buyer.cookie).expect(200)
+  const config = {
+    ...loadEnvironment(identityEnvironment()),
+    CUSTOMER_AUTH_ENABLED: false,
+    ADMIN_AUTH_ENABLED: false,
+  }
+  await expect(
+    composeApplication(
+      db.connection,
+      config,
+      { isReady: async () => true },
+      createLogger(config, () => {}),
+      undefined,
+      [],
+      undefined,
+      [],
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      false,
+      {},
+    ),
+  ).rejects.toThrow()
+})
+it('Package F: completed refund reporting requires a matching confirmed attempt and bounded event-date indexes remain usable', async () => {
+  const f = await packageDFixture(),
+    root = await packageFRoot({}, f.dependencies, f.clock)
+  await f.payout().expect(200)
+  await f.setProof('paid')
+  await f
+    .post(
+      'manual-confirmations',
+      {
+        transferReference: 'synthetic-transfer',
+        evidenceRef: 'synthetic-proof',
+        reason: 'Verified proof',
+      },
+      'report-proof',
+    )
+    .expect(200)
+  f.advance(1)
+  const read = () => request(root).get('/api/v1/admin/dashboard').set('Cookie', f.admin.cookie)
+  await read().expect(200)
+  const attempt = await db.connection
+    .collection('refundAttempts')
+    .findOne({ refundId: new Types.ObjectId(f.refundId) })
+  if (!attempt) throw new Error('Missing completed proof fixture')
+  await db.connection.collection('refundAttempts').deleteOne({ _id: attempt._id })
+  try {
+    await read().expect(503)
+  } finally {
+    await db.connection.collection('refundAttempts').insertOne(attempt)
+  }
+  const cases = [
+    ['orders', 'placedAt', 'order_report_placement'],
+    ['paymentCollections', 'collectedAt', 'collection_report_period'],
+    ['refunds', 'completedAt', 'refund_report_completion'],
+  ] as const
+  for (const [collection, field, index] of cases) {
+    const filter = { [field]: { $gte: new Date(Date.now() - 86400000), $lt: f.clock() } }
+    const plan = await db.connection
+      .collection(collection)
+      .find(filter)
+      .hint(index)
+      .limit(5001)
+      .maxTimeMS(5000)
+      .explain('queryPlanner')
+    expect(JSON.stringify(plan.queryPlanner.winningPlan)).toContain(index)
+  }
+})
+
+it('Package F: guest complaint scope and CSRF remain exact and revoked or malformed customer proof never downgrades to anonymous', async () => {
+  const f = await lifecycleFixture(),
+    other = await lifecycleFixture()
+  const guests = guestSessionService(
+    db.connection,
+    identities,
+    {
+      secret: authSecret,
+      customerTtlSeconds: 600,
+      adminTtlSeconds: 300,
+      sameSite: 'lax',
+      appEnvironment: 'test',
+      apiOrigin: 'http://localhost:4000',
+    },
+    600,
+    guestOrderAccess(db.connection).verify,
+    () => now,
+  )
+  const proof = await inTransaction(db.connection, (session) =>
+      guests.issueAfterProof(session, f.id),
+    ),
+    root = await packageFRoot({}, undefined, undefined, guests),
+    cookie = `sz_guest_order_sid=${proof.token}`
+  const send = (id = f.id, csrf = proof.csrfToken, sessionCookie = cookie) =>
+    request(root)
+      .post('/api/v1/complaints')
+      .set('Origin', origin)
+      .set('Cookie', sessionCookie)
+      .set('X-CSRF-Token', csrf)
+      .set('Idempotency-Key', 'guest-support')
+      .send({ orderId: id, issue: 'Synthetic scoped guest concern' })
+  await send(f.id, 'invalid').expect(403)
+  await send().expect(201)
+  const global = await request(root)
+    .post('/api/v1/complaints')
+    .set('Origin', origin)
+    .set('Cookie', cookie)
+    .set('X-CSRF-Token', proof.csrfToken)
+    .set('Idempotency-Key', 'guest-global')
+    .send({ issue: 'Synthetic guest general concern without an order link' })
+    .expect(201)
+  const globalRow = await complaintModel(db.connection)
+    .findById(global.body.data.reference)
+    .select('+contact')
+    .orFail()
+  expect(globalRow.orderId).toBeUndefined()
+  expect(globalRow.contact.emailNormalized).toBe(
+    (await orderModels(db.connection).orders.findById(f.id).orFail()).customerSnapshot
+      .emailNormalized,
+  )
+  const own = await request(root)
+    .get(`/api/v1/orders/${f.id}/complaints`)
+    .set('Cookie', cookie)
+    .expect(200)
+  expect(own.body.data).toHaveLength(1)
+  expect(own.body.data[0]).not.toHaveProperty('contact')
+  await send(other.id).expect(401)
+  await send(f.id, proof.csrfToken, `${cookie}; sz_customer_sid=invalid`).expect(403)
+  await request(root).get('/api/v1/me/complaints').set('Cookie', cookie).expect(401)
+  await guests.logout(proof.token)
+  await send().expect(401)
+})
+it('Package F: operational queues return matching canonical IDs and safe state projections, then deny a suspended admin', async () => {
+  const pending = await processingFixture(),
+    refund = await packageDFixture(),
+    root = await packageFRoot({}, refund.dependencies)
+  // These isolated source fixtures exercise read filters, not independent provider qualification.
+  await paymentModel(db.connection).updateOne(
+    { orderId: pending.result.id },
+    { $set: { riskStatus: 'review' } },
+  )
+  await db.connection
+    .collection('orders')
+    .updateOne(
+      { _id: new Types.ObjectId(pending.result.id) },
+      { $set: { fulfillmentHold: 'allocation_shortfall' } },
+    )
+  await db.connection
+    .collection('paymentAttempts')
+    .updateOne({ _id: pending.attempt._id }, { $set: { state: 'uncertain' } })
+  await refund.payout().expect(200)
+  const expected = {
+    stock: pending.result.id,
+    payments: pending.attempt.paymentId.toHexString(),
+    reconciliation: pending.attempt._id.toHexString(),
+    refunds: refund.refundId,
+  }
+  for (const kind of ['stock', 'payments', 'reconciliation', 'refunds'] as const) {
+    const response = await request(root)
+      .get(`/api/v1/admin/operational-exceptions?kind=${kind}`)
+      .set('Cookie', refund.admin.cookie)
+      .expect(200)
+    expect(response.body.data.some((row: { id: string }) => row.id === expected[kind])).toBe(true)
+    expect(response.body.meta.totalItems).toBeGreaterThan(0)
+    for (const row of response.body.data)
+      for (const field of [
+        'bankTranId',
+        'refundTransId',
+        'providerCollectionRef',
+        'recipient',
+        'evidenceRef',
+        'emailNormalized',
+      ])
+        expect(row).not.toHaveProperty(field)
+  }
+  await request(root)
+    .get('/api/v1/admin/operational-exceptions?kind=invalid')
+    .set('Cookie', refund.admin.cookie)
+    .expect(400)
+  await request(root)
+    .get('/api/v1/admin/operational-exceptions?kind=stock&pageSize=101')
+    .set('Cookie', refund.admin.cookie)
+    .expect(400)
+  await identities.users.updateOne(
+    { _id: refund.admin.user._id },
+    { $set: { status: 'suspended' } },
+  )
+  await request(root)
+    .get('/api/v1/admin/operational-exceptions?kind=refunds')
+    .set('Cookie', refund.admin.cookie)
+    .expect(401)
 })
