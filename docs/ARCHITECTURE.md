@@ -188,24 +188,31 @@ orchestrator. Root shared utilities and tests/e2e have explicit consumer, runner
 
 ### 4.1 Naming and placement
 
-| Item                               | Convention / example                                                                        |
-| ---------------------------------- | ------------------------------------------------------------------------------------------- |
-| Folders/files                      | kebab-case; guest-access/, payment-receipt.model.ts                                         |
-| Responsibility suffixes            | .routes, .controller, .schema, .service, .model, .types; optional .dto/.policy/.persistence |
-| Provider files                     | provider.client.ts for transport; provider.schema.ts for protocol validation                |
-| Components/types/interfaces        | PascalCase: ProductForm, Order, CreateOrderInput; no I prefix                               |
-| Functions/variables                | camelCase, action-specific: reserveStock, verifyReceipt                                     |
-| Zod inputs/hooks                   | createOrderSchema; useOrders                                                                |
-| Constants/environment              | Fixed global constants and env keys UPPER_SNAKE_CASE                                        |
-| Entities/resources                 | Singular entity filenames; plural collection/HTTP resource names per existing contracts     |
-| Units                              | regularPricePoisha, timeoutMs, ttlSeconds, reservedQuantity                                 |
-| Flags/dates/IDs                    | isActive/hasStock/canCancel; expiresAt; orderId/providerTransactionId                       |
-| Tests                              | .test.ts for unit/integration; .spec.ts for browser journeys                                |
-| Framework/compatibility exceptions | page.tsx/layout.tsx/main.tsx; NodeNext .js imports; retained specification filenames        |
+| Item                               | Convention / example                                                                                                                              |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Folders/files                      | kebab-case; guest-access/, payment-receipt.model.ts                                                                                               |
+| Responsibility suffixes            | .routes, .controller, .schema, .service, .model; purposeful .public/.composition/.types/.policy/.mapper/.constants/.data/.utils/.persistence/.dto |
+| Provider files                     | provider.client.ts for transport; provider.schema.ts for protocol validation                                                                      |
+| Components/types/interfaces        | PascalCase: ProductForm, Order, CreateOrderInput; no I prefix                                                                                     |
+| Functions/variables                | camelCase, action-specific: reserveStock, verifyReceipt                                                                                           |
+| Zod inputs/hooks                   | createOrderSchema; useOrders                                                                                                                      |
+| Constants/environment              | Fixed global constants and env keys UPPER_SNAKE_CASE                                                                                              |
+| Entities/resources                 | Singular entity filenames; plural collection/HTTP resource names per existing contracts                                                           |
+| Units                              | regularPricePoisha, timeoutMs, ttlSeconds, reservedQuantity                                                                                       |
+| Flags/dates/IDs                    | isActive/hasStock/canCancel; expiresAt; orderId/providerTransactionId                                                                             |
+| Tests                              | .test.ts for unit/integration; .spec.ts for browser journeys                                                                                      |
+| Framework/compatibility exceptions | page.tsx/layout.tsx/main.tsx; NodeNext .js imports; retained specification filenames                                                              |
 
 Avoid misc.ts/manager.ts/processData, redundant handwritten types, speculative shared abstractions
 and automatic index.ts barrels. API status/error/pagination/idempotency/If-Match conventions and
 integer-poisha/immutable snapshot/unique-index rules remain governed by API/Database, not filenames.
+
+Backend files use imports → types/interfaces → constants/data → private helpers → implementation →
+explicit named exports at the bottom. No default business exports or `export *` barrels; retain required
+tool/framework configuration exports. Derive types when safe, use `import type` and NodeNext `.js`
+specifiers, and retain existing Biome/strict TypeScript settings. A pure calculation is a function;
+dependency-bearing operations use explicit service factories. Classes require a real state/lifecycle/
+invariant or error responsibility. No generic BaseService/BaseRepository or forwarding factory.
 
 UI shells belong in components/layout; app-owned HeroUI primitives, theme and navigation adapters
 belong in components/ui. Feature-specific code belongs in features. Existing reusable commerce/
@@ -432,28 +439,37 @@ backend/
 │   │   └── notifications.ts
 │   ├── modules/
 │   │   ├── auth/
+│   │   │   ├── credentials/
+│   │   │   ├── sessions/
+│   │   │   ├── verification/
+│   │   │   ├── recovery/
+│   │   │   └── guest-access/
 │   │   ├── customers/
 │   │   ├── catalog/
-│   │   │   ├── products/
-│   │   │   ├── variants/
+│   │   │   ├── products/       # Product-owned variants; inventory owns stock writes
 │   │   │   └── categories/
 │   │   ├── inventory/
-│   │   ├── cart/                # Cart and wishlist subfeatures
+│   │   ├── cart/
+│   │   ├── wishlist/
 │   │   ├── promotions/          # Coupons/discounts, no new promotion scope
 │   │   ├── checkout/
 │   │   ├── orders/
 │   │   ├── payments/
+│   │   │   ├── attempts/
+│   │   │   └── collections/
 │   │   ├── returns/
 │   │   ├── refunds/
+│   │   │   ├── obligations/
+│   │   │   └── payouts/
 │   │   ├── reviews/
 │   │   ├── delivery/
 │   │   ├── media/
 │   │   ├── notifications/
 │   │   ├── support/
 │   │   ├── settings/
-│   │   ├── reporting/           # Dashboard/report aggregation responsibility
-│   │   ├── audit/               # Durable audit responsibility
-│   │   └── health/
+│   │   ├── reports/             # Dashboard/report aggregation responsibility
+│   │   └── audit/               # Durable audit responsibility
+│   ├── health/                  # Technical live/ready HTTP boundary
 │   ├── providers/
 │   │   ├── cloudinary/
 │   │   │   ├── cloudinary.client.ts
@@ -464,11 +480,10 @@ backend/
 │   │   ├── email/resend.client.ts
 │   │   └── antivirus/clamav.client.ts
 │   ├── jobs/                    # Add only for real scheduling/coordination
-│   │   ├── expire-checkout.job.ts
 │   │   ├── expire-reservations.job.ts
 │   │   ├── reconcile-payments.job.ts
 │   │   ├── reconcile-refunds.job.ts
-│   │   └── cleanup-media.job.ts
+│   │   └── media-maintenance.job.ts
 │   └── shared/
 │       ├── errors/app-error.ts
 │       ├── middleware/
@@ -488,8 +503,11 @@ backend/
 ├── tests/
 │   ├── unit/                    # Feature-organized
 │   ├── integration/             # Feature-organized
+│   ├── contracts/               # HTTP registry/runtime parity fixtures
 │   ├── fixtures/
 │   └── helpers/
+├── contracts/                   # Executable schema registry and artifact generator
+├── api/                         # Generated OpenAPI/Postman artifacts
 ├── scripts/
 │   ├── build.mjs               # Clean generated artifact, then compile
 │   ├── provision-admin.mjs
@@ -509,6 +527,9 @@ These names are targets, not new commands. Preserve live operator entry points o
 compatibility during moves. app.ts has no implicit DB connection/listen side effect. Config parses
 once and returns typed options; setup constructs dependencies. Services do not read process.env.
 Route registration and provider construction for multiple domains do not belong inside auth.
+The twenty business/supporting modules are distinct from technical health. Create no empty planned
+directories. Notification scheduling retains its real operator entry; a symmetric notification job file
+is not required. Contracts/tests/scripts, compiled imports and packaging move with their owning code.
 
 Module ownership:
 
@@ -518,7 +539,8 @@ Module ownership:
 | customers     | Profiles, addresses, customer administration; no credential authority             |
 | catalog       | Products, variants, categories, descriptions and base/sale prices                 |
 | inventory     | Counters, reservations, commitments and movements through stock-only capabilities |
-| cart          | Cart and wishlist; neither reserves stock                                         |
+| cart          | Quantities, persistence, merge and estimated totals; no stock reservation         |
+| wishlist      | Saved products and duplicate prevention; independent lifecycle, no reservation    |
 | promotions    | Coupon eligibility, limits and deterministic discounts                            |
 | checkout      | Authoritative quotes and submission coordination                                  |
 | orders        | Historical snapshots, lifecycle, cancellation and fulfillment                     |
@@ -531,14 +553,21 @@ Module ownership:
 | notifications | Durable intent, deduplication, templates, delivery and retries                    |
 | support       | Complaints and support records                                                    |
 | settings      | Store configuration, policies and homepage content                                |
-| reporting     | Read aggregation; never a second source of financial/stock authority              |
+| reports       | Read aggregation; never a second source of financial/stock authority              |
 | audit         | Durable audit records; distinct from diagnostic logging                           |
-| health        | Liveness and restricted readiness                                                 |
 
 Target grouping does not add a feature, endpoint, collection or provider. users has one auth-owned
 registration. productVariants has one catalog-owned registration; inventory receives only stock
 operations. The catalog counter capability is private to inventory and root wiring; other modules and jobs
 use inventory domain services. Cross-module coordination uses public services/capabilities and a shared transaction context.
+
+Auth subfeatures share one identity authority. Catalog products owns variant identity/lifecycle;
+categories owns hierarchy management. Cart and wishlist have independent persistence/operations.
+Payments separates attempts from verified money; refunds separates obligations from disbursement.
+Parent roots retain genuine shared aggregates, contracts and assembly. Other modules remain flat until
+a concrete responsibility/consumer analysis justifies a recorded target change. Folder symmetry is not a reason.
+Delivery owns coverage/charges; orders owns shipment progression. Settings stores store/policy content;
+domain rules remain exposed by their owner without an unnecessary configuration-data migration.
 
 Backend root wiring uses setup.ts/routes.ts; technical helpers use shared/, provider transports use providers/
 and operator entry points use scripts/. Implementation Plan §3.6 governs subsequent source moves. Logical diagrams
@@ -546,17 +575,17 @@ describe domain coordination rather than mandatory source-directory names.
 
 ### 6.2 Request processing
 
-`Route → Authentication / Authorization / Validation → Controller → Service → Persistence / Provider → Response`
+`Route → Authentication / CSRF / rate limits → Controller validation → Service → Persistence / Provider → Response`
 
-- **Routes and middleware:** Endpoint registration, session checks, authorization, CSRF, rate limits, and validation.
-- **Controllers:** Parse validated requests and shape HTTP responses.
+- **Routes and middleware:** Endpoint registration, authentication, CSRF and rate limits; no inline business operations.
+- **Controllers:** Invoke validation for params/query/body separately, build explicit commands and map HTTP responses.
 - **Services:** Enforce business rules, coordinate modules, and control transactions.
 - **Models:** Define persistence structures and indexes.
 - **Provider adapters:** Isolate gateway, media, and email protocol details.
 
 Cross-module financial operations use a coordinating service with explicit transaction boundaries. Never keep a database transaction open while waiting for an external network request.
 
-Standard module convention:
+Standard module convention (files exist only for real responsibilities):
 
 ```text
 modules/reviews/
@@ -565,13 +594,16 @@ modules/reviews/
 ├── review.schema.ts
 ├── review.service.ts
 ├── review.model.ts
-└── review.types.ts
+├── review.public.ts             # Cross-module type contracts, if consumed
+└── review.composition.ts        # Real private assembly, if needed
 ```
 
 Routes bind endpoint/middleware; controllers map HTTP input/output; schema files validate inputs;
 services enforce business rules/ownership and coordinate transactions; models own schemas/indexes.
-Optional .dto.ts, .policy.ts and .persistence.ts require an actual projection, reusable rule or
-persistence/bootstrap need. Mongoose schema/index registration belongs in .model.ts; collection
+Optional .types/.dto/.mapper/.policy/.constants/.data/.utils/.persistence files require an actual shared
+type, projection, pure rule, fixed lookup/helper or persistence/bootstrap responsibility. A one-use
+helper/constant stays local; static data is not a runtime record or seed execution.
+Mongoose schema/index registration belongs in .model.ts; collection
 validators/bootstrap belong in .persistence.ts. Derive types when safe; request input, response DTO
 and stored document are distinct.
 
@@ -580,30 +612,62 @@ contract; do not introduce argument-forwarding factories, empty templates or gen
 Cross-module wiring stays in setup.ts. Use a module-local .composition.ts only for actual assembly
 of private models, services and routers; domain implementation/contracts never import that layer.
 Keep internal dependency types with their service/context when a separate file adds no boundary.
-Configuration imports domain schemas rather than jobs. A job performs actual scheduling/coordination
-and delegates business decisions to domain services; operator scripts may call those services directly.
+Configuration may import owning validation schemas or public types, not domain-service implementations;
+move reusable validation/crypto mechanics to an appropriate pure owner instead of executing workflows from config.
+A job performs actual scheduling/coordination and delegates business decisions to domain services;
+operator scripts may call those services directly.
 
-Large modules use responsibility subfeatures: auth/credentials, sessions, recovery, verification,
-guest-access; catalog/products, variants, categories. Auth retains one user model. Media separates
-upload.service.ts, attachment.service.ts, access.service.ts and cleanup.service.ts; shared media
+Large modules use the responsibility subfeatures in §6.1: auth credentials/sessions/recovery/verification/
+guest-access, catalog products/categories, payments attempts/collections, refunds obligations/payouts.
+Auth retains one user model. Media preserves meaningful upload.service.ts, attachment.service.ts,
+access.service.ts and cleanup.service.ts; shared media
 model/schema/types stay at module root. Payments separates verification, reconciliation, allocation
 and COD operations where implemented. Notifications owns templates and durable delivery; provider
 transport remains in providers/. Split by responsibility, not a fixed line-count threshold.
+
+Business reuse stays with its owner regardless of consumer count; technical reuse goes in the one shared/
+boundary. Similar fields or syntax do not establish the same business meaning. No module-wide giant
+service or per-action file requirement: split by cohesive responsibility and actual dependencies.
 
 Dependency and execution rules:
 
 - Controllers never import models; services never receive Express req/res.
 - A module never imports another module's private model/persistence. Explicit public capabilities
   replace raw model injection. Nested catalog subfeatures still have distinct stock/media boundaries.
+- Cross-module source imports use explicit type-only contracts in the owner's root `.public.ts`.
+  Setup injects runtime implementations. Public files contain types/interfaces, no runtime exports,
+  implementation re-exports or factory-derived private service/model/persistence/composition types.
+  Detached DTOs and narrow operations cross the boundary; Mongoose Model/Document/Connection do not.
+  Explicit type-only ClientSession is the intentional shared-database transaction coupling.
+- Only root setup/server consumes module composition from outside that owner; domain files, contracts
+  and technical helpers cannot use composition or neutral root helpers as implementation barrels.
+  Operator/contract tooling outside the runtime graph has explicit tested entry points, not permission
+  for business modules to import arbitrary implementation files.
 - shared imports no business module. Providers implement protocols and validate responses, not
   business eligibility or funding decisions; they receive typed configuration.
 - Provider clients may import public type-only protocol interfaces, never domain model/service implementations.
+  Domain services receive provider interfaces; private concrete-client type dependencies migrate to owning contracts.
 - Jobs call domain services, not HTTP endpoints or bypassing raw stock/financial writes.
 - External calls stay outside MongoDB transactions and retry callbacks. Transaction participants
   share the coordinator session and do not open nested transactions.
 - No frontend imports backend runtime/models, secrets or privileged provider clients.
 - No broad barrel exports, circular dependencies, generic repository/DI/event-bus infrastructure
   or second shared/helpers/common/utils bucket without demonstrated need.
+
+Every multi-module operation has one coordinator: checkout placement, order cancellation/fulfillment,
+verified collection, return/shortage processing or refund approval/payout. Participants share the
+coordinator's transaction and never recursively invoke its full workflow. Post-placement allocation
+must not depend on checkout's placement implementation. Review the operation call graph as well as
+file imports; type-only injection alone does not prove freedom from runtime recursion.
+
+Migration uses the existing checker and an exact data inventory at
+`scripts/ci/backend-boundary-allowances.json`: each legacy import is identified by source, resolved target,
+type/runtime mode, declaration kind and imported symbols, with an owning removal package. A separate
+exact type-cycle component is recorded. New edges, enlarged symbol sets, changed cycle components and
+stale allowances fail. Existing private-persistence, stock and provider safeguards cannot be waived by
+an allowance. Remove entries with the owning migration and all entries before technical completion;
+do not auto-regenerate the baseline or create wildcard allowances. File-cycle checks include runtime
+and type edges; dynamically injected call paths remain an operation-review/test responsibility.
 
 Typed configuration is wired by setup.ts; config/env.ts validates once. app.ts constructs HTTP
 middleware, routes.ts registers endpoints and server.ts owns process lifecycle. Shared authenticate/

@@ -130,13 +130,13 @@ retain their own approver, environment, artifacts, blockers and explicit decisio
 
 ## 3. Project progress dashboard
 
-The register contains 212 tasks across twelve requirement groups. Application-stage execution is defined in §1; accepted IDs and evidence remain historical. Update totals when tasks are added or statuses change.
+The register contains 213 tasks across twelve requirement groups. Application-stage execution is defined in §1; accepted IDs and evidence remain historical. Update totals when tasks are added or statuses change.
 
 | Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |    Done | Deferred |
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | ------: | -------: |
 | 01 — Requirements Finalization and Planning   |      24 |           0 |     0 |           0 |       0 |         0 |      24 |        0 |
 | 02 — UI/UX Design                             |      17 |           1 |     0 |           0 |       0 |         0 |      16 |        0 |
-| 03 — Authentication and Core Backend          |      24 |           0 |     0 |           1 |       0 |         0 |      23 |        0 |
+| 03 — Authentication and Core Backend          |      25 |           0 |     0 |           1 |       0 |         0 |      24 |        0 |
 | 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       0 |         0 |      12 |        1 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           8 |     0 |           0 |       0 |         0 |       9 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |           6 |     0 |           0 |       0 |         0 |      16 |        0 |
@@ -146,7 +146,7 @@ The register contains 212 tasks across twelve requirement groups. Application-st
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |       0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |       0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |       0 |        0 |
-| **Total**                                     | **212** |      **74** | **0** |       **1** |   **0** |     **0** | **135** |    **2** |
+| **Total**                                     | **213** |      **74** | **0** |       **1** |   **0** |     **0** | **136** |    **2** |
 
 ## 4. Milestone tracker
 
@@ -531,7 +531,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
 
 ### Phase 03 — Authentication and core backend
 
-**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 03. **Associated gate:** M1. **Tasks:** 24.
+**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 03. **Associated gate:** M1. **Tasks:** 25.
 
 - [x] **P03-001 — Bootstrap modular Express API and shared middleware**\
   **Status:** `Done` · **Area:** Backend/core · **Owner:** Codex\
@@ -727,6 +727,15 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Deliverable:** Current source/test/script/contract/runtime inventory, dependency and capability map, canonical persistence fingerprints, current-to-target ownership and selected baseline checks.\
   **Acceptance:** Every backend area and entry point is accounted for; baseline revision/results and limits are reproducible; no runtime/feature changes or prior acceptance overwritten.\
   **Evidence:** [WP00 inventory, selected checks, findings and executor review](./evidence/P03-021-backend-refactor.md#p03-024--wp00-follow-up-baseline-3-november-2026). Completed 3 November 2026 under Tasks §2: 491 backend files, 170 operations, 41 scripts, canonical persistence fingerprints and current-to-target consumers. Typecheck/boundaries/API freshness, 60 selected unit and three selected contract-inventory cases Passed; backend fingerprint unchanged. WP01 specification/boundary reconciliation is next; no runtime/feature or stage acceptance is claimed.
+
+- [x] **P03-025 — Reconcile backend refactor contracts and enforce import boundaries (WP01)**\
+  **Status:** `Done` · **Area:** Backend/refactor enforcement · **Owner:** Codex\
+  **Stage:** `Backend`\
+  **Sources:** Backend Refactor Plan WP01; Architecture §§4/6; Database §§3.1/4.2; API §2.2; Testing §15.5\
+  **Depends on:** `P03-024`\
+  **Deliverable:** Reconciled target ownership/file/dependency rules and executable public-contract/composition/cycle checks with exact legacy migration allowances in existing tooling.\
+  **Acceptance:** Positive/negative import fixtures and current tree checks pass; new private edges, enlarged imports, stale allowances and new cycles fail. Preserve existing persistence/provider/stock safeguards and runtime behavior; no business source moves.\
+  **Evidence:** [WP01 reconciliation, exact allowances, verification and executor review](./evidence/P03-021-backend-refactor.md#p03-025--wp01-contracts-and-enforcement-3-november-2026). Completed 3 November 2026 under Tasks §2. Existing checker/fixtures enforce public types, composition and source cycles; 356 import signatures and one type component have removal owners. Final affected boundary regression: 47 Passed. Initial full tooling run: 87 Passed/3 process failures; the same three failed on untouched control and all Passed outside the sandbox. Boundary/style/format/API-freshness/docs checks Passed; all 491 backend inputs unchanged. Next: WP02 technical foundation/reuse; no application/external acceptance implied.
 
 ### Phase 04 — Product catalog and inventory
 
@@ -2667,3 +2676,6 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 
 
 **3 November 2026 — P03-024 / WP00 refactor baseline:** New refactor-specific task Not Started → In Progress → Done under Tasks §2 following the owner-authorized plan and first-package execution request. Inventoried 491 backend files, 170 business operations, 41 scripts, canonical schema/index/validator fingerprints and current-to-target consumer mappings. Selected checks Passed: typecheck, boundaries, four-artifact freshness, 60 unit cases and three route-inventory cases; 183 unselected contract cases were Not Run. Recorded the refund type-only component, source-defined 39-collection inventory discrepancy and activation-prose reconciliation without modifying runtime or features. [Evidence and executor review](./evidence/P03-021-backend-refactor.md#p03-024--wp00-follow-up-baseline-3-november-2026). Executor/reviewer: Codex. Overall: 212 tasks, 135 Done, 74 Not Started, 1 In Progress, 2 Deferred. Historical accepted tasks, staged owner changes and P03-022/external/milestone gates remain unchanged. Next: WP01 owning-specification reconciliation and executable boundary rules.
+
+
+**3 November 2026 — P03-025 / WP01 refactor contracts:** Not Started → In Progress → Done under Tasks §2 after owner authorization to execute the next package. Reconciled owning Architecture/Database/API/Plan/Testing rules; corrected the existing collection inventory to 39 without creating storage. Extended the existing import checker/fixtures and added one exact legacy data inventory: 356 imports and one type-cycle component, all with removal packages; new/stale violations fail without waiving persistence/provider/stock safeguards. Initial tooling run: 87 Passed/3 process failures; untouched control reproduced all three and targeted outside-sandbox rerun Passed all three. Final affected boundary regression: 47 Passed; current boundaries, API freshness, tooling lint/format and documentation checks Passed. [Observed results, review and limits](./evidence/P03-021-backend-refactor.md#p03-025--wp01-contracts-and-enforcement-3-november-2026). Executor/reviewer: Codex. Overall: 213 tasks, 136 Done, 74 Not Started, 1 In Progress, 2 Deferred. All 491 backend files and existing feature activation remain unchanged; concurrent planning/staged edits preserved. P03-022/external/milestone gates remain unchanged. Next: WP02 technical foundation/reuse.

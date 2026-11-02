@@ -8,6 +8,17 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 3 November 2026 — Backend refactor contracts and boundary enforcement
+
+- Reconciled the selected module/file/dependency target in Architecture, Database, API, Implementation Plan
+  and Testing; corrected the existing collection inventory to 39 without schema or runtime changes.
+- Extended the existing checker/fixtures for public type contracts, private composition, inline/dynamic
+  imports and source cycles. Added one exact migration data inventory with owning removal packages;
+  new violations and stale allowances fail without waiving stock/provider/persistence safeguards.
+- Recorded [WP01/P03-025 verification and limits](docs/evidence/P03-021-backend-refactor.md#p03-025--wp01-contracts-and-enforcement-3-november-2026),
+  including three process-test failures reproduced on untouched HEAD and passing outside-sandbox reruns.
+  Backend runtime inputs, generated APIs, feature activation and stage/external acceptance remain unchanged.
+
 ## 3 November 2026 — Backend refactor baseline inventory
 
 - Completed WP00/P03-024 inventory and impact mapping: 491 backend files, 170 operations, 41 scripts,

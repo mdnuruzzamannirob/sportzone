@@ -8,20 +8,46 @@
 
 ## Contents
 
-- [1. Purpose, authority and scope](#1-purpose-authority-and-scope)
-- [2. Baseline and planning assumptions](#2-baseline-and-planning-assumptions)
-- [3. Target structure and ownership](#3-target-structure-and-ownership)
-- [4. Files, naming and reuse](#4-files-naming-and-reuse)
-- [5. Communication, composition and workflow coordination](#5-communication-composition-and-workflow-coordination)
-- [6. HTTP, security and configuration](#6-http-security-and-configuration)
-- [7. Persistence, transactions and external effects](#7-persistence-transactions-and-external-effects)
-- [8. Jobs, operations and performance](#8-jobs-operations-and-performance)
-- [9. Migration and compatibility protocol](#9-migration-and-compatibility-protocol)
-- [10. Work packages and dependencies](#10-work-packages-and-dependencies)
-- [11. Verification and evidence](#11-verification-and-evidence)
-- [12. Risks and decision controls](#12-risks-and-decision-controls)
-- [13. Completion and final review](#13-completion-and-final-review)
-- [14. Engineering references](#14-engineering-references)
+- [SportZone — Backend refactor plan](#sportzone--backend-refactor-plan)
+  - [Contents](#contents)
+  - [1. Purpose, authority and scope](#1-purpose-authority-and-scope)
+    - [Refactor-only execution agreement](#refactor-only-execution-agreement)
+  - [2. Baseline and planning assumptions](#2-baseline-and-planning-assumptions)
+  - [3. Target structure and ownership](#3-target-structure-and-ownership)
+  - [4. Files, naming and reuse](#4-files-naming-and-reuse)
+    - [4.1 File responsibilities](#41-file-responsibilities)
+    - [4.2 Implementation and export conventions](#42-implementation-and-export-conventions)
+    - [4.3 Reuse decisions](#43-reuse-decisions)
+  - [5. Communication, composition and workflow coordination](#5-communication-composition-and-workflow-coordination)
+    - [5.1 Root responsibilities](#51-root-responsibilities)
+    - [5.2 Allowed dependencies](#52-allowed-dependencies)
+    - [5.3 Coordination and cycles](#53-coordination-and-cycles)
+  - [6. HTTP, security and configuration](#6-http-security-and-configuration)
+  - [7. Persistence, transactions and external effects](#7-persistence-transactions-and-external-effects)
+  - [8. Jobs, operations and performance](#8-jobs-operations-and-performance)
+  - [9. Migration and compatibility protocol](#9-migration-and-compatibility-protocol)
+  - [10. Work packages and dependencies](#10-work-packages-and-dependencies)
+    - [WP00 — Current baseline and impact inventory](#wp00--current-baseline-and-impact-inventory)
+    - [WP01 — Reconcile contracts and make enforcement executable](#wp01--reconcile-contracts-and-make-enforcement-executable)
+    - [WP02 — Technical foundation and reusable code](#wp02--technical-foundation-and-reusable-code)
+    - [WP03 — Pilot module: delivery](#wp03--pilot-module-delivery)
+    - [WP04 — Identity, customer and technical health boundaries](#wp04--identity-customer-and-technical-health-boundaries)
+    - [WP05 — Audit, notification and media capability foundations](#wp05--audit-notification-and-media-capability-foundations)
+    - [WP06 — Catalog and inventory](#wp06--catalog-and-inventory)
+    - [WP07 — Promotions, cart and wishlist](#wp07--promotions-cart-and-wishlist)
+    - [WP08 — Prepare commerce participant contracts and call graph](#wp08--prepare-commerce-participant-contracts-and-call-graph)
+    - [WP09 — Checkout and order lifecycle](#wp09--checkout-and-order-lifecycle)
+    - [WP10 — Payments](#wp10--payments)
+    - [WP11 — Returns and refunds](#wp11--returns-and-refunds)
+    - [WP12 — Reviews, settings, support and reports](#wp12--reviews-settings-support-and-reports)
+    - [WP13 — Final root wiring and provider isolation](#wp13--final-root-wiring-and-provider-isolation)
+    - [WP14 — Workers, scripts, packaging and contract parity](#wp14--workers-scripts-packaging-and-contract-parity)
+    - [WP15 — Consolidated backend regression and handoff](#wp15--consolidated-backend-regression-and-handoff)
+  - [11. Verification and evidence](#11-verification-and-evidence)
+  - [12. Risks and decision controls](#12-risks-and-decision-controls)
+  - [13. Completion and final review](#13-completion-and-final-review)
+    - [Planning-document review record](#planning-document-review-record)
+  - [14. Engineering references](#14-engineering-references)
 
 ## 1. Purpose, authority and scope
 
@@ -37,15 +63,15 @@ this document retains the migration rationale and sequence. Historical accepted 
 
 The following remain authoritative for their respective subjects:
 
-| Source | Subject |
-| --- | --- |
-| [PRD](./PRD.md) | Business scope, policy and acceptance; assess suspected defects instead of copying them into code. |
-| [Architecture](./ARCHITECTURE.md) | Technical ownership, trust boundaries and accepted design decisions. |
-| [Database](./DATABASE.md) | Collections, fields, indexes, validators, atomicity and retention. |
-| [API](./API.md) | Public HTTP/authentication/CSRF/error/DTO/idempotency contracts. |
-| [Testing](./TESTING.md#155-change-based-local-verification) | Applicable verification and evidence procedures. |
-| [Operations](./OPERATIONS.md) | Runtime configuration, activation, deployment, reconciliation and recovery. |
-| [Tasks](./TASKS.md) | Actual task IDs, dependencies, progress and acceptance evidence. |
+| Source                                                      | Subject                                                                                            |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| [PRD](./PRD.md)                                             | Business scope, policy and acceptance; assess suspected defects instead of copying them into code. |
+| [Architecture](./ARCHITECTURE.md)                           | Technical ownership, trust boundaries and accepted design decisions.                               |
+| [Database](./DATABASE.md)                                   | Collections, fields, indexes, validators, atomicity and retention.                                 |
+| [API](./API.md)                                             | Public HTTP/authentication/CSRF/error/DTO/idempotency contracts.                                   |
+| [Testing](./TESTING.md#155-change-based-local-verification) | Applicable verification and evidence procedures.                                                   |
+| [Operations](./OPERATIONS.md)                               | Runtime configuration, activation, deployment, reconciliation and recovery.                        |
+| [Tasks](./TASKS.md)                                         | Actual task IDs, dependencies, progress and acceptance evidence.                                   |
 
 Included: `backend/src`, `backend/tests`, `backend/contracts`, generated `backend/api` parity,
 `backend/scripts`, runtime packaging and directly affected boundary/CI/development tooling.
@@ -85,11 +111,11 @@ Repository inspection found feature modules, private persistence checks, typed c
 jobs and extensive existing tests. Preserve useful implementation; do not rebuild working features
 from templates. Inspection also found substantial root assembly and broad domain services:
 
-| Inspected example | Observed size | Review implication |
-| --- | ---: | --- |
-| `backend/src/setup.ts` | 1,478 lines | Extract real private-module assembly and disentangle provider/configuration preparation. |
-| `backend/src/modules/orders/order.service.ts` | 1,436 lines | Separate coherent read, state-transition and public capability responsibilities. |
-| `backend/src/modules/refunds/refund-recovery.service.ts` | 1,041 lines | Review payout recovery, verification and projection boundaries. |
+| Inspected example                                        | Observed size | Review implication                                                                       |
+| -------------------------------------------------------- | ------------: | ---------------------------------------------------------------------------------------- |
+| `backend/src/setup.ts`                                   |   1,478 lines | Extract real private-module assembly and disentangle provider/configuration preparation. |
+| `backend/src/modules/orders/order.service.ts`            |   1,436 lines | Separate coherent read, state-transition and public capability responsibilities.         |
+| `backend/src/modules/refunds/refund-recovery.service.ts` |   1,041 lines | Review payout recovery, verification and projection boundaries.                          |
 
 These are planning observations from the reviewed tree, not permanent limits or proof that every
 line is defective. Re-inventory at execution start. No fixed file/function line-count target applies.
@@ -104,16 +130,19 @@ Historical [P03-021](./evidence/P03-021-backend-refactor.md) acceptance and
 The latter records a 170-operation inventory; execution must derive current counts instead of
 assuming that number is permanently correct. Existing test totals are not acceptance thresholds.
 
-Reconcile the following deliberate differences during WP01:
+The following table records the deliberate differences captured at WP00 input for WP01 reconciliation.
+Its existing-reference column describes that input, not the current target; Architecture §§4–6 owns
+the reconciled rules and Tasks records execution. Preserve this migration rationale without using it
+as a parallel current specification:
 
-| Existing reference | Selected target | Required reconciliation |
-| --- | --- | --- |
-| Architecture §6.1 and Database §4.2 place wishlist under cart. | Independent `wishlist/`. | Move ownership/imports without changing the wishlist collection or HTTP namespace. |
-| Architecture §§6.1–6.2 use catalog/products, variants, categories. | Products owns variants; categories remains a sibling. | Preserve canonical variant registration and inventory-only stock-write capability. |
-| Architecture §6.1 names `reporting` and keeps health under modules. | Keep existing `reports/`; place technical `health/` outside modules. | Align source paths, composition, checks and consumers; preserve URLs. |
-| Architecture §6.2 allows existing public service capabilities. | Intentional `.public.ts` type contracts and injected implementations. | Update allowed imports, root/script entry points and positive/negative checks. |
-| Existing financial services are largely flat. | Payment attempts/collections and refund obligations/payouts. | Map every operation; retain shared parent aggregates and transaction authority. |
-| Existing export/file conventions vary. | Explicit bottom named exports and responsibility-based supporting files. | Amend naming guidance; preserve mandatory framework/configuration export conventions. |
+| Existing reference                                                  | Selected target                                                          | Required reconciliation                                                               |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| Architecture §6.1 and Database §4.2 place wishlist under cart.      | Independent `wishlist/`.                                                 | Move ownership/imports without changing the wishlist collection or HTTP namespace.    |
+| Architecture §§6.1–6.2 use catalog/products, variants, categories.  | Products owns variants; categories remains a sibling.                    | Preserve canonical variant registration and inventory-only stock-write capability.    |
+| Architecture §6.1 names `reporting` and keeps health under modules. | Keep existing `reports/`; place technical `health/` outside modules.     | Align source paths, composition, checks and consumers; preserve URLs.                 |
+| Architecture §6.2 allows existing public service capabilities.      | Intentional `.public.ts` type contracts and injected implementations.    | Update allowed imports, root/script entry points and positive/negative checks.        |
+| Existing financial services are largely flat.                       | Payment attempts/collections and refund obligations/payouts.             | Map every operation; retain shared parent aggregates and transaction authority.       |
+| Existing export/file conventions vary.                              | Explicit bottom named exports and responsibility-based supporting files. | Amend naming guidance; preserve mandatory framework/configuration export conventions. |
 
 The owner selected these organizational decisions in the planning discussion. This does not approve
 new behavior, deployment, financial effects or milestone acceptance. Missing business decisions are
@@ -191,28 +220,28 @@ backend/
 Twenty business/supporting modules; `health` is technical. The tree defines placement, not a
 command to create empty directories. Folder names do not dictate public HTTP namespaces.
 
-| Module | Authoritative responsibility and important boundary |
-| --- | --- |
-| auth | Credentials, sessions, verification, recovery, guest proof and identity security; one user registration. Suspension/revocation security effects remain here. |
-| customers | Profiles, saved addresses, privacy/deletion intake and customer-management coordination through narrow identity operations. |
-| catalog | Product/variant identity, attributes, prices, categories and public discovery; product edits cannot overwrite stock counters. |
-| inventory | Availability, reservation, commitment, release, adjustments, recovery and movements through the canonical stock capability. |
-| cart | Quantities, persistence, merge and estimates; no stock reservation. |
-| wishlist | Saved products and duplicate prevention; independent lifecycle and existing collection. |
-| promotions | Coupon rules, deterministic discounts, quota holds, counters and redemption; ordinary product sale prices remain catalog-owned. |
-| checkout | Authoritative quotes, intent/idempotency and order-placement coordination; no ownership of later cancellation/fulfillment workflows. |
-| orders | Immutable snapshots, reads, lifecycle, cancellation, fulfillment, deadlines, delivery exceptions and canonical item-quantity guards. |
-| delivery | Coverage, zones, charge rules and estimates; order shipment progression remains orders-owned. |
-| payments | Attempts, independent receipt verification, collections, matching, allocation, risk, COD and reconciliation. |
-| returns | Physical returns and shortage claims, quantity eligibility, evidence, review, receipt, inspection and disposition. |
-| refunds | Requests/obligations, source commitments, merchandise/correction distinctions, payout attempts and confirmed outcomes. |
-| reviews | Qualifying purchases, review mutation, moderation and rating projections. |
-| media | Upload intents, scanning, access, references, retention/holds and recoverable cleanup. |
-| notifications | Durable intents, templates, deduplication, delivery and controlled retry; providers perform transport only. |
-| support | Complaint/inquiry intake, protected correspondence and resolution; no independent financial decision authority. |
-| settings | Store identity/contact/branding, homepage content and versioned policy publication. Domain settings are exposed through their owning service; no speculative storage migration. |
-| reports | Bounded business projections from authoritative module reads; no second financial or stock authority. |
-| audit | Durable actor/action/change evidence, distinct from diagnostic logs; no source of new business decisions. |
+| Module        | Authoritative responsibility and important boundary                                                                                                                             |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| auth          | Credentials, sessions, verification, recovery, guest proof and identity security; one user registration. Suspension/revocation security effects remain here.                    |
+| customers     | Profiles, saved addresses, privacy/deletion intake and customer-management coordination through narrow identity operations.                                                     |
+| catalog       | Product/variant identity, attributes, prices, categories and public discovery; product edits cannot overwrite stock counters.                                                   |
+| inventory     | Availability, reservation, commitment, release, adjustments, recovery and movements through the canonical stock capability.                                                     |
+| cart          | Quantities, persistence, merge and estimates; no stock reservation.                                                                                                             |
+| wishlist      | Saved products and duplicate prevention; independent lifecycle and existing collection.                                                                                         |
+| promotions    | Coupon rules, deterministic discounts, quota holds, counters and redemption; ordinary product sale prices remain catalog-owned.                                                 |
+| checkout      | Authoritative quotes, intent/idempotency and order-placement coordination; no ownership of later cancellation/fulfillment workflows.                                            |
+| orders        | Immutable snapshots, reads, lifecycle, cancellation, fulfillment, deadlines, delivery exceptions and canonical item-quantity guards.                                            |
+| delivery      | Coverage, zones, charge rules and estimates; order shipment progression remains orders-owned.                                                                                   |
+| payments      | Attempts, independent receipt verification, collections, matching, allocation, risk, COD and reconciliation.                                                                    |
+| returns       | Physical returns and shortage claims, quantity eligibility, evidence, review, receipt, inspection and disposition.                                                              |
+| refunds       | Requests/obligations, source commitments, merchandise/correction distinctions, payout attempts and confirmed outcomes.                                                          |
+| reviews       | Qualifying purchases, review mutation, moderation and rating projections.                                                                                                       |
+| media         | Upload intents, scanning, access, references, retention/holds and recoverable cleanup.                                                                                          |
+| notifications | Durable intents, templates, deduplication, delivery and controlled retry; providers perform transport only.                                                                     |
+| support       | Complaint/inquiry intake, protected correspondence and resolution; no independent financial decision authority.                                                                 |
+| settings      | Store identity/contact/branding, homepage content and versioned policy publication. Domain settings are exposed through their owning service; no speculative storage migration. |
+| reports       | Bounded business projections from authoritative module reads; no second financial or stock authority.                                                                           |
+| audit         | Durable actor/action/change evidence, distinct from diagnostic logs; no source of new business decisions.                                                                       |
 
 Parent roots retain genuine shared aggregates, contracts, assembly and cross-subfeature coordination.
 Variants are product-owned because their identity/lifecycle is tied to products; stock mutations
@@ -226,22 +255,22 @@ change requires a concrete responsibility/consumer analysis and a recorded archi
 
 ### 4.1 File responsibilities
 
-| File | Responsibility and creation rule |
-| --- | --- |
-| `feature.routes.ts` | Paths, methods and middleware binding; no inline business operation. |
-| `feature.controller.ts` | HTTP parsing/validation invocation, actor extraction and status/header/cookie/DTO response mapping. |
-| `feature.schema.ts` | Runtime external-input/contract schemas; distinguish commands, queries and projections. |
-| `feature.service.ts` | Cohesive application/domain operations, authorization, invariants and transaction coordination. |
-| `feature.model.ts` | Canonical Mongoose schema, indexes and registration; only when this owner has persistence. |
-| `feature.public.ts` | Intentional cross-module type contracts/DTOs; only with actual consumers, never a broad implementation barrel. |
+| File                     | Responsibility and creation rule                                                                                       |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `feature.routes.ts`      | Paths, methods and middleware binding; no inline business operation.                                                   |
+| `feature.controller.ts`  | HTTP parsing/validation invocation, actor extraction and status/header/cookie/DTO response mapping.                    |
+| `feature.schema.ts`      | Runtime external-input/contract schemas; distinguish commands, queries and projections.                                |
+| `feature.service.ts`     | Cohesive application/domain operations, authorization, invariants and transaction coordination.                        |
+| `feature.model.ts`       | Canonical Mongoose schema, indexes and registration; only when this owner has persistence.                             |
+| `feature.public.ts`      | Intentional cross-module type contracts/DTOs; only with actual consumers, never a broad implementation barrel.         |
 | `feature.composition.ts` | Real private assembly of models/services/controllers/routers; root wiring and supported operator setup may consume it. |
-| `feature.policy.ts` | Pure eligibility, allocation or transition rules with meaningful independent responsibility. |
-| `feature.mapper.ts` | Explicit domain/document-to-DTO projection when substantial enough to extract. |
-| `feature.constants.ts` | Cohesive fixed values shared internally; not mutable configuration or invented policy. |
-| `feature.data.ts` | Genuine static lookup data; runtime records and seed execution do not belong here. |
-| `feature.types.ts` | Shared internal types; keep one-consumer dependency types beside their implementation. |
-| `feature.utils.ts` | Small coherent local helpers; prefer a specific filename when the responsibility is known. |
-| `feature.persistence.ts` | Cohesive complex/reused database operations, validators or persistence verification; no mandatory repository wrapper. |
+| `feature.policy.ts`      | Pure eligibility, allocation or transition rules with meaningful independent responsibility.                           |
+| `feature.mapper.ts`      | Explicit domain/document-to-DTO projection when substantial enough to extract.                                         |
+| `feature.constants.ts`   | Cohesive fixed values shared internally; not mutable configuration or invented policy.                                 |
+| `feature.data.ts`        | Genuine static lookup data; runtime records and seed execution do not belong here.                                     |
+| `feature.types.ts`       | Shared internal types; keep one-consumer dependency types beside their implementation.                                 |
+| `feature.utils.ts`       | Small coherent local helpers; prefer a specific filename when the responsibility is known.                             |
+| `feature.persistence.ts` | Cohesive complex/reused database operations, validators or persistence verification; no mandatory repository wrapper.  |
 
 Do not create every listed file for every feature. A single local constant/helper can remain private
 in its owning file. Do not add a second canonical user/variant schema to satisfy a template. Preserve
@@ -282,14 +311,14 @@ Public collections/results should not grant callers mutable access to private st
 
 ### 5.1 Root responsibilities
 
-| Entry/boundary | Responsibility |
-| --- | --- |
-| `server.ts` | Load validated configuration, open resources, invoke setup, listen, drain and close; clean partial startup failures. |
-| `setup.ts` | Assemble concrete providers and module instances, inject narrow capabilities and return the application/runtime handles. |
-| `routes.ts` | Register all prepared feature routers under the versioned API; no DB/provider construction. |
-| `app.ts` | Construct Express, configure middleware/parsers, mount callback/API routers, 404 and centralized errors; no implicit listen/connect. |
-| module composition | Assemble only the module's private implementation and expose its router and permitted capabilities. |
-| worker/operator entry | Load supported config/resources and invoke required capabilities without requiring an HTTP listener. |
+| Entry/boundary        | Responsibility                                                                                                                       |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `server.ts`           | Load validated configuration, open resources, invoke setup, listen, drain and close; clean partial startup failures.                 |
+| `setup.ts`            | Assemble concrete providers and module instances, inject narrow capabilities and return the application/runtime handles.             |
+| `routes.ts`           | Register all prepared feature routers under the versioned API; no DB/provider construction.                                          |
+| `app.ts`              | Construct Express, configure middleware/parsers, mount callback/API routers, 404 and centralized errors; no implicit listen/connect. |
+| module composition    | Assemble only the module's private implementation and expose its router and permitted capabilities.                                  |
+| worker/operator entry | Load supported config/resources and invoke required capabilities without requiring an HTTP listener.                                 |
 
 `setup.ts` is a composition root, not a second route registry. Do not replace it with a renamed giant
 file or an extra assembly directory. Use module composition only where it actually encapsulates
@@ -340,13 +369,13 @@ Avoid public `ReturnType<typeof internalFactory>` dependencies; consumers should
 
 ### 5.3 Coordination and cycles
 
-| Workflow | Coordinator | Participant responsibilities |
-| --- | --- | --- |
-| Quote and order placement | checkout | Catalog prices, inventory holds, promotion quota, delivery rules, order creation, payment preparation, durable intents. |
-| Cancellation/fulfillment | orders | Inventory and coupon effects, funding evidence, refund-obligation creation, audit and notification intents. |
-| Verified collection | payments | Preserve receipt, match/allocate, then guarded order funding and stock/coupon commitment through participant operations. |
-| Return/shortage decision | returns | Canonical order-unit guards, media evidence, inventory restock where physical goods exist, refund entitlement. |
-| Refund approval/payout | refunds | Source/order/unit capacity, obligations, payout attempts, confirmed settlement and durable notifications. |
+| Workflow                  | Coordinator | Participant responsibilities                                                                                             |
+| ------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Quote and order placement | checkout    | Catalog prices, inventory holds, promotion quota, delivery rules, order creation, payment preparation, durable intents.  |
+| Cancellation/fulfillment  | orders      | Inventory and coupon effects, funding evidence, refund-obligation creation, audit and notification intents.              |
+| Verified collection       | payments    | Preserve receipt, match/allocate, then guarded order funding and stock/coupon commitment through participant operations. |
+| Return/shortage decision  | returns     | Canonical order-unit guards, media evidence, inventory restock where physical goods exist, refund entitlement.           |
+| Refund approval/payout    | refunds     | Source/order/unit capacity, obligations, payout attempts, confirmed settlement and durable notifications.                |
 
 Every operation has one coordinator and a declared transaction owner. Participant methods never call
 the full coordinator workflow recursively. Post-checkout stock/coupon operations must not depend on
@@ -472,18 +501,18 @@ is being reorganized. Existing-feature lists below describe parity, not new deve
 Trace the packages to the existing product requirements without treating requirement headings as module
 boundaries. Detailed Database/API/Testing sections must be attached to each concrete task during WP00/WP01:
 
-| Package scope | Primary [PRD](./PRD.md) references |
-| --- | --- |
-| WP02/WP13 technical runtime | §12 security, performance, reliability and maintainability-related constraints; §10 data integrity. |
-| WP03 delivery | FR-16, FR-28; historical charges and order deadlines also involve WP09. |
-| WP04 identity/customers | FR-01, FR-02, FR-19, FR-21, FR-27. |
-| WP05 audit/notifications/media | FR-20, FR-23/24/32 evidence/media consumers; §§10/12 privacy, security and history. |
-| WP06 catalog/inventory | FR-03–06, FR-13, FR-23–25. |
-| WP07 shopping/promotions | FR-07–09, FR-30. |
-| WP08/WP09 commerce coordination | FR-11–16, FR-19, FR-26; source/refund participants also FR-17/18. |
-| WP10 payments | FR-12, FR-29 and collection/fulfillment invariants. |
-| WP11 returns/refunds | FR-15, FR-17/18, FR-32/33. |
-| WP12 supporting workflows | FR-03, FR-10, FR-16 complaint handling, FR-22, FR-27, FR-31, FR-34. |
+| Package scope                    | Primary [PRD](./PRD.md) references                                                                     |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| WP02/WP13 technical runtime      | §12 security, performance, reliability and maintainability-related constraints; §10 data integrity.    |
+| WP03 delivery                    | FR-16, FR-28; historical charges and order deadlines also involve WP09.                                |
+| WP04 identity/customers          | FR-01, FR-02, FR-19, FR-21, FR-27.                                                                     |
+| WP05 audit/notifications/media   | FR-20, FR-23/24/32 evidence/media consumers; §§10/12 privacy, security and history.                    |
+| WP06 catalog/inventory           | FR-03–06, FR-13, FR-23–25.                                                                             |
+| WP07 shopping/promotions         | FR-07–09, FR-30.                                                                                       |
+| WP08/WP09 commerce coordination  | FR-11–16, FR-19, FR-26; source/refund participants also FR-17/18.                                      |
+| WP10 payments                    | FR-12, FR-29 and collection/fulfillment invariants.                                                    |
+| WP11 returns/refunds             | FR-15, FR-17/18, FR-32/33.                                                                             |
+| WP12 supporting workflows        | FR-03, FR-10, FR-16 complaint handling, FR-22, FR-27, FR-31, FR-34.                                    |
 | WP14/WP15 operational continuity | PRD §§12–14 and Operations/Testing procedures; external launch qualification remains separately gated. |
 
 ### WP00 — Current baseline and impact inventory
@@ -709,19 +738,19 @@ or unresolved structural exception. Unavailable external qualification remains h
 Commands below were confirmed in the current manifests. Execute from repository root; recheck names
 if manifests change. These are execution requirements, not claims that this document ran the suites.
 
-| Change/check | Existing command or method |
-| --- | --- |
-| Documentation only | `npm run lint` and `git diff --check`; inspect headings/contents/references and actual diff. |
-| Source boundary changes | `npm run lint:boundaries`; tooling negative fixtures through `npm run test:unit`. |
-| Backend style/types | `npm run lint --workspace=backend`, `npm run typecheck --workspace=backend`. |
-| Backend/tooling format inventory | `npm run format:backend` (check mode); root `format:check` when its full inventory is affected. |
-| Focused unit tests | `npm run test:unit --workspace=backend -- <actual-test-path>`. |
-| Focused database/HTTP integration | `npm run test:integration --workspace=backend -- <actual-test-path>` on isolated replica sets. |
-| Contract freshness and runtime parity | `npm run test:contract --workspace=backend`; `npm run api:check --workspace=backend`. |
-| Intentional generated artifact update | `npm run api:generate --workspace=backend`, followed by freshness/parity review. |
-| Compiled output and process smoke | `npm run build --workspace=backend`, then `npm run test:smoke --workspace=backend`. |
-| Final consolidated inventory | `npm run ci -- --scope=backend`; inspect actual `ci-workspaces.json`/runner inventory. |
-| Affected supply-chain/secret checks | `npm run test:security` when required by changed scope and at final review. |
+| Change/check                          | Existing command or method                                                                      |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Documentation only                    | `npm run lint` and `git diff --check`; inspect headings/contents/references and actual diff.    |
+| Source boundary changes               | `npm run lint:boundaries`; tooling negative fixtures through `npm run test:unit`.               |
+| Backend style/types                   | `npm run lint --workspace=backend`, `npm run typecheck --workspace=backend`.                    |
+| Backend/tooling format inventory      | `npm run format:backend` (check mode); root `format:check` when its full inventory is affected. |
+| Focused unit tests                    | `npm run test:unit --workspace=backend -- <actual-test-path>`.                                  |
+| Focused database/HTTP integration     | `npm run test:integration --workspace=backend -- <actual-test-path>` on isolated replica sets.  |
+| Contract freshness and runtime parity | `npm run test:contract --workspace=backend`; `npm run api:check --workspace=backend`.           |
+| Intentional generated artifact update | `npm run api:generate --workspace=backend`, followed by freshness/parity review.                |
+| Compiled output and process smoke     | `npm run build --workspace=backend`, then `npm run test:smoke --workspace=backend`.             |
+| Final consolidated inventory          | `npm run ci -- --scope=backend`; inspect actual `ci-workspaces.json`/runner inventory.          |
+| Affected supply-chain/secret checks   | `npm run test:security` when required by changed scope and at final review.                     |
 
 Use [Testing §15.5](./TESTING.md#155-change-based-local-verification): select focused checks before edits,
 reuse valid unchanged results, rerun failures/affected consumers after fixes, and reserve full regression
@@ -745,20 +774,20 @@ rollback. Do not copy historical passing counts as results for the refactored tr
 
 ## 12. Risks and decision controls
 
-| Risk | Control and responsible work |
-| --- | --- |
-| Repeating arbitrary structural changes | Freeze this target after WP01 reconciliation; further changes require concrete defect/evidence, impact and owning decision. |
-| Folder move hides business/security regression | Separate behavior corrections; inventory contracts and run meaningful auth/state/race/replay tests in each affected package. |
-| Circular construction or recursive workflow | WP08 call graph, narrow state participants, explicit root assembly and operation tests. |
-| Duplicate user/variant schemas or collection drift | Canonical registration/validator/index comparison in WP00, each persistence package and WP15. |
-| Financial replay/uncertain outcome loses money | Durable intent, source/unit guards, replay tests, independent verification and reconciliation; no live payout in refactor tests. |
-| Private data leaks through DTO/log/template reuse | Explicit projections, negative response/privacy tests and sanitized logging/evidence. |
-| Over-fragmentation or speculative abstraction | File responsibility/consumer review; no fixed line target, empty folders, forwarding factories or generic bases. |
-| Startup/worker/operator break after moves | Inventory all consumers and packaging; move tests/scripts/tool entries with code; compiled smoke and restart checks. |
-| Endless temporary compatibility | Exact adapter/exception owner and removal condition; zero remaining allowances at technical closeout. |
-| Existing docs/tests encode a real defect | Record exact contradiction and approved correction scope; never silently relax safety or preserve a known unsafe outcome. |
-| Performance regression | Bound queries/batches; compare relevant explain/plans or representative measurements before new infrastructure. |
-| Plan mistaken for release acceptance | No task status/milestone/provider claim from this file; preserve existing stage and external qualification. |
+| Risk                                               | Control and responsible work                                                                                                     |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Repeating arbitrary structural changes             | Freeze this target after WP01 reconciliation; further changes require concrete defect/evidence, impact and owning decision.      |
+| Folder move hides business/security regression     | Separate behavior corrections; inventory contracts and run meaningful auth/state/race/replay tests in each affected package.     |
+| Circular construction or recursive workflow        | WP08 call graph, narrow state participants, explicit root assembly and operation tests.                                          |
+| Duplicate user/variant schemas or collection drift | Canonical registration/validator/index comparison in WP00, each persistence package and WP15.                                    |
+| Financial replay/uncertain outcome loses money     | Durable intent, source/unit guards, replay tests, independent verification and reconciliation; no live payout in refactor tests. |
+| Private data leaks through DTO/log/template reuse  | Explicit projections, negative response/privacy tests and sanitized logging/evidence.                                            |
+| Over-fragmentation or speculative abstraction      | File responsibility/consumer review; no fixed line target, empty folders, forwarding factories or generic bases.                 |
+| Startup/worker/operator break after moves          | Inventory all consumers and packaging; move tests/scripts/tool entries with code; compiled smoke and restart checks.             |
+| Endless temporary compatibility                    | Exact adapter/exception owner and removal condition; zero remaining allowances at technical closeout.                            |
+| Existing docs/tests encode a real defect           | Record exact contradiction and approved correction scope; never silently relax safety or preserve a known unsafe outcome.        |
+| Performance regression                             | Bound queries/batches; compare relevant explain/plans or representative measurements before new infrastructure.                  |
+| Plan mistaken for release acceptance               | No task status/milestone/provider claim from this file; preserve existing stage and external qualification.                      |
 
 No calendar estimate is invented. Estimate package effort after WP00 identifies concrete consumers,
 coverage gaps and data/runtime risks. Unknown production topology/limits are measured operational inputs,

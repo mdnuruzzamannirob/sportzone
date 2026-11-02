@@ -185,14 +185,14 @@ trees/naming/ownership. The task register records migration progress and accepta
 
 P01-018, P03-021, P02-015, P02-016 and P01-019 retain their historical refactor order and acceptance in Tasks/evidence. Ongoing work follows §3.1: foundation → backend → admin → storefront. Make source moves only when a concrete ownership or maintainability issue requires them; preserve compatible imports, tooling and behavior. Do not create empty planned modules or repeat completed migrations.
 
-| Area                             | Required organization / continuity                                                                                     |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Backend runtime                  | setup.ts/routes.ts with cross-domain wiring at root; config/env.ts and config/database.ts                              |
-| Backend technical code           | One shared/ boundary for errors, logging, middleware and database mechanics                                            |
-| Backend providers/operator tools | providers/ client/schema pairs; scripts/ Node entry points with existing input/environment restrictions                |
-| Backend domains                  | Auth subfeatures, catalog products/variants/categories, cohesive media services; one model registration per collection |
-| Storefront                       | Target route/feature/transport tree; account group adds no URL segment; migrate browser discovery together             |
-| Admin                            | Target router/guard/feature tree; backend auth remains mandatory                                                       |
+| Area                             | Required organization / continuity                                                                                                                                                                     |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Backend runtime                  | setup.ts/routes.ts with cross-domain wiring at root; config/env.ts and config/database.ts                                                                                                              |
+| Backend technical code           | One shared/ boundary for errors, logging, middleware and database mechanics                                                                                                                            |
+| Backend providers/operator tools | providers/ client/schema pairs; scripts/ Node entry points with existing input/environment restrictions                                                                                                |
+| Backend domains                  | Twenty modules; auth subfeatures, product-owned variants and sibling categories, separate wishlist, payment attempts/collections and refund obligations/payouts; one model registration per collection |
+| Storefront                       | Target route/feature/transport tree; account group adds no URL segment; migrate browser discovery together                                                                                             |
+| Admin                            | Target router/guard/feature tree; backend auth remains mandatory                                                                                                                                       |
 
 Current implementation and acceptance are recorded by the corresponding task; this table defines ownership,
 not a second progress register. Unimplemented domains do not need empty folders or templates.
@@ -205,7 +205,13 @@ Do not invent a second collection or use a generic repository layer to conceal o
 
 Update automated checks for frontend/backend isolation, nested module/private persistence boundaries,
 controllers→models, shared→modules and provider/business separation with negative fixtures. Keep
-Biome/TypeScript/Vitest/browser tooling and one locked graph; no new frameworks or infrastructure.
+type-only public contracts, root/private composition and runtime/type source-cycle checks executable.
+The existing checker owns `scripts/ci/backend-boundary-allowances.json`: exact source/target/mode/kind/symbol
+entries and type-cycle components have removal packages; new violations and stale entries fail. Remove
+allowances during the owning package, with none left at technical closeout. The inventory is migration
+data, not a permanent permission list or an automatically regenerated snapshot. Preserve stronger
+stock/provider/private-persistence rules throughout migration. Keep Biome/TypeScript/Vitest/browser
+tooling and one locked graph; no new frameworks or infrastructure.
 Update ci-workspaces.json only for actual script/inventory changes; no skipped/passing placeholders.
 Retain existing pure shared utilities/reusable UI and operator entry points until consumers and
 compatibility are verified. Tests stay outside src/; preserve browser/theme/accessibility coverage.

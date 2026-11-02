@@ -283,3 +283,112 @@ Executor/reviewer: Codex. Reviewed inventory ownership, actual selected test out
 route counts, canonical-vs-lookup model counts, static-cycle limitations, task totals and actual diff.
 P03-024 completes WP00 under Tasks §2 only; next is WP01 specification reconciliation and executable
 boundary enforcement. Prior acceptance and all P03-022/external/milestone gates remain unchanged.
+
+## P03-025 — WP01 contracts and enforcement, 3 November 2026
+
+**Scope:** The owner requested the next approved package after P03-024. This continuation implements
+WP01 only: specification reconciliation and executable import safeguards. Historical acceptance above
+is unchanged. No backend source/test/script/contract/generated artifact or environment activation changed.
+Existing staged owner changes were preserved; this task does not stage, commit or deploy them.
+
+### Reconciled decisions and findings
+
+- Architecture §§4.1/6.1/6.2 now owns the selected twenty modules, five auth subfeatures,
+  product-owned variants, independent wishlist, payments attempts/collections, refunds obligations/payouts,
+  existing `reports` naming and technical health outside business modules. Root/private assembly,
+  public type contracts, local helpers/constants/data, explicit exports and workflow coordination are specified.
+- Database §§3.1/4.2/6.5/16 and API §2.2 align ownership without renaming a collection/URL or changing DTOs.
+  The inventory is corrected to 39 collections: existing `paymentInitiations` was already specified in
+  Database §8.5/§11.1 and implemented. This is a documentation correction, not a schema migration.
+- Implementation Plan §3.6 and Testing §15.5 describe the ratchet, exact exceptions, negative fixtures,
+  code-vs-tooling boundaries and removal requirements. Operations procedures do not change.
+- WP00's possible checkout activation discrepancy is resolved by the complete admission chain:
+  setup passes submission only when `checkout.codEnabled`; `checkout.routes.ts` explicitly rejects a
+  non-COD submission. Internal completion supporting online drafts does not activate the public route.
+  Therefore the COD-only activation description is retained. No payment/checkout feature was enabled.
+- Backend Refactor Plan §2 labels its pre-WP01 input/reference comparison as migration history rather
+  than a competing current specification. Task mapping uses P03-025, not an accepted feature task.
+
+### Executable boundary changes
+
+The existing `scripts/ci/check-boundaries.mjs` remains the checker, and existing
+`tests/tooling/development.test.mjs` contains the updated positive fixtures and seven new rule-focused
+tests. No second test suite/framework, production helper or documentation guide was introduced.
+
+- Cross-module imports require explicit type-only contracts at the owning module root. Runtime
+  construction is injected through setup. Checks cover imports, named/star re-exports, dynamic import,
+  require, import-equals and inline TypeScript import types; nonliteral backend dependency calls fail.
+- Public contracts reject runtime statements/imports, broad type barrels, private implementation-derived
+  types and indirect Mongoose model/document/connection exposure. Explicit ClientSession is permitted.
+- Composition is consumed by setup/server or that module's private composition; a technical helper
+  renamed `.composition.ts` cannot bypass ownership. Domains cannot relay implementation through root helpers.
+- Configuration can consume validation schemas/public types, not service implementations. Provider
+  adapters consume public protocol types; domain/private concrete-client type coupling is inventoried.
+- Runtime and type-inclusive source strongly connected components are checked. No runtime-cycle
+  allowance is accepted. Injected call recursion remains an operation-review responsibility, not a
+  property falsely inferred from an acyclic file graph.
+- Existing persistence/controller/shared/provider guards remain blocking. Stock capability protection
+  works at both the current catalog/variants and target catalog/products paths; only inventory/root
+  wiring may receive it. A migration allowance cannot bypass those guards.
+
+The only new repository file is `scripts/ci/backend-boundary-allowances.json`, a consumed data inventory:
+**356 exact legacy import signatures plus one existing type-cycle component**. Signatures identify
+source, resolved target, type/runtime mode, declaration kind and imported symbols; aliases/formatting
+do not authorize new symbols. New consumers, enlarged signatures, stale entries, invalid package
+labels and changed cycles fail. No update-baseline CLI or wildcard permission was added.
+
+| Removal package | Remaining exact entries |
+| --- | ---: |
+| WP02 | 5 |
+| WP03 | 4 |
+| WP04 | 20 |
+| WP05 | 14 |
+| WP06 | 20 |
+| WP07 | 23 |
+| WP09 | 89 |
+| WP10 | 53 |
+| WP11 | 78, including the one type-cycle component |
+| WP12 | 48 |
+| WP13 | 3 |
+| **Total** | **357** |
+
+Remove entries with their owning migration, and all entries before WP15 technical completion. The
+current tree passing with these exact entries is not a claim that its legacy dependencies are refactored.
+Scripts/bootstrap tools and contract generation are inventoried consumers outside the runtime source
+graph; preserve their tested entry points rather than extending runtime privileges to them.
+
+### Observed verification and environment limits
+
+Input revision: `02cb436284007020ba7d3734b455e66c637cab68` plus this reviewed working-tree tooling/docs change.
+Node v24.20.0, npm 11.19.0. All 491 backend file hashes and the original WP00 backend digest match;
+only repository checker/data/fixtures and owning documentation changed. No dependencies/lockfile changed.
+During execution HEAD advanced to the owner's planning-only commit `3481afdabd76181e922a832296bdd709eaa68190`;
+additional Markdown table/contents formatting was preserved. No reset, staging or commit was performed
+by this task, and the backend fingerprint remained identical across that change.
+
+| Command/check | Observed result |
+| --- | --- |
+| `npm run test:unit` | Initial restricted run: 87 Passed, 3 Failed out of 90. Preserve this result; it is not retrospectively a passing full run. |
+| `node --test --test-isolation=none --test-name-pattern='CI-11:\|missing diff revisions\|TOOL-10:' tests/tooling/ci.test.mjs tests/tooling/development.test.mjs` on untouched HEAD control tree | Same three failures reproduced, including truncated child-process output and watch fixture timeout. |
+| The same three-case command outside the sandbox, current tree | Passed: all 3. Only the failed process cases were rerun; no fixture/CI/watch behavior was weakened to obtain a pass. |
+| `node --test --test-isolation=none --test-name-pattern='BOUNDARY\|STRUCTURE\|TOOL-0[1-5]' tests/tooling/development.test.mjs` | Final affected regression Passed: 47 cases after final public/composition/cycle review fixes. Unchanged passing cases from the initial run remain applicable. |
+| `npm run lint:boundaries` | Passed: 427 source files, zero errors; 357 exact legacy allowances explicitly reported. |
+| `npm run api:check --workspace=backend` | Passed: all four generated artifacts unchanged/fresh after ownership-prose changes. |
+| `node_modules/.bin/biome lint scripts/ci/check-boundaries.mjs tests/tooling/development.test.mjs --error-on-warnings` | Passed after correcting one local useConst warning. |
+| `node_modules/.bin/biome format scripts/ci/check-boundaries.mjs scripts/ci/backend-boundary-allowances.json tests/tooling/development.test.mjs` | Passed for changed tooling/data. |
+| Backend hash inventory / actual diff review | All 491 backend inputs unchanged; exact exception coverage and removal packages reviewed. |
+
+Table escaping is Markdown only; quoted test filters use literal `|`. No additional full test run was
+needed after the focused rechecks. Backend application suites/build/integration/browser, migrations,
+live providers, external qualification and deployment were Not Run for unchanged runtime inputs.
+Repository lint/link and staged/unstaged whitespace checks are run on the final documentation revision.
+
+Artifacts: [boundary/allowance result](../../test-results/backend-refactor/wp01-boundaries.json),
+[observed check summary and tooling fingerprint](../../test-results/backend-refactor/wp01-checks.json),
+[untouched-baseline failure reproduction](../../test-results/backend-refactor/wp01-control-failures.log).
+The control tree was extracted from HEAD under `/tmp`; it did not overwrite the shared workspace.
+
+Executor/reviewer: Codex. Reviewed exact import signatures/removal ownership, the positive/negative
+fixtures, composition/helper and inline-type bypasses, runtime-cycle denial, canonical-source parity,
+owning-doc consistency and actual diff. P03-025 completes WP01 under Tasks §2 only; next is WP02
+technical foundation/reuse. P03-022 and external/application/milestone acceptance remain unchanged.
