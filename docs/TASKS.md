@@ -138,15 +138,15 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 02 — UI/UX Design                             |      17 |           1 |     0 |           0 |       0 |         0 |      16 |        0 |
 | 03 — Authentication and Core Backend          |      22 |           1 |     0 |           0 |       0 |         0 |      21 |        0 |
 | 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       0 |         0 |      12 |        1 |
-| 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           8 |     0 |           0 |       1 |         0 |       8 |        0 |
+| 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           8 |     0 |           0 |       0 |         0 |       9 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |           6 |     0 |           0 |       2 |         0 |      14 |        0 |
 | 07 — Payment Integration and Verification     |      18 |           3 |     0 |           0 |       0 |         0 |      15 |        0 |
-| 08 — Returns and Refunds                      |      19 |           6 |     0 |           0 |       2 |         0 |      11 |        0 |
+| 08 — Returns and Refunds                      |      19 |           6 |     0 |           0 |       0 |         0 |      13 |        0 |
 | 09 — Admin Management and Reports             |      18 |          12 |     0 |           0 |       4 |         0 |       1 |        1 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |       0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |       0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |       0 |        0 |
-| **Total**                                     | **210** |      **77** | **0** |       **0** |   **9** |     **0** | **122** |    **2** |
+| **Total**                                     | **210** |      **77** | **0** |       **0** |   **6** |     **0** | **125** |    **2** |
 
 ## 4. Milestone tracker
 
@@ -1027,15 +1027,15 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Invalid policy and stale edits fail; live holds retain approved quoted terms; history and quotas remain replay/concurrency safe.\
   **Evidence:** [Implementation, observed verification and recovery](./evidence/P05-015-coupon-administration.md). Accepted by project owner, 25 October 2026 — “Review করেছি—accept করছি, Done করো”.
 
-- [ ] **P05-016 — Expose review reading and moderation APIs**\
-  **Status:** `Blocked` · **Area:** Backend\
+- [x] **P05-016 — Expose review reading and moderation APIs**\
+  **Status:** `Done` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-10; FR-31; API §§10.3,14.2\
   **Depends on:** `P08-016`\
   **Deliverable:** Expose approved public ratings/reviews, customer-owned history and eligible submit/edit, and protected moderation queues/actions with reasons and audit history.\
   **Acceptance:** Eligibility, one active review, moderation-after-edit and public allowlists are verified through HTTP; administrators cannot attribute altered rating values to customers.\
-  **Evidence:** [Local scope, checks and blockers](./evidence/P05-016-P08-019-local-reads.md). P08-016 acceptance and integrated runtime remain pending.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package E completion, affected tests and runtime/recovery procedures](./evidence/P05-016-P08-019-local-reads.md#package-e-completion).\
+  **Review:** Executor implementation/diff review and engineering completion recorded 2 November 2026 under Tasks §2; explicit release/stage gates remain separate.
 
 - [ ] **P05-017 — Implement admin review moderation controls**\
   **Status:** `Not Started` · **Area:** Admin\
@@ -1577,15 +1577,15 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** No optimistic Completed and every financial action needs authorization/confirmation/audit.\
   **Evidence to attach:** Admin refund E2E.
 
-- [ ] **P08-016 — Complete delivered-purchase and full-return review eligibility**\
-  **Status:** `Blocked` · **Area:** Backend/reviews\
+- [x] **P08-016 — Complete delivered-purchase and full-return review eligibility**\
+  **Status:** `Done` · **Area:** Backend/reviews\
   **Stage:** `Backend`\
   **Sources:** FR-10; FR-31\
   **Depends on:** `P05-009`, `P08-005`\
   **Deliverable:** Require qualifying delivered purchase and block new verification after fully returned/refunded purchase unless another qualifies.\
   **Acceptance:** Legitimate prior reviews are not auto-deleted solely by refund; edited reviews return to moderation when required.\
-  **Evidence:** [Local return notifications, review qualification and actual checks](./evidence/P08-011-016-return-notifications-review.md). Required refund prerequisites, production composition and independent acceptance remain outstanding.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package E completion, affected tests and runtime/recovery procedures](./evidence/P05-016-P08-019-local-reads.md#package-e-completion).\
+  **Review:** Executor implementation/diff review and engineering completion recorded 2 November 2026 under Tasks §2; explicit release/stage gates remain separate.
 
 - [ ] **P08-017 — Enable verified customer review submission and editing UI**\
   **Status:** `Not Started` · **Area:** Storefront/reviews\
@@ -1605,15 +1605,15 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** M5 safety gates pass; every Completed refund has verified payout proof.\
   **Evidence to attach:** M5 after-sales test report.
 
-- [ ] **P08-019 — Expose scoped claim and refund history APIs**\
-  **Status:** `Blocked` · **Area:** Backend\
+- [x] **P08-019 — Expose scoped claim and refund history APIs**\
+  **Status:** `Done` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-17; FR-18; FR-19; API §13\
   **Depends on:** `P08-011`\
   **Deliverable:** Complete customer/guest and admin claim/refund list/detail/decision surfaces, evidence access and safe timelines using return/refund services; include timing snapshots and investigation status.\
   **Acceptance:** Nested ownership, guest proof scope, private image retrieval, quantity/source caps and verified payout status are proven by API tests; missing policy timing never produces a guessed deadline.\
-  **Evidence:** [Local scope, checks and blockers](./evidence/P05-016-P08-019-local-reads.md). P08-011 acceptance and remaining history/refund surfaces remain pending.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package E completion, affected tests and runtime/recovery procedures](./evidence/P05-016-P08-019-local-reads.md#package-e-completion).\
+  **Review:** Executor implementation/diff review and engineering completion recorded 2 November 2026 under Tasks §2; explicit release/stage gates remain separate.
 
 ### Phase 09 — Admin management and reports
 
@@ -1754,7 +1754,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P03-008`, `P06-014`, `P08-019`\
   **Deliverable:** Implement customer search, authorized history, suspension/reactivation and verified deletion-request review with retention/legal-hold-safe decisions.\
   **Acceptance:** Suspension revokes relevant sessions; foreign access and unsafe deletion fail; required order/financial/audit history remains and sensitive data is minimized.\
-  **Evidence:** [Local masked customer read and remaining scope](./evidence/P09-002-015-local-report-customer.md). P06-014 development prerequisite is Done; P08-019 and full customer operations remain pending.\
+  **Evidence:** [Local masked customer read and remaining scope](./evidence/P09-002-015-local-report-customer.md). P06-014 and P08-019 development prerequisites are Done; full customer operations remain in Package F.\
   **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
 
 - [ ] **P09-016 — Expose support and complaint operations APIs**\
@@ -2631,3 +2631,6 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **2 November 2026 — Package C completion:** P08-005/006/007/008 Blocked → In Progress → Done under Tasks §2. Completed protected policy and canonical admin group/list/detail/dispatch integration, source merchant binding, command alias replay protection and actual local/test startup. Existing Package B commit `9a7d0b2`, absent from main, was combined without discarding C work; final combined verification passed 802 unit, 396 integration, 112 contract and 79 tooling cases. [Task-by-task outcomes, migration/activation, review and release scope](./evidence/P06-013-P08-005-008-durable-reservations.md#package-c-completion). Executor/reviewer: Codex. Counts: 119 Done, 12 Blocked, 77 Not Started, 2 Deferred (210 total); D/E and milestones remain unchanged.
 
 **2 November 2026 — Package D completion:** P08-009/010/011 Blocked → In Progress → Done under Tasks §2. Implemented qualified payout/release transactions, original-reference recovery, explicit safe retry and consented manual fallback, protected manual confirmation, durable fenced reconciliation and verified return/refund outbox delivery. Existing C work appeared in owner commit `cc58fd4` during execution and was retained. [Actual commands/results, owner boundaries, migration/activation and release limits](./evidence/P08-009-010-local-refund-evidence.md#package-d-completion). Executor/reviewer: Codex. Overall: 122 Done, 9 Blocked, 77 Not Started, 2 Deferred; Package E/F/G and milestones unchanged.
+
+
+**2 November 2026 — Package E completion:** P05-016/P08-016/P08-019 Blocked → In Progress → Done under Tasks §2. Connected canonical delivered/refunded purchase eligibility to review HTTP, completed cross-order customer claim/refund history, exact guest/customer private refund reads, safe timing/investigation/payout timelines and explicit actual server composition. Existing claim decisions/private evidence and refund source caps/verified payout are retained and covered by affected regression. [Actual commands/results and executor diff review](./evidence/P05-016-P08-019-local-reads.md#package-e-completion). Executor/reviewer: Codex. Overall: 125 Done, 6 Blocked, 77 Not Started, 2 Deferred. No milestone or application-stage closeout is self-approved.

@@ -1,6 +1,6 @@
 # P08-011 / P08-016 — Local return notifications and review qualification
 
-**Current status: P08-011 Done.** [Package D refund/return notification integration and verification](./P08-009-010-local-refund-evidence.md#package-d-completion) supersede the historical limits for that task. P08-016 remains its separate Package E task.
+**Current status: P08-011 Done.** [Package D refund/return notification integration and verification](./P08-009-010-local-refund-evidence.md#package-d-completion) supersede the historical limits for that task. P08-016 is also Done under [Package E completion](./P05-016-P08-019-local-reads.md#package-e-completion), including real canonical settlement binding and resolved zero-price units. The remainder below is historical.
 
 
 Date: 31 October 2026 (Asia/Dhaka). Executor: Codex. Base revision `fe32523`. Owner requested the

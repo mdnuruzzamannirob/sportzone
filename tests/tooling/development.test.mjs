@@ -342,6 +342,9 @@ test('HISTORY-BOUNDARY-01: review and claim readers cannot import foreign privat
     ['reviews/review-query', 'catalog/products/product'],
     ['returns/return-history', 'orders/order'],
     ['returns/return-history', 'media/media'],
+    ['refunds/refund-history', 'orders/order'],
+    ['refunds/refund-history', 'payments/payment'],
+    ['refunds/refund-history', 'audit/audit'],
   ]) {
     put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
     const relative = `../${owner}.model.js`

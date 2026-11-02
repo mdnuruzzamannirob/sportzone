@@ -3,7 +3,7 @@ import { afterEach, expect, it } from 'vitest'
 import { chmod, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { loadReturnOperationsOptions } from '../../src/config/returns.js'
+import { loadReturnOperationsOptions, loadAfterSalesHistory } from '../../src/config/returns.js'
 const directories: string[] = []
 afterEach(async () => {
   for (const path of directories.splice(0)) await rm(path, { recursive: true, force: true })
@@ -81,4 +81,21 @@ it('configured return media stays opt-in/local and requires complete canonical p
   expect(() => configuredReturnMedia({ ...env, MEDIA_ENABLED: 'true' })).toThrow(
     'Invalid backend configuration.',
   )
+})
+
+it('after-sales history defaults off and requires explicit local/test identity and return composition', () => {
+  expect(loadAfterSalesHistory({})).toBe(false)
+  expect(loadAfterSalesHistory({ ...env, AFTER_SALES_HISTORY_ENABLED: 'false' })).toBe(false)
+  expect(loadAfterSalesHistory({ ...env, AFTER_SALES_HISTORY_ENABLED: 'true' })).toBe(true)
+  for (const change of [
+    { APP_ENV: 'production' },
+    { APP_ENV: 'staging' },
+    { CUSTOMER_AUTH_ENABLED: 'false' },
+    { ADMIN_AUTH_ENABLED: 'false' },
+    { RETURN_OPERATIONS_ENABLED: 'false' },
+    { AFTER_SALES_HISTORY_ENABLED: 'yes' },
+  ])
+    expect(() =>
+      loadAfterSalesHistory({ ...env, AFTER_SALES_HISTORY_ENABLED: 'true', ...change }),
+    ).toThrow()
 })

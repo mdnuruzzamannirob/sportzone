@@ -5,6 +5,7 @@
 Package B P08-002/003/004 are also Done after [full engineering completion](./P08-003-004-local-return-inspection.md#package-b-completion).
 Package C P08-005/006/007/008 are also Done after [consolidated engineering verification](./P06-013-P08-005-008-durable-reservations.md#package-c-completion).
 Package D P08-009/010/011 are also Done after [outcome/recovery and notification completion](./P08-009-010-local-refund-evidence.md#package-d-completion).
+Package E P05-016/P08-016/P08-019 are also Done after [history and review completion](./P05-016-P08-019-local-reads.md#package-e-completion).
 The 24-task audit below retains its historical review scope; Tasks is authoritative for current status.
 No live qualification or milestone acceptance is inferred.
 

@@ -10,7 +10,7 @@ import type { reviewQueryService } from './review-query.service.js'
 import { reviewId } from './review.schema.js'
 const productParams = z.strictObject({ productId: reviewId }),
   reviewParams = z.strictObject({ reviewId })
-// Explicit local/test composition only; root wiring waits for accepted purchase/visibility dependencies.
+// Root composition supplies canonical eligibility, visibility and current-session moderation.
 export function reviewRoutes(
   query: ReturnType<typeof reviewQueryService>,
   service: ReturnType<typeof createReviewService>,

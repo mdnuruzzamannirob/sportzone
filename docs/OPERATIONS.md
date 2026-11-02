@@ -2014,6 +2014,19 @@ restart; existing claims retain their eligibility snapshot. This is development 
 legal sign-off (P11-007). Default startup omits return routes. Without configured Media, optional
 uploads/private URL requests fail unavailable; text-only claims remain usable.
 
+For customer after-sales histories and review HTTP in local/test, additionally set
+`AFTER_SALES_HISTORY_ENABLED=true`. It requires `RETURN_OPERATIONS_ENABLED=true` and both auth audiences;
+malformed flags or deployed activation fail startup. Build first and run the existing identity, catalog,
+orders, payment/refund/attempt, audit, Media and return bootstraps against the same owned database;
+`node --env-file=.env backend/scripts/bootstrap-reviews.mjs` additively initializes review validation/indexes.
+There is no startup DDL or owner/evidence backfill. Re-running initialization preserves existing reviews.
+The flag composes public approved reviews, owned submit/edit/history, protected admin moderation,
+customer cross-order claims/refunds and customer/exact-guest order refund detail/history. Return routes
+continue to own claim decisions and protected evidence URL retrieval; refund operations retain their
+separate mutation flag and proof requirements. Disabling history omits its routes without deleting data.
+Do not downgrade persistence or erase review/refund/audit history on rollback. Inspect `investigationStatus`
+and current payout state together; missing calendar timing never becomes an invented target date.
+
 Preserve return requests, order-item ordinal coverage, Media references and audit together during
 restore. Do not delete claims or reset ordinal coverage to release capacity. Review releases only
 unapproved units with zero refund commitments; shortages resolve without stock/payout effects.

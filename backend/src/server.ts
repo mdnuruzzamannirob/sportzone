@@ -2,7 +2,7 @@ import { protectedRefundEvidence } from './modules/refunds/refund-evidence.servi
 import { createHash } from 'node:crypto'
 import { loadRefundOperationsOptions } from './config/refunds.js'
 import { loadSslcommerzOptions } from './config/payments.js'
-import { loadReturnOperationsOptions } from './config/returns.js'
+import { loadReturnOperationsOptions, loadAfterSalesHistory } from './config/returns.js'
 import { loadOrderOperationsOptions } from './config/order-operations.js'
 import { configuredOrderOperations, configuredReturnMedia } from './setup.js'
 import { loadPaymentCallbackOptions, loadPaymentProcessingOptions } from './config/payments.js'
@@ -94,6 +94,7 @@ export async function startServer(
               : {}),
           }
         : undefined,
+      loadAfterSalesHistory(process.env),
     )
   } catch (error) {
     await connection.destroy()

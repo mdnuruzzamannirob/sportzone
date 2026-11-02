@@ -4,7 +4,7 @@ import type {
   PaymentInitiationCredentials,
   OrderPrincipal,
 } from '../auth/checkout-access.service.js'
-import type { complaintOrderAccess } from '../orders/order.service.js'
+import type { complaintOrderAccess, customerOrderHistoryAccess } from '../orders/order.service.js'
 import type { claimEvidenceMetadataAccess } from '../media/claim-evidence.service.js'
 import type { AdminAccountAccess } from '../auth/admin-account.service.js'
 import { z } from 'zod'
@@ -40,6 +40,7 @@ export function returnHistoryService(
   order: ReturnType<typeof complaintOrderAccess>,
   evidence: ReturnType<typeof claimEvidenceMetadataAccess>,
   admins?: AdminAccountAccess,
+  customerOrders?: ReturnType<typeof customerOrderHistoryAccess>,
 ) {
   const model = returnModel(connection)
   async function view(session: ClientSession, row: Row) {
@@ -77,6 +78,32 @@ export function returnHistoryService(
     await verifyReturnPersistence(connection)
   }
   return {
+    async mine(credentials: PaymentInitiationCredentials, raw: unknown) {
+      if (!credentials.customerPresent) throw new ApiError('AUTH_REQUIRED')
+      const query = parseInput(adminQuery, raw)
+      return scope.ownedAny(credentials, async (principal, session) => {
+        if (principal.kind !== 'customer') throw new ApiError('AUTH_REQUIRED')
+        if (!customerOrders) throw new ApiError('SERVICE_UNAVAILABLE')
+        await verifyReturnPersistence(connection)
+        const filter = {
+          orderId: { $in: await customerOrders(session, principal.userId) },
+          ...(query.claimType ? { claimType: query.claimType } : {}),
+          ...(query.status ? { status: query.status } : {}),
+        }
+        const rows = await model
+          .find(filter)
+          .sort({ createdAt: -1, _id: -1 })
+          .skip((query.page - 1) * query.pageSize)
+          .limit(query.pageSize)
+          .session(session)
+        const items = []
+        for (const row of rows) items.push(await view(session, row))
+        return {
+          items,
+          pagination: pageMeta(query, await model.countDocuments(filter).session(session)),
+        }
+      })
+    },
     async adminList(token: string | undefined, raw: unknown) {
       if (!admins) throw new ApiError('SERVICE_UNAVAILABLE')
       const query = parseInput(adminQuery, raw)
@@ -133,13 +160,10 @@ export function returnHistoryService(
       const id = parseInput(claimId, rawId)
       return scope.owned(credentials, id, async (principal, session) => {
         await authorize(session, principal, id)
-        // No silent truncation: the unpaginated contract fails closed above the local bound.
         const rows = await model
           .find({ orderId: id })
           .sort({ createdAt: -1, _id: -1 })
-          .limit(101)
           .session(session)
-        if (rows.length > 100) throw new ApiError('SERVICE_UNAVAILABLE')
         const result = []
         for (const row of rows) result.push(await view(session, row))
         return result

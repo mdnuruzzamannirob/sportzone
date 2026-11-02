@@ -942,15 +942,10 @@ export function reviewPurchaseEligibilityAccess(connection: Connection) {
     const allResolvedAndFullyPaid = balance.unitCoverage.every(
       (u) => u.claimState === 'resolved' && u.refundCompletedPoisha === u.netEntitlementPoisha,
     )
-    if (allResolvedAndFullyPaid) {
-      if (
-        balance.unitCoverage.every((u) => u.netEntitlementPoisha > 0) ||
-        balance.refundedMerchandiseQty === balance.purchasedQty
-      )
-        return null
-      // Zero-value units need explicit completed-quantity evidence, not an inferred payout.
-      throw new ApiError('SERVICE_UNAVAILABLE')
-    }
+    // Resolved zero-value units have no payout obligation. Positive units still require
+    // actual completed money; an open, held or merely approved unit never satisfies this.
+    // The legacy refunded quantity projection cannot override these canonical unit facts.
+    if (allResolvedAndFullyPaid) return null
     const orderFence = await orders.updateOne(
       {
         _id: order._id,
@@ -1016,6 +1011,17 @@ export function codCollectionOrderAccess(connection: Connection) {
       placedAt: row.placedAt,
       expectedPoisha: row.pricingSnapshot.finalTotalPoisha,
     }
+  }
+}
+
+// Only immutable owned identities cross this boundary; callers paginate their own resources.
+export function customerOrderHistoryAccess(connection: Connection) {
+  const { orders } = orderModels(connection)
+  return async (session: ClientSession, userId: string) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyOrderPersistence(connection)
+    const rows = await orders.find({ userId }).select({ _id: 1 }).lean().session(session)
+    return rows.map((row) => row._id.toHexString())
   }
 }
 

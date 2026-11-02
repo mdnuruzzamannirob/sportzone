@@ -134,6 +134,7 @@ describe('executable API contract registry', () => {
         'promotions/coupon-admin.routes.ts',
         'returns/return-history.routes.ts',
         'refunds/refund.routes.ts',
+        'refunds/refund-history.routes.ts',
         'returns/return.routes.ts',
         'reviews/review.routes.ts',
         'settings/settings.routes.ts',
@@ -146,6 +147,10 @@ describe('executable API contract registry', () => {
       .flatMap((router) => registeredOperations(router))
       .filter((op) => !['HEAD', 'OPTIONS'].includes(op.method))
     const expected = [
+      'GET /me/claims',
+      'GET /me/refunds',
+      'GET /orders/{orderId}/refunds',
+      'GET /refunds/{refundId}',
       'GET /admin/refunds',
       'GET /admin/refunds/{refundId}',
       'POST /admin/refund-groups',

@@ -1,3 +1,4 @@
+import { refundHistoryRoutes } from '../../src/modules/refunds/refund-history.routes.js'
 import { refundRoutes } from '../../src/modules/refunds/refund.routes.js'
 import { returnRoutes } from '../../src/modules/returns/return.routes.js'
 import { orderAdminRoutes } from '../../src/modules/orders/order-admin.routes.js'
@@ -95,6 +96,7 @@ const media = {
 // These routers are locally composed only and are deliberately excluded from live registry parity.
 export function localOnlyRouters() {
   return [
+    refundHistoryRoutes({ mine: unused, list: unused, detail: unused }, security),
     refundRoutes(
       {
         list: unused,
@@ -120,7 +122,7 @@ export function localOnlyRouters() {
       },
       { transition: unused },
       { receive: unused, inspect: unused },
-      { adminList: unused, adminDetail: unused, list: unused, detail: unused },
+      { adminList: unused, adminDetail: unused, list: unused, detail: unused, mine: unused },
       security,
       sessions,
       'https://shop.example.test',
@@ -144,7 +146,7 @@ export function localOnlyRouters() {
     customerAdminRoutes({ list: unused, detail: unused, decideStatus: unused }, security, sessions),
     supportReadRoutes({ adminList: unused }, { list: unused }, security, sessions),
     returnHistoryRoutes(
-      { list: unused, detail: unused, adminList: unused, adminDetail: unused },
+      { list: unused, detail: unused, adminList: unused, adminDetail: unused, mine: unused },
       security,
       sessions,
     ),

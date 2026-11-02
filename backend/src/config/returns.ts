@@ -45,3 +45,17 @@ export async function loadReturnOperationsOptions(
     throw new ConfigurationError(['return_operations_configuration'])
   }
 }
+
+export function loadAfterSalesHistory(env: NodeJS.ProcessEnv): boolean {
+  if (env.AFTER_SALES_HISTORY_ENABLED === undefined || env.AFTER_SALES_HISTORY_ENABLED === 'false')
+    return false
+  if (
+    env.AFTER_SALES_HISTORY_ENABLED !== 'true' ||
+    !['local', 'test'].includes(env.APP_ENV ?? '') ||
+    env.CUSTOMER_AUTH_ENABLED !== 'true' ||
+    env.ADMIN_AUTH_ENABLED !== 'true' ||
+    env.RETURN_OPERATIONS_ENABLED !== 'true'
+  )
+    throw new ConfigurationError(['after_sales_history_configuration'])
+  return true
+}

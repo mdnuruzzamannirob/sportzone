@@ -8,6 +8,15 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 2 November 2026 — Package E development completion
+
+- Completed customer cross-order claim/refund history, exact guest/customer private refund reads,
+  safe status/investigation timelines, separate merchandise/correction totals and explicit server activation.
+- Connected review HTTP to canonical purchase/refund facts; resolved zero-price units without inventing payout,
+  preserved historical reviews and retained moderation/auth/CSRF/privacy protections.
+- Recorded P05-016/P08-016/P08-019 Done with affected replica-set/API regression and executor review;
+  [evidence](docs/evidence/P05-016-P08-019-local-reads.md#package-e-completion). No deployed release or milestone claim.
+
 ## 2 November 2026 — Package D refund outcome and recovery
 
 - Completed P08-009/010/011 with independently bound payout proof, atomic source/order/unit/delivery settlement and guarded review/reconcile/manual-confirmation APIs.

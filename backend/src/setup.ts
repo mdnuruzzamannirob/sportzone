@@ -1,3 +1,6 @@
+import { refundHistoryService } from './modules/refunds/refund-history.service.js'
+import { refundHistoryRoutes } from './modules/refunds/refund-history.routes.js'
+import { customerOrderHistoryAccess } from './modules/orders/order.service.js'
 import { returnMessageService } from './modules/notifications/return-message.service.js'
 import { returnNotificationProofAccess } from './modules/returns/return.service.js'
 import {
@@ -280,6 +283,7 @@ export function composeReturnOperationsRoutes(
     complaintOrderAccess(connection),
     claimEvidenceMetadataAccess(connection),
     auth.adminAccounts,
+    customerOrderHistoryAccess(connection),
   )
   const mediaFor = (
     credentials: import('./modules/auth/checkout-access.service.js').PaymentInitiationCredentials,
@@ -515,6 +519,26 @@ export function composeLocalReviewRoutes(
   )
 }
 
+export function composeAfterSalesHistoryRoutes(
+  connection: Connection,
+  environment: RuntimeConfig['APP_ENV'],
+  auth: Parameters<typeof composeReturnOperationsRoutes>[1],
+) {
+  if (!['local', 'test'].includes(environment)) throw new ApiError('SERVICE_UNAVAILABLE')
+  return [
+    composeLocalReviewRoutes(connection, environment, auth),
+    refundHistoryRoutes(
+      refundHistoryService(
+        connection,
+        orderScopeAccess(auth.customerAccounts, auth.sessions, auth.guestAccounts),
+        complaintOrderAccess(connection),
+        customerOrderHistoryAccess(connection),
+      ),
+      auth.security,
+    ),
+  ]
+}
+
 export type RefundOperationsDependencies = {
   options: RefundOperationsOptions
   verifyEvidence?: RefundOutcomeVerifier
@@ -656,9 +680,15 @@ export async function composeIdentityRoutes(
   orderOperations?: OrderOperationsDependencies,
   returnOptions?: ReturnOperationsOptions,
   refunds?: RefundOperationsDependencies,
+  afterSalesHistory = false,
 ) {
   const notifications = createRegistrationNotifications(connection)
   const auth = await createAuthRuntime(connection, config, notifications)
+  if (afterSalesHistory) {
+    if (!config.CUSTOMER_AUTH_ENABLED || !config.ADMIN_AUTH_ENABLED || !returnOptions)
+      throw new ApiError('SERVICE_UNAVAILABLE')
+    auth.router.use(...composeAfterSalesHistoryRoutes(connection, config.APP_ENV, auth))
+  }
   if (refunds) {
     if (!config.ADMIN_AUTH_ENABLED || !['local', 'test'].includes(config.APP_ENV))
       throw new ApiError('SERVICE_UNAVAILABLE')
@@ -992,7 +1022,13 @@ export async function composeApplication(
   orderOperations?: OrderOperationsDependencies,
   returnOptions?: ReturnOperationsOptions,
   refunds?: RefundOperationsDependencies,
+  afterSalesHistory = false,
 ) {
+  if (
+    afterSalesHistory &&
+    (!config.CUSTOMER_AUTH_ENABLED || !config.ADMIN_AUTH_ENABLED || !returnOptions)
+  )
+    throw new ApiError('SERVICE_UNAVAILABLE')
   if (refunds && !config.ADMIN_AUTH_ENABLED) throw new ApiError('SERVICE_UNAVAILABLE')
   if (returnOptions && (!config.CUSTOMER_AUTH_ENABLED || !config.ADMIN_AUTH_ENABLED))
     throw new ApiError('SERVICE_UNAVAILABLE')
@@ -1015,6 +1051,7 @@ export async function composeApplication(
           orderOperations,
           returnOptions,
           refunds,
+          afterSalesHistory,
         )
       : undefined
   const unavailable = async (): Promise<never> => {

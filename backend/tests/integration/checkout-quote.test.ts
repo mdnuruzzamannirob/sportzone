@@ -1,3 +1,4 @@
+import { composeAfterSalesHistoryRoutes } from '../../src/setup.js'
 import { z } from 'zod'
 import { composeRefundRecovery } from '../../src/setup.js'
 import { refundReconciliationJob } from '../../src/jobs/reconcile-refunds.job.js'
@@ -4061,10 +4062,10 @@ it('monitor/claim batch: attempt/collection identity filters intersect without d
     .expect(404)
 })
 
-async function lifecycleFixture(approved = true) {
+async function lifecycleFixture(approved = true, registered = false) {
   await initializePaymentRecordPersistence(db.connection)
   await initializeCorrectionPersistence(db.connection)
-  const who = await guest(),
+  const who = registered ? await customer() : await guest(),
     selected = await variant(),
     input = body([selected.item]),
     quote = await service.create(who.credentials, input)
@@ -6355,9 +6356,10 @@ it('commerce/exception batch: a pending-order delay concern records no fabricate
 async function physicalReturnFixture(
   type: 'physical_return' | 'shortage' = 'physical_return',
   prepare = true,
+  registered = false,
 ) {
   await initializeReturnPersistence(db.connection)
-  const f = await lifecycleFixture()
+  const f = await lifecycleFixture(true, registered)
   for (const status of ['confirmed', 'processing', 'shipped', 'delivered']) await f.move(status)
   const order = await orderModels(db.connection).orders.findById(f.id).orFail(),
     item = order.items[0]
@@ -6762,16 +6764,16 @@ function reservations(
     policy,
   )
 }
-async function reservationFixture(collected = true) {
+async function reservationFixture(collected = true, registered = false, quantity = 1) {
   await initializeRefundAttemptPersistence(db.connection)
-  const f = await physicalReturnFixture('shortage')
+  const f = await physicalReturnFixture('shortage', true, registered)
   if (collected) await f.cash()
   const input = {
     orderId: f.id,
     basis: 'shortage',
     basisRefId: f.claimId,
     classification: 'merchandise',
-    requestedItems: [{ orderItemId: f.itemId, quantity: 1 }],
+    requestedItems: [{ orderItemId: f.itemId, quantity }],
     reason: 'Synthetic reservation review',
   }
   return { ...f, input, service: reservations() }
@@ -7754,14 +7756,23 @@ it('refund status local: provider status reads are forbidden inside transaction'
   expect(transport).not.toHaveBeenCalled()
 })
 
-async function deliveredReviewFixture(deliver = true) {
+async function deliveredReviewFixture(
+  deliver = true,
+  existingBuyer?: Awaited<ReturnType<typeof customer>>,
+  zeroValue = false,
+) {
   await initializePaymentRecordPersistence(db.connection)
   await initializeReviewPersistence(db.connection)
-  const buyer = await customer(),
+  const buyer = existingBuyer ?? (await customer()),
     selected = await variant(),
-    draft = body([selected.item])
+    draft = { ...body([selected.item]), ...(zeroValue ? { couponCode: 'SYNTHETIC' } : {}) }
+  if (zeroValue) await coupon({ type: 'percentage', value: 10000 })
   const quote = await service.create(buyer.credentials, draft)
-  const placed = await placeCod(buyer, submit(draft, quote)).expect(201)
+  const placed = await placeCod(
+    buyer,
+    submit(draft, quote),
+    existingBuyer ? `review-second-${selected.row._id}` : undefined,
+  ).expect(201)
   const orderId = placed.body.data.order.id
   const admin = await customer('admin'),
     access = createAdminAccountAccess(db.connection, identities, sessions)
@@ -9738,8 +9749,10 @@ it('Package B HTTP: suspended customers/admins cannot mutate or retrieve private
   expect((await returnModel(db.connection).findById(id).orFail()).status).toBe('requested')
 })
 
-it('Package B HTTP: real server startup activates configured claims while default startup keeps them absent', async () => {
+it('Package B/E HTTP: real server startup activates configured claims and histories while default startup keeps them absent', async () => {
   const f = await packageBFixture()
+  await initializeCorrectionPersistence(db.connection)
+  await initializeRefundAttemptPersistence(db.connection)
   const originalEnvironment = process.env
   let runtime: Awaited<ReturnType<typeof startServer>> | undefined
   try {
@@ -9761,6 +9774,7 @@ it('Package B HTTP: real server startup activates configured claims while defaul
     process.env = {
       ...env,
       RETURN_OPERATIONS_ENABLED: 'true',
+      AFTER_SALES_HISTORY_ENABLED: 'true',
       MEDIA_ENABLED: 'true',
       MEDIA_SCANNER: 'clamav',
       MEDIA_SCANNER_HOST: '127.0.0.1',
@@ -9784,6 +9798,8 @@ it('Package B HTTP: real server startup activates configured claims while defaul
       .get(`/api/v1/orders/${f.orderId}/claim-eligibility`)
       .set('Cookie', f.buyer.cookie)
       .expect(200)
+    for (const path of ['/me/reviews', '/me/claims', '/me/refunds'])
+      await request(runtime.server).get(`/api/v1${path}`).set('Cookie', f.buyer.cookie).expect(200)
     // File validation rejects before scanner/provider I/O; no live credentials or calls.
     await request(runtime.server)
       .post(`/api/v1/orders/${f.orderId}/claims/evidence-uploads`)
@@ -9816,6 +9832,7 @@ async function packageDFixture(
   gateway = false,
   offset = 60000,
   manualMethod: 'manual_bank' | 'manual_bkash' | 'manual_nagad' | 'manual_rocket' = 'manual_bank',
+  registered = false,
 ) {
   let ticks = Date.now() + offset
   let proof: RefundOutcomeProof | undefined
@@ -9884,7 +9901,7 @@ async function packageDFixture(
     orderId = f.result.id
     options = refundDevelopmentPolicy
   } else {
-    manual = await reservationFixture(false)
+    manual = await reservationFixture(false, registered, registered ? 2 : 1)
     await manual.cash(undefined, `d-cash-${manual.id}`)
     admin = manual.admin
     orderId = manual.id
@@ -10774,4 +10791,410 @@ it('Package D: verified gateway failure can use protected consented manual fallb
   expect(row.toObject().timingSnapshot).toEqual(timing)
   expect(await refundAttemptModel(db.connection).countDocuments({ refundId: f.refundId })).toBe(2)
   expect(f.initiateRefund).toHaveBeenCalledTimes(1)
+})
+
+function packageEAuth(guests?: ReturnType<typeof guestSessionService>) {
+  return {
+    ...localReviewAuth(),
+    guestAccounts: guests,
+    throttle: createAuthThrottle(createAuthQuotaStore(db.connection), authSecret),
+  }
+}
+function packageERoot(guests?: ReturnType<typeof guestSessionService>) {
+  return createApp({
+    apiRouter: createApiRouter(
+      undefined,
+      composeAfterSalesHistoryRoutes(db.connection, 'test', packageEAuth(guests)),
+    ),
+  })
+}
+it('Package E: cross-order customer claim history filters before pagination and rejects guest, stale or foreign identity', async () => {
+  const f = await packageBFixture(),
+    second = await deliveredReviewFixture(true, f.buyer),
+    foreign = await packageBFixture()
+  const firstClaim = await f.submit(f.body('shortage', 1), 'e-first').expect(201)
+  const secondClaim = await request(f.root)
+    .post(`/api/v1/orders/${second.orderId}/claims`)
+    .set('Origin', origin)
+    .set('Cookie', f.buyer.cookie)
+    .set('X-CSRF-Token', f.buyer.csrf)
+    .set('Idempotency-Key', 'e-second')
+    .send({
+      claimType: 'physical_return',
+      items: [
+        {
+          orderItemId: second.selection.qualifyingOrderItemId,
+          quantity: 1,
+          reason: 'Synthetic second order',
+        },
+      ],
+    })
+    .expect(201)
+  await foreign.submit().expect(201)
+  const path = '/api/v1/me/claims'
+  const list = await request(f.root)
+    .get(`${path}?pageSize=1`)
+    .set('Cookie', f.buyer.cookie)
+    .expect(200)
+  expect(list.body.meta).toMatchObject({ totalItems: 2, totalPages: 2 })
+  expect(list.body.data).toHaveLength(1)
+  const page2 = await request(f.root)
+    .get(`${path}?pageSize=1&page=2`)
+    .set('Cookie', f.buyer.cookie)
+    .expect(200)
+  expect(new Set([list.body.data[0].id, page2.body.data[0].id])).toEqual(
+    new Set([firstClaim.body.data.id, secondClaim.body.data.id]),
+  )
+  const filtered = await request(f.root)
+    .get(`${path}?claimType=shortage&pageSize=1`)
+    .set('Cookie', f.buyer.cookie)
+    .expect(200)
+  expect(filtered.body.meta.totalItems).toBe(1)
+  expect(filtered.body.data[0].id).toBe(firstClaim.body.data.id)
+  expect(list.headers['cache-control']).toContain('no-store')
+  for (const suffix of ['?userId=anything', '?status=bogus', '?page=0', '?pageSize=101'])
+    await request(f.root)
+      .get(path + suffix)
+      .set('Cookie', f.buyer.cookie)
+      .expect(400)
+  await request(f.root).get(path).expect(401)
+  await request(f.root).get(path).set('Cookie', 'sz_guest_order_sid=invalid').expect(401)
+  await identities.users.updateOne({ _id: f.buyer.user._id }, { $set: { status: 'suspended' } })
+  await request(f.root).get(path).set('Cookie', f.buyer.cookie).expect(401)
+})
+it('Package E: scoped refund histories expose durable pending/completed timelines and class-specific totals without protected evidence', async () => {
+  const f = await packageDFixture(false, 60000, 'manual_bank', true)
+  if (!f.manual) throw new Error('Missing manual fixture')
+  await initializeMediaPersistence(db.connection)
+  const root = packageERoot(),
+    cookie = f.manual.who.cookie,
+    other = await customer()
+  const path = `/api/v1/refunds/${f.refundId}`,
+    listPath = `/api/v1/orders/${f.orderId}/refunds`
+  const before = await request(root).get(path).set('Cookie', cookie).expect(200)
+  expect(before.body.data).toMatchObject({
+    status: 'approved',
+    capacityStatus: 'reserved',
+    timing: { status: 'under_review' },
+  })
+  expect(before.body.data.timing).not.toHaveProperty('targetAt')
+  expect(before.body.data).not.toHaveProperty('completedAt')
+  expect(Object.keys(before.body.data).sort()).toEqual(
+    [
+      'id',
+      'orderId',
+      'sourceCollectionId',
+      'refundGroupKey',
+      'classification',
+      'basis',
+      'amountPoisha',
+      'method',
+      'status',
+      'capacityStatus',
+      'investigationStatus',
+      'requestedAt',
+      'approvedAt',
+      'items',
+      'timing',
+      'timeline',
+    ].sort(),
+  )
+  for (const field of [
+    'approvedBy',
+    'consentEvidenceRef',
+    'attempts',
+    'decisionKey',
+    'revision',
+    'manualEvidence',
+    'sourceCapacity',
+  ])
+    expect(before.body.data).not.toHaveProperty(field)
+  // Projection must retain a shorter approved target already recorded by the owning policy.
+  await refundModel(db.connection).collection.updateOne(
+    { _id: new Types.ObjectId(f.refundId) },
+    { $set: { 'timingSnapshot.targetBusinessDays': 3 } },
+  )
+  await f.payout().expect(200)
+  const processing = await request(root).get(path).set('Cookie', cookie).expect(200)
+  expect(processing.body.data.status).toBe('processing')
+  expect(processing.body.data.timing.targetBusinessDays).toBe(3)
+  expect(
+    processing.body.data.timeline.some((event: { status: string }) => event.status === 'completed'),
+  ).toBe(false)
+  await f.domain().defer(f.refundId, async () => {})
+  const investigating = await request(root).get(path).set('Cookie', cookie).expect(200)
+  expect(investigating.body.data.investigationStatus).toBe('under_review')
+  await f.setProof('paid')
+  await f
+    .post('manual-confirmations', {
+      transferReference: 'synthetic-transfer',
+      evidenceRef: 'synthetic-proof',
+      reason: 'Verified test proof',
+    })
+    .expect(200)
+  const complete = await request(root).get(path).set('Cookie', cookie).expect(200)
+  expect(complete.body.data).toMatchObject({
+    status: 'completed',
+    capacityStatus: 'completed',
+    investigationStatus: 'none',
+  })
+  expect(complete.body.data.timeline.map((event: { status: string }) => event.status)).toEqual(
+    expect.arrayContaining(['approved', 'processing', 'completed']),
+  )
+  const text = JSON.stringify(complete.body)
+  for (const secret of [
+    'synthetic-transfer',
+    'synthetic-proof',
+    '****1234',
+    'synthetic:verified-consent',
+  ])
+    expect(text).not.toContain(secret)
+  const list = await request(root).get(listPath).set('Cookie', cookie).expect(200)
+  expect(list.body.data.merchandiseSummary).toEqual({
+    heldPoisha: 0,
+    completedPoisha: complete.body.data.amountPoisha,
+  })
+  expect(list.body.data.correctionSummary).toEqual({ heldPoisha: 0, completedPoisha: 0 })
+  const mine = await request(root)
+    .get('/api/v1/me/refunds?status=completed&classification=merchandise&pageSize=1')
+    .set('Cookie', cookie)
+    .expect(200)
+  expect(mine.body.meta.totalItems).toBe(1)
+  expect(mine.body.data[0].id).toBe(f.refundId)
+  expect(complete.headers['cache-control']).toContain('no-store')
+  for (const target of [path, listPath]) {
+    await request(root).get(target).expect(401)
+    await request(root).get(target).set('Cookie', other.cookie).expect(404)
+    await request(root).get(`${target}?unexpected=1`).set('Cookie', cookie).expect(400)
+  }
+  for (const target of [
+    '/api/v1/me/refunds?status=bogus',
+    '/api/v1/me/refunds?sourceCollectionId=bad',
+    '/api/v1/refunds/invalid',
+  ])
+    await request(root).get(target).set('Cookie', cookie).expect(400)
+  await request(root).get('/api/v1/me/refunds').expect(401)
+  const ownerId = (await orderModels(db.connection).orders.findById(f.orderId).orFail()).userId
+  await identities.users.updateOne({ _id: ownerId }, { $set: { status: 'suspended' } })
+  await request(root).get(path).set('Cookie', cookie).expect(401)
+})
+it('Package E: exact guest proof permits only its own refund and cannot enter customer cross-order lists or downgrade invalid customer credentials', async () => {
+  const f = await packageDFixture(),
+    foreign = await packageDFixture()
+  const guests = guestSessionService(
+    db.connection,
+    identities,
+    {
+      secret: authSecret,
+      customerTtlSeconds: 600,
+      adminTtlSeconds: 300,
+      sameSite: 'lax',
+      appEnvironment: 'test',
+      apiOrigin: 'https://api.example.test',
+    },
+    600,
+    guestOrderAccess(db.connection).verify,
+    () => now,
+  )
+  const proof = await inTransaction(db.connection, (session) =>
+    guests.issueAfterProof(session, f.orderId),
+  )
+  const root = packageERoot(guests),
+    cookie = `sz_guest_order_sid=${proof.token}`
+  await request(root).get(`/api/v1/orders/${f.orderId}/refunds`).set('Cookie', cookie).expect(200)
+  await request(root).get(`/api/v1/refunds/${f.refundId}`).set('Cookie', cookie).expect(200)
+  await request(root).get(`/api/v1/refunds/${foreign.refundId}`).set('Cookie', cookie).expect(404)
+  await request(root)
+    .get(`/api/v1/orders/${foreign.orderId}/refunds`)
+    .set('Cookie', cookie)
+    .expect(401)
+  await request(root).get('/api/v1/me/refunds').set('Cookie', cookie).expect(401)
+  await request(root)
+    .get(`/api/v1/refunds/${f.refundId}`)
+    .set('Cookie', `${cookie}; sz_customer_sid=invalid`)
+    .expect(401)
+  await guests.logout(proof.token)
+  await request(root).get(`/api/v1/refunds/${f.refundId}`).set('Cookie', cookie).expect(401)
+})
+it('Package E: actual settled full merchandise refunds deny new review verification while preserving historical review edits for moderation', async () => {
+  const f = await packageDFixture(false, 60000, 'manual_bank', true)
+  if (!f.manual) throw new Error('Missing manual fixture')
+  await initializeReviewPersistence(db.connection)
+  await f.manual.review.transition(
+    f.manual.token,
+    f.manual.claimId,
+    { to: 'completed', reason: 'Approved shortage resolved' },
+    'e-resolved',
+  )
+  const order = await orderModels(db.connection).orders.findById(f.orderId).orFail(),
+    item = order.items[0]
+  if (!item || !order.userId) throw new Error('Missing registered purchase')
+  const root = packageERoot(),
+    cookie = f.manual.who.cookie,
+    csrf = f.manual.who.csrf
+  const input = {
+    rating: 4,
+    comment: 'Historical legitimate review',
+    qualifyingOrderItemId: item.id.toHexString(),
+  }
+  const created = await request(root)
+    .post(`/api/v1/products/${item.productId}/reviews`)
+    .set('Origin', origin)
+    .set('Cookie', cookie)
+    .set('X-CSRF-Token', csrf)
+    .send(input)
+    .expect(201)
+  const eligibility = reviewPurchaseEligibilityAccess(db.connection),
+    selection = {
+      userId: order.userId.toHexString(),
+      productId: item.productId.toHexString(),
+      qualifyingOrderItemId: item.id.toHexString(),
+    }
+  expect(
+    await inTransaction(db.connection, (session) => eligibility(session, selection)),
+  ).toMatchObject({ eligible: true })
+  await f.payout().expect(200)
+  await f.setProof('paid')
+  await f
+    .post('manual-confirmations', {
+      transferReference: 'synthetic-transfer',
+      evidenceRef: 'synthetic-proof',
+      reason: 'Verified full refund',
+    })
+    .expect(200)
+  expect(
+    await inTransaction(db.connection, (session) => eligibility(session, selection)),
+  ).toBeNull()
+  await request(root)
+    .post(`/api/v1/products/${item.productId}/reviews`)
+    .set('Origin', origin)
+    .set('Cookie', cookie)
+    .set('X-CSRF-Token', csrf)
+    .send(input)
+    .expect(422)
+  await request(root)
+    .patch(`/api/v1/reviews/${created.body.data.id}`)
+    .set('Origin', origin)
+    .set('Cookie', cookie)
+    .set('X-CSRF-Token', csrf)
+    .send({ comment: 'Historical review edited' })
+    .expect(200)
+  expect((await reviewModel(db.connection).findById(created.body.data.id).orFail()).status).toBe(
+    'pending',
+  )
+  expect(await reviewModel(db.connection).countDocuments()).toBe(1)
+})
+it('Package E: application root explicitly composes history/reviews and refuses incomplete admission', async () => {
+  const config = loadEnvironment({ ...identityEnvironment(), SESSION_SECRET: authSecret })
+  await initializeReviewPersistence(db.connection)
+  await initializeCorrectionPersistence(db.connection)
+  await initializeRefundAttemptPersistence(db.connection)
+  const buyer = await customer()
+  const make = (
+    enabled: boolean,
+    actualConfig = config,
+    options: Parameters<typeof composeApplication>[11] = {
+      policyVersion: 'sportzone-returns-v1',
+      exceptions: [],
+    },
+  ) =>
+    composeApplication(
+      db.connection,
+      actualConfig,
+      { isReady: async () => true },
+      createLogger(actualConfig, () => {}),
+      undefined,
+      [],
+      undefined,
+      [],
+      undefined,
+      undefined,
+      undefined,
+      options,
+      undefined,
+      enabled,
+    )
+  const active = await make(true),
+    inactive = await make(false)
+  for (const path of ['/me/reviews', '/me/refunds']) {
+    await request(active).get(`/api/v1${path}`).expect(401)
+    await request(active).get(`/api/v1${path}`).set('Cookie', buyer.cookie).expect(200)
+    await request(inactive).get(`/api/v1${path}`).set('Cookie', buyer.cookie).expect(404)
+  }
+  await expect(make(true, { ...config, CUSTOMER_AUTH_ENABLED: false })).rejects.toThrow()
+  await expect(make(true, { ...config, APP_ENV: 'production' })).rejects.toThrow()
+  await expect(
+    composeApplication(
+      db.connection,
+      config,
+      { isReady: async () => true },
+      createLogger(config, () => {}),
+      undefined,
+      [],
+      undefined,
+      [],
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      true,
+    ),
+  ).rejects.toThrow()
+})
+it('Package E: zero-price delivered units qualify until a canonical claim resolution and never require a fictitious payout', async () => {
+  await initializeReturnPersistence(db.connection)
+  const f = await deliveredReviewFixture(true, undefined, true)
+  expect(
+    await inTransaction(db.connection, (session) => f.eligibility(session, f.selection)),
+  ).toMatchObject({ eligible: true })
+  const claimId = new Types.ObjectId().toHexString(),
+    create = returnService(db.connection, claimQuantityAccess(db.connection), async () => ({
+      requestedBy: { type: 'customer', id: f.buyer.user._id.toHexString() },
+      eligibilitySnapshot: { policyVersion: 'synthetic' },
+    }))
+  await inTransaction(db.connection, (session) =>
+    create.create(session, {
+      claimId,
+      orderId: f.orderId,
+      claimType: 'shortage',
+      items: [
+        {
+          orderItemId: f.selection.qualifyingOrderItemId,
+          quantity: 2,
+          reason: 'Synthetic missing free goods',
+        },
+      ],
+    }),
+  )
+  const admin = await customer('admin'),
+    lifecycle = returnLifecycleService(
+      db.connection,
+      createAdminAccountAccess(db.connection, identities, sessions),
+      claimReviewQuantityAccess(db.connection),
+      () => new Date(Date.now() + 1000),
+    )
+  for (const to of ['under_review', 'approved', 'completed'])
+    await lifecycle.transition(
+      admin.credentials.customerToken,
+      claimId,
+      {
+        to,
+        reason: 'Resolve zero-value shortage',
+        ...(to === 'approved'
+          ? { approvedItems: [{ orderItemId: f.selection.qualifyingOrderItemId, quantity: 2 }] }
+          : {}),
+      },
+      to,
+    )
+  expect(
+    await inTransaction(db.connection, (session) => f.eligibility(session, f.selection)),
+  ).toBeNull()
+  expect(await refundModel(db.connection).countDocuments()).toBe(0)
+  const balance = await orderModels(db.connection).balances.findOne({ orderId: f.orderId }).orFail()
+  expect(
+    balance.unitCoverage.every(
+      (unit) => unit.netEntitlementPoisha === 0 && unit.refundCompletedPoisha === 0,
+    ),
+  ).toBe(true)
 })
