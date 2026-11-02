@@ -5,7 +5,7 @@ import { loadRefundOperationsOptions } from './config/refunds.js'
 import { loadSslcommerzOptions } from './config/payments.js'
 import { loadReturnOperationsOptions, loadAfterSalesHistory } from './config/returns.js'
 import { loadOrderOperationsOptions } from './config/order-operations.js'
-import { configuredOrderOperations, configuredReturnMedia } from './setup.js'
+import { configuredOrderOperations, configuredReturnMedia, configuredPublicMedia } from './setup.js'
 import { loadPaymentCallbackOptions, loadPaymentProcessingOptions } from './config/payments.js'
 import { createSslcommerzAdapter } from './providers/sslcommerz/sslcommerz.client.js'
 import { initiationInput } from './providers/sslcommerz/sslcommerz.schema.js'
@@ -56,7 +56,7 @@ export async function startServer(
       config,
       health,
       logger,
-      returnOptions ? configuredReturnMedia(process.env) : undefined,
+      returnOptions ? configuredReturnMedia(process.env) : configuredPublicMedia(process.env),
       await loadPolicyApprovals(process.env),
       await loadCheckoutOptions(process.env),
       await loadPaymentChannelApprovals(process.env),

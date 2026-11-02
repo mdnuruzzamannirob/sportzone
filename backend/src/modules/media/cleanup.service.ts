@@ -11,7 +11,7 @@ export function createMediaCleanup(
   const { connection, model, provider, canDelete, clock } = context
   const authorized = createMediaAuthorization(context)
   return {
-    async maintenanceBatch(limit = 20) {
+    async maintenanceBatch(limit = 20, fence?: () => Promise<void>) {
       assertOutsideTransaction()
       if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100)
         throw new ApiError('VALIDATION_FAILED')
@@ -34,6 +34,7 @@ export function createMediaCleanup(
         blocked: 0,
       }
       for (const candidate of candidates) {
+        await fence?.()
         try {
           if (candidate.status === 'uploading') {
             const status = await reconcileUpload(candidate._id.toHexString())
@@ -112,4 +113,18 @@ export function createMediaCleanup(
       return true
     },
   }
+}
+
+// Abandoned private evidence is never expired without its explicit per-asset retention decision.
+export function mediaMaintenanceDeletionAllowed(asset: Readonly<MediaAsset>, now: Date) {
+  return (
+    Number.isFinite(now.getTime()) &&
+    ['temporary', 'quarantined', 'deleting'].includes(asset.status) &&
+    !asset.legalHold &&
+    asset.references.length === 0 &&
+    Boolean(asset.expiresAt && asset.expiresAt <= now) &&
+    (asset.assetKind === 'public_media'
+      ? !asset.retainUntil || asset.retainUntil <= now
+      : Boolean(asset.retainUntil && asset.retainUntil <= now))
+  )
 }

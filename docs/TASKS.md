@@ -702,13 +702,13 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence:** [Backend target structure and parity](./evidence/P03-021-backend-refactor.md). Root setup/routes, typed config/shared, auth/catalog/media ownership, provider clients/schemas, jobs/scripts and test discovery migrated; negative boundary fixtures and clean build/format scope updated. 343 unit/contract, 327 real MongoDB integration, 40 tooling cases and 6 three-engine identity journeys passed; backend lint/types/build/smoke, boundaries, formatting and documentation checks passed. Project owner reviewed and accepted through the popup on 22 October 2026: “Review করেছি—accept করছি, Done করো”; [acceptance recorded](./evidence/P03-021-backend-refactor.md#owner-acceptance). EXT-04 and milestone gates unchanged.
 
 - [ ] **P03-022 — Verify and accept the complete backend stage**\
-  **Status:** `Not Started` · **Area:** Backend\
+  **Status:** `In Progress` · **Area:** Backend\
   **Stage:** `Backend`\
   **Sources:** FR-01–FR-34 backend surfaces; Plan §3.1; Testing §15\
   **Depends on:** `P04-003`, `P09-011`, `P05-004`, `P06-016`, `P07-016`, `P08-004`, `P04-017`, `P04-019`, `P05-014`, `P05-015`, `P05-016`, `P09-014`, `P09-016`, `P09-017`, `P09-018`\
   **Deliverable:** Consolidate all customer/admin API, validator/index, transaction/race/replay, job/recovery, secret/privacy and required real provider evidence against one backend revision. Reconcile generated OpenAPI/Postman and operator procedures.\
   **Acceptance:** All backend-stage dependencies and applicable provider gates pass; no frontend server/build/test or browser engine is required. API scenario tests prove guest/customer/admin workflows. Independent owner acceptance permits admin stage; M1–M8 product gates remain separate.\
-  **Evidence to attach:** Owning-scope verification commands, positive/negative outcomes, artifact revision and independent acceptance.
+  **Evidence:** [Package G verification and remaining external/stage acceptance](./evidence/P09-011-staging-runtime.md#package-g-verification). Consolidated backend regression and scoped repair performed; P04-003/P09-011 and independent owner closeout remain outstanding.
 
 ### Phase 04 — Product catalog and inventory
 
@@ -2637,3 +2637,9 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 
 
 **2 November 2026 — Package F completion:** P06-016/017 and P09-002/015/016/017 Blocked → In Progress → Done; P09-014/018 Not Started → In Progress → Done under Tasks §2. Completed authoritative financial/dashboard/report projections, scoped support/contact/response and customer history/privacy HTTP, protected paid final-delivery closure with once-only stock recovery and verified payout path, sanitized operational queues and safe known-nonacceptance notification retry. Added exact-predecessor complaint migration, additive indexes and actual server configuration/recovery procedures. [Observed runs, source snapshot and executor review](./evidence/P06-016-017-commerce-delivery-support.md#package-f-completion). Executor/reviewer: Codex. Overall: 133 Done, 0 Blocked, 75 Not Started, 2 Deferred. Backend P03-022, application/milestone and explicit external qualification tasks remain independently tracked.
+
+
+**2 November 2026 — Package G verification started:** P03-022 Not Started → In Progress. Completed leased media maintenance/operator entry, standalone local/test public media composition, runtime worker/context packaging and payment-bootstrap test correction. Consolidated backend checks plus final affected regression cover 1,234 integration cases with passing observations; the original full pipeline retained one failure subsequently repaired and rerun. Tooling 82 Passed; security, types, formatting and documentation checks Passed. [Revision/environment, exact commands and remaining acceptance](./evidence/P09-011-staging-runtime.md#package-g-verification). P04-003/P09-011 remain Deferred under the recorded free-only decision: live target is an older restricted catalog revision, no configured scanner or current-image/hosted-worker acceptance. Independent P03-022 acceptance is not claimed. Overall: 133 Done, 74 Not Started, 1 In Progress, 2 Deferred (210 total).
+
+
+**2 November 2026 — Package G hosting constraint reaffirmed:** Owner answered “Free-only সীমা বজায় রাখো”. Retain the existing free-only limit; no billable hosting is authorized. P04-003/P09-011 remain Deferred and P03-022 remains In Progress; technical verification and real hosted acceptance remain separately recorded in the [Package G evidence](./evidence/P09-011-staging-runtime.md#package-g-verification). No task counts or acceptance gates changed.

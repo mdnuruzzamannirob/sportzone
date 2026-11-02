@@ -270,6 +270,29 @@ export function configuredReturnMedia(env: NodeJS.ProcessEnv): MediaDependencies
   }
 }
 
+// Public-media admission does not depend on the unrelated return workflow switch.
+export function configuredPublicMedia(env: NodeJS.ProcessEnv): MediaDependencies | undefined {
+  if (env.MEDIA_ENABLED === undefined || env.MEDIA_ENABLED === 'false') return undefined
+  if (!['local', 'test'].includes(env.APP_ENV ?? '') || env.ADMIN_AUTH_ENABLED !== 'true')
+    throw new ApiError('SERVICE_UNAVAILABLE')
+  const options = loadMediaConfiguration(env)
+  return {
+    policy: options.policy,
+    provider: createCloudinaryAdapter(options.cloud),
+    scanner: createClamAvScanner(options.scanner),
+    async canDelete(asset) {
+      const now = new Date()
+      return (
+        asset.assetKind === 'public_media' &&
+        asset.references.length === 0 &&
+        !asset.legalHold &&
+        Boolean(asset.expiresAt && asset.expiresAt <= now) &&
+        (!asset.retainUntil || asset.retainUntil <= now)
+      )
+    },
+  }
+}
+
 export function composeReturnOperationsRoutes(
   connection: Connection,
   auth: Pick<

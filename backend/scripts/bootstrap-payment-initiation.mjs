@@ -9,22 +9,32 @@ import { initializePaymentRecordPersistence } from '../dist/modules/payments/pay
 import { initializePaymentInitiationPersistence } from '../dist/modules/payments/payment-initiation.persistence.js'
 import { initializeAuditPersistence } from '../dist/modules/audit/audit.persistence.js'
 let connection
+let stage = 'configuration'
 try {
   const config = loadEnvironment(process.env)
   if (!['local', 'test'].includes(config.APP_ENV)) throw new Error('Local/test only')
+  stage = 'database'
   connection = await openDatabase(config.MONGODB_URI, config.MONGODB_DB_NAME)
+  stage = 'identity'
   await migrateIdentityPostalCode(connection)
+  stage = 'orders'
   await migrateOrderPostalCode(connection)
+  stage = 'payment-records'
   await initializePaymentRecordPersistence(connection)
+  stage = 'refunds'
   await initializeCorrectionPersistence(connection)
+  stage = 'initiation'
   await initializePaymentInitiationPersistence(connection)
+  stage = 'audit'
   await initializeAuditPersistence(connection)
+  stage = 'leases'
   await initializeJobLeases(connection)
+  stage = 'notifications'
   await createRegistrationNotifications(connection).migrateFoundation()
   console.log('Payment initiation persistence ready; no HTTP/provider activation enabled.')
 } catch {
   console.error(
-    'Payment initiation bootstrap failed; inspect protected configuration and persistence.',
+    `Payment initiation bootstrap failed at ${stage}; inspect protected configuration and persistence.`,
   )
   process.exitCode = 1
 } finally {

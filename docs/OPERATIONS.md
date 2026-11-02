@@ -2616,6 +2616,25 @@ inside each ledger transaction. The development retention capability permits onl
 private claim evidence, subject to the canonical legal-hold/retainUntil guards. Staging/production
 activation remains in EXT-04/P11-008 qualification; these flags do not approve an account or scanner.
 
+For standalone local/test public media, `MEDIA_ENABLED=true` also works without return admission;
+admin authentication, the real provider/scanner and validated policy remain mandatory. Bootstrap a
+new isolated local/test ledger and job leases explicitly with
+`node --env-file=.env backend/scripts/bootstrap-media.mjs` after the backend build. This command
+refuses deployed environments and does not activate uploads or provider effects.
+
+The one-shot scheduled entry is `node --env-file=.env.staging backend/scripts/media-maintenance.mjs`.
+It defaults off; explicit nonproduction admission requires `MEDIA_MAINTENANCE_ENABLED=true`,
+`MEDIA_MAINTENANCE_BATCH_SIZE=20`, `MEDIA_MAINTENANCE_LEASE_MS=60000`, validated media policy and
+protected Cloudinary configuration. Provision/verify the ledger and shared leases through the reviewed
+target procedure first; the worker never repairs persistence on startup. Upload/scanner/browser access
+is unavailable in this process. The `media-maintenance` lease fences each candidate and final checkpoint;
+expired owners stop admission and cannot report success. Choose a lease longer than the bounded batch,
+monitor blocked/pending counts and reconcile uncertain provider outcomes before retrying. Private
+claim evidence additionally requires explicit elapsed `retainUntil`; missing retention never authorizes
+a maintenance deletion. All legal holds and live references still prevent deletion. Stop scheduling
+and disable the flag for rollback, retaining the ledger and provider identities. Shipping this entry
+in the image does not establish a running hosted scheduler or EXT-04 acceptance.
+
 Invoke `maintenanceBatch(1..100)` only from the restricted durable scheduled-job/operator boundary.
 It performs sequential, bounded reconciliation/cleanup and returns examined/deleted/reconciled/
 pending/blocked counts. It does not claim pending status lookups as completed uploads. Polling never

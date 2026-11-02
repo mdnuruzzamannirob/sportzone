@@ -1,3 +1,10 @@
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+import { testEnvironment } from '../helpers/environment.js'
+import { mediaMaintenanceJob } from '../../src/jobs/media-maintenance.job.js'
+import { mediaMaintenanceDeletionAllowed } from '../../src/modules/media/cleanup.service.js'
+import { initializeJobLeases, jobLeaseModel } from '../../src/shared/jobs/job-lease.model.js'
+import { jobLeaseService } from '../../src/shared/jobs/job-lease.service.js'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { createServer } from 'node:net'
 import { Schema, Types } from 'mongoose'
@@ -59,6 +66,7 @@ beforeAll(async () => {
   models = createIdentityModels(fixture.connection)
   await initializeIdentityPersistence(fixture.connection, models)
   await initializeMediaPersistence(fixture.connection)
+  await initializeJobLeases(fixture.connection)
   await fixture.connection
     .model('MediaOrderFixture', orderSchema, 'media_order_fixture')
     .createCollection()
@@ -81,6 +89,7 @@ beforeAll(async () => {
 })
 beforeEach(async () => {
   time = Date.now()
+  await jobLeaseModel(fixture.connection).deleteMany({})
   allowedDelete = true
   verdict = 'clean'
   await mediaModel(fixture.connection).deleteMany({})
@@ -495,4 +504,96 @@ it('does not return an expired attachable reference after a slow provider outcom
     ),
   ).rejects.toThrow()
   expect(await service.cleanup(expired.id)).toBe(true)
+})
+
+it('Package G: media maintenance lease survives restart and deletes one expired orphan without duplicate provider effects', async () => {
+  const upload = await service.uploadPublic(admin.token, imageFile())
+  time += 61000
+  const first = mediaMaintenanceJob(
+    fixture.connection,
+    service,
+    { batchSize: 1, leaseMs: 30000 },
+    clock,
+  )
+  expect(await first.run()).toMatchObject({ acquired: true, examined: 1, deleted: 1 })
+  expect(provider.state.deletes).toBe(1)
+  const restarted = mediaMaintenanceJob(
+    fixture.connection,
+    service,
+    { batchSize: 1, leaseMs: 30000 },
+    clock,
+  )
+  expect(await restarted.run()).toMatchObject({ acquired: true, examined: 0, deleted: 0 })
+  expect(provider.state.deletes).toBe(1)
+  expect((await asset(upload.assetId)).status).toBe('deleted')
+})
+it('Package G: another media worker cannot acquire an active lease; an expired owner cannot checkpoint after takeover', async () => {
+  const old = jobLeaseService(fixture.connection, 'media-maintenance', 1000, clock),
+    claim = await old.acquire()
+  if (!claim) throw new Error('Missing lease')
+  const job = mediaMaintenanceJob(
+    fixture.connection,
+    service,
+    { batchSize: 1, leaseMs: 1000 },
+    clock,
+  )
+  expect(await job.run()).toMatchObject({ acquired: false })
+  time += 1001
+  expect(await job.run()).toMatchObject({ acquired: true })
+  await expect(old.finish(claim.owner)).rejects.toMatchObject({ code: 'STATE_CONFLICT' })
+})
+it('Package G: uncertain provider deletion is retained for lookup after restart, never blindly resent', async () => {
+  const upload = await service.uploadPublic(admin.token, imageFile())
+  time += 61000
+  provider.state.uncertainDelete = true
+  const job = () =>
+    mediaMaintenanceJob(fixture.connection, service, { batchSize: 1, leaseMs: 30000 }, clock)
+  expect(await job().run()).toMatchObject({ pending: 1, deleted: 0 })
+  expect(await job().run()).toMatchObject({ pending: 1, deleted: 0 })
+  expect(provider.state.deletes).toBe(1)
+  provider.assets.clear()
+  expect(await job().run()).toMatchObject({ deleted: 1 })
+  expect((await asset(upload.assetId)).status).toBe('deleted')
+})
+it('Package G: production maintenance retention policy preserves private evidence without an elapsed explicit retainUntil', async () => {
+  const uploaded = await service.uploadPublic(admin.token, imageFile()),
+    pub = await asset(uploaded.assetId)
+  time += 61000
+  expect(mediaMaintenanceDeletionAllowed(pub, clock())).toBe(true)
+  pub.legalHold = true
+  expect(mediaMaintenanceDeletionAllowed(pub, clock())).toBe(false)
+  const evidence = await service.uploadEvidence(customer.token, scope, imageFile()),
+    priv = await asset(evidence.assetId)
+  time += 61000
+  expect(mediaMaintenanceDeletionAllowed(priv, clock())).toBe(false)
+  priv.retainUntil = new Date(time + 1000)
+  expect(mediaMaintenanceDeletionAllowed(priv, clock())).toBe(false)
+  time += 1001
+  expect(mediaMaintenanceDeletionAllowed(priv, clock())).toBe(true)
+  priv.legalHold = true
+  expect(mediaMaintenanceDeletionAllowed(priv, clock())).toBe(false)
+})
+
+it('Package G: compiled media bootstrap preserves existing assets on replay and maintenance defaults off without provider calls', async () => {
+  const uploaded = await service.uploadPublic(admin.token, imageFile()),
+    before = (await asset(uploaded.assetId)).toObject(),
+    run = promisify(execFile),
+    env = {
+      ...process.env,
+      ...testEnvironment(),
+      MONGODB_URI: fixture.replica.getUri(),
+      MONGODB_DB_NAME: fixture.connection.name,
+      MEDIA_MAINTENANCE_ENABLED: 'false',
+    }
+  for (let attempt = 0; attempt < 2; attempt++)
+    await run(process.execPath, ['scripts/bootstrap-media.mjs'], { env })
+  expect((await asset(uploaded.assetId)).toObject()).toEqual(before)
+  await expect(
+    run(process.execPath, ['scripts/bootstrap-media.mjs', '--activate'], { env }),
+  ).rejects.toMatchObject({ code: 1 })
+  await expect(
+    run(process.execPath, ['scripts/media-maintenance.mjs'], { env }),
+  ).rejects.toMatchObject({ code: 1 })
+  expect((await asset(uploaded.assetId)).toObject()).toEqual(before)
+  expect(provider.state.deletes).toBe(0)
 })

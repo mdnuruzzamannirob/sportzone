@@ -8,6 +8,13 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 2 November 2026 — Package G backend verification preparation
+
+- Added explicitly admitted, leased media maintenance with retention/legal-hold safeguards and restart/uncertain-delete regression; composed standalone local/test public media independently of returns.
+- Included payment/refund reconciliation and media worker entries plus reviewed staging scripts in the restricted runtime image context.
+- Fixed the payment-bootstrap test's blocking child-process invocation; retained protected static bootstrap stage diagnostics.
+- Started backend closeout verification; [current evidence and external acceptance limits](docs/evidence/P09-011-staging-runtime.md#package-g-verification). No hosted staging, media-policy approval or independent backend acceptance is claimed.
+
 ## 2 November 2026 — Package F backend operations completion
 
 - Completed authoritative financial reports/dashboard and bounded sanitized operational queues using domain-owned source projections and explicit current cutoff/event dates.

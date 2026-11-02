@@ -1,5 +1,5 @@
 import { loadEnvironment } from '../../src/config/env.js'
-import { spawnSync } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import { testEnvironment } from '../helpers/environment.js'
 import { createHash } from 'node:crypto'
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from 'vitest'
@@ -456,12 +456,23 @@ it('compiled local bootstrap preserves durable operations and refuses deployed p
     MONGODB_URI: db.replica.getUri(),
     MONGODB_DB_NAME: db.connection.name,
   }
-  for (let run = 0; run < 2; run++) {
-    const result = spawnSync(process.execPath, ['scripts/bootstrap-payment-initiation.mjs'], {
-      cwd: process.cwd(),
-      env,
-      encoding: 'utf8',
+  // Keep the replica-set supervisor's event loop live while the child verifies persistence.
+  const bootstrap = (environment: NodeJS.ProcessEnv) =>
+    new Promise<{ status: number | null; stderr: string }>((resolve, reject) => {
+      const child = spawn(process.execPath, ['scripts/bootstrap-payment-initiation.mjs'], {
+        cwd: process.cwd(),
+        env: environment,
+        stdio: ['ignore', 'ignore', 'pipe'],
+      })
+      let stderr = ''
+      child.stderr.setEncoding('utf8').on('data', (chunk: string) => {
+        stderr += chunk
+      })
+      child.on('error', reject)
+      child.on('close', (status) => resolve({ status, stderr }))
     })
+  for (let run = 0; run < 2; run++) {
+    const result = await bootstrap(env)
     expect(result.status, result.stderr).toBe(0)
   }
   expect(await paymentInitiationModel(db.connection).countDocuments()).toBe(1)
@@ -480,11 +491,7 @@ it('compiled local bootstrap preserves durable operations and refuses deployed p
     EMAIL_CHANGE_ENABLED: 'false',
   }
   expect(() => loadEnvironment(production)).not.toThrow()
-  const denied = spawnSync(process.execPath, ['scripts/bootstrap-payment-initiation.mjs'], {
-    cwd: process.cwd(),
-    env: production,
-    encoding: 'utf8',
-  })
+  const denied = await bootstrap(production)
   expect(denied.status).toBe(1)
   expect(denied.stderr).not.toContain(env.MONGODB_URI)
 })

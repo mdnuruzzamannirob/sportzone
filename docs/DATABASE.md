@@ -1797,6 +1797,12 @@ financial state and repeated command replay never refreshes its request time.
 
 **Rules:** process reservation expiry, payment uncertainty, refund verification and notification retries through idempotent domain services. A lease alone does not make a job's financial side effects idempotent.
 
+Media maintenance uses jobKey `media-maintenance` with the existing unique lease identity. It fences
+before each bounded asset operation and before success; an expired owner cannot checkpoint. Asset CAS
+and durable upload/delete intent remain the effect authority across lease takeover. Private evidence
+without explicit elapsed `retainUntil`, held assets and referenced assets cannot be deleted by this
+worker. No new collection or automatic ledger TTL is introduced.
+
 The reservation-expiry partition uses jobKey `reservation-expiry`, a random owner per acquisition and
 a bounded reservation-ID cursor. A live lease cannot be stolen; every business transaction checks the
 same owner/expiry before and after domain writes. Stale owners cannot commit effects or checkpoint

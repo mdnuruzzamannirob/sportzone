@@ -368,6 +368,13 @@ test('SUPPORT-BOUNDARY-01: support routes cannot import audit or complaint persi
   }
 })
 
+test('MEDIA-WORKER-BOUNDARY: scheduled maintenance cannot import foreign private media persistence', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/modules/media/media.model.ts', 'export const model = 1')
+  put('backend/src/jobs/media-maintenance.job.ts', 'import "../modules/media/media.model.js"')
+  assert.ok(checkBoundaries(root).errors.some((error) => error.includes('private persistence')))
+})
+
 test('REPORT-BOUNDARY-01: reporting cannot import foreign private persistence', (t) => {
   const { root, put } = fixture(t)
   for (const owner of ['orders/order', 'payments/payment', 'refunds/refund']) {

@@ -427,3 +427,99 @@ The authorized free-demo catalog work is complete. P09-011 remains Deferred only
 full hosted scheduler/runtime/transaction/session/recovery acceptance; this result does not self-approve
 M1–M8 or remove initial-release prerequisites. P04-003 retains the owner-approved free-demo deferral
 for persistent scanner/media lifecycle/policy acceptance, with media disabled.
+
+## Package G verification
+
+**2 November 2026; executor/reviewer: Codex.** Package G covers P04-003, P09-011 and
+P03-022. Input baseline is owner commit `def7f8e` plus the G working-tree changes listed
+below. This section supersedes earlier local preparation summaries only for the checks
+explicitly rerun; historical provider evidence retains its original revision/environment.
+
+### Implementation and ownership review
+
+- Media maintenance has a real one-shot CLI, explicit nonproduction configuration, bounded
+  batches and the existing durable `media-maintenance` lease. It fences each candidate and
+  success, uses the public media service rather than private persistence from the job, and
+  keeps provider calls outside transactions. Existing asset CAS and uncertain-outcome lookup
+  prevent duplicate effects after restart/takeover. Legal holds/references prevent deletion;
+  private evidence also requires explicit elapsed retention. No startup DDL is introduced.
+- An explicit local/test bootstrap provisions only the ledger/shared lease foundation.
+  Public admin media composition no longer depends on return activation; actual adapters,
+  policy, admin authentication and deployed-environment denial remain enforced.
+- Runtime packaging includes the payment/refund reconciliation and media maintenance
+  entries; Docker context includes the existing reviewed staging inventory/catalog scripts.
+  This does not prove a rebuilt/deployed image or a running scheduled worker.
+- Consolidated regression exposed a payment-initiation bootstrap test failure. Synchronous
+  child execution blocked the local replica supervisor; asynchronous child execution keeps
+  its event loop live. Bootstrap logs identify only a fixed internal stage, never raw driver
+  diagnostics/configuration. The actual CLI is still tested twice for additive preservation
+  and once for production refusal, without increasing a timeout or removing assertions.
+- Changed owners: media configuration/setup, media cleanup domain service, jobs, operator
+  scripts and container tooling. No frontend runtime, financial authority, production
+  environment, provider account setting or unrelated owner change was modified.
+
+### Observed verification
+
+- `npm run ci -- --scope=backend`: tooling, import boundaries, backend formatting/lint/types,
+  API contract tests, unit tests, build and smoke **Passed**. Consolidated real isolated
+  MongoDB replica-set integration: **1,232 Passed / 1 Failed** across 50 files (1,233 cases).
+  Original failure is retained in `test-results/ci/backend.json` and
+  `test-results/database.json`; it is not relabeled a successful full pipeline.
+- After the scoped bootstrap-test fix:
+  `cd backend && ../node_modules/.bin/vitest run --config vitest.integration.config.ts payment-initiation.test.ts --reporter=dot`:
+  **25 Passed**. Combined with unchanged-suite results, all 1,233 integration cases have
+  passing observations; the complete pipeline was not rerun after this localized fix.
+- `npm run test:unit --workspace=backend -- media-maintenance-config.test.ts return-operations-config.test.ts`:
+  **7 Passed**. Focused `media.test.ts`: **23 Passed**, including four G lease/restart,
+  uncertain-delete and private-retention scenarios. External provider/scanner are test
+  doubles in this integration suite; real MongoDB transactions are used.
+- Sandbox-only retries cannot bind local replica sockets (EPERM). Applicable replica/tooling
+  checks run outside that restriction against generated local databases; no staging DB is
+  substituted. Local Docker still fails OS socket permission, including outside the sandbox;
+  socket/group/sudo controls were not changed. Current-source Docker build/runtime:
+  **Not Run**. Historical container evidence is not current-source verification.
+- No frontend build/test/browser, real payout/refund, customer email, staging DDL, deployment,
+  billable resource creation, source push or synthetic provider asset creation was performed.
+
+### Real target inspection and remaining acceptance
+
+Protected read-only Render inspection identifies the existing free Oregon service
+`srv-dbi9dce7bikc73ah07ng` (`sportzone-api-staging`). Its live deploy
+`dep-dbid4l142hec73d3sngg` runs historical catalog revision
+`84403afe833ee082512ba0d4bc695807030eb14f`, not Package A–G. Live/authorized-ready/catalog
+probes returned 200; these prove only that older restricted deployment. The current protected
+staging configuration has no scanner host. No secret value is recorded here.
+
+The previously accepted owner limit is free-only. Render's free tier has sleeping web
+services, no free persistent worker/private service or disk; a protected continuously
+available ClamAV service needs a suitable separate runtime. Official references:
+[Render free limitations](https://render.com/docs/free),
+[ClamAV image resource guidance](https://docs.clamav.net/manual/Installing/Docker.html).
+A temporary CI scanner is useful for qualification but does not establish persistent hosted
+scanner availability. The existing real media qualification run
+[41091490222](https://github.com/mdnuruzzamannirob/sportzone/actions/runs/41091490222)
+passed at `774442f847da4a7a2212ba463a605ce11ddb5842`; it does not certify this runtime revision.
+
+To close G, use an owner-authorized existing server or review a hosting plan within an
+explicit budget; build the final revision on a Docker-enabled runner; review the target
+schema/index inventory and apply approved additive provisioning; deploy matching API and
+bounded scheduled worker entries with private scanner/current signatures and protected
+secrets. Then record actual HTTPS/session, restart/drain/recovery, clean/EICAR, public/private
+media/privacy/expiry/retention and sandbox provider/test-email qualification on that target.
+Collect independent owner acceptance for P03-022 after P04-003/P09-011 pass. No production
+merchant activation or product milestone is implied by that backend closeout.
+
+The owner answered the hosting preference question on 2 November 2026:
+“Free-only সীমা বজায় রাখো”. This reconfirms the free-only constraint; no billable hosting
+is authorized. P04-003/P09-011 remain **Deferred** under this decision; P03-022 is
+**In Progress** with local consolidation delivered. Free qualification runs may supply
+check evidence, but do not substitute for the required hosted scanner/worker acceptance.
+Neither local tests nor this evidence manufacture external or independent acceptance.
+
+### Final affected checks and snapshot
+
+- Final affected replica-set run: `cd backend && ../node_modules/.bin/vitest run --config vitest.integration.config.ts media.test.ts payment-initiation.test.ts --reporter=dot`: **49 Passed** (24 media, 25 payment initiation), including compiled media bootstrap replay/preservation, unexpected-argument refusal and default-disabled maintenance refusal. Together with unchanged suite results, all **1,234** current integration cases have passing observations; the original full-run report remains a failed historical run.
+- Final root tooling `npm run test:unit`: **82 Passed** with required process/socket access. Restricted-sandbox retries failed supervisor/socket fixtures and are superseded by this actual successful run.
+- `npm run test:security`: **Passed**, Gitleaks history/current snapshot clean and dependency advisory counts zero (`test-results/security.json`). This script scans the repository; no frontend builds/tests were run.
+- Backend typecheck and formatting, repository documentation/link lint and `git diff --check`: **Passed**. Executor inspected the changed diff for ownership, secret output, provider effects and unrelated changes.
+- Verification input SHA-256 of sorted tracked/nonignored source inventory (path NUL bytes NUL; backend/scripts/tooling/shared/manifests): `94415aff675c7efffa650ffc34a250a5108593e0ea1bd2f31e1cc3d1a62b7815`. No protected environment file is part of this inventory. This is a working-tree snapshot, not a deployed revision or independent acceptance.
