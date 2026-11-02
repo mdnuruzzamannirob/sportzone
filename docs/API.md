@@ -1480,7 +1480,7 @@ a manual fallback requires protected consent authority. Delivery charges require
 approval. Without a configured gateway, payout admission returns unavailable without consuming intent.
 The dispatcher binds the original collection to the configured merchant, persists a unique intent before
 transport and sends at most once; acknowledgment/timeout leaves processing and reserved funds. Verified
-outcome/release/retry/manual confirmation remain the separate outcome/recovery workflow (§13.5).
+outcome/release/retry/manual confirmation use the guarded outcome/recovery workflow (§13.5).
 Private status reports and manual verification alone never record Completed. Admin projections add
 `basisRefId?`, component amounts and, in detail/group responses, current `sourceCapacity`, `orderCapacity`
 and bounded safe attempt identities/states/provider references. They exclude original bank references,
@@ -1524,6 +1524,30 @@ records verified transfer reference/evidence (where the one-admin baseline canno
 trail and verification standard is required). The server sets `confirmedAt` from independently verified transfer evidence;
 a client-supplied timestamp is not proof. `Completed` requires verified transfer, not uploaded screenshot alone. The
 7-business-day refund target is a policy goal, not a fabricated gateway SLA.
+
+**Outcome/recovery:** Reconcile reads the current durable attempt, queries the configured provider outside
+transactions where a provider reference exists, and requires protected independent amount/identity/time
+proof before completion or terminal no-payout release. A provider status report alone never proves a
+payout. Unknown outcomes retain processing/reserved state. Manual payout-attempt admission records a
+submitted intent without executing a transfer; manual-confirmations requires independently verified
+masked destination, exact transfer reference, amount/time and applicable consent. Completion, source/
+order/unit/delivery settlement, attempt proof, audit and notification intent commit atomically.
+
+`payout-attempts` with a failed/released refund is an explicit admin retry. Only an attempt already
+closed by verified no-payout evidence can authorize a new identity; original approval/timing remain.
+Re-reserve original entitlements transactionally before creating that identity. Reconcile cannot retry.
+Review rejection releases a created, undispatched intent only; submitted/uncertain attempts require
+verified no-payout reconciliation. Same command keys bind payloads; replay never repeats payout.
+Protected proof and transfer destinations are never accepted as financial facts from HTTP request bodies.
+If initiation acknowledgment was lost, a qualified independent artifact may supply the original
+provider reference only after refund/order/source/attempt/amount/method/merchant/bank/merchant-ref
+binding; query that reference and persist it atomically with the verified outcome. Never resend to
+recover a missing provider ID. Proof timestamps must name a timezone; read-only polls do not invalidate
+later-arriving proof of an outcome after the original durable dispatch. Manual transfer references
+are provider/account-qualified and unique across confirmed manual attempts. Duplicate references
+conflict without financial effects. A single admin may operate the protected approval/confirmation
+trail; current authorization is rechecked after external verification. Approval/payout history is
+immutable causal audit, and notification delivery rechecks those facts and the original recipient.
 
 ### 13.4 Refund response and statuses
 

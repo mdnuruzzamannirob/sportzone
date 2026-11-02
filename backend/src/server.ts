@@ -1,3 +1,4 @@
+import { protectedRefundEvidence } from './modules/refunds/refund-evidence.service.js'
 import { createHash } from 'node:crypto'
 import { loadRefundOperationsOptions } from './config/refunds.js'
 import { loadSslcommerzOptions } from './config/payments.js'
@@ -78,6 +79,9 @@ export async function startServer(
       refundOptions
         ? {
             options: refundOptions,
+            ...(process.env.REFUND_PAYOUT_EVIDENCE_FILE
+              ? { verifyEvidence: protectedRefundEvidence(process.env.REFUND_PAYOUT_EVIDENCE_FILE) }
+              : {}),
             ...(refundGateway
               ? {
                   gateway: {

@@ -1087,3 +1087,96 @@ export function claimEligibilitySnapshotAccess(connection: Connection) {
     }
   }
 }
+
+// Refunds supplies only persisted obligation slices; Orders owns original ordinal settlement.
+export function refundUnitOutcomeAccess(connection: Connection) {
+  const { orders, balances } = orderModels(connection)
+  const id = z.string().regex(/^[a-f0-9]{24}$/)
+  const command = z.strictObject({
+    orderId: id,
+    action: z.enum(['complete', 'release', 'reserve']),
+    items: z
+      .array(
+        z.strictObject({
+          orderItemId: id,
+          unitAmounts: z
+            .array(
+              z.strictObject({
+                ordinal: z.int().min(1).max(50),
+                amountPoisha: z.int().positive().max(Number.MAX_SAFE_INTEGER),
+              }),
+            )
+            .min(1)
+            .max(50),
+        }),
+      )
+      .max(50),
+  })
+  return async (session: ClientSession, raw: unknown) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    const input = parseInput(command, raw)
+    await verifyOrderPersistence(connection)
+    const order = await orders.findById(input.orderId).session(session)
+    if (!order) throw new ApiError('NOT_FOUND')
+    if (new Set(input.items.map((i) => i.orderItemId)).size !== input.items.length)
+      throw new ApiError('STATE_CONFLICT')
+    for (const item of input.items) {
+      const row = await balances
+        .findOne({ orderId: input.orderId, orderItemId: item.orderItemId })
+        .session(session)
+      if (
+        !row ||
+        row.revision >= Number.MAX_SAFE_INTEGER ||
+        new Set(item.unitAmounts.map((u) => u.ordinal)).size !== item.unitAmounts.length
+      )
+        throw new ApiError('STATE_CONFLICT')
+      const coverage = row.toObject().unitCoverage
+      for (const amount of item.unitAmounts) {
+        const unit = coverage.find((u) => u.ordinal === amount.ordinal)
+        if (!unit) throw new ApiError('STATE_CONFLICT')
+        if (input.action === 'reserve') {
+          if (
+            BigInt(unit.refundHeldPoisha) +
+              BigInt(unit.refundCompletedPoisha) +
+              BigInt(amount.amountPoisha) >
+            BigInt(unit.netEntitlementPoisha)
+          )
+            throw new ApiError('REFUND_BALANCE_EXCEEDED')
+          unit.refundHeldPoisha += amount.amountPoisha
+        } else {
+          if (unit.refundHeldPoisha < amount.amountPoisha) throw new ApiError('STATE_CONFLICT')
+          unit.refundHeldPoisha -= amount.amountPoisha
+          if (input.action === 'complete') unit.refundCompletedPoisha += amount.amountPoisha
+        }
+      }
+      const changed = await balances.updateOne(
+        { _id: row._id, revision: row.revision },
+        {
+          $set: {
+            ...Object.fromEntries(
+              item.unitAmounts.flatMap((amount) => {
+                const unit = coverage[amount.ordinal - 1]
+                if (!unit) throw new ApiError('STATE_CONFLICT')
+                return [
+                  [`unitCoverage.${amount.ordinal - 1}.refundHeldPoisha`, unit.refundHeldPoisha],
+                  [
+                    `unitCoverage.${amount.ordinal - 1}.refundCompletedPoisha`,
+                    unit.refundCompletedPoisha,
+                  ],
+                ]
+              }),
+            ),
+            refundedMerchandiseQty: coverage.filter(
+              (u) =>
+                u.netEntitlementPoisha > 0 && u.refundCompletedPoisha === u.netEntitlementPoisha,
+            ).length,
+          },
+          $inc: { revision: 1 },
+        },
+        { session },
+      )
+      if (changed.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
+    }
+    return { deliveryChargePoisha: order.pricingSnapshot.deliveryChargePoisha }
+  }
+}

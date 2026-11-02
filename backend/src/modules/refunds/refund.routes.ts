@@ -24,6 +24,9 @@ export function refundRoutes(
     '/admin/refunds/:refundId',
     '/admin/refund-groups',
     '/admin/refunds/:refundId/payout-attempts',
+    '/admin/refunds/:refundId/reconcile',
+    '/admin/refunds/:refundId/manual-confirmations',
+    '/admin/refunds/:refundId/review',
   ])
     router.options(path, cors)
   router.get('/admin/refunds', cors, http.require('admin'), async (req, res) => {
@@ -70,5 +73,39 @@ export function refundRoutes(
       )
     },
   )
+  for (const suffix of ['reconcile', 'manual-confirmations', 'review'] as const) {
+    router.post(
+      `/admin/refunds/:refundId/${suffix}`,
+      cors,
+      security.require('admin', 'admin'),
+      http.require('admin'),
+      async (req, res) => {
+        parseInput(z.strictObject({}), req.query)
+        respond(
+          res,
+          await (suffix === 'reconcile'
+            ? service.reconcile(
+                token(req.get('Cookie')),
+                parseInput(params, req.params).refundId,
+                req.body,
+                req.get('Idempotency-Key'),
+              )
+            : suffix === 'manual-confirmations'
+              ? service.confirmManual(
+                  token(req.get('Cookie')),
+                  parseInput(params, req.params).refundId,
+                  req.body,
+                  req.get('Idempotency-Key'),
+                )
+              : service.review(
+                  token(req.get('Cookie')),
+                  parseInput(params, req.params).refundId,
+                  req.body,
+                  req.get('Idempotency-Key'),
+                )),
+        )
+      },
+    )
+  }
   return router
 }

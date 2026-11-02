@@ -1,3 +1,15 @@
+import { returnMessageService } from './modules/notifications/return-message.service.js'
+import { returnNotificationProofAccess } from './modules/returns/return.service.js'
+import {
+  refundRecoveryService,
+  refundNotificationProofAccess,
+} from './modules/refunds/refund-recovery.service.js'
+import type { RefundOutcomeVerifier } from './modules/refunds/refund-outcome.schema.js'
+import {
+  refundDecisionNotifier,
+  refundMessageService,
+} from './modules/notifications/refund-message.service.js'
+import { refundUnitOutcomeAccess } from './modules/orders/order.service.js'
 import { refundOperationsOptions, type RefundOperationsOptions } from './config/refunds.js'
 import { refundRoutes } from './modules/refunds/refund.routes.js'
 import { refundOperationsService } from './modules/refunds/refund-operations.service.js'
@@ -388,6 +400,11 @@ export function configuredOrderOperations(
         return entry.approval
       },
       clock,
+      refundDecisionNotifier(
+        returnNotificationOrderAccess(connection),
+        createRegistrationNotifications(connection, clock),
+        createAuditWriter(connection),
+      ),
     ),
   }
 }
@@ -500,11 +517,56 @@ export function composeLocalReviewRoutes(
 
 export type RefundOperationsDependencies = {
   options: RefundOperationsOptions
+  verifyEvidence?: RefundOutcomeVerifier
   gateway?: {
-    client: Pick<ReturnType<typeof createSslcommerzAdapter>, 'initiateRefund'>
+    client: Pick<ReturnType<typeof createSslcommerzAdapter>, 'initiateRefund'> &
+      Partial<Pick<ReturnType<typeof createSslcommerzAdapter>, 'queryRefund'>>
     merchantAccountKey: string
   }
 }
+export function composeRefundRecovery(
+  connection: Connection,
+  admins: Parameters<typeof refundRecoveryService>[1],
+  dependencies: Pick<RefundOperationsDependencies, 'gateway' | 'verifyEvidence'> &
+    Partial<Pick<RefundOperationsDependencies, 'options'>>,
+  clock: () => Date = () => new Date(),
+) {
+  const policy = dependencies.options
+    ? structuredClone(refundOperationsOptions.parse(dependencies.options))
+    : undefined
+  return refundRecoveryService(
+    connection,
+    admins,
+    refundFundingAccess(connection),
+    refundUnitOutcomeAccess(connection),
+    dependencies.verifyEvidence,
+    dependencies.gateway?.client.queryRefund
+      ? {
+          client: { queryRefund: dependencies.gateway.client.queryRefund },
+          merchantAccountKey: dependencies.gateway.merchantAccountKey,
+        }
+      : undefined,
+    refundDecisionNotifier(
+      returnNotificationOrderAccess(connection),
+      createRegistrationNotifications(connection, clock),
+      createAuditWriter(connection),
+    ),
+    clock,
+    policy
+      ? async (_session, input) => {
+          const row = policy.authorizations.find(
+            (r) =>
+              r.orderId === input.orderId &&
+              r.basis === input.basis &&
+              r.basisRefId === input.basisRefId,
+          )
+          if (!row) throw new ApiError('SERVICE_UNAVAILABLE')
+          return row.approval
+        }
+      : undefined,
+  )
+}
+
 export function composeRefundOperationsRoutes(
   connection: Connection,
   auth: Pick<
@@ -518,6 +580,11 @@ export function composeRefundOperationsRoutes(
   if (dependencies.gateway && !/^[a-f0-9]{64}$/.test(dependencies.gateway.merchantAccountKey))
     throw new ApiError('SERVICE_UNAVAILABLE')
   const funding = refundFundingAccess(connection)
+  const notify = refundDecisionNotifier(
+    returnNotificationOrderAccess(connection),
+    createRegistrationNotifications(connection, clock),
+    createAuditWriter(connection),
+  )
   const reservation = refundReservationService(
     connection,
     auth.adminAccounts,
@@ -550,6 +617,7 @@ export function composeRefundOperationsRoutes(
       }
     },
     clock,
+    notify,
   )
   const dispatch = dependencies.gateway
     ? refundDispatchService(
@@ -559,10 +627,19 @@ export function composeRefundOperationsRoutes(
         dependencies.gateway.client,
         clock,
         dependencies.gateway.merchantAccountKey,
+        notify,
       )
     : undefined
+  const recovery = composeRefundRecovery(connection, auth.adminAccounts, dependencies, clock)
   return refundRoutes(
-    refundOperationsService(connection, auth.adminAccounts, funding, reservation, dispatch),
+    refundOperationsService(
+      connection,
+      auth.adminAccounts,
+      funding,
+      reservation,
+      dispatch,
+      recovery,
+    ),
     auth.security,
     auth.sessions,
   )
@@ -1022,9 +1099,13 @@ export async function composeNotificationWorker(
         settings: RetryPolicy
         paymentsEnabled?: boolean
         commerceEnabled?: boolean
+        afterSalesEnabled?: boolean
       },
 ) {
   const { settings } = options
+  const afterSalesEnabled = 'afterSalesEnabled' in options && options.afterSalesEnabled === true
+  if (afterSalesEnabled && !['local', 'test'].includes(config.APP_ENV))
+    throw new Error('After-sales notifications require local/test activation')
   const paymentsEnabled = 'paymentsEnabled' in options && options.paymentsEnabled === true
   const commerceEnabled = 'commerceEnabled' in options && options.commerceEnabled === true
   if (commerceEnabled && !['local', 'test'].includes(config.APP_ENV))
@@ -1053,5 +1134,15 @@ export async function composeNotificationWorker(
         )
       : undefined,
     commerceEnabled ? orderMessageService(orderNotificationAccess(connection)) : undefined,
+    afterSalesEnabled
+      ? returnMessageService(
+          returnNotificationProofAccess(connection, returnNotificationOrderAccess(connection)),
+        )
+      : undefined,
+    afterSalesEnabled
+      ? refundMessageService(
+          refundNotificationProofAccess(connection, returnNotificationOrderAccess(connection)),
+        )
+      : undefined,
   )
 }

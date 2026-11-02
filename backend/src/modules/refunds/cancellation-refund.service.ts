@@ -1,3 +1,4 @@
+import type { RefundNotifier } from './refund-recovery.service.js'
 import { createHash } from 'node:crypto'
 import { Types, type Connection, type ClientSession } from 'mongoose'
 import { z } from 'zod'
@@ -35,6 +36,7 @@ export function cancellationRefundService(
   funding: ReturnType<typeof refundFundingAccess>,
   policy?: Parameters<typeof refundReservationService>[6],
   clock: () => Date = () => new Date(),
+  notify?: RefundNotifier,
 ) {
   const refunds = refundModel(connection),
     attempts = refundAttemptModel(connection),
@@ -194,6 +196,13 @@ export function cancellationRefundService(
         createdAt: now,
         updatedAt: now,
       }).save({ session, timestamps: false })
+      await notify?.(session, {
+        refundId: row._id.toHexString(),
+        orderId: input.orderId,
+        status: 'approved',
+        operationKey: hash(`approved:${row._id}`),
+        occurredAt: now,
+      })
     }
     await audit(session, {
       actorType: 'admin',

@@ -55,7 +55,8 @@ const proofSchema = z.strictObject({
 })
 
 // Private read-only verification. The reader and verifier are protected capabilities, never request
-// fields. Real completion must reauthorize and fence the same facts in the financial transaction.
+// fields. Canonical refundRecoveryService separately reauthorizes/fences persisted facts and settles
+// the financial ledger atomically; this compatibility capability remains read-only.
 export function manualPayoutVerificationService(
   admin: AdminAccountAccess,
   readReserved: (session: ClientSession, refundId: string) => Promise<unknown>,

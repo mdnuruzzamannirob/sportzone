@@ -6,3 +6,9 @@ useDefault = true
 [[allowlists]]
 description = "Generated dependencies, builds, caches and test reports; source and history remain scanned"
 paths = ['''(^|/)(node_modules|\.next|dist|coverage|test-results|\.cache|\.git)/''']
+
+
+[[allowlists]]
+description = "Confirmed ordinary evidence prose, not a credential; exact English phrase only"
+regexTarget = "secret"
+regexes = ['''^funding/quantity/concurrency$''']

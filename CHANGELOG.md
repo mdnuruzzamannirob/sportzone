@@ -8,6 +8,14 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 2 November 2026 — Package D refund outcome and recovery
+
+- Completed P08-009/010/011 with independently bound payout proof, atomic source/order/unit/delivery settlement and guarded review/reconcile/manual-confirmation APIs.
+- Added explicit safe retry, qualified lost-reference recovery, consented manual fallback, original-transfer uniqueness and a durable lease/cursor reconciliation runner.
+- Added transactional status-specific refund intents and verified return/refund worker composition; migrated only known notification predecessors and retained all history.
+- Verified final 806 unit and 23 focused recovery cases, 446-case integration regression plus 313 checkout rerun, 112 contracts and 80 tooling cases. [Evidence and release scope](docs/evidence/P08-009-010-local-refund-evidence.md#package-d-completion).
+- Narrowly classified a known English-prose scanner false positive; same-document credential detection remains verified. Counts: 122 Done, 9 Blocked, 77 Not Started, 2 Deferred; no real payout or release/milestone qualification claimed.
+
 ## 2 November 2026 — Package C refund foundation and dispatch
 
 - Completed P08-005/006/007/008 with protected local/test policy configuration and canonical admin refund group/list/detail/gateway-attempt APIs.

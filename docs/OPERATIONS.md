@@ -1529,12 +1529,15 @@ worker readiness, build and explicitly run `migrate-notifications.mjs` or the lo
 leases, accepted sends and uncertainty. Old binaries need a schema-compatible rollback build rather
 than deletion or a validator downgrade. Provider acceptance remains distinct from inbox delivery.
 
-Return-decision outbox events extend the known commerce validator; before upgraded readiness, use
-`migrate-notifications.mjs` in local/test to upgrade only an exact recognized predecessor. Preserve
-queued/sent/uncertain rows and audit/order/claim facts together; do not downgrade validators or delete
-outbox records to roll back. The local return sender requires explicit composition and is not enabled
-by ordinary worker configuration. Real sender/provider qualification and refund-completion delivery
-remain separate gates.
+Return/refund outbox events require the known additive notification successor. Before upgraded
+readiness, run `migrate-notifications.mjs` or `bootstrap-refunds.mjs` in local/test; only exact known
+predecessors migrate. Set `AFTER_SALES_NOTIFICATIONS_ENABLED=true` on the separately scheduled
+`notification-worker.mjs` to compose both protected renderers. Keep the test-recipient override,
+accepted-send/uncertain recovery and provider/sender safeguards. The worker validates causal audit,
+original recipient and confirmed payout before refund-completed wording. A return-completed message
+explicitly does not assert payout. Default workers skip these intents. Staging/production qualification
+remains its existing release gate. Preserve outbox, leases and original audit/order/refund facts together;
+never delete them or downgrade validators to force rollback.
 
 Policy bounds: 1–10 attempts; 1–100 claims per batch; base delay 100–3600000 ms; maximum delay at least the base and at most
 86400000 ms; lease 1000–3600000 ms; HTTP timeout 1–60000 ms. Require lease strictly greater than timeout plus 1000 ms.
@@ -1900,7 +1903,10 @@ A `cancelled` report or an unknown outcome remains under investigation; never re
 After backend build, run `node --env-file=.env backend/scripts/bootstrap-refunds.mjs` only against
 an owned local/test database. The explicit migration recognizes the exact correction-only predecessor,
 checks existing rows against the new validator, adds indexes and preserves historical intents. It
-creates strict `refundAttempts` persistence with one open attempt per obligation and no TTL. Unknown
+creates strict `refundAttempts` persistence with one open attempt per obligation and no TTL; adds the
+unique manual transfer-reference index, migrates the exact known notification predecessor and provisions
+existing durable job leases. Pre-existing duplicate transfer references stop index creation: investigate
+original proofs, never delete financial history to force activation. Unknown
 validator drift fails closed; ordinary startup never repairs it. Existing databases must complete this
 step before running a new binary/payment-initiation bootstrap that verifies the extended refund schema.
 
@@ -1935,8 +1941,59 @@ verified disbursement. Never exercise real payout on a developer's behalf withou
 Back up and restore refunds, attempts, source/aggregate/unit/delivery counters, cancellation/allocation
 history and audit consistently. An older correction-only binary cannot verify or process the extended
 schema. Roll back application code only to a compatible build; retain financial records and reconcile
-external effects. Reconciliation, verified completion/release, safe retry and ordinary scheduler activation
-remain separate outcome/recovery capabilities and must not be simulated by manual database edits.
+external effects. Never use manual database edits to simulate outcome or retry authority.
+
+**Outcome evidence:** Configure `REFUND_PAYOUT_EVIDENCE_FILE` to an owner-only regular JSON manifest:
+`{ "version": 1, "entries": [{ "refundId": "<id>", "attemptId": "<id>", "artifactFile":
+"original-settlement.json", "evidenceDigest": "<SHA-256 of original artifact bytes>" }] }`.
+Artifact paths resolve relative to the protected manifest; both files must be owner-controlled regular
+files with no group/other permissions or symlinks. Duplicate refund/attempt entries and digest drift
+fail closed. The artifact is independently qualified settlement/no-payout evidence, not an uploaded
+screenshot or HTTP assertion. It binds refundId, orderId, sourceCollectionId, attemptId, amountPoisha,
+method, provider, outcome (`paid`/`no_payout`), checkedAt and, for paid, paidAt. ISO timestamps must
+include UTC/offset. Gateway proof also binds merchantAccountKey, original bankTranId, refundTransId
+and known/recovered refundRefId; matching provider status remains necessary when a provider reference
+exists. A missing-reference no-payout statement must independently establish terminal nonpayment
+against the original merchant request. A lost acceptance response is never a retry authorization.
+
+For manual confirmation include the exact transferReference/evidenceRef, a masked destination and,
+where the approved refund has consentEvidenceRef, that same reference plus consentDigest and consentAt
+not later than payment. Keep source originals, qualification provenance and retention controls with the
+protected operator/finance evidence. The manifest string or digest alone does not make a transfer true.
+Manual payout admission records intent first; the operator performs the authorized actual transfer
+outside the backend, qualifies its original evidence and then calls manual-confirmations. No bank or
+wallet money-transfer API is invented. Use provider/account-qualified original references; a reference
+already used for a confirmed manual attempt conflicts and must be investigated, not renamed to force
+success. One administrator may maintain this explicit, audited approval/confirmation trail.
+
+Reconcile is a fresh investigation command with a new Idempotency-Key; replaying the same command
+returns current durable state without another verification/payout. Proof must be no earlier than its
+original durable dispatch; a later read-only poll does not erase that causal timestamp. Completion/
+release settles exact source/order/unit/delivery holds, status, proof, audit and outbox atomically.
+Underfunded COD refunds remain Pending in payment projections, correction refunds do not alter
+merchandise progress, and fulfillment history is retained. An explicit payout-attempt request can
+retry only a VERIFIED_NO_PAYOUT failed/released attempt, reacquiring original capacity before a new
+number/identity. Original approval/timing and all old attempts remain.
+A gateway-to-manual fallback after verified nonpayment requires an exact protected authorization
+(order/basis/reference, original policyVersion, manual method and consent reference). Review can
+record that method decision while the obligation remains failed/released; then explicit manual
+admission reacquires capacity and retains the old gateway attempt. It does not reset approval or target
+time. An unqualified client-selected fallback is denied. Cancellation/delivery-exception authorizations
+bind their exact original basis reference; no new financial basis is created by this method review. Created undispatched intent
+can be rejected/released; submitted/uncertain intent cannot. Unknown remains reserved.
+
+**Scheduled recovery:** Set `REFUND_RECONCILIATION_ENABLED=true`, bounded batch/lease/poll values from
+the sanitized environment template, and the canonical original-merchant SSLCOMMERZ sandbox settings.
+Run `node --env-file=.env backend/scripts/reconcile-refunds.mjs` from the operator scheduler in local/test.
+Each invocation uses durable due-attempt timestamps, a resumable ID cursor and the shared lease with
+transactional owner/expiry fences. It performs status/proof investigation only, never payout dispatch.
+Use a lease covering expected network/proof calls or smaller batches; an expired owner cannot settle.
+Malformed/unavailable proof is deferred with INVESTIGATION_REQUIRED so other rows can progress;
+unknown cases remain held. Unknown outcomes also receive that marker after 24 hours from initiation
+(an operational escalation default, not a payout SLA). Inspect aging unknowns/that marker, source caps
+and audit. Qualified recovery
+clears the marker on completion. Scheduler and deployed sender/provider qualification retain their
+existing release checks. After restore, reconcile external effects before authorizing any retry.
 
 #### Private claim persistence bootstrap
 

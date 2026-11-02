@@ -153,6 +153,78 @@ export function refundFundingAccess(connection: Connection) {
         })),
       }
     },
+    async settle(session: ClientSession, raw: unknown) {
+      const input = parseInput(
+        z.strictObject({
+          orderId: z.string().regex(/^[a-f0-9]{24}$/),
+          sourceCollectionId: z.string().regex(/^[a-f0-9]{24}$/),
+          classification: z.enum(['merchandise', 'payment_correction']),
+          amountPoisha: money.refine((n) => n > 0),
+          deliveryAmountPoisha: money,
+          complete: z.boolean(),
+          occurredAt: z.date(),
+        }),
+        raw,
+      )
+      const payment = await read(session, input.orderId)
+      const row = await collections
+        .findOne({ _id: input.sourceCollectionId, orderId: input.orderId, paymentId: payment._id })
+        .session(session)
+      const correction = input.classification === 'payment_correction'
+      const held = correction ? 'correctionRefundHeldPoisha' : 'merchandiseRefundHeldPoisha'
+      const completed = correction
+        ? 'correctionRefundCompletedPoisha'
+        : 'merchandiseRefundCompletedPoisha'
+      if (
+        !row ||
+        row.get(held) < input.amountPoisha ||
+        payment[held] < input.amountPoisha ||
+        payment.deliveryRefundHeldPoisha < input.deliveryAmountPoisha ||
+        (correction && input.deliveryAmountPoisha) ||
+        input.deliveryAmountPoisha > input.amountPoisha ||
+        payment.revision >= Number.MAX_SAFE_INTEGER ||
+        row.get('revision') >= Number.MAX_SAFE_INTEGER
+      )
+        throw new ApiError('STATE_CONFLICT')
+      const inc = {
+        [held]: -input.amountPoisha,
+        ...(input.complete ? { [completed]: input.amountPoisha } : {}),
+        revision: 1,
+      }
+      const source = await collections.collection.updateOne(
+        { _id: row._id, revision: row.get('revision') },
+        { $inc: inc, $set: { updatedAt: input.occurredAt } },
+        { session },
+      )
+      const refunded =
+        payment.merchandiseRefundCompletedPoisha +
+        (!correction && input.complete ? input.amountPoisha : 0)
+      const paymentStatus =
+        !correction &&
+        input.complete &&
+        payment.expectedPoisha > 0 &&
+        payment.merchandiseFundedPoisha === payment.expectedPoisha
+          ? refunded >= payment.merchandiseFundedPoisha
+            ? 'refunded'
+            : 'partially_refunded'
+          : payment.paymentStatus
+      const aggregate = await payments.collection.updateOne(
+        { _id: payment._id, revision: payment.revision },
+        {
+          $inc: {
+            ...inc,
+            deliveryRefundHeldPoisha: -input.deliveryAmountPoisha,
+            ...(input.complete
+              ? { deliveryRefundCompletedPoisha: input.deliveryAmountPoisha }
+              : {}),
+          },
+          $set: { paymentStatus, updatedAt: input.occurredAt },
+        },
+        { session },
+      )
+      if (source.modifiedCount !== 1 || aggregate.modifiedCount !== 1)
+        throw new ApiError('STATE_CONFLICT')
+    },
     async reserve(session: ClientSession, raw: unknown) {
       const input = parseInput(
         z.strictObject({

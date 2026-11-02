@@ -1,3 +1,12 @@
+import { z } from 'zod'
+import { composeRefundRecovery } from '../../src/setup.js'
+import { refundReconciliationJob } from '../../src/jobs/reconcile-refunds.job.js'
+import { refundNotificationProofAccess } from '../../src/modules/refunds/refund-recovery.service.js'
+import { refundMessageService } from '../../src/modules/notifications/refund-message.service.js'
+import type {
+  RefundOutcomeProof,
+  RefundOutcomeVerifier,
+} from '../../src/modules/refunds/refund-outcome.schema.js'
 import { composeRefundOperationsRoutes } from '../../src/setup.js'
 import { initializeMediaPersistence } from '../../src/modules/media/media.persistence.js'
 import { fakeMediaProvider } from '../helpers/media.js'
@@ -9801,4 +9810,968 @@ it('Package B HTTP: real server startup activates configured claims while defaul
     await runtime?.close()
     process.env = originalEnvironment
   }
+})
+
+async function packageDFixture(
+  gateway = false,
+  offset = 60000,
+  manualMethod: 'manual_bank' | 'manual_bkash' | 'manual_nagad' | 'manual_rocket' = 'manual_bank',
+) {
+  let ticks = Date.now() + offset
+  let proof: RefundOutcomeProof | undefined
+  const merchant = createHash('sha256').update('sandbox\0synthetic-store').digest('hex')
+  const queryRefund = vi
+    .fn<ReturnType<typeof createSslcommerzAdapter>['queryRefund']>()
+    .mockImplementation(async (raw) => {
+      const input = z.strictObject({ refundRefId: z.string(), bankTranId: z.string() }).parse(raw)
+      return {
+        kind: 'refund_report',
+        merchantAccountKey: merchant,
+        refundRefId: input.refundRefId,
+        bankTranId: input.bankTranId,
+        status: proof?.outcome === 'no_payout' ? 'cancelled' : 'refunded',
+        evidenceDigest: 'a'.repeat(64),
+      }
+    })
+  const initiateRefund = vi
+    .fn<ReturnType<typeof createSslcommerzAdapter>['initiateRefund']>()
+    .mockImplementation(async () => ({
+      kind: 'accepted',
+      refundRefId: `d-${refundId}-${initiateRefund.mock.calls.length}`,
+      evidenceDigest: 'b'.repeat(64),
+    }))
+  let admin: Awaited<ReturnType<typeof customer>>,
+    refundId: string,
+    orderId: string,
+    manual: Awaited<ReturnType<typeof reservationFixture>> | undefined
+  let options: Parameters<typeof composeRefundOperationsRoutes>[2]['options']
+  if (gateway) {
+    await initializeRefundAttemptPersistence(db.connection)
+    const base = await processingFixture()
+    base.change({ bank_tran_id: `d-first-${base.result.id}`, val_id: `d-first-${base.result.id}` })
+    expect(
+      await base.processor().process({ ...base.claim, validationId: `d-first-${base.result.id}` }),
+    ).toBe('committed')
+    base.change({
+      bank_tran_id: `d-second-${base.result.id}`,
+      val_id: `d-second-${base.result.id}`,
+    })
+    expect(
+      await base.processor().process({ ...base.claim, validationId: `d-second-${base.result.id}` }),
+    ).toBe('committed')
+    const obligation = await refundModel(db.connection)
+        .findOne({ orderId: base.result.id })
+        .orFail(),
+      administrator = await customer('admin')
+    const service = reservations(
+      createAdminAccountAccess(db.connection, identities, sessions),
+      async () => ({ policyVersion: 'synthetic', method: 'gateway', consentRequired: false }),
+    )
+    await service.reserve(
+      administrator.credentials.customerToken,
+      {
+        orderId: base.result.id,
+        basis: 'payment_correction',
+        classification: 'payment_correction',
+        correctionCollectionId: obligation.sourceCollectionId.toHexString(),
+        reason: 'Synthetic correction',
+      },
+      'reserve-d',
+    )
+    const f = { ...base, obligation, admin: administrator }
+    admin = f.admin
+    refundId = f.obligation._id.toHexString()
+    orderId = f.result.id
+    options = refundDevelopmentPolicy
+  } else {
+    manual = await reservationFixture(false)
+    await manual.cash(undefined, `d-cash-${manual.id}`)
+    admin = manual.admin
+    orderId = manual.id
+    const policy = codRefundPolicy(manual)
+    options = {
+      ...policy,
+      authorizations: policy.authorizations.map((row) => ({
+        ...row,
+        approval: { ...row.approval, method: manualMethod },
+      })),
+    }
+    refundId = ''
+  }
+  const verifyEvidence: RefundOutcomeVerifier = async () => proof
+  const dependencies = {
+    options,
+    ...(gateway
+      ? { gateway: { client: { initiateRefund, queryRefund }, merchantAccountKey: merchant } }
+      : {}),
+    verifyEvidence,
+  }
+  const clock = () => new Date(ticks),
+    root = packageCRoot(dependencies, clock)
+  if (manual) {
+    const created = await packageCPost(
+      root,
+      admin,
+      '/admin/refund-groups',
+      manual.input,
+      'd-group',
+    ).expect(200)
+    refundId = created.body.data.refunds[0].id
+  }
+  const post = (suffix: string, body: object, key = suffix) =>
+    packageCPost(root, admin, `/admin/refunds/${refundId}/${suffix}`, body, key)
+  const payout = () =>
+    post(
+      'payout-attempts',
+      { method: gateway ? 'gateway' : manualMethod, reason: 'Synthetic payout admission' },
+      'd-payout',
+    )
+  const setProof = async (
+    outcome: 'paid' | 'no_payout',
+    change: Partial<RefundOutcomeProof> = {},
+  ) => {
+    ticks += 1000
+    const row = await refundModel(db.connection).findById(refundId).orFail(),
+      attempt = await refundAttemptModel(db.connection)
+        .findOne({ refundId })
+        .sort({ attemptNumber: -1 })
+        .orFail()
+    proof = {
+      refundId,
+      orderId,
+      sourceCollectionId: row.sourceCollectionId.toHexString(),
+      attemptId: attempt._id.toHexString(),
+      amountPoisha: row.amountPoisha,
+      outcome,
+      checkedAt: clock(),
+      ...(outcome === 'paid' ? { paidAt: clock() } : {}),
+      evidenceDigest: 'c'.repeat(64),
+      provider: gateway ? 'sslcommerz' : 'manual',
+      method: gateway ? 'gateway' : manualMethod,
+      ...(gateway
+        ? {
+            merchantAccountKey: merchant,
+            bankTranId: attempt.originalBankTranId ?? '',
+            refundTransId: attempt.refundTransId ?? '',
+            ...(attempt.refundRefId ? { refundRefId: attempt.refundRefId } : {}),
+          }
+        : {
+            transferReference: 'synthetic-transfer',
+            evidenceRef: 'synthetic-proof',
+            destinationMasked: 'bank ****1234',
+            consentEvidenceRef: 'synthetic:verified-consent',
+            consentDigest: 'd'.repeat(64),
+            consentAt: new Date(ticks - 500),
+          }),
+      ...change,
+    }
+  }
+  return {
+    root,
+    post,
+    payout,
+    setProof,
+    clock,
+    admin,
+    refundId,
+    orderId,
+    manual,
+    initiateRefund,
+    queryRefund,
+    dependencies,
+    advance: (ms = 1000) => {
+      ticks += ms
+    },
+    clearProof: () => {
+      proof = undefined
+    },
+    domain: () =>
+      composeRefundRecovery(
+        db.connection,
+        createAdminAccountAccess(db.connection, identities, sessions),
+        dependencies,
+        clock,
+      ),
+  }
+}
+it('Package D: verified manual confirmation atomically completes source/order/unit counters and deduplicates outbox', async () => {
+  const f = await packageDFixture()
+  await f.payout().expect(200)
+  await f.setProof('paid')
+  const body = {
+    transferReference: 'synthetic-transfer',
+    evidenceRef: 'synthetic-proof',
+    reason: 'Confirmed protected original transfer',
+  }
+  await f.post('manual-confirmations', body, 'manual-proof').expect(200)
+  await f.post('manual-confirmations', body, 'manual-proof').expect(200)
+  const row = await refundModel(db.connection).findById(f.refundId).orFail(),
+    attempt = await refundAttemptModel(db.connection).findOne({ refundId: f.refundId }).orFail()
+  expect(row.status).toBe('completed')
+  expect(row.capacityStatus).toBe('completed')
+  expect(attempt.status).toBe('confirmed')
+  expect(attempt.manualEvidence?.destinationMasked).toBe('bank ****1234')
+  const payment = await paymentModel(db.connection).findById(row.paymentId).orFail()
+  expect(payment.merchandiseRefundHeldPoisha).toBe(0)
+  expect(payment.merchandiseRefundCompletedPoisha).toBe(row.amountPoisha)
+  const balance = await orderModels(db.connection).balances.findOne({ orderId: f.orderId }).orFail()
+  expect(balance.unitCoverage.reduce((n, u) => n + u.refundCompletedPoisha, 0)).toBe(
+    row.merchandiseAmountPoisha,
+  )
+  expect(
+    await db.connection.collection('notifications').countDocuments({
+      eventType: 'refund_update',
+      'payload.refundId': row._id,
+      'payload.refundStatus': 'completed',
+    }),
+  ).toBe(1)
+})
+it('Package D: gateway status alone remains uncertain; independent matching proof completes correction without merchandise projection', async () => {
+  const f = await packageDFixture(true)
+  await f.payout().expect(200)
+  await f.post('reconcile', { reason: 'Status alone' }, 'status-alone').expect(200)
+  expect((await refundModel(db.connection).findById(f.refundId).orFail()).capacityStatus).toBe(
+    'reserved',
+  )
+  await f.setProof('paid')
+  await f.post('reconcile', { reason: 'Independent settlement' }, 'qualified').expect(200)
+  const row = await refundModel(db.connection).findById(f.refundId).orFail(),
+    payment = await paymentModel(db.connection).findById(row.paymentId).orFail()
+  expect(row.status).toBe('completed')
+  expect(payment.correctionRefundCompletedPoisha).toBe(row.amountPoisha)
+  expect(payment.merchandiseRefundCompletedPoisha).toBe(0)
+  expect(payment.paymentStatus).toBe('paid')
+  expect(f.initiateRefund).toHaveBeenCalledTimes(1)
+})
+it('Package D: mismatched amount, method, consent and client-supplied payout facts cannot complete manual payout', async () => {
+  const f = await packageDFixture()
+  await f.payout().expect(200)
+  const input = {
+    transferReference: 'synthetic-transfer',
+    evidenceRef: 'synthetic-proof',
+    reason: 'Review',
+  }
+  await f.post('manual-confirmations', input, 'no-proof').expect(422)
+  await f.setProof('paid', { amountPoisha: 1 })
+  await f.post('manual-confirmations', input, 'bad-amount').expect(422)
+  await f.setProof('paid', { method: 'manual_nagad' })
+  await f.post('manual-confirmations', input, 'bad-method').expect(422)
+  await f.setProof('paid', { consentAt: new Date(f.clock().getTime() + 10000) })
+  await f.post('manual-confirmations', input, 'bad-consent').expect(422)
+  await f
+    .post('manual-confirmations', { ...input, confirmedAt: f.clock().toISOString() }, 'client-time')
+    .expect(400)
+  expect((await refundModel(db.connection).findById(f.refundId).orFail()).status).toBe('processing')
+})
+it('Package D: verified no-payout releases once; explicit retry reacquires balance and preserves original approval time', async () => {
+  const f = await packageDFixture(true)
+  await f.payout().expect(200)
+  await f.setProof('no_payout')
+  const approvedAt = (await refundModel(db.connection).findById(f.refundId).orFail()).approvedAt
+  await f.post('reconcile', { reason: 'Verified terminal no payout' }, 'failed-proof').expect(200)
+  let row = await refundModel(db.connection).findById(f.refundId).orFail()
+  expect(row.status).toBe('failed')
+  expect(row.capacityStatus).toBe('released')
+  expect(
+    (await paymentModel(db.connection).findById(row.paymentId).orFail()).correctionRefundHeldPoisha,
+  ).toBe(0)
+  f.advance()
+  await f
+    .post('payout-attempts', { method: 'gateway', reason: 'Authorized safe retry' }, 'retry')
+    .expect(200)
+  row = await refundModel(db.connection).findById(f.refundId).orFail()
+  expect(row.approvedAt?.getTime()).toBe(approvedAt?.getTime())
+  expect(row.capacityStatus).toBe('reserved')
+  const attempts = await refundAttemptModel(db.connection)
+    .find({ refundId: f.refundId })
+    .sort({ attemptNumber: 1 })
+  expect(attempts).toHaveLength(2)
+  expect(attempts[0]?.status).toBe('failed')
+  expect(attempts[0]?.refundTransId).not.toBe(attempts[1]?.refundTransId)
+})
+it('Package D: undispatched rejection releases entitlements; uncertain attempt cannot be rejected or blindly retried', async () => {
+  const f = await packageDFixture()
+  await f
+    .post('review', { decision: 'reject', reason: 'Reviewed pre-dispatch rejection' }, 'reject')
+    .expect(200)
+  expect((await refundModel(db.connection).findById(f.refundId).orFail()).capacityStatus).toBe(
+    'released',
+  )
+  const other = await packageDFixture(true)
+  await other.payout().expect(200)
+  await other
+    .post('review', { decision: 'reject', reason: 'Unsafe submitted release' }, 'reject-submitted')
+    .expect(409)
+  await other
+    .post(
+      'payout-attempts',
+      { method: 'gateway', reason: 'Replay existing submitted identity' },
+      'new-key',
+    )
+    .expect(200)
+  expect(other.initiateRefund).toHaveBeenCalledTimes(1)
+})
+it('Package D: notification failure rolls back payout completion and all financial effects', async () => {
+  const f = await packageDFixture()
+  await f.payout().expect(200)
+  await f.setProof('paid')
+  await db.connection.collection('notifications').dropIndex('notifications_event_key_unique')
+  try {
+    await f
+      .post(
+        'manual-confirmations',
+        {
+          transferReference: 'synthetic-transfer',
+          evidenceRef: 'synthetic-proof',
+          reason: 'Completion must roll back',
+        },
+        'rollback',
+      )
+      .expect(500)
+    const row = await refundModel(db.connection).findById(f.refundId).orFail()
+    expect(row.status).toBe('processing')
+    expect(row.capacityStatus).toBe('reserved')
+    expect(
+      (await paymentModel(db.connection).findById(row.paymentId).orFail())
+        .merchandiseRefundCompletedPoisha,
+    ).toBe(0)
+    expect(
+      (await refundAttemptModel(db.connection).findOne({ refundId: f.refundId }).orFail()).status,
+    ).toBe('submitted')
+  } finally {
+    await createRegistrationNotifications(db.connection).initialize()
+  }
+})
+it('Package D: reconciliation job checkpoints durable attempt identity and never initiates payout', async () => {
+  const f = await packageDFixture(true)
+  await f.payout().expect(200)
+  await f.setProof('paid')
+  f.advance(60001)
+  const job = refundReconciliationJob(
+    db.connection,
+    f.domain(),
+    { batchSize: 1, leaseMs: 60000, pollMs: 1000 },
+    f.clock,
+  )
+  const result = await job.run()
+  expect(result.acquired).toBe(true)
+  expect(result.resolved).toBe(1)
+  expect((await refundModel(db.connection).findById(f.refundId).orFail()).status).toBe('completed')
+  await job.run()
+  expect(f.initiateRefund).toHaveBeenCalledTimes(1)
+})
+
+it('Package D: concurrent manual confirmations settle once and completed-key payload changes conflict', async () => {
+  const f = await packageDFixture()
+  await f.payout().expect(200)
+  await f.setProof('paid')
+  const body = {
+    transferReference: 'synthetic-transfer',
+    evidenceRef: 'synthetic-proof',
+    reason: 'Concurrent protected completion',
+  }
+  const results = await Promise.all(
+    ['one', 'two'].map((key) => f.post('manual-confirmations', body, key)),
+  )
+  expect(results.map((r) => r.status)).toEqual([200, 200])
+  await f.post('manual-confirmations', { ...body, reason: 'Changed request' }, 'two').expect(409)
+  const row = await refundModel(db.connection).findById(f.refundId).orFail()
+  expect(
+    (await paymentModel(db.connection).findById(row.paymentId).orFail())
+      .merchandiseRefundCompletedPoisha,
+  ).toBe(row.amountPoisha)
+  expect(
+    await db.connection
+      .collection('notifications')
+      .countDocuments({ 'payload.refundId': row._id, 'payload.refundStatus': 'completed' }),
+  ).toBe(1)
+})
+it('Package D: a verified transfer reference cannot fund a second refund', async () => {
+  const f = await packageDFixture()
+  await f.payout().expect(200)
+  await f.setProof('paid')
+  const body = {
+    transferReference: 'synthetic-transfer',
+    evidenceRef: 'synthetic-proof',
+    reason: 'Reference uniqueness',
+  }
+  await f.post('manual-confirmations', body, 'first-transfer').expect(200)
+  const other = await packageDFixture()
+  await other.payout().expect(200)
+  await other.setProof('paid')
+  await other.post('manual-confirmations', body, 'same-transfer').expect(409)
+  expect((await refundModel(db.connection).findById(other.refundId).orFail()).capacityStatus).toBe(
+    'reserved',
+  )
+})
+it('Package D: proof predating dispatch is denied but delayed settlement proof survives later read-only polls', async () => {
+  const f = await packageDFixture(true)
+  await f.payout().expect(200)
+  await f.setProof('no_payout', { checkedAt: new Date(f.clock().getTime() - 10000) })
+  await f.post('reconcile', { reason: 'Stale before dispatch' }, 'stale').expect(422)
+  await f.setProof('paid')
+  f.advance(60000)
+  // A missing proof poll must not erase the stable external-dispatch timestamp.
+  const proofDomain = composeRefundRecovery(
+    db.connection,
+    createAdminAccountAccess(db.connection, identities, sessions),
+    { ...f.dependencies, verifyEvidence: async () => undefined },
+    f.clock,
+  )
+  await proofDomain.reconcile(
+    f.admin.credentials.customerToken,
+    f.refundId,
+    'No artifact yet',
+    'missing-proof-poll',
+  )
+  await f.post('reconcile', { reason: 'Delayed independent artifact' }, 'delayed-proof').expect(200)
+  expect((await refundModel(db.connection).findById(f.refundId).orFail()).status).toBe('completed')
+})
+it('Package D: worker lease exclusion and expiration protect financial effects before restart', async () => {
+  const f = await packageDFixture(true)
+  await f.payout().expect(200)
+  await f.setProof('paid')
+  f.advance(60000)
+  const leases = jobLeaseService(db.connection, 'refund-reconciliation', 60000, f.clock),
+    claim = await leases.acquire()
+  expect(claim).not.toBeNull()
+  const job = refundReconciliationJob(
+    db.connection,
+    f.domain(),
+    { batchSize: 10, leaseMs: 60000, pollMs: 1000 },
+    f.clock,
+  )
+  expect((await job.run()).acquired).toBe(false)
+  f.advance(60001)
+  const proof = f.dependencies.verifyEvidence
+  const stale = composeRefundRecovery(
+    db.connection,
+    createAdminAccountAccess(db.connection, identities, sessions),
+    {
+      ...f.dependencies,
+      verifyEvidence: async (input) => {
+        const result = await proof(input)
+        f.advance(60001)
+        return result
+      },
+    },
+    f.clock,
+  )
+  await expect(
+    refundReconciliationJob(
+      db.connection,
+      stale,
+      { batchSize: 10, leaseMs: 60000, pollMs: 1000 },
+      f.clock,
+    ).run(),
+  ).rejects.toThrow()
+  expect((await refundModel(db.connection).findById(f.refundId).orFail()).capacityStatus).toBe(
+    'reserved',
+  )
+  expect((await job.run()).resolved).toBe(1)
+})
+it('Package D: malformed proof is deferred without starving another ready attempt', async () => {
+  const first = await packageDFixture(true)
+  await first.payout().expect(200)
+  await first.setProof('paid')
+  const second = await packageDFixture(true)
+  await second.payout().expect(200)
+  await second.setProof('paid')
+  second.advance(120000)
+  const valid = second.dependencies.verifyEvidence
+  const domain = composeRefundRecovery(
+    db.connection,
+    createAdminAccountAccess(db.connection, identities, sessions),
+    {
+      ...second.dependencies,
+      verifyEvidence: async (input) =>
+        input.refundId === first.refundId ? { bad: 'unqualified' } : valid(input),
+    },
+    second.clock,
+  )
+  const result = await refundReconciliationJob(
+    db.connection,
+    domain,
+    { batchSize: 10, leaseMs: 60000, pollMs: 1000 },
+    second.clock,
+  ).run()
+  expect(result.resolved).toBe(1)
+  expect(result.blocked).toBe(1)
+  const attempt = await refundAttemptModel(db.connection)
+    .findOne({ refundId: first.refundId })
+    .orFail()
+  expect(attempt.status).toBe('uncertain')
+  expect(attempt.failureCode).toBe('INVESTIGATION_REQUIRED')
+  expect((await refundModel(db.connection).findById(first.refundId).orFail()).capacityStatus).toBe(
+    'reserved',
+  )
+  first.advance(180000)
+  await first
+    .post('reconcile', { reason: 'Qualified proof after investigation' }, 'after-investigation')
+    .expect(200)
+  expect(
+    (await refundAttemptModel(db.connection).findById(attempt._id).orFail()).failureCode,
+  ).toBeUndefined()
+})
+it('Package D: after-sales worker sends only verified refund facts and rejects tampered completed intent', async () => {
+  const f = await packageDFixture()
+  await f.payout().expect(200)
+  await f.setProof('paid')
+  await f
+    .post(
+      'manual-confirmations',
+      {
+        transferReference: 'synthetic-transfer',
+        evidenceRef: 'synthetic-proof',
+        reason: 'Verified settlement',
+      },
+      'email-proof',
+    )
+    .expect(200)
+  const store = createRegistrationNotifications(db.connection, f.clock),
+    send = vi.fn().mockResolvedValue({ kind: 'accepted', providerMessageId: 'synthetic-mail' })
+  const worker = createNotificationDeliveryService(
+    store,
+    { send },
+    { maxAttempts: 3, baseDelayMs: 1000, maxDelayMs: 10000, claimTtlMs: 30000, batchSize: 100 },
+    f.clock,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    refundMessageService(
+      refundNotificationProofAccess(db.connection, returnNotificationOrderAccess(db.connection)),
+    ),
+  )
+  await worker.runBatch()
+  await worker.runBatch()
+  const completed = send.mock.calls.filter((c) =>
+    String(c[0]?.text).includes('independently verified as completed'),
+  )
+  expect(completed).toHaveLength(1)
+  const recipient = (await orderModels(db.connection).orders.findById(f.orderId).orFail())
+    .customerSnapshot.emailNormalized
+  await db.connection.collection('notifications').insertOne({
+    eventKey: `refund_update:${f.refundId}:completed:${'e'.repeat(64)}:v1`,
+    orderId: new Types.ObjectId(f.orderId),
+    recipient: { emailNormalized: recipient },
+    eventType: 'refund_update',
+    templateVersion: 'refund-update-v1',
+    payload: {
+      refundId: new Types.ObjectId(f.refundId),
+      refundStatus: 'completed',
+      operationKey: 'e'.repeat(64),
+      occurredAt: f.clock(),
+    },
+    status: 'queued',
+    attemptCount: 0,
+    nextAttemptAt: f.clock(),
+    createdAt: f.clock(),
+    updatedAt: f.clock(),
+  })
+  const before = send.mock.calls.length
+  await worker.runBatch()
+  expect(send.mock.calls.length).toBe(before)
+})
+
+it('Package D: independent verifier cannot authorize a suspended administrator after external verification', async () => {
+  const f = await packageDFixture()
+  await f.payout().expect(200)
+  await f.setProof('paid')
+  const verify = f.dependencies.verifyEvidence
+  const root = packageCRoot(
+    {
+      ...f.dependencies,
+      verifyEvidence: async (input) => {
+        await identities.users.updateOne(
+          { _id: f.admin.user._id },
+          { $set: { status: 'suspended' } },
+        )
+        return verify(input)
+      },
+    },
+    f.clock,
+  )
+  await packageCPost(
+    root,
+    f.admin,
+    `/admin/refunds/${f.refundId}/manual-confirmations`,
+    {
+      transferReference: 'synthetic-transfer',
+      evidenceRef: 'synthetic-proof',
+      reason: 'Reauthorize after verification',
+    },
+    'revoked-during-proof',
+  ).expect(401)
+  expect((await refundModel(db.connection).findById(f.refundId).orFail()).capacityStatus).toBe(
+    'reserved',
+  )
+})
+it('Package D: manual no-payout release permits an explicit new numbered attempt without resetting approval', async () => {
+  const f = await packageDFixture()
+  await f.payout().expect(200)
+  await f.setProof('no_payout')
+  await f
+    .post('reconcile', { reason: 'Independent no-transfer evidence' }, 'manual-no-payout')
+    .expect(200)
+  const approvedAt = (await refundModel(db.connection).findById(f.refundId).orFail()).approvedAt
+  f.advance()
+  await f
+    .post(
+      'payout-attempts',
+      { method: 'manual_bank', reason: 'Explicit manual retry' },
+      'manual-retry',
+    )
+    .expect(200)
+  const attempts = await refundAttemptModel(db.connection)
+    .find({ refundId: f.refundId })
+    .sort({ attemptNumber: 1 })
+  expect(attempts).toHaveLength(2)
+  expect(attempts[0]?.status).toBe('failed')
+  expect(attempts[1]?.status).toBe('submitted')
+  expect(
+    (await refundModel(db.connection).findById(f.refundId).orFail()).approvedAt?.getTime(),
+  ).toBe(approvedAt?.getTime())
+  expect(
+    await db.connection.collection('notifications').countDocuments({
+      'payload.refundId': new Types.ObjectId(f.refundId),
+      'payload.refundStatus': 'approved',
+    }),
+  ).toBe(2)
+  expect(
+    await db.connection.collection('notifications').countDocuments({
+      'payload.refundId': new Types.ObjectId(f.refundId),
+      'payload.refundStatus': 'processing',
+    }),
+  ).toBe(2)
+})
+it('Package D: refunded partial COD cancellation remains Pending and never rewrites cancelled fulfillment', async () => {
+  const f = await fundedCancellationFixture(true),
+    asked = await f.ask()
+  await f.cancellation.decide(
+    f.admin.credentials.customerToken,
+    asked.id,
+    { decision: 'approve', reason: 'Partially collected cancellation' },
+    'partial-cancel',
+  )
+  const row = await refundModel(db.connection).findOne({ orderId: f.id }).orFail()
+  let proof: RefundOutcomeProof | undefined
+  const clock = () => new Date(Date.now() + 60000),
+    root = packageCRoot(
+      { options: refundDevelopmentPolicy, verifyEvidence: async () => proof },
+      clock,
+    )
+  await packageCPost(
+    root,
+    f.admin,
+    `/admin/refunds/${row._id}/payout-attempts`,
+    { method: 'manual_bank', reason: 'Admit recorded partial refund' },
+    'partial-start',
+  ).expect(200)
+  const attempt = await refundAttemptModel(db.connection).findOne({ refundId: row._id }).orFail(),
+    at = clock()
+  proof = {
+    refundId: row._id.toHexString(),
+    orderId: f.id,
+    sourceCollectionId: row.sourceCollectionId.toHexString(),
+    attemptId: attempt._id.toHexString(),
+    amountPoisha: row.amountPoisha,
+    outcome: 'paid',
+    checkedAt: at,
+    paidAt: at,
+    evidenceDigest: 'f'.repeat(64),
+    provider: 'manual',
+    method: 'manual_bank',
+    transferReference: 'partial-cash-transfer',
+    evidenceRef: 'synthetic:partial-cash-proof',
+    destinationMasked: 'bank ****5678',
+  }
+  await packageCPost(
+    root,
+    f.admin,
+    `/admin/refunds/${row._id}/manual-confirmations`,
+    {
+      transferReference: 'partial-cash-transfer',
+      evidenceRef: 'synthetic:partial-cash-proof',
+      reason: 'Independent partial transfer',
+    },
+    'partial-complete',
+  ).expect(200)
+  const payment = await paymentModel(db.connection).findById(row.paymentId).orFail()
+  expect(payment.paymentStatus).toBe('pending')
+  expect(payment.merchandiseRefundCompletedPoisha).toBe(1)
+  expect((await orderModels(db.connection).orders.findById(f.id).orFail()).fulfillmentStatus).toBe(
+    'cancelled',
+  )
+})
+it('Package D: actual configured server confirms only the exact protected digest-bound original transfer artifact', async () => {
+  const f = await packageDFixture(false, 0),
+    directory = await mkdtemp(join(tmpdir(), 'sportzone-d-proof-startup-'))
+  const originalEnvironment = process.env
+  let runtime: Awaited<ReturnType<typeof startServer>> | undefined
+  try {
+    const registry = join(directory, 'registry.json'),
+      artifact = join(directory, 'original-transfer.json')
+    await writeFile(registry, JSON.stringify({ version: 1, entries: [] }), { mode: 0o600 })
+    const env = {
+      ...identityEnvironment(),
+      SESSION_SECRET: authSecret,
+      MONGODB_URI: db.replica.getUri(),
+      MONGODB_DB_NAME: db.connection.name,
+      REFUND_OPERATIONS_ENABLED: 'true',
+      REFUND_PAYOUT_EVIDENCE_FILE: registry,
+    }
+    process.env = { ...env }
+    const config = { ...loadEnvironment(env), PORT: 0 }
+    runtime = await startServer(
+      config,
+      createLogger(config, () => {}),
+    )
+    const server = runtime.server
+    const post = (suffix: string, body: object, key: string) =>
+      request(server)
+        .post(`/api/v1/admin/refunds/${f.refundId}/${suffix}`)
+        .set('Origin', 'https://admin.example.test')
+        .set('Cookie', f.admin.cookie)
+        .set('X-CSRF-Token', f.admin.csrf)
+        .set('Idempotency-Key', key)
+        .send(body)
+    await post(
+      'payout-attempts',
+      { method: 'manual_bank', reason: 'Admit protected transfer' },
+      'actual-start',
+    ).expect(200)
+    const row = await refundModel(db.connection).findById(f.refundId).orFail(),
+      attempt = await refundAttemptModel(db.connection).findOne({ refundId: f.refundId }).orFail(),
+      at = new Date()
+    const fact = {
+      refundId: f.refundId,
+      orderId: f.orderId,
+      sourceCollectionId: row.sourceCollectionId.toHexString(),
+      attemptId: attempt._id.toHexString(),
+      amountPoisha: row.amountPoisha,
+      outcome: 'paid',
+      method: 'manual_bank',
+      provider: 'manual',
+      checkedAt: at.toISOString(),
+      paidAt: at.toISOString(),
+      transferReference: 'configured-original-transfer',
+      evidenceRef: 'synthetic:protected-receipt',
+      destinationMasked: 'bank ****1234',
+      consentEvidenceRef: 'synthetic:verified-consent',
+      consentDigest: 'c'.repeat(64),
+      consentAt: at.toISOString(),
+    }
+    const bytes = JSON.stringify(fact)
+    await writeFile(artifact, bytes, { mode: 0o600 })
+    await writeFile(
+      registry,
+      JSON.stringify({
+        version: 1,
+        entries: [
+          {
+            refundId: f.refundId,
+            attemptId: attempt._id.toHexString(),
+            artifactFile: 'original-transfer.json',
+            evidenceDigest: createHash('sha256').update(bytes).digest('hex'),
+          },
+        ],
+      }),
+    )
+    const input = {
+      transferReference: fact.transferReference,
+      evidenceRef: fact.evidenceRef,
+      reason: 'Verify original protected transfer',
+    }
+    await post('manual-confirmations', input, 'actual-confirm').expect(200)
+    await rm(artifact)
+    await post('manual-confirmations', input, 'actual-confirm').expect(200)
+    expect((await refundModel(db.connection).findById(f.refundId).orFail()).status).toBe(
+      'completed',
+    )
+  } finally {
+    await runtime?.close()
+    process.env = originalEnvironment
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+it('Package D: correction review binds the original command across promotion and never reapproves a changed payload', async () => {
+  await initializeRefundAttemptPersistence(db.connection)
+  const f = await processingFixture()
+  expect(await f.processor().process(f.claim)).toBe('committed')
+  f.change({ bank_tran_id: 'd-review-second-bank', val_id: 'd-review-second-validation' })
+  expect(
+    await f.processor().process({ ...f.claim, validationId: 'd-review-second-validation' }),
+  ).toBe('committed')
+  const row = await refundModel(db.connection).findOne({ orderId: f.result.id }).orFail(),
+    admin = await customer('admin'),
+    root = packageCRoot({ options: refundDevelopmentPolicy })
+  const path = `/admin/refunds/${row._id}/review`,
+    input = { decision: 'approve', reason: 'Original protected review', method: 'gateway' }
+  await packageCPost(root, admin, path, input, 'same-review').expect(200)
+  const before = (await refundModel(db.connection).findById(row._id).orFail()).approvedAt
+  await packageCPost(root, admin, path, input, 'same-review').expect(200)
+  await packageCPost(
+    root,
+    admin,
+    path,
+    { ...input, reason: 'Changed after promotion' },
+    'same-review',
+  ).expect(409)
+  expect((await refundModel(db.connection).findById(row._id).orFail()).approvedAt?.getTime()).toBe(
+    before?.getTime(),
+  )
+  expect(await refundAttemptModel(db.connection).countDocuments({ refundId: row._id })).toBe(1)
+})
+
+for (const method of ['manual_bkash', 'manual_nagad', 'manual_rocket'] as const) {
+  it(`Package D: mobile wallet ${method} requires and records exact method-bound verified transfer`, async () => {
+    const f = await packageDFixture(false, 60000, method)
+    await f.payout().expect(200)
+    await f.setProof('paid')
+    await f
+      .post(
+        'manual-confirmations',
+        {
+          transferReference: 'synthetic-transfer',
+          evidenceRef: 'synthetic-proof',
+          reason: 'Method-bound wallet verification',
+        },
+        'wallet-confirm',
+      )
+      .expect(200)
+    const refund = await refundModel(db.connection).findById(f.refundId).orFail()
+    expect(refund.method).toBe(method)
+    expect(refund.status).toBe('completed')
+    expect(
+      (await refundAttemptModel(db.connection).findOne({ refundId: f.refundId }).orFail())
+        .manualEvidence?.destinationMasked,
+    ).toContain('****')
+  })
+}
+
+it('Package D: a lost gateway acknowledgment recovers its qualified provider reference without resending payout', async () => {
+  const f = await packageDFixture(true)
+  f.initiateRefund.mockRejectedValueOnce(new Error('Synthetic lost gateway response'))
+  const started = await f.payout().expect(200)
+  expect(started.body.data.state).toBe('uncertain')
+  expect(
+    (await refundAttemptModel(db.connection).findOne({ refundId: f.refundId }).orFail())
+      .refundRefId,
+  ).toBeUndefined()
+  await f.setProof('paid', { refundRefId: 'recovered-qualified-provider-ref' })
+  await f
+    .post('reconcile', { reason: 'Original settlement recovered reference' }, 'recover-original')
+    .expect(200)
+  const attempt = await refundAttemptModel(db.connection).findOne({ refundId: f.refundId }).orFail()
+  expect(attempt.status).toBe('confirmed')
+  expect(attempt.refundRefId).toBe('recovered-qualified-provider-ref')
+  expect(f.initiateRefund).toHaveBeenCalledTimes(1)
+})
+
+it('Package D: verified gateway failure can use protected consented manual fallback without resetting timing or losing attempt history', async () => {
+  const f = await packageDFixture(true)
+  await f.payout().expect(200)
+  await f.setProof('no_payout')
+  await f
+    .post(
+      'reconcile',
+      { reason: 'Verified original gateway request cannot pay' },
+      'fallback-failure',
+    )
+    .expect(200)
+  const old = await refundModel(db.connection).findById(f.refundId).orFail(),
+    beforeApproval = old.approvedAt?.getTime(),
+    timing = old.toObject().timingSnapshot
+  await f
+    .post(
+      'review',
+      { decision: 'approve', method: 'manual_bank', reason: 'Unqualified fallback' },
+      'unqualified-fallback',
+    )
+    .expect(503)
+  let proof: RefundOutcomeProof | undefined
+  const options = {
+    ...refundDevelopmentPolicy,
+    authorizations: [
+      {
+        orderId: f.orderId,
+        basis: 'payment_correction' as const,
+        approval: {
+          policyVersion: old.policyVersion ?? '',
+          method: 'manual_bank' as const,
+          consentRequired: true,
+          consentEvidenceRef: 'synthetic:fallback-consent',
+          deliveryApproved: false,
+        },
+      },
+    ],
+  }
+  const root = packageCRoot(
+    { ...f.dependencies, options, verifyEvidence: async () => proof },
+    f.clock,
+  )
+  const post = (suffix: string, body: object, key: string) =>
+    packageCPost(root, f.admin, `/admin/refunds/${f.refundId}/${suffix}`, body, key)
+  await post(
+    'review',
+    {
+      decision: 'approve',
+      method: 'manual_bank',
+      consentEvidenceRef: 'synthetic:fallback-consent',
+      reason: 'Protected original-policy fallback',
+    },
+    'approve-fallback',
+  ).expect(200)
+  f.advance()
+  await post(
+    'payout-attempts',
+    { method: 'manual_bank', reason: 'Admit consented manual fallback' },
+    'fallback-admit',
+  ).expect(200)
+  const attempt = await refundAttemptModel(db.connection)
+    .findOne({ refundId: f.refundId })
+    .sort({ attemptNumber: -1 })
+    .orFail()
+  expect(attempt.provider).toBe('manual')
+  expect(attempt.refundTransId).toBeUndefined()
+  f.advance()
+  proof = {
+    refundId: f.refundId,
+    orderId: f.orderId,
+    sourceCollectionId: old.sourceCollectionId.toHexString(),
+    attemptId: attempt._id.toHexString(),
+    amountPoisha: old.amountPoisha,
+    outcome: 'paid',
+    method: 'manual_bank',
+    provider: 'manual',
+    checkedAt: f.clock(),
+    paidAt: f.clock(),
+    evidenceDigest: 'f'.repeat(64),
+    transferReference: 'qualified-fallback-transfer',
+    evidenceRef: 'synthetic:fallback-proof',
+    destinationMasked: 'bank ****9876',
+    consentEvidenceRef: 'synthetic:fallback-consent',
+    consentDigest: 'e'.repeat(64),
+    consentAt: new Date(f.clock().getTime() - 500),
+  }
+  await post(
+    'manual-confirmations',
+    {
+      transferReference: 'qualified-fallback-transfer',
+      evidenceRef: 'synthetic:fallback-proof',
+      reason: 'Independently verified fallback',
+    },
+    'fallback-confirm',
+  ).expect(200)
+  const row = await refundModel(db.connection).findById(f.refundId).orFail()
+  expect(row.status).toBe('completed')
+  expect(row.approvedAt?.getTime()).toBe(beforeApproval)
+  expect(row.toObject().timingSnapshot).toEqual(timing)
+  expect(await refundAttemptModel(db.connection).countDocuments({ refundId: f.refundId })).toBe(2)
+  expect(f.initiateRefund).toHaveBeenCalledTimes(1)
 })

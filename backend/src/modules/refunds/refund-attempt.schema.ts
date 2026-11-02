@@ -16,8 +16,8 @@ const manualEvidence = z.strictObject({
   confirmedBy: id,
   confirmedAt: z.date(),
 })
-// A validated shape is not evidence of actual provider or transfer verification. This fact is
-// transient, with no writer, payout capability, collection or runtime activation.
+// A validated fact shape alone is not actual provider/transfer verification. Canonical durable
+// attempts and refundRecoveryService separately own intent, protected outcome proof and settlement.
 export const refundAttemptFact = z
   .strictObject({
     refundId: id,

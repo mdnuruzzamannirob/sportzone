@@ -1552,6 +1552,13 @@ refunds cannot consume payment-correction-only collections unless explicitly cla
 and ordinals are bounded by original immutable order lines and `orderItemBalances.unitCoverage`; a partially refunded
 ordinal can receive another source-funded payment only for its exact remaining net amount.
 
+Outcome settlement decrements exact held source/order/unit/delivery counters and increments completed
+counters only for independently verified disbursement. Confirmed merchandise units update the bounded
+refunded quantity; correction completion never changes merchandise progress. Verified no-payout releases
+holds and retains failed attempt evidence. An authorized retry reacquires capacity before opening the
+next numbered identity, preserving approval/timing and all old attempts. Financial settlement, attempt/
+refund CAS, causal audit and outbox intent are one transaction; external verification is outside it.
+
 ### 9.3 `refundAttempts` — `refunds`
 
 | Field | Type | Constraints / notes |
@@ -1561,7 +1568,7 @@ ordinal can receive another source-funded payment only for its exact remaining n
 | `provider`! | enum(`sslcommerz`,`manual`) | Authorized payout channel |
 | `originalBankTranId`? | string | **Required for gateway initiation**; original verified collection's bank transaction ID |
 | `refundTransId`? | string | **Required for gateway initiation**: unique **merchant-generated** `refund_trans_id` (maximum 30 characters), persisted **before** sending the request |
-| `refundRefId`? | string | Optional **provider-issued** `refund_ref_id` (maximum 50 characters); populated on successful initiation acknowledgment |
+| `refundRefId`? | string | Optional **provider-issued** `refund_ref_id` (maximum 50 characters); populated on successful initiation acknowledgment or qualified independent recovery, after original-attempt binding and provider status verification |
 | `status`! | enum(`created`,`submitted`,`uncertain`,`confirmed`,`failed`) | Acknowledgment/submission is not completed payout |
 | `amountPoisha`! / `initiatedAt`! | int / Date | Must equal a source-reserved refund obligation |
 | `lastCheckedAt`? / `confirmedAt`? | Date | Verification timestamps |
@@ -1569,7 +1576,7 @@ ordinal can receive another source-funded payment only for its exact remaining n
 | `failureCode`? / `lastOperationKey`? | string | Safe failure metadata and unique causal reference |
 | `revision`! | int | Safe-integer CAS revision; generic model edits/deletes remain prohibited |
 
-**Indexes:** unique `{refundId:1,attemptNumber:1}`; unique `{provider:1,idempotencyKey:1}`; partial unique
+**Indexes:** partial unique `{provider:1,"manualEvidence.transferReference":1}` where the transfer reference is a string (original provider/account-qualified manual reference); unique `{refundId:1,attemptNumber:1}`; unique `{provider:1,idempotencyKey:1}`; partial unique
 `{provider:1,refundTransId:1}` and `{provider:1,refundRefId:1}` **where the field is a string**, after account-level
 semantics are verified; `{status:1,lastCheckedAt:1}`; partial unique `{refundId:1}` for
 `created/submitted/uncertain` prevents two simultaneously open attempts. Use one merchant `refundTransId` for replay/reconciliation of the
@@ -1592,7 +1599,7 @@ authorization and applicable consent; a 7-business-day target is a policy target
 | `eventKey`! | string | Unique event + recipient + template purpose; prevents duplicate intent |
 | `orderId`? / `userId`? | ObjectId | Optional source reference |
 | `recipient`! | embedded | `{emailNormalized,displayName?}`; restricted |
-| `eventType`! | enum | `registration`, `email_verification`, `email_change`, `password_reset`, `guest_order_access`, `order_received`, `order_confirmation`, `payment_success`, `payment_failure`, `payment_pending`, `order_cancellation`, `shipment_update`, `delivery_completion`, `return_update`, `refund_approval`, `refund_rejection`, `refund_completion` (PRD FR-20) |
+| `eventType`! | enum | `registration`, `email_verification`, `email_change`, `password_reset`, `guest_order_access`, `order_received`, `order_confirmation`, `payment_success`, `payment_failure`, `payment_pending`, `order_cancellation`, `shipment_update`, `delivery_completion`, `return_update`, `refund_update` with explicit approved/processing/completed/failed/rejected status (PRD FR-20) |
 | `templateVersion`! / `payload`! | string / embedded | Minimal redacted template data; no secrets |
 | `status`! | enum(`queued`,`sending`,`delivery_uncertain`,`sent`,`retry_wait`,`failed`) | Delivery state independent of business success |
 | `attemptCount`! / `nextAttemptAt`? | int / Date | Bounded backoff |
@@ -1645,8 +1652,16 @@ stored in the outbox. Approval, rejection and completion intents commit in the s
 claim change and audit. Delivery rechecks the immutable matching transition audit, order ownership and
 snapshotted recipient before rendering. A completion message explicitly does not claim refund payout.
 The exact commerce validator is an additive migration predecessor and its records/leases are preserved.
-The sender remains disabled unless explicitly composed in a controlled local/test worker; no ordinary
-runtime activation or refund-completion notification is implied.
+The standard local/test worker explicitly enables return and refund rendering with
+`AFTER_SALES_NOTIFICATIONS_ENABLED`; default workers skip both. No provider qualification follows.
+
+Refund status events use `refund_update`/`refund-update-v1` with `{refundId,refundStatus,operationKey,
+occurredAt}` only. Unique `refund_update:refundId:refundStatus:operationKey:v1` keys allow distinct
+approval and processing events from a retry while deduplicating each one. Financial transition, causal
+audit and intent commit together. Delivery requires the matching immutable status audit, exact order
+recipient, and, for completed messages, a completed refund and matching confirmed payout attempt.
+Original bank references, transfer proofs/destinations and internal reasons are absent from payloads.
+The exact prior return validator is an additive migration predecessor; records/leases are retained.
 
 Other notification event types require an explicit backward-compatible validator/model expansion before activation.
 Existing validators are checked, never silently replaced by startup or local bootstrap.

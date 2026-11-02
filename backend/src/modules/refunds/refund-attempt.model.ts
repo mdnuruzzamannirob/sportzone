@@ -71,6 +71,14 @@ schema.index(
     name: 'refund_attempt_open_unique',
   },
 )
+schema.index(
+  { provider: 1, 'manualEvidence.transferReference': 1 },
+  {
+    unique: true,
+    partialFilterExpression: { 'manualEvidence.transferReference': { $type: 'string' } },
+    name: 'refund_manual_transfer_unique',
+  },
+)
 schema.index({ status: 1, lastCheckedAt: 1 }, { name: 'refund_attempt_reconciliation' })
 schema.pre('save', function () {
   if (!this.isNew || this.status !== 'created') throw new ApiError('STATE_CONFLICT')

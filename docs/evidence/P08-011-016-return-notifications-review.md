@@ -1,5 +1,8 @@
 # P08-011 / P08-016 — Local return notifications and review qualification
 
+**Current status: P08-011 Done.** [Package D refund/return notification integration and verification](./P08-009-010-local-refund-evidence.md#package-d-completion) supersede the historical limits for that task. P08-016 remains its separate Package E task.
+
+
 Date: 31 October 2026 (Asia/Dhaka). Executor: Codex. Base revision `fe32523`. Owner requested the
 next batch and previously authorized safe local work despite blocked prerequisites. Full task
 status: **Blocked**; no task, policy, provider, backend stage or milestone acceptance is inferred.

@@ -11,7 +11,13 @@ export const refundOperationsOptions = z
       .array(
         z.strictObject({
           orderId: id,
-          basis: z.enum(['physical_return', 'shortage', 'payment_correction']),
+          basis: z.enum([
+            'physical_return',
+            'shortage',
+            'payment_correction',
+            'cancellation',
+            'delivery_exception',
+          ]),
           basisRefId: id.optional(),
           approval: refundApproval,
         }),

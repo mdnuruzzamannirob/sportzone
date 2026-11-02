@@ -1,3 +1,6 @@
+import { refundStatusTimelineAccess } from '../audit/audit.service.js'
+import type { refundRecoveryService } from './refund-recovery.service.js'
+import { createHash } from 'node:crypto'
 import type { Connection, ClientSession } from 'mongoose'
 import { z } from 'zod'
 import type { AdminAccountAccess } from '../auth/admin-account.service.js'
@@ -33,9 +36,11 @@ export function refundOperationsService(
   funding: ReturnType<typeof refundFundingAccess>,
   reservation: ReturnType<typeof refundReservationService>,
   dispatch?: ReturnType<typeof refundDispatchService>,
+  recovery?: ReturnType<typeof refundRecoveryService>,
 ) {
   const refunds = refundModel(connection),
-    attempts = refundAttemptModel(connection)
+    attempts = refundAttemptModel(connection),
+    timeline = refundStatusTimelineAccess(connection)
   async function ready() {
     try {
       await verifyCorrectionPersistence(connection)
@@ -91,6 +96,24 @@ export function refundOperationsService(
       },
     }
   }
+  async function historyView(session: ClientSession, row: InstanceType<typeof refunds>) {
+    const current = view(row),
+      events = await timeline(session, row._id.toHexString())
+    const all = [...current.timeline, ...events],
+      seen = new Set<string>()
+    return {
+      ...current,
+      timeline: all
+        .sort((a, b) => a.at.localeCompare(b.at))
+        .filter((e) => {
+          const key = `${e.status}:${e.at}`
+          if (seen.has(key)) return false
+          seen.add(key)
+          return true
+        })
+        .slice(-40),
+    }
+  }
   async function detail(session: ClientSession, refundId: string) {
     const row = await refunds.findById(refundId).session(session)
     if (!row) throw new ApiError('NOT_FOUND')
@@ -105,7 +128,7 @@ export function refundOperationsService(
       .limit(50)
       .session(session)
     return {
-      ...view(row),
+      ...(await historyView(session, row)),
       sourceCapacity: {
         allocatedPoisha: source.allocatedPoisha,
         heldPoisha: source.heldPoisha,
@@ -119,6 +142,7 @@ export function refundOperationsService(
         state: attempt.status,
         amountPoisha: attempt.amountPoisha,
         initiatedAt: attempt.initiatedAt.toISOString(),
+        ...(attempt.failureCode ? { failureCode: attempt.failureCode } : {}),
         ...(attempt.refundTransId ? { refundTransId: attempt.refundTransId } : {}),
         ...(attempt.refundRefId ? { refundRefId: attempt.refundRefId } : {}),
         ...(attempt.lastCheckedAt ? { lastCheckedAt: attempt.lastCheckedAt.toISOString() } : {}),
@@ -143,8 +167,10 @@ export function refundOperationsService(
             .skip((input.page - 1) * input.pageSize)
             .limit(input.pageSize)
             .session(session)
+          const items = []
+          for (const row of rows) items.push(await historyView(session, row))
           return {
-            items: rows.map(view),
+            items,
             pagination: pageMeta(input, await refunds.countDocuments(filter).session(session)),
           }
         },
@@ -180,10 +206,96 @@ export function refundOperationsService(
         false,
       )
     },
+    async reconcile(token: string | undefined, rawId: unknown, raw: unknown, key: unknown) {
+      if (!recovery) throw new ApiError('SERVICE_UNAVAILABLE')
+      const input = parseInput(z.strictObject({ reason: z.string().trim().min(1).max(2000) }), raw)
+      return recovery.reconcile(
+        token,
+        parseInput(id, rawId),
+        input.reason,
+        parseInput(z.string().min(1).max(128), key),
+      )
+    },
+    async confirmManual(token: string | undefined, rawId: unknown, raw: unknown, key: unknown) {
+      if (!recovery) throw new ApiError('SERVICE_UNAVAILABLE')
+      await recovery.confirmManual(
+        token,
+        parseInput(id, rawId),
+        raw,
+        parseInput(z.string().min(1).max(128), key),
+      )
+      return this.detail(token, rawId)
+    },
+    async review(token: string | undefined, rawId: unknown, raw: unknown, key: unknown) {
+      if (!recovery) throw new ApiError('SERVICE_UNAVAILABLE')
+      const input = parseInput(
+          z.strictObject({
+            decision: z.enum(['approve', 'reject']),
+            reason: z.string().trim().min(1).max(2000),
+            method: z
+              .enum(['gateway', 'manual_bkash', 'manual_nagad', 'manual_rocket', 'manual_bank'])
+              .optional(),
+            consentEvidenceRef: z.string().min(1).max(256).optional(),
+          }),
+          raw,
+        ),
+        refundId = parseInput(id, rawId),
+        commandKey = parseInput(z.string().min(1).max(128), key)
+      if (input.decision === 'reject')
+        await recovery.reject(token, refundId, input.reason, commandKey)
+      else {
+        const current = await this.detail(token, refundId)
+        if (current.status === 'under_review' && current.classification === 'payment_correction')
+          await reservation.reserve(
+            token,
+            {
+              orderId: current.orderId,
+              basis: 'payment_correction',
+              classification: 'payment_correction',
+              correctionCollectionId: current.sourceCollectionId,
+              reason: input.reason,
+            },
+            createHash('sha256').update(`review:${refundId}:${commandKey}`).digest('hex'),
+            {
+              review: {
+                refundId,
+                key: commandKey,
+                digest: createHash('sha256').update(JSON.stringify(input)).digest('hex'),
+              },
+              ...(input.method ? { method: input.method } : {}),
+              ...(input.consentEvidenceRef ? { consentEvidenceRef: input.consentEvidenceRef } : {}),
+            },
+          )
+        else await recovery.approve(token, refundId, input, commandKey)
+      }
+      return this.detail(token, refundId)
+    },
     async payout(token: string | undefined, rawId: unknown, raw: unknown, key: unknown) {
       await admins.owned(token, async () => ready(), false)
-      if (!dispatch) throw new ApiError('SERVICE_UNAVAILABLE')
-      return dispatch.dispatch(token, rawId, raw, key)
+      const input = parseInput(
+        z.strictObject({
+          method: z.enum([
+            'gateway',
+            'manual_bkash',
+            'manual_nagad',
+            'manual_rocket',
+            'manual_bank',
+          ]),
+          reason: z.string().trim().min(1).max(2000),
+        }),
+        raw,
+      )
+      if (input.method === 'gateway' && !dispatch) throw new ApiError('SERVICE_UNAVAILABLE')
+      if (recovery)
+        await recovery.prepare(
+          token,
+          parseInput(id, rawId),
+          input,
+          parseInput(z.string().min(1).max(128), key),
+        )
+      else if (input.method !== 'gateway') throw new ApiError('SERVICE_UNAVAILABLE')
+      if (input.method === 'gateway') return dispatch?.dispatch(token, rawId, input, key)
+      return { attemptId: (await this.detail(token, rawId)).attempts[0]?.id, state: 'submitted' }
     },
   }
 }

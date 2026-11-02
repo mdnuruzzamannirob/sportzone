@@ -141,12 +141,12 @@ The register contains 210 tasks across twelve requirement groups. Application-st
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           8 |     0 |           0 |       1 |         0 |       8 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |           6 |     0 |           0 |       2 |         0 |      14 |        0 |
 | 07 — Payment Integration and Verification     |      18 |           3 |     0 |           0 |       0 |         0 |      15 |        0 |
-| 08 — Returns and Refunds | 19 | 6 | 0 | 0 | 5 | 0 | 8 | 0 |
+| 08 — Returns and Refunds                      |      19 |           6 |     0 |           0 |       2 |         0 |      11 |        0 |
 | 09 — Admin Management and Reports             |      18 |          12 |     0 |           0 |       4 |         0 |       1 |        1 |
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |       0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |       0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |       0 |        0 |
-| **Total** | **210** | **77** | **0** | **0** | **12** | **0** | **119** | **2** |
+| **Total**                                     | **210** |      **77** | **0** |       **0** |   **9** |     **0** | **122** |    **2** |
 
 ## 4. Milestone tracker
 
@@ -1511,35 +1511,35 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Evidence:** [Package C completion, protected policy/HTTP/dispatch integration and consolidated verification](./evidence/P06-013-P08-005-008-durable-reservations.md#package-c-completion). 802 unit, 396 affected replica-set integration, 112 contract and 79 tooling cases Passed; build/types/lint/boundaries/smoke/security Passed.\
   **Completion:** Codex implementation and diff review under Tasks §2. Package B prerequisite commit is combined into this checkout and retested. Verified payout/release/retry/manual notification remain Package D; actual merchant/legal/deployed qualification retains its release gates.
 
-- [ ] **P08-009 — Implement refund-status verification/retry/investigation**\
-  **Status:** `Blocked` · **Area:** Backend/jobs\
+- [x] **P08-009 — Implement refund-status verification/retry/investigation**\
+  **Status:** `Done` · **Area:** Backend/jobs\
   **Stage:** `Backend`\
   **Sources:** FR-18; FR-33\
   **Depends on:** `P08-008`\
   **Deliverable:** Query supported status, reconcile uncertainty and guard authorized retry without duplicate payout.\
   **Acceptance:** Unknown result never marked Completed; duplicate callbacks and job restarts are safe.\
-  **Evidence:** [Original investigation checks](./evidence/P08-009-010-local-refund-evidence.md) and [durable dispatch follow-up](./evidence/P06-013-P08-005-008-durable-reservations.md). Attempts now persist through submission/uncertainty; independent payout proof, completion/release/retry transactions, durable worker and accepted prerequisites remain pending.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package D completion, atomic outcome/retry/manual verification, worker and notification integration](./evidence/P08-009-010-local-refund-evidence.md#package-d-completion). 806 final unit, 446 affected integration regression, 313 checkout rerun, 23 final recovery cases, 112 contract and 80 tooling cases Passed; build/types/lint/boundaries/smoke/security Passed.\
+  **Completion:** Codex implementation and actual diff review under Tasks §2. Proof qualification, source/merchant/sender deployment and launch retain their release owners; no real transfer/email/payout, application closeout or milestone acceptance is inferred.
 
-- [ ] **P08-010 — Implement controlled COD/manual payout evidence**\
-  **Status:** `Blocked` · **Area:** Backend/refunds\
+- [x] **P08-010 — Implement controlled COD/manual payout evidence**\
+  **Status:** `Done` · **Area:** Backend/refunds\
   **Stage:** `Backend`\
   **Sources:** FR-18; FR-33\
   **Depends on:** `P08-007`, `P06-012`\
   **Deliverable:** Record consent where required, verified transfer and admin confirmation for COD/bank/mobile wallet.\
   **Acceptance:** Uncollected COD cannot be refunded; no Completed state without payout evidence.\
-  **Evidence:** [Local manual evidence verification](./evidence/P08-009-010-local-refund-evidence.md) and [durable attempt foundation](./evidence/P06-013-P08-005-008-durable-reservations.md). Attempts now persist; real transfer/consent verification, canonical manual-confirmation integration, transactional completion and prerequisite acceptance remain pending.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package D completion, atomic outcome/retry/manual verification, worker and notification integration](./evidence/P08-009-010-local-refund-evidence.md#package-d-completion). 806 final unit, 446 affected integration regression, 313 checkout rerun, 23 final recovery cases, 112 contract and 80 tooling cases Passed; build/types/lint/boundaries/smoke/security Passed.\
+  **Completion:** Codex implementation and actual diff review under Tasks §2. Proof qualification, source/merchant/sender deployment and launch retain their release owners; no real transfer/email/payout, application closeout or milestone acceptance is inferred.
 
-- [ ] **P08-011 — Persist return and refund decisions and notifications**\
-  **Status:** `Blocked` · **Area:** Backend/notifications\
+- [x] **P08-011 — Persist return and refund decisions and notifications**\
+  **Status:** `Done` · **Area:** Backend/notifications\
   **Stage:** `Backend`\
   **Sources:** FR-20; FR-17; FR-18\
   **Depends on:** `P08-009`, `P08-010`\
   **Deliverable:** Record approvals, rejection reasons, retry/failure and accurate customer status email.\
   **Acceptance:** Return completion never sends unverified refund-completed claim; notifications deduplicate.\
-  **Evidence:** [Local return notifications, review qualification and actual checks](./evidence/P08-011-016-return-notifications-review.md). Required refund prerequisites, production composition and independent acceptance remain outstanding.\
-  **Review:** [1 November blocked-task audit](./evidence/blocked-backend-review-2026-11-01.md#task-by-task-review). Remaining implementation and external acceptance are recorded separately; full task remains Blocked.
+  **Evidence:** [Package D completion, atomic outcome/retry/manual verification, worker and notification integration](./evidence/P08-009-010-local-refund-evidence.md#package-d-completion). 806 final unit, 446 affected integration regression, 313 checkout rerun, 23 final recovery cases, 112 contract and 80 tooling cases Passed; build/types/lint/boundaries/smoke/security Passed.\
+  **Completion:** Codex implementation and actual diff review under Tasks §2. Proof qualification, source/merchant/sender deployment and launch retain their release owners; no real transfer/email/payout, application closeout or milestone acceptance is inferred.
 
 - [ ] **P08-012 — Implement request/history and evidence UX**\
   **Status:** `Not Started` · **Area:** Storefront/returns\
@@ -2629,3 +2629,5 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 **1 November 2026 — Package B completion:** P08-002/003/004 Blocked → In Progress → Done under the owner-approved engineering convention. Completed scoped eligibility/submission/private evidence, full admin lifecycle, partial/additional-case resolution and cumulative duplicate-safe receipt/inspection/restock; actual local/test startup and exact-predecessor additive migration are verified. [Implementation review, commands/results and separate release checks](./evidence/P08-003-004-local-return-inspection.md#package-b-completion). Executor/reviewer: Codex. Overall: 210 tasks, 115 Done, 16 Blocked, 77 Not Started, 2 Deferred; no other task, application closeout or milestone accepted.
 
 **2 November 2026 — Package C completion:** P08-005/006/007/008 Blocked → In Progress → Done under Tasks §2. Completed protected policy and canonical admin group/list/detail/dispatch integration, source merchant binding, command alias replay protection and actual local/test startup. Existing Package B commit `9a7d0b2`, absent from main, was combined without discarding C work; final combined verification passed 802 unit, 396 integration, 112 contract and 79 tooling cases. [Task-by-task outcomes, migration/activation, review and release scope](./evidence/P06-013-P08-005-008-durable-reservations.md#package-c-completion). Executor/reviewer: Codex. Counts: 119 Done, 12 Blocked, 77 Not Started, 2 Deferred (210 total); D/E and milestones remain unchanged.
+
+**2 November 2026 — Package D completion:** P08-009/010/011 Blocked → In Progress → Done under Tasks §2. Implemented qualified payout/release transactions, original-reference recovery, explicit safe retry and consented manual fallback, protected manual confirmation, durable fenced reconciliation and verified return/refund outbox delivery. Existing C work appeared in owner commit `cc58fd4` during execution and was retained. [Actual commands/results, owner boundaries, migration/activation and release limits](./evidence/P08-009-010-local-refund-evidence.md#package-d-completion). Executor/reviewer: Codex. Overall: 122 Done, 9 Blocked, 77 Not Started, 2 Deferred; Package E/F/G and milestones unchanged.

@@ -787,3 +787,26 @@ test('RETURN-OPERATIONS-BOUNDARY-01: claim HTTP and orchestration cannot access 
     put(`backend/src/modules/${consumer}.ts`, 'export const consumer = 1')
   }
 })
+
+test('REFUND-RECOVERY-BOUNDARY-01: payout recovery, notifications and job retain private owner persistence', (t) => {
+  const { root, put } = fixture(t)
+  for (const [consumer, owner] of [
+    ['modules/refunds/refund-recovery.service', 'modules/payments/payment'],
+    ['modules/refunds/refund-recovery.service', 'modules/orders/order'],
+    ['modules/refunds/refund-recovery.service', 'modules/notifications/notification'],
+    ['modules/notifications/refund-message.service', 'modules/refunds/refund'],
+    ['jobs/reconcile-refunds.job', 'modules/refunds/refund'],
+  ]) {
+    put(`backend/src/${owner}.model.ts`, 'export const model=1')
+    const from = consumer.startsWith('jobs/')
+      ? '../modules/refunds/refund.model.js'
+      : `../${owner.slice('modules/'.length)}.model.js`
+    put(`backend/src/${consumer}.ts`, `import "${from}"`)
+    assert.ok(
+      checkBoundaries(root).errors.some(
+        (e) => e.includes('private persistence') || e.includes('jobs must delegate persistence'),
+      ),
+    )
+    put(`backend/src/${consumer}.ts`, 'export const consumer=1')
+  }
+})

@@ -1,3 +1,4 @@
+import type { RefundNotifier } from './refund-recovery.service.js'
 import { refundApproval } from './refund-reservation.schema.js'
 export { refundApproval } from './refund-reservation.schema.js'
 import { createHash } from 'node:crypto'
@@ -76,6 +77,7 @@ export function refundReservationService(
     },
   ) => Promise<unknown>,
   clock: () => Date = () => new Date(),
+  notify?: RefundNotifier,
 ) {
   const refunds = refundModel(connection),
     attempts = refundAttemptModel(connection)
@@ -92,7 +94,16 @@ export function refundReservationService(
     })),
   })
   return {
-    async reserve(token: string | undefined, raw: unknown, rawKey: unknown) {
+    async reserve(
+      token: string | undefined,
+      raw: unknown,
+      rawKey: unknown,
+      expected?: {
+        method?: string
+        consentEvidenceRef?: string
+        review?: { refundId: string; key: string; digest: string }
+      },
+    ) {
       const input = parseInput(command, raw)
       const key = parseInput(
         z
@@ -141,6 +152,31 @@ export function refundReservationService(
           targetId: input.orderId,
           operationKey: hash(`refund-group:${actorId}:${input.orderId}:${key}`),
         }
+        const reviewCause = expected?.review
+          ? {
+              action: 'refund.review.approve',
+              targetType: 'refund',
+              targetId: expected.review.refundId,
+              operationKey: hash(`approve:${expected.review.refundId}:${expected.review.key}`),
+            }
+          : undefined
+        const reviewPrior = reviewCause ? await lookup(session, reviewCause) : undefined
+        if (reviewPrior && reviewPrior.afterDigest !== expected?.review?.digest)
+          throw new ApiError('IDEMPOTENCY_CONFLICT')
+        const reviewReceipt = async (rows: InstanceType<typeof refunds>[]) => {
+          if (!reviewCause || !expected?.review) return
+          if (rows.length !== 1 || rows[0]?._id.toHexString() !== expected.review.refundId)
+            throw new ApiError('STATE_CONFLICT')
+          if (!reviewPrior)
+            await audit(session, {
+              ...reviewCause,
+              actorType: 'admin',
+              actorId,
+              afterDigest: expected.review.digest,
+              reason: input.reason,
+              occurredAt: clock(),
+            })
+        }
         const prior = await lookup(session, cause)
         if (prior && prior.afterDigest !== digest) throw new ApiError('IDEMPOTENCY_CONFLICT')
         const existing = await refunds
@@ -157,6 +193,7 @@ export function refundReservationService(
               reason: input.reason,
               occurredAt: clock(),
             })
+          await reviewReceipt(existing)
           return view(existing)
         }
         if (prior) throw new ApiError('STATE_CONFLICT')
@@ -171,6 +208,12 @@ export function refundReservationService(
             deliveryRequestedPoisha: input.deliveryChargeRequestedPoisha,
           }),
         )
+        if (
+          (expected?.method && expected.method !== authorized.method) ||
+          (expected?.consentEvidenceRef &&
+            expected.consentEvidenceRef !== authorized.consentEvidenceRef)
+        )
+          throw new ApiError('BUSINESS_RULE_VIOLATION')
         if (authorized.consentRequired && !authorized.consentEvidenceRef)
           throw new ApiError('BUSINESS_RULE_VIOLATION')
         const now = clock()
@@ -371,6 +414,13 @@ export function refundReservationService(
             createdAt: now,
             updatedAt: now,
           }).save({ session, timestamps: false })
+          await notify?.(session, {
+            refundId: row._id.toHexString(),
+            orderId: input.orderId,
+            status: 'approved',
+            operationKey: hash(`approved:${row._id}`),
+            occurredAt: now,
+          })
           rows.push(row)
         }
         await audit(session, {
@@ -381,6 +431,7 @@ export function refundReservationService(
           reason: input.reason,
           occurredAt: now,
         })
+        await reviewReceipt(rows)
         return view(rows)
       })
     },

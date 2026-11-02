@@ -52,7 +52,8 @@ export function createNotificationPersistence(connection: Connection, model: Not
           !isDeepStrictEqual(existing.options?.validator, orderReceivedNotificationValidator) &&
           !isDeepStrictEqual(existing.options?.validator, guestNotificationValidator) &&
           !isDeepStrictEqual(existing.options?.validator, paymentNotificationValidator) &&
-          !isDeepStrictEqual(existing.options?.validator, commerceNotificationValidator)
+          !isDeepStrictEqual(existing.options?.validator, commerceNotificationValidator) &&
+          !isDeepStrictEqual(existing.options?.validator, returnNotificationValidator)
         )
           throw new Error('Notification collection requires reviewed migration.')
         await connection.db.command({
@@ -542,7 +543,7 @@ export const commerceNotificationValidator = {
 }
 
 // Additive private return events retain the exact prior commerce validator as a predecessor.
-export const registrationNotificationValidator = {
+export const returnNotificationValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -635,6 +636,72 @@ export const registrationNotificationValidator = {
           'payload.intakeId': { $exists: false },
           'payload.orderNumber': { $exists: false },
           'payload.amountPoisha': { $exists: false },
+        },
+      ],
+    },
+  ],
+} as const
+
+// Additive successor; exact prior return schema remains an accepted migration predecessor.
+export const registrationNotificationValidator = {
+  $and: [
+    {
+      $jsonSchema: {
+        ...returnNotificationValidator.$and[0].$jsonSchema,
+        properties: {
+          ...returnNotificationValidator.$and[0].$jsonSchema.properties,
+          eventType: {
+            enum: [
+              ...returnNotificationValidator.$and[0].$jsonSchema.properties.eventType.enum,
+              'refund_update',
+            ],
+          },
+          templateVersion: {
+            enum: [
+              ...returnNotificationValidator.$and[0].$jsonSchema.properties.templateVersion.enum,
+              'refund-update-v1',
+            ],
+          },
+          payload: {
+            ...returnNotificationValidator.$and[0].$jsonSchema.properties.payload,
+            properties: {
+              ...returnNotificationValidator.$and[0].$jsonSchema.properties.payload.properties,
+              refundId: { bsonType: 'objectId' },
+              refundStatus: { enum: ['approved', 'processing', 'completed', 'failed', 'rejected'] },
+            },
+          },
+        },
+      },
+    },
+    {
+      $or: [
+        {
+          $and: [
+            returnNotificationValidator.$and[1],
+            { 'payload.refundId': { $exists: false }, 'payload.refundStatus': { $exists: false } },
+          ],
+        },
+        {
+          eventType: 'refund_update',
+          templateVersion: 'refund-update-v1',
+          orderId: { $type: 'objectId' },
+          'payload.refundId': { $type: 'objectId' },
+          'payload.refundStatus': { $type: 'string' },
+          'payload.operationKey': { $type: 'string' },
+          'payload.occurredAt': { $type: 'date' },
+          ...Object.fromEntries(
+            [
+              'challengeId',
+              'paymentId',
+              'attemptId',
+              'intakeId',
+              'orderNumber',
+              'amountPoisha',
+              'returnId',
+              'returnFrom',
+              'returnTo',
+            ].map((k) => [`payload.${k}`, { $exists: false }]),
+          ),
         },
       ],
     },

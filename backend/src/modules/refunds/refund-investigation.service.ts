@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import { parseInput } from '../../shared/middleware/validate.js'
-import { assertOutsideTransaction } from '../../shared/database/transaction.js'
 import type { createSslcommerzAdapter } from '../../providers/sslcommerz/sslcommerz.client.js'
+import { assertOutsideTransaction } from '../../shared/database/transaction.js'
+import { parseInput } from '../../shared/middleware/validate.js'
 
 const ref = (max: number) =>
   z
@@ -37,9 +37,15 @@ export function refundInvestigationService(
     )
       return { state: 'investigate' as const }
     if (result.status === 'processing')
-      return { state: 'pending' as const, evidenceDigest: result.evidenceDigest }
+      return {
+        state: 'pending' as const,
+        evidenceDigest: result.evidenceDigest,
+      }
     if (result.status === 'cancelled')
-      return { state: 'investigate' as const, evidenceDigest: result.evidenceDigest }
+      return {
+        state: 'investigate' as const,
+        evidenceDigest: result.evidenceDigest,
+      }
     return {
       state: 'independent_verification_required' as const,
       evidenceDigest: result.evidenceDigest,
@@ -71,8 +77,8 @@ const retryInput = z.strictObject({
     })
     .optional(),
 })
-// This assesses protected facts only. A candidate is not authorization to retry; a future
-// current-admin transaction must revalidate proof, attempts, source reservation and identity.
+// Advisory assessment only. Canonical refundRecoveryService owns current-admin proof revalidation,
+// capacity reacquisition and durable retry identity; this helper never authorizes a mutation.
 export function assessRefundRetry(raw: unknown) {
   const data = parseInput(retryInput, raw)
   if (data.lastOperationAt < data.initiatedAt || data.now < data.lastOperationAt)
@@ -98,5 +104,8 @@ export function assessRefundRetry(raw: unknown) {
     proof.checkedAt > data.now
   )
     return { state: 'investigate' as const }
-  return { state: 'retry_review_required' as const, evidenceDigest: proof.evidenceDigest }
+  return {
+    state: 'retry_review_required' as const,
+    evidenceDigest: proof.evidenceDigest,
+  }
 }

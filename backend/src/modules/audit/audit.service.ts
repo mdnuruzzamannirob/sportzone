@@ -174,3 +174,33 @@ export function orderAuditRefsAccess(connection: Connection) {
     return rows.map((row) => row._id.toHexString())
   }
 }
+
+// Refund UI receives bounded public status facts only, not internal financial evidence or actors.
+export function refundStatusTimelineAccess(connection: Connection) {
+  return async (session: ClientSession, refundId: string) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    await verifyAuditPersistence(connection)
+    const rows = await auditModel(connection)
+      .find({
+        targetType: 'refund',
+        targetId: parseInput(id, refundId),
+        action: {
+          $in: [
+            'refund.notification.approved',
+            'refund.notification.processing',
+            'refund.notification.completed',
+            'refund.notification.failed',
+            'refund.notification.rejected',
+          ],
+        },
+      })
+      .sort({ occurredAt: -1, _id: -1 })
+      .limit(40)
+      .select('action occurredAt')
+      .session(session)
+    return rows.reverse().map((row) => ({
+      status: row.action.slice('refund.notification.'.length),
+      at: row.occurredAt.toISOString(),
+    }))
+  }
+}

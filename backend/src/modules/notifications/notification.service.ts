@@ -139,6 +139,44 @@ export function createRegistrationNotifications(
         { upsert: true, session, runValidators: true },
       )
     },
+    async enqueueRefund(
+      input: {
+        orderId: Types.ObjectId
+        userId?: Types.ObjectId
+        email: string
+        name: string
+        refundId: Types.ObjectId
+        status: 'approved' | 'processing' | 'completed' | 'failed' | 'rejected'
+        operationKey: string
+        occurredAt: Date
+      },
+      session: ClientSession,
+    ) {
+      if (!session.inTransaction()) throw new Error('Refund intent requires transaction')
+      await createNotificationPersistence(connection, model).verifyIndexes()
+      await model.updateOne(
+        { eventKey: `refund_update:${input.refundId}:${input.status}:${input.operationKey}:v1` },
+        {
+          $setOnInsert: {
+            orderId: input.orderId,
+            ...(input.userId ? { userId: input.userId } : {}),
+            recipient: { emailNormalized: input.email, displayName: input.name },
+            eventType: 'refund_update',
+            templateVersion: 'refund-update-v1',
+            payload: {
+              refundId: input.refundId,
+              refundStatus: input.status,
+              operationKey: input.operationKey,
+              occurredAt: input.occurredAt,
+            },
+            status: 'queued',
+            attemptCount: 0,
+            nextAttemptAt: clock(),
+          },
+        },
+        { upsert: true, session, runValidators: true },
+      )
+    },
     async enqueuePayment(
       input: {
         event: 'success' | 'failure' | 'pending'
@@ -266,6 +304,7 @@ export function createRegistrationNotifications(
       includePayments = false,
       includeCommerce = false,
       includeReturns = false,
+      includeRefunds = false,
     ) {
       const claimId = randomUUID()
       const row = await model
@@ -273,6 +312,9 @@ export function createRegistrationNotifications(
           {
             $or: [
               { eventType: 'registration', templateVersion: 'registration-v1' },
+              ...(includeRefunds
+                ? [{ eventType: 'refund_update' as const, templateVersion: 'refund-update-v1' }]
+                : []),
               ...(includeReturns
                 ? [{ eventType: 'return_update' as const, templateVersion: 'return-update-v1' }]
                 : []),

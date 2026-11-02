@@ -1,3 +1,4 @@
+import type { RefundNotifier } from './refund-recovery.service.js'
 import { createHash } from 'node:crypto'
 import type { Connection } from 'mongoose'
 import { z } from 'zod'
@@ -32,6 +33,7 @@ export function refundDispatchService(
   gateway: Pick<ReturnType<typeof createSslcommerzAdapter>, 'initiateRefund'>,
   clock: () => Date = () => new Date(),
   merchantAccountKey?: string,
+  notify?: RefundNotifier,
 ) {
   const refunds = refundModel(connection),
     attempts = refundAttemptModel(connection)
@@ -137,6 +139,13 @@ export function refundDispatchService(
           actorId,
           afterDigest: digest,
           reason: input.reason,
+          occurredAt: now,
+        })
+        await notify?.(session, {
+          refundId,
+          orderId: refund.orderId.toHexString(),
+          status: 'processing',
+          operationKey: cause.operationKey,
           occurredAt: now,
         })
         return {

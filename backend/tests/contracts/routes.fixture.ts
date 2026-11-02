@@ -96,7 +96,15 @@ const media = {
 export function localOnlyRouters() {
   return [
     refundRoutes(
-      { list: unused, detail: unused, group: unused, payout: unused },
+      {
+        list: unused,
+        detail: unused,
+        group: unused,
+        payout: unused,
+        reconcile: unused,
+        confirmManual: unused,
+        review: unused,
+      },
       security,
       sessions,
     ),
