@@ -1,7 +1,7 @@
 # SportZone — Backend refactor plan
 
 **Date:** 3 November 2026 (Asia/Dhaka)\
-**Status:** Planning complete; implementation not started by this document\
+**Status:** Execution plan; progress and acceptance tracked in Tasks\
 **Scope:** The complete backend application, its contracts, workers, scripts, tests and affected repository tooling\
 **Decision basis:** Project-owner discussion, domain/workflow analysis and repository inspection\
 **Execution register:** [Tasks](./TASKS.md#2-task-management-conventions)

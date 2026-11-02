@@ -102,3 +102,184 @@ On 22 October 2026, the project owner reviewed the refactor and verification han
 P03-021 is Done under AGENTS §13. Acceptance covers this backend refactor and its existing parity evidence;
 M1, EXT-04, production/provider gates and later frontend refactors remain separate. Closure changes documentation
 only; application suites are not rerun for an acceptance-record update.
+
+## P03-024 — WP00 follow-up baseline, 3 November 2026
+
+This section is a new refactor-baseline task, not a revision of P03-021's historical acceptance above.
+The owner authorized the [whole-backend refactor plan](../BACKEND_REFACTOR_PLAN.md) and instructed execution
+of its first work package. P03-024 covers WP00 only: inventory, impact mapping and selected baseline
+verification. No feature, runtime, schema, route, test, script or generated API artifact was changed.
+
+### Revision, environment and artifacts
+
+- Input/runtime revision: `02cb436284007020ba7d3734b455e66c637cab68`.
+- Node `v24.20.0`, npm `11.19.0`, existing Linux workspace; no provider account or external DB used.
+- Existing staged changes to Changelog, Implementation Plan and the new refactor plan were retained.
+- Foundation P01-024 is Done with recorded owner acceptance; existing P03-023 is Done. P03-022 remains
+  In Progress with its independent/external prerequisites; no application or milestone acceptance inferred.
+- Backend fingerprint: SHA-256 `3461d13a592a94fe095c1db22944db8f41ead223ea84cd16b6f641a70d663c99`.
+  Input is every inventoried backend path sorted lexically, followed by NUL, file bytes and NUL.
+  Documentation and ignored build/test output are excluded; this identifies the inspected runtime inputs.
+
+Local generated artifacts, deliberately outside tracked source/tooling:
+
+- [Complete per-file/import/export/persistence/operation inventory](../../test-results/backend-refactor/wp00-inventory.json).
+- [Baseline counts, dependency components and candidate paths](../../test-results/backend-refactor/wp00-summary.json).
+- [Observed check results and scope](../../test-results/backend-refactor/wp00-checks.json).
+- [One-off inventory analyzer](../../test-results/backend-refactor/sportzone-wp00-inventory.mjs) and
+  [scan output](../../test-results/backend-refactor/wp00-scan.log); not a new project framework or test suite.
+
+The analyzer uses the installed TypeScript AST parser. Each backend file has current/target path,
+package assignment, content hash, direct consumers and affected module owners. It records import and
+export declarations, function/method scopes, literal route calls, imported-call sites and canonical
+persistence expressions. Emitted `dist` imports are mapped back to source for consumer impact only.
+Related repository paths and hashes cover configuration, CI, development tooling and browser fixtures.
+
+To reproduce at a later revision, regenerate the local metadata from repository root before running
+the analyzer; regenerated results describe that revision, not this immutable input fingerprint:
+
+```sh
+git ls-files --cached --others --exclude-standard -z > test-results/backend-refactor/wp00-paths
+git rev-parse HEAD > test-results/backend-refactor/wp00-revision
+npm --version > test-results/backend-refactor/wp00-npm
+node test-results/backend-refactor/sportzone-wp00-inventory.mjs
+```
+
+An initial analyzer attempt used nested synchronous child processes and returned sandbox `EPERM`.
+Metadata was instead collected with the allowed shell commands above; the completed scan exited 0.
+No permissions, project dependencies or runtime implementation were changed to run the inventory.
+
+### Complete area and ownership coverage
+
+| Backend area | Observed inventory | Disposition |
+| --- | ---: | --- |
+| `src/` | 319 files | Owner/package and current-to-target mapping for every path. |
+| `tests/` | 113 files | 51 unit suites, 52 integration suites, one contract suite plus its fixture, five helpers, two fixtures and smoke entry. |
+| `scripts/` | 41 files | All bootstrap, activation, migration, provisioning, development, qualification, worker and runtime entries retained in the inventory. |
+| `contracts/` | 4 files | Registry, local registry, independent local-operation list and generator; source-schema imports recorded. |
+| `api/` | 4 files | OpenAPI, planned-operation inventory, Postman collection/environment; all four freshness-checked. |
+| Backend root configuration/packaging | 10 files | Package/Biome, three TypeScript configs, three Vitest configs, Dockerfile and context allowlist. |
+| **Total backend** | **491 files** | No unassigned area; review-in-place does not mean mandatory rewrite. |
+
+Current module file counts and package ownership:
+
+| Current owner | Files | Target / owning package |
+| --- | ---: | --- |
+| auth | 41 | Keep five auth subfeatures; private identity/security capabilities — WP04. |
+| customers | 4 | Profile/privacy/administration through auth-owned identity operations — WP04. |
+| health | 2 | Move to `src/health/`, preserve URLs/readiness behavior — WP04. |
+| delivery | 6 | Pilot owner, existing coverage/charge persistence — WP03. |
+| audit | 5 | Durable append/query capabilities — WP05. |
+| notifications | 11 | Intent/template/delivery interfaces — WP05; final worker parity WP14. |
+| media | 14 | Preserve meaningful upload/access/reference/cleanup services — WP05. |
+| catalog | 21 | Product-owned variants, sibling categories — WP06. |
+| inventory | 10 | Preserve sole stock-write capability — WP06. |
+| promotions | 11 | Coupon eligibility/holds/quota and deterministic allocation — WP07. |
+| cart | 10 | Five cart files stay; five wishlist files move to `modules/wishlist/` — WP07. |
+| checkout | 17 | Participant boundaries WP08, placement coordination WP09. |
+| orders | 23 | Participant boundaries WP08, lifecycle coordination WP09. |
+| payments | 37 | Attempts/collections; shared aggregate stays at parent — WP08/WP10. |
+| returns | 11 | Claims/physical inspection/disposition — WP11. |
+| refunds | 24 | Obligations/payouts; shared aggregate/assembly stays at parent — WP08/WP11. |
+| reviews | 6 | Purchase qualification/moderation — WP12. |
+| settings | 11 | Store/policy content, narrowly exposed configuration — WP12. |
+| support | 6 | Complaint scope/correspondence — WP12. |
+| reports | 4 | Keep existing name; owner-provided bounded projections — WP12. |
+
+The 60 candidate responsibility moves have no target filename collisions. They include selected
+wishlist/health/variant/financial subfeature placements; mixed files and shared parent aggregates need
+operation-level review before moving. No speculative public/controller/composition files were created.
+The remaining source paths are assigned to technical foundation, provider/root wiring or workers.
+
+Thirty-eight related repository paths were inventoried. Eleven contain direct backend path/command
+references: container workflow, root package, Render config, CI affected/boundary/container tooling,
+development backend/start tools, `tests/e2e/auth-server.mjs` and two tooling suites. Additional indirect
+consumers include `ci-workspaces.json`, CI workflow/runner and sanitized environment templates.
+The browser fixture imports compiled auth/models/setup/app directly: retain compatibility or update
+and verify its affected consumer when those paths change; do not start a frontend refactor.
+
+### Routes, activation, entry points and persistence
+
+- Generated registry: 170 business HTTP operations; 40 route-owning files. The 422 static router calls
+  include middleware/mounts/transport and dynamic declarations and are not 422 distinct public operations.
+- Existing router parity tests compare actual Express registrations, including HEAD/OPTIONS behavior,
+  to the independent registry; missing/duplicate/undeclared operations and omitted route fixtures are checked.
+- Every operation's method/path/status/security and activation metadata is retained in the inventory.
+  Forty distinct activation descriptions include auth feature flags, protected local/test operations,
+  provider/callback admission and always-registered public/health surfaces. Sixty-three operations share
+  the explicit local/test-only composition description. Registration is not hosted availability.
+- Build uses TypeScript `src → dist`; contract tooling compiles to `.cache/contracts`. Existing discovery:
+  `tests/unit/**/*.test.ts`, `tests/integration/**/*.test.ts`, `tests/contracts/**/*.test.ts`.
+- HTTP lifecycle is `server → setup → app/routes`; worker/operator scripts are independent `.mjs`
+  entries importing compiled domain/setup/job capabilities. The inventory includes all 41 script names/imports.
+- Four job files: reservation expiry, payment reconciliation, refund reconciliation and media maintenance.
+  Notification delivery uses its existing worker script and `composeNotificationWorker`; do not invent a
+  missing notification `.job.ts` just to make a symmetric tree.
+- Container runtime copies notification, expiry, payment/refund reconciliation, media maintenance, health
+  and staging catalog/inventory scripts plus compiled `dist`; Docker context allowlist and CI image checks
+  must move with imports. Render currently selects free hosting and disabled protected capabilities.
+- Source has 28 model files with 38 canonical named model registrations, plus raw `authRateLimits` storage:
+  **39 distinct source-defined collection names**, not a claim that all exist in a deployed database.
+- Fingerprints cover 112 Schema expressions (including embedded schemas), 117 schema-index call sites,
+  nine raw index-operation sites, 47 validator variable initializers and 45 BSON-schema expression sites.
+  These are AST counts, not unique deployed index counts. The 71 `.model()` call sites include model
+  lookups as well as the 38 registration calls; no duplicate canonical model is inferred from call count.
+
+### Dependency and workflow impact
+
+The runtime source file-import graph has no strongly connected component. Including type-only edges
+reveals one two-file component: `refund-recovery.service.ts` imports the reservation factory's type,
+while `refund-reservation.service.ts` imports `RefundNotifier` from recovery. WP01/WP11 should extract
+the stable semantic contracts without treating this as an observed runtime recursion.
+
+At aggregated module level, ten owners are mutually reachable through different files: auth, catalog,
+checkout, customers, inventory, orders, payments, promotions, refunds and settings. This is coupling
+evidence, not proof that individual requests execute circularly. The artifact lists concrete import
+and imported-call sites; dynamically injected methods require the operation-level review in WP08.
+There are no unresolved backend relative source/compiled-import mappings in the scanned inventory.
+
+| Existing workflow / entry | Participants and current transaction boundary | Refactor impact |
+| --- | --- | --- |
+| Checkout intent/completion | Auth-owned scope passes one session into intent, order creation, stock/coupon allocation, payment preparation and outbox. | Keep coordinator checkout-owned; do not construct all participants inside the domain operation. |
+| Cancellation | `cancellationService` receives auth scope/admin capability, checkout allocation callback, payment capability and optional refund callback. | Replace deep factory-derived contracts; later lifecycle must not depend on placement internals. |
+| Fulfillment | Order lifecycle receives allocation/funding/deadline capabilities; stock/coupon helpers currently live under checkout. | Separate participant rules from checkout placement without moving transaction authority accidentally. |
+| Verified collection / settlement | Receipt processing independently preserves money, uses injected order/allocation capabilities; late recovery opens its own guarded transaction. | Preserve the receipt/recovery split; do not merge into one rollback that can discard received funds. |
+| Return/shortage | Scoped return operations and admin physical operations share canonical unit guards, evidence and inventory/refund participants. | Preserve transaction session, physical-vs-missing distinction and replay identity. |
+| Refund reservation | Admin/current-scope callbacks join source funding, order/unit and claim capabilities, obligations/attempts/audit/outbox. | Extract obligation contracts before payout code moves; preserve pending capacity. |
+| Payout/recovery | Durable intent precedes external dispatch; outcome recovery uses funding/unit capabilities and guarded settlement. | Keep external calls outside transactions and uncertain outcomes recoverable. |
+| Expiry/reconciliation workers | Leases/cursors and guarded transactions invoke existing domain services. | Preserve fencing/checkpoints and script-to-compiled-entry compatibility. |
+
+### Findings and disposition
+
+| Finding | Exact source / risk | Follow-up |
+| --- | --- | --- |
+| Collection inventory understates source-defined storage | Database §3.1 says 38 and omits `paymentInitiations`; Database §8.5 and §11.1 already specify it, and payment-initiation persistence bootstraps it. The raw auth quota store makes 39 source-defined names. | WP01 reconcile the inventory/count; do not add/drop a collection or run a migration. |
+| Type-only refund dependency component | Recovery uses `Parameters<typeof refundReservationService>`; reservation uses recovery's `RefundNotifier`. | WP01 public-contract rules and WP11 semantic type placement. No runtime failure claimed. |
+| Stale activation prose may mislead clients | Contract registry checkout activation still says COD-only/pending Phase 07, while checkout completion handles online drafts and payment preparation. Fresh generation cannot prove prose accuracy. | Reconcile complete admission chain with API/config/setup in WP01; no enablement change in WP00. |
+| Broad composition and deep implementation contracts | Root setup and exported factory-derived capabilities couple domain construction/HTTP/worker consumers. | WP01 boundary rules and WP08/WP13 contract/assembly work. Preserve working participants until replacement. |
+| Future rules exceed today's checker | Current checker passes existing allowed imports; it does not enforce the selected public-contract boundary/type-cycle rules. | WP01 positive/negative fixtures and exact migration allowances; no blanket bypass. |
+
+No missing feature was implemented or declared accepted. Static analysis does not prove every injected
+call path, every deployed index or every production activation policy. Those limitations are explicit
+handoffs, not permission to rewrite working modules or expand this task into feature development.
+
+### Observed checks and executor review
+
+| Command | Observed result |
+| --- | --- |
+| `npm run typecheck --workspace=backend` | Passed, exit 0; existing source/contracts/tests type-check. |
+| `npm run lint:boundaries` | Passed: 427 source files, zero current-rule errors. |
+| `npm run api:check --workspace=backend` | Passed: all four generated artifacts verified. |
+| `npm run test:unit --workspace=backend -- tests/unit/pricing.test.ts tests/unit/refund-calculation.test.ts tests/unit/composition.test.ts` | Passed: 60 cases, three existing files; calculation and configuration/composition baseline. |
+| `npm exec --workspace=backend -- vitest run --config vitest.contract.config.ts -t 'reconciles actual Express routers\|fails on missing, undeclared, duplicate or status-drifted operations\|fails when a route-owning module is added'` | Passed: three selected existing parity/negative cases. Other 183 cases were excluded by the name filter; they were not run or claimed passed. |
+| Inventory analyzer and consistency review | Passed: 491 backend paths, all owner/package mappings, zero candidate target collisions, no unresolved backend imports; persistence hashes and source digest retained. |
+
+The command above uses literal `|` alternation inside its quoted test filter; table escaping is only
+Markdown formatting. Full backend suites, build/smoke, replica-set integration, browser, deployment,
+live providers and supply-chain scan were Not Run: no runtime/import/dependency changes occurred in WP00.
+Documentation/link/diff checks are run on the final record and reported at handoff.
+
+Executor/reviewer: Codex. Reviewed inventory ownership, actual selected test output, source-vs-generated
+route counts, canonical-vs-lookup model counts, static-cycle limitations, task totals and actual diff.
+P03-024 completes WP00 under Tasks §2 only; next is WP01 specification reconciliation and executable
+boundary enforcement. Prior acceptance and all P03-022/external/milestone gates remain unchanged.

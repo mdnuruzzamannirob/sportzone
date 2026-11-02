@@ -8,6 +8,14 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 3 November 2026 — Backend refactor baseline inventory
+
+- Completed WP00/P03-024 inventory and impact mapping: 491 backend files, 170 operations, 41 scripts,
+  canonical persistence fingerprints and affected tooling/worker consumers; runtime code remains unchanged.
+- Reused the [existing refactor evidence record](docs/evidence/P03-021-backend-refactor.md#p03-024--wp00-follow-up-baseline-3-november-2026)
+  for selected baseline results, type-only coupling and collection/activation documentation discrepancies.
+  Existing staged planning changes and all application/external acceptance gates are preserved.
+
 ## 3 November 2026 — Whole-backend refactor planning
 
 - Added the [backend refactor plan](docs/BACKEND_REFACTOR_PLAN.md) covering the selected module boundaries,
