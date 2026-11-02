@@ -174,6 +174,12 @@ Do not assign arbitrary completion dates. Estimate work after evaluating develop
 
 ### 3.6 Engineering foundation and incremental refactor
 
+The owner-selected whole-backend follow-up is detailed in the
+[Backend refactor plan](./BACKEND_REFACTOR_PLAN.md). It defines the target decisions, current-to-target
+reconciliation, dependent work packages and verification/rollback requirements. Its first implementation
+packages reconcile the owning specifications and task mapping; it does not replace accepted historical
+refactor evidence, change task status or waive application/external acceptance.
+
 Refactor one application at a time to the approved feature-based structure. [Architecture §§4–6](./ARCHITECTURE.md#4-project-structure) define target
 trees/naming/ownership. The task register records migration progress and acceptance; prior refactor evidence does not establish parity for a subsequent source move.
 

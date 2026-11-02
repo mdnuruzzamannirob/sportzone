@@ -8,6 +8,15 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 3 November 2026 — Whole-backend refactor planning
+
+- Added the [backend refactor plan](docs/BACKEND_REFACTOR_PLAN.md) covering the selected module boundaries,
+  file/reuse conventions, dependency and workflow rules, complete migration packages, verification and rollback.
+- Linked the plan from Implementation Plan §3.6 and identified owning-specification differences to reconcile
+  before code changes. Documentation only; no backend refactor, task acceptance or release is claimed.
+- Clarified refactor-only execution: preserve existing behavior, change files only for demonstrated reasons,
+  reuse tests/records and select affected checks; missing features and unrelated fixes are separate scope.
+
 ## 2 November 2026 — Whole-backend implementation audit and API gap closure
 
 - Audited all 170 specified operations against runtime; identified nine missing surfaces despite earlier task completion records.
