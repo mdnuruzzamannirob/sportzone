@@ -164,12 +164,17 @@ describe('admin navigation shell', () => {
     )
     await click(trigger())
     desktop.matches = true
-    await act(async () => {
-      desktop.dispatchEvent(new Event('change'))
-      await new Promise((resolve) => setTimeout(resolve, 80))
-    })
-    expect(dialog()).toBeNull()
-    expect(document.activeElement).toBe(host.querySelector('header a[href="/app"]'))
+    await act(() => desktop.dispatchEvent(new Event('change')))
+    await vi.waitFor(
+      async () => {
+        await act(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 0))
+        })
+        expect(dialog()).toBeNull()
+        expect(document.activeElement).toBe(host.querySelector('header a[href="/app"]'))
+      },
+      { timeout: 2000, interval: 20 },
+    )
   })
   it('ADMIN-SHELL-05: longest section match distinguishes delivery settings; unknown paths are not reflected', async () => {
     await visit('/app/settings/delivery')

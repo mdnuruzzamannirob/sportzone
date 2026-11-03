@@ -1,4 +1,3 @@
-import { spawnSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import { gzipSync } from 'node:zlib'
 import { Router } from 'express'
@@ -354,45 +353,4 @@ it('never invokes independent processing inside a retryable business transaction
     inTransaction(db.connection, async () => service.receive(body)),
   ).rejects.toMatchObject({ code: 'EXTERNAL_EFFECT_IN_TRANSACTION' })
   expect(processor).not.toHaveBeenCalled()
-})
-
-it('compiled local bootstrap preserves callback audit evidence and refuses a valid deployed environment', async () => {
-  await request(app).post(ipn).type('form').send(body).expect(503)
-  const env = {
-    ...process.env,
-    ...testEnvironment(),
-    MONGODB_URI: db.replica.getUri(),
-    MONGODB_DB_NAME: db.connection.name,
-  }
-  for (let run = 0; run < 2; run++) {
-    const result = spawnSync(process.execPath, ['scripts/bootstrap-payment-callbacks.mjs'], {
-      cwd: process.cwd(),
-      env,
-      encoding: 'utf8',
-    })
-    expect(result.status, result.stderr).toBe(0)
-  }
-  expect(await db.connection.db?.collection('auditLogs').countDocuments()).toBe(1)
-  const production = {
-    ...env,
-    APP_ENV: 'production',
-    NODE_ENV: 'production',
-    API_PUBLIC_ORIGIN: 'https://api.example.test',
-    STOREFRONT_ORIGIN: options.storefrontOrigin,
-    ADMIN_ORIGIN: 'https://admin.example.test',
-    CORS_ALLOWED_ORIGINS: `${options.storefrontOrigin},https://admin.example.test`,
-    CUSTOMER_AUTH_ENABLED: 'false',
-    ADMIN_AUTH_ENABLED: 'false',
-    GUEST_ACCESS_ENABLED: 'false',
-    PASSWORD_RECOVERY_ENABLED: 'false',
-    EMAIL_CHANGE_ENABLED: 'false',
-  }
-  expect(() => loadEnvironment(production)).not.toThrow()
-  const denied = spawnSync(process.execPath, ['scripts/bootstrap-payment-callbacks.mjs'], {
-    cwd: process.cwd(),
-    env: production,
-    encoding: 'utf8',
-  })
-  expect(denied.status).toBe(1)
-  expect(denied.stderr).not.toContain(env.MONGODB_URI)
 })

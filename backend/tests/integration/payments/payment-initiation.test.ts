@@ -1,7 +1,5 @@
-import { spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from 'vitest'
-import { loadEnvironment } from '../../../src/config/env.js'
 import { initializeAuditPersistence } from '../../../src/modules/audit/audit.persistence.js'
 import { createAuditWriter } from '../../../src/modules/audit/audit.service.js'
 import { initializeOrderPersistence } from '../../../src/modules/orders/order.persistence.js'
@@ -23,7 +21,6 @@ import { composeAuditAccess, composeOrderDependencies } from '../../../src/setup
 import { inTransaction } from '../../../src/shared/database/transaction.js'
 import { ApiError } from '../../../src/shared/errors/app-error.js'
 import { isolatedDatabase } from '../../helpers/database.js'
-import { testEnvironment } from '../../helpers/environment.js'
 import { orderTestTime, syntheticOrderProof } from '../../helpers/orders.js'
 
 let db: Awaited<ReturnType<typeof isolatedDatabase>>,
@@ -183,6 +180,10 @@ it('commits operation, unique reference and uncertain attempt before provider I/
       ?.collection('auditLogs')
       .countDocuments({ action: /^payment.initiation/ }),
   ).toBe(2)
+
+  const before = await paymentInitiationModel(db.connection).findOne().lean()
+  await initializePaymentInitiationPersistence(db.connection)
+  expect(await paymentInitiationModel(db.connection).findOne().lean()).toEqual(before)
 })
 it('concurrent identical requests dispatch once and preserve one idempotent identity across new service instances', async () => {
   const results = await Promise.all(
@@ -449,53 +450,6 @@ it('concurrent shortfall replays retain one durable result without a duplicate-k
   ).toEqual([{ state: 'allocation_shortfall' }, { state: 'allocation_shortfall' }])
   expect(await paymentInitiationModel(db.connection).countDocuments()).toBe(1)
   expect(transport).not.toHaveBeenCalled()
-})
-it('compiled local bootstrap preserves durable operations and refuses deployed provisioning', async () => {
-  await service().initiate(owner, orderId, input, 'key')
-  const env = {
-    ...process.env,
-    ...testEnvironment(),
-    MONGODB_URI: db.replica.getUri(),
-    MONGODB_DB_NAME: db.connection.name,
-  }
-  // Keep the replica-set supervisor's event loop live while the child verifies persistence.
-  const bootstrap = (environment: NodeJS.ProcessEnv) =>
-    new Promise<{ status: number | null; stderr: string }>((resolve, reject) => {
-      const child = spawn(process.execPath, ['scripts/bootstrap-payment-initiation.mjs'], {
-        cwd: process.cwd(),
-        env: environment,
-        stdio: ['ignore', 'ignore', 'pipe'],
-      })
-      let stderr = ''
-      child.stderr.setEncoding('utf8').on('data', (chunk: string) => {
-        stderr += chunk
-      })
-      child.on('error', reject)
-      child.on('close', (status) => resolve({ status, stderr }))
-    })
-  for (let run = 0; run < 2; run++) {
-    const result = await bootstrap(env)
-    expect(result.status, result.stderr).toBe(0)
-  }
-  expect(await paymentInitiationModel(db.connection).countDocuments()).toBe(1)
-  const production = {
-    ...env,
-    APP_ENV: 'production',
-    NODE_ENV: 'production',
-    API_PUBLIC_ORIGIN: 'https://api.example.test',
-    STOREFRONT_ORIGIN: 'https://shop.example.test',
-    ADMIN_ORIGIN: 'https://admin.example.test',
-    CORS_ALLOWED_ORIGINS: 'https://shop.example.test,https://admin.example.test',
-    CUSTOMER_AUTH_ENABLED: 'false',
-    ADMIN_AUTH_ENABLED: 'false',
-    GUEST_ACCESS_ENABLED: 'false',
-    PASSWORD_RECOVERY_ENABLED: 'false',
-    EMAIL_CHANGE_ENABLED: 'false',
-  }
-  expect(() => loadEnvironment(production)).not.toThrow()
-  const denied = await bootstrap(production)
-  expect(denied.status).toBe(1)
-  expect(denied.stderr).not.toContain(env.MONGODB_URI)
 })
 it('retains merchant/gateway snapshots and refuses to reissue an old session under a changed qualification', async () => {
   const first = await service().initiate(owner, orderId, input, 'key')

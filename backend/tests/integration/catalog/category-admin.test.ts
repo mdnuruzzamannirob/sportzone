@@ -1,4 +1,3 @@
-import { spawnSync } from 'node:child_process'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { Router } from 'express'
 import { Types } from 'mongoose'
@@ -36,7 +35,7 @@ import { composeCatalogDependencies, composeIdentityRoutes } from '../../../src/
 import { createDeclaredIndexes } from '../../../src/shared/database/indexes.js'
 import { sessionHttpFor } from '../../helpers/auth.js'
 import { isolatedDatabase } from '../../helpers/database.js'
-import { identityEnvironment, testEnvironment } from '../../helpers/environment.js'
+import { identityEnvironment } from '../../helpers/environment.js'
 import { fakeMediaProvider, imageFile, mediaPolicy } from '../../helpers/media.js'
 
 let db: Awaited<ReturnType<typeof isolatedDatabase>>
@@ -192,6 +191,10 @@ it('creates normalized safe categories with strong ETag and a durable audit dige
   expect(audit?.actorId).toEqual(own.user._id)
   expect(audit?.afterDigest).toMatch(/^[a-f0-9]{64}$/)
   expect(audit).not.toHaveProperty('name')
+
+  const before = await categoryModel(db.connection).findById(res.body.data.id).lean()
+  await createDeclaredIndexes(categoryModel(db.connection))
+  expect(await categoryModel(db.connection).findById(res.body.data.id).lean()).toEqual(before)
 })
 it('lists bounded stable status-filtered pages without changing principal timestamps', async () => {
   const own = await account(),
@@ -605,32 +608,4 @@ it('rejects exhausted category and ancestry revisions instead of overflowing the
   await patch(own, c.id, { name: 'Overflow' }, `"${Number.MAX_SAFE_INTEGER}"`).expect(409)
   await post(own, { name: 'Child', slug: 'overflow-child', parentId: parent.id }).expect(409)
   expect(await categoryModel(db.connection).countDocuments()).toBe(2)
-})
-
-it('runs compiled category bootstrap additively and refuses production without exposing configuration', async () => {
-  const own = await account(),
-    c = await create(own)
-  const env = {
-    ...testEnvironment(),
-    MONGODB_URI: db.replica.getUri(),
-    MONGODB_DB_NAME: db.connection.name,
-  }
-  for (let i = 0; i < 2; i++) {
-    const result = spawnSync(process.execPath, ['scripts/bootstrap-categories.mjs'], {
-      env,
-      encoding: 'utf8',
-      timeout: 15000,
-    })
-    expect(result.status, result.stderr).toBe(0)
-    expect(result.stdout).toContain('Category indexes and audit persistence ready')
-  }
-  expect((await categoryModel(db.connection).findById(c.id))?.revision).toBe(0)
-  expect(await db.connection.db?.collection('auditLogs').countDocuments()).toBe(1)
-  const refused = spawnSync(process.execPath, ['scripts/bootstrap-categories.mjs'], {
-    env: { ...env, NODE_ENV: 'production', APP_ENV: 'production' },
-    encoding: 'utf8',
-    timeout: 15000,
-  })
-  expect(refused.status).toBe(1)
-  expect(refused.stderr).not.toContain(env.MONGODB_URI)
 })

@@ -140,7 +140,7 @@ export async function verifyCatalogRendering(nextBin, inspect) {
       !first.html.includes('synthetic-private-cookie') &&
         !first.html.includes('synthetic-private-proof'),
     )
-    const otherContext = await fetch(origin + '/products/synthetic-ball', {
+    const otherContext = await fetch(`${origin}/products/synthetic-ball`, {
       headers: { ...headers, Cookie: 'sz_customer_sid=second-private-context' },
       signal: AbortSignal.timeout(10000),
     })

@@ -271,19 +271,3 @@ it('wires cart and wishlist behind customer activation and explicit persistence 
   await request(inactive).get('/api/v1/cart').set('Cookie', cookie).expect(404)
   await request(inactive).get('/api/v1/wishlist').set('Cookie', cookie).expect(404)
 })
-
-it('runs the explicit compiled local/test shopping bootstrap additively', () => {
-  const result = spawnSync(process.execPath, ['scripts/bootstrap-cart.mjs'], {
-    env: {
-      ...process.env,
-      ...identityEnvironment(),
-      MONGODB_URI: fixture.replica.getUri(),
-      MONGODB_DB_NAME: fixture.connection.name,
-    },
-    encoding: 'utf8',
-    timeout: 15000,
-  })
-  expect(result.status).toBe(0)
-  expect(result.stdout).toContain('Cart and wishlist persistence ready.')
-  expect(result.stderr).toBe('')
-})

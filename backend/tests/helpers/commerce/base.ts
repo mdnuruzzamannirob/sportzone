@@ -390,56 +390,29 @@ const context = {
   get db() {
     return db
   },
-  set db(value: typeof db) {
-    db = value
-  },
   get identities() {
     return identities
-  },
-  set identities(value: typeof identities) {
-    identities = value
   },
   get sessions() {
     return sessions
   },
-  set sessions(value: typeof sessions) {
-    sessions = value
-  },
   get security() {
     return security
-  },
-  set security(value: typeof security) {
-    security = value
   },
   get access() {
     return access
   },
-  set access(value: typeof access) {
-    access = value
-  },
   get service() {
     return service
   },
-  set service(value: typeof service) {
-    service = value
-  },
   get app() {
     return app
-  },
-  set app(value: typeof app) {
-    app = value
   },
   get now() {
     return now
   },
   set now(value: typeof now) {
     now = value
-  },
-  get categoryId() {
-    return categoryId
-  },
-  set categoryId(value: typeof categoryId) {
-    categoryId = value
   },
 }
 

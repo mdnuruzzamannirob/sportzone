@@ -8,9 +8,30 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
-## 4 November 2026 — PR #11 TypeScript 7 compatibility
+## 4 November 2026 — Complete backend/root test and CI review
 
-- Resolve compiler entry points from the exported package manifest. Pin typescript-legacy to TypeScript 6.0.3 for the boundary checker and development watch API that TypeScript 7 no longer provides.
+- Removed fifteen feature copies of generic boundary checks; consolidated the dependent runtime
+  lifecycle and made transaction rollback fixtures independent. No test cases or packages added.
+- Hosted CI now executes affected checks within the existing backend-stage restriction, including
+  metadata, security and conditional image verification; removed duplicate formatting execution.
+- Bounded browser-fixture shutdown and cleared IPC timers; aligned retired notification/delivery
+  fixture setup and current proof contracts. Fixed TypeScript 7 compiler resolution and test harness
+  identity/focus timing without adding cases or suppressing checks.
+- Pulled merged main with local refactor changes preserved. Node typings are 26.6.6; the configured
+  runtime remains Node 24.20.0.
+- [Review scope and verification](docs/evidence/P03-021-backend-refactor.md#p03-032--complete-test-and-ci-review).
+
+## 4 November 2026 — Backend test ownership and fixture cleanup
+
+- Corrected the initial structural-only approach after owner feedback: removed 20 redundant/stale
+  cases and three extra payout files. Centralized compiled bootstrap checks and folded historical
+  preservation assertions into existing domain tests. No new test cases or runtime changes.
+
+- Separated quote, COD placement, allocation, expiry, hosted initiation, receipt matching and refund
+  request/dispatch/evidence/reconciliation scenarios into independently selectable owning suites.
+- Moved wallet scenarios out of shared fixtures so imports no longer repeat those tests; consolidated
+  application fixtures into payment/refund owners and removed unused fixture-resource setters.
+- [Scope, preservation review and checks](docs/evidence/P03-021-backend-refactor.md#p03-031--backend-test-refactor-4-november-2026).
 
 ## 3 November 2026 — Explicit backend lint fix/check scripts
 

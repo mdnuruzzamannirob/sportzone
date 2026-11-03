@@ -1,4 +1,3 @@
-import { spawnSync } from 'node:child_process'
 import { Types } from 'mongoose'
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from 'vitest'
 import { initializeAuditPersistence } from '../../../src/modules/audit/audit.persistence.js'
@@ -22,7 +21,6 @@ import { composeAuditAccess, composeOrderDependencies } from '../../../src/setup
 import { inTransaction } from '../../../src/shared/database/transaction.js'
 import { ApiError } from '../../../src/shared/errors/app-error.js'
 import { isolatedDatabase } from '../../helpers/database.js'
-import { testEnvironment } from '../../helpers/environment.js'
 import { orderTestTime, syntheticOrderProof } from '../../helpers/orders.js'
 
 let db: Awaited<ReturnType<typeof isolatedDatabase>>, now: Date
@@ -206,6 +204,11 @@ it('prepares one immutable exact outstanding request and audit without receipt, 
       ?.collection('auditLogs')
       .countDocuments({ action: 'payment.attempt.prepare' }),
   ).toBe(1)
+
+  await initializePaymentRecordPersistence(db.connection)
+  expect(await paymentRecordModels(db.connection).attempts.findById(row._id).lean()).toEqual(
+    row.toObject(),
+  )
 })
 it('concurrent identical operation IDs replay one attempt and every replay reauthorizes scope', async () => {
   const { orderId } = await seed(),
@@ -546,29 +549,4 @@ it('fails missing indexes/validator drift/TTL readiness without silently repairi
   } finally {
     await model.collection.dropIndex('synthetic_ttl')
   }
-})
-it('compiled additive bootstrap preserves existing attempts and refuses production provisioning', async () => {
-  const { orderId } = await seed()
-  await prepare(orderId)
-  const env = {
-    ...testEnvironment(),
-    MONGODB_URI: db.replica.getUri(),
-    MONGODB_DB_NAME: db.connection.name,
-  }
-  for (let count = 0; count < 2; count++) {
-    const result = spawnSync(process.execPath, ['scripts/bootstrap-payment-records.mjs'], {
-      env,
-      encoding: 'utf8',
-      timeout: 15000,
-    })
-    expect(result.status, result.stderr).toBe(0)
-  }
-  expect(await paymentRecordModels(db.connection).attempts.countDocuments()).toBe(1)
-  const denied = spawnSync(process.execPath, ['scripts/bootstrap-payment-records.mjs'], {
-    env: { ...env, APP_ENV: 'production', NODE_ENV: 'production' },
-    encoding: 'utf8',
-    timeout: 15000,
-  })
-  expect(denied.status).toBe(1)
-  expect(denied.stderr).not.toContain(env.MONGODB_URI)
 })

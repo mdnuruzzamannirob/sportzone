@@ -1,4 +1,3 @@
-import { spawnSync } from 'node:child_process'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { Router } from 'express'
 import { Types } from 'mongoose'
@@ -36,7 +35,7 @@ import { createDeclaredIndexes } from '../../../src/shared/database/indexes.js'
 import { sessionHttpFor } from '../../helpers/auth.js'
 import { isolatedDatabase } from '../../helpers/database.js'
 
-import { identityEnvironment, testEnvironment } from '../../helpers/environment.js'
+import { identityEnvironment } from '../../helpers/environment.js'
 import { fakeMediaProvider, imageFile, mediaPolicy } from '../../helpers/media.js'
 
 let db: Awaited<ReturnType<typeof isolatedDatabase>>,
@@ -195,6 +194,12 @@ it('creates product and normalized default SKU atomically with safe DTO, Locatio
     revision: 0,
   })
   expect(await db.connection.db?.collection('auditLogs').countDocuments()).toBe(1)
+
+  const before = await productModels(db.connection).products.findById(res.body.data.id).lean()
+  await initializeProductPersistence(db.connection)
+  expect(await productModels(db.connection).products.findById(res.body.data.id).lean()).toEqual(
+    before,
+  )
 })
 it('returns every active/inactive variant in detail and bounded filtered lists without writing', async () => {
   const own = await account(),
@@ -481,31 +486,6 @@ it('wires full product/variant APIs through actual root admin activation', async
     apiRouter: await composeIdentityRoutes(db.connection, { ...config, ADMIN_AUTH_ENABLED: false }),
   })
   await request(disabled).get(base).expect(404)
-})
-it('runs compiled catalog bootstrap additively and refuses production', async () => {
-  const own = await account(),
-    p = await create(own),
-    env = {
-      ...testEnvironment(),
-      MONGODB_URI: db.replica.getUri(),
-      MONGODB_DB_NAME: db.connection.name,
-    }
-  for (let i = 0; i < 2; i++) {
-    const r = spawnSync(process.execPath, ['scripts/bootstrap-catalog.mjs'], {
-      env,
-      encoding: 'utf8',
-      timeout: 15000,
-    })
-    expect(r.status, r.stderr).toBe(0)
-  }
-  expect((await detail(own, p.id)).variants).toHaveLength(1)
-  const refused = spawnSync(process.execPath, ['scripts/bootstrap-catalog.mjs'], {
-    env: { ...env, NODE_ENV: 'production', APP_ENV: 'production' },
-    encoding: 'utf8',
-    timeout: 15000,
-  })
-  expect(refused.status).toBe(1)
-  expect(refused.stderr).not.toContain(env.MONGODB_URI)
 })
 
 it('invalidates product detail ETag on canonical stock movement and rolls back an exhausted parent fence', async () => {

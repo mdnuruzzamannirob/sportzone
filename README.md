@@ -104,6 +104,8 @@ Fix backend lint issues with `npm run lint --workspace=backend`, or check withou
 Format backend-owned code/configuration from the repository root with
 `npm run format --workspace=backend`; verify it without edits with
 `npm run format:check --workspace=backend`.
+The backend CI scope uses root `format:backend` to cover backend code/JSON, tooling and shared utilities
+once. [Testing §15.1](docs/TESTING.md#151-ci-verification-pipeline) documents affected hosted scopes.
 
 For integrated work across all three applications:
 

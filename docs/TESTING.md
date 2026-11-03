@@ -213,6 +213,12 @@ releases, commit exact versions and lockfile, and record installed versions in r
 
 Architecture §§4–6 owns application placement. Keep backend tests outside production `src/` and organize
 them by feature under `tests/unit/` and `tests/integration/`; use fixtures/helpers for shared test setup.
+Keep cases that prove distinct business behavior or trust boundaries; merge duplicate scenarios rather
+than preserving cases solely for file or task symmetry. Verify compiled bootstrap entry points in the
+application suite; check domain record preservation through its persistence initializer in existing
+scenarios. Helpers export fixtures or explicitly invoked lifecycle registration; importing a helper
+must not register test cases in its consumers. Each case supplies its own required records; dependent
+startup/shutdown steps belong in one lifecycle scenario, not separate order-dependent tests.
 Frontend tests live in each owning application's `tests/` directory; cross-app browser journeys target root `tests/e2e/`.
 Root tooling regressions live in tests/tooling, reusable app contracts in tests/helpers and browser journeys in
 tests/e2e. Preserve discovery, fixture imports and CI inventory together when moving tests.
@@ -1055,19 +1061,19 @@ flowchart LR
 
 Operations §5.5 owns execution/caching/security and §5.6 owns promotion. Select scopes from changed paths and actual consumers, retaining a stable required aggregate result. Backend-private changes require backend and applicable repository/contract/security checks, without frontend builds, UI tests or browser engine installation. UI changes require their owning workspace and applicable browser checks; shared dependencies/configuration require affected consumers. Integrated staging/release candidates require the full inventory above.
 
-Current owner-selected backend stage: automatic PR/main/tag/manual runs execute repository metadata
-validation and `npm run ci -- --scope=supply-chain,backend`. Frontend environment values, browser-engine
-installation and the affected application-scope invocation are commented in `.github/workflows/ci.yml`
-until admin/storefront work resumes. No UI build/test/browser verification is claimed for these runs.
-The local complete inventory and application checks remain available; restore the commented scope and
-browser steps before integrated staging/release verification. This stage selection does not accept any
-frontend, integrated release or milestone gate.
+Current owner-selected backend stage: `.github/workflows/ci.yml` passes `CI_BACKEND_ONLY=true` to
+its affected selector and executes the returned `CI_SCOPE` through the shared inventory. Prose-only
+PRs run repository/security checks; backend/API changes retain backend and applicable repository checks.
+Main/tag pushes, manual dispatch and unknown revisions conservatively select the full active backend
+stage, including the image gate. Frontend/browser execution remains paused, rather than silently
+counted as passed. Before integrated staging/release verification, remove this stage restriction and
+restore frontend API-origin values and browser-engine installation. Local full/application scopes stay
+available; no application-stage or milestone acceptance is implied by local checks.
 
-The affected selector remains responsible for the conditional backend image gate. It compares PR paths
-from their merge base and push paths from before/head; missing revisions conservatively include the
-image. Backend scope retains root tooling, import boundaries and format:backend, and now also runs the
-workspace format:check covering backend JSON configuration. The existing selector's full/application
-scope outputs are preserved for restoring integrated CI; they do not override the current stage scope.
+The selector compares PR paths from their merge base and push paths from before/head. Backend scope
+requires root metadata, tooling, import boundaries and format:backend. Both root format:backend and
+full format:check cover backend JSON configuration, so the inventory does not repeat the workspace
+formatter. The standalone backend format:check command remains available for focused local work.
 
 Docker recipe/package/compiler/runtime-script inputs and full-inventory selection additionally run
 `scripts/ci/container.mjs` inside the same required job. Image build or runtime identity/secret-exclusion

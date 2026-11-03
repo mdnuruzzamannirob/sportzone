@@ -39,7 +39,6 @@ import {
 import { inTransaction } from '../../../src/shared/database/transaction.js'
 import { createLogger } from '../../../src/shared/logger.js'
 import { sessionHttpFor } from '../../helpers/auth.js'
-import { customerRefundPost, customerRefundRoot } from '../../helpers/commerce/application.js'
 import {
   authSecret,
   context,
@@ -51,7 +50,12 @@ import {
 import { exceptionFixture } from '../../helpers/commerce/customers.js'
 import { lifecycleFixture } from '../../helpers/commerce/orders.js'
 import { processingFixture } from '../../helpers/commerce/payments.js'
-import { packageCPost, packageDFixture } from '../../helpers/commerce/refunds.js'
+import {
+  customerRefundPost,
+  customerRefundRoot,
+  packageCPost,
+  packageDFixture,
+} from '../../helpers/commerce/refunds.js'
 import { packageBFixture } from '../../helpers/commerce/returns.js'
 import { packageFRoot } from '../../helpers/commerce/support.js'
 import { createContractCheckedApp as createApp } from '../../helpers/contracts.js'

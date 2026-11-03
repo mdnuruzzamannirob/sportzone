@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process'
-import { rmSync } from 'node:fs'
+import { readFileSync, rmSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 
@@ -8,11 +9,13 @@ for (const path of ['../.next/types/', '../.next/dev/types/'])
   rmSync(new URL(path, import.meta.url), { recursive: true, force: true })
 const require = createRequire(import.meta.url)
 const cwd = fileURLToPath(new URL('..', import.meta.url))
+const manifest = require.resolve('typescript/package.json')
+const compiler = resolve(dirname(manifest), JSON.parse(readFileSync(manifest, 'utf8')).bin.tsc)
 for (const [entry, args] of [
-  ['next/dist/bin/next', ['typegen']],
-  ['typescript/bin/tsc', ['--noEmit']],
+  [require.resolve('next/dist/bin/next'), ['typegen']],
+  [compiler, ['--noEmit']],
 ]) {
-  const result = spawnSync(process.execPath, [require.resolve(entry), ...args], {
+  const result = spawnSync(process.execPath, [entry, ...args], {
     cwd,
     stdio: 'inherit',
   })

@@ -205,42 +205,6 @@ it('enforces durable attempt identity, one open attempt, proof requirements and 
     ),
   ).toBe(false)
 })
-it('runs refund bootstrap additively against local/test history and refuses deployed configuration', async () => {
-  const input = {
-    orderId: new Types.ObjectId().toHexString(),
-    paymentId: new Types.ObjectId().toHexString(),
-    sourceCollectionId: new Types.ObjectId().toHexString(),
-    amountPoisha: 100,
-    decisionKey: 'c'.repeat(64),
-  }
-  await inTransaction(db.connection, (session) =>
-    createCorrectionObligationService(db.connection, composeAuditAccess(db.connection)).create(
-      session,
-      input,
-    ),
-  )
-  const before = await db.connection.collection('refunds').findOne({})
-  const env = {
-    ...identityEnvironment(),
-    MONGODB_URI: db.replica.getUri(),
-    MONGODB_DB_NAME: db.connection.name,
-  }
-  for (let i = 0; i < 2; i++) {
-    const result = spawnSync(process.execPath, ['scripts/bootstrap-refunds.mjs'], {
-      env,
-      encoding: 'utf8',
-      timeout: 10000,
-    })
-    expect(result.status, result.stderr).toBe(0)
-  }
-  expect(await db.connection.collection('refunds').findOne({})).toEqual(before)
-  const refused = spawnSync(process.execPath, ['scripts/bootstrap-refunds.mjs'], {
-    env: { ...env, APP_ENV: 'production', NODE_ENV: 'production' },
-    encoding: 'utf8',
-    timeout: 10000,
-  })
-  expect(refused.status).not.toBe(0)
-})
 
 it('Package D migration: exact return notification predecessor upgrades additively and manual-reference index is provisioned', async () => {
   const { createNotificationService } = await import(

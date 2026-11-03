@@ -58,9 +58,10 @@ export function ciPlan(root, selected = scopeNames) {
         name === 'backend' && !selected.includes('repository') ? entry.rootChecks : []
       if (
         !Array.isArray(rootChecks) ||
+        new Set(rootChecks).size !== rootChecks.length ||
         (name === 'backend' &&
           !selected.includes('repository') &&
-          !['test:unit', 'lint:boundaries', 'format:backend'].every((check) =>
+          !['lint', 'test:unit', 'lint:boundaries', 'format:backend'].every((check) =>
             rootChecks.includes(check),
           ))
       )

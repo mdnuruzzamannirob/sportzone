@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, useState } from 'react'
+import { act, type ComponentProps, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -55,6 +55,47 @@ const amounts = {
   couponDiscountPoisha: 500,
   deliveryChargePoisha: 2500,
   finalTotalPoisha: 9876,
+}
+
+function ControlledVariantSelector({
+  options,
+  onChange,
+}: Pick<ComponentProps<typeof VariantSelector>, 'options' | 'onChange'>) {
+  const [value, setValue] = useState<string | null>(null)
+  return (
+    <VariantSelector
+      options={options}
+      value={value}
+      onChange={(next) => {
+        onChange(next)
+        setValue(next)
+      }}
+    />
+  )
+}
+
+function ControlledCartLine({
+  onQuantityChange,
+  onRemove,
+  maxQuantity = line.maxQuantity,
+}: {
+  onQuantityChange: (quantity: number) => void
+  onRemove: () => void
+  maxQuantity?: number
+}) {
+  const [quantity, setQuantity] = useState(line.quantity)
+  return (
+    <CartLine
+      {...line}
+      quantity={quantity}
+      maxQuantity={maxQuantity}
+      onQuantityChange={(next) => {
+        onQuantityChange(next)
+        setQuantity(next)
+      }}
+      onRemove={onRemove}
+    />
+  )
 }
 
 describe('commerce foundations', () => {
@@ -150,20 +191,7 @@ describe('commerce foundations', () => {
       { id: 'm', label: 'Size M', available: true },
       { id: 'l', label: 'Size L', available: false },
     ]
-    function Example() {
-      const [value, setValue] = useState<string | null>(null)
-      return (
-        <VariantSelector
-          options={options}
-          value={value}
-          onChange={(next) => {
-            change(next)
-            setValue(next)
-          }}
-        />
-      )
-    }
-    await act(() => root.render(<Example />))
+    await act(() => root.render(<ControlledVariantSelector options={options} onChange={change} />))
     expect(host.textContent).toContain('Choose an available variant before adding to cart.')
     const radios = [...host.querySelectorAll<HTMLInputElement>('input[type="radio"]')]
     expect(radios[1].disabled).toBe(true)
@@ -194,22 +222,11 @@ describe('commerce foundations', () => {
   it('COMMERCE-08: quantity bounds and removal send requests while supplied line totals remain untouched', async () => {
     const change = vi.fn(),
       remove = vi.fn()
-    function Example() {
-      const [quantity, setQuantity] = useState(1)
-      return (
-        <CartLine
-          {...line}
-          quantity={quantity}
-          maxQuantity={2}
-          onQuantityChange={(value) => {
-            change(value)
-            setQuantity(value)
-          }}
-          onRemove={remove}
-        />
-      )
-    }
-    await act(() => root.render(<Example />))
+    await act(() =>
+      root.render(
+        <ControlledCartLine onQuantityChange={change} onRemove={remove} maxQuantity={2} />,
+      ),
+    )
     const minus = host.querySelector<HTMLButtonElement>(
       '[data-slot="number-field-decrement-button"]',
     )
@@ -302,21 +319,9 @@ describe('commerce foundations', () => {
   )
   it('COMMERCE-13: direct quantity input commits bounded integers and rejects nonnumeric requests', async () => {
     const change = vi.fn()
-    function Example() {
-      const [quantity, setQuantity] = useState(1)
-      return (
-        <CartLine
-          {...line}
-          quantity={quantity}
-          onQuantityChange={(value) => {
-            change(value)
-            setQuantity(value)
-          }}
-          onRemove={vi.fn()}
-        />
-      )
-    }
-    await act(() => root.render(<Example />))
+    await act(() =>
+      root.render(<ControlledCartLine onQuantityChange={change} onRemove={vi.fn()} />),
+    )
     const input = host.querySelector<HTMLInputElement>('[data-slot="number-field-input"]')
     if (!input) throw new Error('Quantity input missing')
     async function enter(value: string) {
