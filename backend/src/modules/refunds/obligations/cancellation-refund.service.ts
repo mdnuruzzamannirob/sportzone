@@ -77,6 +77,7 @@ function createCancellationRefundService(
     const orderTotal = BigInt(
       facts.order.allocatedPoisha - facts.order.heldPoisha - facts.order.completedPoisha,
     )
+    // biome-ignore lint/complexity/useMathMinMax: Math.min does not accept bigint; preserve exact poisha arithmetic.
     const amount = Number(sourceTotal < orderTotal ? sourceTotal : orderTotal)
     if (amount <= 0) throw new ApiError('REFUND_BALANCE_EXCEEDED')
     let remaining = amount
