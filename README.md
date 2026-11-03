@@ -89,14 +89,21 @@ npm run db:local --workspace=backend
 Create a private root `.env` from [.env.example](.env.example). The template groups runtime, identity,
 commerce, providers and workers, with local session/proof timing and technical worker defaults. Supply
 the URI of a running replica set and independently generated `SESSION_SECRET` and `HEALTH_MONITOR_TOKEN`;
-proof activation also needs a private versioned key map. Blank provider credentials and policy/evidence
-inputs must be configured before their features are enabled. Frontend reference values still belong
+proof activation also needs a private versioned key map. Templates contain illustrative placeholders,
+reserved example domains and policy paths; replace these with actual credentials, origins and reviewed
+files before enabling their features. Private files must never contain copied example credentials. Frontend reference values still belong
 in each client’s own environment. For the backend stage, start only
 its compiler and API from the repository root:
 
 ```sh
 npm run dev:backend
 ```
+
+Fix backend lint issues with `npm run lint --workspace=backend`, or check without edits using
+`npm run lint:check --workspace=backend`. CI uses the check-only command.
+Format backend-owned code/configuration from the repository root with
+`npm run format --workspace=backend`; verify it without edits with
+`npm run format:check --workspace=backend`.
 
 For integrated work across all three applications:
 

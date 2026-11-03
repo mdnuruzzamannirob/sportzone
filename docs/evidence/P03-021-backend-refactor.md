@@ -1127,3 +1127,40 @@ manifest formatting, repository links and diff checks Passed. No backend runtime
 this cleanup; the preceding final regression results remain applicable and were not needlessly rerun.
 No database/provider connection or migration is implied by environment validation. No staging, commit,
 push, branch or PR mutation was performed; existing staged edits were preserved.
+
+
+### Environment examples, workspace formatting and backend-stage CI — 3 November 2026
+
+Owner requested visible backend format scripts, illustrative env templates versus actual private
+values, and frontend CI steps commented until their work resumes. Added workspace format/format:check
+for backend source, tests, scripts, contracts and root TS/JSON config; included the check in the actual
+backend CI inventory. Existing JSON configuration formatting changed only whitespace.
+
+Local/staging templates now show placeholders for credentials, reserved example domains and illustrative
+policy paths/limits. These are examples, not approvals or available integrations. Root private env keeps
+actual values; private staging organization preserves existing nonempty values and fills only technical
+settings, without copying illustrative provider credentials/evidence. Unknown externally issued values
+remain unconfigured; no real merchant/scanner/policy outcome is fabricated. README describes setup.
+
+Hosted CI keeps the stable required job, security/backend regression, repository metadata and conditional
+backend image gate. Frontend environment/browser-install/affected-scope execution steps are commented
+with restoration instructions. Local full inventory, frontend checks and integrated acceptance remain
+intact. Testing/Operations owning procedures explain the temporary stage selection. No application or
+milestone acceptance is inferred from backend-only hosted success.
+
+Verification: existing tooling suite Passed 92 cases including active-workflow (comments excluded)
+assertions; backend format:check Passed 508 files; YAML parsing confirmed active backend/security scope
+and no browser install. Workspace/configuration inventory, private configuration validation and repository
+links/diff checks verified. Existing backend regression evidence is reused: no runtime business behavior
+changed. No CI job or hosted provider was executed; no commit/push/index change was performed.
+
+
+### Backend lint fix/check naming — 3 November 2026
+
+Owner chose four workspace commands: lint applies Biome safe lint fixes; lint:check checks without
+writes; format applies formatting; format:check checks it. Backend CI inventory uses lint:check.
+Workspace inventory validation requires the check-only entry when a workspace declares it, preserving
+other applications' existing lint convention. No dependency or runtime changes. Lint:check (503 files),
+format:check (508 files), executable backend CI-plan validation and repository/diff checks Passed.
+Private local configuration validates with all feature flags off and a configured database URI;
+connectivity/provider qualification was not tested. Existing actual private values were not modified.

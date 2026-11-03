@@ -931,15 +931,23 @@ or affected feature; use OP-REL-02 and OP-FIN-* instead of ad hoc manual ledger 
 
 ### 5.5 CI execution and supply-chain controls
 
-GitHub Actions runs one job named `CI required result`. Feature-branch validation runs on pull requests, avoiding duplicate push/PR runs for the same source. Pushes to main or tags and manual dispatch run the full inventory. For a branch without a PR, open a draft PR or dispatch CI explicitly; no skipped placeholder claims validation. A single locked install serves all checks.
-`ci-workspaces.json` lists the commands; the local runner executes repository, supply-chain, storefront, admin, backend
-and browser groups in order. Security findings fail before expensive application/database/browser suites. Each application builds once; browser checks reuse the two UI builds
-in the same job. No workflow generation, cross-job build transfer or report aggregation is required.
+GitHub Actions runs one job named `CI required result`, using one locked install and pinned actions.
+PRs validate feature branches; main/tag pushes and manual dispatch retain the required job. During the
+owner-selected backend stage it runs repository metadata validation plus the supply-chain/backend
+inventory. Frontend/browser environment and execution steps are commented until those stages resume;
+they are not reported as successful checks. Testing §15.1 owns this temporary scope and restoration.
 
-The workflow selects affected scopes under Testing §15.1, retaining the stable required result. Prose-only changes retain repository/security checks without application builds; executable API documentation retains backend checks. Backend-only runs enforce import boundaries. PR merge-base diffs include both sides of cross-application moves, and unavailable diff revisions conservatively select full verification. Browser engines install only for browser scopes. Manual dispatch and conservative fallbacks run the full inventory; integrated/release verification remains mandatory. Tasks records actual hosted evidence and acceptance. During development follow Testing §15.5 rather
-than repeatedly running the entire pipeline. Affected Docker builds and runtime-image inventory run inside that same required job through `scripts/ci/container.mjs`; the manual image workflow reuses the check. No automatic provider/deployment activation is added. A failed command stops the runner and fails the job; an interrupted
-or cancelled job cannot satisfy the required successful check. Do not use `--if-present`, `continue-on-error`
-or passing placeholders. Preserve application/browser/replica-set coverage when simplifying tooling.
+`ci-workspaces.json` retains every application/browser check for local or integrated verification.
+Security runs before backend regression. Backend includes tooling, boundaries, formatting, types,
+contracts, unit/integration, build and smoke checks. Its workspace format and format:check scripts
+include backend-owned JSON configuration without reformatting generated API artifacts. The affected
+selector still controls the required Docker image check; the manual image workflow reuses it.
+
+Restore frontend/browser workflow steps before integrated staging/release verification; full local
+`npm run ci` remains available and all application/provider/milestone acceptance remains separate.
+Follow Testing §15.5 for routine change-based verification. No deployment/provider activation is added.
+A failed command fails the required job; interrupted/cancelled jobs cannot satisfy it. Do not use
+`--if-present`, `continue-on-error` or passing placeholders to conceal missing verification.
 
 The runner records command outcomes, exit status and duration in `test-results/ci.json`; native suite reports
 retain detailed cases. On GitHub Actions, a failed command also emits an error annotation containing its

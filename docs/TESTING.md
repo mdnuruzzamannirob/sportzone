@@ -1055,17 +1055,19 @@ flowchart LR
 
 Operations §5.5 owns execution/caching/security and §5.6 owns promotion. Select scopes from changed paths and actual consumers, retaining a stable required aggregate result. Backend-private changes require backend and applicable repository/contract/security checks, without frontend builds, UI tests or browser engine installation. UI changes require their owning workspace and applicable browser checks; shared dependencies/configuration require affected consumers. Integrated staging/release candidates require the full inventory above.
 
-Feature branches validate through PR events; main/tag pushes and manual dispatch force the full inventory, including the image gate. This avoids duplicate feature push/PR runs without skipping a required check. The workflow uses `scripts/ci/affected.mjs` with validated event base/head revisions. PR paths are
-compared from their merge base; push paths compare before/head. Rename detection is disabled so a
-move between applications checks both owners. Missing/unavailable revisions or a diff lookup failure
-select the full inventory with a static warning; they never turn into skipped verification.
-Backend-private changes select backend and supply-chain checks without browser installation. Backend
-scope includes root tooling tests, import boundaries and `format:backend` through inventory rootChecks.
-Accompanying documentation adds repository checks. Prose-only documentation selects repository and
-supply-chain checks without application builds/browser installation; docs/API.md also selects backend
-because it is executable contract-generation input. UI changes select both UI builds, backend and the
-shared browser audit. Shared/tooling changes, unknown paths, empty diffs and manual dispatch select all.
-Scopes have deterministic ordering; unknown/duplicate scopes and selected failures fail closed.
+Current owner-selected backend stage: automatic PR/main/tag/manual runs execute repository metadata
+validation and `npm run ci -- --scope=supply-chain,backend`. Frontend environment values, browser-engine
+installation and the affected application-scope invocation are commented in `.github/workflows/ci.yml`
+until admin/storefront work resumes. No UI build/test/browser verification is claimed for these runs.
+The local complete inventory and application checks remain available; restore the commented scope and
+browser steps before integrated staging/release verification. This stage selection does not accept any
+frontend, integrated release or milestone gate.
+
+The affected selector remains responsible for the conditional backend image gate. It compares PR paths
+from their merge base and push paths from before/head; missing revisions conservatively include the
+image. Backend scope retains root tooling, import boundaries and format:backend, and now also runs the
+workspace format:check covering backend JSON configuration. The existing selector's full/application
+scope outputs are preserved for restoring integrated CI; they do not override the current stage scope.
 
 Docker recipe/package/compiler/runtime-script inputs and full-inventory selection additionally run
 `scripts/ci/container.mjs` inside the same required job. Image build or runtime identity/secret-exclusion

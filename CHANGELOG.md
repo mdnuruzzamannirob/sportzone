@@ -8,6 +8,19 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 3 November 2026 — Explicit backend lint fix/check scripts
+
+- Backend lint/format apply safe fixes; lint:check/format:check validate without edits. CI uses
+  lint:check and enforces its inventory entry when that script exists.
+
+## 3 November 2026 — Backend formatting, env examples and CI scope
+
+- Added backend format/format:check scripts and executable CI coverage for backend JSON configuration.
+- Populated local/staging env templates with illustrative values; preserved actual private configuration.
+- Commented frontend/browser hosted steps for the owner-selected backend stage, retaining security,
+  backend checks, image gate and future integrated verification requirements.
+- [Changes and verification](docs/evidence/P03-021-backend-refactor.md#environment-examples-workspace-formatting-and-backend-stage-ci--3-november-2026).
+
 ## 3 November 2026 — Backend refactor closed; local configuration organized
 
 - Organized env keys and local technical defaults, preserving private credentials and explicit feature
