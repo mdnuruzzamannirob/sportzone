@@ -174,6 +174,17 @@ Do not assign arbitrary completion dates. Estimate work after evaluating develop
 
 ### 3.6 Engineering foundation and incremental refactor
 
+The owner's current backend batching sequence is **module-layer organization → remaining src
+composition/integration → outside-src tests/contracts/scripts/tooling in bounded batches → consolidated
+test/review/fix**. Intermediate module moves may therefore leave outside-src consumer paths and the
+legacy boundary inventory awaiting their owning pass. Keep source-only TypeScript/lint/format checks
+separate from behavior verification; defer test execution/review as requested and record it as Not Run.
+Do not claim a work-package/application closeout from structural checks alone. Preserve a current-to-target
+migration record and reconcile all consumers, public capabilities, boundary allowances and CI discovery
+before final acceptance. This staging changes local work order, not product/security/financial contracts
+or release gates. Do not commit, push or change branches/PRs without a new explicit owner instruction.
+
+
 The owner-selected whole-backend follow-up is detailed in the
 [Backend refactor plan](./BACKEND_REFACTOR_PLAN.md). It defines the target decisions, current-to-target
 reconciliation, dependent work packages and verification/rollback requirements. Its first implementation

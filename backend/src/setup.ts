@@ -1,3 +1,6 @@
+import { createAuditRoutes } from './modules/audit/audit.routes.js'
+import { createNotificationRoutes } from './modules/notifications/notification.routes.js'
+import { createDeliveryExceptionRoutes } from './modules/orders/order.routes.js'
 import { guestOrderAccess } from './modules/orders/order.service.js'
 import { auditOperationReader } from './modules/audit/audit.service.js'
 import { createSessionHttp, readSessionCookie } from './modules/auth/sessions/session.http.js'
@@ -5,18 +8,21 @@ import {
   refundRequestOrderAccess,
   closedRefundRequestAccess,
 } from './modules/orders/order.service.js'
-import { refundRequestRoutes } from './modules/refunds/refund-request.routes.js'
+import { createRefundRequestRoutes } from './modules/refunds/refund.routes.js'
 import { refundClaimSelectionAccess } from './modules/returns/return.service.js'
-import { paymentMatchingRoutes } from './modules/payments/payment-matching.routes.js'
+import { createPaymentMatchingRoutes } from './modules/payments/payment.routes.js'
 import {
-  paymentMatchingService,
+  createPaymentMatchingService,
   protectedPaymentMatchingEvidence,
-} from './modules/payments/payment-matching.service.js'
-import { couponPreviewRoutes } from './modules/promotions/coupon-preview.routes.js'
-import { couponPreviewService } from './modules/promotions/coupon.service.js'
+} from './modules/payments/collections/payment-matching.service.js'
+import { createCouponPreviewRoutes } from './modules/promotions/promotion.routes.js'
+import { createCouponPreviewService } from './modules/promotions/promotion.service.js'
 import type { OperationsOptions } from './config/operations.js'
-import { reportService, operationalQueueService } from './modules/reports/report.service.js'
-import { reportRoutes } from './modules/reports/report.routes.js'
+import {
+  createReportService,
+  createOperationalQueueService,
+} from './modules/reports/report.service.js'
+import { createReportRoutes } from './modules/reports/report.routes.js'
 import {
   orderReportAccess,
   customerAdminOrderHistoryAccess,
@@ -32,40 +38,40 @@ import {
   refundExceptionQueueAccess,
 } from './modules/refunds/refund-history.service.js'
 import { catalogReportAccess } from './modules/catalog/products/product.service.js'
-import { reportThresholdAccess } from './modules/settings/settings.service.js'
+import { reportThresholdAccess } from './modules/settings/setting.service.js'
 import { returnReportAccess } from './modules/returns/return.service.js'
 import { customerAdministrationAccess } from './modules/auth/auth.composition.js'
 import {
   createCustomerAdminRoutes,
   createCustomerRoutes,
 } from './modules/customers/customer.routes.js'
-import { complaintService } from './modules/support/complaint.service.js'
-import { supportReadRoutes } from './modules/support/support-read.routes.js'
-import { supportRoutes } from './modules/support/support.routes.js'
-import { auditQueryService } from './modules/audit/audit-query.service.js'
-import { deliveryExceptionService } from './modules/orders/delivery-exception.service.js'
-import { recoveryReceiptService } from './modules/inventory/recovery-receipt.service.js'
-import { notificationAdminService } from './modules/notifications/notification-admin.service.js'
-import { refundHistoryService } from './modules/refunds/refund-history.service.js'
-import { refundHistoryRoutes } from './modules/refunds/refund-history.routes.js'
+import { createComplaintService } from './modules/support/support.service.js'
+import { createSupportReadRoutes } from './modules/support/support.routes.js'
+import { createSupportRoutes } from './modules/support/support.routes.js'
+import { createAuditQueryService } from './modules/audit/audit.service.js'
+import { createDeliveryExceptionService } from './modules/orders/delivery-exception.service.js'
+import { createRecoveryReceiptService } from './modules/inventory/inventory.service.js'
+import { createNotificationAdminService } from './modules/notifications/notification.service.js'
+import { createRefundHistoryService } from './modules/refunds/refund-history.service.js'
+import { createRefundHistoryRoutes } from './modules/refunds/refund.routes.js'
 import { customerOrderHistoryAccess } from './modules/orders/order.service.js'
-import { returnMessageService } from './modules/notifications/return-message.service.js'
+import { createReturnMessageService } from './modules/notifications/notification-template.js'
 import { returnNotificationProofAccess } from './modules/returns/return.service.js'
 import {
-  refundRecoveryService,
+  createRefundRecoveryService,
   refundNotificationProofAccess,
-} from './modules/refunds/refund-recovery.service.js'
-import type { RefundOutcomeVerifier } from './modules/refunds/refund-outcome.schema.js'
+} from './modules/refunds/payouts/refund-recovery.service.js'
+import type { RefundOutcomeVerifier } from './modules/refunds/payouts/refund-outcome.schema.js'
 import {
   refundDecisionNotifier,
-  refundMessageService,
-} from './modules/notifications/refund-message.service.js'
+  createRefundMessageService,
+} from './modules/notifications/notification-template.js'
 import { refundUnitOutcomeAccess } from './modules/orders/order.service.js'
 import { refundOperationsOptions, type RefundOperationsOptions } from './config/refunds.js'
-import { refundRoutes } from './modules/refunds/refund.routes.js'
-import { refundOperationsService } from './modules/refunds/refund-operations.service.js'
-import { refundReservationService } from './modules/refunds/refund-reservation.service.js'
-import { refundDispatchService } from './modules/refunds/refund-dispatch.service.js'
+import { createRefundRoutes } from './modules/refunds/refund.routes.js'
+import { createRefundOperationsService } from './modules/refunds/refund-operations.service.js'
+import { createRefundReservationService } from './modules/refunds/obligations/refund-reservation.service.js'
+import { createRefundDispatchService } from './modules/refunds/payouts/refund-dispatch.service.js'
 import { refundClaimSnapshotAccess } from './modules/returns/return.service.js'
 import { refundOrderSnapshotAccess } from './modules/orders/order.service.js'
 import { loadMediaConfiguration } from './config/media.js'
@@ -94,36 +100,36 @@ import {
   paymentMethodAccess,
 } from './modules/auth/checkout-access.service.js'
 import { createPaymentCallbackThrottle } from './modules/auth/sessions/auth-throttle.service.js'
-import { cartRoutes } from './modules/cart/cart.routes.js'
-import { cartService } from './modules/cart/cart.service.js'
-import { wishlistRoutes } from './modules/cart/wishlist.routes.js'
-import { wishlistService } from './modules/cart/wishlist.service.js'
-import { catalogRoutes } from './modules/catalog/catalog.routes.js'
+import { createCartRoutes } from './modules/cart/cart.routes.js'
+import { createCartService } from './modules/cart/cart.service.js'
+import { createWishlistRoutes } from './modules/wishlist/wishlist.routes.js'
+import { createWishlistService } from './modules/wishlist/wishlist.service.js'
+import { createCatalogRoutes } from './modules/catalog/catalog.routes.js'
 import {
   catalogCheckoutAccess,
   catalogReviewVisibility,
-  catalogService,
+  createCatalogService,
 } from './modules/catalog/catalog.service.js'
-import { categoryAdminRoutes } from './modules/catalog/categories/category-admin.routes.js'
-import { categoryAdminService } from './modules/catalog/categories/category-admin.service.js'
-import { productAdminRoutes } from './modules/catalog/products/product-admin.routes.js'
-import { productAdminService } from './modules/catalog/products/product-admin.service.js'
+import { createCategoryAdminRoutes } from './modules/catalog/categories/category.routes.js'
+import { createCategoryAdminService } from './modules/catalog/categories/category.service.js'
+import { createProductAdminRoutes } from './modules/catalog/products/product.routes.js'
+import { createProductAdminService } from './modules/catalog/products/product.service.js'
 import { productReviewAccess } from './modules/catalog/products/product.service.js'
 import {
   variantInventoryAccess,
   variantStockAccess,
-} from './modules/catalog/variants/variant.service.js'
-import { cancellationAllocationService } from './modules/checkout/cancellation-allocation.service.js'
-import { checkoutCompletion } from './modules/checkout/checkout-completion.service.js'
-import { checkoutIntentService } from './modules/checkout/checkout-intent.service.js'
+} from './modules/catalog/products/variant.service.js'
+import { createCancellationAllocationService } from './modules/orders/order-allocation.service.js'
+import { createCheckoutCompletionService } from './modules/checkout/checkout.service.js'
+import { createCheckoutIntentService } from './modules/checkout/checkout.service.js'
 import {
-  checkoutQuoteService,
+  createCheckoutQuoteService,
   orderPolicySnapshotAccess,
-} from './modules/checkout/checkout-quote.service.js'
-import { checkoutRoutes } from './modules/checkout/checkout.routes.js'
-import { fulfillmentAllocationService } from './modules/checkout/fulfillment-allocation.service.js'
-import { paymentAllocationService } from './modules/checkout/payment-allocation.service.js'
-import { verifiedAllocationService } from './modules/checkout/verified-allocation.service.js'
+} from './modules/checkout/checkout.service.js'
+import { createCheckoutRoutes } from './modules/checkout/checkout.routes.js'
+import { createFulfillmentAllocationService } from './modules/orders/order-allocation.service.js'
+import { createPaymentAllocationService } from './modules/orders/order-allocation.service.js'
+import { createVerifiedAllocationService } from './modules/orders/order-allocation.service.js'
 
 import { createCustomerService } from './modules/customers/customer.service.js'
 import {
@@ -138,37 +144,37 @@ import {
 } from './modules/delivery/delivery.routes.js'
 
 import type { HealthDependencies } from './health/health.service.js'
-import { allocationService } from './modules/inventory/allocation.service.js'
-import { inventoryAdminRoutes } from './modules/inventory/inventory-admin.routes.js'
-import { inventoryAdminService } from './modules/inventory/inventory-admin.service.js'
-import { inventoryService } from './modules/inventory/inventory.service.js'
-import { returnReceiptService } from './modules/inventory/return-receipt.service.js'
-import { claimEvidenceMetadataAccess } from './modules/media/claim-evidence.service.js'
-import { mediaRoutes } from './modules/media/media.routes.js'
+import { createAllocationService } from './modules/inventory/inventory.service.js'
+import { createInventoryAdminRoutes } from './modules/inventory/inventory.routes.js'
+import { createInventoryAdminService } from './modules/inventory/inventory.service.js'
+import { createInventoryService } from './modules/inventory/inventory.service.js'
+import { createReturnReceiptService } from './modules/inventory/inventory.service.js'
+import { claimEvidenceMetadataAccess } from './modules/media/attachment.service.js'
+import { createMediaRoutes } from './modules/media/media.routes.js'
 import {
   createMediaService,
   verifyMediaPersistence,
   type MediaDependencies,
 } from './modules/media/media.service.js'
-import { publicMediaService } from './modules/media/public-media.service.js'
+import { createPublicMediaService } from './modules/media/access.service.js'
 import { createNotificationDeliveryService } from './modules/notifications/notification-delivery.service.js'
 import type { RetryPolicy } from './modules/notifications/notification.schema.js'
-import { createRegistrationNotifications } from './modules/notifications/notification.service.js'
+import { createNotificationService } from './modules/notifications/notification.service.js'
 import type { EmailAdapter } from './modules/notifications/notification.types.js'
-import { orderMessageService } from './modules/notifications/order-message.service.js'
-import { paymentMessageService } from './modules/notifications/payment-message.service.js'
-import { returnDecisionNotifier } from './modules/notifications/return-message.service.js'
-import { cancellationRoutes } from './modules/orders/cancellation.routes.js'
-import { cancellationService } from './modules/orders/cancellation.service.js'
+import { createOrderMessageService } from './modules/notifications/notification-template.js'
+import { createPaymentMessageService } from './modules/notifications/notification-template.js'
+import { returnDecisionNotifier } from './modules/notifications/notification-template.js'
+import { createCancellationRoutes } from './modules/orders/order.routes.js'
+import { createCancellationService } from './modules/orders/cancellation.service.js'
 import {
   createDeliveryDeadlineService,
   deliveryDeadlineApprovalAccess,
 } from './modules/orders/delivery-deadline.service.js'
-import { orderAdminRoutes } from './modules/orders/order-admin.routes.js'
-import { orderLifecycleService } from './modules/orders/order-lifecycle.service.js'
+import { createOrderAdminRoutes } from './modules/orders/order.routes.js'
+import { createOrderLifecycleService } from './modules/orders/order-lifecycle.service.js'
 import { orderNotificationAccess } from './modules/orders/order-notification.service.js'
-import { orderReadRoutes } from './modules/orders/order-read.routes.js'
-import { orderReadService } from './modules/orders/order-read.service.js'
+import { createOrderReadRoutes } from './modules/orders/order.routes.js'
+import { createOrderReadService } from './modules/orders/order-read.service.js'
 import {
   cancellationRefundSnapshotAccess,
   claimEligibilitySnapshotAccess,
@@ -185,36 +191,36 @@ import {
   reviewPurchaseEligibilityAccess,
   verifiedFundingOrderAccess,
 } from './modules/orders/order.service.js'
-import { codCollectionService } from './modules/payments/cod-collection.service.js'
-import { protectedCodCollectionEvidence } from './modules/payments/cod-evidence.service.js'
-import { paymentCallbackRoutes } from './modules/payments/payment-callback.routes.js'
+import { createCodCollectionService } from './modules/payments/collections/cod-collection.service.js'
+import { protectedCodCollectionEvidence } from './modules/payments/collections/cod-evidence.service.js'
+import { createPaymentCallbackRoutes } from './modules/payments/payment.routes.js'
 import {
   paymentCallbackOptions,
   type PaymentCallbackOptions,
-} from './modules/payments/payment-callback.schema.js'
+} from './modules/payments/collections/payment-callback.schema.js'
 import {
-  paymentCallbackService,
+  createPaymentCallbackService,
   type PaymentCallbackProcessor,
-} from './modules/payments/payment-callback.service.js'
-import type { PaymentChannelApproval } from './modules/payments/payment-eligibility.schema.js'
+} from './modules/payments/collections/payment-callback.service.js'
+import type { PaymentChannelApproval } from './modules/payments/attempts/payment-eligibility.schema.js'
 import {
   paymentEligibility,
   paymentInitiationChannelAccess,
   verifiedMerchantChannels,
-} from './modules/payments/payment-eligibility.service.js'
-import { paymentInitiationRoutes } from './modules/payments/payment-initiation.routes.js'
-import { paymentInitiationService } from './modules/payments/payment-initiation.service.js'
-import { paymentMethodsRoutes } from './modules/payments/payment-methods.routes.js'
-import { paymentMethodsService } from './modules/payments/payment-methods.service.js'
-import { paymentMonitorRoutes } from './modules/payments/payment-monitor.routes.js'
-import { paymentMonitorService } from './modules/payments/payment-monitor.service.js'
-import { paymentNotificationAccess } from './modules/payments/payment-notification.service.js'
-import { paymentProcessingService } from './modules/payments/payment-processing.service.js'
-import { paymentRetryService } from './modules/payments/payment-retry.service.js'
-import { paymentRiskRoutes } from './modules/payments/payment-risk.routes.js'
-import { paymentRiskService } from './modules/payments/payment-risk.service.js'
-import { paymentSettlementService } from './modules/payments/payment-settlement.service.js'
-import { paymentVerificationService } from './modules/payments/payment-verification.service.js'
+} from './modules/payments/attempts/payment-eligibility.service.js'
+import { createPaymentInitiationRoutes } from './modules/payments/payment.routes.js'
+import { createPaymentInitiationService } from './modules/payments/attempts/payment-initiation.service.js'
+import { createPaymentMethodsRoutes } from './modules/payments/payment.routes.js'
+import { createPaymentMethodsService } from './modules/payments/payment-methods.service.js'
+import { createPaymentMonitorRoutes } from './modules/payments/payment.routes.js'
+import { createPaymentMonitorService } from './modules/payments/collections/payment-monitor.service.js'
+import { paymentNotificationAccess } from './modules/payments/collections/payment-notification.service.js'
+import { createPaymentProcessingService } from './modules/payments/collections/payment-processing.service.js'
+import { createPaymentRetryService } from './modules/payments/attempts/payment-retry.service.js'
+import { createPaymentRiskRoutes } from './modules/payments/payment.routes.js'
+import { createPaymentRiskService } from './modules/payments/collections/payment-risk.service.js'
+import { createPaymentSettlementService } from './modules/payments/collections/payment-settlement.service.js'
+import { createPaymentVerificationService } from './modules/payments/collections/payment-verification.service.js'
 import {
   cancellationPaymentAccess,
   customerPaymentSummaryAccess,
@@ -222,29 +228,35 @@ import {
   paymentInitiationEligibilityAccess,
   refundFundingAccess,
 } from './modules/payments/payment.service.js'
-import { couponAdminRoutes } from './modules/promotions/coupon-admin.routes.js'
-import { couponAdminService } from './modules/promotions/coupon-admin.service.js'
-import { couponQuoteAccess } from './modules/promotions/coupon.service.js'
-import { cancellationRefundService } from './modules/refunds/cancellation-refund.service.js'
-import { returnEligibilityService } from './modules/returns/return-eligibility.service.js'
-import { returnHistoryRoutes } from './modules/returns/return-history.routes.js'
-import { returnHistoryService } from './modules/returns/return-history.service.js'
-import { returnLifecycleService } from './modules/returns/return-lifecycle.service.js'
-import { returnOperationsService } from './modules/returns/return-operations.service.js'
-import { returnPhysicalService } from './modules/returns/return-physical.service.js'
-import { returnRoutes } from './modules/returns/return.routes.js'
-import { reviewQueryService } from './modules/reviews/review-query.service.js'
-import { reviewRoutes } from './modules/reviews/review.routes.js'
+import { createCouponAdminRoutes } from './modules/promotions/promotion.routes.js'
+import { createCouponAdminService } from './modules/promotions/promotion.service.js'
+import { couponQuoteAccess } from './modules/promotions/promotion.service.js'
+import { createCancellationRefundService } from './modules/refunds/obligations/cancellation-refund.service.js'
+import { createReturnEligibilityService } from './modules/returns/return.policy.js'
+import { createReturnHistoryRoutes } from './modules/returns/return.routes.js'
+import { createReturnHistoryService } from './modules/returns/return.service.js'
+import { createReturnLifecycleService } from './modules/returns/return.service.js'
+import { createReturnOperationsService } from './modules/returns/return.service.js'
+import { createReturnPhysicalService } from './modules/returns/return.service.js'
+import { createReturnRoutes } from './modules/returns/return.routes.js'
+import { createReviewQueryService } from './modules/reviews/review.service.js'
+import { createReviewRoutes } from './modules/reviews/review.routes.js'
 import { createReviewService } from './modules/reviews/review.service.js'
 import {
   checkoutSettingsAccess,
   paymentChannelSettingsAccess,
-} from './modules/settings/checkout-settings.service.js'
-import { deliverySettingsGuard } from './modules/settings/delivery-settings.service.js'
-import { policyService } from './modules/settings/policy.service.js'
-import { settingsAdminRoutes, settingsPublicRoutes } from './modules/settings/settings.routes.js'
-import { settingsService, storefrontSettingsAccess } from './modules/settings/settings.service.js'
-import { stockSettingsReader } from './modules/settings/stock-settings.service.js'
+} from './modules/settings/setting.service.js'
+import { deliverySettingsGuard } from './modules/settings/setting.service.js'
+import { createPolicyService } from './modules/settings/setting.service.js'
+import {
+  createSettingAdminRoutes,
+  createSettingPublicRoutes,
+} from './modules/settings/setting.routes.js'
+import {
+  createSettingService,
+  storefrontSettingsAccess,
+} from './modules/settings/setting.service.js'
+import { stockSettingsReader } from './modules/settings/setting.service.js'
 import { createResendAdapter } from './providers/email/resend.client.js'
 import type { createSslcommerzAdapter } from './providers/sslcommerz/sslcommerz.client.js'
 import { createApiRouter } from './routes.js'
@@ -336,7 +348,7 @@ export function composeReturnOperationsRoutes(
   const policy = structuredClone(options)
   const scope = orderScopeAccess(auth.customerAccounts, auth.sessions, auth.guestAccounts)
   const snapshot = claimEligibilitySnapshotAccess(connection)
-  const eligibility = returnEligibilityService(
+  const eligibility = createReturnEligibilityService(
     async (session, orderId, principal) => {
       const facts = await snapshot(session, orderId, principal)
       return { status: facts.status, deliveredAt: facts.deliveredAt }
@@ -352,7 +364,7 @@ export function composeReturnOperationsRoutes(
     },
     clock,
   )
-  const history = returnHistoryService(
+  const history = createReturnHistoryService(
     connection,
     scope,
     complaintOrderAccess(connection),
@@ -398,24 +410,24 @@ export function composeReturnOperationsRoutes(
       clock,
     )
   }
-  const lifecycle = returnLifecycleService(
+  const lifecycle = createReturnLifecycleService(
     connection,
     auth.adminAccounts,
     claimReviewQuantityAccess(connection),
     clock,
     returnDecisionNotifier(
       returnNotificationOrderAccess(connection),
-      createRegistrationNotifications(connection, clock),
+      createNotificationService(connection, clock),
     ),
   )
-  const physical = returnPhysicalService(
+  const physical = createReturnPhysicalService(
     connection,
     auth.adminAccounts,
     claimRestockAccess(connection),
-    returnReceiptService(connection, clock),
+    createReturnReceiptService(connection, clock),
     clock,
   )
-  const operations = returnOperationsService(
+  const operations = createReturnOperationsService(
     connection,
     {
       scope,
@@ -430,8 +442,8 @@ export function composeReturnOperationsRoutes(
     clock,
   )
   return [
-    returnHistoryRoutes(history, auth.security, auth.sessions),
-    returnRoutes(
+    createReturnHistoryRoutes(history, auth.security, auth.sessions),
+    createReturnRoutes(
       operations,
       lifecycle,
       physical,
@@ -452,9 +464,11 @@ export function composeReturnOperationsRoutes(
 }
 
 export type OrderOperationsDependencies = {
-  approvedDeadline: NonNullable<Parameters<typeof orderLifecycleService>[4]>
-  cashEvidence: NonNullable<Parameters<typeof codCollectionService>[3]> | { receiptFile: string }
-  cancellationRefund: NonNullable<Parameters<typeof cancellationService>[5]>
+  approvedDeadline: NonNullable<Parameters<typeof createOrderLifecycleService>[4]>
+  cashEvidence:
+    | NonNullable<Parameters<typeof createCodCollectionService>[3]>
+    | { receiptFile: string }
+  cancellationRefund: NonNullable<Parameters<typeof createCancellationService>[5]>
 }
 
 export function configuredOrderOperations(
@@ -466,7 +480,7 @@ export function configuredOrderOperations(
   return {
     approvedDeadline: deliveryDeadlineApprovalAccess([options.deadline], clock),
     cashEvidence: { receiptFile: options.cashReceiptFile },
-    cancellationRefund: cancellationRefundService(
+    cancellationRefund: createCancellationRefundService(
       connection,
       cancellationRefundSnapshotAccess(connection),
       refundUnitReservationAccess(connection),
@@ -481,7 +495,7 @@ export function configuredOrderOperations(
       clock,
       refundDecisionNotifier(
         returnNotificationOrderAccess(connection),
-        createRegistrationNotifications(connection, clock),
+        createNotificationService(connection, clock),
         createAuditWriter(connection),
       ),
     ),
@@ -500,8 +514,8 @@ export function composeOrderOperationsRoutes(
   clock: () => Date = () => new Date(),
 ) {
   const scope = orderScopeAccess(auth.customerAccounts, auth.sessions, auth.guestAccounts)
-  const stock = allocationService(connection, undefined, clock)
-  const reads = orderReadService(
+  const stock = createAllocationService(connection, undefined, clock)
+  const reads = createOrderReadService(
     connection,
     auth.customerAccounts,
     scope,
@@ -525,15 +539,15 @@ export function composeOrderOperationsRoutes(
       },
     },
   )
-  const lifecycle = orderLifecycleService(
+  const lifecycle = createOrderLifecycleService(
     connection,
     auth.adminAccounts,
     fulfillmentPaymentAccess(connection, clock),
-    fulfillmentAllocationService(connection, clock),
+    createFulfillmentAllocationService(connection, clock),
     dependencies.approvedDeadline,
     clock,
   )
-  const cash = codCollectionService(
+  const cash = createCodCollectionService(
     connection,
     auth.adminAccounts,
     codCollectionOrderAccess(connection),
@@ -542,19 +556,19 @@ export function composeOrderOperationsRoutes(
       : protectedCodCollectionEvidence(dependencies.cashEvidence.receiptFile, clock),
     clock,
   )
-  const cancellation = cancellationService(
+  const cancellation = createCancellationService(
     connection,
     scope,
     auth.adminAccounts,
-    cancellationAllocationService(connection, clock),
+    createCancellationAllocationService(connection, clock),
     cancellationPaymentAccess(connection),
     dependencies.cancellationRefund,
     clock,
   )
   return [
-    orderReadRoutes(reads, auth.security),
-    orderAdminRoutes(reads, lifecycle, cash, auth.security, auth.sessions),
-    cancellationRoutes(cancellation, auth.security, auth.sessions, storefrontOrigin),
+    createOrderReadRoutes(reads, auth.security),
+    createOrderAdminRoutes(reads, lifecycle, cash, auth.security, auth.sessions),
+    createCancellationRoutes(cancellation, auth.security, auth.sessions, storefrontOrigin),
   ]
 }
 
@@ -581,8 +595,8 @@ export function composeLocalReviewRoutes(
     },
     clock,
   )
-  return reviewRoutes(
-    reviewQueryService(
+  return createReviewRoutes(
+    createReviewQueryService(
       connection,
       auth.customerAccounts,
       auth.adminAccounts,
@@ -602,8 +616,8 @@ export function composeAfterSalesHistoryRoutes(
   if (!['local', 'test'].includes(environment)) throw new ApiError('SERVICE_UNAVAILABLE')
   return [
     composeLocalReviewRoutes(connection, environment, auth),
-    refundHistoryRoutes(
-      refundHistoryService(
+    createRefundHistoryRoutes(
+      createRefundHistoryService(
         connection,
         orderScopeAccess(auth.customerAccounts, auth.sessions, auth.guestAccounts),
         complaintOrderAccess(connection),
@@ -629,7 +643,7 @@ export function composeOperationsRoutes(
     : undefined
   const scope = orderScopeAccess(auth.customerAccounts, auth.sessions, auth.guestAccounts),
     customerOrders = customerOrderHistoryAccess(connection),
-    claims = returnHistoryService(
+    claims = createReturnHistoryService(
       connection,
       scope,
       complaintOrderAccess(connection),
@@ -637,7 +651,7 @@ export function composeOperationsRoutes(
       auth.adminAccounts,
       customerOrders,
     ),
-    history = refundHistoryService(
+    history = createRefundHistoryService(
       connection,
       scope,
       complaintOrderAccess(connection),
@@ -660,7 +674,7 @@ export function composeOperationsRoutes(
       createAuditWriter(connection),
       auditOperationReader(connection),
     ),
-    complaints = complaintService(
+    complaints = createComplaintService(
       connection,
       scope,
       complaintOrderAccess(connection),
@@ -668,9 +682,9 @@ export function composeOperationsRoutes(
       clock,
       checkoutAccess(auth.customerAccounts, auth.security),
     ),
-    notifications = notificationAdminService(connection, auth.adminAccounts, clock),
+    notifications = createNotificationAdminService(connection, auth.adminAccounts, clock),
     funds = refundFundingAccess(connection),
-    exceptionRefund = cancellationRefundService(
+    exceptionRefund = createCancellationRefundService(
       connection,
       deliveryExceptionRefundSnapshotAccess(connection),
       refundUnitReservationAccess(connection),
@@ -692,16 +706,16 @@ export function composeOperationsRoutes(
       clock,
       refundDecisionNotifier(
         returnNotificationOrderAccess(connection),
-        createRegistrationNotifications(connection, clock),
+        createNotificationService(connection, clock),
         createAuditWriter(connection),
       ),
       'delivery_exception',
     ),
-    exceptions = deliveryExceptionService(
+    exceptions = createDeliveryExceptionService(
       connection,
       auth.adminAccounts,
       cancellationPaymentAccess(connection),
-      recoveryReceiptService(connection, clock),
+      createRecoveryReceiptService(connection, clock),
       options.verifyDisposition,
       async (session, input) =>
         exceptionRefund(session, {
@@ -714,7 +728,7 @@ export function composeOperationsRoutes(
       clock,
     ),
     payments = paymentExceptionQueueAccess(connection),
-    queues = operationalQueueService(auth.adminAccounts, {
+    queues = createOperationalQueueService(auth.adminAccounts, {
       stock: stockExceptionQueueAccess(connection),
       refunds: refundExceptionQueueAccess(connection),
       payments: (session, q) => payments(session, q, false),
@@ -727,21 +741,23 @@ export function composeOperationsRoutes(
       requireSession: createSessionHttp(auth.sessions).require('admin'),
       readToken: (header) => readSessionCookie(header, 'admin'),
     }),
-    supportReadRoutes(
-      complaints,
-      auditQueryService(connection, auth.adminAccounts),
+    createSupportReadRoutes(complaints, auth.security, auth.sessions),
+    createAuditRoutes(
+      createAuditQueryService(connection, auth.adminAccounts),
       auth.security,
       auth.sessions,
     ),
-    supportRoutes(
-      { complaints, exceptions, notifications, customers: auth.customerAccounts },
+    createNotificationRoutes(notifications, auth.security, auth.sessions),
+    createDeliveryExceptionRoutes(exceptions, auth.security, auth.sessions),
+    createSupportRoutes(
+      { complaints, customers: auth.customerAccounts },
       auth.security,
       auth.sessions,
       auth.throttle,
       storefrontOrigin,
     ),
-    reportRoutes(
-      reportService(
+    createReportRoutes(
+      createReportService(
         auth.adminAccounts,
         {
           paymentSummary: customerPaymentSummaryAccess(connection),
@@ -773,7 +789,7 @@ export type RefundOperationsDependencies = {
 }
 export function composeRefundRecovery(
   connection: Connection,
-  admins: Parameters<typeof refundRecoveryService>[1],
+  admins: Parameters<typeof createRefundRecoveryService>[1],
   dependencies: Pick<RefundOperationsDependencies, 'gateway' | 'verifyEvidence'> &
     Partial<Pick<RefundOperationsDependencies, 'options'>>,
   clock: () => Date = () => new Date(),
@@ -781,7 +797,7 @@ export function composeRefundRecovery(
   const policy = dependencies.options
     ? structuredClone(refundOperationsOptions.parse(dependencies.options))
     : undefined
-  return refundRecoveryService(
+  return createRefundRecoveryService(
     connection,
     admins,
     refundFundingAccess(connection),
@@ -795,7 +811,7 @@ export function composeRefundRecovery(
       : undefined,
     refundDecisionNotifier(
       returnNotificationOrderAccess(connection),
-      createRegistrationNotifications(connection, clock),
+      createNotificationService(connection, clock),
       createAuditWriter(connection),
     ),
     clock,
@@ -823,7 +839,7 @@ export function composeRefundOperationsRoutes(
   dependencies: RefundOperationsDependencies,
   clock: () => Date = () => new Date(),
   requestOptions?: {
-    access: NonNullable<Parameters<typeof refundReservationService>[9]>
+    access: NonNullable<Parameters<typeof createRefundReservationService>[9]>
     throttle: import('express').RequestHandler
     origin: string
   },
@@ -834,10 +850,10 @@ export function composeRefundOperationsRoutes(
   const funding = refundFundingAccess(connection)
   const notify = refundDecisionNotifier(
     returnNotificationOrderAccess(connection),
-    createRegistrationNotifications(connection, clock),
+    createNotificationService(connection, clock),
     createAuditWriter(connection),
   )
-  const reservation = refundReservationService(
+  const reservation = createRefundReservationService(
     connection,
     auth.adminAccounts,
     refundClaimSnapshotAccess(connection),
@@ -873,7 +889,7 @@ export function composeRefundOperationsRoutes(
     requestOptions?.access,
   )
   const dispatch = dependencies.gateway
-    ? refundDispatchService(
+    ? createRefundDispatchService(
         connection,
         auth.adminAccounts,
         funding,
@@ -884,8 +900,8 @@ export function composeRefundOperationsRoutes(
       )
     : undefined
   const recovery = composeRefundRecovery(connection, auth.adminAccounts, dependencies, clock)
-  const router = refundRoutes(
-    refundOperationsService(
+  const router = createRefundRoutes(
+    createRefundOperationsService(
       connection,
       auth.adminAccounts,
       funding,
@@ -898,7 +914,7 @@ export function composeRefundOperationsRoutes(
   )
   if (requestOptions)
     router.use(
-      refundRequestRoutes(
+      createRefundRequestRoutes(
         reservation,
         auth.security,
         requestOptions.throttle,
@@ -922,7 +938,7 @@ export async function composeIdentityRoutes(
   afterSalesHistory = false,
   operations?: OperationsOptions,
 ) {
-  const notifications = createRegistrationNotifications(connection)
+  const notifications = createNotificationService(connection)
   const auth = await createAuthRuntime(
     connection,
     config,
@@ -1005,8 +1021,8 @@ export async function composeIdentityRoutes(
   }
   if (config.CUSTOMER_ORDER_READ_ENABLED && !orderOperations)
     auth.router.use(
-      orderReadRoutes(
-        orderReadService(
+      createOrderReadRoutes(
+        createOrderReadService(
           connection,
           auth.customerAccounts,
           orderScopeAccess(auth.customerAccounts, auth.sessions, auth.guestAccounts),
@@ -1030,8 +1046,8 @@ export async function composeIdentityRoutes(
     )
   if (config.CUSTOMER_AUTH_ENABLED && ['local', 'test'].includes(config.APP_ENV))
     auth.router.use(
-      couponPreviewRoutes(
-        couponPreviewService(
+      createCouponPreviewRoutes(
+        createCouponPreviewService(
           connection,
           checkoutAccess(auth.customerAccounts, auth.security),
           catalogCheckoutAccess(connection),
@@ -1042,11 +1058,11 @@ export async function composeIdentityRoutes(
     )
   if (config.CUSTOMER_AUTH_ENABLED)
     auth.router.use(
-      cartRoutes(
-        cartService(
+      createCartRoutes(
+        createCartService(
           connection,
           auth.customerAccounts,
-          catalogService(connection, publicMediaService(connection, media?.provider)),
+          createCatalogService(connection, createPublicMediaService(connection, media?.provider)),
         ),
         auth.security,
         auth.sessions,
@@ -1054,11 +1070,11 @@ export async function composeIdentityRoutes(
     )
   if (config.CUSTOMER_AUTH_ENABLED)
     auth.router.use(
-      wishlistRoutes(
-        wishlistService(
+      createWishlistRoutes(
+        createWishlistService(
           connection,
           auth.customerAccounts,
-          catalogService(connection, publicMediaService(connection, media?.provider)),
+          createCatalogService(connection, createPublicMediaService(connection, media?.provider)),
         ),
         auth.security,
         auth.sessions,
@@ -1066,11 +1082,11 @@ export async function composeIdentityRoutes(
     )
   if (config.ADMIN_AUTH_ENABLED)
     auth.router.use(
-      inventoryAdminRoutes(
-        inventoryAdminService(
+      createInventoryAdminRoutes(
+        createInventoryAdminService(
           connection,
           auth.adminAccounts,
-          inventoryService(connection, variantStockAccess(connection)),
+          createInventoryService(connection, variantStockAccess(connection)),
           variantInventoryAccess(connection),
           stockSettingsReader(connection),
           createAuditWriter(connection),
@@ -1081,20 +1097,20 @@ export async function composeIdentityRoutes(
     )
   if (config.ADMIN_AUTH_ENABLED)
     auth.router.use(
-      couponAdminRoutes(
-        couponAdminService(connection, auth.adminAccounts, createAuditWriter(connection)),
+      createCouponAdminRoutes(
+        createCouponAdminService(connection, auth.adminAccounts, createAuditWriter(connection)),
         auth.security,
         auth.sessions,
       ),
     )
   if (config.ADMIN_AUTH_ENABLED && ['local', 'test'].includes(config.APP_ENV)) {
     auth.router.use(
-      paymentMatchingRoutes(
-        paymentMatchingService(
+      createPaymentMatchingRoutes(
+        createPaymentMatchingService(
           connection,
           auth.adminAccounts,
           verifiedFundingOrderAccess(connection),
-          verifiedAllocationService(connection),
+          createVerifiedAllocationService(connection),
           config.PAYMENT_MATCHING_EVIDENCE_FILE
             ? protectedPaymentMatchingEvidence(config.PAYMENT_MATCHING_EVIDENCE_FILE)
             : undefined,
@@ -1104,21 +1120,21 @@ export async function composeIdentityRoutes(
       ),
     )
     auth.router.use(
-      paymentMonitorRoutes(
-        paymentMonitorService(connection, auth.adminAccounts),
+      createPaymentMonitorRoutes(
+        createPaymentMonitorService(connection, auth.adminAccounts),
         auth.security,
         auth.sessions,
       ),
     )
     const orderAccess = verifiedFundingOrderAccess(connection)
-    const settlement = paymentSettlementService(
+    const settlement = createPaymentSettlementService(
       connection,
       orderAccess,
-      verifiedAllocationService(connection),
+      createVerifiedAllocationService(connection),
     )
     auth.router.use(
-      paymentRiskRoutes(
-        paymentRiskService(connection, auth.adminAccounts, orderAccess, settlement),
+      createPaymentRiskRoutes(
+        createPaymentRiskService(connection, auth.adminAccounts, orderAccess, settlement),
         auth.security,
         auth.sessions,
       ),
@@ -1140,7 +1156,7 @@ export async function composeIdentityRoutes(
       },
     })
     auth.router.use(
-      mediaRoutes(
+      createMediaRoutes(
         mediaService,
         auth.security,
         auth.sessions,
@@ -1151,8 +1167,8 @@ export async function composeIdentityRoutes(
   }
   if (config.ADMIN_AUTH_ENABLED)
     auth.router.use(
-      categoryAdminRoutes(
-        categoryAdminService(
+      createCategoryAdminRoutes(
+        createCategoryAdminService(
           connection,
           auth.adminAccounts,
           createAuditWriter(connection),
@@ -1164,8 +1180,8 @@ export async function composeIdentityRoutes(
     )
   if (config.ADMIN_AUTH_ENABLED)
     auth.router.use(
-      productAdminRoutes(
-        productAdminService(
+      createProductAdminRoutes(
+        createProductAdminService(
           connection,
           auth.adminAccounts,
           createAuditWriter(connection),
@@ -1192,23 +1208,23 @@ export async function composeIdentityRoutes(
         },
       ),
     )
-  const settings = settingsService(
+  const settings = createSettingService(
     connection,
     auth.adminAccounts,
     createAuditWriter(connection),
     mediaService,
   )
-  const policies = policyService(
+  const policies = createPolicyService(
     connection,
     auth.adminAccounts,
     createAuditWriter(connection),
     approvals,
   )
   if (config.ADMIN_AUTH_ENABLED)
-    auth.router.use(settingsAdminRoutes(settings, policies, auth.security, auth.sessions))
+    auth.router.use(createSettingAdminRoutes(settings, policies, auth.security, auth.sessions))
   auth.router.use(
-    paymentMethodsRoutes(
-      paymentMethodsService(connection, {
+    createPaymentMethodsRoutes(
+      createPaymentMethodsService(connection, {
         access: paymentMethodAccess(
           config.CUSTOMER_AUTH_ENABLED
             ? auth.customerAccounts
@@ -1236,9 +1252,9 @@ export async function composeIdentityRoutes(
         connection,
         paymentInitiationEligibilityAccess(connection),
       ),
-      allocation = paymentAllocationService(connection, allocationOrder, clock)
+      allocation = createPaymentAllocationService(connection, allocationOrder, clock)
     const channel = paymentInitiationChannelAccess(settings, channelApprovals, clock)
-    const initiation = paymentInitiationService(
+    const initiation = createPaymentInitiationService(
       connection,
       {
         ...paymentInitiationAuthAccess(
@@ -1269,17 +1285,17 @@ export async function composeIdentityRoutes(
       paymentGateway.validateRequest,
       clock,
       paymentGateway.reconciliationGateway
-        ? paymentRetryService(
+        ? createPaymentRetryService(
             connection,
             paymentGateway.reconciliationGateway,
             verifiedFundingOrderAccess(connection),
-            verifiedAllocationService(connection, clock),
+            createVerifiedAllocationService(connection, clock),
             clock,
           )
         : undefined,
     )
     auth.router.use(
-      paymentInitiationRoutes(
+      createPaymentInitiationRoutes(
         initiation,
         auth.security,
         auth.throttle.middleware('customer', 'checkout'),
@@ -1291,7 +1307,7 @@ export async function composeIdentityRoutes(
     if (!config.CUSTOMER_AUTH_ENABLED)
       throw new Error('Customer authentication required for checkout quotes.')
     const access = checkoutAccess(auth.customerAccounts, auth.security)
-    const quotes = checkoutQuoteService(
+    const quotes = createCheckoutQuoteService(
       connection,
       access,
       {
@@ -1308,12 +1324,17 @@ export async function composeIdentityRoutes(
       },
     )
     auth.router.use(
-      checkoutRoutes(
+      createCheckoutRoutes(
         quotes,
         auth.security,
         auth.throttle.middleware('customer', 'checkout'),
         checkout.codEnabled
-          ? checkoutIntentService(connection, access, quotes, checkoutCompletion(connection))
+          ? createCheckoutIntentService(
+              connection,
+              access,
+              quotes,
+              createCheckoutCompletionService(connection),
+            )
           : undefined,
       ),
     )
@@ -1380,25 +1401,25 @@ export async function composeApplication(
     throw new ApiError('AUTH_REQUIRED')
   }
   const publicAccess = { owned: unavailable }
-  const images = publicMediaService(connection, media?.provider)
-  const settings = settingsService(connection, publicAccess, unavailable)
-  const policies = policyService(connection, publicAccess, unavailable)
-  const catalog = catalogRoutes(
-    catalogService(connection, images, {
+  const images = createPublicMediaService(connection, media?.provider)
+  const settings = createSettingService(connection, publicAccess, unavailable)
+  const policies = createPolicyService(connection, publicAccess, unavailable)
+  const catalog = createCatalogRoutes(
+    createCatalogService(connection, images, {
       settings: storefrontSettingsAccess(connection, images),
       policies: policies.publicLinks,
     }),
     config.CORS_ALLOWED_ORIGINS,
   )
-  const content = settingsPublicRoutes(settings, policies, config.CORS_ALLOWED_ORIGINS)
+  const content = createSettingPublicRoutes(settings, policies, config.CORS_ALLOWED_ORIGINS)
   const apiRouter = createApiRouter(health, [
     createDeliveryAreaRoutes(deliveryAreasAccess(connection), config.CORS_ALLOWED_ORIGINS),
     catalog,
     content,
     ...(!identity
       ? [
-          paymentMethodsRoutes(
-            paymentMethodsService(connection, {
+          createPaymentMethodsRoutes(
+            createPaymentMethodsService(connection, {
               access: publicAccess,
               order: paymentMethodOrderAccess(connection),
               settings: paymentChannelSettingsAccess(connection),
@@ -1423,20 +1444,20 @@ export async function composeApplication(
       throw new Error('Ambiguous callback processor')
     const clock = callbacks.clock ?? (() => new Date())
     const process = callbacks.verificationGateway
-      ? paymentProcessingService(
+      ? createPaymentProcessingService(
           connection,
-          paymentVerificationService(
+          createPaymentVerificationService(
             connection,
             callbacks.verificationGateway,
             createHash('sha256').update(`${options.mode}\0${options.storeId}`).digest('hex'),
           ),
           verifiedFundingOrderAccess(connection),
-          verifiedAllocationService(connection, clock),
+          createVerifiedAllocationService(connection, clock),
           clock,
         ).process
       : callbacks.process
-    providerCallbacks = paymentCallbackRoutes(
-      paymentCallbackService(connection, options, config.SESSION_SECRET, process),
+    providerCallbacks = createPaymentCallbackRoutes(
+      createPaymentCallbackService(connection, options, config.SESSION_SECRET, process),
       createPaymentCallbackThrottle(connection, config.SESSION_SECRET, options.rateLimit),
     )
   }
@@ -1472,7 +1493,7 @@ export async function composeNotificationWorker(
   if (paymentsEnabled && !['local', 'test'].includes(config.APP_ENV))
     throw new Error('Payment notification delivery requires reviewed local/test activation')
   const adapter = 'adapter' in options ? options.adapter : createResendAdapter(options.email)
-  const store = createRegistrationNotifications(connection)
+  const store = createNotificationService(connection)
   await store.verifyIndexes()
   const delivery = composeProofDeliveries(connection, config.identity, guestOrderAccess(connection))
   return createNotificationDeliveryService(
@@ -1485,21 +1506,21 @@ export async function composeNotificationWorker(
     delivery.adminReset,
     delivery.guest,
     paymentsEnabled
-      ? paymentMessageService(
+      ? createPaymentMessageService(
           paymentNotificationAccess(
             connection,
             verifiedFundingOrderAccess(connection).notificationTarget,
           ),
         )
       : undefined,
-    commerceEnabled ? orderMessageService(orderNotificationAccess(connection)) : undefined,
+    commerceEnabled ? createOrderMessageService(orderNotificationAccess(connection)) : undefined,
     afterSalesEnabled
-      ? returnMessageService(
+      ? createReturnMessageService(
           returnNotificationProofAccess(connection, returnNotificationOrderAccess(connection)),
         )
       : undefined,
     afterSalesEnabled
-      ? refundMessageService(
+      ? createRefundMessageService(
           refundNotificationProofAccess(connection, returnNotificationOrderAccess(connection)),
         )
       : undefined,

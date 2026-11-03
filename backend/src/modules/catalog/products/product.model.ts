@@ -1,7 +1,7 @@
 import { Schema, Types, type Connection, type InferSchemaType } from 'mongoose'
 import { integerField, mutableSchemaOptions } from '../../../shared/database/schema.js'
 import { description, slug } from './product.schema.js'
-import { variantSchema } from '../variants/variant.model.js'
+import { variantSchema } from './variant.model.js'
 import { text, embedded } from '../model-fields.js'
 
 const image = new Schema(
@@ -23,6 +23,7 @@ const image = new Schema(
   },
   embedded,
 )
+
 const productSchema = new Schema(
   {
     name: text(120),
@@ -81,25 +82,31 @@ const productSchema = new Schema(
   },
   mutableSchemaOptions,
 )
+
 productSchema.index({ slug: 1 }, { unique: true, name: 'product_slug_unique' })
+
 productSchema.index(
   { status: 1, categoryIds: 1, createdAt: -1 },
   { name: 'product_status_categories_created' },
 )
+
 productSchema.index(
   { status: 1, featured: 1, createdAt: -1 },
   { name: 'product_status_featured_created' },
 )
 
 productSchema.index({ status: 1, createdAt: -1, _id: -1 }, { name: 'product_public_newest' })
+
 productSchema.index(
   { status: 1, name: 'text', keywords: 'text' },
   { name: 'product_public_search', default_language: 'none', weights: { name: 5, keywords: 2 } },
 )
 
-export type Product = InferSchemaType<typeof productSchema>
-export type ProductVariant = InferSchemaType<typeof variantSchema>
-export function productModels(connection: Connection) {
+type Product = InferSchemaType<typeof productSchema>
+
+type ProductVariant = InferSchemaType<typeof variantSchema>
+
+function productModels(connection: Connection) {
   return {
     products: connection.models.Product
       ? connection.model<Product>('Product')
@@ -109,3 +116,6 @@ export function productModels(connection: Connection) {
       : connection.model<ProductVariant>('ProductVariant', variantSchema, 'productVariants'),
   }
 }
+
+export { productModels }
+export type { Product, ProductVariant }

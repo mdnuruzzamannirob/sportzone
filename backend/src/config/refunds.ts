@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { readProtectedFile } from '../shared/protected-file.js'
 import { ConfigurationError } from '../shared/errors/configuration-error.js'
-import { refundApproval } from '../modules/refunds/refund-reservation.schema.js'
+import { refundApproval } from '../modules/refunds/obligations/refund-reservation.schema.js'
 
 const id = z.string().regex(/^[a-f0-9]{24}$/)
 export const refundOperationsOptions = z

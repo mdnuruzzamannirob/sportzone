@@ -12,12 +12,16 @@ import { readSessionCookie } from './session.http.js'
 import type { SessionKind, SessionService } from './session.service.js'
 
 type BrowserAudience = 'storefront' | 'admin'
+
 const opaque = /^[A-Za-z0-9_-]{43}$/
+
 const contextNames = {
   storefront: 'sz_browser_ctx',
   admin: 'sz_admin_browser_ctx',
 } as const
+
 const denied = () => new ApiError('CSRF_INVALID')
+
 function readContextCookie(header: string | undefined, audience: BrowserAudience) {
   const matches = (header ?? '')
     .split(';')
@@ -26,6 +30,7 @@ function readContextCookie(header: string | undefined, audience: BrowserAudience
   const token = matches.length === 1 ? matches[0]?.slice(matches[0].indexOf('=') + 1) : undefined
   return token && opaque.test(token) ? token : undefined
 }
+
 function createBrowserSecurity(
   connection: Connection,
   models: IdentityModels,
@@ -76,7 +81,12 @@ function createBrowserSecurity(
       audience: BrowserAudience,
       token: string | undefined,
       csrf: string | undefined,
-      effect: (scope: { keyHash: string }, session: ClientSession) => Promise<T>,
+      effect: (
+        scope: {
+          keyHash: string
+        },
+        session: ClientSession,
+      ) => Promise<T>,
     ) {
       if (!token || !csrf || !opaque.test(token) || !opaque.test(csrf)) throw denied()
       return inTransaction(connection, async (session) => {
@@ -221,7 +231,10 @@ function createBrowserSecurity(
     setContextCookie(
       res: import('express').Response,
       audience: BrowserAudience,
-      issued: { token: string; expiresAt: Date },
+      issued: {
+        token: string
+        expiresAt: Date
+      },
     ) {
       res.cookie(contextNames[audience], issued.token, {
         ...sessions.cookiePolicy,
@@ -231,11 +244,8 @@ function createBrowserSecurity(
     },
   }
 }
-type BrowserSecurity = ReturnType<typeof createBrowserSecurity>
 
-export { loadBrowserSecurityOptions } from '../../../config/security.js'
-export { readContextCookie, createBrowserSecurity, validateBrowserSecurityOptions }
-export type { BrowserAudience, BrowserSecurity, BrowserSecurityOptions }
+type BrowserSecurity = ReturnType<typeof createBrowserSecurity>
 
 function logoutProtection(
   security: BrowserSecurity,
@@ -251,4 +261,12 @@ function logoutProtection(
     } else await sessionGuard(req, res, next)
   }
 }
-export { logoutProtection }
+
+export { loadBrowserSecurityOptions } from '../../../config/security.js'
+export {
+  readContextCookie,
+  createBrowserSecurity,
+  validateBrowserSecurityOptions,
+  logoutProtection,
+}
+export type { BrowserAudience, BrowserSecurity, BrowserSecurityOptions }

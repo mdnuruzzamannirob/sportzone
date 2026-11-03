@@ -6,9 +6,11 @@ import { createMediaAttachments } from './attachment.service.js'
 import { createMediaCleanup } from './cleanup.service.js'
 import type { MediaAccess } from './media.types.js'
 
-export function createMediaService(
+function createMediaService(
   connection: Connection,
-  dependencies: MediaDependencies & { access: MediaAccess },
+  dependencies: MediaDependencies & {
+    access: MediaAccess
+  },
   clock: () => Date = () => new Date(),
 ) {
   const context = createMediaContext(connection, dependencies, clock)
@@ -20,6 +22,10 @@ export function createMediaService(
     ...createMediaCleanup(context, uploads.reconcileUpload),
   }
 }
-export type MediaService = ReturnType<typeof createMediaService>
+
+type MediaService = ReturnType<typeof createMediaService>
+
 export { verifyMediaPersistence } from './media.persistence.js'
 export type { MediaDependencies } from './media.context.js'
+export { createMediaService }
+export type { MediaService }

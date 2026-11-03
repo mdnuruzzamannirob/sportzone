@@ -15,6 +15,7 @@ import { confirmInput, requestInput } from './email-change.schema.js'
 import { createProofCodec, proofHash } from './proof.crypto.js'
 
 type User = InstanceType<IdentityModels['users']>
+
 function createEmailChangeService(
   connection: Connection,
   models: IdentityModels,
@@ -213,6 +214,7 @@ function createEmailChangeService(
     },
   }
 }
+
 type EmailChangeService = ReturnType<typeof createEmailChangeService>
 
 export { createEmailChangeService }

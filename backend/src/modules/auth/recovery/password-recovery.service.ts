@@ -3,7 +3,6 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { type ClientSession, type Connection, Types } from 'mongoose'
 import type { RecoveryOptions } from '../../../config/security.js'
 import { changeInput, confirmation, issuance } from './password-recovery.schema.js'
-
 import { inTransaction } from '../../../shared/database/transaction.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
@@ -246,11 +245,9 @@ function createRecoveryService(
     },
   }
 }
+
 type RecoveryService = ReturnType<typeof createRecoveryService>
 
-export {
-  loadRecoveryOptions,
-  type RecoveryOptions,
-} from '../../../config/security.js'
+export { loadRecoveryOptions, type RecoveryOptions } from '../../../config/security.js'
 export { createRecoveryService }
 export type { RecoveryService }

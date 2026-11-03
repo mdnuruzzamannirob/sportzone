@@ -1,12 +1,12 @@
 import { verifyMediaPersistence } from './media.persistence.js'
-import { Types, type ClientSession } from 'mongoose'
+import { Types, type ClientSession, type Connection } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { key, requireTransaction, type MediaContext } from './media.context.js'
 import { createMediaAuthorization } from './access.service.js'
-import type { MediaAsset } from './media.model.js'
+import { type MediaAsset, mediaModel } from './media.model.js'
 import type { MediaReference } from './media.types.js'
 
-export function createMediaAttachments(context: MediaContext) {
+function createMediaAttachments(context: MediaContext) {
   const { model, policy, clock } = context
   const authorized = createMediaAuthorization(context)
   const attachments = {
@@ -121,7 +121,13 @@ export function createMediaAttachments(context: MediaContext) {
       alt: string,
       reference: MediaReference,
       session: ClientSession,
-      mutateTarget: (image: { publicId: string; url: string; alt: string } | null) => Promise<void>,
+      mutateTarget: (
+        image: {
+          publicId: string
+          url: string
+          alt: string
+        } | null,
+      ) => Promise<void>,
     ) {
       requireTransaction(session)
       const asset = assetId ? await model.findById(key(assetId)).session(session) : null
@@ -144,10 +150,20 @@ export function createMediaAttachments(context: MediaContext) {
     async changePublicReference(
       credential: string | undefined,
       previousPublicId: string | undefined,
-      image: { publicId: string; url: string; alt: string } | null,
+      image: {
+        publicId: string
+        url: string
+        alt: string
+      } | null,
       reference: MediaReference,
       session: ClientSession,
-      mutateTarget: (image: { publicId: string; url: string; alt: string } | null) => Promise<void>,
+      mutateTarget: (
+        image: {
+          publicId: string
+          url: string
+          alt: string
+        } | null,
+      ) => Promise<void>,
     ) {
       requireTransaction(session)
       try {
@@ -163,7 +179,11 @@ export function createMediaAttachments(context: MediaContext) {
         return asset
       }
       const next = image ? await resolve(image.publicId) : undefined
-      let canonical: { publicId: string; url: string; alt: string } | null = null
+      let canonical: {
+        publicId: string
+        url: string
+        alt: string
+      } | null = null
       if (image && next) {
         const url = context.provider.publicUrl(next.publicId, next.format)
         if (url !== image.url || !URL.canParse(url)) throw new ApiError('VALIDATION_FAILED')
@@ -205,3 +225,61 @@ export function createMediaAttachments(context: MediaContext) {
     },
   }
 }
+
+// A scoped claim reader has already authorized the order in this same transaction.
+function claimEvidenceMetadataAccess(connection: Connection) {
+  const model = mediaModel(connection)
+  return async (
+    session: ClientSession,
+    input: {
+      orderId: string
+      returnId: string
+      claimType: 'physical_return' | 'shortage'
+      items: {
+        orderItemId: string
+        assetIds: string[]
+      }[]
+    },
+  ) => {
+    if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
+    const all = input.items.flatMap((item) => item.assetIds)
+    if (!all.length) return []
+    if (new Set(all).size !== all.length) throw new ApiError('STATE_CONFLICT')
+    await verifyMediaPersistence(connection)
+    const rows = await model
+      .find({
+        _id: { $in: all.map((id) => new Types.ObjectId(id)) },
+        orderId: input.orderId,
+        assetKind: 'claim_evidence',
+        claimType: input.claimType,
+        access: 'private',
+        status: 'attached',
+        scanStatus: 'clean',
+      })
+      .session(session)
+    if (rows.length !== all.length) throw new ApiError('SERVICE_UNAVAILABLE')
+    return input.items.flatMap((item) =>
+      item.assetIds.map((id) => {
+        const row = rows.find((asset) => asset._id.toHexString() === id)
+        if (
+          !row?.orderItemIds.some((itemId) => itemId.toHexString() === item.orderItemId) ||
+          !row.references.some(
+            (ref) =>
+              ref.targetType === 'claim' &&
+              ref.targetId.toHexString() === input.returnId &&
+              ref.slot === `item:${item.orderItemId}`,
+          )
+        )
+          throw new ApiError('SERVICE_UNAVAILABLE')
+        return {
+          assetId: id,
+          orderItemId: item.orderItemId,
+          mimeType: row.mimeType,
+          size: row.size,
+        }
+      }),
+    )
+  }
+}
+
+export { createMediaAttachments, claimEvidenceMetadataAccess }

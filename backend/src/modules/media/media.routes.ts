@@ -4,7 +4,8 @@ import { createSessionHttp } from '../auth/sessions/session.http.js'
 import type { SessionService } from '../auth/sessions/session.service.js'
 import type { MediaService } from './media.service.js'
 import { createMediaController } from './media.controller.js'
-export function mediaRoutes(
+
+function createMediaRoutes(
   service: MediaService,
   security: BrowserSecurity,
   sessions: SessionService,
@@ -27,3 +28,5 @@ export function mediaRoutes(
   router.delete('/admin/media/:assetId', controller.remove)
   return router
 }
+
+export { createMediaRoutes }

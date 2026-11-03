@@ -1,5 +1,10 @@
-import { cancellationQuery } from './cancellation.schema.js'
-import { createRegistrationNotifications } from '../notifications/notification.service.js'
+import {
+  cancellationQuery,
+  cancellationInput,
+  cancellationDecision,
+  cancellationView,
+} from './cancellation.schema.js'
+import { createNotificationService } from '../notifications/notification.service.js'
 import { createHash } from 'node:crypto'
 import { Types, type Connection, type ClientSession } from 'mongoose'
 import type { AdminAccountAccess } from '../auth/auth.public.js'
@@ -7,10 +12,10 @@ import type {
   orderScopeAccess,
   PaymentInitiationCredentials,
 } from '../auth/checkout-access.service.js'
-import type { cancellationAllocationService } from '../checkout/cancellation-allocation.service.js'
+import type { createCancellationAllocationService } from './order-allocation.service.js'
 import type { cancellationPaymentAccess } from '../payments/payment.service.js'
 import { createAuditWriter, auditOperationReader } from '../audit/audit.service.js'
-import { paymentInitiationKey } from '../payments/payment-initiation.schema.js'
+import { paymentInitiationKey } from '../payments/attempts/payment-initiation.schema.js'
 import { orderModels } from './order.model.js'
 import { orderId } from './order.schema.js'
 import { orderOwnerFilter } from './order-read.service.js'
@@ -18,16 +23,17 @@ import { orderAllocationBinding } from './order.service.js'
 import { verifyOrderPersistence } from './order.persistence.js'
 import { cancellationModel } from './cancellation.model.js'
 import { verifyCancellationPersistence } from './cancellation.persistence.js'
-import { cancellationInput, cancellationDecision, cancellationView } from './cancellation.schema.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { pageMeta } from '../../shared/pagination.js'
+
 const hash = (s: string) => createHash('sha256').update(s).digest('hex')
-export function cancellationService(
+
+function createCancellationService(
   connection: Connection,
   scope: ReturnType<typeof orderScopeAccess>,
   admin: AdminAccountAccess,
-  release: ReturnType<typeof cancellationAllocationService>,
+  release: ReturnType<typeof createCancellationAllocationService>,
   payment: ReturnType<typeof cancellationPaymentAccess>,
   refunds?: (
     session: ClientSession,
@@ -277,7 +283,7 @@ export function cancellationService(
             { session },
           )
           if (changed.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
-          await createRegistrationNotifications(connection, clock).enqueueCommerce(
+          await createNotificationService(connection, clock).enqueueCommerce(
             {
               orderId: order._id,
               ...(order.userId ? { userId: order.userId } : {}),
@@ -317,3 +323,5 @@ export function cancellationService(
     },
   }
 }
+
+export { createCancellationService }

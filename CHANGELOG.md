@@ -8,6 +8,16 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 3 November 2026 — Whole-module structural batch
+
+- Organized all twenty module owners, extracted wishlist, placed variants under products and separated
+  payment attempts/collections and refund obligations/payouts. Consolidated cohesive services/schemas,
+  separated HTTP handlers and moved audit/notification/delivery-exception routes to their owners.
+- Module source count 275 → 251; source-only compilation/module lint/format passed. No tests executed,
+  no test/contract/script/tooling edits, and no commit/push/PR changes in this batch.
+- Recorded the [owner-directed staged sequence and remaining verification](docs/evidence/P03-021-backend-refactor.md#p03-030--whole-module-structural-pass-3-november-2026).
+  Full src integration, outside-src consumer migration and consolidated behavior review remain pending.
+
 ## 3 November 2026 — Completed backend package review corrections
 
 - Reviewed WP00–WP04 and corrected naming/cohesion gaps: consolidated credential/customer route files,

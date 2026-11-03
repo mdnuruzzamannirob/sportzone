@@ -1,14 +1,16 @@
+import { createCatalogController } from './catalog.controller.js'
 import { Router, type RequestHandler } from 'express'
 import { z } from 'zod'
 import { parseInput } from '../../shared/middleware/validate.js'
-import { respond } from '../../shared/responses.js'
 import { ApiError } from '../../shared/errors/app-error.js'
-import type { catalogService } from './catalog.service.js'
+import type { createCatalogService } from './catalog.service.js'
 
-export function catalogRoutes(
-  service: ReturnType<typeof catalogService>,
+function createCatalogRoutes(
+  service: ReturnType<typeof createCatalogService>,
   origins: readonly string[],
 ) {
+  const controller = createCatalogController(service)
+
   const router = Router()
   const cors: RequestHandler = (req, res, next) => {
     res.vary('Origin')
@@ -48,25 +50,12 @@ export function catalogRoutes(
     '/categories/:slug',
   ])
     router.options(path, cors)
-  router.get('/storefront/home', cors, async (req, res) => {
-    parseInput(z.strictObject({}), req.query)
-    respond(res, await service.home())
-  })
-  router.get('/products', cors, async (req, res) => {
-    const result = await service.products(req.query)
-    respond(res, result.data, 200, result.page)
-  })
-  router.get('/products/:slug', cors, async (req, res) => {
-    parseInput(z.strictObject({}), req.query)
-    respond(res, await service.product(String(req.params.slug)))
-  })
-  router.get('/categories', cors, async (req, res) => {
-    const result = await service.categories(req.query)
-    respond(res, result.data, 200, result.page)
-  })
-  router.get('/categories/:slug', cors, async (req, res) => {
-    parseInput(z.strictObject({}), req.query)
-    respond(res, await service.category(String(req.params.slug)))
-  })
+  router.get('/storefront/home', cors, controller.getStorefrontHome)
+  router.get('/products', cors, controller.getProducts)
+  router.get('/products/:slug', cors, controller.getProducts2)
+  router.get('/categories', cors, controller.getCategories)
+  router.get('/categories/:slug', cors, controller.getCategories2)
   return router
 }
+
+export { createCatalogRoutes }

@@ -9,13 +9,20 @@ const line = new Schema(
   },
   { _id: false, strict: 'throw', versionKey: false },
 )
+
 const schema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, required: true },
     items: {
       type: [line],
       default: [],
-      validate: (items: { variantId: { toString(): string } }[]) =>
+      validate: (
+        items: {
+          variantId: {
+            toString(): string
+          }
+        }[],
+      ) =>
         items.length <= 100 &&
         new Set(items.map((i) => i.variantId.toString())).size === items.length,
     },
@@ -23,10 +30,16 @@ const schema = new Schema(
   },
   mutableSchemaOptions,
 )
+
 schema.index({ userId: 1 }, { unique: true, name: 'cart_user_unique' })
-export type CartRecord = InferSchemaType<typeof schema>
-export function cartModel(connection: Connection) {
+
+type CartRecord = InferSchemaType<typeof schema>
+
+function cartModel(connection: Connection) {
   return connection.models.Cart
     ? connection.model<CartRecord>('Cart')
     : connection.model<CartRecord>('Cart', schema, 'carts')
 }
+
+export { cartModel }
+export type { CartRecord }

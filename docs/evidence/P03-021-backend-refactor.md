@@ -808,3 +808,73 @@ transaction/revocation/audit fences and negative boundary fixtures. Final docume
 format and staged/unstaged whitespace checks are recorded with the handoff. P03-029 closes these
 completed-package findings under Tasks §2. P03-022 and application/external/milestone gates remain
 unchanged. Next planned implementation remains WP05.
+
+## P03-030 — Whole-module structural pass, 3 November 2026
+
+Owner explicitly requested the complete module folder pass first, remaining src work next, outside-src
+folders in subsequent batches, and consolidated tests/review/fixes last. Owner prohibited further
+commit/push/branch/PR actions. Input revision: `305c463`, initially clean working tree. This record
+reports source organization, not verified behavior or package/application acceptance.
+
+### Structural pass delivered
+
+- Twenty actual module owners: auth, customers, catalog, inventory, cart, wishlist, promotions,
+  checkout, orders, delivery, payments, returns, refunds, reviews, media, notifications, support,
+  settings, reports and audit. No empty template module was created.
+- Wishlist is independent of cart. Existing variant model/schema/stock capability files now belong
+  under catalog/products; categories remains its sibling. Canonical model/collection identities stay
+  in their existing declarations rather than being copied into new models.
+- Payments has attempts/collections; refunds has obligations/payouts, with genuine shared aggregates
+  at their parent. Distinct verification/reconciliation/risk and payout state machines retain cohesive
+  operation implementations instead of being collapsed into an unrelated giant service.
+- Consolidated same-owner inventory, promotion, category/product, return, review, setting and audit
+  operations; merged notification message builders into one template owner and related media ledger/
+  access operations into their actual owner. Services/schemas keep explicit named exports at the end.
+- Removed post-placement allocation coordination from checkout ownership into orders' neutral allocation
+  capability. Checkout retains quote/intent/placement operations. A separate small consent policy retains
+  the shared immutable-digest responsibility and avoids a runtime initialization cycle; it is a real
+  shared business leaf, not an empty abstraction.
+- Extracted actual HTTP mapping into twenty additional owning controller files. Audit, notification
+  management and delivery-exception HTTP were removed from support and placed in their proper owners.
+  Root registration uses the existing instantiated capabilities and activation gates. Existing distinct
+  customer/admin audiences retain their guard chains and transport entry points.
+- Standardized owned service/router factory names and removed collision-generated private export aliases
+  where their canonical names were available. Source has no generated absolute-machine imports, new
+  any/suppression escape hatch, compatibility barrel or new package/framework.
+- Module source count: **275 → 251**. Source-only caller sync touches setup/server, three existing jobs
+  and five configuration files where moved/renamed module capabilities are referenced. This is necessary
+  reference continuity, not the remaining root/src architecture pass.
+
+Work was prepared in `/tmp/sportzone-module-batch/` and applied only after checking that every original
+source file still matched its snapshot. Original source copies and old→new path/symbol inventories are
+retained there for the remaining migration, including 881 validated export/path mappings with no
+unresolved exported names. This is migration metadata, not behavior verification. No concurrent source
+changes were overwritten.
+
+### Actual checks and deferred obligations
+
+| Check | Result / limit |
+| --- | --- |
+| `node_modules/.bin/tsc --project backend/tsconfig.json --noEmit` | Passed for src only; this excludes tests/contracts. Not a behavioral or full workspace typecheck. |
+| `node_modules/.bin/biome lint backend/src/modules --error-on-warnings` | Passed: 251 module files |
+| Module Biome format check | Passed: 251 module files |
+| Static runtime import graph | Acyclic after extracting the real consent-policy leaf; not proof of per-operation recursion/concurrency behavior |
+| Model/persistence source literals | 53 mapped model/persistence files retain their non-import string/numeric/regex/boolean/null literal sets; not a database/schema deployment test |
+| Tests and test review | **Not Run**, explicitly deferred by owner |
+| Contract generation, operator commands, build/deployment/live providers | **Not Run** in this pass |
+| Git commit/push/branch/PR operations | **Not performed**; HEAD remains `305c463` |
+
+Artifact: [module folder inventory, move map and deferred work](../../test-results/backend-refactor/module-folder-batch.json).
+It is ignored local output, not a new test suite or specification. Existing tests, contracts, scripts,
+generated API artifacts and CI/boundary tooling were deliberately not edited. Their old import paths,
+export names and executable discovery inventories therefore require migration in their requested later
+passes; no freshness or passing status is claimed for them. The existing exact allowance inventory is
+not a current-path inventory after these moves and must be reconciled with the actual consumer work,
+without granting new private-persistence or stock authority.
+
+Remaining src work includes composition/injection, public-capability cleanup and executable boundary
+reconciliation; those changes can require module signature adjustments. Outside-src work then updates
+actual tests/contracts/operator scripts/tools and aliases. Consolidated functional/security/financial/
+concurrency testing, review and fixes follow. Keep final package exits and P03-022 acceptance pending.
+The module structural pass is complete; P03-030 remains In Progress for this staged integration and
+verification sequence. Historical task/feature acceptance is preserved, not used to certify these moves.

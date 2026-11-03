@@ -2,8 +2,10 @@ import { isDeepStrictEqual } from 'node:util'
 import type { Connection } from 'mongoose'
 import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 import { auditModel } from './audit.model.js'
+
 const text = (maxLength: number) => ({ bsonType: 'string', minLength: 1, maxLength })
-export const auditValidator = {
+
+const auditValidator = {
   $jsonSchema: {
     bsonType: 'object',
     additionalProperties: false,
@@ -24,6 +26,7 @@ export const auditValidator = {
     },
   },
 }
+
 async function verifyCollection(connection: Connection) {
   const row = await connection.db
     ?.listCollections({ name: 'auditLogs' }, { nameOnly: false })
@@ -36,7 +39,8 @@ async function verifyCollection(connection: Connection) {
   )
     throw new Error('Audit persistence requires reviewed bootstrap/migration.')
 }
-export async function initializeAuditPersistence(connection: Connection) {
+
+async function initializeAuditPersistence(connection: Connection) {
   if (!connection.db) throw new Error('Database unavailable')
   if (!(await connection.db.listCollections({ name: 'auditLogs' }).hasNext()))
     await connection.db.createCollection('auditLogs', {
@@ -47,7 +51,10 @@ export async function initializeAuditPersistence(connection: Connection) {
   await verifyCollection(connection)
   await createDeclaredIndexes(auditModel(connection))
 }
-export async function verifyAuditPersistence(connection: Connection) {
+
+async function verifyAuditPersistence(connection: Connection) {
   await verifyCollection(connection)
   await verifyDeclaredIndexes(auditModel(connection))
 }
+
+export { initializeAuditPersistence, verifyAuditPersistence, auditValidator }

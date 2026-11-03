@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { parseInput } from '../shared/middleware/validate.js'
 import { inTransaction } from '../shared/database/transaction.js'
 import { jobLeaseService } from '../shared/jobs/job-lease.service.js'
-import { checkoutExpiryService } from '../modules/checkout/checkout-expiry.service.js'
+import { createCheckoutExpiryService } from '../modules/checkout/checkout.service.js'
 import { ApiError } from '../shared/errors/app-error.js'
 export const reservationExpiryOptions = z.strictObject({
   batchSize: z.int().min(1).max(100),
@@ -16,7 +16,7 @@ export function reservationExpiryJob(
 ) {
   const options = parseInput(reservationExpiryOptions, raw),
     leases = jobLeaseService(connection, 'reservation-expiry', options.leaseMs, clock),
-    expiry = checkoutExpiryService(connection, clock)
+    expiry = createCheckoutExpiryService(connection, clock)
   return {
     async run() {
       const claim = await leases.acquire()

@@ -1,5 +1,9 @@
-import { reportViews, operationalItem } from './report.schema.js'
-import { reportQuery as query, operationalQuery } from './report.schema.js'
+import {
+  reportViews,
+  operationalItem,
+  reportQuery as query,
+  operationalQuery,
+} from './report.schema.js'
 import type { ClientSession } from 'mongoose'
 import type { AdminAccountAccess } from '../auth/auth.public.js'
 import type { orderReportAccess } from '../orders/order.service.js'
@@ -9,15 +13,18 @@ import type {
 } from '../payments/payment.service.js'
 import type { refundReportAccess } from '../refunds/refund-history.service.js'
 import type { catalogReportAccess } from '../catalog/products/product.service.js'
-import { calculateFinancialReport } from './report-calculation.service.js'
+import { calculateFinancialReport } from './report-calculation.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { ApiError } from '../../shared/errors/app-error.js'
+
 const date = (s: string) => new Date(s.length === 10 ? `${s}T00:00:00+06:00` : s)
+
 const safeMoney = (n: number) => {
   if (!Number.isSafeInteger(n) || n < 0) throw new ApiError('SERVICE_UNAVAILABLE')
   return n
 }
-export function reportService(
+
+function createReportService(
   admins: AdminAccountAccess,
   deps: {
     paymentSummary: ReturnType<typeof customerPaymentSummaryAccess>
@@ -187,14 +194,20 @@ export function reportService(
   }
 }
 
-export function operationalQueueService(
+function createOperationalQueueService(
   admins: AdminAccountAccess,
   readers: Record<
     'stock' | 'payments' | 'refunds' | 'reconciliation',
     (
       session: ClientSession,
-      query: { page: number; pageSize: number },
-    ) => Promise<{ items: unknown[]; pagination: import('../../shared/pagination.js').PageMeta }>
+      query: {
+        page: number
+        pageSize: number
+      },
+    ) => Promise<{
+      items: unknown[]
+      pagination: import('../../shared/pagination.js').PageMeta
+    }>
   >,
 ) {
   return {
@@ -211,3 +224,5 @@ export function operationalQueueService(
     },
   }
 }
+
+export { createReportService, createOperationalQueueService }

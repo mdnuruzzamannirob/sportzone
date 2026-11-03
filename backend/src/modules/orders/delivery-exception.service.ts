@@ -3,11 +3,11 @@ import { createHash } from 'node:crypto'
 import { Types, type ClientSession, type Connection } from 'mongoose'
 import { z } from 'zod'
 import type { AdminAccountAccess } from '../auth/auth.public.js'
-import type { recoveryReceiptService } from '../inventory/recovery-receipt.service.js'
+import type { createRecoveryReceiptService } from '../inventory/inventory.service.js'
 import type { cancellationPaymentAccess } from '../payments/payment.service.js'
 import { createAuditWriter, auditOperationReader } from '../audit/audit.service.js'
-import { createRegistrationNotifications } from '../notifications/notification.service.js'
-import { paymentInitiationKey } from '../payments/payment-initiation.schema.js'
+import { createNotificationService } from '../notifications/notification.service.js'
+import { paymentInitiationKey } from '../payments/attempts/payment-initiation.schema.js'
 import { orderModels } from './order.model.js'
 import { verifyOrderPersistence } from './order.persistence.js'
 import { orderId } from './order.schema.js'
@@ -16,12 +16,14 @@ import { verifyDeliveryExceptionPersistence } from './delivery-exception.persist
 import { exceptionInput, exceptionResolution, exceptionView } from './delivery-exception.schema.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
+
 const hash = (s: string) => createHash('sha256').update(s).digest('hex')
-function deliveryExceptionService(
+
+function createDeliveryExceptionService(
   connection: Connection,
   admin: AdminAccountAccess,
   payment: ReturnType<typeof cancellationPaymentAccess>,
-  restore: ReturnType<typeof recoveryReceiptService>,
+  restore: ReturnType<typeof createRecoveryReceiptService>,
   verifyDisposition?: DeliveryDispositionVerifier,
   refunds?: (
     session: ClientSession,
@@ -258,7 +260,7 @@ function deliveryExceptionService(
             transitionOptions,
           )
           if (changed.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
-          await createRegistrationNotifications(connection, clock).enqueueCommerce(
+          await createNotificationService(connection, clock).enqueueCommerce(
             {
               orderId: row._id,
               ...(row.userId ? { userId: row.userId } : {}),
@@ -314,4 +316,4 @@ function deliveryExceptionService(
   }
 }
 
-export { deliveryExceptionService }
+export { createDeliveryExceptionService }

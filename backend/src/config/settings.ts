@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { z } from 'zod'
-import { policyType } from '../modules/settings/policy.schema.js'
+import { policyType } from '../modules/settings/setting.schema.js'
 import { ConfigurationError } from '../shared/errors/configuration-error.js'
 export const policyApproval = z.strictObject({
   evidenceRef: z.string().min(1).max(2000),

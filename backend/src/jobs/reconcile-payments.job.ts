@@ -2,11 +2,11 @@ import type { Connection } from 'mongoose'
 import { jobLeaseService } from '../shared/jobs/job-lease.service.js'
 import {
   paymentReconciliationOptions,
-  type paymentReconciliationService,
-} from '../modules/payments/payment-reconciliation.service.js'
+  type createPaymentReconciliationService,
+} from '../modules/payments/collections/payment-reconciliation.service.js'
 export function paymentReconciliationJob(
   connection: Connection,
-  domain: ReturnType<typeof paymentReconciliationService>,
+  domain: ReturnType<typeof createPaymentReconciliationService>,
   raw: unknown,
   clock: () => Date = () => new Date(),
 ) {

@@ -115,16 +115,19 @@ function createDelivery(
     },
   }
 }
+
 const createResetDelivery = (
   models: IdentityModels,
   options: RecoveryOptions,
   clock: () => Date = () => new Date(),
 ) => createDelivery(models, options, clock, 'password_reset')
+
 const createEmailChangeDelivery = (
   models: IdentityModels,
   options: RecoveryOptions,
   clock: () => Date = () => new Date(),
 ) => createDelivery(models, options, clock, 'email_change')
+
 type ResetDelivery = ReturnType<typeof createResetDelivery>
 
 const createAdminResetDelivery = (

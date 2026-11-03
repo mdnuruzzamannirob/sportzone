@@ -14,6 +14,7 @@ import {
 const addressDto = (address: CustomerProfile['addresses'][number]) => ({
   ...address,
 })
+
 function createCustomerService(
   access: CustomerAccountAccess,
   coverage: AddressCoverage,
@@ -21,7 +22,10 @@ function createCustomerService(
 ) {
   const owned = access.owned
   async function supported(
-    address: { districtKey: string; areaKey: string },
+    address: {
+      districtKey: string
+      areaKey: string
+    },
     session: ClientSession,
   ) {
     if (!(await coverage.supports(address.districtKey, address.areaKey, session)))
@@ -121,6 +125,7 @@ function createCustomerService(
     },
   }
 }
+
 type CustomerService = ReturnType<typeof createCustomerService>
 
 export { createCustomerService }

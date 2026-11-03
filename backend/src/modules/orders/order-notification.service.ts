@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { inTransaction } from '../../shared/database/transaction.js'
 import { orderModels } from './order.model.js'
 import { verifyOrderPersistence } from './order.persistence.js'
+
 const input = z.strictObject({
   orderId: z.string().regex(/^[a-f0-9]{24}$/),
   recipient: z.email(),
@@ -20,7 +21,8 @@ const input = z.strictObject({
     .optional(),
   occurredAt: z.date().optional(),
 })
-export function orderNotificationAccess(connection: Connection) {
+
+function orderNotificationAccess(connection: Connection) {
   return async (raw: unknown) => {
     const parsed = input.safeParse(raw)
     if (!parsed.success) return undefined
@@ -61,3 +63,5 @@ export function orderNotificationAccess(connection: Connection) {
     })
   }
 }
+
+export { orderNotificationAccess }

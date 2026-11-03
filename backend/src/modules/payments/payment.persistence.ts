@@ -2,12 +2,14 @@ import type { Connection } from 'mongoose'
 import { isDeepStrictEqual } from 'node:util'
 import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 import { paymentAmounts, paymentModel, paymentStates } from './payment.model.js'
+
 const integer = {
   bsonType: ['int', 'long', 'double'],
   minimum: 0,
   maximum: Number.MAX_SAFE_INTEGER,
   multipleOf: 1,
 }
+
 function definePaymentValidator(correctionOnly: boolean) {
   return {
     $and: [
@@ -110,9 +112,12 @@ function definePaymentValidator(correctionOnly: boolean) {
     ],
   }
 }
-export const paymentValidator = definePaymentValidator(true)
-export const precedingPaymentValidator = definePaymentValidator(false)
-export async function migratePaymentCorrectionProjection(connection: Connection) {
+
+const paymentValidator = definePaymentValidator(true)
+
+const precedingPaymentValidator = definePaymentValidator(false)
+
+async function migratePaymentCorrectionProjection(connection: Connection) {
   const row = await connection.db?.listCollections({ name: 'payments' }, { nameOnly: false }).next()
   if (
     !row ||
@@ -131,6 +136,7 @@ export async function migratePaymentCorrectionProjection(connection: Connection)
     validationAction: 'error',
   })
 }
+
 async function verify(connection: Connection) {
   const row = await connection.db?.listCollections({ name: 'payments' }, { nameOnly: false }).next()
   if (
@@ -141,7 +147,8 @@ async function verify(connection: Connection) {
   )
     throw new Error('Payment persistence requires reviewed bootstrap/migration.')
 }
-export async function initializePaymentPersistence(connection: Connection) {
+
+async function initializePaymentPersistence(connection: Connection) {
   if (!connection.db) throw new Error('Payment database unavailable')
   if (!(await connection.db.listCollections({ name: 'payments' }).hasNext()))
     await connection.db.createCollection('payments', {
@@ -153,7 +160,16 @@ export async function initializePaymentPersistence(connection: Connection) {
   await verify(connection)
   await createDeclaredIndexes(paymentModel(connection))
 }
-export async function verifyPaymentPersistence(connection: Connection) {
+
+async function verifyPaymentPersistence(connection: Connection) {
   await verify(connection)
   await verifyDeclaredIndexes(paymentModel(connection))
+}
+
+export {
+  migratePaymentCorrectionProjection,
+  initializePaymentPersistence,
+  verifyPaymentPersistence,
+  paymentValidator,
+  precedingPaymentValidator,
 }

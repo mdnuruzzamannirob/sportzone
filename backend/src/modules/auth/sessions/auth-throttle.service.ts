@@ -1,11 +1,11 @@
 import type { Connection } from 'mongoose'
-import { createAuthQuotaStore } from './auth-throttle.persistence.js'
+import { createAuthQuotaStore, type QuotaStore } from './auth-throttle.persistence.js'
 import { createHash, createHmac } from 'node:crypto'
 import type { RequestHandler } from 'express'
 import { ApiError } from '../../../shared/errors/app-error.js'
-import type { QuotaStore } from './auth-throttle.persistence.js'
 
 type Audience = 'customer' | 'admin'
+
 type Group =
   | 'credentials'
   | 'recovery'
@@ -15,6 +15,7 @@ type Group =
   | 'checkout'
   | 'guest'
   | 'complaint'
+
 function createAuthThrottle(store: QuotaStore, secret: string, clock = Date.now) {
   if (!/^[a-f0-9]{64}$/.test(secret)) throw new Error('Invalid auth throttle configuration.')
   async function consume(audience: Audience, group: Group, network: string, target?: string) {
@@ -79,7 +80,13 @@ function createAuthThrottle(store: QuotaStore, secret: string, clock = Date.now)
 
 // Local process guard, not a multi-replica abuse-control claim. Trusted proxy remains disabled.
 function localAuthRateLimit(clock: () => number = Date.now, maximum = 10): RequestHandler {
-  const buckets = new Map<string, { count: number; until: number }>()
+  const buckets = new Map<
+    string,
+    {
+      count: number
+      until: number
+    }
+  >()
   return (req, _res, next) => {
     const now = clock()
     for (const [key, value] of buckets) if (value.until <= now) buckets.delete(key)

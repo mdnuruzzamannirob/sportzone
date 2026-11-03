@@ -4,10 +4,11 @@ import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import type { paymentMethodAccess } from '../auth/checkout-access.service.js'
 import type { paymentMethodOrderAccess } from '../orders/order.service.js'
-import { paymentMethodsQuery, paymentMethodsView } from './payment-eligibility.schema.js'
-import { paymentEligibility } from './payment-eligibility.service.js'
+import { paymentMethodsQuery, paymentMethodsView } from './attempts/payment-eligibility.schema.js'
+import { paymentEligibility } from './attempts/payment-eligibility.service.js'
 import { paymentMethodBalanceAccess } from './payment.service.js'
-export function paymentMethodsService(
+
+function createPaymentMethodsService(
   connection: Connection,
   dependencies: {
     access: ReturnType<typeof paymentMethodAccess>
@@ -48,3 +49,5 @@ export function paymentMethodsService(
     },
   }
 }
+
+export { createPaymentMethodsService }

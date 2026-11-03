@@ -1,6 +1,7 @@
 import { Schema, type Connection, type InferSchemaType } from 'mongoose'
 import { integerField, mutableSchemaOptions } from '../../shared/database/schema.js'
 import { ApiError } from '../../shared/errors/app-error.js'
+
 const schema = new Schema(
   {
     orderId: { type: Schema.Types.ObjectId, required: true, immutable: true },
@@ -102,15 +103,22 @@ const schema = new Schema(
   },
   mutableSchemaOptions,
 )
+
 schema.index({ orderId: 1, decisionKey: 1 }, { unique: true, name: 'refund_decision_unique' })
+
 schema.index({ sourceCollectionId: 1, status: 1 }, { name: 'refund_source_status' })
+
 schema.index({ status: 1, completedAt: 1, _id: 1 }, { name: 'refund_report_completion' })
+
 schema.index({ capacityStatus: 1, createdAt: 1 }, { name: 'refund_capacity_queue' })
+
 schema.index(
   { orderId: 1, classification: 1, createdAt: -1 },
   { name: 'refund_order_class_history' },
 )
+
 schema.index({ refundGroupKey: 1, createdAt: 1 }, { name: 'refund_group_history' })
+
 schema.pre('save', function () {
   if (
     !this.isNew ||
@@ -121,6 +129,7 @@ schema.pre('save', function () {
   )
     throw new ApiError('STATE_CONFLICT')
 })
+
 schema.pre(
   [
     'updateOne',
@@ -136,12 +145,17 @@ schema.pre(
     throw new ApiError('STATE_CONFLICT')
   },
 )
+
 type Refund = InferSchemaType<typeof schema>
+
 schema.pre('deleteOne', { document: true, query: true }, () => {
   throw new ApiError('STATE_CONFLICT')
 })
-export function refundModel(connection: Connection) {
+
+function refundModel(connection: Connection) {
   return connection.models.Refund
     ? connection.model<Refund>('Refund')
     : connection.model<Refund>('Refund', schema, 'refunds')
 }
+
+export { refundModel }

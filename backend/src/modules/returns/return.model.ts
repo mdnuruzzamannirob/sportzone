@@ -1,8 +1,11 @@
 import { ApiError } from '../../shared/errors/app-error.js'
 import { Schema, type Connection, type InferSchemaType } from 'mongoose'
 import { integerField, mutableSchemaOptions } from '../../shared/database/schema.js'
+
 const oid = { type: Schema.Types.ObjectId, required: true, immutable: true }
+
 const embedded = { _id: false, strict: 'throw', versionKey: false } as const
+
 const schema = new Schema(
   {
     orderId: oid,
@@ -85,11 +88,15 @@ const schema = new Schema(
   },
   mutableSchemaOptions,
 )
+
 schema.index({ orderId: 1, status: 1, createdAt: -1 }, { name: 'return_order_history' })
+
 schema.index({ claimType: 1, status: 1, createdAt: 1 }, { name: 'return_type_queue' })
+
 schema.pre('save', function () {
   if (!this.isNew) throw new ApiError('STATE_CONFLICT')
 })
+
 schema.pre(
   [
     'updateOne',
@@ -105,12 +112,17 @@ schema.pre(
     throw new ApiError('STATE_CONFLICT')
   },
 )
+
 schema.pre('deleteOne', { document: true, query: false }, () => {
   throw new ApiError('STATE_CONFLICT')
 })
+
 type ReturnRequest = InferSchemaType<typeof schema>
-export function returnModel(connection: Connection) {
+
+function returnModel(connection: Connection) {
   return connection.models.ReturnRequest
     ? connection.model<ReturnRequest>('ReturnRequest')
     : connection.model<ReturnRequest>('ReturnRequest', schema, 'returnRequests')
 }
+
+export { returnModel }

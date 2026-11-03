@@ -1,12 +1,12 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
 import { Types, type ClientSession, type Connection } from 'mongoose'
 import type { IdentityModels } from '../auth.model.js'
-import type { SessionOptions } from '../sessions/session.service.js'
-import { validateSessionOptions } from '../sessions/session.service.js'
+import { type SessionOptions, validateSessionOptions } from '../sessions/session.service.js'
 import { inTransaction } from '../../../shared/database/transaction.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { proofPattern } from '../verification/proof.crypto.js'
-function guestSessionService(
+
+function createGuestSessionService(
   connection: Connection,
   models: IdentityModels,
   options: SessionOptions,
@@ -103,7 +103,11 @@ function guestSessionService(
       token: string | undefined,
       orderId: string | undefined,
       work: (
-        scope: { orderId: string; expiresAt: Date; sessionId: string },
+        scope: {
+          orderId: string
+          expiresAt: Date
+          sessionId: string
+        },
         session: ClientSession,
       ) => Promise<T>,
       csrf?: string,
@@ -166,7 +170,9 @@ function guestSessionService(
     } as const,
   }
 }
-type GuestSessions = ReturnType<typeof guestSessionService>
+
+type GuestSessions = ReturnType<typeof createGuestSessionService>
+
 function readGuestCookie(header: string | undefined) {
   const entries = (header ?? '')
     .split(';')
@@ -176,5 +182,5 @@ function readGuestCookie(header: string | undefined) {
   return token && proofPattern.test(token) ? token : undefined
 }
 
-export { guestSessionService, readGuestCookie }
+export { createGuestSessionService, readGuestCookie }
 export type { GuestSessions }

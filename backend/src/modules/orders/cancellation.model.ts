@@ -1,6 +1,7 @@
 import { Schema, type Connection, type InferSchemaType } from 'mongoose'
 import { integerField, mutableSchemaOptions } from '../../shared/database/schema.js'
 import { ApiError } from '../../shared/errors/app-error.js'
+
 const schema = new Schema(
   {
     orderId: { type: Schema.Types.ObjectId, required: true, immutable: true },
@@ -26,10 +27,12 @@ const schema = new Schema(
   },
   mutableSchemaOptions,
 )
+
 schema.index(
   { orderId: 1, operationKey: 1 },
   { unique: true, name: 'cancellation_operation_unique' },
 )
+
 schema.index(
   { orderId: 1 },
   {
@@ -38,15 +41,19 @@ schema.index(
     name: 'cancellation_pending_unique',
   },
 )
+
 schema.index({ orderId: 1, createdAt: -1, _id: -1 }, { name: 'cancellation_order_history' })
+
 schema.pre(
   ['replaceOne', 'findOneAndReplace', 'deleteOne', 'deleteMany', 'findOneAndDelete'],
   () => {
     throw new ApiError('STATE_CONFLICT')
   },
 )
+
 type Cancellation = InferSchemaType<typeof schema>
-export function cancellationModel(connection: Connection) {
+
+function cancellationModel(connection: Connection) {
   return connection.models.CancellationRequest
     ? connection.model<Cancellation>('CancellationRequest')
     : connection.model<Cancellation>('CancellationRequest', schema, 'cancellationRequests')
@@ -55,9 +62,11 @@ export function cancellationModel(connection: Connection) {
 schema.pre('save', function () {
   if (!this.isNew) throw new ApiError('STATE_CONFLICT')
 })
+
 schema.pre('deleteOne', { document: true, query: false }, () => {
   throw new ApiError('STATE_CONFLICT')
 })
+
 schema.pre(['updateOne', 'updateMany', 'findOneAndUpdate'], function () {
   const filter = this.getFilter(),
     update = this.getUpdate()
@@ -80,3 +89,5 @@ schema.pre(['updateOne', 'updateMany', 'findOneAndUpdate'], function () {
         throw new ApiError('STATE_CONFLICT')
   }
 })
+
+export { cancellationModel }

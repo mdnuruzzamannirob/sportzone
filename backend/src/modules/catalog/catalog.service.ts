@@ -1,4 +1,4 @@
-import { publicHomeSettings } from '../settings/settings.schema.js'
+import { publicHomeSettings } from '../settings/setting.schema.js'
 import { Types, type ClientSession, type Connection, type PipelineStage } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
@@ -16,12 +16,13 @@ import {
   productDetail,
   storefrontHome,
 } from './catalog.schema.js'
-import { attributes, attributeSignature } from './variants/variant.schema.js'
-import type { publicMediaService, PublicImageCandidate } from '../media/public-media.service.js'
+import { attributes, attributeSignature } from './products/variant.schema.js'
+import type { createPublicMediaService, PublicImageCandidate } from '../media/access.service.js'
 
 // A parent is singular. Reaching an active root proves the chain terminated; cycles/orphans
 // and ancestry beyond the bounded traversal cannot become public through a partial chain.
 type LookupPipeline = NonNullable<PipelineStage.Lookup['$lookup']['pipeline']>
+
 const ancestry: LookupPipeline = [
   { $match: { status: 'active' } },
   {
@@ -65,12 +66,14 @@ const ancestry: LookupPipeline = [
     },
   },
 ]
+
 const validNumber = (path: string) => [
   { $isNumber: path },
   { $gte: [path, 0] },
   { $lte: [path, Number.MAX_SAFE_INTEGER] },
   { $eq: [{ $mod: [path, 1] }, 0] },
 ]
+
 const validVariants: LookupPipeline = [
   {
     $match: {
@@ -108,6 +111,7 @@ const validVariants: LookupPipeline = [
     },
   },
 ]
+
 const offers: LookupPipeline = [
   ...validVariants,
   { $sort: { _effective: 1, _id: 1 } },
@@ -120,6 +124,7 @@ const offers: LookupPipeline = [
     },
   },
 ]
+
 const visibleProducts = (category?: string): LookupPipeline => [
   {
     $lookup: {
@@ -156,6 +161,7 @@ const visibleProducts = (category?: string): LookupPipeline => [
   },
   { $unwind: '$_offer' },
 ]
+
 const cardProjection: PipelineStage.Project = {
   $project: {
     _id: 0,
@@ -183,12 +189,14 @@ const cardProjection: PipelineStage.Project = {
     },
   },
 }
+
 const facet = (page: number, pageSize: number): PipelineStage => ({
   $facet: {
     rows: [{ $skip: (page - 1) * pageSize }, { $limit: pageSize }],
     total: [{ $count: 'count' }],
   },
 })
+
 type Row = {
   id: string
   name: string
@@ -197,14 +205,30 @@ type Row = {
   regularPricePoisha: number
   effectivePricePoisha: number
   availability: 'available' | 'unavailable'
-  rating?: { average: number; count: number }
-  _image?: { publicId: string; alt: string }
+  rating?: {
+    average: number
+    count: number
+  }
+  _image?: {
+    publicId: string
+    alt: string
+  }
 }
-type Result = { rows: Row[]; total: { count: number }[] }
-export function catalogService(
+
+type Result = {
+  rows: Row[]
+  total: {
+    count: number
+  }[]
+}
+
+function createCatalogService(
   connection: Connection,
-  images: ReturnType<typeof publicMediaService>,
-  homeContent?: { settings: () => Promise<unknown>; policies: () => Promise<unknown> },
+  images: ReturnType<typeof createPublicMediaService>,
+  homeContent?: {
+    settings: () => Promise<unknown>
+    policies: () => Promise<unknown>
+  },
 ) {
   const models = productModels(connection),
     categories = categoryModel(connection)
@@ -476,8 +500,17 @@ export function catalogService(
       type DetailRow = Row & {
         description: string
         categoryIds: Types.ObjectId[]
-        _categories: { id: string; name: string; slug: string; parentId?: string }[]
-        _images: { publicId: string; alt: string; position: number }[]
+        _categories: {
+          id: string
+          name: string
+          slug: string
+          parentId?: string
+        }[]
+        _images: {
+          publicId: string
+          alt: string
+          position: number
+        }[]
         _variants: {
           id: string
           sku: string
@@ -645,7 +678,7 @@ export function catalogService(
 
 // Checkout receives only detached selected-SKU facts; catalog retains private persistence and
 // the same active product/category/variant visibility checks used by shopping reads.
-export function catalogReviewVisibility(connection: Connection) {
+function catalogReviewVisibility(connection: Connection) {
   const products = productModels(connection).products
   return async (session: ClientSession, productId: string) => {
     if (!session.inTransaction() || !/^[a-f0-9]{24}$/.test(productId))
@@ -662,8 +695,8 @@ export function catalogReviewVisibility(connection: Connection) {
   }
 }
 
-export function catalogCheckoutAccess(connection: Connection) {
-  const catalog = catalogService(connection, async () => new Map())
+function catalogCheckoutAccess(connection: Connection) {
+  const catalog = createCatalogService(connection, async () => new Map())
   const models = productModels(connection)
   return async (ids: readonly string[], session: ClientSession) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
@@ -697,3 +730,5 @@ export function catalogCheckoutAccess(connection: Connection) {
     )
   }
 }
+
+export { createCatalogService, catalogReviewVisibility, catalogCheckoutAccess }

@@ -1,6 +1,9 @@
 import type { IdentityModels } from '../auth.model.js'
+
 type User = InstanceType<IdentityModels['users']>
+
 type Address = User['addresses'][number]
+
 function addressDto(address: Address) {
   return {
     id: address.id.toHexString(),
@@ -14,6 +17,7 @@ function addressDto(address: Address) {
     isDefault: address.isDefault,
   }
 }
+
 function accountDto(user: User) {
   return {
     id: user._id.toHexString(),

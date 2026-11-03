@@ -3,11 +3,13 @@ import { inTransaction } from '../../../shared/database/transaction.js'
 import type { IdentityModels } from '../auth.model.js'
 
 type UserPurpose = 'email_verify' | 'email_change' | 'password_reset'
+
 class ChallengeUnavailableError extends Error {
   constructor() {
     super('Challenge is unavailable.')
   }
 }
+
 // Internal digests only: caller verifies proof provenance and supplies its route-selected role.
 // The effect callback is sequential DB-only and may run again on transaction retry.
 async function consumeUserChallenge<T>(

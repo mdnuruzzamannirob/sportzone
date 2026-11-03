@@ -1,5 +1,6 @@
-import { customerAdminView, customerPrivacyView } from './account-management.schema.js'
 import {
+  customerAdminView,
+  customerPrivacyView,
   customerAdminQuery as querySchema,
   customerStatusDecision as decisionSchema,
   customerPrivacyDecision,
@@ -20,6 +21,7 @@ import type { AuditWriter, AuditOperationReader } from '../audit/audit.public.js
 import { pageMeta } from '../../shared/pagination.js'
 
 const id = z.string().regex(/^[a-f0-9]{24}$/)
+
 const keySchema = z
   .string()
   .min(1)
@@ -27,11 +29,13 @@ const keySchema = z
   .refine(
     (v) => v === v.trim() && [...v].every((c) => c.charCodeAt(0) >= 32 && c.charCodeAt(0) !== 127),
   )
+
 function maskedEmail(email: string) {
   const at = email.lastIndexOf('@')
   if (at <= 0) throw new ApiError('SERVICE_UNAVAILABLE')
   return `${email[0]}***@${email.slice(at + 1)}`
 }
+
 // Private administration capability; deletion and financial history remain separately authorized.
 function createAccountManagementService(
   connection: Connection,

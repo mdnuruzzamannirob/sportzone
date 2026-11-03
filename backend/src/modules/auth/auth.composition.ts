@@ -4,7 +4,7 @@ import {
 } from './account-management.service.js'
 import type { AdminAccountAccess, CustomerHistories } from './auth.public.js'
 import type { AuditWriter, AuditOperationReader } from '../audit/audit.public.js'
-import { emailVerificationRoutes } from './verification/email-verification.routes.js'
+import { createEmailVerificationRoutes } from './verification/email-verification.routes.js'
 import { createEmailVerificationService } from './verification/email-verification.service.js'
 import {
   createEmailVerificationDelivery,
@@ -13,9 +13,9 @@ import {
   createResetDelivery,
 } from './verification/proof-delivery.service.js'
 import type { GuestOrderAccess } from '../orders/order.public.js'
-import { guestSessionService } from './guest-access/guest-session.service.js'
-import { guestAccessService } from './guest-access/guest-access.service.js'
-import { guestAccessRoutes } from './guest-access/guest-access.routes.js'
+import { createGuestSessionService } from './guest-access/guest-session.service.js'
+import { createGuestAccessService } from './guest-access/guest-access.service.js'
+import { createGuestAccessRoutes } from './guest-access/guest-access.routes.js'
 import { guestProofDelivery } from './guest-access/guest-proof-delivery.service.js'
 import {
   adminTransactionAccess,
@@ -33,17 +33,15 @@ import {
   createCustomerCredentialRoutes,
 } from './credentials/credential.routes.js'
 import { createCredentialService } from './credentials/credential.service.js'
-
 import { verifyIdentityPersistence } from './identity.persistence.js'
-
-import { recoveryRoutes } from './recovery/password-recovery.routes.js'
+import { createRecoveryRoutes } from './recovery/password-recovery.routes.js'
 import { createRecoveryService } from './recovery/password-recovery.service.js'
 import { createAuthQuotaStore } from './sessions/auth-throttle.persistence.js'
 import { createAuthThrottle } from './sessions/auth-throttle.service.js'
-import { browserSecurityRoutes } from './sessions/browser-security.routes.js'
+import { createBrowserSecurityRoutes } from './sessions/browser-security.routes.js'
 import { createBrowserSecurity } from './sessions/browser-security.service.js'
 import { createSessionService } from './sessions/session.service.js'
-import { emailChangeRoutes } from './verification/email-change.routes.js'
+import { createEmailChangeRoutes } from './verification/email-change.routes.js'
 import { createEmailChangeService } from './verification/email-change.service.js'
 
 async function createAuthRuntime(
@@ -63,7 +61,7 @@ async function createAuthRuntime(
   await quota.verify()
   const throttle = createAuthThrottle(quota, config.SESSION_SECRET)
   const guestSessions = options.guest
-    ? guestSessionService(
+    ? createGuestSessionService(
         connection,
         models,
         options.sessions,
@@ -75,7 +73,7 @@ async function createAuthRuntime(
   const router = Router()
   // Separate bootstrap adapters select their audience from the registered route.
   router.use(
-    browserSecurityRoutes(security, sessions, guestSessions, (req, res, next) =>
+    createBrowserSecurityRoutes(security, sessions, guestSessions, (req, res, next) =>
       throttle.middleware(req.path.startsWith('/admin/') ? 'admin' : 'customer', 'bootstrap')(
         req,
         res,
@@ -85,8 +83,8 @@ async function createAuthRuntime(
   )
   if (options.guest && guestSessions)
     router.use(
-      guestAccessRoutes(
-        guestAccessService(
+      createGuestAccessRoutes(
+        createGuestAccessService(
           models,
           security,
           guestSessions,
@@ -110,7 +108,7 @@ async function createAuthRuntime(
     )
   if (options.emailVerification)
     router.use(
-      emailVerificationRoutes(
+      createEmailVerificationRoutes(
         createEmailVerificationService(
           connection,
           models,
@@ -124,7 +122,7 @@ async function createAuthRuntime(
     )
   if (options.recovery)
     router.use(
-      recoveryRoutes(
+      createRecoveryRoutes(
         createRecoveryService(
           connection,
           models,
@@ -140,7 +138,7 @@ async function createAuthRuntime(
     )
   if (options.emailChange)
     router.use(
-      emailChangeRoutes(
+      createEmailChangeRoutes(
         createEmailChangeService(connection, models, sessions, notifications, options.emailChange),
         security,
         sessions,
@@ -231,5 +229,4 @@ function customerAdministrationAccess(
   }
 }
 
-export { customerAdministrationAccess }
-export { createAuthRuntime, composeProofDeliveries }
+export { customerAdministrationAccess, createAuthRuntime, composeProofDeliveries }

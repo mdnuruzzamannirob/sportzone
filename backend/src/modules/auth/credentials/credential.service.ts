@@ -1,5 +1,4 @@
 import { loginInput, registrationInput } from './credential.schema.js'
-
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
 import type { IdentityNotifications } from '../../notifications/notification.public.js'
@@ -89,6 +88,7 @@ function createCredentialService(
     },
   }
 }
+
 type CredentialService = ReturnType<typeof createCredentialService>
 
 export { loginInput, registrationInput } from './credential.schema.js'

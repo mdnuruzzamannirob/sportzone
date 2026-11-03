@@ -13,6 +13,7 @@ import type { IdentityModels } from '../auth.model.js'
 import type { BrowserSecurity } from '../sessions/browser-security.service.js'
 import { consumeUserChallenge, ChallengeUnavailableError } from '../sessions/session.persistence.js'
 import { createProofCodec, proofHash } from './proof.crypto.js'
+
 function createEmailVerificationService(
   connection: Connection,
   models: IdentityModels,

@@ -57,15 +57,20 @@ const movementSchema = new Schema(
   },
   { ...mutableSchemaOptions, timestamps: false },
 )
+
 movementSchema.index(
   { variantId: 1, type: 1, operationKey: 1 },
   { unique: true, name: 'movement_operation_unique' },
 )
+
 movementSchema.index({ variantId: 1, occurredAt: -1 }, { name: 'movement_variant_occurred' })
+
 movementSchema.index({ orderId: 1, occurredAt: 1 }, { name: 'movement_order_occurred' })
+
 movementSchema.pre('save', function () {
   if (!this.isNew) throw new Error('Inventory movements are append-only.')
 })
+
 movementSchema.pre(
   [
     'updateOne',
@@ -81,14 +86,18 @@ movementSchema.pre(
     throw new Error('Inventory movements are append-only.')
   },
 )
+
 movementSchema.pre('deleteOne', { document: true, query: false }, () => {
   throw new Error('Inventory movements are append-only.')
 })
+
 movementSchema.pre('bulkWrite', () => {
   throw new Error('Inventory movements are append-only.')
 })
-export type InventoryMovement = InferSchemaType<typeof movementSchema>
-export function inventoryMovementModel(connection: Connection) {
+
+type InventoryMovement = InferSchemaType<typeof movementSchema>
+
+function inventoryMovementModel(connection: Connection) {
   return connection.models.InventoryMovement
     ? connection.model<InventoryMovement>('InventoryMovement')
     : connection.model<InventoryMovement>('InventoryMovement', movementSchema, 'inventoryMovements')
@@ -115,10 +124,12 @@ const reservationSchema = new Schema(
   },
   { ...mutableSchemaOptions, timestamps: false },
 )
+
 reservationSchema.index(
   { orderId: 1, variantId: 1, generation: 1 },
   { unique: true, name: 'reservation_generation_unique' },
 )
+
 reservationSchema.index(
   { orderId: 1, variantId: 1, activeKey: 1 },
   {
@@ -127,9 +138,12 @@ reservationSchema.index(
     name: 'reservation_active_unique',
   },
 )
+
 reservationSchema.index({ status: 1, expiresAt: 1 }, { name: 'reservation_status_expiry' })
-export type InventoryReservation = InferSchemaType<typeof reservationSchema>
-export function inventoryReservationModel(connection: Connection) {
+
+type InventoryReservation = InferSchemaType<typeof reservationSchema>
+
+function inventoryReservationModel(connection: Connection) {
   return connection.models.InventoryReservation
     ? connection.model<InventoryReservation>('InventoryReservation')
     : connection.model<InventoryReservation>(
@@ -138,3 +152,6 @@ export function inventoryReservationModel(connection: Connection) {
         'inventoryReservations',
       )
 }
+
+export { inventoryMovementModel, inventoryReservationModel }
+export type { InventoryMovement, InventoryReservation }

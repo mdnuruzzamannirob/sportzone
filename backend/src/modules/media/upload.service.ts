@@ -7,7 +7,7 @@ import type { MediaAsset } from './media.model.js'
 import type { EvidenceScope, MediaFile, MediaLookup, MediaScanner } from './media.types.js'
 import { inspectFile } from './media.schema.js'
 
-export function createMediaUploads(context: MediaContext) {
+function createMediaUploads(context: MediaContext) {
   const { connection, model, access, scanner, provider, policy, clock } = context
   const authorized = createMediaAuthorization(context)
   function matches(asset: MediaAsset, result: MediaLookup) {
@@ -152,3 +152,5 @@ export function createMediaUploads(context: MediaContext) {
     },
   }
 }
+
+export { createMediaUploads }

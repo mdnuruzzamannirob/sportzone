@@ -1,26 +1,30 @@
-import { publicHomeSettings } from '../settings/settings.schema.js'
-import { publicPolicyLink } from '../settings/policy.schema.js'
+import { publicHomeSettings, publicPolicyLink } from '../settings/setting.schema.js'
 import { z } from 'zod'
 import { paginationSchema } from '../../shared/pagination.js'
+
 // Existing aggregate inputs remain numeric; HTTP price filters are separately parsed strings.
-export const text = (max: number) =>
+const text = (max: number) =>
   z
     .string()
     .trim()
     .min(1)
     .refine((value) => [...value].length <= max)
     .meta({ maxLength: max })
-export const money = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER)
+
+const money = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER)
+
 const slug = z
   .string()
   .max(160)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+
 const queryMoney = z
   .string()
   .regex(/^(0|[1-9]\d*)$/)
   .transform(Number)
   .pipe(z.int().nonnegative())
-export const productQuery = paginationSchema
+
+const productQuery = paginationSchema
   .safeExtend({
     q: z
       .string()
@@ -54,25 +58,30 @@ export const productQuery = paginationSchema
       value.maxPricePoisha === undefined ||
       value.minPricePoisha <= value.maxPricePoisha,
   )
-export const categoryQuery = paginationSchema.safeExtend({
+
+const categoryQuery = paginationSchema.safeExtend({
   parent: slug.optional(),
 })
-export const categorySlug = z.strictObject({ slug })
-export const publicImage = z.strictObject({
+
+const categorySlug = z.strictObject({ slug })
+
+const publicImage = z.strictObject({
   url: z.url(),
   alt: z
     .string()
     .min(1)
     .refine((value) => [...value].length <= 120),
 })
-export const categoryCard = z.strictObject({
+
+const categoryCard = z.strictObject({
   id: z.string(),
   name: z.string(),
   slug: z.string(),
   parentId: z.string().optional(),
   image: publicImage.optional(),
 })
-export const productCard = z.strictObject({
+
+const productCard = z.strictObject({
   id: z.string(),
   name: z.string(),
   slug: z.string(),
@@ -88,7 +97,7 @@ export const productCard = z.strictObject({
     .optional(),
 })
 
-export const publicVariant = z
+const publicVariant = z
   .strictObject({
     id: z.string().regex(/^[a-f0-9]{24}$/),
     sku: z.string().min(1).max(64),
@@ -98,7 +107,8 @@ export const publicVariant = z
     availableQty: z.int().nonnegative(),
   })
   .refine((value) => value.effectivePricePoisha <= value.regularPricePoisha)
-export const productDetail = productCard.safeExtend({
+
+const productDetail = productCard.safeExtend({
   description: text(2000),
   categories: z.array(categoryCard).min(1).max(30),
   images: z.array(publicImage).max(12),
@@ -106,10 +116,24 @@ export const productDetail = productCard.safeExtend({
   relatedProducts: z.array(productCard).max(6),
 })
 
-export const storefrontHome = publicHomeSettings.extend({
+const storefrontHome = publicHomeSettings.extend({
   featured: z.array(productCard).max(8),
   newArrivals: z.array(productCard).max(8),
   discounted: z.array(productCard).max(8),
   categories: z.array(categoryCard).max(12),
   policyLinks: z.array(publicPolicyLink).max(7),
 })
+
+export {
+  text,
+  money,
+  productQuery,
+  categoryQuery,
+  categorySlug,
+  publicImage,
+  categoryCard,
+  productCard,
+  publicVariant,
+  productDetail,
+  storefrontHome,
+}

@@ -1,24 +1,37 @@
+import { createSupportReadController, createSupportController } from './support.controller.js'
 import { Router, type Request } from 'express'
-import { z } from 'zod'
+import {
+  type BrowserSecurity,
+  readContextCookie,
+} from '../auth/sessions/browser-security.service.js'
+import { createSessionHttp, readSessionCookie } from '../auth/sessions/session.http.js'
+import type { SessionService } from '../auth/sessions/session.service.js'
+import type { createComplaintService } from './support.service.js'
 import { ApiError } from '../../shared/errors/app-error.js'
-import { parseInput } from '../../shared/middleware/validate.js'
-import { respond } from '../../shared/responses.js'
 import type { CustomerAccountAccess } from '../auth/auth.public.js'
 import { readGuestCookie } from '../auth/guest-access/guest-session.service.js'
 import type { createAuthThrottle } from '../auth/sessions/auth-throttle.service.js'
-import type { BrowserSecurity } from '../auth/sessions/browser-security.service.js'
-import { readContextCookie } from '../auth/sessions/browser-security.service.js'
-import { createSessionHttp, readSessionCookie } from '../auth/sessions/session.http.js'
-import type { SessionService } from '../auth/sessions/session.service.js'
-import type { notificationAdminService } from '../notifications/notification-admin.service.js'
-import type { deliveryExceptionService } from '../orders/delivery-exception.service.js'
-import type { complaintService } from './complaint.service.js'
 
-export function supportRoutes(
+// Local/test composition only. Other support mutations and operational queues remain gated.
+function createSupportReadRoutes(
+  complaints: Pick<ReturnType<typeof createComplaintService>, 'adminList'>,
+  security: BrowserSecurity,
+  sessions: SessionService,
+) {
+  const controller = createSupportReadController(complaints)
+
+  const router = Router(),
+    cors = security.cors('admin'),
+    http = createSessionHttp(sessions)
+  for (const path of ['/admin/complaints']) router.options(path, cors)
+  router.get('/admin/complaints', cors, http.require('admin'), controller.getAdminComplaints)
+
+  return router
+}
+
+function createSupportRoutes(
   deps: {
-    complaints: ReturnType<typeof complaintService>
-    exceptions: ReturnType<typeof deliveryExceptionService>
-    notifications: ReturnType<typeof notificationAdminService>
+    complaints: ReturnType<typeof createComplaintService>
     customers: CustomerAccountAccess
   },
   security: BrowserSecurity,
@@ -26,11 +39,12 @@ export function supportRoutes(
   throttle: ReturnType<typeof createAuthThrottle>,
   storefrontOrigin: string,
 ) {
+  const controller = createSupportController(deps)
+
   const router = Router(),
     cors = security.cors('storefront'),
     adminCors = security.cors('admin'),
-    http = createSessionHttp(sessions),
-    id = z.string().regex(/^[a-f0-9]{24}$/)
+    http = createSessionHttp(sessions)
   const credentials = (req: Request) => ({
     customerPresent: (req.get('Cookie') ?? '')
       .split(';')
@@ -56,151 +70,28 @@ export function supportRoutes(
         return security.require('storefront', 'customer-or-context')(req, res, next)
       next()
     },
-    async (req, res) => {
-      parseInput(z.strictObject({}), req.query)
-      respond(
-        res,
-        await deps.complaints.intake(credentials(req), req.body, req.get('Idempotency-Key')),
-        201,
-      )
-    },
+    controller.postComplaints,
   )
-  router.get('/me/complaints', cors, http.require('customer'), async (req, res) => {
-    parseInput(z.undefined(), req.body)
-    const result = await deps.complaints.mine(
-      readSessionCookie(req.get('Cookie'), 'customer'),
-      req.query,
-      deps.customers,
-    )
-    respond(res, result.items, 200, result.pagination)
-  })
-  router.get('/orders/:orderId/complaints', cors, async (req, res) => {
-    parseInput(z.undefined(), req.body)
-    parseInput(z.strictObject({}), req.query)
-    respond(
-      res,
-      await deps.complaints.list(
-        credentials(req),
-        parseInput(z.strictObject({ orderId: id }), req.params).orderId,
-      ),
-    )
-  })
+  router.get('/me/complaints', cors, http.require('customer'), controller.getMeComplaints)
+  router.get('/orders/:orderId/complaints', cors, controller.getOrdersComplaints)
   router.options('/admin/complaints/:complaintId', adminCors)
   router.get(
     '/admin/complaints/:complaintId',
     adminCors,
     http.require('admin'),
-    async (req, res) => {
-      parseInput(z.undefined(), req.body)
-      parseInput(z.strictObject({}), req.query)
-      respond(
-        res,
-        await deps.complaints.adminDetail(
-          readSessionCookie(req.get('Cookie'), 'admin'),
-          parseInput(z.strictObject({ complaintId: id }), req.params).complaintId,
-        ),
-      )
-    },
+    controller.getAdminComplaints,
   )
-  const paths = [
-    '/admin/complaints/:complaintId/resolve',
-    '/admin/orders/:orderId/delivery-exceptions',
-    '/admin/delivery-exceptions/:exceptionId/resolve',
-    '/admin/notifications',
-    '/admin/notifications/:notificationId/retry',
-  ] as const
+  const paths = ['/admin/complaints/:complaintId/resolve'] as const
   for (const path of paths) router.options(path, adminCors)
   router.post(
     paths[0],
     adminCors,
     security.require('admin', 'admin'),
     http.require('admin'),
-    async (req, res) => {
-      parseInput(z.strictObject({}), req.query)
-      respond(
-        res,
-        await deps.complaints.resolve(
-          readSessionCookie(req.get('Cookie'), 'admin'),
-          parseInput(z.strictObject({ complaintId: id }), req.params).complaintId,
-          req.body,
-          req.get('Idempotency-Key'),
-        ),
-      )
-    },
+    controller.postComplaintsResolve,
   )
-  router.get(paths[1], adminCors, http.require('admin'), async (req, res) => {
-    parseInput(z.undefined(), req.body)
-    parseInput(z.strictObject({}), req.query)
-    respond(
-      res,
-      await deps.exceptions.list(
-        readSessionCookie(req.get('Cookie'), 'admin'),
-        parseInput(z.strictObject({ orderId: id }), req.params).orderId,
-      ),
-    )
-  })
-  router.post(
-    paths[1],
-    adminCors,
-    security.require('admin', 'admin'),
-    http.require('admin'),
-    async (req, res) => {
-      parseInput(z.strictObject({}), req.query)
-      respond(
-        res,
-        await deps.exceptions.create(
-          readSessionCookie(req.get('Cookie'), 'admin'),
-          parseInput(z.strictObject({ orderId: id }), req.params).orderId,
-          req.body,
-          req.get('Idempotency-Key'),
-        ),
-        201,
-      )
-    },
-  )
-  router.post(
-    paths[2],
-    adminCors,
-    security.require('admin', 'admin'),
-    http.require('admin'),
-    async (req, res) => {
-      parseInput(z.strictObject({}), req.query)
-      respond(
-        res,
-        await deps.exceptions.resolve(
-          readSessionCookie(req.get('Cookie'), 'admin'),
-          parseInput(z.strictObject({ exceptionId: id }), req.params).exceptionId,
-          req.body,
-          req.get('Idempotency-Key'),
-        ),
-      )
-    },
-  )
-  router.get(paths[3], adminCors, http.require('admin'), async (req, res) => {
-    parseInput(z.undefined(), req.body)
-    const result = await deps.notifications.list(
-      readSessionCookie(req.get('Cookie'), 'admin'),
-      req.query,
-    )
-    respond(res, result.items, 200, result.pagination)
-  })
-  router.post(
-    paths[4],
-    adminCors,
-    security.require('admin', 'admin'),
-    http.require('admin'),
-    async (req, res) => {
-      parseInput(z.strictObject({}), req.query)
-      respond(
-        res,
-        await deps.notifications.retry(
-          readSessionCookie(req.get('Cookie'), 'admin'),
-          parseInput(z.strictObject({ notificationId: id }), req.params).notificationId,
-          req.body,
-          req.get('Idempotency-Key'),
-        ),
-      )
-    },
-  )
+
   return router
 }
+
+export { createSupportReadRoutes, createSupportRoutes }

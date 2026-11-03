@@ -1,15 +1,18 @@
-import { publicPaymentAttempt } from '../payments/payment-initiation.schema.js'
+import { publicPaymentAttempt } from '../payments/attempts/payment-initiation.schema.js'
 import { z } from 'zod'
 import { paginationSchema } from '../../shared/pagination.js'
 import { checkoutOrderSummary } from '../checkout/checkout-intent.schema.js'
 import { quoteLine, quoteTotals, quotePolicyRef } from '../checkout/checkout.schema.js'
 import { fulfillmentStatus, fulfillmentHold } from './order.schema.js'
 import { deliveryDeadline } from './delivery-deadline.schema.js'
+
 const money = z.int().nonnegative().max(Number.MAX_SAFE_INTEGER),
   text = z.string().min(1).max(2000),
   date = z.iso.datetime({ offset: true })
-export const orderReadQuery = paginationSchema.safeExtend({ status: fulfillmentStatus.optional() })
-export const customerPaymentSummary = z.strictObject({
+
+const orderReadQuery = paginationSchema.safeExtend({ status: fulfillmentStatus.optional() })
+
+const customerPaymentSummary = z.strictObject({
   status: checkoutOrderSummary.shape.paymentStatus,
   fundingContext: z.enum(['normal', 'correction_only']),
   expectedPoisha: money,
@@ -23,17 +26,20 @@ export const customerPaymentSummary = z.strictObject({
   correctionRefundHeldPoisha: money,
   correctionRefundCompletedPoisha: money,
 })
-export const orderReadSummary = checkoutOrderSummary.safeExtend({
+
+const orderReadSummary = checkoutOrderSummary.safeExtend({
   deliveryEstimate: date.optional(),
 })
-export const orderStatusView = z.strictObject({
+
+const orderStatusView = z.strictObject({
   fulfillmentStatus,
   fulfillmentHold: fulfillmentHold.optional(),
   paymentSummary: customerPaymentSummary,
   deliveryEstimate: date.optional(),
   deliveryDeadline,
 })
-export const customerOrderDetail = orderReadSummary.safeExtend({
+
+const customerOrderDetail = orderReadSummary.safeExtend({
   items: z.array(quoteLine).min(1).max(50),
   pricingSnapshot: quoteTotals,
   deliverySnapshot: z.strictObject({
@@ -67,7 +73,7 @@ export const customerOrderDetail = orderReadSummary.safeExtend({
   }),
 })
 
-export const adminOrderQuery = paginationSchema.safeExtend({
+const adminOrderQuery = paginationSchema.safeExtend({
   orderNumber: z.string().trim().min(1).max(128).optional(),
   customerId: z
     .string()
@@ -76,7 +82,8 @@ export const adminOrderQuery = paginationSchema.safeExtend({
   fulfillmentStatus: fulfillmentStatus.optional(),
   paymentStatus: checkoutOrderSummary.shape.paymentStatus.optional(),
 })
-export const adminOrderDetail = customerOrderDetail.safeExtend({
+
+const adminOrderDetail = customerOrderDetail.safeExtend({
   allocationSummary: z.strictObject({
     generation: z.int().positive().nullable(),
     items: z
@@ -93,18 +100,19 @@ export const adminOrderDetail = customerOrderDetail.safeExtend({
   auditRefs: z.array(z.string().regex(/^[a-f0-9]{24}$/)).max(40),
 })
 
-export const customerDeliveryEvents = z.strictObject({
+const customerDeliveryEvents = z.strictObject({
   status: fulfillmentStatus,
   estimate: date.optional(),
   deadline: deliveryDeadline,
   events: customerOrderDetail.shape.statusHistory,
 })
 
-export const customerPaymentHistory = z.strictObject({
+const customerPaymentHistory = z.strictObject({
   payment: customerPaymentSummary,
   attempts: z.array(publicPaymentAttempt).max(50),
 })
-export const customerAdminOrderSummary = z.strictObject({
+
+const customerAdminOrderSummary = z.strictObject({
   id: z.string().regex(/^[a-f0-9]{24}$/),
   orderNumber: z.string(),
   paymentStatus: checkoutOrderSummary.shape.paymentStatus,
@@ -113,3 +121,16 @@ export const customerAdminOrderSummary = z.strictObject({
   finalTotalPoisha: money,
   currency: z.literal('BDT'),
 })
+
+export {
+  orderReadQuery,
+  customerPaymentSummary,
+  orderReadSummary,
+  orderStatusView,
+  customerOrderDetail,
+  adminOrderQuery,
+  adminOrderDetail,
+  customerDeliveryEvents,
+  customerPaymentHistory,
+  customerAdminOrderSummary,
+}

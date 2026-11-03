@@ -8,23 +8,37 @@ const text = (max: number) =>
     .min(1)
     .refine((value) => [...value].length <= max)
     .meta({ maxLength: max })
+
 const email = z.string().trim().toLowerCase().pipe(z.email().max(254))
+
 const id = z.string().regex(/^[a-f0-9]{24}$/)
+
 const instant = z.iso.datetime({ offset: false })
+
 const opaque = z
   .string()
   .min(1)
   .max(128)
   .regex(/^[A-Za-z0-9_-]+$/)
+
 const noBody = z.undefined()
+
 const emptyBody = z.union([noBody, z.strictObject({})])
+
 const credential = z.string().min(1) // Never trim or transform a password.
+
 const confirmation = z.strictObject({ token: opaque })
+
 const emailRequest = z.strictObject({ email })
+
 const csrf = z.strictObject({ csrfToken: opaque, expiresAt: instant })
+
 const accepted = z.strictObject({ accepted: z.literal(true) })
+
 const logout = z.strictObject({ revoked: z.literal(true), csrfToken: opaque })
+
 const addressParams = z.strictObject({ addressId: id })
+
 const noParams = z.strictObject({})
 
 const challengePurpose = z.enum([
@@ -33,6 +47,7 @@ const challengePurpose = z.enum([
   'password_reset',
   'guest_order_access',
 ])
+
 type ChallengePurpose = z.infer<typeof challengePurpose>
 
 // Required service policies: transport validation cannot invent password policy or coverage.

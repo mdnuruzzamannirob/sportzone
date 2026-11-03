@@ -1,10 +1,71 @@
+import { auditView, auditQuery as querySchema } from './audit.schema.js'
 import { Types, type Connection, type ClientSession } from 'mongoose'
-import { z } from 'zod'
-import { ApiError } from '../../shared/errors/app-error.js'
+import type { AdminAccountAccess } from '../auth/auth.public.js'
+import { pageMeta } from '../../shared/pagination.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { auditModel } from './audit.model.js'
 import { verifyAuditPersistence } from './audit.persistence.js'
+import { z } from 'zod'
+import { ApiError } from '../../shared/errors/app-error.js'
+
+// Locally composed administrative read. Omit free-form reason, digests and operation keys.
+function createAuditQueryService(connection: Connection, admins: AdminAccountAccess) {
+  const model = auditModel(connection)
+  return {
+    async list(token: string | undefined, raw: unknown) {
+      const q = parseInput(querySchema, raw)
+      return admins.owned(
+        token,
+        async (_actor, session) => {
+          await verifyAuditPersistence(connection)
+          const filter = {
+            ...(q.targetType ? { targetType: q.targetType } : {}),
+            ...(q.targetId ? { targetId: new Types.ObjectId(q.targetId) } : {}),
+            ...(q.from || q.to
+              ? {
+                  occurredAt: {
+                    ...(q.from ? { $gte: new Date(q.from) } : {}),
+                    ...(q.to ? { $lte: new Date(q.to) } : {}),
+                  },
+                }
+              : {}),
+          }
+          const rows = await model
+            .find(filter)
+            .sort({ occurredAt: -1, _id: -1 })
+            .skip((q.page - 1) * q.pageSize)
+            .limit(q.pageSize)
+            .maxTimeMS(5000)
+            .session(session)
+          return {
+            items: rows.map((row) =>
+              auditView.parse({
+                action: row.action,
+                actor: {
+                  type: row.actorType,
+                  ...(row.actorId ? { id: row.actorId.toHexString() } : {}),
+                },
+                subject: {
+                  type: row.targetType,
+                  ...(row.targetId ? { id: row.targetId.toHexString() } : {}),
+                },
+                occurredAt: row.occurredAt.toISOString(),
+              }),
+            ),
+            pagination: pageMeta(
+              q,
+              await model.countDocuments(filter).maxTimeMS(5000).session(session),
+            ),
+          }
+        },
+        false,
+      )
+    },
+  }
+}
+
 const id = z.string().regex(/^[a-f0-9]{24}$/)
+
 const eventInput = z.strictObject({
   actorType: z.enum(['customer', 'admin', 'guest_order', 'system']),
   actorId: id.optional(),
@@ -24,7 +85,8 @@ const eventInput = z.strictObject({
   reason: z.string().trim().min(1).max(2000).optional(),
   requestCorrelationId: z.string().min(1).max(128).optional(),
 })
-export function createAuditWriter(connection: Connection, replaySameDigest = false) {
+
+function createAuditWriter(connection: Connection, replaySameDigest = false) {
   const model = auditModel(connection)
   // Append-only capability: callers receive no model, query, update or delete operation.
   return async (session: ClientSession, raw: unknown) => {
@@ -64,7 +126,7 @@ export function createAuditWriter(connection: Connection, replaySameDigest = fal
 }
 
 // Narrow durable operation identity lookup; exposes no persistence model or mutable audit capability.
-export function auditOperationReader(connection: Connection) {
+function auditOperationReader(connection: Connection) {
   const model = auditModel(connection)
   return async (session: ClientSession, raw: unknown) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
@@ -93,11 +155,15 @@ export function auditOperationReader(connection: Connection) {
 }
 
 // Reviews receive only their own durable moderation identity for replay validation.
-export function reviewModerationReceiptAccess(connection: Connection) {
+function reviewModerationReceiptAccess(connection: Connection) {
   const model = auditModel(connection)
   return async (
     session: ClientSession,
-    identity: { actorId: string; reviewId: string; operationKey: string },
+    identity: {
+      actorId: string
+      reviewId: string
+      operationKey: string
+    },
   ) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
     await verifyAuditPersistence(connection)
@@ -125,7 +191,7 @@ export function reviewModerationReceiptAccess(connection: Connection) {
 }
 
 // Payment monitors receive only event identity/status facts, never free-form reasons or request data.
-export function paymentAuditAccess(connection: Connection) {
+function paymentAuditAccess(connection: Connection) {
   return async (session: ClientSession, paymentId: string, offset: number, limit: number) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
     await verifyAuditPersistence(connection)
@@ -150,23 +216,24 @@ export function paymentAuditAccess(connection: Connection) {
   }
 }
 
-export function paymentReconciliationScheduleAccess(connection: Connection) {
+function paymentReconciliationScheduleAccess(connection: Connection) {
   return async () => {
     await verifyAuditPersistence(connection)
-    const rows = await auditModel(connection).aggregate<{ _id: Types.ObjectId; requestedAt: Date }>(
-      [
-        { $match: { action: 'payment.reconcile.request', targetType: 'payment' } },
-        { $group: { _id: '$targetId', requestedAt: { $max: '$occurredAt' } } },
-        { $sort: { requestedAt: -1, _id: -1 } },
-        { $limit: 100 },
-      ],
-    )
+    const rows = await auditModel(connection).aggregate<{
+      _id: Types.ObjectId
+      requestedAt: Date
+    }>([
+      { $match: { action: 'payment.reconcile.request', targetType: 'payment' } },
+      { $group: { _id: '$targetId', requestedAt: { $max: '$occurredAt' } } },
+      { $sort: { requestedAt: -1, _id: -1 } },
+      { $limit: 100 },
+    ])
     return rows.map((r) => ({ paymentId: r._id, requestedAt: r.requestedAt }))
   }
 }
 
 // Narrow same-transaction projection for protected order details; no raw audit payload escapes.
-export function orderAuditRefsAccess(connection: Connection) {
+function orderAuditRefsAccess(connection: Connection) {
   return async (session: ClientSession, orderId: string) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
     const targetId = parseInput(id, orderId)
@@ -182,7 +249,7 @@ export function orderAuditRefsAccess(connection: Connection) {
 }
 
 // Refund UI receives bounded public status facts only, not internal financial evidence or actors.
-export function refundStatusTimelineAccess(connection: Connection) {
+function refundStatusTimelineAccess(connection: Connection) {
   return async (session: ClientSession, refundId: string) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
     await verifyAuditPersistence(connection)
@@ -209,4 +276,15 @@ export function refundStatusTimelineAccess(connection: Connection) {
       at: row.occurredAt.toISOString(),
     }))
   }
+}
+
+export {
+  createAuditQueryService,
+  createAuditWriter,
+  auditOperationReader,
+  reviewModerationReceiptAccess,
+  paymentAuditAccess,
+  paymentReconciliationScheduleAccess,
+  orderAuditRefsAccess,
+  refundStatusTimelineAccess,
 }

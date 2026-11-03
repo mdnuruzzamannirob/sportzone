@@ -7,19 +7,23 @@ import type { IdentityModels } from '../auth.model.js'
 import { findActiveUserSession } from './session.persistence.js'
 
 type SessionKind = 'customer' | 'admin'
+
 const tokenPattern = /^[A-Za-z0-9_-]{43}$/
+
 type SessionIdentity = {
   sessionId: Types.ObjectId
   userId: Types.ObjectId
   kind: SessionKind
   expiresAt: Date
 }
+
 type IssuedSession = {
   token: string
   csrfToken: string
   kind: SessionKind
   expiresAt: Date
 }
+
 function createSessionService(
   connection: Connection,
   models: IdentityModels,
@@ -145,7 +149,10 @@ function createSessionService(
     async refreshCsrf(
       kind: SessionKind,
       token: string,
-    ): Promise<{ csrfToken: string; expiresAt: Date }> {
+    ): Promise<{
+      csrfToken: string
+      expiresAt: Date
+    }> {
       const found = await resolve(kind, token)
       if (!found?.csrfSecretHash) throw new ApiError('AUTH_REQUIRED')
       const csrfToken = randomBytes(32).toString('base64url')
@@ -251,6 +258,7 @@ function createSessionService(
     },
   }
 }
+
 type SessionService = ReturnType<typeof createSessionService>
 
 export { loadSessionOptions } from '../../../config/security.js'

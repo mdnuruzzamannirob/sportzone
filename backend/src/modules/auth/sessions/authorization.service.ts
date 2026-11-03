@@ -37,7 +37,6 @@ async function authorizeAccount(
     .session(transaction)
   if (!user) throw new ApiError('AUTH_REQUIRED')
   if (!fence) return user
-
   // Real writes serialize with logout and principal changes. Monotonic timestamps
   // prevent a same-clock no-op; neither write extends the credential lifetime.
   const touch = (updatedAt: Date) => new Date(Math.max(now.getTime(), updatedAt.getTime() + 1))

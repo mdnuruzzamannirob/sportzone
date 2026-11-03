@@ -11,14 +11,16 @@ const policy = z
     batchSize: z.int().min(1).max(100),
   })
   .refine((value) => value.maxDelayMs >= value.baseDelayMs)
-export type RetryPolicy = z.infer<typeof policy>
-export function validateRetryPolicy(input: RetryPolicy) {
+
+type RetryPolicy = z.infer<typeof policy>
+
+function validateRetryPolicy(input: RetryPolicy) {
   const result = policy.safeParse(input)
   if (!result.success) throw new ConfigurationError(['notification_retry_policy'])
   return Object.freeze(result.data)
 }
 
-export const notificationStatus = z.enum([
+const notificationStatus = z.enum([
   'queued',
   'sending',
   'sent',
@@ -26,7 +28,8 @@ export const notificationStatus = z.enum([
   'failed',
   'delivery_uncertain',
 ])
-export const notificationEvent = z.enum([
+
+const notificationEvent = z.enum([
   'registration',
   'password_reset',
   'email_verification',
@@ -43,11 +46,13 @@ export const notificationEvent = z.enum([
   'return_update',
   'refund_update',
 ])
-export const notificationAdminQuery = paginationSchema.safeExtend({
+
+const notificationAdminQuery = paginationSchema.safeExtend({
   status: notificationStatus.optional(),
   eventType: notificationEvent.optional(),
 })
-export const notificationAdminView = z.strictObject({
+
+const notificationAdminView = z.strictObject({
   id: z.string().regex(/^[a-f0-9]{24}$/),
   eventType: notificationEvent,
   status: notificationStatus,
@@ -55,5 +60,18 @@ export const notificationAdminView = z.strictObject({
   createdAt: z.iso.datetime(),
   sentAt: z.iso.datetime().optional(),
 })
-export const notificationRetryInput = z.strictObject({ reason: z.string().trim().min(1).max(2000) })
-export const notificationRetryResult = z.strictObject({ status: notificationStatus })
+
+const notificationRetryInput = z.strictObject({ reason: z.string().trim().min(1).max(2000) })
+
+const notificationRetryResult = z.strictObject({ status: notificationStatus })
+
+export {
+  validateRetryPolicy,
+  notificationStatus,
+  notificationEvent,
+  notificationAdminQuery,
+  notificationAdminView,
+  notificationRetryInput,
+  notificationRetryResult,
+}
+export type { RetryPolicy }

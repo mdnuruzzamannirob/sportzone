@@ -4,7 +4,7 @@ import {
   mutableSchemaOptions,
   optionalObjectIdField,
 } from '../../shared/database/schema.js'
-import { policyContent, policyStatus, policyType } from './policy.schema.js'
+import { policyContent, policyStatus, policyType } from './setting.schema.js'
 
 const operation = new Schema(
   {
@@ -15,6 +15,7 @@ const operation = new Schema(
   },
   { _id: false, strict: 'throw', versionKey: false },
 )
+
 const schema = new Schema(
   {
     approvalOperation: { type: operation, default: undefined },
@@ -51,12 +52,20 @@ const schema = new Schema(
   },
   mutableSchemaOptions,
 )
+
 schema.index({ type: 1, version: 1 }, { unique: true, name: 'policy_type_version_unique' })
+
 schema.index({ type: 1, status: 1, effectiveAt: -1 }, { name: 'policy_type_status_effective' })
+
 schema.index({ type: 1, publishedAt: -1 }, { name: 'policy_type_published' })
-export type PolicyDocument = InferSchemaType<typeof schema>
-export function policyModel(connection: Connection) {
+
+type PolicyDocument = InferSchemaType<typeof schema>
+
+function policyModel(connection: Connection) {
   return connection.models.PolicyDocument
     ? connection.model<PolicyDocument>('PolicyDocument')
     : connection.model<PolicyDocument>('PolicyDocument', schema, 'policyDocuments')
 }
+
+export { policyModel }
+export type { PolicyDocument }

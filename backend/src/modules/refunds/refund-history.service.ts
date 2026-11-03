@@ -8,15 +8,16 @@ import type {
 import type { complaintOrderAccess, customerOrderHistoryAccess } from '../orders/order.service.js'
 import { refundStatusTimelineAccess } from '../audit/audit.service.js'
 import { refundModel } from './refund.model.js'
-import { refundAttemptModel } from './refund-attempt.model.js'
-import { verifyRefundAttemptPersistence } from './refund-attempt.persistence.js'
+import { refundAttemptModel } from './payouts/refund-attempt.model.js'
+import { verifyRefundAttemptPersistence } from './payouts/refund-attempt.persistence.js'
 import { verifyCorrectionPersistence } from './refund.persistence.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { pageMeta } from '../../shared/pagination.js'
 
 const id = z.string().regex(/^[a-f0-9]{24}$/)
-export function refundHistoryService(
+
+function createRefundHistoryService(
   connection: Connection,
   scope: ReturnType<typeof orderScopeAccess>,
   order: ReturnType<typeof complaintOrderAccess>,
@@ -187,9 +188,16 @@ export function refundHistoryService(
   }
 }
 
-export function refundReportAccess(connection: Connection) {
+function refundReportAccess(connection: Connection) {
   const refunds = refundModel(connection)
-  return async (session: ClientSession, period: { from: Date; to: Date; asOf: Date }) => {
+  return async (
+    session: ClientSession,
+    period: {
+      from: Date
+      to: Date
+      asOf: Date
+    },
+  ) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
     await verifyCorrectionPersistence(connection)
     const rows = await refunds
@@ -230,7 +238,9 @@ export function refundReportAccess(connection: Connection) {
     )
       throw new ApiError('SERVICE_UNAVAILABLE')
     const held = await refunds
-      .aggregate<{ amount: number }>([
+      .aggregate<{
+        amount: number
+      }>([
         { $match: { capacityStatus: 'reserved', createdAt: { $lte: period.asOf } } },
         { $group: { _id: null, amount: { $sum: '$amountPoisha' } } },
       ])
@@ -251,9 +261,15 @@ export function refundReportAccess(connection: Connection) {
   }
 }
 
-export function refundExceptionQueueAccess(connection: Connection) {
+function refundExceptionQueueAccess(connection: Connection) {
   const model = refundModel(connection)
-  return async (session: ClientSession, input: { page: number; pageSize: number }) => {
+  return async (
+    session: ClientSession,
+    input: {
+      page: number
+      pageSize: number
+    },
+  ) => {
     await verifyCorrectionPersistence(connection)
     const filter = { status: { $in: ['under_review', 'processing', 'failed'] as const } }
     const rows = await model
@@ -276,3 +292,5 @@ export function refundExceptionQueueAccess(connection: Connection) {
     }
   }
 }
+
+export { createRefundHistoryService, refundReportAccess, refundExceptionQueueAccess }

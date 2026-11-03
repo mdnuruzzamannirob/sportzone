@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto'
 import { ApiError } from '../../shared/errors/app-error.js'
 import type { MediaPolicy } from '../../config/media.js'
 import type { MediaFile, MediaFormat } from './media.types.js'
+import { z } from 'zod'
+
 function dimensions(bytes: Buffer, format: MediaFormat) {
   if (format === 'png' && bytes.length >= 24 && bytes.toString('ascii', 12, 16) === 'IHDR')
     return [bytes.readUInt32BE(16), bytes.readUInt32BE(20)] as const
@@ -37,7 +39,8 @@ function dimensions(bytes: Buffer, format: MediaFormat) {
   }
   throw new ApiError('VALIDATION_FAILED')
 }
-export function inspectFile(file: MediaFile, policy: MediaPolicy) {
+
+function inspectFile(file: MediaFile, policy: MediaPolicy) {
   if (
     !(file.bytes instanceof Uint8Array) ||
     file.bytes.length < 12 ||
@@ -73,7 +76,7 @@ export function inspectFile(file: MediaFile, policy: MediaPolicy) {
 }
 
 // Multipart field names on the wire; the controller separately validates the binary File.
-export const claimEvidenceForm = z.strictObject({
+const claimEvidenceForm = z.strictObject({
   file: z.string().meta({ format: 'binary' }),
   claimType: z.enum(['physical_return', 'shortage']),
   'orderItemIds[]': z
@@ -81,4 +84,5 @@ export const claimEvidenceForm = z.strictObject({
     .min(1)
     .max(40),
 })
-import { z } from 'zod'
+
+export { inspectFile, claimEvidenceForm }

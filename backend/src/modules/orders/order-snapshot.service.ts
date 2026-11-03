@@ -1,10 +1,11 @@
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
-import { checkoutCommercialDigest } from '../checkout/checkout-consent.service.js'
-import { calculatePricing } from '../promotions/pricing.service.js'
+import { checkoutCommercialDigest } from '../checkout/checkout-consent.policy.js'
+import { calculatePricing } from '../promotions/pricing.js'
 import { createDeliveryDeadlineService } from './delivery-deadline.service.js'
 import { orderCreationProof } from './order.schema.js'
-export function buildOrderSnapshot(raw: unknown, placedAt: Date) {
+
+function buildOrderSnapshot(raw: unknown, placedAt: Date) {
   const proof = parseInput(orderCreationProof, raw),
     snapshot = proof.snapshot
   const acceptedAt = new Date(proof.acceptedAt)
@@ -150,3 +151,5 @@ export function buildOrderSnapshot(raw: unknown, placedAt: Date) {
     paymentMethod: snapshot.draft.method === 'cod' ? ('cod' as const) : ('online' as const),
   }
 }
+
+export { buildOrderSnapshot }

@@ -1,19 +1,26 @@
 import { text } from '../catalog/catalog.schema.js'
 import { z } from 'zod'
 import { addressInput, bangladeshPhone } from '../customers/customer.schema.js'
-import { couponCode } from '../promotions/coupon.schema.js'
-import { attributes } from '../catalog/variants/variant.schema.js'
+import { couponCode } from '../promotions/promotion.schema.js'
+import { attributes } from '../catalog/products/variant.schema.js'
 import { deliveryDeadline, deliveryDeadlineBasis } from '../orders/delivery-deadline.schema.js'
-import { paymentChannel, paymentMethodEligibility } from '../payments/payment-eligibility.schema.js'
-import { policyType } from '../settings/policy.schema.js'
-export const quoteId = z.string().regex(/^[a-f0-9]{24}$/)
+import {
+  paymentChannel,
+  paymentMethodEligibility,
+} from '../payments/attempts/payment-eligibility.schema.js'
+import { policyType } from '../settings/setting.schema.js'
+
+const quoteId = z.string().regex(/^[a-f0-9]{24}$/)
+
 const money = z.int().nonnegative().max(Number.MAX_SAFE_INTEGER)
+
 const items = z
   .array(z.strictObject({ variantId: quoteId, quantity: z.int().min(1).max(50) }))
   .min(1)
   .max(40)
   .refine((v) => new Set(v.map((row) => row.variantId)).size === v.length)
-export const checkoutQuoteInput = z
+
+const checkoutQuoteInput = z
   .strictObject({
     items,
     recipient: addressInput.optional(),
@@ -24,7 +31,8 @@ export const checkoutQuoteInput = z
     method: paymentChannel,
   })
   .refine((v) => Boolean(v.recipient) !== Boolean(v.savedAddressId))
-export const checkoutSubmitInput = checkoutQuoteInput.safeExtend({
+
+const checkoutSubmitInput = checkoutQuoteInput.safeExtend({
   quoteId,
   acceptedTermsVersion: z.string().min(1).max(100),
   acceptedPolicyVersionIds: z
@@ -34,7 +42,8 @@ export const checkoutSubmitInput = checkoutQuoteInput.safeExtend({
     .refine((v) => new Set(v).size === v.length),
   notes: z.string().trim().max(2000).optional(),
 })
-export const quoteLine = z.strictObject({
+
+const quoteLine = z.strictObject({
   id: quoteId,
   productId: quoteId,
   variantId: quoteId,
@@ -50,12 +59,14 @@ export const quoteLine = z.strictObject({
   netMerchandisePoisha: money,
   couponEligible: z.boolean(),
 })
-export const quotePolicyRef = z.strictObject({
+
+const quotePolicyRef = z.strictObject({
   type: policyType,
   version: z.string().min(1).max(100),
   effectiveAt: z.iso.datetime({ offset: true }),
 })
-export const quoteTotals = z.strictObject({
+
+const quoteTotals = z.strictObject({
   regularSubtotalPoisha: money,
   productDiscountPoisha: money,
   saleSubtotalPoisha: money,
@@ -64,7 +75,8 @@ export const quoteTotals = z.strictObject({
   finalTotalPoisha: money,
   currency: z.literal('BDT'),
 })
-export const checkoutQuote = quoteTotals.extend({
+
+const checkoutQuote = quoteTotals.extend({
   quoteId,
   items: z.array(quoteLine).min(1).max(40),
   deliveryEstimate: z.iso.datetime({ offset: true }).optional(),
@@ -73,7 +85,8 @@ export const checkoutQuote = quoteTotals.extend({
   availableMethods: z.array(paymentMethodEligibility).length(4),
   policyVersions: z.array(quotePolicyRef).min(1).max(7),
 })
-export const normalizedCheckoutDraft = z.strictObject({
+
+const normalizedCheckoutDraft = z.strictObject({
   items,
   recipient: addressInput,
   customer: z.strictObject({
@@ -84,7 +97,8 @@ export const normalizedCheckoutDraft = z.strictObject({
   couponCode: couponCode.optional(),
   method: paymentChannel,
 })
-export const quoteCouponSnapshot = z.strictObject({
+
+const quoteCouponSnapshot = z.strictObject({
   couponId: quoteId,
   code: couponCode,
   type: z.enum(['fixed', 'percentage']),
@@ -93,7 +107,8 @@ export const quoteCouponSnapshot = z.strictObject({
   eligibleSubtotalPoisha: money,
   discountPoisha: money,
 })
-export const checkoutCommercialSnapshot = z.strictObject({
+
+const checkoutCommercialSnapshot = z.strictObject({
   draft: normalizedCheckoutDraft,
   items: z.array(quoteLine).min(1).max(40),
   pricing: quoteTotals,
@@ -110,3 +125,16 @@ export const checkoutCommercialSnapshot = z.strictObject({
   availableMethods: z.array(paymentMethodEligibility).length(4),
   policyVersions: z.array(quotePolicyRef).min(1).max(7),
 })
+
+export {
+  quoteId,
+  checkoutQuoteInput,
+  checkoutSubmitInput,
+  quoteLine,
+  quotePolicyRef,
+  quoteTotals,
+  checkoutQuote,
+  normalizedCheckoutDraft,
+  quoteCouponSnapshot,
+  checkoutCommercialSnapshot,
+}

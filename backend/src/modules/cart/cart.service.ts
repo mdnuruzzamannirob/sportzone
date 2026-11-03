@@ -2,7 +2,7 @@ import { Types, type Connection } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import type { CustomerAccountAccess } from '../auth/auth.public.js'
-import type { catalogService } from '../catalog/catalog.service.js'
+import type { createCatalogService } from '../catalog/catalog.service.js'
 import { cartModel } from './cart.model.js'
 import { verifyCartPersistence } from './cart.persistence.js'
 import {
@@ -13,17 +13,23 @@ import {
   variantParams,
 } from './cart.schema.js'
 
-export function cartService(
+function createCartService(
   connection: Connection,
   access: CustomerAccountAccess,
-  catalog: Pick<ReturnType<typeof catalogService>, 'cartSelections'>,
+  catalog: Pick<ReturnType<typeof createCatalogService>, 'cartSelections'>,
   clock: () => Date = () => new Date(),
 ) {
   const carts = cartModel(connection)
   async function perform(
     token: string | undefined,
-    mutation?: { variantId: string; quantity?: number },
-    merge?: { variantId: string; quantity: number }[],
+    mutation?: {
+      variantId: string
+      quantity?: number
+    },
+    merge?: {
+      variantId: string
+      quantity: number
+    }[],
   ) {
     return access.owned(
       token,
@@ -35,7 +41,10 @@ export function cartService(
         }
         const userId = new Types.ObjectId(user.id)
         let cart = await carts.findOne({ userId }).session(transaction)
-        const errors: { variantId: string; code: 'BUSINESS_RULE_VIOLATION' }[] = []
+        const errors: {
+          variantId: string
+          code: 'BUSINESS_RULE_VIOLATION'
+        }[] = []
         if (merge) {
           if (!cart) cart = new carts({ userId, items: [], revision: 0 })
           const quantities = new Map<string, number>()
@@ -140,3 +149,5 @@ export function cartService(
     },
   }
 }
+
+export { createCartService }

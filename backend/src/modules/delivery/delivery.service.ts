@@ -403,7 +403,9 @@ function createDeliveryService(
     },
     async runDue() {
       await verify()
-      const due = await charges.aggregate<{ _id: Types.ObjectId }>([
+      const due = await charges.aggregate<{
+        _id: Types.ObjectId
+      }>([
         {
           $match: {
             $or: [
@@ -580,7 +582,10 @@ function deliveryAreasAccess(
       throw new ApiError('SERVICE_UNAVAILABLE')
     }
     const rows = await deliveryModels(connection)
-      .charges.aggregate<{ coverageKey: string; zoneId: Types.ObjectId }>([
+      .charges.aggregate<{
+        coverageKey: string
+        zoneId: Types.ObjectId
+      }>([
         {
           $match: {
             status: 'active',
@@ -613,5 +618,6 @@ function deliveryAreasAccess(
     })
   }
 }
+
 export { createDeliveryService, createAddressCoverage, checkoutDeliveryAccess, deliveryAreasAccess }
 export type { DeliveryService, AddressCoverage }

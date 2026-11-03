@@ -5,6 +5,7 @@ type QuotaStore = {
   verify?(): Promise<void>
   increment(key: string, expiresAt: Date, limit: number): Promise<number>
 }
+
 const validator = {
   $jsonSchema: {
     bsonType: 'object',
@@ -22,7 +23,13 @@ const validator = {
     },
   },
 }
-type Bucket = { _id: string; count: number; expiresAt: Date }
+
+type Bucket = {
+  _id: string
+  count: number
+  expiresAt: Date
+}
+
 function createAuthQuotaStore(connection: Connection) {
   if (!connection.db) throw new Error('Auth throttle persistence unavailable.')
   const db = connection.db,

@@ -14,16 +14,21 @@ import { verifyOrderPersistence } from './order.persistence.js'
 import { initialOrderResult, orderCreateCommand } from './order.schema.js'
 import { cancellationModel } from './cancellation.model.js'
 import { verifyCancellationPersistence } from './cancellation.persistence.js'
+
 // REQUIRED checkout coordinator capability. In THIS transaction it must authorize current
 // principal/consent, bind the intended order/intent, consume its valid quote and coordinate
 // durable intent outcome. Real allocations/payment intent must join before outer commit.
-export type OrderCreationAccess = {
+type OrderCreationAccess = {
   authorize(
     session: ClientSession,
-    command: { orderId: string; checkoutIntentId: string },
+    command: {
+      orderId: string
+      checkoutIntentId: string
+    },
   ): Promise<unknown>
 }
-export function orderService(
+
+function createOrderService(
   connection: Connection,
   checkout: OrderCreationAccess,
   audit: (session: ClientSession, event: unknown) => Promise<void>,
@@ -116,7 +121,7 @@ export function orderService(
 
 // Narrow checkout-only projection: intent scope is authorized by checkout, while canonical order
 // ownership and intent linkage are checked again here. Never returns contact/financial secrets.
-export function checkoutOrderReadAccess(connection: Connection) {
+function checkoutOrderReadAccess(connection: Connection) {
   const { orders } = orderModels(connection)
   return async (
     session: ClientSession,
@@ -150,7 +155,7 @@ export function checkoutOrderReadAccess(connection: Connection) {
 
 // Initial checkout allocation only. Payment commits and cancellation/release need their own
 // durable eligibility capability; this access deliberately cannot authorize those later transitions.
-export function initialOrderAllocationAccess(connection: Connection) {
+function initialOrderAllocationAccess(connection: Connection) {
   const { orders } = orderModels(connection)
   return {
     async authorize(session: ClientSession, orderId: string, generation: number, action: string) {
@@ -175,7 +180,7 @@ export function initialOrderAllocationAccess(connection: Connection) {
   }
 }
 
-export function orderAllocationBinding(
+function orderAllocationBinding(
   row: import('mongoose').HydratedDocument<import('./order.model.js').Order>,
   generation: number,
 ) {
@@ -214,7 +219,7 @@ export function orderAllocationBinding(
   }
 }
 
-export function expiredOrderAllocationAccess(
+function expiredOrderAllocationAccess(
   connection: Connection,
   payment: (session: ClientSession, orderId: string) => Promise<boolean>,
 ) {
@@ -244,7 +249,7 @@ export function expiredOrderAllocationAccess(
   }
 }
 
-export function guestOrderAccess(connection: Connection): GuestOrderAccess {
+function guestOrderAccess(connection: Connection): GuestOrderAccess {
   const { orders } = orderModels(connection)
   return {
     verifyPersistence: () => verifyOrderPersistence(connection),
@@ -318,12 +323,15 @@ export function guestOrderAccess(connection: Connection): GuestOrderAccess {
 }
 
 // Only an authenticated customer or proven guest scope may request this private projection.
-export function paymentMethodOrderAccess(connection: Connection) {
+function paymentMethodOrderAccess(connection: Connection) {
   const { orders } = orderModels(connection)
   return async (
     session: ClientSession,
     orderId: string,
-    scope: { customerId?: string; guestOrderId?: string },
+    scope: {
+      customerId?: string
+      guestOrderId?: string
+    },
   ) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
     if (!scope.customerId && scope.guestOrderId !== orderId) throw new ApiError('NOT_FOUND')
@@ -343,7 +351,7 @@ export function paymentMethodOrderAccess(connection: Connection) {
   }
 }
 
-export function paymentAllocationOrderAccess(
+function paymentAllocationOrderAccess(
   connection: Connection,
   eligible: (session: ClientSession, orderId: string) => Promise<void>,
 ) {
@@ -399,7 +407,7 @@ export function paymentAllocationOrderAccess(
   }
 }
 
-export function paymentInitiationOrderData(connection: Connection) {
+function paymentInitiationOrderData(connection: Connection) {
   const { orders } = orderModels(connection)
   return {
     async authorize(session: ClientSession, orderId: string) {
@@ -469,7 +477,7 @@ export function paymentInitiationOrderData(connection: Connection) {
 
 // Internal verified-funding capability. The caller must fence the canonical payment and durable
 // receipt in the SAME transaction. This is not a browser mutation or a fulfillment authorization API.
-export function verifiedFundingOrderAccess(connection: Connection) {
+function verifiedFundingOrderAccess(connection: Connection) {
   const { orders } = orderModels(connection)
   return {
     async notificationTarget(session: ClientSession, orderId: string) {
@@ -552,19 +560,25 @@ export function verifiedFundingOrderAccess(connection: Connection) {
 
 // Returns receives only ordinal-selection authority, never the private balance model. Eligibility
 // and current principal scope must be established by the owning coordinator in this transaction.
-export function claimQuantityAccess(connection: Connection) {
+function claimQuantityAccess(connection: Connection) {
   const { balances } = orderModels(connection)
   return async (
     session: ClientSession,
     input: {
       orderId: string
       claimId: string
-      items: { orderItemId: string; quantity: number }[]
+      items: {
+        orderItemId: string
+        quantity: number
+      }[]
     },
   ) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
     await verifyOrderPersistence(connection)
-    const selected: { orderItemId: string; ordinals: number[] }[] = []
+    const selected: {
+      orderItemId: string
+      ordinals: number[]
+    }[] = []
     for (const item of input.items) {
       const row = await balances
         .findOne({ orderId: input.orderId, orderItemId: item.orderItemId })
@@ -602,7 +616,7 @@ export function claimQuantityAccess(connection: Connection) {
 }
 
 // Scope and revision fence belong to Orders; Returns never reads its private model.
-export function claimEligibilityOrderAccess(connection: Connection) {
+function claimEligibilityOrderAccess(connection: Connection) {
   const { orders } = orderModels(connection)
   return async (
     session: ClientSession,
@@ -627,14 +641,18 @@ export function claimEligibilityOrderAccess(connection: Connection) {
   }
 }
 
-export function claimReviewQuantityAccess(connection: Connection) {
+function claimReviewQuantityAccess(connection: Connection) {
   const { balances } = orderModels(connection)
   return async (
     session: ClientSession,
     input: {
       orderId: string
       claimId: string
-      items: { orderItemId: string; protected: number[]; approved: number[] }[]
+      items: {
+        orderItemId: string
+        protected: number[]
+        approved: number[]
+      }[]
       resolve: boolean
     },
   ) => {
@@ -702,7 +720,7 @@ export function claimReviewQuantityAccess(connection: Connection) {
 
 // The caller must already hold the reviewed claim in this transaction. Only canonical
 // order snapshots and protected ordinals can authorize a physical return movement.
-export function claimRestockAccess(connection: Connection) {
+function claimRestockAccess(connection: Connection) {
   const { orders, balances } = orderModels(connection)
   return async (
     session: ClientSession,
@@ -750,13 +768,17 @@ export function claimRestockAccess(connection: Connection) {
 }
 
 // Read-only, transaction-scoped source of historical unit entitlements and delivery charge.
-export function refundOrderSnapshotAccess(connection: Connection) {
+function refundOrderSnapshotAccess(connection: Connection) {
   const { orders, balances } = orderModels(connection)
   return async (
     session: ClientSession,
     orderId: string,
     claimId: string,
-    requested: { orderItemId: string; quantity: number; ordinals: number[] }[],
+    requested: {
+      orderItemId: string
+      quantity: number
+      ordinals: number[]
+    }[],
   ) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
     await verifyOrderPersistence(connection)
@@ -794,7 +816,7 @@ export function refundOrderSnapshotAccess(connection: Connection) {
 }
 
 // Called only by the cancellation-decision coordinator inside its still-uncommitted approval.
-export function cancellationRefundSnapshotAccess(connection: Connection) {
+function cancellationRefundSnapshotAccess(connection: Connection) {
   const { orders, balances } = orderModels(connection),
     requests = cancellationModel(connection)
   return async (session: ClientSession, orderId: string, requestId: string) => {
@@ -835,7 +857,7 @@ export function cancellationRefundSnapshotAccess(connection: Connection) {
 }
 
 // Claim or pre-dispatch cancellation ordinals retain the same original entitlement namespace.
-export function refundUnitReservationAccess(connection: Connection) {
+function refundUnitReservationAccess(connection: Connection) {
   const { balances } = orderModels(connection)
   const id = z.string().regex(/^[a-f0-9]{24}$/)
   const command = z.strictObject({
@@ -923,7 +945,7 @@ export function refundUnitReservationAccess(connection: Connection) {
 
 // A delivered purchase remains eligible until its entire item is both resolved and fully refunded.
 // Write fences serialize review creation against concurrent fulfillment/refund changes.
-export function reviewPurchaseEligibilityAccess(connection: Connection) {
+function reviewPurchaseEligibilityAccess(connection: Connection) {
   const { orders, balances } = orderModels(connection)
   const selectionSchema = z.strictObject({
     userId: z.string().regex(/^[a-f0-9]{24}$/),
@@ -989,7 +1011,7 @@ export function reviewPurchaseEligibilityAccess(connection: Connection) {
 }
 
 // Return notifications obtain immutable order contact through the owning Orders boundary.
-export function returnNotificationOrderAccess(connection: Connection) {
+function returnNotificationOrderAccess(connection: Connection) {
   const { orders } = orderModels(connection)
   return async (session: ClientSession, orderId: string) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
@@ -1006,7 +1028,7 @@ export function returnNotificationOrderAccess(connection: Connection) {
   }
 }
 
-export function codCollectionOrderAccess(connection: Connection) {
+function codCollectionOrderAccess(connection: Connection) {
   const { orders } = orderModels(connection)
   return async (session: ClientSession, orderId: string) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
@@ -1031,7 +1053,7 @@ export function codCollectionOrderAccess(connection: Connection) {
 }
 
 // Only immutable owned identities cross this boundary; callers paginate their own resources.
-export function customerOrderHistoryAccess(connection: Connection) {
+function customerOrderHistoryAccess(connection: Connection) {
   const { orders } = orderModels(connection)
   return async (session: ClientSession, userId: string) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
@@ -1041,7 +1063,7 @@ export function customerOrderHistoryAccess(connection: Connection) {
   }
 }
 
-export function complaintOrderAccess(connection: Connection) {
+function complaintOrderAccess(connection: Connection) {
   const { orders } = orderModels(connection)
   return async (
     session: ClientSession,
@@ -1072,7 +1094,7 @@ export function complaintOrderAccess(connection: Connection) {
 }
 
 // Narrow delivered-order/item availability projection; no persistence object crosses the boundary.
-export function claimEligibilitySnapshotAccess(connection: Connection) {
+function claimEligibilitySnapshotAccess(connection: Connection) {
   const { orders, balances } = orderModels(connection)
   return async (
     session: ClientSession,
@@ -1111,7 +1133,7 @@ export function claimEligibilitySnapshotAccess(connection: Connection) {
 }
 
 // Refunds supplies only persisted obligation slices; Orders owns original ordinal settlement.
-export function refundUnitOutcomeAccess(connection: Connection) {
+function refundUnitOutcomeAccess(connection: Connection) {
   const { orders, balances } = orderModels(connection)
   const id = z.string().regex(/^[a-f0-9]{24}$/)
   const command = z.strictObject({
@@ -1204,9 +1226,16 @@ export function refundUnitOutcomeAccess(connection: Connection) {
 }
 
 // Reports receive bounded, immutable purchase-time amounts and sanitized cutoff summaries only.
-export function orderReportAccess(connection: Connection) {
+function orderReportAccess(connection: Connection) {
   const { orders } = orderModels(connection)
-  return async (session: ClientSession, period: { from: Date; to: Date; asOf: Date }) => {
+  return async (
+    session: ClientSession,
+    period: {
+      from: Date
+      to: Date
+      asOf: Date
+    },
+  ) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
     await verifyOrderPersistence(connection)
     const rows = await orders
@@ -1228,7 +1257,10 @@ export function orderReportAccess(connection: Connection) {
       .session(session)
     if (rows.length > 5000 || cod.length > 5000) throw new ApiError('BUSINESS_RULE_VIOLATION')
     const counts = await orders
-      .aggregate<{ _id: string; count: number }>([
+      .aggregate<{
+        _id: string
+        count: number
+      }>([
         { $match: { placedAt: { $lte: period.asOf } } },
         { $group: { _id: '$fulfillmentStatus', count: { $sum: 1 } } },
       ])
@@ -1267,7 +1299,7 @@ export function orderReportAccess(connection: Connection) {
   }
 }
 
-export function customerAdminOrderHistoryAccess(
+function customerAdminOrderHistoryAccess(
   connection: Connection,
   payments: ReturnType<typeof customerPaymentSummaryAccess>,
 ) {
@@ -1314,7 +1346,7 @@ export function customerAdminOrderHistoryAccess(
   }
 }
 
-export function deliveryExceptionRefundSnapshotAccess(connection: Connection) {
+function deliveryExceptionRefundSnapshotAccess(connection: Connection) {
   const { orders, balances } = orderModels(connection),
     exceptions = deliveryExceptionModel(connection)
   return async (session: ClientSession, orderId: string, exceptionId: string) => {
@@ -1353,9 +1385,15 @@ export function deliveryExceptionRefundSnapshotAccess(connection: Connection) {
   }
 }
 
-export function stockExceptionQueueAccess(connection: Connection) {
+function stockExceptionQueueAccess(connection: Connection) {
   const { orders } = orderModels(connection)
-  return async (session: ClientSession, input: { page: number; pageSize: number }) => {
+  return async (
+    session: ClientSession,
+    input: {
+      page: number
+      pageSize: number
+    },
+  ) => {
     await verifyOrderPersistence(connection)
     const filter = { fulfillmentHold: 'allocation_shortfall' as const }
     const rows = await orders
@@ -1379,7 +1417,7 @@ export function stockExceptionQueueAccess(connection: Connection) {
 }
 
 // Closed-state qualification is separate from the pre-closure reservation snapshot.
-export function closedRefundRequestAccess(connection: Connection) {
+function closedRefundRequestAccess(connection: Connection) {
   const { orders } = orderModels(connection)
   return async (
     session: ClientSession,
@@ -1421,7 +1459,7 @@ export function closedRefundRequestAccess(connection: Connection) {
 }
 
 // Owning order fence for customer refund submissions; no contact or persistence escapes.
-export function refundRequestOrderAccess(connection: Connection) {
+function refundRequestOrderAccess(connection: Connection) {
   const { orders } = orderModels(connection)
   return async (session: ClientSession, orderId: string) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
@@ -1435,3 +1473,37 @@ export function refundRequestOrderAccess(connection: Connection) {
     return { ...(row.userId ? { customerId: row.userId.toHexString() } : {}) }
   }
 }
+
+export {
+  createOrderService,
+  checkoutOrderReadAccess,
+  initialOrderAllocationAccess,
+  orderAllocationBinding,
+  expiredOrderAllocationAccess,
+  guestOrderAccess,
+  paymentMethodOrderAccess,
+  paymentAllocationOrderAccess,
+  paymentInitiationOrderData,
+  verifiedFundingOrderAccess,
+  claimQuantityAccess,
+  claimEligibilityOrderAccess,
+  claimReviewQuantityAccess,
+  claimRestockAccess,
+  refundOrderSnapshotAccess,
+  cancellationRefundSnapshotAccess,
+  refundUnitReservationAccess,
+  reviewPurchaseEligibilityAccess,
+  returnNotificationOrderAccess,
+  codCollectionOrderAccess,
+  customerOrderHistoryAccess,
+  complaintOrderAccess,
+  claimEligibilitySnapshotAccess,
+  refundUnitOutcomeAccess,
+  orderReportAccess,
+  customerAdminOrderHistoryAccess,
+  deliveryExceptionRefundSnapshotAccess,
+  stockExceptionQueueAccess,
+  closedRefundRequestAccess,
+  refundRequestOrderAccess,
+}
+export type { OrderCreationAccess }

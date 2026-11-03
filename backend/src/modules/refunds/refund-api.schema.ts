@@ -1,8 +1,10 @@
 import { z } from 'zod'
 import { paginationSchema } from '../../shared/pagination.js'
+
 const id = z.string().regex(/^[a-f0-9]{24}$/),
   money = z.int().nonnegative().max(Number.MAX_SAFE_INTEGER)
-export const refundStatus = z.enum([
+
+const refundStatus = z.enum([
   'requested',
   'under_review',
   'approved',
@@ -11,19 +13,24 @@ export const refundStatus = z.enum([
   'failed',
   'rejected',
 ])
-export const refundClassification = z.enum(['merchandise', 'payment_correction'])
-export const refundMethod = z.enum([
+
+const refundClassification = z.enum(['merchandise', 'payment_correction'])
+
+const refundMethod = z.enum([
   'gateway',
   'manual_bkash',
   'manual_nagad',
   'manual_rocket',
   'manual_bank',
 ])
-export const refundHistoryQuery = paginationSchema.safeExtend({
+
+const refundHistoryQuery = paginationSchema.safeExtend({
   status: refundStatus.optional(),
   classification: refundClassification.optional(),
 })
-export const refundAdminQuery = refundHistoryQuery.safeExtend({ sourceCollectionId: id.optional() })
+
+const refundAdminQuery = refundHistoryQuery.safeExtend({ sourceCollectionId: id.optional() })
+
 const timing = z.strictObject({
   status: z.enum(['awaiting_approval', 'under_review', 'calculated']),
   targetBusinessDays: z.int().min(1).max(7),
@@ -32,7 +39,8 @@ const timing = z.strictObject({
   calendarVersion: z.string().optional(),
   targetAt: z.iso.datetime().optional(),
 })
-export const refundHistoryView = z.strictObject({
+
+const refundHistoryView = z.strictObject({
   id,
   orderId: id,
   sourceCollectionId: id,
@@ -60,32 +68,32 @@ export const refundHistoryView = z.strictObject({
   timing,
   timeline: z.array(z.strictObject({ status: refundStatus, at: z.iso.datetime() })).max(40),
 })
+
 const summary = z.strictObject({ heldPoisha: money, completedPoisha: money })
-export const refundOrderHistory = z.strictObject({
+
+const refundOrderHistory = z.strictObject({
   refunds: z.array(refundHistoryView),
   merchandiseSummary: summary,
   correctionSummary: summary,
 })
-export const refundAdminView = refundHistoryView.omit({ investigationStatus: true }).extend({
+
+const refundAdminView = refundHistoryView.omit({ investigationStatus: true }).extend({
   basisRefId: id.optional(),
   merchandiseAmountPoisha: money,
   deliveryAmountPoisha: money,
   correctionAmountPoisha: money,
   policyVersion: z.string().optional(),
 })
-export const refundAttemptState = z.enum([
-  'created',
-  'submitted',
-  'uncertain',
-  'confirmed',
-  'failed',
-])
+
+const refundAttemptState = z.enum(['created', 'submitted', 'uncertain', 'confirmed', 'failed'])
+
 const capacity = z.strictObject({
   allocatedPoisha: money,
   heldPoisha: money,
   completedPoisha: money,
 })
-export const refundAdminDetail = refundAdminView.extend({
+
+const refundAdminDetail = refundAdminView.extend({
   sourceCapacity: capacity,
   orderCapacity: capacity,
   attempts: z
@@ -105,37 +113,65 @@ export const refundAdminDetail = refundAdminView.extend({
     )
     .max(50),
 })
-export const refundGroupView = z.strictObject({
+
+const refundGroupView = z.strictObject({
   refundGroupKey: z.string().regex(/^[a-f0-9]{64}$/),
   refunds: z.array(refundAdminDetail),
   status: refundStatus,
 })
-export const refundReasonInput = z.strictObject({ reason: z.string().trim().min(1).max(2000) })
+
+const refundReasonInput = z.strictObject({ reason: z.string().trim().min(1).max(2000) })
+
 // Preserve the established normalized key order: audit idempotency digests use JSON.stringify.
-export const refundReviewInput = z.strictObject({
+const refundReviewInput = z.strictObject({
   decision: z.enum(['approve', 'reject']),
   reason: refundReasonInput.shape.reason,
   method: refundMethod.optional(),
   consentEvidenceRef: z.string().min(1).max(256).optional(),
 })
-export const refundPayoutInput = z.strictObject({
+
+const refundPayoutInput = z.strictObject({
   method: refundMethod,
   reason: refundReasonInput.shape.reason,
 })
-export const refundPayoutView = z.strictObject({ attemptId: id, state: refundAttemptState })
-export const refundReconcileView = z.strictObject({
+
+const refundPayoutView = z.strictObject({ attemptId: id, state: refundAttemptState })
+
+const refundReconcileView = z.strictObject({
   status: refundStatus,
   attemptState: refundAttemptState,
   attemptId: id,
 })
+
 const manualText = z
   .string()
   .trim()
   .min(1)
   .max(2000)
   .refine((s) => [...s].every((c) => c.charCodeAt(0) >= 32 && c.charCodeAt(0) !== 127))
-export const refundManualInput = z.strictObject({
+
+const refundManualInput = z.strictObject({
   transferReference: manualText,
   evidenceRef: manualText,
   reason: manualText,
 })
+
+export {
+  refundStatus,
+  refundClassification,
+  refundMethod,
+  refundHistoryQuery,
+  refundAdminQuery,
+  refundHistoryView,
+  refundOrderHistory,
+  refundAdminView,
+  refundAttemptState,
+  refundAdminDetail,
+  refundGroupView,
+  refundReasonInput,
+  refundReviewInput,
+  refundPayoutInput,
+  refundPayoutView,
+  refundReconcileView,
+  refundManualInput,
+}

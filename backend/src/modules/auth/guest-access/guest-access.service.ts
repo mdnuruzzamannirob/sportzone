@@ -11,7 +11,8 @@ import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
 import { createProofCodec, proofHash } from '../verification/proof.crypto.js'
 import { guestChallengeInput, guestExchangeInput } from './guest-access.schema.js'
-function guestAccessService(
+
+function createGuestAccessService(
   models: IdentityModels,
   security: BrowserSecurity,
   sessions: GuestSessions,
@@ -136,4 +137,4 @@ function guestAccessService(
   }
 }
 
-export { guestAccessService }
+export { createGuestAccessService }

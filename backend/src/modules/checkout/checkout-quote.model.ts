@@ -6,9 +6,13 @@ import {
 } from '../../shared/database/schema.js'
 import type { z } from 'zod'
 import type { checkoutCommercialSnapshot } from './checkout.schema.js'
+
 const embedded = { _id: false, strict: 'throw', versionKey: false, minimize: false } as const
+
 const text = { type: String, required: true } as const
+
 const money = { ...integerField(), required: true }
+
 const address = new Schema(
   {
     recipient: text,
@@ -21,10 +25,12 @@ const address = new Schema(
   },
   embedded,
 )
+
 const selection = new Schema(
   { variantId: text, quantity: { ...integerField(1), required: true } },
   embedded,
 )
+
 const line = new Schema(
   {
     id: text,
@@ -44,6 +50,7 @@ const line = new Schema(
   },
   embedded,
 )
+
 const deadline = new Schema(
   {
     status: text,
@@ -58,10 +65,12 @@ const deadline = new Schema(
   },
   embedded,
 )
+
 const timingRule = new Schema(
   { startEvent: text, calendarDays: { ...integerField(1), required: true } },
   embedded,
 )
+
 const basis = new Schema(
   {
     rule: {
@@ -114,6 +123,7 @@ const basis = new Schema(
   },
   embedded,
 )
+
 const method = new Schema(
   {
     channel: text,
@@ -125,6 +135,7 @@ const method = new Schema(
   },
   embedded,
 )
+
 const snapshot = new Schema<z.output<typeof checkoutCommercialSnapshot>>(
   {
     draft: {
@@ -198,7 +209,8 @@ const snapshot = new Schema<z.output<typeof checkoutCommercialSnapshot>>(
   },
   embedded,
 )
-export type CheckoutQuote = {
+
+type CheckoutQuote = {
   scopeType: 'customer' | 'guest_context'
   scopeKeyHash: string
   requestFingerprint: string
@@ -214,6 +226,7 @@ export type CheckoutQuote = {
   createdAt?: Date
   updatedAt?: Date
 }
+
 const schema = new Schema<CheckoutQuote>(
   {
     scopeType: {
@@ -236,7 +249,9 @@ const schema = new Schema<CheckoutQuote>(
   },
   mutableSchemaOptions,
 )
+
 schema.index({ scopeType: 1, scopeKeyHash: 1, expiresAt: 1 }, { name: 'quote_scope_expiry' })
+
 schema.index(
   { checkoutIntentId: 1 },
   {
@@ -245,6 +260,7 @@ schema.index(
     name: 'quote_intent_unique',
   },
 )
+
 schema.index(
   { orderId: 1 },
   {
@@ -253,8 +269,12 @@ schema.index(
     name: 'quote_order_unique',
   },
 )
-export function checkoutQuoteModel(connection: Connection) {
+
+function checkoutQuoteModel(connection: Connection) {
   return connection.models.CheckoutQuote
     ? connection.model<CheckoutQuote>('CheckoutQuote')
     : connection.model<CheckoutQuote>('CheckoutQuote', schema, 'checkoutQuotes')
 }
+
+export { checkoutQuoteModel }
+export type { CheckoutQuote }

@@ -1,6 +1,6 @@
 import type { Connection } from 'mongoose'
 import { z } from 'zod'
-import type { refundRecoveryService } from '../modules/refunds/refund-recovery.service.js'
+import type { createRefundRecoveryService } from '../modules/refunds/payouts/refund-recovery.service.js'
 import { jobLeaseService } from '../shared/jobs/job-lease.service.js'
 export const refundReconciliationOptions = z.strictObject({
   batchSize: z.int().min(1).max(100),
@@ -9,7 +9,7 @@ export const refundReconciliationOptions = z.strictObject({
 })
 export function refundReconciliationJob(
   connection: Connection,
-  domain: ReturnType<typeof refundRecoveryService>,
+  domain: ReturnType<typeof createRefundRecoveryService>,
   raw: unknown,
   clock: () => Date = () => new Date(),
 ) {

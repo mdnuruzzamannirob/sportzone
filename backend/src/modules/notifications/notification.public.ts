@@ -6,10 +6,15 @@ interface IdentityProofIntent {
   userId: string
   email: string
 }
+
 interface IdentityNotifications {
   verifyIndexes(): Promise<void>
   enqueue(
-    input: { userId: string; email: string; name: string },
+    input: {
+      userId: string
+      email: string
+      name: string
+    },
     session: ClientSession,
   ): Promise<void>
   enqueuePasswordReset(
@@ -20,7 +25,12 @@ interface IdentityNotifications {
   enqueueEmailVerification(input: IdentityProofIntent, session: ClientSession): Promise<void>
   enqueueEmailChange(input: IdentityProofIntent, session: ClientSession): Promise<void>
   enqueueGuestAccess(
-    input: { id: string; challengeId: string; orderId: string; email: string },
+    input: {
+      id: string
+      challengeId: string
+      orderId: string
+      email: string
+    },
     session: ClientSession,
   ): Promise<void>
 }

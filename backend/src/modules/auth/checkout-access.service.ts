@@ -3,17 +3,20 @@ import type { ClientSession } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
 import type { CustomerAccountAccess, CustomerProfile } from './account-access.service.js'
 import type { BrowserSecurity } from './sessions/browser-security.service.js'
+
 type CheckoutCredentials = {
   customerPresent: boolean
   customerToken?: string | undefined
   contextToken?: string | undefined
   csrfToken?: string | undefined
 }
+
 type CheckoutPrincipal = {
   scopeType: 'customer' | 'guest_context'
   scopeKeyHash: string
   profile?: CustomerProfile
 }
+
 function checkoutAccess(customers: CustomerAccountAccess, security: BrowserSecurity) {
   return {
     async owned<T>(
@@ -57,7 +60,10 @@ function paymentMethodAccess(
       },
       orderId: string,
       work: (
-        scope: { customerId?: string; guestOrderId?: string },
+        scope: {
+          customerId?: string
+          guestOrderId?: string
+        },
         session: ClientSession,
       ) => Promise<T>,
     ) {
@@ -81,13 +87,17 @@ type PaymentInitiationCredentials = {
   guestToken?: string | undefined
   csrfToken?: string | undefined
 }
+
 function paymentInitiationAuthAccess(
   customers: CustomerAccountAccess,
   sessions: import('./sessions/session.service.js').SessionService,
   order: (
     session: ClientSession,
     orderId: string,
-    scope: { customerId?: string; guestOrderId?: string },
+    scope: {
+      customerId?: string
+      guestOrderId?: string
+    },
   ) => Promise<unknown>,
   guests?: Pick<import('./guest-access/guest-session.service.js').GuestSessions, 'owned'>,
 ) {
@@ -148,8 +158,16 @@ function paymentInitiationAuthAccess(
 }
 
 type OrderPrincipal =
-  | { kind: 'customer'; userId: string }
-  | { kind: 'guest_order'; guestSessionId: string; orderId: string }
+  | {
+      kind: 'customer'
+      userId: string
+    }
+  | {
+      kind: 'guest_order'
+      guestSessionId: string
+      orderId: string
+    }
+
 function orderScopeAccess(
   customers: CustomerAccountAccess,
   sessions: import('./sessions/session.service.js').SessionService,

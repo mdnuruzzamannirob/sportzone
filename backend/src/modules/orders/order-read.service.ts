@@ -1,18 +1,8 @@
 import type { ClientSession, Connection, HydratedDocument } from 'mongoose'
-import type { AdminAccountAccess } from '../auth/auth.public.js'
-import { adminOrderQuery, adminOrderDetail } from './order-read.schema.js'
-import type { CustomerAccountAccess } from '../auth/auth.public.js'
-import type {
-  orderScopeAccess,
-  PaymentInitiationCredentials,
-  OrderPrincipal,
-} from '../auth/checkout-access.service.js'
-import type { customerPaymentSummaryAccess } from '../payments/payment.service.js'
-import type { orderPolicySnapshotAccess } from '../checkout/checkout-quote.service.js'
-import { orderModels, type Order } from './order.model.js'
-import { verifyOrderPersistence } from './order.persistence.js'
-import { orderId } from './order.schema.js'
+import type { AdminAccountAccess, CustomerAccountAccess } from '../auth/auth.public.js'
 import {
+  adminOrderQuery,
+  adminOrderDetail,
   orderReadQuery,
   orderReadSummary,
   orderStatusView,
@@ -20,15 +10,27 @@ import {
   customerDeliveryEvents,
   customerPaymentHistory,
 } from './order-read.schema.js'
+import type {
+  orderScopeAccess,
+  PaymentInitiationCredentials,
+  OrderPrincipal,
+} from '../auth/checkout-access.service.js'
+import type { customerPaymentSummaryAccess } from '../payments/payment.service.js'
+import type { orderPolicySnapshotAccess } from '../checkout/checkout.service.js'
+import { orderModels, type Order } from './order.model.js'
+import { verifyOrderPersistence } from './order.persistence.js'
+import { orderId } from './order.schema.js'
 import { createDeliveryDeadlineService } from './delivery-deadline.service.js'
 import { pageMeta } from '../../shared/pagination.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
-export const orderOwnerFilter = (id: string, principal: OrderPrincipal) => {
+
+const orderOwnerFilter = (id: string, principal: OrderPrincipal) => {
   if (principal.kind === 'guest_order' && principal.orderId !== id) throw new ApiError('NOT_FOUND')
   return { _id: id, userId: principal.kind === 'customer' ? principal.userId : null }
 }
-export function orderReadService(
+
+function createOrderReadService(
   connection: Connection,
   customers: CustomerAccountAccess,
   access: ReturnType<typeof orderScopeAccess>,
@@ -289,3 +291,5 @@ export function orderReadService(
     },
   }
 }
+
+export { createOrderReadService, orderOwnerFilter }

@@ -1,17 +1,19 @@
-import type { refundMessageService } from './refund-message.service.js'
-import type { orderMessageService } from './order-message.service.js'
-import type { paymentMessageService } from './payment-message.service.js'
-import type { returnMessageService } from './return-message.service.js'
+import type {
+  createRefundMessageService,
+  createOrderMessageService,
+  createPaymentMessageService,
+  createReturnMessageService,
+} from './notification-template.js'
 import type { GuestProofDelivery } from '../auth/guest-access/guest-proof-delivery.service.js'
 import { createHash } from 'node:crypto'
 import { assertOutsideTransaction } from '../../shared/database/transaction.js'
 import { validateRetryPolicy, type RetryPolicy } from './notification.schema.js'
 import type { EmailAdapter, EmailMessage } from './notification.types.js'
 import type { ResetDelivery } from '../auth/verification/proof-delivery.service.js'
-import type { RegistrationNotifications } from './notification.service.js'
+import type { NotificationService } from './notification.service.js'
 
-export function createNotificationDeliveryService(
-  store: RegistrationNotifications,
+function createNotificationDeliveryService(
+  store: NotificationService,
   adapter: EmailAdapter,
   input: RetryPolicy,
   clock: () => Date = () => new Date(),
@@ -19,10 +21,10 @@ export function createNotificationDeliveryService(
   emailChangeDelivery?: ResetDelivery,
   adminResetDelivery?: ResetDelivery,
   guestDelivery?: GuestProofDelivery,
-  paymentDelivery?: ReturnType<typeof paymentMessageService>,
-  commerceDelivery?: ReturnType<typeof orderMessageService>,
-  returnDelivery?: ReturnType<typeof returnMessageService>,
-  refundDelivery?: ReturnType<typeof refundMessageService>,
+  paymentDelivery?: ReturnType<typeof createPaymentMessageService>,
+  commerceDelivery?: ReturnType<typeof createOrderMessageService>,
+  returnDelivery?: ReturnType<typeof createReturnMessageService>,
+  refundDelivery?: ReturnType<typeof createRefundMessageService>,
   emailVerificationDelivery?: ResetDelivery,
 ) {
   const settings = validateRetryPolicy(input)
@@ -124,3 +126,5 @@ export function createNotificationDeliveryService(
     },
   }
 }
+
+export { createNotificationDeliveryService }

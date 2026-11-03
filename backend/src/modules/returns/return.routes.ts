@@ -1,24 +1,92 @@
-import { claimInspectionInput, claimCompleteInput } from './return.schema.js'
 import { Router, type Request, type RequestHandler } from 'express'
 import { z } from 'zod'
-import { ApiError } from '../../shared/errors/app-error.js'
-import { parseInput } from '../../shared/middleware/validate.js'
-import { respond } from '../../shared/responses.js'
-import { readGuestCookie } from '../auth/guest-access/guest-session.service.js'
 import type { BrowserSecurity } from '../auth/sessions/browser-security.service.js'
 import { createSessionHttp, readSessionCookie } from '../auth/sessions/session.http.js'
 import type { SessionService } from '../auth/sessions/session.service.js'
+import { readGuestCookie } from '../auth/guest-access/guest-session.service.js'
+import { parseInput } from '../../shared/middleware/validate.js'
+import { respond } from '../../shared/responses.js'
+import type {
+  createReturnHistoryService,
+  createReturnLifecycleService,
+  createReturnOperationsService,
+  createReturnPhysicalService,
+} from './return.service.js'
+import { claimId, claimInspectionInput, claimCompleteInput } from './return.schema.js'
+import { ApiError } from '../../shared/errors/app-error.js'
 import { claimEvidenceMultipart } from '../media/media.controller.js'
-import type { returnHistoryService } from './return-history.service.js'
-import type { returnLifecycleService } from './return-lifecycle.service.js'
-import type { returnOperationsService } from './return-operations.service.js'
-import type { returnPhysicalService } from './return-physical.service.js'
-import { claimId } from './return.schema.js'
-export function returnRoutes(
-  operations: ReturnType<typeof returnOperationsService>,
-  lifecycle: ReturnType<typeof returnLifecycleService>,
-  physical: ReturnType<typeof returnPhysicalService>,
-  history: ReturnType<typeof returnHistoryService>,
+
+// Shared current-session reads; root composition owns environment admission.
+function createReturnHistoryRoutes(
+  service: ReturnType<typeof createReturnHistoryService>,
+  security: BrowserSecurity,
+  sessions: SessionService,
+) {
+  const router = Router(),
+    cors = security.cors('storefront'),
+    adminCors = security.cors('admin'),
+    http = createSessionHttp(sessions)
+  const credentials = (req: Request) => ({
+    customerPresent: (req.get('Cookie') ?? '')
+      .split(';')
+      .some((p) => p.trim().startsWith('sz_customer_sid=')),
+    customerToken: readSessionCookie(req.get('Cookie'), 'customer'),
+    guestToken: readGuestCookie(req.get('Cookie')),
+  })
+  for (const path of ['/me/claims', '/orders/:orderId/claims', '/claims/:claimId'])
+    router.options(path, cors)
+  for (const path of ['/admin/claims', '/admin/claims/:claimId']) router.options(path, adminCors)
+  router.get('/me/claims', cors, async (req, res) => {
+    parseInput(z.undefined(), req.body)
+    const result = await service.mine(credentials(req), req.query)
+    respond(res, result.items, 200, result.pagination)
+  })
+  router.get('/admin/claims', adminCors, http.require('admin'), async (req, res) => {
+    parseInput(z.undefined(), req.body)
+    const result = await service.adminList(readSessionCookie(req.get('Cookie'), 'admin'), req.query)
+    respond(res, result.items, 200, result.pagination)
+  })
+  router.get('/admin/claims/:claimId', adminCors, http.require('admin'), async (req, res) => {
+    parseInput(z.undefined(), req.body)
+    parseInput(z.strictObject({}), req.query)
+    respond(
+      res,
+      await service.adminDetail(
+        readSessionCookie(req.get('Cookie'), 'admin'),
+        parseInput(z.strictObject({ claimId }), req.params).claimId,
+      ),
+    )
+  })
+  router.get('/orders/:orderId/claims', cors, async (req, res) => {
+    parseInput(z.undefined(), req.body)
+    parseInput(z.strictObject({}), req.query)
+    respond(
+      res,
+      await service.list(
+        credentials(req),
+        parseInput(z.strictObject({ orderId: claimId }), req.params).orderId,
+      ),
+    )
+  })
+  router.get('/claims/:claimId', cors, async (req, res) => {
+    parseInput(z.undefined(), req.body)
+    parseInput(z.strictObject({}), req.query)
+    respond(
+      res,
+      await service.detail(
+        credentials(req),
+        parseInput(z.strictObject({ claimId }), req.params).claimId,
+      ),
+    )
+  })
+  return router
+}
+
+function createReturnRoutes(
+  operations: ReturnType<typeof createReturnOperationsService>,
+  lifecycle: ReturnType<typeof createReturnLifecycleService>,
+  physical: ReturnType<typeof createReturnPhysicalService>,
+  history: ReturnType<typeof createReturnHistoryService>,
   security: BrowserSecurity,
   sessions: SessionService,
   storefrontOrigin: string,
@@ -28,7 +96,9 @@ export function returnRoutes(
     token: string | undefined,
     claim: string,
     asset: string,
-  ) => Promise<{ url: string }>,
+  ) => Promise<{
+    url: string
+  }>,
 ) {
   const router = Router(),
     customer = security.cors('storefront'),
@@ -177,3 +247,5 @@ export function returnRoutes(
   )
   return router
 }
+
+export { createReturnHistoryRoutes, createReturnRoutes }

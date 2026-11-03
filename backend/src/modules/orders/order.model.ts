@@ -9,6 +9,7 @@ import {
   optionalObjectIdField,
 } from '../../shared/database/schema.js'
 import { fulfillmentStatus, fulfillmentHold, assertFulfillmentTransition } from './order.schema.js'
+
 const embedded = {
   _id: false,
   id: false,
@@ -16,15 +17,20 @@ const embedded = {
   versionKey: false,
   minimize: false,
 } as const
+
 const text = (max: number) => ({
   type: String,
   required: true,
   validate: (value: string) => [...value].length <= max,
 })
+
 const number = { ...integerField(), required: true }
+
 const oid = { type: Schema.Types.ObjectId, required: true, immutable: true }
+
 const instant = { type: Date, default: undefined }
-export type OrderItem = Omit<
+
+type OrderItem = Omit<
   z.output<typeof quoteLine>,
   'id' | 'productId' | 'variantId' | 'variantAttributes'
 > & {
@@ -35,12 +41,17 @@ export type OrderItem = Omit<
   unitRefundBasePoisha: number
   unitRefundRemainderQty: number
 }
-export type Order = {
+
+type Order = {
   orderNumber: string
   userId: Types.ObjectId | null
   checkoutIntentId: Types.ObjectId
   items: OrderItem[]
-  customerSnapshot: { name: string; emailNormalized: string; phone: string }
+  customerSnapshot: {
+    name: string
+    emailNormalized: string
+    phone: string
+  }
   deliverySnapshot: {
     recipient: string
     phone: string
@@ -107,6 +118,7 @@ export type Order = {
   createdAt?: Date
   updatedAt?: Date
 }
+
 const line = new Schema(
   {
     id: oid,
@@ -128,6 +140,7 @@ const line = new Schema(
   },
   embedded,
 )
+
 const timing = new Schema(
   {
     startEvent: { type: String, enum: ['placedAt', 'confirmedAt'], required: true },
@@ -135,6 +148,7 @@ const timing = new Schema(
   },
   embedded,
 )
+
 const basis = new Schema(
   {
     rule: {
@@ -192,6 +206,7 @@ const basis = new Schema(
   },
   embedded,
 )
+
 const orderSchema = new Schema<Order>(
   {
     orderNumber: { ...text(64), immutable: true },
@@ -199,7 +214,9 @@ const orderSchema = new Schema<Order>(
       type: Schema.Types.ObjectId,
       default: undefined,
       immutable: true,
-      required(this: { userId?: Types.ObjectId | null }) {
+      required(this: {
+        userId?: Types.ObjectId | null
+      }) {
         return this.userId !== null
       },
     },
@@ -367,6 +384,7 @@ const orderSchema = new Schema<Order>(
   },
   mutableSchemaOptions,
 )
+
 const historicalPaths = [
   'orderNumber',
   'userId',
@@ -383,12 +401,15 @@ const historicalPaths = [
   'schemaVersion',
   'createdAt',
 ]
+
 orderSchema.post('init', (row) => {
   row.$locals.fulfillmentAtLoad = row.fulfillmentStatus
 })
+
 orderSchema.post('save', (row) => {
   row.$locals.fulfillmentAtLoad = row.fulfillmentStatus
 })
+
 orderSchema.pre('validate', function () {
   if (
     this.isNew &&
@@ -405,13 +426,16 @@ orderSchema.pre('validate', function () {
       to: this.fulfillmentStatus,
     })
 })
+
 orderSchema.pre('save', function () {
   if (!this.isNew && historicalPaths.some((path) => this.isModified(path)))
     throw new ApiError('STATE_CONFLICT')
 })
+
 orderSchema.pre(['replaceOne', 'findOneAndReplace'], () => {
   throw new ApiError('STATE_CONFLICT')
 })
+
 orderSchema.pre(['updateOne', 'updateMany', 'findOneAndUpdate'], function () {
   const update = this.getUpdate()
   if (this.getOptions().upsert || !update || Array.isArray(update))
@@ -445,17 +469,25 @@ orderSchema.pre(['updateOne', 'updateMany', 'findOneAndUpdate'], function () {
     }
   }
 })
+
 orderSchema.index({ orderNumber: 1 }, { unique: true, name: 'order_number_unique' })
+
 orderSchema.index({ checkoutIntentId: 1 }, { unique: true, name: 'order_intent_unique' })
+
 orderSchema.index({ userId: 1, placedAt: -1 }, { name: 'order_customer_history' })
+
 orderSchema.index({ placedAt: 1, _id: 1 }, { name: 'order_report_placement' })
+
 orderSchema.index({ fulfillmentHold: 1, placedAt: -1, _id: -1 }, { name: 'order_hold_queue' })
+
 orderSchema.index({ fulfillmentStatus: 1, placedAt: -1 }, { name: 'order_fulfillment_history' })
+
 orderSchema.index(
   { 'customerSnapshot.emailNormalized': 1, orderNumber: 1 },
   { name: 'order_internal_guest_lookup' },
 )
-export type OrderItemBalance = {
+
+type OrderItemBalance = {
   orderId: Types.ObjectId
   orderItemId: Types.ObjectId
   purchasedQty: number
@@ -475,6 +507,7 @@ export type OrderItemBalance = {
   createdAt?: Date
   updatedAt?: Date
 }
+
 const balanceSchema = new Schema<OrderItemBalance>(
   {
     orderId: oid,
@@ -509,6 +542,7 @@ const balanceSchema = new Schema<OrderItemBalance>(
   },
   mutableSchemaOptions,
 )
+
 const unitIdentity = (row: OrderItemBalance) =>
   JSON.stringify([
     row.orderId,
@@ -516,12 +550,15 @@ const unitIdentity = (row: OrderItemBalance) =>
     row.purchasedQty,
     row.unitCoverage.map((unit) => [unit.ordinal, unit.netEntitlementPoisha]),
   ])
+
 balanceSchema.post('init', (row) => {
   row.$locals.unitIdentity = unitIdentity(row)
 })
+
 balanceSchema.post('save', (row) => {
   row.$locals.unitIdentity = unitIdentity(row)
 })
+
 balanceSchema.pre('validate', function () {
   if (!this.isNew && this.$locals.unitIdentity !== unitIdentity(this))
     throw new ApiError('STATE_CONFLICT')
@@ -540,9 +577,11 @@ balanceSchema.pre('validate', function () {
   )
     this.invalidate('unitCoverage', 'Invalid unit coverage')
 })
+
 balanceSchema.pre(['replaceOne', 'findOneAndReplace'], () => {
   throw new ApiError('STATE_CONFLICT')
 })
+
 balanceSchema.pre(['updateOne', 'updateMany', 'findOneAndUpdate'], function () {
   const update = this.getUpdate()
   if (!update || Array.isArray(update) || this.getOptions().upsert)
@@ -567,11 +606,13 @@ balanceSchema.pre(['updateOne', 'updateMany', 'findOneAndUpdate'], function () {
     }
   }
 })
+
 balanceSchema.index(
   { orderId: 1, orderItemId: 1 },
   { unique: true, name: 'order_item_balance_unique' },
 )
-export function orderModels(connection: Connection) {
+
+function orderModels(connection: Connection) {
   return {
     orders: connection.models.Order
       ? connection.model<Order>('Order')
@@ -581,3 +622,6 @@ export function orderModels(connection: Connection) {
       : connection.model<OrderItemBalance>('OrderItemBalance', balanceSchema, 'orderItemBalances'),
   }
 }
+
+export { orderModels }
+export type { OrderItem, Order, OrderItemBalance }

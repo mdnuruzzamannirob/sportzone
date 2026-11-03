@@ -4,29 +4,35 @@ import { verifyDeclaredIndexes } from '../../../shared/database/indexes.js'
 import { productModels } from './product.model.js'
 
 type Shape = Record<string, unknown>
+
 const integer = {
   bsonType: ['int', 'long', 'double'],
   minimum: 0,
   maximum: Number.MAX_SAFE_INTEGER,
   multipleOf: 1,
 }
+
 const text = (maxLength: number): Shape => ({
   bsonType: 'string',
   minLength: 1,
   maxLength,
 })
+
 const object = (properties: Shape, required: string[]): Shape => ({
   bsonType: 'object',
   additionalProperties: false,
   properties,
   required,
 })
+
 const base = {
   _id: { bsonType: 'objectId' },
   createdAt: { bsonType: 'date' },
   updatedAt: { bsonType: 'date' },
 }
+
 const requiredBase = ['_id', 'createdAt', 'updatedAt']
+
 const productValidator = {
   $jsonSchema: object(
     {
@@ -90,6 +96,7 @@ const productValidator = {
     ],
   ),
 }
+
 const variantValidator = {
   $and: [
     {
@@ -145,13 +152,14 @@ const variantValidator = {
     },
   ],
 }
-export const productCollectionValidators = {
+
+const productCollectionValidators = {
   products: productValidator,
   productVariants: variantValidator,
 }
 
 // Explicit additive bootstrap only. Never alter an existing validator or drop an index.
-export async function initializeProductPersistence(connection: Connection) {
+async function initializeProductPersistence(connection: Connection) {
   if (!connection.db) throw new Error('Product database is unavailable.')
   for (const [name, validator] of Object.entries(productCollectionValidators)) {
     const existing = await connection.db.listCollections({ name }, { nameOnly: false }).next()
@@ -177,7 +185,7 @@ export async function initializeProductPersistence(connection: Connection) {
   }
 }
 
-export async function verifyProductPersistence(connection: Connection) {
+async function verifyProductPersistence(connection: Connection) {
   if (!connection.db) throw new Error('Product database unavailable.')
   for (const [name, validator] of Object.entries(productCollectionValidators)) {
     const row = await connection.db.listCollections({ name }, { nameOnly: false }).next()
@@ -193,3 +201,5 @@ export async function verifyProductPersistence(connection: Connection) {
   await verifyDeclaredIndexes(models.products)
   await verifyDeclaredIndexes(models.variants)
 }
+
+export { initializeProductPersistence, verifyProductPersistence, productCollectionValidators }

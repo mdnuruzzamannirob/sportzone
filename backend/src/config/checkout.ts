@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { policyType } from '../modules/settings/policy.schema.js'
+import { policyType } from '../modules/settings/setting.schema.js'
 import { ConfigurationError } from '../shared/errors/configuration-error.js'
 import { loadDeliveryDeadlinePolicy } from './delivery.js'
 export const checkoutOptions = z.strictObject({

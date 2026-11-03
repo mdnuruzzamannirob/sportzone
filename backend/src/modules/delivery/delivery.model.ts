@@ -4,6 +4,7 @@ import {
   mutableSchemaOptions,
   optionalObjectIdField,
 } from '../../shared/database/schema.js'
+
 const zoneSchema = new Schema(
   {
     name: { type: String, required: true, maxlength: 120 },
@@ -14,7 +15,9 @@ const zoneSchema = new Schema(
   },
   mutableSchemaOptions,
 )
+
 zoneSchema.index({ createdAt: -1, _id: -1 }, { name: 'delivery_zone_list' })
+
 const snapshot = new Schema(
   {
     id: { type: String, required: true },
@@ -30,6 +33,7 @@ const snapshot = new Schema(
   },
   { _id: false, strict: 'throw', versionKey: false },
 )
+
 const operation = new Schema(
   {
     action: { type: String, enum: ['activate', 'deactivate', 'supersede'], required: true },
@@ -40,6 +44,7 @@ const operation = new Schema(
   },
   { _id: false, strict: 'throw', versionKey: false },
 )
+
 const chargeSchema = new Schema(
   {
     zoneId: { type: Schema.Types.ObjectId, required: true, immutable: true },
@@ -61,6 +66,7 @@ const chargeSchema = new Schema(
   },
   mutableSchemaOptions,
 )
+
 chargeSchema.index(
   { coverageKey: 1 },
   {
@@ -69,19 +75,27 @@ chargeSchema.index(
     name: 'delivery_active_coverage_unique',
   },
 )
+
 chargeSchema.index(
   { coverageKey: 1, ruleVersion: 1 },
   { unique: true, name: 'delivery_coverage_version_unique' },
 )
+
 chargeSchema.index(
   { zoneId: 1, status: 1, effectiveFrom: 1 },
   { name: 'delivery_zone_status_start' },
 )
+
 chargeSchema.index({ status: 1, effectiveFrom: 1 }, { name: 'delivery_due_start' })
+
 chargeSchema.index({ status: 1, effectiveTo: 1 }, { name: 'delivery_due_end' })
+
 chargeSchema.index({ createdAt: -1, _id: -1 }, { name: 'delivery_charge_list' })
+
 type DeliveryZone = InferSchemaType<typeof zoneSchema>
+
 type DeliveryCharge = InferSchemaType<typeof chargeSchema>
+
 function deliveryModels(connection: Connection) {
   return {
     zones: connection.models.DeliveryZone

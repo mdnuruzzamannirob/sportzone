@@ -1,12 +1,12 @@
-import { createRegistrationNotifications } from '../notifications/notification.service.js'
+import { createNotificationService } from '../notifications/notification.service.js'
 import { createDeliveryDeadlineService } from './delivery-deadline.service.js'
 import { createHash } from 'node:crypto'
 import { Types, type ClientSession, type Connection } from 'mongoose'
 import type { AdminAccountAccess } from '../auth/auth.public.js'
 import type { fulfillmentPaymentAccess } from '../payments/payment.service.js'
-import type { fulfillmentAllocationService } from '../checkout/fulfillment-allocation.service.js'
+import type { createFulfillmentAllocationService } from './order-allocation.service.js'
 import { createAuditWriter, auditOperationReader } from '../audit/audit.service.js'
-import { paymentInitiationKey } from '../payments/payment-initiation.schema.js'
+import { paymentInitiationKey } from '../payments/attempts/payment-initiation.schema.js'
 import { orderModels, type Order } from './order.model.js'
 import { verifyOrderPersistence } from './order.persistence.js'
 import { orderAllocationBinding } from './order.service.js'
@@ -15,8 +15,14 @@ import { deliveryDeadline } from './delivery-deadline.schema.js'
 import { lifecycleInput, lifecycleResult } from './order-lifecycle.schema.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
+
 const hash = (v: string) => createHash('sha256').update(v).digest('hex')
-const view = (r: Order & { _id: Types.ObjectId }) =>
+
+const view = (
+  r: Order & {
+    _id: Types.ObjectId
+  },
+) =>
   lifecycleResult.parse({
     id: r._id.toHexString(),
     fulfillmentStatus: r.fulfillmentStatus,
@@ -25,11 +31,12 @@ const view = (r: Order & { _id: Types.ObjectId }) =>
     ...(r.shippedAt ? { shippedAt: r.shippedAt.toISOString() } : {}),
     ...(r.deliveredAt ? { deliveredAt: r.deliveredAt.toISOString() } : {}),
   })
-export function orderLifecycleService(
+
+function createOrderLifecycleService(
   connection: Connection,
   admin: AdminAccountAccess,
   payment: ReturnType<typeof fulfillmentPaymentAccess>,
-  allocation: ReturnType<typeof fulfillmentAllocationService>,
+  allocation: ReturnType<typeof createFulfillmentAllocationService>,
   approvedDeadline?: (session: ClientSession, basis: unknown) => Promise<void>,
   clock: () => Date = () => new Date(),
 ) {
@@ -167,7 +174,7 @@ export function orderLifecycleService(
                 ? 'delivery_completion'
                 : undefined
         if (eventType)
-          await createRegistrationNotifications(connection, clock).enqueueCommerce(
+          await createNotificationService(connection, clock).enqueueCommerce(
             {
               orderId: row._id,
               ...(row.userId ? { userId: row.userId } : {}),
@@ -192,3 +199,5 @@ export function orderLifecycleService(
     },
   }
 }
+
+export { createOrderLifecycleService }

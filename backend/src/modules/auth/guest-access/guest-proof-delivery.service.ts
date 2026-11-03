@@ -3,6 +3,7 @@ import type { IdentityModels } from '../auth.model.js'
 import type { GuestAccessOptions } from '../../../config/security.js'
 import type { GuestOrderAccess } from '../../orders/order.public.js'
 import { createProofCodec, proofHash, type ProofEnvelope } from '../verification/proof.crypto.js'
+
 function guestProofDelivery(
   models: IdentityModels,
   orders: Pick<GuestOrderAccess, 'verify'>,
@@ -98,6 +99,7 @@ function guestProofDelivery(
     },
   }
 }
+
 type GuestProofDelivery = ReturnType<typeof guestProofDelivery>
 
 export { guestProofDelivery }

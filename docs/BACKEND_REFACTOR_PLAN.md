@@ -483,6 +483,16 @@ conditional writes, not process-local correctness. Preserve packaging restrictio
 
 ## 9. Migration and compatibility protocol
 
+For the owner-selected current batch, organize the complete module layer first, then finish the
+remaining src composition/public-contract work, then migrate outside-src consumers in bounded batches.
+Consolidated test execution, test review and fixes follow those passes. Existing package exit criteria
+remain final verification obligations; intermediate structural completion does not satisfy them.
+Source-only compilation, module lint/format and import-graph checks may be used during source edits.
+Track renamed/consolidated paths and exported symbols for later test/contract/operator/tooling migration;
+never generate empty compatibility barrels or widen legacy permissions just to obtain a green check.
+No automatic commits, pushes, branch switches or PR updates are authorized by this batching instruction.
+
+
 For each work package:
 
 1. Inspect current git/staged changes and relevant source/contracts/tests. Identify owner, FR references,

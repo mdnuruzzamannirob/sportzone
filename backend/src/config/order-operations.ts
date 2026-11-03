@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { refundApproval } from '../modules/refunds/refund-reservation.schema.js'
+import { refundApproval } from '../modules/refunds/obligations/refund-reservation.schema.js'
 import { ConfigurationError } from '../shared/errors/configuration-error.js'
 import { readProtectedFile } from '../shared/protected-file.js'
 import { loadDeliveryDeadlinePolicy } from './delivery.js'

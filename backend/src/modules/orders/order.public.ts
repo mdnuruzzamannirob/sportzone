@@ -14,15 +14,17 @@ type DeliveryDispositionVerifier = (
   input: DeliveryDispositionInput,
 ) => Promise<unknown>
 
-export type { DeliveryDispositionInput, DeliveryDispositionVerifier }
-
 interface GuestOrderAccess {
   verifyPersistence(): Promise<void>
   lookup(
     session: ClientSession,
     orderNumber: string,
     email: string,
-  ): Promise<{ id: string; email: string; revision: number } | null>
+  ): Promise<{
+    id: string
+    email: string
+    revision: number
+  } | null>
   issue(session: ClientSession, orderId: string, expectedRevision: number): Promise<number>
   verify(
     session: ClientSession | undefined,
@@ -38,4 +40,4 @@ interface GuestOrderAccess {
   ): Promise<boolean>
 }
 
-export type { GuestOrderAccess }
+export type { DeliveryDispositionInput, DeliveryDispositionVerifier, GuestOrderAccess }

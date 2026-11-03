@@ -1,6 +1,7 @@
 import type { ClientSession } from 'mongoose'
 
 type AuditWriter = (session: ClientSession, event: unknown) => Promise<void>
+
 type AuditOperationReader = (
   session: ClientSession,
   identity: unknown,

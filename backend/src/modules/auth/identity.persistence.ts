@@ -6,37 +6,49 @@ import { verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 import type { IdentityModels } from './auth.model.js'
 
 type Shape = Record<string, unknown>
+
 const text = (max?: number): Shape => ({
   bsonType: 'string',
   minLength: 1,
   ...(max ? { maxLength: max } : {}),
   pattern: '^\\S(?:[\\s\\S]*\\S)?$',
 })
+
 const email: Shape = { ...text(254), pattern: z.regexes.email.source }
+
 const oid = { bsonType: 'objectId' }
+
 const date = { bsonType: 'date' }
+
 const integer = {
   bsonType: ['int', 'long', 'double'],
   minimum: 0,
   maximum: Number.MAX_SAFE_INTEGER,
   multipleOf: 1,
 }
+
 const object = (properties: Shape, required: string[]): Shape => ({
   bsonType: 'object',
   additionalProperties: false,
   required,
   properties,
 })
+
 const base = { _id: oid, createdAt: date, updatedAt: date }
+
 const baseRequired = ['_id', 'createdAt', 'updatedAt']
+
 const has = (...fields: string[]) => ({ required: fields })
+
 const lacks = (...fields: string[]) => ({
   not: { anyOf: fields.map((field) => has(field)) },
 })
+
 const enumField = (...values: string[]) => ({
   bsonType: 'string',
   enum: values,
 })
+
 const address = object(
   {
     id: oid,
@@ -51,10 +63,12 @@ const address = object(
   },
   ['id', 'recipient', 'phone', 'districtKey', 'areaKey', 'street', 'isDefault'],
 )
+
 const revisions = object(
   { email_verify: integer, email_change: integer, password_reset: integer },
   ['email_verify', 'email_change', 'password_reset'],
 )
+
 const deletion = {
   ...object(
     {
@@ -76,6 +90,7 @@ const deletion = {
     },
   ],
 }
+
 const envelope = object(
   {
     algorithm: enumField('AES-256-GCM'),
@@ -86,15 +101,19 @@ const envelope = object(
   },
   ['algorithm', 'keyVersion', 'nonce', 'ciphertext', 'authTag'],
 )
+
 const normalized = (field: string) => ({
   $eq: [`$${field}`, { $toLower: `$${field}` }],
 })
+
 const issuanceExpiry = { $gt: ['$expiresAt', '$createdAt'] }
+
 const guest = (key: 'kind' | 'purpose', value: string, revision = false) => ({
   properties: { [key]: { enum: [value] } },
   ...has('orderId'),
   ...lacks('userId', ...(revision ? ['securityRevisionAtIssue'] : [])),
 })
+
 const principal = (key: 'kind' | 'purpose', values: string[], revision = false) => ({
   properties: { [key]: { enum: values } },
   ...has('userId', ...(revision ? ['securityRevisionAtIssue'] : [])),

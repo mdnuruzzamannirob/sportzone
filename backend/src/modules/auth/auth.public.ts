@@ -23,6 +23,7 @@ interface AccountAddress {
   addressLine2?: string
   isDefault: boolean
 }
+
 interface AccountView {
   id: string
   name: string
@@ -32,7 +33,9 @@ interface AccountView {
   addresses: AccountAddress[]
   status: 'active' | 'suspended' | 'deletion_pending' | 'deactivated'
 }
+
 type PrivacyStatus = 'requested' | 'under_review' | 'approved' | 'rejected' | 'completed'
+
 type CustomerProfile = Pick<AccountView, 'name' | 'phone' | 'addresses'> &
   Readonly<Omit<AccountView, 'name' | 'phone' | 'addresses'>> & {
     deletionRequest?: {
@@ -45,6 +48,7 @@ type CustomerProfile = Pick<AccountView, 'name' | 'phone' | 'addresses'> &
       decisionReason?: string | null
     }
   }
+
 interface CustomerAccountAccess {
   authorizeInSession(
     token: string | undefined,
@@ -64,12 +68,17 @@ interface CustomerAccountAccess {
     mutating?: boolean,
   ): Promise<T>
 }
+
 type CustomerHistories = (
   session: ClientSession,
   customerId: string,
   kind: 'orders' | 'claims' | 'refunds',
   raw: unknown,
-) => Promise<{ items: unknown[]; pagination: ReturnType<typeof pageMeta> }>
+) => Promise<{
+  items: unknown[]
+  pagination: ReturnType<typeof pageMeta>
+}>
+
 interface CustomerAdministration {
   history(
     token: string | undefined,
@@ -83,7 +92,10 @@ interface CustomerAdministration {
     id: unknown,
     raw: unknown,
     key: unknown,
-  ): Promise<{ status: PrivacyStatus | undefined; retained: boolean }>
+  ): Promise<{
+    status: PrivacyStatus | undefined
+    retained: boolean
+  }>
   list(
     token: string | undefined,
     raw: unknown,
@@ -96,7 +108,9 @@ interface CustomerAdministration {
     id: unknown,
     raw: unknown,
     key: unknown,
-  ): Promise<{ status: AccountView['status'] }>
+  ): Promise<{
+    status: AccountView['status']
+  }>
   detail(token: string | undefined, id: unknown): Promise<z.output<typeof customerAdminView>>
 }
 
@@ -107,12 +121,12 @@ interface BrowserRouteAccess {
   readToken(header: string | undefined): string | undefined
 }
 
-export type { AdminAccountAccess }
 export type {
+  AdminAccountAccess,
   AccountView,
   CustomerProfile,
   CustomerAccountAccess,
   CustomerHistories,
   CustomerAdministration,
+  BrowserRouteAccess,
 }
-export type { BrowserRouteAccess }

@@ -2,7 +2,9 @@ import { z } from 'zod'
 import { newPasswordPolicy } from './password.service.js'
 
 const email = z.string().trim().toLowerCase().pipe(z.email().max(254))
+
 const nameLimit = 120
+
 const registrationInput = z.strictObject({
   name: z
     .string()
@@ -13,6 +15,7 @@ const registrationInput = z.strictObject({
   email,
   password: newPasswordPolicy,
 })
+
 const loginInput = z.strictObject({
   email,
   password: z

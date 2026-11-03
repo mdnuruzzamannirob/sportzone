@@ -1,5 +1,6 @@
 import { Schema, type Connection, type InferSchemaType } from 'mongoose'
 import { mutableSchemaOptions } from '../../shared/database/schema.js'
+
 const schema = new Schema(
   {
     actorType: {
@@ -20,14 +21,21 @@ const schema = new Schema(
   },
   { ...mutableSchemaOptions, timestamps: false },
 )
+
 schema.index({ targetType: 1, targetId: 1, occurredAt: -1 }, { name: 'audit_target_time' })
+
 schema.index({ actorId: 1, occurredAt: -1 }, { name: 'audit_actor_time' })
+
 schema.index(
   { operationKey: 1, action: 1, targetType: 1, targetId: 1 },
   { unique: true, name: 'audit_cause_unique' },
 )
+
 type Audit = InferSchemaType<typeof schema>
-export function auditModel(connection: Connection) {
+
+function auditModel(connection: Connection) {
   if (!connection.models.AuditLog) connection.model<Audit>('AuditLog', schema, 'auditLogs')
   return connection.model<Audit>('AuditLog')
 }
+
+export { auditModel }

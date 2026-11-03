@@ -1,9 +1,11 @@
 import { z } from 'zod'
 import { productCard } from '../catalog/catalog.schema.js'
 
-export const variantParams = z.strictObject({ variantId: z.string().regex(/^[a-f0-9]{24}$/) })
-export const cartQuantity = z.strictObject({ quantity: z.int().min(1).max(50) })
-export const cartResponse = z.strictObject({
+const variantParams = z.strictObject({ variantId: z.string().regex(/^[a-f0-9]{24}$/) })
+
+const cartQuantity = z.strictObject({ quantity: z.int().min(1).max(50) })
+
+const cartResponse = z.strictObject({
   items: z
     .array(
       z.strictObject({
@@ -19,7 +21,7 @@ export const cartResponse = z.strictObject({
   revision: z.int().nonnegative().max(Number.MAX_SAFE_INTEGER),
 })
 
-export const cartMerge = z.strictObject({
+const cartMerge = z.strictObject({
   items: z
     .array(
       z.strictObject({
@@ -29,7 +31,8 @@ export const cartMerge = z.strictObject({
     )
     .max(100),
 })
-export const cartMergeResponse = cartResponse.extend({
+
+const cartMergeResponse = cartResponse.extend({
   errors: z
     .array(
       z.strictObject({
@@ -39,3 +42,5 @@ export const cartMergeResponse = cartResponse.extend({
     )
     .max(100),
 })
+
+export { variantParams, cartQuantity, cartResponse, cartMerge, cartMergeResponse }

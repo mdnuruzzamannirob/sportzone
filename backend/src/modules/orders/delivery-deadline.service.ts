@@ -17,6 +17,7 @@ function deliveryDeadlineDigest(raw: unknown) {
   const rule = parseInput(deliveryDeadlineRule, raw)
   return jsonDigest(rule)
 }
+
 const formatter = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'Asia/Dhaka',
   year: 'numeric',
@@ -27,6 +28,7 @@ const formatter = new Intl.DateTimeFormat('en-GB', {
   second: '2-digit',
   hourCycle: 'h23',
 })
+
 function wallTime(value: Date) {
   const parts = formatter.formatToParts(value)
   const field = (key: Intl.DateTimeFormatPartTypes) =>
@@ -36,6 +38,7 @@ function wallTime(value: Date) {
   result.setUTCHours(field('hour'), field('minute'), field('second'), value.getUTCMilliseconds())
   return result.getTime()
 }
+
 // Calendar-day arithmetic preserves Dhaka wall-clock time, including month/year/leap boundaries.
 // If a historical timezone transition has no unambiguous local result, fail closed.
 function addDeliveryCalendarDays(raw: string, calendarDays: number) {
@@ -58,12 +61,14 @@ function addDeliveryCalendarDays(raw: string, calendarDays: number) {
   if (matches.length === 1 && matches[0] !== undefined) return new Date(matches[0]).toISOString()
   throw new ApiError('BUSINESS_RULE_VIOLATION')
 }
+
 function reviewed(manifest: DeliveryDeadlineManifest, at: Date) {
   return (
     manifest.review.ruleDigest === deliveryDeadlineDigest(manifest.rule) &&
     Date.parse(manifest.review.approvedAt) <= at.getTime()
   )
 }
+
 function active(manifest: DeliveryDeadlineManifest, at: Date) {
   return (
     reviewed(manifest, at) &&
@@ -71,6 +76,7 @@ function active(manifest: DeliveryDeadlineManifest, at: Date) {
     (!manifest.rule.effectiveTo || at.getTime() < Date.parse(manifest.rule.effectiveTo))
   )
 }
+
 function freezeBasis(basis: DeliveryDeadlineBasis) {
   for (const cap of basis.rule.legalCaps) Object.freeze(cap)
   Object.freeze(basis.rule.legalCaps)
@@ -81,6 +87,7 @@ function freezeBasis(basis: DeliveryDeadlineBasis) {
   Object.freeze(basis.review)
   return Object.freeze(basis)
 }
+
 function createDeliveryDeadlineService(
   manifest?: DeliveryDeadlineManifest,
   clock: () => Date = () => new Date(),

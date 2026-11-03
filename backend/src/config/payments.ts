@@ -1,9 +1,9 @@
-import { paymentCallbackOptions } from '../modules/payments/payment-callback.schema.js'
+import { paymentCallbackOptions } from '../modules/payments/collections/payment-callback.schema.js'
 import { readFile } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
 import { createHash } from 'node:crypto'
 import { z } from 'zod'
-import { paymentChannelApproval } from '../modules/payments/payment-eligibility.schema.js'
+import { paymentChannelApproval } from '../modules/payments/attempts/payment-eligibility.schema.js'
 import { validateSslcommerzOptions } from '../providers/sslcommerz/sslcommerz.schema.js'
 import { ConfigurationError } from '../shared/errors/configuration-error.js'
 

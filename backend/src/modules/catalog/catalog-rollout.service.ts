@@ -11,7 +11,8 @@ import {
 import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 
 const validators: Readonly<Record<string, unknown>> = productCollectionValidators
-export async function inspectCatalogRollout(connection: Connection) {
+
+async function inspectCatalogRollout(connection: Connection) {
   if (!connection.db) throw new Error('Catalog rollout database unavailable.')
   const products = productModels(connection)
   const collections = []
@@ -71,7 +72,7 @@ export async function inspectCatalogRollout(connection: Connection) {
   return { ...state, digest }
 }
 
-export async function applyCatalogRollout(connection: Connection, expectedDigest: string) {
+async function applyCatalogRollout(connection: Connection, expectedDigest: string) {
   if (!/^[a-f0-9]{64}$/.test(expectedDigest)) throw new Error('Reviewed plan digest required.')
   const before = await inspectCatalogRollout(connection)
   if (!before.safeToApply || before.digest !== expectedDigest)
@@ -84,3 +85,5 @@ export async function applyCatalogRollout(connection: Connection, expectedDigest
   await verifyDeclaredIndexes(categoryModel(connection))
   return inspectCatalogRollout(connection)
 }
+
+export { inspectCatalogRollout, applyCatalogRollout }
