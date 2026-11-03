@@ -1044,7 +1044,7 @@ test('REFACTOR-BOUNDARY-03: root assembly is allowed while domain and technical 
   assert.ok(checkBoundaries(root).errors.some((error) => error.includes('neutral root helpers')))
 })
 
-test('REFACTOR-BOUNDARY-04: exact legacy allowances reject new symbols, new files and stale entries', (t) => {
+test('REFACTOR-BOUNDARY-04: retired inventories cannot grant private implementation permission', (t) => {
   const { root, put } = fixture(t)
   put(
     'backend/src/modules/orders/order.service.ts',
@@ -1054,41 +1054,26 @@ test('REFACTOR-BOUNDARY-04: exact legacy allowances reject new symbols, new file
     'backend/src/modules/payments/payment.service.ts',
     'import {read} from "../orders/order.service.js"',
   )
+  const file = 'scripts/ci/backend-boundary-allowances.json'
   const key =
     'modules/payments/payment.service.ts -> modules/orders/order.service.ts (runtime; import; read)'
-  const file = 'scripts/ci/backend-boundary-allowances.json'
-  put(file, JSON.stringify({ version: 1, imports: { [key]: 'WP10' }, cycles: {} }))
-  assert.deepEqual(checkBoundaries(root).errors, [])
-  assert.equal(checkBoundaries(root).remainingAllowances, 1)
-  put(
-    'backend/src/modules/payments/payment.service.ts',
-    'import {read, write} from "../orders/order.service.js"',
-  )
-  const errors = checkBoundaries(root).errors
-  assert.ok(errors.some((error) => error.includes('public contract')))
-  assert.ok(errors.some((error) => error.includes('stale imports allowance')))
-  put(
-    'backend/src/modules/payments/payment.service.ts',
-    'import {read} from "../orders/order.service.js"',
-  )
-  put(
-    'backend/src/modules/payments/new.service.ts',
-    'import {read} from "../orders/order.service.js"',
-  )
-  assert.ok(
-    checkBoundaries(root).errors.some((error) =>
-      error.startsWith('backend/src/modules/payments/new.service.ts:'),
-    ),
-  )
-  put('backend/src/modules/payments/new.service.ts', '')
+  for (const imports of [{ [key]: 'WP10' }, { [key]: 'all' }, {}]) {
+    put(file, JSON.stringify({ version: 1, imports, cycles: {} }))
+    const result = checkBoundaries(root)
+    assert.equal(result.remainingAllowances, 0)
+    assert.ok(result.errors.some((error) => error.includes('public contract')))
+    assert.ok(
+      result.errors.some((error) => error.includes('legacy migration inventories are retired')),
+    )
+  }
   put('backend/src/modules/payments/payment.service.ts', '')
-  assert.ok(checkBoundaries(root).errors.some((error) => error.includes('stale imports allowance')))
-  put(file, JSON.stringify({ version: 1, imports: { [key]: 'all' }, cycles: {} }))
   assert.ok(
     checkBoundaries(root).errors.some((error) =>
-      error.includes('invalid exact migration allowance'),
+      error.includes('legacy migration inventories are retired'),
     ),
   )
+  rmSync(join(root, file))
+  assert.deepEqual(checkBoundaries(root).errors, [])
 })
 
 test('REFACTOR-BOUNDARY-05: legacy permission never waives persistence or stock restrictions', (t) => {
@@ -1118,10 +1103,7 @@ test('REFACTOR-BOUNDARY-05: legacy permission never waives persistence or stock 
     checkBoundaries(root).errors.some((error) => error.includes('stock counter capability')),
   )
   put('backend/src/modules/payments/payment.service.ts', '')
-  put(
-    'scripts/ci/backend-boundary-allowances.json',
-    JSON.stringify({ version: 1, imports: {}, cycles: {} }),
-  )
+  rmSync(join(root, 'scripts/ci/backend-boundary-allowances.json'))
   put(
     'backend/src/modules/inventory/inventory.service.ts',
     'import "../catalog/products/variant.service.js"',
@@ -1145,7 +1127,8 @@ test('REFACTOR-BOUNDARY-06: runtime, type-only, re-export and dynamic source cyc
     'scripts/ci/backend-boundary-allowances.json',
     JSON.stringify({ version: 1, imports: {}, cycles: { [key]: 'WP09' } }),
   )
-  assert.deepEqual(checkBoundaries(root).errors, [])
+  assert.ok(checkBoundaries(root).errors.some((error) => error.includes('import cycle (type:')))
+  assert.equal(checkBoundaries(root).remainingAllowances, 0)
   put(a, 'import "./b.js"')
   put(b, 'import "./a.js"')
   assert.ok(checkBoundaries(root).errors.some((error) => error.includes('import cycle (runtime:')))
@@ -1159,7 +1142,7 @@ test('REFACTOR-BOUNDARY-06: runtime, type-only, re-export and dynamic source cyc
   )
   assert.ok(
     checkBoundaries(root).errors.some((error) =>
-      error.includes('invalid exact migration allowance'),
+      error.includes('legacy migration inventories are retired'),
     ),
   )
   put(
@@ -1168,7 +1151,11 @@ test('REFACTOR-BOUNDARY-06: runtime, type-only, re-export and dynamic source cyc
   )
   put(a, 'export interface A {}')
   put(b, 'export interface B {}')
-  assert.ok(checkBoundaries(root).errors.some((error) => error.includes('stale cycles allowance')))
+  assert.ok(
+    checkBoundaries(root).errors.some((error) =>
+      error.includes('legacy migration inventories are retired'),
+    ),
+  )
 })
 
 test('REFACTOR-BOUNDARY-07: configuration cannot relay domain implementations and providers use public types', (t) => {

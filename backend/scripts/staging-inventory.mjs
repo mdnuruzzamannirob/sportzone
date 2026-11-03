@@ -1,14 +1,15 @@
-import { createPublicKey, randomBytes, createCipheriv, publicEncrypt, constants } from 'node:crypto'
 import { execFile } from 'node:child_process'
-import { promisify } from 'node:util'
-import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises'
+import { constants, createCipheriv, createPublicKey, publicEncrypt, randomBytes } from 'node:crypto'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { promisify } from 'node:util'
 import { openDatabase } from '../dist/config/database.js'
 import { inspectCatalogRollout } from '../dist/modules/catalog/catalog-rollout.service.js'
 
 // Explicit staging operator preload: default read-only, apply only with a reviewed manifest.
 // Healthcheck child processes must never execute a rollout or repeat the operator inventory.
+
 let connection, directory
 if (!process.argv[1]?.endsWith('/scripts/container-health.mjs')) {
   try {

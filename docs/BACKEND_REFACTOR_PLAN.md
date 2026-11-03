@@ -509,9 +509,10 @@ For each work package:
 6. Record revision, changed paths, command/environment/result, actual evidence and remaining limits in the
    owning task record. Reuse valid unchanged results; expand verification for demonstrated consumer impact.
 
-Boundary tightening is ratcheted by migrated owner. If a temporary legacy allowance is unavoidable, enumerate
-exact paths/edges, responsible package and removal condition; no glob bypass or new legacy violation. New and
-migrated code follows final rules immediately. All allowances are removed before technical completion.
+Backend source boundaries do not permit legacy migration inventories. The checker rejects the former
+allowance file even when empty; private implementation, persistence, stock and cycle restrictions cannot
+be waived by adding an edge/package entry. Narrow canonical capabilities remain explicitly owned and
+enforced. New and migrated code follows the final rules without a compatibility allowlist.
 
 Rollback is the prior compatible complete code artifact with matching config, workers and operator paths.
 Drain affected processes and reconcile uncertain effects before safe retries. Never revert by deleting

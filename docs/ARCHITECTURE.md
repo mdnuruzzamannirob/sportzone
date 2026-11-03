@@ -510,6 +510,7 @@ backend/
 ├── api/                         # Generated OpenAPI/Postman artifacts
 ├── scripts/
 │   ├── build.mjs               # Clean generated artifact, then compile
+│   ├── lib/environment.mjs     # Shared pure operator input parsing
 │   ├── provision-admin.mjs
 │   ├── bootstrap-identity.mjs
 │   ├── migrate-notifications.mjs
@@ -686,14 +687,12 @@ coordinator's transaction and never recursively invoke its full workflow. Post-p
 must not depend on checkout's placement implementation. Review the operation call graph as well as
 file imports; type-only injection alone does not prove freedom from runtime recursion.
 
-Migration uses the existing checker and an exact data inventory at
-`scripts/ci/backend-boundary-allowances.json`: each legacy import is identified by source, resolved target,
-type/runtime mode, declaration kind and imported symbols, with an owning removal package. A separate
-exact type-cycle component is recorded. New edges, enlarged symbol sets, changed cycle components and
-stale allowances fail. Existing private-persistence, stock and provider safeguards cannot be waived by
-an allowance. Remove entries with the owning migration and all entries before technical completion;
-do not auto-regenerate the baseline or create wildcard allowances. File-cycle checks include runtime
-and type edges; dynamically injected call paths remain an operation-review/test responsibility.
+The checker enforces final owner boundaries without legacy edge or cycle allowances. The former
+backend-boundary-allowances.json inventory is retired; its presence, even when empty, is an error.
+Private-persistence, stock, provider and cycle restrictions cannot be waived by an inventory entry.
+File-cycle checks include runtime and type edges; dynamically injected call paths remain an
+operation-review/test responsibility. Supported operator/fixture consumers reuse typed root assembly;
+they do not introduce a second business service graph or alter runtime module import permissions.
 
 Typed configuration is wired by setup.ts; config/env.ts validates once. app.ts constructs HTTP
 middleware, routes.ts registers endpoints and server.ts owns process lifecycle. Shared authenticate/

@@ -36,6 +36,7 @@ import {
   createAuditWriter,
   orderAuditRefsAccess,
   paymentAuditAccess,
+  paymentReconciliationScheduleAccess,
   refundStatusTimelineAccess,
   reviewModerationReceiptAccess,
 } from './modules/audit/audit.service.js'
@@ -80,11 +81,15 @@ import { createCheckoutRoutes } from './modules/checkout/checkout.routes.js'
 import { createCheckoutSchemas, quoteTotals } from './modules/checkout/checkout.schema.js'
 import {
   createCheckoutCompletionService,
+  type createCheckoutExpiryService,
   createCheckoutIntentService,
   createCheckoutQuoteService,
   orderPolicySnapshotAccess,
 } from './modules/checkout/checkout.service.js'
-import { checkoutCommercialDigest } from './modules/checkout/checkout-consent.policy.js'
+import {
+  checkoutCommercialDigest,
+  type checkoutDraftFingerprint,
+} from './modules/checkout/checkout-consent.policy.js'
 import { createCheckoutIntentSchemas } from './modules/checkout/checkout-intent.schema.js'
 import {
   createCustomerAdminRoutes,
@@ -172,6 +177,7 @@ import {
   customerAdminOrderHistoryAccess,
   customerOrderHistoryAccess,
   deliveryExceptionRefundSnapshotAccess,
+  expiredOrderAllocationAccess,
   guestOrderAccess,
   initialOrderAllocationAccess,
   orderReportAccess,
@@ -198,6 +204,7 @@ import { createOrderLifecycleService } from './modules/orders/order-lifecycle.se
 import { orderNotificationAccess } from './modules/orders/order-notification.service.js'
 import { createOrderReadSchemas } from './modules/orders/order-read.schema.js'
 import { createOrderReadService } from './modules/orders/order-read.service.js'
+import type { buildOrderSnapshot } from './modules/orders/order-snapshot.service.js'
 import type { PaymentChannelApproval } from './modules/payments/attempts/payment-eligibility.schema.js'
 import {
   paymentChannel,
@@ -228,6 +235,7 @@ import {
 import { createPaymentMonitorService } from './modules/payments/collections/payment-monitor.service.js'
 import { paymentNotificationAccess } from './modules/payments/collections/payment-notification.service.js'
 import { createPaymentProcessingService } from './modules/payments/collections/payment-processing.service.js'
+import type { createPaymentReconciliationService } from './modules/payments/collections/payment-reconciliation.service.js'
 import { createPaymentRiskService } from './modules/payments/collections/payment-risk.service.js'
 import { createPaymentSettlementService } from './modules/payments/collections/payment-settlement.service.js'
 import { createPaymentVerificationService } from './modules/payments/collections/payment-verification.service.js'
@@ -687,16 +695,9 @@ function composeOrderOperationsRoutes(
     connection,
     auth.adminAccounts,
     fulfillmentPaymentAccess(connection, clock),
-    createFulfillmentAllocationService(
-      {
-        createAllocationService: createAllocationService.bind(undefined, connection, undefined),
-        couponGenerationAccess: couponGenerationAccess(connection),
-        schemaOrderAllocationBinding: orderAllocationBindingSchema,
-      },
-      clock,
-    ),
+    createFulfillmentAllocationService(composeFulfillmentAllocationDependencies(connection), clock),
     composeAuditAccess(connection),
-    { createNotificationService: createNotificationService.bind(undefined, connection) },
+    composeOrderLifecycleDependencies(connection),
     dependencies.approvedDeadline,
     clock,
   )
@@ -705,12 +706,7 @@ function composeOrderOperationsRoutes(
     auth.adminAccounts,
     codCollectionOrderAccess(connection),
     composeAuditAccess(connection),
-    {
-      createCorrectionObligationService: createCorrectionObligationService.bind(
-        undefined,
-        connection,
-      ),
-    },
+    composePaymentMatchingDependencies(connection),
     typeof dependencies.cashEvidence === 'function'
       ? dependencies.cashEvidence
       : protectedCodCollectionEvidence(dependencies.cashEvidence.receiptFile, clock),
@@ -723,7 +719,7 @@ function composeOrderOperationsRoutes(
     createCancellationAllocationService(composeAllocationDependencies(connection), clock),
     cancellationPaymentAccess(connection),
     composeAuditAccess(connection),
-    { createNotificationService: createNotificationService.bind(undefined, connection) },
+    composeOrderLifecycleDependencies(connection),
     dependencies.cancellationRefund,
     clock,
   )
@@ -889,7 +885,7 @@ function composeOperationsRoutes(
       cancellationPaymentAccess(connection),
       createRecoveryReceiptService(connection, clock),
       composeAuditAccess(connection),
-      { createNotificationService: createNotificationService.bind(undefined, connection) },
+      composeOrderLifecycleDependencies(connection),
       options.verifyDisposition,
       async (session, input) =>
         exceptionRefund(session, {
@@ -1222,10 +1218,7 @@ async function composeIdentityRoutes(
         createCouponPreviewService(
           connection,
           checkoutAccess(auth.customerAccounts, auth.security),
-          catalogCheckoutAccess(connection, {
-            schemaPublicHomeSettings: publicHomeSettings,
-            schemaStorefrontHome: catalogSchemas.storefrontHome,
-          }),
+          catalogCheckoutAccess(connection, composeCatalogCheckoutAccessDependencies()),
           checkoutDeliveryAccess(connection),
         ),
         auth.security,
@@ -1243,10 +1236,7 @@ async function composeIdentityRoutes(
             createPublicMediaService(connection, media?.provider),
             composeCatalogDependencies(),
           ),
-          {
-            schemaCartMergeResponse: cartSchemas.cartMergeResponse,
-            schemaCartResponse: cartSchemas.cartResponse,
-          },
+          composeCartDependencies(),
         ),
         auth.security,
         auth.http,
@@ -1263,7 +1253,7 @@ async function composeIdentityRoutes(
             createPublicMediaService(connection, media?.provider),
             composeCatalogDependencies(),
           ),
-          { schemaWishlistResponse: wishlistSchemas.wishlistResponse },
+          composeWishlistDependencies(),
         ),
         auth.security,
         auth.http,
@@ -1279,11 +1269,7 @@ async function composeIdentityRoutes(
           variantInventoryAccess(connection),
           stockSettingsReader(connection),
           createAuditWriter(connection),
-          {
-            schemaAdjustmentResult: inventorySchemas.adjustmentResult,
-            schemaInventoryFacet: inventorySchemas.inventoryFacet,
-            schemaInventoryList: inventorySchemas.inventoryList,
-          },
+          composeInventoryAdminDependencies(),
         ),
         auth.security,
         auth.http,
@@ -1309,12 +1295,7 @@ async function composeIdentityRoutes(
             composeAllocationDependencies(connection),
           ),
           composeAuditAccess(connection),
-          {
-            createCorrectionObligationService: createCorrectionObligationService.bind(
-              undefined,
-              connection,
-            ),
-          },
+          composePaymentMatchingDependencies(connection),
           config.PAYMENT_MATCHING_EVIDENCE_FILE
             ? protectedPaymentMatchingEvidence(config.PAYMENT_MATCHING_EVIDENCE_FILE)
             : undefined,
@@ -1329,10 +1310,7 @@ async function composeIdentityRoutes(
           connection,
           auth.adminAccounts,
           composeAuditAccess(connection),
-          {
-            paymentAuditAccess: paymentAuditAccess(connection),
-            correctionMonitoringAccess: correctionMonitoringAccess(connection),
-          },
+          composePaymentMonitorDependencies(connection),
         ),
         auth.security,
         auth.http,
@@ -1463,7 +1441,7 @@ async function composeIdentityRoutes(
           settings: paymentChannelSettingsAccess(connection),
           verified: verifiedMerchantChannels(channelApprovals),
         },
-        { schemaPaymentChannels: paymentChannels },
+        composePaymentMethodsDependencies(),
       ),
       [config.STOREFRONT_ORIGIN],
       auth.http,
@@ -1488,7 +1466,7 @@ async function composeIdentityRoutes(
     const channel = paymentInitiationChannelAccess(
       settings,
       channelApprovals,
-      { schemaPaymentChannels: paymentChannels },
+      composePaymentMethodsDependencies(),
       clock,
     )
     const initiation = createPaymentInitiationService(
@@ -1556,16 +1534,13 @@ async function composeIdentityRoutes(
       connection,
       access,
       {
-        catalog: catalogCheckoutAccess(connection, {
-          schemaPublicHomeSettings: publicHomeSettings,
-          schemaStorefrontHome: catalogSchemas.storefrontHome,
-        }),
+        catalog: catalogCheckoutAccess(connection, composeCatalogCheckoutAccessDependencies()),
         delivery: checkoutDeliveryAccess(connection),
         settings: checkoutSettingsAccess(connection, checkout.requiredPolicyTypes),
         deadline: createDeliveryDeadlineService(checkout.deadline),
         coupon: couponQuoteAccess(connection),
         methods: paymentEligibility(
-          { schemaPaymentChannels: paymentChannels },
+          composePaymentMethodsDependencies(),
           verifiedMerchantChannels(channelApprovals),
         ),
       },
@@ -1573,14 +1548,7 @@ async function composeIdentityRoutes(
         quoteTtlSeconds: checkout.quoteTtlSeconds,
         requiredPolicyTypes: checkout.requiredPolicyTypes,
       },
-      {
-        calculatePricing: calculatePricing,
-        schemaCheckoutCommercialSnapshot: checkoutSchemas.checkoutCommercialSnapshot,
-        schemaCheckoutQuote: checkoutSchemas.checkoutQuote,
-        schemaCheckoutQuoteInput: checkoutSchemas.checkoutQuoteInput,
-        schemaCheckoutSubmitInput: checkoutSchemas.checkoutSubmitInput,
-        schemaNormalizedCheckoutDraft: checkoutSchemas.normalizedCheckoutDraft,
-      },
+      composeCheckoutQuoteDependencies(),
     )
     auth.router.use(
       createCheckoutRoutes(
@@ -1620,30 +1588,15 @@ async function composeIdentityRoutes(
                     connection,
                     checkout,
                     audit,
-                    {
-                      checkoutCommercialDigest: (raw) =>
-                        checkoutCommercialDigest(raw, {
-                          schemaCheckoutCommercialSnapshot:
-                            checkoutSchemas.checkoutCommercialSnapshot,
-                        }),
-                      calculatePricing: calculatePricing,
-                      schemaOrderCreationProof: orderSchemas.orderCreationProof,
-                    },
+                    composeOrderDependencies(),
                     clock,
                   ),
               }),
-              {
-                schemaCheckoutSubmitInput: checkoutSchemas.checkoutSubmitInput,
-                checkoutSubmissionFingerprint: checkoutIntentSchemas.checkoutSubmissionFingerprint,
-                schemaCheckoutOrderOutcome: checkoutIntentSchemas.checkoutOrderOutcome,
-              },
+              composeCheckoutIntentDependencies(),
             )
           : undefined,
         auth.http,
-        {
-          schemaCheckoutSubmitInput: checkoutSchemas.checkoutSubmitInput,
-          schemaCheckoutSubmitResult: checkoutIntentSchemas.checkoutSubmitResult,
-        },
+        composeCheckoutRoutesDependencies(),
       ),
     )
   }
@@ -1735,7 +1688,7 @@ async function composeApplication(
                 settings: paymentChannelSettingsAccess(connection),
                 verified: verifiedMerchantChannels(channelApprovals),
               },
-              { schemaPaymentChannels: paymentChannels },
+              composePaymentMethodsDependencies(),
             ),
             [config.STOREFRONT_ORIGIN],
             sessionCookies,
@@ -1971,6 +1924,207 @@ function composeOrderReadDependencies(): Parameters<typeof createOrderReadServic
 
 // Contract generation and outside-src fixtures consume the same assembled validators as the app.
 
+function composeCartDependencies(): Parameters<typeof createCartService>[3] {
+  return {
+    schemaCartMergeResponse: cartSchemas.cartMergeResponse,
+    schemaCartResponse: cartSchemas.cartResponse,
+  }
+}
+
+function composeCatalogCheckoutAccessDependencies(): Parameters<typeof catalogCheckoutAccess>[1] {
+  return {
+    schemaPublicHomeSettings: publicHomeSettings,
+    schemaStorefrontHome: catalogSchemas.storefrontHome,
+  }
+}
+
+function composeCheckoutCommercialDigestDependencies(): Parameters<
+  typeof checkoutCommercialDigest
+>[1] {
+  return {
+    schemaCheckoutCommercialSnapshot: checkoutSchemas.checkoutCommercialSnapshot,
+  }
+}
+
+function composeCheckoutCompletionDependencies(
+  connection: Connection,
+): Parameters<typeof createCheckoutCompletionService>[1] {
+  return {
+    checkoutPaymentAccess: checkoutPaymentAccess(connection),
+    createNotificationService: createNotificationService.bind(undefined, connection),
+    createOrderAllocationService: (stock, access, clock) =>
+      createOrderAllocationService(
+        stock,
+        access,
+        composeOrderAllocationDependencies(connection),
+        clock,
+      ),
+    createAllocationService: createAllocationService.bind(undefined, connection, undefined),
+    initialOrderAllocationAccess: initialOrderAllocationAccess(connection),
+    checkoutOrderReadAccess: checkoutOrderReadAccess(connection),
+    createOrderService: (checkout, audit, clock) =>
+      createOrderService(connection, checkout, audit, composeOrderDependencies(), clock),
+  }
+}
+
+function composeCheckoutIntentDependencies(): Parameters<typeof createCheckoutIntentService>[4] {
+  return {
+    schemaCheckoutSubmitInput: checkoutSchemas.checkoutSubmitInput,
+    checkoutSubmissionFingerprint: checkoutIntentSchemas.checkoutSubmissionFingerprint,
+    schemaCheckoutOrderOutcome: checkoutIntentSchemas.checkoutOrderOutcome,
+  }
+}
+
+function composeCheckoutQuoteDependencies(): Parameters<typeof createCheckoutQuoteService>[4] {
+  return {
+    calculatePricing: calculatePricing,
+    schemaCheckoutCommercialSnapshot: checkoutSchemas.checkoutCommercialSnapshot,
+    schemaCheckoutQuote: checkoutSchemas.checkoutQuote,
+    schemaCheckoutQuoteInput: checkoutSchemas.checkoutQuoteInput,
+    schemaCheckoutSubmitInput: checkoutSchemas.checkoutSubmitInput,
+    schemaNormalizedCheckoutDraft: checkoutSchemas.normalizedCheckoutDraft,
+  }
+}
+
+function composeCheckoutRoutesDependencies(): Parameters<typeof createCheckoutRoutes>[5] {
+  return {
+    schemaCheckoutSubmitInput: checkoutSchemas.checkoutSubmitInput,
+    schemaCheckoutSubmitResult: checkoutIntentSchemas.checkoutSubmitResult,
+  }
+}
+
+function composeInventoryAdminDependencies(): Parameters<typeof createInventoryAdminService>[6] {
+  return {
+    schemaAdjustmentResult: inventorySchemas.adjustmentResult,
+    schemaInventoryFacet: inventorySchemas.inventoryFacet,
+    schemaInventoryList: inventorySchemas.inventoryList,
+  }
+}
+
+function composeOrderSnapshotDependencies(): Parameters<typeof buildOrderSnapshot>[2] {
+  return {
+    checkoutCommercialDigest: (raw) =>
+      checkoutCommercialDigest(raw, composeCheckoutCommercialDigestDependencies()),
+    calculatePricing: calculatePricing,
+    schemaOrderCreationProof: orderSchemas.orderCreationProof,
+  }
+}
+
+function composeOrderDependencies(): Parameters<typeof createOrderService>[3] {
+  return {
+    checkoutCommercialDigest: (raw) =>
+      checkoutCommercialDigest(raw, composeCheckoutCommercialDigestDependencies()),
+    calculatePricing: calculatePricing,
+    schemaOrderCreationProof: orderSchemas.orderCreationProof,
+  }
+}
+
+function composeOrderAllocationDependencies(
+  connection: Connection,
+): Parameters<typeof createOrderAllocationService>[2] {
+  return {
+    createCouponAllocationService: createCouponAllocationService.bind(undefined, connection),
+    schemaOrderAllocationBinding: orderAllocationBindingSchema,
+  }
+}
+
+function composeFulfillmentAllocationDependencies(
+  connection: Connection,
+): Parameters<typeof createFulfillmentAllocationService>[0] {
+  return {
+    createAllocationService: createAllocationService.bind(undefined, connection, undefined),
+    couponGenerationAccess: couponGenerationAccess(connection),
+    schemaOrderAllocationBinding: orderAllocationBindingSchema,
+  }
+}
+
+function composeCancellationDependencies(
+  connection: Connection,
+): Parameters<typeof createCancellationService>[6] {
+  return { createNotificationService: createNotificationService.bind(undefined, connection) }
+}
+
+function composeDeliveryExceptionDependencies(
+  connection: Connection,
+): Parameters<typeof createDeliveryExceptionService>[5] {
+  return { createNotificationService: createNotificationService.bind(undefined, connection) }
+}
+
+function composeOrderLifecycleDependencies(
+  connection: Connection,
+): Parameters<typeof createOrderLifecycleService>[5] {
+  return { createNotificationService: createNotificationService.bind(undefined, connection) }
+}
+
+function composePaymentEligibilityDependencies(): Parameters<typeof paymentEligibility>[0] {
+  return { schemaPaymentChannels: paymentChannels }
+}
+
+function composeCodCollectionDependencies(
+  connection: Connection,
+): Parameters<typeof createCodCollectionService>[4] {
+  return {
+    createCorrectionObligationService: createCorrectionObligationService.bind(
+      undefined,
+      connection,
+    ),
+  }
+}
+
+function composePaymentMatchingDependencies(
+  connection: Connection,
+): Parameters<typeof createPaymentMatchingService>[5] {
+  return {
+    createCorrectionObligationService: createCorrectionObligationService.bind(
+      undefined,
+      connection,
+    ),
+  }
+}
+
+function composePaymentMonitorDependencies(
+  connection: Connection,
+): Parameters<typeof createPaymentMonitorService>[3] {
+  return {
+    paymentAuditAccess: paymentAuditAccess(connection),
+    correctionMonitoringAccess: correctionMonitoringAccess(connection),
+  }
+}
+
+function composePaymentMethodsDependencies(): Parameters<typeof createPaymentMethodsService>[2] {
+  return { schemaPaymentChannels: paymentChannels }
+}
+
+function composeWishlistDependencies(): Parameters<typeof createWishlistService>[3] {
+  return { schemaWishlistResponse: wishlistSchemas.wishlistResponse }
+}
+
+function composeCheckoutExpiryDependencies(
+  connection: Connection,
+): Parameters<typeof createCheckoutExpiryService>[1] {
+  return {
+    createAllocationService: createAllocationService.bind(undefined, connection, undefined),
+    couponGenerationAccess: couponGenerationAccess(connection),
+    expiredOrderAllocationAccess: expiredOrderAllocationAccess.bind(undefined, connection),
+    checkoutPaymentAccess: checkoutPaymentAccess(connection),
+    createOrderAllocationService: (stock, access, clock) =>
+      createOrderAllocationService(
+        stock,
+        access,
+        composeOrderAllocationDependencies(connection),
+        clock,
+      ),
+  }
+}
+function composePaymentReconciliationDependencies(
+  connection: Connection,
+): Parameters<typeof createPaymentReconciliationService>[5] {
+  return { paymentReconciliationScheduleAccess: paymentReconciliationScheduleAccess(connection) }
+}
+function composeCheckoutFingerprintDependencies(): Parameters<typeof checkoutDraftFingerprint>[1] {
+  return { schemaNormalizedCheckoutDraft: checkoutSchemas.normalizedCheckoutDraft }
+}
+
 export type {
   OrderOperationsDependencies,
   PaymentCallbackDependencies,
@@ -1983,16 +2137,45 @@ export {
   checkoutIntentSchemas,
   checkoutSchemas,
   composeAfterSalesHistoryRoutes,
+  composeAllocationDependencies,
   composeApplication,
+  composeAuditAccess,
+  composeCancellationDependencies,
+  composeCartDependencies,
+  composeCatalogCheckoutAccessDependencies,
+  composeCatalogDependencies,
+  composeCheckoutCommercialDigestDependencies,
+  composeCheckoutCompletionDependencies,
+  composeCheckoutExpiryDependencies,
+  composeCheckoutFingerprintDependencies,
+  composeCheckoutIntentDependencies,
+  composeCheckoutQuoteDependencies,
+  composeCheckoutRoutesDependencies,
+  composeCodCollectionDependencies,
   composeConfiguredApplication,
+  composeDeliveryExceptionDependencies,
+  composeFulfillmentAllocationDependencies,
   composeIdentityRoutes,
+  composeInventoryAdminDependencies,
   composeLocalReviewRoutes,
   composeNotificationWorker,
   composeOperationsRoutes,
+  composeOrderAllocationDependencies,
+  composeOrderDependencies,
+  composeOrderLifecycleDependencies,
   composeOrderOperationsRoutes,
+  composeOrderReadDependencies,
+  composeOrderSnapshotDependencies,
+  composePaymentEligibilityDependencies,
+  composePaymentMatchingDependencies,
+  composePaymentMethodsDependencies,
+  composePaymentMonitorDependencies,
+  composePaymentOutcomeDependencies,
+  composePaymentReconciliationDependencies,
   composeRefundOperationsRoutes,
   composeRefundRecovery,
   composeReturnOperationsRoutes,
+  composeWishlistDependencies,
   configuredOrderOperations,
   configuredPublicMedia,
   configuredReturnMedia,

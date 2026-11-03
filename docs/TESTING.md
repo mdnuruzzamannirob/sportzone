@@ -1150,15 +1150,21 @@ do not present older application results as verification of a newer application 
 architecture or tooling research only when a concrete requirement, compatibility issue or new evidence warrants it.
 
 Source-layout refactors follow Architecture §§4–6 and Implementation Plan §3.6, one application at a
-time. Inventory current→target paths and preserve imports, aliases, scripts, TypeScript output, test
+time. Backend unit/integration suites use owner folders under tests/unit/ and tests/integration/; existing
+Vitest recursive globs discover them. Cross-workflow scenarios use explicit registerCommerceFixture()
+setup and owner-specific helpers in tests/helpers/commerce/, with isolated per-file fixture context.
+Shared fixtures do not register scenarios on import. Keep parameterized cases and assertions when moving
+scenarios; a static inventory or successful typecheck is not executed test evidence.
+
+Inventory current→target paths and preserve imports, aliases, scripts, TypeScript output, test
 discovery and CI inventory together. Required positive/negative boundary cases cover frontend/backend
 isolation, nested foreign persistence, controllers→models, shared→business modules and provider/business
 separation (public type-only interfaces are allowed). Extend the existing tooling fixtures for
 owner-root type-only public contracts (including re-exports/dynamic and inline import types),
 composition consumers, indirect private/Mongoose type leaks, configuration/
-provider direction and runtime/type import cycles. Test exact migration allowances against new files,
-enlarged symbol lists, changed cycle modes/components, invalid ownership and stale entries. Allowances
-cannot waive private-persistence, stock or provider restrictions; remove them with their owning package.
+provider direction and runtime/type import cycles. Retired migration inventories are rejected even
+when empty; negative fixtures must prove that legacy edge/package entries cannot waive implementation,
+persistence, stock, provider or cycle restrictions.
 Only root setup/server constructs module composition; worker/operator/contract-tool entry points remain
 explicitly inventoried compatibility consumers outside the runtime-source graph. Static source checks
 do not prove that injected calls are non-recursive; use the affected operation tests and call review.
@@ -1256,7 +1262,7 @@ identifiers during implementation. `FX-*` identifies fixtures; `OPV-*` identifie
 outlines define expected behavior; link them to executable tests and run evidence before reporting results.
 
 Backend stage composition is additionally checked by
-`backend/tests/integration/backend-completion.test.ts`: run the actual local/test bootstrap
+`backend/tests/integration/application/backend-completion.test.ts`: run the actual local/test bootstrap
 entry points on one isolated replica set, compose all optional domain modules in one application,
 check duplicate/missing registrations against active and local-only inventories, enforce current
 customer/admin isolation and assemble the qualified notification worker without external effects.

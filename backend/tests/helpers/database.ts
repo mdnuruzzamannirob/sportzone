@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { MongoMemoryReplSet } from 'mongodb-memory-server-core'
 import { openDatabase } from '../../src/config/database.js'
 
-export async function isolatedDatabase() {
+async function isolatedDatabase() {
   // Generated URI only: never read external MongoDB connection configuration.
   const replica = await MongoMemoryReplSet.create({
     binary: { version: '8.0.16' },
@@ -29,3 +29,5 @@ export async function isolatedDatabase() {
     throw error
   }
 }
+
+export { isolatedDatabase }

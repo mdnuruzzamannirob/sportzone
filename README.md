@@ -156,6 +156,10 @@ Select checks for the changed area using [Testing §15.5](docs/TESTING.md#155-ch
 | Security scans                         | `npm run test:security`                                              |
 | Complete integration inventory         | `npm run ci`                                                         |
 
+Backend unit/integration tests are grouped under `backend/tests/{unit,integration}/<owner>/`.
+Cross-workflow fixtures live in `backend/tests/helpers/commerce/`; scenario files register their own
+fixture lifecycle explicitly. Existing recursive Vitest discovery and workspace commands are unchanged.
+
 Backend integration tests own their isolated replica sets and never use the configured `MONGODB_URI`.
 The first run downloads the pinned MongoDB binary. On Ubuntu 26, use `MONGOMS_DISTRO=ubuntu-24.04` for the
 compatible binary. Browser tests require both frontend builds and installed Playwright engines;

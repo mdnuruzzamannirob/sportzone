@@ -974,7 +974,10 @@ Applications are private workspaces with a coordinated release record; no public
 The backend recipe is `backend/Dockerfile`, built from repository root with its Dockerfile-specific
 allowlist (`backend/Dockerfile.dockerignore`). It pins the official Node image digest, installs the pinned
 npm toolchain, compiles only backend source and places only production backend dependencies, compiled output
-and HTTP/notification/reservation-expiry commands in the runtime stage. No frontend install/build is part of this recipe.
+and the HTTP, notification, reservation-expiry, reconciliation, media-maintenance and staging preflight
+commands in the runtime stage. Packaged commands retain their scripts/lib/ runtime dependencies; the
+Dockerfile allowlist, COPY inventory and affected-input selection must include those helpers. No frontend
+install/build is part of this recipe.
 Secrets are runtime inputs, never Docker build arguments or copied environment files. Actual builder,
 image inspection and staging execution evidence remain required before deployment acceptance.
 

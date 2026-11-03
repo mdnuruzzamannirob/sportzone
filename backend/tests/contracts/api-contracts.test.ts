@@ -1,5 +1,3 @@
-import { localOperations } from '../../contracts/local-operations.js'
-import { createContractCheckedApp } from '../helpers/contracts.js'
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import {
@@ -26,6 +24,7 @@ import {
   wireSchema,
   writeArtifacts,
 } from '../../contracts/generate.js'
+import { localOperations } from '../../contracts/local-operations.js'
 import {
   assertOperationParity,
   operationId,
@@ -33,6 +32,8 @@ import {
   transportOperations,
 } from '../../contracts/registry.js'
 import { createApp } from '../../src/app.js'
+import { createContractCheckedApp } from '../helpers/contracts.js'
+
 import { localOnlyRouters, registeredOperations, registeredRouter } from './routes.fixture.js'
 
 const markdown = readFileSync(resolve('../docs/API.md'), 'utf8')

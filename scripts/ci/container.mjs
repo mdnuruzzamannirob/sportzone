@@ -26,8 +26,9 @@ try {
       if (existsSync(path)) process.exit(1);
     for (const dir of ['/app', '/app/backend'])
       if (readdirSync(dir).some(name => name.startsWith('.env'))) process.exit(1);
-    for (const name of ['notification-worker', 'expire-reservations', 'reconcile-payments', 'reconcile-refunds', 'media-maintenance'])
+    for (const name of ['notification-worker', 'expire-reservations', 'reconcile-payments', 'reconcile-refunds', 'media-maintenance', 'container-health', 'staging-inventory', 'staging-catalog'])
       if (!existsSync('/app/backend/scripts/' + name + '.mjs')) process.exit(1);
+    if (!existsSync('/app/backend/scripts/lib/environment.mjs')) process.exit(1);
     if (!existsSync('/app/backend/dist/server.js') || process.getuid() === 0) process.exit(1);
   `,
   ])

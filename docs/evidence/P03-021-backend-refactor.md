@@ -1000,3 +1000,39 @@ Next work is exclusively the owner-requested outside-src batches: migrate actual
 contracts/artifact discovery, operator/build scripts and CI/boundary inventory/negative fixtures.
 Then execute consolidated backend behavior/security/financial/concurrency regression, review and fixes.
 Do not mark P03-030 or backend closeout Done from source-only checks.
+
+
+### Outside-src structural closeout — 3 November 2026
+
+Owner-authorized outside-src batch following module/src organization. This supersedes the earlier
+outside-src migration deferral and stale-boundary result; historical verification remains unchanged.
+
+- Migrated contracts, test fixtures and operator callers to current named exports and root-wired
+  capabilities. Root setup shares actual dependency assembly with these consumers.
+- Grouped 102 unit/integration files by owner. Split the former checkout-quote integration file's
+  339 scenario declarations into 19 workflow files with 11 reusable commerce fixture parts and
+  explicit lifecycle registration. Recursive Vitest discovery remains intact.
+- Retained all 41 operator entry paths. Shared the identical positive-integer environment parser;
+  synchronized Docker COPY/context rules and CI runtime inputs with its script-library dependency.
+- Retired the 292 stale boundary allowances and their waiver mechanism. Updated existing negative
+  fixtures; private imports and cycles remain errors. These fixtures have not been executed yet.
+- Updated existing Architecture, Testing, Operations, README and refactor-plan sections. No package,
+  business behavior, collection, public route or generated API contract change is intended.
+
+| Verification | Observed result |
+| --- | --- |
+| `npm run typecheck --workspace=backend` | Passed; full source/tests/contracts compilation |
+| `npm run lint --workspace=backend` | Passed |
+| `npm run format:backend` | Passed after formatting existing export lists and migrated files |
+| `npm run build --workspace=backend` | Passed |
+| `npm run api:generate --workspace=backend` and `npm run api:check --workspace=backend` | Passed; four artifacts byte-identical to pre-batch copies |
+| `npm run lint:boundaries` | Passed; 419 files, zero errors and zero allowances |
+| Static preservation inventory | Passed: 1,456 case declarations, 51 describe declarations, 4,950 expect calls and lifecycle-hook counts retained; not runtime verification |
+| Script syntax/import/signature inspection | Passed: 42 script files, 183 named bindings and 211 constructor calls; operators not executed |
+| Unit/integration/contract/tooling/smoke tests and semantic test review | Not Run; owner deferred to final tests/review/fix phase |
+| Docker image/runtime, database and external-provider qualification | Not Run |
+
+Local environment: Node v24.20.0 and existing locked tools. No Git staging, commit, push, branch or PR
+mutation. [Ignored structural inventory](../../test-results/backend-refactor/outside-src-completion.json)
+records the migration and preservation checks. P03-030 remains In Progress until consolidated final
+verification/fixes; P03-022 and all external/application/milestone acceptance remain unchanged.

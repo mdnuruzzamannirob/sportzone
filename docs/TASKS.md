@@ -780,7 +780,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P03-029`\
   **Deliverable:** Organize all twenty module owners, consolidate cohesive code and separate HTTP mapping; follow with remaining src wiring/contracts, outside-src consumer migration and final consolidated verification.\
   **Acceptance:** Final behavior/security/financial checks and consumer/boundary/CI reconciliation remain required after the owner-requested deferred test/review phase. No commit/push/branch/PR mutation.\
-  **Evidence:** [Src structural closeout and deferred work](./evidence/P03-021-backend-refactor.md#src-structural-closeout--3-november-2026). Module and full src structural phases complete: twenty modules, 311 source files; source TypeScript/lint/format Passed, type/runtime graphs acyclic, zero source violations and zero active migration allowances. Full boundary gate still fails on 292 stale outside-src entries. Tests/contracts/scripts/tooling migration and final tests/review remain deferred. Status remains In Progress; no Git/PR mutations or stage acceptance.
+  **Evidence:** [Outside-src structural closeout and deferred verification](./evidence/P03-021-backend-refactor.md#outside-src-structural-closeout--3-november-2026). Module/src/outside-src structural phases complete; owner-grouped tests and reusable fixtures, contract/operator callers, Docker/CI inputs and boundary enforcement migrated. Full backend typecheck/lint/build/API freshness and boundary checks Passed; zero allowances. Final runtime tests, semantic review and fixes remain deferred. Status remains In Progress; no Git/PR mutations or stage acceptance.
 
 
 ### Phase 04 — Product catalog and inventory
@@ -2751,3 +2751,10 @@ outside-src allowances. Static persistence/route/validation inventories retained
 not run. [Source evidence and consumer migration ledger](./evidence/P03-021-backend-refactor.md#src-structural-closeout--3-november-2026).
 Outside-src batches and final tests/review/fix remain next. No Git/PR mutation or application/milestone
 acceptance. Overall unchanged: 218 tasks, 140 Done, 74 Not Started, 2 In Progress, 2 Deferred.
+
+
+**3 November 2026 — P03-030 / outside-src structural closeout:** Contracts, tests, operator scripts and
+Docker/CI consumers migrated. Preserved static case/assertion inventories and all four API artifacts;
+retired stale boundary allowances. Backend typecheck/lint/build/format/API freshness and boundaries
+Passed. [Evidence and explicit verification limits](./evidence/P03-021-backend-refactor.md#outside-src-structural-closeout--3-november-2026).
+Final tests/review/fix remain next; In Progress, task counts and acceptance gates unchanged. No Git mutation.

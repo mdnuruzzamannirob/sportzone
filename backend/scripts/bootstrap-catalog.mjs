@@ -1,9 +1,10 @@
-import { loadEnvironment } from '../dist/config/env.js'
 import { openDatabase } from '../dist/config/database.js'
-import { initializeProductPersistence } from '../dist/modules/catalog/products/product.persistence.js'
-import { categoryModel } from '../dist/modules/catalog/categories/category.model.js'
-import { createDeclaredIndexes } from '../dist/shared/database/indexes.js'
+import { loadEnvironment } from '../dist/config/env.js'
 import { initializeAuditPersistence } from '../dist/modules/audit/audit.persistence.js'
+import { categoryModel } from '../dist/modules/catalog/categories/category.model.js'
+import { initializeProductPersistence } from '../dist/modules/catalog/products/product.persistence.js'
+import { createDeclaredIndexes } from '../dist/shared/database/indexes.js'
+
 let connection
 try {
   const config = loadEnvironment(process.env)

@@ -1,8 +1,8 @@
-import { loadEnvironment } from '../dist/config/env.js'
 import { openDatabase } from '../dist/config/database.js'
+import { loadEnvironment } from '../dist/config/env.js'
+import { initializeAuditPersistence } from '../dist/modules/audit/audit.persistence.js'
 import { categoryModel } from '../dist/modules/catalog/categories/category.model.js'
 import { createDeclaredIndexes } from '../dist/shared/database/indexes.js'
-import { initializeAuditPersistence } from '../dist/modules/audit/audit.persistence.js'
 
 let connection
 try {

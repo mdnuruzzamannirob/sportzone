@@ -1,7 +1,8 @@
-import { loadEnvironment } from '../dist/config/env.js'
 import { openDatabase } from '../dist/config/database.js'
-import { initializeSettingsPersistence } from '../dist/modules/settings/settings.persistence.js'
+import { loadEnvironment } from '../dist/config/env.js'
 import { initializeAuditPersistence } from '../dist/modules/audit/audit.persistence.js'
+import { initializeSettingsPersistence } from '../dist/modules/settings/setting.persistence.js'
+
 let connection
 try {
   const config = loadEnvironment(process.env)

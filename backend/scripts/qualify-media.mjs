@@ -1,15 +1,16 @@
-import { randomBytes, createHash } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 import { open, readFile, writeFile } from 'node:fs/promises'
-import {
-  createCloudinaryAdapter,
-  validateCloudinaryOptions,
-} from '../dist/providers/cloudinary/cloudinary.client.js'
 import {
   createClamAvScanner,
   inspectClamAvVersion,
 } from '../dist/providers/antivirus/clamav.client.js'
+import {
+  createCloudinaryAdapter,
+  validateCloudinaryOptions,
+} from '../dist/providers/cloudinary/cloudinary.client.js'
 
 // Synthetic assets only. Prepare and persist the intent artifact before --run.
+
 const png = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=',
   'base64',

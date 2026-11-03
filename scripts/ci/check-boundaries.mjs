@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { builtinModules } from 'node:module'
 import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -140,54 +140,14 @@ export function checkBoundaries(root = process.cwd()) {
         path.endsWith('.public.ts'),
     )
   const allowanceFile = join(root, 'scripts/ci/backend-boundary-allowances.json')
-  let allowances = { version: 1, imports: {}, cycles: {} }
-  if (existsSync(allowanceFile)) {
-    try {
-      const parsed = JSON.parse(readFileSync(allowanceFile, 'utf8'))
-      const packages = new Set([
-        'WP02',
-        'WP03',
-        'WP04',
-        'WP05',
-        'WP06',
-        'WP07',
-        'WP09',
-        'WP10',
-        'WP11',
-        'WP12',
-        'WP13',
-        'WP14',
-      ])
-      if (
-        parsed.version !== 1 ||
-        Object.keys(parsed).sort().join(',') !== 'cycles,imports,version' ||
-        !['imports', 'cycles'].every(
-          (kind) =>
-            parsed[kind] &&
-            typeof parsed[kind] === 'object' &&
-            !Array.isArray(parsed[kind]) &&
-            Object.entries(parsed[kind]).every(
-              ([key, owner]) =>
-                key.length > 0 &&
-                packages.has(owner) &&
-                (kind !== 'cycles' || key.startsWith('type: ')),
-            ),
-        )
-      )
-        throw new Error('Invalid allowance inventory')
-      allowances = parsed
-    } catch {
-      errors.push(
-        'scripts/ci/backend-boundary-allowances.json: invalid exact migration allowance inventory',
-      )
-    }
-  }
-  const usedAllowances = { imports: new Set(), cycles: new Set() }
+  if (existsSync(allowanceFile))
+    errors.push(
+      'scripts/ci/backend-boundary-allowances.json: legacy migration inventories are retired; remove this file',
+    )
   const migrationViolations = []
   const migrationViolation = (kind, key, message) => {
     migrationViolations.push({ kind, key, message })
-    if (Object.hasOwn(allowances[kind], key)) usedAllowances[kind].add(key)
-    else errors.push(message)
+    errors.push(message)
   }
   const inspectContractMongoose = (file, label) => {
     for (const edge of imports(sources.get(file)))
@@ -346,10 +306,7 @@ export function checkBoundaries(root = process.cwd()) {
         !(typeOnly && isPublicContract(target)) &&
         !(
           moduleOwner(file) === 'inventory' &&
-          [
-            'modules/catalog/variants/variant.service.ts',
-            'modules/catalog/products/variant.service.ts',
-          ].includes(relative(backendSource, target))
+          ['modules/catalog/products/variant.service.ts'].includes(relative(backendSource, target))
         )
       const providerImplementation =
         target &&
@@ -421,10 +378,9 @@ export function checkBoundaries(root = process.cwd()) {
         (target, edge) => {
           if (
             !edge.typeOnly &&
-            [
-              'modules/catalog/variants/variant.service.ts',
-              'modules/catalog/products/variant.service.ts',
-            ].some((path) => target === join(backendSource, path))
+            ['modules/catalog/products/variant.service.ts'].some(
+              (path) => target === join(backendSource, path),
+            )
           )
             errors.push(
               `${label}: stock counter capability is private to inventory; use inventory services`,
@@ -569,12 +525,6 @@ export function checkBoundaries(root = process.cwd()) {
       const key = `${kind}: ${group.map((file) => relative(backendSource, file)).join(' <-> ')}`
       migrationViolation('cycles', key, `backend source import cycle (${key})`)
     }
-  for (const kind of ['imports', 'cycles'])
-    for (const key of Object.keys(allowances[kind]))
-      if (!usedAllowances[kind].has(key))
-        errors.push(
-          `scripts/ci/backend-boundary-allowances.json: remove stale ${kind} allowance ${key}`,
-        )
   for (const owner of ['storefront', 'admin']) {
     const sourceRoot = join(root, owner, 'src')
     const featureRoot = join(sourceRoot, 'features')
@@ -653,7 +603,7 @@ export function checkBoundaries(root = process.cwd()) {
     files: files.length,
     errors: [...new Set(errors)],
     migrationViolations,
-    remainingAllowances: usedAllowances.imports.size + usedAllowances.cycles.size,
+    remainingAllowances: 0,
   }
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {

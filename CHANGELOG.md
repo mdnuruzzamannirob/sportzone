@@ -8,6 +8,15 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 3 November 2026 — Backend outside-src structural closeout
+
+- Migrated contract/operator/test consumers; organized suites by owner and split commerce scenarios
+  into workflow files with reusable fixtures. Preserved generated API artifacts and operator commands.
+- Synchronized Docker/CI script dependencies and retired stale boundary waivers; current boundaries,
+  backend compilation/build/lint and API freshness pass.
+- [Structural evidence and deferred verification](docs/evidence/P03-021-backend-refactor.md#outside-src-structural-closeout--3-november-2026).
+  Runtime tests/review/fixes remain pending; P03-030 stays In Progress. No commit/push or release acceptance.
+
 ## 3 November 2026 — Backend src structural closeout
 
 - Completed root-wired owner capabilities and reusable schema assembly; detached proof, notification

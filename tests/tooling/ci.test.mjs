@@ -594,6 +594,11 @@ test('Docker inputs are blocking in the required CI job; manual provider checks 
     'backend/Dockerfile',
     'backend/Dockerfile.dockerignore',
     'backend/scripts/staging-inventory.mjs',
+    'backend/scripts/reconcile-payments.mjs',
+    'backend/scripts/reconcile-refunds.mjs',
+    'backend/scripts/media-maintenance.mjs',
+    'backend/scripts/lib/environment.mjs',
+    'backend/src/app.ts',
     'package-lock.json',
   ])
     assert.equal(containerInputsChanged([path]), true)

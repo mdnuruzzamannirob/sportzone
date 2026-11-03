@@ -1,8 +1,9 @@
-import { loadEnvironment } from '../dist/config/env.js'
 import { openDatabase } from '../dist/config/database.js'
-import { createDeliveryService } from '../dist/modules/delivery/delivery.service.js'
-import { deliverySettingsGuard } from '../dist/modules/settings/delivery-settings.service.js'
+import { loadEnvironment } from '../dist/config/env.js'
 import { createAuditWriter } from '../dist/modules/audit/audit.service.js'
+import { createDeliveryService } from '../dist/modules/delivery/delivery.service.js'
+import { deliverySettingsGuard } from '../dist/modules/settings/setting.service.js'
+
 let connection
 try {
   const config = loadEnvironment(process.env)
