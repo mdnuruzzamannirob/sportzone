@@ -790,7 +790,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P03-030`\
   **Deliverable:** Review backend test inventory, separate mixed workflow responsibilities, remove import-time duplicate scenarios and retire redundant fixture assembly without losing distinct assertions.\
   **Acceptance:** Preserve behavioral cases, discover every relocated suite, verify owning unit/contract/real replica-set integration checks and review the final diff. Backend stage/provider gates remain separate.\
-  **Evidence:** [Test refactor, preservation review and verification](./evidence/P03-021-backend-refactor.md#p03-031--backend-test-refactor-4-november-2026). Completed 4 November 2026 under Tasks §2 after executor diff review: all 1,318 callback bodies preserved, 814 distinct unit, 186 contract and 1,258 replica-set integration cases have passing observations; type/build/lint/format/boundaries/smoke Passed. Removed import-time wallet duplication and redundant fixture assembly. No backend-stage/external acceptance.
+  **Evidence:** [Test refactor, preservation review and verification](./evidence/P03-021-backend-refactor.md#p03-031--backend-test-refactor-4-november-2026). Corrected 4 November 2026 after the owner clarified that redundant test code must be pruned, not just reorganized: removed 20 cases and three payout files; retained record-preservation checks in existing domain tests and centralized CLI coverage. 314 affected integration, 72 identity unit and 185 contract cases have passing observations through focused run/rechecks. Initial full-run results remain historical; unchanged consumers reuse their valid evidence under Testing §15.5. No new test cases, runtime changes or stage/external acceptance.
 
 ### Phase 04 — Product catalog and inventory
 
@@ -2795,3 +2795,12 @@ checks Passed after sandbox port/child-process restrictions were resolved by out
 [Review and commands](./evidence/P03-021-backend-refactor.md#p03-031--backend-test-refactor-4-november-2026).
 Executor/reviewer: Codex. Overall: 219 tasks, 142 Done, 74 Not Started, 1 In Progress, 2 Deferred.
 P03-022, external qualification and milestone acceptance unchanged. No Git mutation.
+
+
+**4 November 2026 — P03-031 / owner correction:** Reopened for substantive test-code pruning,
+then completed under Tasks §2 after review and affected checks. Removed 15 repetitive bootstrap cases,
+three duplicated category cases, one redundant identity Markdown-registry check and one vacuous
+local-only contract check. Folded persistence preservation into existing domain scenarios, centralized
+compiled entry-point coverage, and merged three payout files into the existing payout suite. No test
+case added. [Correction, retained coverage and results](./evidence/P03-021-backend-refactor.md#owner-correction--remove-redundant-test-code).
+Executor/reviewer: Codex. Task totals/statuses and external/application gates are unchanged.

@@ -10,6 +10,10 @@ environment limits and independent acceptance. Historical UI or source layouts m
 
 ## 4 November 2026 — Backend test ownership and fixture cleanup
 
+- Corrected the initial structural-only approach after owner feedback: removed 20 redundant/stale
+  cases and three extra payout files. Centralized compiled bootstrap checks and folded historical
+  preservation assertions into existing domain tests. No new test cases or runtime changes.
+
 - Separated quote, COD placement, allocation, expiry, hosted initiation, receipt matching and refund
   request/dispatch/evidence/reconciliation scenarios into independently selectable owning suites.
 - Moved wallet scenarios out of shared fixtures so imports no longer repeat those tests; consolidated

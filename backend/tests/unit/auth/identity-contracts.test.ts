@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs'
 import { Router } from 'express'
 import request from 'supertest'
 import { describe, expect, it } from 'vitest'
@@ -99,24 +98,6 @@ describe('identity request/response contracts', () => {
       ).toBe(true)
     },
   )
-  it('matches all 26 API identity method/path declarations without adding live routes', async () => {
-    const spec = readFileSync(new URL('../../../../docs/API.md', import.meta.url), 'utf8')
-    const table = spec.slice(
-      spec.indexOf('### 9.1 Authentication'),
-      spec.indexOf('**Identity input registry**'),
-    )
-    const declared = [
-      ...table.matchAll(/^\|[ \t]+`(GET|POST|PATCH|DELETE)`[ \t]+\|[ \t]+`([^`]+)`/gm),
-    ]
-      .map((m) => `${m[1]} ${m[2]}`)
-      .sort()
-    expect(contracts.operations.map((item) => `${item.method} ${item.path}`).sort()).toEqual(
-      declared,
-    )
-    expect(declared).toHaveLength(26)
-    const response = await request(createApp()).post('/api/v1/auth/login').send(credentials)
-    expect(response.status).toBe(404)
-  })
   it('normalizes identity, preserves exact password and applies supplied new-password policy', () => {
     expect(
       contracts.credentials.parse({ ...credentials, email: ' Fixture@Example.Test ' }),

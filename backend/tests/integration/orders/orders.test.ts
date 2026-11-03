@@ -1,4 +1,3 @@
-import { spawnSync } from 'node:child_process'
 import { Types } from 'mongoose'
 import { afterAll, beforeAll, beforeEach, expect, it } from 'vitest'
 import { initializeAuditPersistence } from '../../../src/modules/audit/audit.persistence.js'
@@ -50,7 +49,6 @@ import {
 import { inTransaction } from '../../../src/shared/database/transaction.js'
 import { ApiError } from '../../../src/shared/errors/app-error.js'
 import { isolatedDatabase } from '../../helpers/database.js'
-import { testEnvironment } from '../../helpers/environment.js'
 import { fakeMediaProvider, imageFile, mediaPolicy } from '../../helpers/media.js'
 import { orderTestTime, syntheticOrderProof } from '../../helpers/orders.js'
 
@@ -224,6 +222,12 @@ it('creates guest pending order and canonical unit balances from the exact consu
     await db.connection.db?.collection('auditLogs').countDocuments({ action: 'order.create' }),
   ).toBe(1)
   expect((await checkoutQuoteModel(db.connection).findById(proof.quoteId))?.status).toBe('consumed')
+
+  await initializeOrderPersistence(db.connection)
+  expect(await orders.findById(order._id).lean()).toEqual(order.toObject({ flattenMaps: true }))
+  expect(await balances.findById(balance._id).lean()).toEqual(
+    balance.toObject({ flattenMaps: true }),
+  )
 })
 it('keeps online and customer identity separate from financial status and fulfillment', async () => {
   const userId = new Types.ObjectId().toHexString(),
@@ -416,32 +420,6 @@ it('enforces per-ordinal refund caps and unique ordinal coverage at the database
   await expect(
     collection.updateOne({ _id: row._id }, { $set: { purchasedQty: 1.5 } }),
   ).rejects.toMatchObject({ code: 121 })
-})
-it('runs compiled additive bootstrap without rewriting history and refuses production setup', async () => {
-  const proof = await stage()
-  await place(proof)
-  const env = {
-    ...testEnvironment(),
-    MONGODB_URI: db.replica.getUri(),
-    MONGODB_DB_NAME: db.connection.name,
-  }
-  for (let i = 0; i < 2; i++) {
-    const result = spawnSync(process.execPath, ['scripts/bootstrap-orders.mjs'], {
-      env,
-      encoding: 'utf8',
-      timeout: 15000,
-    })
-    expect(result.status, result.stderr).toBe(0)
-  }
-  await verifyOrderPersistence(db.connection)
-  expect(await orderModels(db.connection).orders.countDocuments()).toBe(1)
-  const denied = spawnSync(process.execPath, ['scripts/bootstrap-orders.mjs'], {
-    env: { ...env, NODE_ENV: 'production', APP_ENV: 'production' },
-    encoding: 'utf8',
-    timeout: 15000,
-  })
-  expect(denied.status).toBe(1)
-  expect(denied.stderr).not.toContain(env.MONGODB_URI)
 })
 it('protects immutable purchased unit identities separately from mutable claim/refund counters', async () => {
   const proof = await stage()
@@ -710,36 +688,6 @@ it('claim foundation: BSON validation rejects duplicate lines and mismatched pro
       })),
     }),
   ).rejects.toThrow()
-})
-it('claim foundation: compiled bootstrap preserves requests and refuses deployed environment', async () => {
-  const f = await claimFixture()
-  await inTransaction(db.connection, (session) => f.service.create(session, f.command()))
-  const command = () =>
-    spawnSync(process.execPath, ['scripts/bootstrap-returns.mjs'], {
-      cwd: process.cwd(),
-      env: {
-        ...testEnvironment(),
-        MONGODB_URI: db.replica.getUri(),
-        MONGODB_DB_NAME: db.connection.name,
-      },
-      encoding: 'utf8',
-      timeout: 10000,
-    })
-  expect(command().status).toBe(0)
-  expect(command().status).toBe(0)
-  expect(await returnModel(db.connection).countDocuments()).toBe(1)
-  const deployed = spawnSync(process.execPath, ['scripts/bootstrap-returns.mjs'], {
-    cwd: process.cwd(),
-    env: {
-      ...testEnvironment(),
-      MONGODB_URI: db.replica.getUri(),
-      MONGODB_DB_NAME: db.connection.name,
-      APP_ENV: 'production',
-    },
-    encoding: 'utf8',
-    timeout: 10000,
-  })
-  expect(deployed.status).not.toBe(0)
 })
 
 async function lifecycleClaimFixture(kind: 'physical_return' | 'shortage' = 'physical_return') {

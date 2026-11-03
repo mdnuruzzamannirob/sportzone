@@ -1,4 +1,3 @@
-import { spawnSync } from 'node:child_process'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { Types } from 'mongoose'
 import request from 'supertest'
@@ -28,7 +27,7 @@ import { inTransaction } from '../../../src/shared/database/transaction.js'
 import { ApiError } from '../../../src/shared/errors/app-error.js'
 import { sessionHttpFor } from '../../helpers/auth.js'
 import { isolatedDatabase } from '../../helpers/database.js'
-import { identityEnvironment, testEnvironment } from '../../helpers/environment.js'
+import { identityEnvironment } from '../../helpers/environment.js'
 
 let db: Awaited<ReturnType<typeof isolatedDatabase>>
 let models: ReturnType<typeof createIdentityModels>
@@ -443,32 +442,6 @@ it('registers protected coupon APIs only when admin auth is enabled in actual co
     apiRouter: await composeIdentityRoutes(db.connection, { ...config, ADMIN_AUTH_ENABLED: false }),
   })
   await request(disabled).get(base).expect(404)
-})
-it('runs additive compiled local bootstrap without deleting records and refuses production', async () => {
-  const own = await account()
-  await create(own)
-  const env = {
-    ...testEnvironment(),
-    MONGODB_URI: db.replica.getUri(),
-    MONGODB_DB_NAME: db.connection.name,
-  }
-  for (let i = 0; i < 2; i++) {
-    const run = spawnSync(process.execPath, ['scripts/bootstrap-promotions.mjs'], {
-      env,
-      encoding: 'utf8',
-      timeout: 15000,
-    })
-    expect(run.status, run.stderr).toBe(0)
-  }
-  expect(await couponModels(db.connection).coupons.countDocuments()).toBe(1)
-  expect(await db.connection.db?.collection('auditLogs').countDocuments()).toBe(1)
-  const refused = spawnSync(process.execPath, ['scripts/bootstrap-promotions.mjs'], {
-    env: { ...env, NODE_ENV: 'production', APP_ENV: 'production' },
-    encoding: 'utf8',
-    timeout: 15000,
-  })
-  expect(refused.status).toBe(1)
-  expect(refused.stderr).not.toContain(env.MONGODB_URI)
 })
 it('provides append-only audit capability with strict validation and duplicate-cause rejection', async () => {
   const writer = createAuditWriter(db.connection)

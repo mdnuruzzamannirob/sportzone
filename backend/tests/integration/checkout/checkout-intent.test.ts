@@ -1,6 +1,4 @@
-import { execFile } from 'node:child_process'
 import { createHash, randomBytes } from 'node:crypto'
-import { promisify } from 'node:util'
 import { Types } from 'mongoose'
 import { afterAll, beforeAll, beforeEach, expect, it } from 'vitest'
 import { initializeAuditPersistence } from '../../../src/modules/audit/audit.persistence.js'
@@ -40,7 +38,6 @@ import {
 import { inTransaction } from '../../../src/shared/database/transaction.js'
 import { ApiError } from '../../../src/shared/errors/app-error.js'
 import { isolatedDatabase } from '../../helpers/database.js'
-import { testEnvironment } from '../../helpers/environment.js'
 import { orderTestTime, syntheticOrderProof } from '../../helpers/orders.js'
 
 const { checkoutSubmitInput } = checkoutSchemas
@@ -179,6 +176,10 @@ it('commits one order, durable hashed identity, consumed consent and balances; r
   expect(Object.keys(intent.toObject().resultSnapshot ?? {})).toEqual(['orderId'])
   expect(await orderModels(db.connection).orders.countDocuments()).toBe(1)
   expect(await db.connection.db?.collection('auditLogs').countDocuments()).toBe(1)
+
+  const before = await checkoutIntentModel(db.connection).findOne().lean()
+  await initializeCheckoutIntentPersistence(db.connection)
+  expect(await checkoutIntentModel(db.connection).findOne().lean()).toEqual(before)
 })
 it('concurrent identical submissions resolve to one committed order', async () => {
   const { proof, input } = await stage(),
@@ -345,29 +346,6 @@ it('strict persistence rejects secret results, malformed outcomes and TTL expiry
   } finally {
     await checkoutIntentModel(db.connection).collection.dropIndex('synthetic_ttl')
   }
-})
-it('compiled bootstrap is additive, preserves the registry and refuses production', async () => {
-  const { proof, input } = await stage()
-  await service(proof).submit({ customerPresent: false }, input, key)
-  const env = {
-    ...testEnvironment(),
-    APP_ENV: 'test',
-    NODE_ENV: 'test',
-    MONGODB_URI: db.replica.getUri(),
-    MONGODB_DB_NAME: db.connection.name,
-  }
-  for (let i = 0; i < 2; i++)
-    await promisify(execFile)(process.execPath, ['scripts/bootstrap-checkout-intents.mjs'], {
-      cwd: process.cwd(),
-      env,
-    })
-  expect(await checkoutIntentModel(db.connection).countDocuments()).toBe(1)
-  await expect(
-    promisify(execFile)(process.execPath, ['scripts/bootstrap-checkout-intents.mjs'], {
-      cwd: process.cwd(),
-      env: { ...env, APP_ENV: 'production', NODE_ENV: 'production' },
-    }),
-  ).rejects.toThrow()
 })
 
 it('uses actual customer/session authorization on every replay and rejects revoked or wrong owners', async () => {

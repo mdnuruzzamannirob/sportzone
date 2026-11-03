@@ -1,4 +1,3 @@
-import { spawnSync } from 'node:child_process'
 import { type ClientSession, Types } from 'mongoose'
 import { afterAll, beforeAll, beforeEach, expect, it } from 'vitest'
 import { categoryModel } from '../../../src/modules/catalog/categories/category.model.js'
@@ -18,7 +17,6 @@ import { createDeclaredIndexes } from '../../../src/shared/database/indexes.js'
 import { inTransaction } from '../../../src/shared/database/transaction.js'
 import { ApiError } from '../../../src/shared/errors/app-error.js'
 import { isolatedDatabase } from '../../helpers/database.js'
-import { testEnvironment } from '../../helpers/environment.js'
 
 let db: Awaited<ReturnType<typeof isolatedDatabase>>
 let service: ReturnType<typeof createCouponAllocationService>
@@ -156,6 +154,9 @@ it('reserves once and replay never extends the trusted synchronized expiry', asy
   expect(b.id).toBe(a.id)
   expect(b.expiresAt).toEqual(a.expiresAt)
   expect(a.expiresAt?.getTime()).toBe(heldAt.getTime() + 900000)
+  expect(await counts()).toEqual({ held: 1, redeemed: 0 })
+
+  await initializeCouponPersistence(db.connection)
   expect(await counts()).toEqual({ held: 1, redeemed: 0 })
 })
 it('redeems COD atomically and replays without consuming another slot', async () => {
@@ -573,42 +574,6 @@ it('preserves existing hold quota when master per-customer limits are enabled la
   )
   await run((s) => service.commit(s, command(id)))
   expect(await counts()).toEqual({ held: 0, redeemed: 1 })
-})
-
-it('runs explicit local/test bootstrap additively without deleting existing financial records', async () => {
-  const env = {
-    ...process.env,
-    ...testEnvironment(),
-    MONGODB_URI: db.replica.getUri(),
-    MONGODB_DB_NAME: db.connection.name,
-  }
-  for (let pass = 0; pass < 2; pass++) {
-    const result = spawnSync(process.execPath, ['scripts/bootstrap-promotions.mjs'], {
-      env,
-      encoding: 'utf8',
-      timeout: 15000,
-    })
-    expect(result.status).toBe(0)
-    expect(result.stdout).toContain('Coupon persistence ready.')
-    expect(result.stderr).toBe('')
-  }
-  expect(await couponModels(db.connection).coupons.countDocuments()).toBe(1)
-  const denied = spawnSync(process.execPath, ['scripts/bootstrap-promotions.mjs'], {
-    env: {
-      ...env,
-      NODE_ENV: 'production',
-      APP_ENV: 'production',
-      API_PUBLIC_ORIGIN: 'https://api.example.test',
-      STOREFRONT_ORIGIN: 'https://shop.example.test',
-      ADMIN_ORIGIN: 'https://admin.example.test',
-      CORS_ALLOWED_ORIGINS: 'https://shop.example.test,https://admin.example.test',
-    },
-    encoding: 'utf8',
-    timeout: 15000,
-  })
-  expect(denied.status).toBe(1)
-  expect(denied.stderr).toContain('Coupon bootstrap failed;')
-  expect(await couponModels(db.connection).coupons.countDocuments()).toBe(1)
 })
 
 it('reconciles mixed transitions to the durable ledger and registered-customer counter', async () => {

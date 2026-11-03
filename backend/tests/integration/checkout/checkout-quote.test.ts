@@ -1,4 +1,3 @@
-import { spawnSync } from 'node:child_process'
 import { Types } from 'mongoose'
 import request from 'supertest'
 import { expect, it } from 'vitest'
@@ -6,6 +5,7 @@ import { loadEnvironment } from '../../../src/config/env.js'
 import { categoryModel } from '../../../src/modules/catalog/categories/category.model.js'
 import { productModels } from '../../../src/modules/catalog/products/product.model.js'
 import { checkoutQuoteModel } from '../../../src/modules/checkout/checkout-quote.model.js'
+import { initializeCheckoutQuotePersistence } from '../../../src/modules/checkout/checkout-quote.persistence.js'
 import { deliveryModels } from '../../../src/modules/delivery/delivery.model.js'
 import { createDeliveryAreaRoutes } from '../../../src/modules/delivery/delivery.routes.js'
 import { deliveryAreasAccess } from '../../../src/modules/delivery/delivery.service.js'
@@ -74,6 +74,16 @@ it('creates a scope-bound guest quote with authoritative amounts and no reservat
     'paymentAttempts',
   ])
     expect(await context.db.connection.db?.collection(collection).countDocuments()).toBe(0)
+
+  await initializeCheckoutQuotePersistence(context.db.connection)
+  expect(await checkoutQuoteModel(context.db.connection).findById(persisted._id).lean()).toEqual(
+    persisted.toObject({ flattenMaps: true }),
+  )
+  expect(
+    (await checkoutQuoteModel(context.db.connection).listIndexes()).some(
+      (index) => index.expireAfterSeconds !== undefined,
+    ),
+  ).toBe(false)
 })
 
 it('requires exact Origin/CSRF and does not downgrade invalid/duplicate/customer-role cookies to guest', async () => {
@@ -545,37 +555,6 @@ it('wires quotes through actual root composition only when explicitly activated,
   )
   await request(inactive).post(path).send({}).expect(404)
   await request(inactive).get('/api/v1/delivery/areas').expect(200)
-})
-
-it('runs compiled quote bootstrap additively, retains consent and refuses production', async () => {
-  const who = await guest(),
-    selected = await variant(),
-    quote = (await post(who, body([selected.item])).expect(200)).body.data
-  const env = {
-    ...testEnvironment(),
-    MONGODB_URI: context.db.replica.getUri(),
-    MONGODB_DB_NAME: context.db.connection.name,
-  }
-  for (let i = 0; i < 2; i++) {
-    const result = spawnSync(process.execPath, ['scripts/bootstrap-checkout-quotes.mjs'], {
-      env,
-      encoding: 'utf8',
-      timeout: 15000,
-    })
-    expect(result.status, result.stderr).toBe(0)
-  }
-  expect((await checkoutQuoteModel(context.db.connection).findById(quote.quoteId))?.status).toBe(
-    'open',
-  )
-  const indexes = await checkoutQuoteModel(context.db.connection).listIndexes()
-  expect(indexes.some((index) => index.expireAfterSeconds !== undefined)).toBe(false)
-  const refused = spawnSync(process.execPath, ['scripts/bootstrap-checkout-quotes.mjs'], {
-    env: { ...env, NODE_ENV: 'production', APP_ENV: 'production' },
-    encoding: 'utf8',
-    timeout: 15000,
-  })
-  expect(refused.status).toBe(1)
-  expect(refused.stderr).not.toContain(env.MONGODB_URI)
 })
 
 it('requires renewed confirmation when coupon terms change without changing the discount total', async () => {

@@ -1,4 +1,3 @@
-import { spawnSync } from 'node:child_process'
 import request from 'supertest'
 import { expect, it } from 'vitest'
 import { loadEnvironment } from '../../../src/config/env.js'
@@ -292,34 +291,4 @@ it('actual root composition activates COD explicitly and default composition omi
     { ...options, deadline: manifest },
   )
   await request(inactive).post('/api/v1/checkout/orders').send({}).expect(404)
-})
-
-it('compiled combined checkout bootstrap preserves historical state and refuses production', async () => {
-  const who = await guest(),
-    selected = await variant(),
-    input = body([selected.item]),
-    quote = await context.service.create(who.credentials, input)
-  await submissionService().submit(who.credentials, submit(input, quote), 'bootstrap-cod')
-  const env = {
-    ...testEnvironment(),
-    MONGODB_URI: context.db.replica.getUri(),
-    MONGODB_DB_NAME: context.db.connection.name,
-  }
-  for (let i = 0; i < 2; i++) {
-    const result = spawnSync(process.execPath, ['scripts/bootstrap-checkout-submit.mjs'], {
-      env,
-      encoding: 'utf8',
-      timeout: 15000,
-    })
-    expect(result.status, result.stderr).toBe(0)
-  }
-  expect(await orderModels(context.db.connection).orders.countDocuments()).toBe(1)
-  expect(await paymentModel(context.db.connection).countDocuments()).toBe(1)
-  const denied = spawnSync(process.execPath, ['scripts/bootstrap-checkout-submit.mjs'], {
-    env: { ...env, APP_ENV: 'production', NODE_ENV: 'production' },
-    encoding: 'utf8',
-    timeout: 15000,
-  })
-  expect(denied.status).toBe(1)
-  expect(denied.stderr).not.toContain(env.MONGODB_URI)
 })

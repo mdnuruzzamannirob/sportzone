@@ -35,6 +35,7 @@ const run = promisify(execFile)
 // These are the real operator entry points, not a second initialization implementation.
 const bootstrap = [
   'identity',
+  'categories',
   'catalog',
   'media',
   'settings',
@@ -42,6 +43,9 @@ const bootstrap = [
   'promotions',
   'cart',
   'reviews',
+  'checkout-quotes',
+  'checkout-intents',
+  'orders',
   'checkout-submit',
   'payment-records',
   'payment-initiation',
@@ -59,13 +63,26 @@ beforeAll(async () => {
     MONGODB_URI: database.replica.getUri(),
     MONGODB_DB_NAME: database.connection.name,
   }
+  const deployed = {
+    ...env,
+    APP_ENV: 'production',
+    NODE_ENV: 'production',
+    CUSTOMER_ORDER_READ_ENABLED: 'false',
+  }
+  // Verify the scripts' environment guard, rather than rejection of malformed configuration.
+  loadEnvironment(deployed)
   for (const tool of bootstrap) {
-    const result = await run(process.execPath, [`scripts/bootstrap-${tool}.mjs`], {
+    const args = [`scripts/bootstrap-${tool}.mjs`]
+    const result = await run(process.execPath, args, {
       env,
       timeout: 20000,
       maxBuffer: 1048576,
     })
     expect(result.stderr, tool).toBe('')
+    await expect(
+      run(process.execPath, args, { env: deployed, timeout: 20000, maxBuffer: 1048576 }),
+      tool,
+    ).rejects.toMatchObject({ code: 1, stdout: '' })
   }
 }, 120000)
 afterAll(async () => {

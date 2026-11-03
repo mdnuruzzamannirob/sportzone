@@ -4,18 +4,31 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Types } from 'mongoose'
 import request from 'supertest'
-import { expect, it } from 'vitest'
+import { expect, it, vi } from 'vitest'
 import { loadEnvironment } from '../../../src/config/env.js'
+import { refundReconciliationJob } from '../../../src/jobs/reconcile-refunds.job.js'
 import { createAdminAccountAccess } from '../../../src/modules/auth/account-access.service.js'
 import { createNotificationService } from '../../../src/modules/notifications/notification.service.js'
+import { createNotificationDeliveryService } from '../../../src/modules/notifications/notification-delivery.service.js'
+import { createRefundMessageService } from '../../../src/modules/notifications/notification-template.js'
 import { orderModels } from '../../../src/modules/orders/order.model.js'
+import { returnNotificationOrderAccess } from '../../../src/modules/orders/order.service.js'
 import { paymentModel } from '../../../src/modules/payments/payment.model.js'
+import { refundFundingAccess } from '../../../src/modules/payments/payment.service.js'
 import { refundAttemptModel } from '../../../src/modules/refunds/payouts/refund-attempt.model.js'
 import { initializeRefundAttemptPersistence } from '../../../src/modules/refunds/payouts/refund-attempt.persistence.js'
+import { createRefundDispatchService } from '../../../src/modules/refunds/payouts/refund-dispatch.service.js'
 import type { RefundOutcomeProof } from '../../../src/modules/refunds/payouts/refund-outcome.schema.js'
+import { refundNotificationProofAccess } from '../../../src/modules/refunds/payouts/refund-recovery.service.js'
 import { refundModel } from '../../../src/modules/refunds/refund.model.js'
+import { createSslcommerzAdapter } from '../../../src/providers/sslcommerz/sslcommerz.client.js'
 import { startServer } from '../../../src/server.js'
-import { composeRefundRecovery } from '../../../src/setup.js'
+import { composeAuditAccess, composeRefundRecovery } from '../../../src/setup.js'
+import {
+  assertOutsideTransaction,
+  inTransaction,
+} from '../../../src/shared/database/transaction.js'
+import { jobLeaseService } from '../../../src/shared/jobs/job-lease.service.js'
 import { createLogger } from '../../../src/shared/logger.js'
 import {
   authSecret,
@@ -26,10 +39,12 @@ import {
 import { fundedCancellationFixture } from '../../helpers/commerce/orders.js'
 import { processingFixture } from '../../helpers/commerce/payments.js'
 import {
+  manualEvidenceFixture,
   packageCPost,
   packageCRoot,
   packageDFixture,
   refundDevelopmentPolicy,
+  reservedGatewayFixture,
 } from '../../helpers/commerce/refunds.js'
 import { identityEnvironment } from '../../helpers/environment.js'
 
@@ -683,3 +698,427 @@ for (const method of ['manual_bkash', 'manual_nagad', 'manual_rocket'] as const)
     ).toContain('****')
   })
 }
+
+it('refund dispatch: concurrent requests submit one persisted identity outside the transaction and acceptance remains processing', async () => {
+  const f = await reservedGatewayFixture()
+  const initiateRefund = vi
+    .fn<ReturnType<typeof createSslcommerzAdapter>['initiateRefund']>()
+    .mockImplementation(async () => {
+      assertOutsideTransaction()
+      expect((await refundAttemptModel(context.db.connection).findOne().orFail()).status).toBe(
+        'submitted',
+      )
+      expect(
+        (await refundModel(context.db.connection).findById(f.obligation._id).orFail()).status,
+      ).toBe('processing')
+      return {
+        kind: 'accepted',
+        refundRefId: 'synthetic-provider-refund',
+        evidenceDigest: 'a'.repeat(64),
+      }
+    })
+  const service = createRefundDispatchService(
+    context.db.connection,
+    f.admins,
+    refundFundingAccess(context.db.connection),
+    { initiateRefund },
+    composeAuditAccess(context.db.connection),
+  )
+  const command = { method: 'gateway', reason: 'Synthetic dispatch review' }
+  const result = await Promise.all([
+    service.dispatch(
+      f.admin.credentials.customerToken,
+      f.obligation._id.toHexString(),
+      command,
+      'send',
+    ),
+    service.dispatch(
+      f.admin.credentials.customerToken,
+      f.obligation._id.toHexString(),
+      command,
+      'send',
+    ),
+  ])
+  expect(result.every((r) => r.state === 'submitted')).toBe(true)
+  expect(initiateRefund).toHaveBeenCalledTimes(1)
+  const attempt = await refundAttemptModel(context.db.connection).findOne().orFail()
+  expect(attempt.refundRefId).toBe('synthetic-provider-refund')
+  expect(attempt.confirmedAt).toBeUndefined()
+  const payment = await paymentModel(context.db.connection).findById(f.attempt.paymentId).orFail()
+  expect(payment.correctionRefundHeldPoisha).toBe(f.obligation.amountPoisha)
+  expect(payment.correctionRefundCompletedPoisha).toBe(0)
+})
+
+it('refund dispatch: timeout preserves held funds and stable identity without automatic redispatch', async () => {
+  const f = await reservedGatewayFixture()
+  const initiateRefund = vi
+    .fn<ReturnType<typeof createSslcommerzAdapter>['initiateRefund']>()
+    .mockRejectedValue(new Error('Synthetic ambiguous external timeout'))
+  const service = createRefundDispatchService(
+    context.db.connection,
+    f.admins,
+    refundFundingAccess(context.db.connection),
+    { initiateRefund },
+    composeAuditAccess(context.db.connection),
+  )
+  const command = { method: 'gateway', reason: 'Synthetic dispatch review' }
+  const result = await service.dispatch(
+    f.admin.credentials.customerToken,
+    f.obligation._id.toHexString(),
+    command,
+    'uncertain',
+  )
+  expect(result.state).toBe('uncertain')
+  expect(
+    (
+      await service.dispatch(
+        f.admin.credentials.customerToken,
+        f.obligation._id.toHexString(),
+        command,
+        'different-key',
+      )
+    ).state,
+  ).toBe('uncertain')
+  expect(initiateRefund).toHaveBeenCalledTimes(1)
+  await expect(
+    service.dispatch(
+      f.admin.credentials.customerToken,
+      f.obligation._id.toHexString(),
+      { ...command, reason: 'Changed' },
+      'uncertain',
+    ),
+  ).rejects.toMatchObject({ code: 'IDEMPOTENCY_CONFLICT' })
+  expect(
+    (await refundModel(context.db.connection).findById(f.obligation._id).orFail()).capacityStatus,
+  ).toBe('reserved')
+  await expect(
+    inTransaction(context.db.connection, () =>
+      service.dispatch(
+        f.admin.credentials.customerToken,
+        f.obligation._id.toHexString(),
+        command,
+        'inside-transaction',
+      ),
+    ),
+  ).rejects.toThrow()
+})
+
+it('refund transport local: provider request is forbidden inside a MongoDB transaction', async () => {
+  const transport = vi.fn<typeof fetch>()
+  const provider = createSslcommerzAdapter(
+    {
+      appEnv: 'test',
+      mode: 'sandbox',
+      storeId: 'synthetic-store',
+      storePassword: 'synthetic-password',
+      callbackOrigin: 'https://api.example.test',
+      timeoutMs: 1000,
+    },
+    transport,
+  )
+  await expect(
+    inTransaction(context.db.connection, (session) => {
+      expect(session.inTransaction()).toBe(true)
+      return provider.initiateRefund({
+        bankTranId: 'bank',
+        refundTransId: 'refund',
+        amountPoisha: 100,
+        remarks: 'synthetic',
+      })
+    }),
+  ).rejects.toThrow()
+  expect(transport).not.toHaveBeenCalled()
+})
+
+it('manual payout evidence local: real admin authorizes verified bound proof without any financial write', async () => {
+  const f = await manualEvidenceFixture(),
+    token = f.administrator.credentials.customerToken
+  const result = await f.verify(token, f.snapshot.refundId, f.request)
+  expect(result).toMatchObject({ state: 'evidence_verified', evidenceDigest: 'a'.repeat(64) })
+  expect(JSON.stringify(result)).not.toContain('synthetic-transfer')
+  expect(JSON.stringify(result)).not.toContain('***123')
+  expect(await context.db.connection.collection('refunds').countDocuments()).toBe(0)
+  expect(await context.db.connection.collection('paymentCollections').countDocuments()).toBe(0)
+  expect(await context.db.connection.collection('auditLogs').countDocuments()).toBe(0)
+})
+
+it('manual payout evidence local: unauthorized or unfunded snapshots never access protected evidence', async () => {
+  const f = await manualEvidenceFixture()
+  await expect(f.verify(undefined, f.snapshot.refundId, f.request)).rejects.toThrow()
+  expect(f.calls()).toBe(0)
+  f.setSnapshot({ ...f.snapshot, sourceCollectedPoisha: 0 })
+  await expect(
+    f.verify(f.administrator.credentials.customerToken, f.snapshot.refundId, f.request),
+  ).rejects.toThrow()
+  expect(f.calls()).toBe(0)
+  f.setSnapshot({ ...f.snapshot, sourceCollectedPoisha: 100, sourceReservedPoisha: 101 })
+  await expect(
+    f.verify(f.administrator.credentials.customerToken, f.snapshot.refundId, f.request),
+  ).rejects.toThrow()
+  expect(f.calls()).toBe(0)
+})
+
+it('manual payout evidence local: forged binding, time, masked destination and consent cannot establish proof', async () => {
+  const f = await manualEvidenceFixture({ consentRequired: true })
+  const base = f.proof()
+  const cases = [
+    { ...base, amountPoisha: 99 },
+    { ...base, sourceCollectionId: new Types.ObjectId().toHexString() },
+    { ...base, orderId: new Types.ObjectId().toHexString() },
+    { ...base, method: 'manual_bank' },
+    { ...base, attemptId: new Types.ObjectId().toHexString() },
+    { ...base, transferReference: 'other' },
+    { ...base, evidenceRef: 'other' },
+    { ...base, transferredAt: new Date(Date.now() + 60000) },
+    { ...base, verdict: 'unknown' },
+    { ...base, destinationMasked: '1234567890' },
+    base,
+  ]
+  for (const fact of cases) {
+    f.setProvider(async () => fact)
+    await expect(
+      f.verify(f.administrator.credentials.customerToken, f.snapshot.refundId, f.request),
+    ).rejects.toThrow()
+  }
+  f.setProvider(async () => ({
+    ...base,
+    consentDigest: 'b'.repeat(64),
+    consentAt: base.transferredAt,
+  }))
+  await expect(
+    f.verify(f.administrator.credentials.customerToken, f.snapshot.refundId, f.request),
+  ).resolves.toMatchObject({ state: 'evidence_verified', consentDigest: 'b'.repeat(64) })
+})
+
+it('manual payout evidence local: changed reservation or revoked admin during evidence read fails closed', async () => {
+  const f = await manualEvidenceFixture(),
+    base = f.proof()
+  f.setProvider(async () => {
+    f.setSnapshot({ ...f.snapshot, sourceRevision: f.snapshot.sourceRevision + 1 })
+    return base
+  })
+  await expect(
+    f.verify(f.administrator.credentials.customerToken, f.snapshot.refundId, f.request),
+  ).rejects.toMatchObject({ code: 'STATE_CONFLICT' })
+  f.setProvider(async () => {
+    await context.identities.users.updateOne(
+      { _id: f.administrator.user._id },
+      { $set: { status: 'suspended' } },
+    )
+    return base
+  })
+  await expect(
+    f.verify(f.administrator.credentials.customerToken, f.snapshot.refundId, f.request),
+  ).rejects.toThrow()
+  expect(await context.db.connection.collection('refunds').countDocuments()).toBe(0)
+})
+
+it('manual payout evidence local: unknown evidence failure is sanitized and no retry or completion occurs', async () => {
+  const f = await manualEvidenceFixture()
+  f.setProvider(async () => {
+    throw new Error('synthetic-secret')
+  })
+  await expect(
+    f.verify(f.administrator.credentials.customerToken, f.snapshot.refundId, f.request),
+  ).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' })
+  expect(f.calls()).toBe(1)
+  expect(await context.db.connection.collection('refunds').countDocuments()).toBe(0)
+})
+
+it('refund status local: provider status reads are forbidden inside transaction', async () => {
+  const transport = vi.fn<typeof fetch>()
+  const provider = createSslcommerzAdapter(
+    {
+      appEnv: 'test',
+      mode: 'sandbox',
+      storeId: 'synthetic-store',
+      storePassword: 'synthetic-password',
+      callbackOrigin: 'https://api.example.test',
+      timeoutMs: 1000,
+    },
+    transport,
+  )
+  await expect(
+    inTransaction(context.db.connection, () =>
+      provider.queryRefund({ bankTranId: 'bank', refundRefId: 'refund' }),
+    ),
+  ).rejects.toThrow()
+  expect(transport).not.toHaveBeenCalled()
+})
+
+it('Package D: reconciliation job checkpoints durable attempt identity and never initiates payout', async () => {
+  const f = await packageDFixture(true)
+  await f.payout().expect(200)
+  await f.setProof('paid')
+  f.advance(60001)
+  const job = refundReconciliationJob(
+    context.db.connection,
+    f.domain(),
+    { batchSize: 1, leaseMs: 60000, pollMs: 1000 },
+    f.clock,
+  )
+  const result = await job.run()
+  expect(result.acquired).toBe(true)
+  expect(result.resolved).toBe(1)
+  expect((await refundModel(context.db.connection).findById(f.refundId).orFail()).status).toBe(
+    'completed',
+  )
+  await job.run()
+  expect(f.initiateRefund).toHaveBeenCalledTimes(1)
+})
+
+it('Package D: worker lease exclusion and expiration protect financial effects before restart', async () => {
+  const f = await packageDFixture(true)
+  await f.payout().expect(200)
+  await f.setProof('paid')
+  f.advance(60000)
+  const leases = jobLeaseService(context.db.connection, 'refund-reconciliation', 60000, f.clock),
+    claim = await leases.acquire()
+  expect(claim).not.toBeNull()
+  const job = refundReconciliationJob(
+    context.db.connection,
+    f.domain(),
+    { batchSize: 10, leaseMs: 60000, pollMs: 1000 },
+    f.clock,
+  )
+  expect((await job.run()).acquired).toBe(false)
+  f.advance(60001)
+  const proof = f.dependencies.verifyEvidence
+  const stale = composeRefundRecovery(
+    context.db.connection,
+    createAdminAccountAccess(context.db.connection, context.identities, context.sessions),
+    {
+      ...f.dependencies,
+      verifyEvidence: async (input) => {
+        const result = await proof(input)
+        f.advance(60001)
+        return result
+      },
+    },
+    f.clock,
+  )
+  await expect(
+    refundReconciliationJob(
+      context.db.connection,
+      stale,
+      { batchSize: 10, leaseMs: 60000, pollMs: 1000 },
+      f.clock,
+    ).run(),
+  ).rejects.toThrow()
+  expect(
+    (await refundModel(context.db.connection).findById(f.refundId).orFail()).capacityStatus,
+  ).toBe('reserved')
+  expect((await job.run()).resolved).toBe(1)
+})
+
+it('Package D: malformed proof is deferred without starving another ready attempt', async () => {
+  const first = await packageDFixture(true)
+  await first.payout().expect(200)
+  await first.setProof('paid')
+  const second = await packageDFixture(true)
+  await second.payout().expect(200)
+  await second.setProof('paid')
+  second.advance(120000)
+  const valid = second.dependencies.verifyEvidence
+  const domain = composeRefundRecovery(
+    context.db.connection,
+    createAdminAccountAccess(context.db.connection, context.identities, context.sessions),
+    {
+      ...second.dependencies,
+      verifyEvidence: async (input) =>
+        input.refundId === first.refundId ? { bad: 'unqualified' } : valid(input),
+    },
+    second.clock,
+  )
+  const result = await refundReconciliationJob(
+    context.db.connection,
+    domain,
+    { batchSize: 10, leaseMs: 60000, pollMs: 1000 },
+    second.clock,
+  ).run()
+  expect(result.resolved).toBe(1)
+  expect(result.blocked).toBe(1)
+  const attempt = await refundAttemptModel(context.db.connection)
+    .findOne({ refundId: first.refundId })
+    .orFail()
+  expect(attempt.status).toBe('uncertain')
+  expect(attempt.failureCode).toBe('INVESTIGATION_REQUIRED')
+  expect(
+    (await refundModel(context.db.connection).findById(first.refundId).orFail()).capacityStatus,
+  ).toBe('reserved')
+  first.advance(180000)
+  await first
+    .post('reconcile', { reason: 'Qualified proof after investigation' }, 'after-investigation')
+    .expect(200)
+  expect(
+    (await refundAttemptModel(context.db.connection).findById(attempt._id).orFail()).failureCode,
+  ).toBeUndefined()
+})
+
+it('Package D: after-sales worker sends only verified refund facts and rejects tampered completed intent', async () => {
+  const f = await packageDFixture()
+  await f.payout().expect(200)
+  await f.setProof('paid')
+  await f
+    .post(
+      'manual-confirmations',
+      {
+        transferReference: 'synthetic-transfer',
+        evidenceRef: 'synthetic-proof',
+        reason: 'Verified settlement',
+      },
+      'email-proof',
+    )
+    .expect(200)
+  const store = createNotificationService(context.db.connection, f.clock),
+    send = vi.fn().mockResolvedValue({ kind: 'accepted', providerMessageId: 'synthetic-mail' })
+  const worker = createNotificationDeliveryService(
+    store,
+    { send },
+    { maxAttempts: 3, baseDelayMs: 1000, maxDelayMs: 10000, claimTtlMs: 30000, batchSize: 100 },
+    f.clock,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    createRefundMessageService(
+      refundNotificationProofAccess(
+        context.db.connection,
+        returnNotificationOrderAccess(context.db.connection),
+        composeAuditAccess(context.db.connection),
+      ),
+    ),
+  )
+  await worker.runBatch()
+  await worker.runBatch()
+  const completed = send.mock.calls.filter((c) =>
+    String(c[0]?.text).includes('independently verified as completed'),
+  )
+  expect(completed).toHaveLength(1)
+  const recipient = (await orderModels(context.db.connection).orders.findById(f.orderId).orFail())
+    .customerSnapshot.emailNormalized
+  await context.db.connection.collection('notifications').insertOne({
+    eventKey: `refund_update:${f.refundId}:completed:${'e'.repeat(64)}:v1`,
+    orderId: new Types.ObjectId(f.orderId),
+    recipient: { emailNormalized: recipient },
+    eventType: 'refund_update',
+    templateVersion: 'refund-update-v1',
+    payload: {
+      refundId: new Types.ObjectId(f.refundId),
+      refundStatus: 'completed',
+      operationKey: 'e'.repeat(64),
+      occurredAt: f.clock(),
+    },
+    status: 'queued',
+    attemptCount: 0,
+    nextAttemptAt: f.clock(),
+    createdAt: f.clock(),
+    updatedAt: f.clock(),
+  })
+  const before = send.mock.calls.length
+  await worker.runBatch()
+  expect(send.mock.calls.length).toBe(before)
+})

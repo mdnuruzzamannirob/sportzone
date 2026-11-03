@@ -1167,6 +1167,10 @@ connectivity/provider qualification was not tested. Existing actual private valu
 
 ### P03-031 — Backend test refactor, 4 November 2026
 
+The initial organization-only work and its full-run results below are historical. The owner rejected
+that approach as insufficient; the correction subsection records substantive pruning and the current
+verification. The initial callback-preservation totals do not describe the corrected current suite.
+
 Owner requested a careful backend-wide test review and cleanup, including justified merges, removals
 and additions. The initial working tree was clean. Reviewed all 140 TypeScript test/helper files,
 runner discovery, helper consumers, Architecture §§4/6 and Testing §§3/5.2/15.5. Unit and integration
@@ -1222,3 +1226,59 @@ check output. No runtime source or API/Database/Operations contract changed. No 
 browser tests for either frontend were run because this work is backend-test-only. External provider,
 Docker and staging qualification were not run. P03-031 is Done under the owner-authorized engineering
 convention in Tasks §2; P03-022 and external/milestone gates remain unchanged.
+
+
+#### Owner correction — remove redundant test code
+
+The owner clarified that the goal was to read/refactor test code against the current backend and
+remove cases with no distinct value, rather than add files or preserve every test. Inspected current
+category/product services, persistence initializers, bootstrap scripts, application assembly and API
+registry generation alongside their tests. Preserved the owner's staged work; these corrections are
+working-tree changes on top, with no index/commit mutation.
+
+| Removed code | Retained verification / reason |
+| --- | --- |
+| 15 repeated compiled-bootstrap cases across catalog, promotions, checkout, payment, order, refund, review and application suites | The existing backend-completion scenario now runs the 21 actual bootstrap entry points once for success and once against valid deployed configuration for refusal. Existing category/product, coupon hold, quote, intent, order/item balance, payment attempt/initiation and review scenarios directly reinitialize persistence and inspect retained state. Refund predecessor/history migration cases already exercise repeated initialization. Distinct worker/migration/qualification tests remain. |
+| Category parent omission/null reassignment and mutual-reparent/lost-edit cases at the lower service layer | Existing category-admin HTTP scenarios already exercise the same production service with real sessions, CAS and MongoDB, including concurrent administrators. Deep cycles, deletion versus child creation, private media/corrupt ancestry and low-level persistence constraints remain. |
+| Synthetic CategoryProductFixture model/collection and its association/deletion race | The existing products integration scenario races actual createProductService association against category deletion with canonical product/variant models. No fabricated substitute collection is needed. |
+| Identity-only Markdown route parser/count and synthetic default-route probe | The whole API contract suite already compares actual routers with the full specification; app transport tests cover absent routes. Kept real request/response schema and identity protection tests. |
+| Empty local-only route parity test | localOperations and localOnlyRouters are empty in the current backend; assertions compared empty arrays and the loop executed zero times. Full active/specification router parity remains. |
+| Three extra refund dispatch/evidence/reconciliation files from the initial split | All used the same commerce lifecycle fixture. Merged their unchanged cases into the existing payout suite, with one fixture initialization and explicit import cleanup. |
+
+No new test case or test folder was added. Static it/test call inventory falls from 1,318 to 1,298;
+parameterized/runtime case totals are separate. The correction removes about 530 net test-code lines
+and three test files relative to the staged initial refactor. Removed fixed 170-operation counts in
+favor of the actual registry length, retaining parity checks. Runtime sources, packages, database/API
+contracts, financial state transitions and provider activation are unchanged.
+
+Verification: local Linux, Node v24.20.0, isolated MongoDB 8.0.16 replica sets and local HTTP; commands
+requiring local ports ran outside the sandbox. Existing unchanged consumer results from the initial
+run are reusable under Testing §15.5; a fresh full backend/application/release pass is not claimed.
+
+- `npm run test:unit --workspace backend -- tests/unit/auth/identity-contracts.test.ts`: Passed, 72 cases.
+- `npm run test:contract --workspace backend`: Passed, generated artifacts current, 185 cases.
+- Affected integration selection below: first run 311 Passed, two comparison failures and one setup
+  failure (314 selected cases). Corrected fixture-only issues: flatten Mongoose Maps before comparing
+  lean snapshots, and disable the local-only order-read flag in the deployed refusal fixture. Reran
+  only the three affected cases; all three Passed. Every one of the 314 selected cases has a passing
+  observation; no financial assertion was removed to resolve a failure.
+
+```sh
+npm run test:integration --workspace backend -- tests/integration/application/backend-completion.test.ts tests/integration/application/composition.test.ts tests/integration/catalog/categories.test.ts tests/integration/catalog/category-admin.test.ts tests/integration/catalog/product-admin.test.ts tests/integration/checkout/checkout-quote.test.ts tests/integration/checkout/cod-placement.test.ts tests/integration/checkout/checkout-intent.test.ts tests/integration/promotions/coupon-admin.test.ts tests/integration/promotions/coupon-allocation.test.ts tests/integration/payments/payment-records.test.ts tests/integration/payments/payment-initiation.test.ts tests/integration/payments/payment-callback.test.ts tests/integration/payments/payment-correction-migration.test.ts tests/integration/orders/orders.test.ts tests/integration/reviews/reviews.test.ts tests/integration/refunds/payout-workflow.test.ts
+npm run test:integration --workspace backend -- tests/integration/application/backend-completion.test.ts tests/integration/orders/orders.test.ts tests/integration/checkout/checkout-quote.test.ts -t 'creates guest pending order|creates a scope-bound guest quote|assembles every contracted endpoint'
+```
+
+The three-case recheck Passed; its other 55 cases were filtered out intentionally, not reported as
+fresh passes. The broader run took 51.90s and the recheck 16.27s. Those observations are not a controlled
+before/after speed benchmark. Raw local outputs: /tmp/sportzone-test-pruning-integration.log,
+/tmp/sportzone-test-pruning-recheck.log, /tmp/sportzone-test-pruning-unit.log and
+/tmp/sportzone-test-pruning-contract.log. The integration script writes test-results/database.json;
+that report contains only the latest selected run, not the earlier full regression.
+
+Final checks Passed: `npm run typecheck --workspace backend`, `npm run lint:check --workspace backend`,
+`npm run format:check --workspace backend`, `npm run lint:boundaries` (419 source files, zero errors),
+`npm run lint` (853 repository files, 1,651 links, zero errors) and `git diff --check`. Executor reviewed
+removed-case dispositions, retained safety checks, direct persistence comparisons and import/discovery
+changes. Removed a redundant self-count assertion during final contract review and rechecked that
+router-parity case. P03-031 correction is Done under Tasks §2. No runtime rebuild/smoke, unchanged
+application suites, frontend/browser or external-provider verification was repeated.

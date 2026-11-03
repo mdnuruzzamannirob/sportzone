@@ -1,4 +1,3 @@
-import { spawnSync } from 'node:child_process'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { type ClientSession, Types } from 'mongoose'
 import request from 'supertest'
@@ -35,7 +34,6 @@ import { createDeclaredIndexes } from '../../../src/shared/database/indexes.js'
 import { sessionHttpFor } from '../../helpers/auth.js'
 import { createContractCheckedApp as createApp } from '../../helpers/contracts.js'
 import { isolatedDatabase } from '../../helpers/database.js'
-import { testEnvironment } from '../../helpers/environment.js'
 
 let db: Awaited<ReturnType<typeof isolatedDatabase>>
 let models: ReturnType<typeof createIdentityModels>
@@ -225,6 +223,9 @@ it('requires delivered, owned, eligible purchase evidence and creates only pendi
   const stored = await reviewModel(db.connection).findById(result.id).lean()
   expect(stored?.userId.equals(own.user._id)).toBe(true)
   expect(stored?.qualifyingOrderItemId.toHexString()).toBe(itemId)
+
+  await initializeReviewPersistence(db.connection)
+  expect(await reviewModel(db.connection).findById(result.id).lean()).toEqual(stored)
 })
 it.each([
   'absent',
@@ -571,44 +572,6 @@ it('updates existing public catalog ratings only after approval and removes edit
   })
   await service.edit(own.token, review.id, { rating: 2 })
   expect((await request(app).get(path).expect(200)).body.data.rating).toBeUndefined()
-})
-it('bootstraps review persistence additively but refuses production mode', async () => {
-  const own = await account()
-  await purchase(own.user._id)
-  await service.create(own.token, productId, input)
-  const count = await reviewModel(db.connection).countDocuments()
-  const env = {
-    ...process.env,
-    ...testEnvironment(),
-    MONGODB_URI: db.replica.getUri(),
-    MONGODB_DB_NAME: db.connection.name,
-  }
-  for (let pass = 0; pass < 2; pass++) {
-    const result = spawnSync(process.execPath, ['scripts/bootstrap-reviews.mjs'], {
-      env,
-      encoding: 'utf8',
-      timeout: 15000,
-    })
-    expect(result.status).toBe(0)
-    expect(result.stdout).toContain('Review persistence ready;')
-    expect(result.stderr).toBe('')
-  }
-  expect(await reviewModel(db.connection).countDocuments()).toBe(count)
-  const refused = spawnSync(process.execPath, ['scripts/bootstrap-reviews.mjs'], {
-    env: {
-      ...env,
-      NODE_ENV: 'production',
-      APP_ENV: 'production',
-      API_PUBLIC_ORIGIN: 'https://api.example.test',
-      STOREFRONT_ORIGIN: 'https://shop.example.test',
-      ADMIN_ORIGIN: 'https://admin.example.test',
-      CORS_ALLOWED_ORIGINS: 'https://shop.example.test,https://admin.example.test',
-    },
-    encoding: 'utf8',
-    timeout: 15000,
-  })
-  expect(refused.status).toBe(1)
-  expect(await reviewModel(db.connection).countDocuments()).toBe(count)
 })
 
 it('does not reapprove a later customer edit when an old moderation request is replayed', async () => {
