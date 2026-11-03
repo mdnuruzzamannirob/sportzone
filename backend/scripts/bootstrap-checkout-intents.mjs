@@ -1,6 +1,7 @@
-import { loadEnvironment } from '../dist/config/env.js'
 import { openDatabase } from '../dist/config/database.js'
+import { loadEnvironment } from '../dist/config/env.js'
 import { initializeCheckoutIntentPersistence } from '../dist/modules/checkout/checkout-intent.persistence.js'
+
 let connection
 try {
   const config = loadEnvironment(process.env)

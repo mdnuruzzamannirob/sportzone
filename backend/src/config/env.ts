@@ -1,20 +1,28 @@
-import { validateSessionOptions } from '../modules/auth/sessions/session.service.js'
-import { validateBrowserSecurityOptions } from '../modules/auth/sessions/browser-security.service.js'
-import {
-  loadRecoveryOptions,
-  loadEmailVerificationOptions,
-  loadEmailChangeOptions,
-  loadAdminRecoveryOptions,
-  loadGuestAccessOptions,
-} from './security.js'
-import { ConfigurationError } from '../shared/errors/configuration-error.js'
-export { ConfigurationError } from '../shared/errors/configuration-error.js'
 import { z } from 'zod'
+import { ConfigurationError } from '../shared/errors/configuration-error.js'
+import {
+  loadAdminRecoveryOptions,
+  loadEmailChangeOptions,
+  loadEmailVerificationOptions,
+  loadGuestAccessOptions,
+  loadRecoveryOptions,
+  securitySecretSchema,
+  validateBrowserSecurityOptions,
+  validateSessionOptions,
+} from './security.js'
 
-const secret = z
-  .string()
-  .regex(/^[a-f0-9]{64}$/)
-  .refine((value) => !/^(.)\1+$/.test(value))
+type IdentityConfig = Readonly<{
+  sessions: ReturnType<typeof validateSessionOptions>
+  browser: ReturnType<typeof validateBrowserSecurityOptions>
+  recovery?: ReturnType<typeof loadRecoveryOptions>
+  emailVerification?: ReturnType<typeof loadEmailVerificationOptions>
+  emailChange?: ReturnType<typeof loadEmailChangeOptions>
+  adminRecovery?: ReturnType<typeof loadAdminRecoveryOptions>
+  guest?: ReturnType<typeof loadGuestAccessOptions>
+}>
+
+type RuntimeConfig = Readonly<z.output<typeof schema> & { identity?: IdentityConfig }>
+
 const origin = z.string().transform((value, ctx) => {
   try {
     const url = new URL(value)
@@ -100,8 +108,8 @@ const schema = z
     ADMIN_SESSION_TTL_SECONDS: z.string().optional(),
     SESSION_COOKIE_SAME_SITE: z.enum(['lax', 'strict']).optional(),
     BROWSER_CONTEXT_TTL_SECONDS: z.string().optional(),
-    SESSION_SECRET: secret,
-    HEALTH_MONITOR_TOKEN: secret,
+    SESSION_SECRET: securitySecretSchema,
+    HEALTH_MONITOR_TOKEN: securitySecretSchema,
     API_PUBLIC_ORIGIN: origin,
     STOREFRONT_ORIGIN: origin,
     ADMIN_ORIGIN: origin,
@@ -216,17 +224,7 @@ const schema = z
       }
     }
   })
-export type IdentityConfig = Readonly<{
-  sessions: ReturnType<typeof validateSessionOptions>
-  browser: ReturnType<typeof validateBrowserSecurityOptions>
-  recovery?: ReturnType<typeof loadRecoveryOptions>
-  emailVerification?: ReturnType<typeof loadEmailVerificationOptions>
-  emailChange?: ReturnType<typeof loadEmailChangeOptions>
-  adminRecovery?: ReturnType<typeof loadAdminRecoveryOptions>
-  guest?: ReturnType<typeof loadGuestAccessOptions>
-}>
-export type RuntimeConfig = Readonly<z.output<typeof schema> & { identity?: IdentityConfig }>
-export function loadEnvironment(environment: NodeJS.ProcessEnv): RuntimeConfig {
+function loadEnvironment(environment: NodeJS.ProcessEnv): RuntimeConfig {
   const parsed = schema.safeParse(environment)
   if (!parsed.success)
     throw new ConfigurationError(
@@ -286,3 +284,7 @@ export function loadEnvironment(environment: NodeJS.ProcessEnv): RuntimeConfig {
   })
   return Object.freeze({ ...config, identity })
 }
+
+export { ConfigurationError } from '../shared/errors/configuration-error.js'
+export type { IdentityConfig, RuntimeConfig }
+export { loadEnvironment }

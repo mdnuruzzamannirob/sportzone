@@ -1,13 +1,14 @@
-import { loadEnvironment } from '../dist/config/env.js'
 import { openDatabase } from '../dist/config/database.js'
+import { loadEnvironment } from '../dist/config/env.js'
 import { initializeOrderPersistence } from '../dist/modules/orders/order.persistence.js'
-import { initializePaymentRecordPersistence } from '../dist/modules/payments/payment-record.persistence.js'
+import { initializePaymentRecordPersistence } from '../dist/modules/payments/collections/payment-record.persistence.js'
+import { initializeRefundAttemptPersistence } from '../dist/modules/refunds/payouts/refund-attempt.persistence.js'
 import { initializeCorrectionPersistence } from '../dist/modules/refunds/refund.persistence.js'
-import { initializeRefundAttemptPersistence } from '../dist/modules/refunds/refund-attempt.persistence.js'
 import {
   initializeComplaintPersistence,
   upgradeComplaintPersistence,
-} from '../dist/modules/support/complaint.persistence.js'
+} from '../dist/modules/support/support.persistence.js'
+
 let connection
 try {
   const args = process.argv.slice(2)

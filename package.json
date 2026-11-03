@@ -2,7 +2,7 @@
   "name": "sportzone",
   "version": "0.0.0",
   "private": true,
-  "description": "SportZone application workspace foundation",
+  "description": "SportZone sports commerce workspace",
   "packageManager": "npm@11.19.0",
   "engines": {
     "node": ">=24.20.0 <25",
@@ -14,36 +14,36 @@
     "backend"
   ],
   "scripts": {
-    "workspaces:check": "npm ls --workspaces --depth=0",
-    "lint": "node scripts/ci/check-repository.mjs",
-    "test:unit": "node --test --test-isolation=none tests/tooling/ci.test.mjs tests/tooling/development.test.mjs",
-    "ci": "node scripts/ci/run.mjs",
-    "test:security": "node scripts/ci/security.mjs",
-    "test:ui": "tsc --project tests/e2e/tsconfig.json && playwright test --config tests/e2e/playwright.config.mts",
     "dev": "node scripts/dev/start.mjs",
     "dev:backend": "node scripts/dev/start.mjs --scope=backend",
-    "format:backend": "biome format backend/src backend/tests backend/scripts backend/contracts backend/*.ts scripts tests/tooling shared",
-    "ui:showcase": "node node_modules/vite/bin/vite.js --config tests/e2e/vite.config.mts",
+    "workspaces:check": "npm ls --workspaces --depth=0",
+    "lint": "node scripts/ci/check-repository.mjs",
     "lint:boundaries": "node scripts/ci/check-boundaries.mjs",
     "format:check": "biome format scripts tests shared backend/src backend/tests backend/scripts backend/contracts backend/*.ts storefront/src storefront/tests storefront/scripts storefront/*.ts storefront/*.mjs admin/src admin/tests admin/*.ts",
-    "format": "biome format --write scripts tests shared backend/src backend/tests backend/scripts backend/contracts backend/*.ts storefront/src storefront/tests storefront/scripts storefront/*.ts storefront/*.mjs admin/src admin/tests admin/*.ts"
+    "format:backend": "biome format backend/src backend/tests backend/scripts backend/contracts backend/*.ts scripts tests/tooling shared",
+    "format": "biome format --write scripts tests shared backend/src backend/tests backend/scripts backend/contracts backend/*.ts storefront/src storefront/tests storefront/scripts storefront/*.ts storefront/*.mjs admin/src admin/tests admin/*.ts",
+    "test:unit": "node --test --test-isolation=none tests/tooling/ci.test.mjs tests/tooling/development.test.mjs",
+    "test:security": "node scripts/ci/security.mjs",
+    "test:ui": "tsc --project tests/e2e/tsconfig.json && playwright test --config tests/e2e/playwright.config.mts",
+    "ci": "node scripts/ci/run.mjs",
+    "ui:showcase": "node node_modules/vite/bin/vite.js --config tests/e2e/vite.config.mts"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
     "@biomejs/biome": "2.5.15",
     "@playwright/test": "1.64.1",
-    "typescript": "6.0.3",
+    "@tailwindcss/vite": "4.3.3",
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "mongodb-memory-server-core": "11.3.0",
+    "mongoose": "9.11.2",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "react-router": "8.4.0",
+    "typescript": "6.0.3",
     "vite": "8.3.4",
-    "@vitejs/plugin-react": "6.1.2",
-    "@tailwindcss/vite": "4.3.3",
-    "vitest": "5.0.5",
-    "@types/react": "19.3.0",
-    "@types/react-dom": "19.3.0",
-    "@types/node": "24.19.2",
-    "mongoose": "9.11.2",
-    "mongodb-memory-server-core": "11.3.0"
+    "vitest": "5.0.5"
   }
 }

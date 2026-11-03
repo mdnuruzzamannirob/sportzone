@@ -57,7 +57,7 @@ test('TOOL-04: undeclared dependencies and impure shared imports fail; comments 
   assert.ok(result.errors.some((e) => e.includes('shared code must remain pure')))
   assert.ok(!result.errors.some((e) => e.includes('fake-comment')))
 })
-test('TOOL-05: cross-module private persistence fails while service imports remain allowed', (t) => {
+test('TOOL-05: cross-module private persistence fails while injected public type contracts remain allowed', (t) => {
   const { root, put } = fixture(t)
   put('backend/src/modules/users/user.model.ts', 'export const model = 1')
   put('backend/src/modules/users/user.service.ts', 'export const service = 1')
@@ -66,7 +66,11 @@ test('TOOL-05: cross-module private persistence fails while service imports rema
   put('backend/src/modules/users/user.persistence.ts', 'export const persistence = 1')
   put('backend/src/modules/auth/service.ts', 'import "../users/user.persistence.js"')
   assert.ok(checkBoundaries(root).errors.some((e) => e.includes('private persistence')))
-  put('backend/src/modules/auth/service.ts', 'import "../users/user.service.js"')
+  put('backend/src/modules/users/user.public.ts', 'export interface UserAccess {}')
+  put(
+    'backend/src/modules/auth/service.ts',
+    'import type {UserAccess} from "../users/user.public.js"',
+  )
   assert.deepEqual(checkBoundaries(root).errors, [])
 })
 
@@ -251,8 +255,9 @@ test('BACKEND-BOUNDARY-01: nested foreign models and persistence barrels cannot 
   }
   put(
     'backend/src/modules/inventory/stock.service.ts',
-    'import "../catalog/products/product.service.js"',
+    'import type {ProductAccess} from "../catalog/catalog.public.js"',
   )
+  put('backend/src/modules/catalog/catalog.public.ts', 'export interface ProductAccess {}')
   assert.deepEqual(checkBoundaries(root).errors, [])
 })
 
@@ -271,7 +276,7 @@ test('BACKEND-BOUNDARY-02: controllers and routes access models only through dom
   assert.deepEqual(checkBoundaries(root).errors, [])
 })
 
-test('RETURN-BOUNDARY-01: claims consume Orders, Media and Inventory capabilities without persistence imports', (t) => {
+test('RETURN-BOUNDARY-01: claims consume injected Orders, Media and Inventory public capabilities', (t) => {
   const { root, put } = fixture(t)
   for (const owner of ['orders/order', 'media/media', 'inventory/inventory']) {
     put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
@@ -281,7 +286,11 @@ test('RETURN-BOUNDARY-01: claims consume Orders, Media and Inventory capabilitie
       `backend/src/modules/${owner}.service.ts`,
       `import "./${owner.split('/')[1]}.model.js"; export const access = 1`,
     )
-    put('backend/src/modules/returns/return.service.ts', `import "../${owner}.service.js"`)
+    put(`backend/src/modules/${owner}.public.ts`, 'export interface Access {}')
+    put(
+      'backend/src/modules/returns/return.service.ts',
+      `import type {Access} from "../${owner}.public.js"`,
+    )
     assert.deepEqual(checkBoundaries(root).errors, [])
   }
   put('backend/src/modules/returns/return.model.ts', 'export const model = 1')
@@ -289,7 +298,7 @@ test('RETURN-BOUNDARY-01: claims consume Orders, Media and Inventory capabilitie
   assert.ok(checkBoundaries(root).errors.some((e) => e.includes('private persistence')))
 })
 
-test('REFUND-BOUNDARY-01: advisory uses claim, order and payment services, never private models', (t) => {
+test('REFUND-BOUNDARY-01: advisory uses injected claim, order and payment contracts, never private models', (t) => {
   const { root, put } = fixture(t)
   for (const owner of ['orders/order', 'returns/return', 'payments/payment-record']) {
     put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
@@ -299,7 +308,11 @@ test('REFUND-BOUNDARY-01: advisory uses claim, order and payment services, never
       `backend/src/modules/${owner}.service.ts`,
       `import "./${owner.split('/')[1]}.model.js"; export const access = 1`,
     )
-    put('backend/src/modules/refunds/refund-advisory.service.ts', `import "../${owner}.service.js"`)
+    put(`backend/src/modules/${owner}.public.ts`, 'export interface Access {}')
+    put(
+      'backend/src/modules/refunds/refund-advisory.service.ts',
+      `import type {Access} from "../${owner}.public.js"`,
+    )
     assert.deepEqual(checkBoundaries(root).errors, [])
   }
 })
@@ -396,7 +409,7 @@ test('OPERATIONS-BOUNDARY-01: support/report routes and readers retain private s
     ['reports/report.service', 'refunds/refund'],
     ['support/support.routes', 'support/complaint'],
     ['notifications/notification-admin.service', 'auth/auth'],
-    ['customers/customer-admin.routes', 'orders/order'],
+    ['customers/customer.routes', 'orders/order'],
   ]) {
     put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
     put(`backend/src/modules/${reader}.ts`, `import "../${owner}.model.js"`)
@@ -412,7 +425,7 @@ test('OPERATIONS-BOUNDARY-01: support/report routes and readers retain private s
 test('BLOCKED-AUDIT-BOUNDARY-01: customer routes and reviews retain auth and audit persistence privacy', (t) => {
   const { root, put } = fixture(t)
   for (const [consumer, owner] of [
-    ['customers/customer-admin.routes', 'auth/auth'],
+    ['customers/customer.routes', 'auth/auth'],
     ['reviews/review.service', 'auth/auth'],
     ['reviews/review.service', 'audit/audit'],
   ]) {
@@ -460,17 +473,17 @@ test('BACKEND-BOUNDARY-03: shared technical helpers cannot import domain/configu
 
 test('BACKEND-BOUNDARY-04: provider runtime cannot execute business code but public type-only contracts are allowed', (t) => {
   const { root, put } = fixture(t)
-  put('backend/src/modules/media/media.types.ts', 'export interface MediaProvider {}')
+  put('backend/src/modules/media/media.public.ts', 'export interface MediaProvider {}')
   put('backend/src/modules/media/media.service.ts', 'export const service = 1')
   put('backend/src/providers/helper.ts', 'export * from "../modules/media/media.service.js"')
   put('backend/src/providers/cloudinary/cloudinary.client.ts', 'import "../helper.js"')
   assert.ok(checkBoundaries(root).errors.some((e) => e.includes('provider transport')))
   put('backend/src/providers/helper.ts', 'export const helper = 1')
   for (const declaration of [
-    'import type {MediaProvider} from "../../modules/media/media.types.js"',
-    'import {type MediaProvider} from "../../modules/media/media.types.js"',
-    'export type {MediaProvider} from "../../modules/media/media.types.js"',
-    'export {type MediaProvider} from "../../modules/media/media.types.js"',
+    'import type {MediaProvider} from "../../modules/media/media.public.js"',
+    'import {type MediaProvider} from "../../modules/media/media.public.js"',
+    'export type {MediaProvider} from "../../modules/media/media.public.js"',
+    'export {type MediaProvider} from "../../modules/media/media.public.js"',
   ]) {
     put('backend/src/providers/cloudinary/cloudinary.client.ts', declaration)
     assert.deepEqual(checkBoundaries(root).errors, [], declaration)
@@ -639,36 +652,36 @@ test('STRUCTURE-06: job/composition factories must add assembly or orchestration
 
 test('INVENTORY-BOUNDARY-01: inventory consumes stock capabilities instead of catalog private models', (t) => {
   const { root, put } = fixture(t)
-  put('backend/src/modules/catalog/variants/variant.model.ts', 'export const model = 1')
+  put('backend/src/modules/catalog/products/variant.model.ts', 'export const model = 1')
   put(
     'backend/src/modules/inventory/inventory.service.ts',
-    'import "../catalog/variants/variant.model.js"',
+    'import "../catalog/products/variant.model.js"',
   )
   assert.ok(checkBoundaries(root).errors.some((error) => error.includes('private persistence')))
   put(
-    'backend/src/modules/catalog/variants/variant.service.ts',
+    'backend/src/modules/catalog/products/variant.service.ts',
     'import "./variant.model.js"; export const stock = 1',
   )
   put(
     'backend/src/modules/inventory/inventory.service.ts',
-    'import "../catalog/variants/variant.service.js"',
+    'import "../catalog/products/variant.service.js"',
   )
   assert.deepEqual(checkBoundaries(root).errors, [])
 })
 
 test('INVENTORY-BOUNDARY-02: checkout and jobs cannot bypass inventory through the catalog stock capability', (t) => {
   const { root, put } = fixture(t)
-  put('backend/src/modules/catalog/variants/variant.service.ts', 'export const stock = 1')
+  put('backend/src/modules/catalog/products/variant.service.ts', 'export const stock = 1')
   put(
     'backend/src/modules/inventory/allocation.service.ts',
-    'import "../catalog/variants/variant.service.js"; export const allocate = 1',
+    'import "../catalog/products/variant.service.js"; export const allocate = 1',
   )
   put(
     'backend/src/modules/checkout/helper.ts',
-    'export * from "../catalog/variants/variant.service.js"',
+    'export * from "../catalog/products/variant.service.js"',
   )
   put('backend/src/modules/checkout/checkout.service.ts', 'import "./helper.js"')
-  put('backend/src/jobs/expire.job.ts', 'import "../modules/catalog/variants/variant.service.js"')
+  put('backend/src/jobs/expire.job.ts', 'import "../modules/catalog/products/variant.service.js"')
   assert.equal(
     checkBoundaries(root).errors.filter((error) => error.includes('stock counter capability'))
       .length,
@@ -676,8 +689,9 @@ test('INVENTORY-BOUNDARY-02: checkout and jobs cannot bypass inventory through t
   )
   put(
     'backend/src/modules/checkout/helper.ts',
-    'export * from "../inventory/allocation.service.js"',
+    'export type {InventoryAccess} from "../inventory/inventory.public.js"',
   )
+  put('backend/src/modules/inventory/inventory.public.ts', 'export interface InventoryAccess {}')
   put('backend/src/jobs/expire.job.ts', 'import "../modules/inventory/allocation.service.js"')
   assert.deepEqual(checkBoundaries(root).errors, [])
 })
@@ -754,6 +768,70 @@ test('DEPLOY-02: Vercel separates app builds, uses the locked workspace and expo
       assert.equal(Object.hasOwn(config, 'outputDirectory'), false)
     }
   }
+})
+
+test('IDENTITY-BOUNDARY-01: auth assembly and customer HTTP consume injected capabilities, never foreign implementations', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/modules/orders/order.service.ts', 'export const guestOrders = 1')
+  put('backend/src/modules/audit/audit.service.ts', 'export const audit = 1')
+  put('backend/src/modules/auth/auth.model.ts', 'export const model = 1')
+  put('backend/src/health/health.service.ts', 'export const health = 1')
+  for (const [file, declaration, expected] of [
+    ['auth/auth.composition', 'import "../orders/order.service.js"', 'public contract'],
+    ['auth/customer-admin.service', 'import "../audit/audit.service.js"', 'public contract'],
+    ['customers/customer.controller', 'import "../auth/auth.model.js"', 'private persistence'],
+    ['auth/auth.composition', 'import "../../health/health.service.js"', 'root/health'],
+  ]) {
+    put(`backend/src/modules/${file}.ts`, declaration)
+    assert.ok(
+      checkBoundaries(root).errors.some((error) => error.includes(expected)),
+      declaration,
+    )
+    put(`backend/src/modules/${file}.ts`, '')
+  }
+  put(
+    'backend/src/modules/orders/order.public.ts',
+    'export interface GuestOrders { verify(): Promise<boolean> }',
+  )
+  put(
+    'backend/src/modules/auth/auth.composition.ts',
+    'import type {GuestOrders} from "../orders/order.public.js"',
+  )
+  put('backend/src/setup.ts', 'import {guestOrders} from "./modules/orders/order.service.js"')
+  assert.deepEqual(checkBoundaries(root).errors, [])
+})
+
+test('DELIVERY-BOUNDARY-01: HTTP and coverage consumers cannot bypass private persistence or auth', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/modules/delivery/delivery.model.ts', 'export const model = 1')
+  put('backend/src/modules/delivery/delivery.service.ts', 'export const coverage = 1')
+  put('backend/src/modules/auth/sessions/session.http.ts', 'export const session = 1')
+  for (const [consumer, declaration, expected] of [
+    ['delivery/delivery.controller', 'import "./delivery.model.js"', 'delegate persistence'],
+    ['delivery/delivery.routes', 'import "../auth/sessions/session.http.js"', 'public contract'],
+    ['customers/customer.service', 'import "../delivery/delivery.model.js"', 'private persistence'],
+    [
+      'checkout/checkout-quote.service',
+      'import type {coverage} from "../delivery/delivery.service.js"',
+      'public contract',
+    ],
+  ]) {
+    put(`backend/src/modules/${consumer}.ts`, declaration)
+    assert.ok(
+      checkBoundaries(root).errors.some((error) => error.includes(expected)),
+      declaration,
+    )
+    put(`backend/src/modules/${consumer}.ts`, '')
+  }
+  put(
+    'backend/src/modules/delivery/delivery.public.ts',
+    'export interface Coverage { supports(): Promise<boolean> }',
+  )
+  put(
+    'backend/src/modules/customers/customer.service.ts',
+    'import type {Coverage} from "../delivery/delivery.public.js"',
+  )
+  assert.deepEqual(checkBoundaries(root).errors, [])
 })
 
 test('ORDER-OPERATIONS-BOUNDARY-01: admin HTTP and order projections cannot import private models', (t) => {
@@ -862,4 +940,244 @@ test('BACKEND-COMPLETION-BOUNDARY: customer requests and supervised matching can
     )
     put(`backend/src/modules/${consumer}.ts`, 'export const consumer = 1')
   }
+})
+
+test('REFACTOR-BOUNDARY-01: private service imports, re-exports and dynamic access cannot replace public contracts', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/modules/orders/order.service.ts', 'export const read = 1')
+  for (const declaration of [
+    'import {read} from "../orders/order.service.js"',
+    'import type {read} from "../orders/order.service.js"',
+    'export {read} from "../orders/order.service.js"',
+    'export * from "../orders/order.service.js"',
+    'import("../orders/order.service.js")',
+    'require("../orders/order.service.js")',
+    'export type Read = typeof import("../orders/order.service.js").read',
+  ]) {
+    put('backend/src/modules/payments/payment.service.ts', declaration)
+    assert.ok(
+      checkBoundaries(root).errors.some((error) => error.includes('public contract')),
+      declaration,
+    )
+  }
+  put('backend/src/modules/orders/order.public.ts', 'export interface OrderRead { read(): void }')
+  for (const declaration of [
+    'import type {OrderRead} from "../orders/order.public.js"',
+    'import {type OrderRead} from "../orders/order.public.js"',
+    'export type {OrderRead} from "../orders/order.public.js"',
+  ]) {
+    put('backend/src/modules/payments/payment.service.ts', declaration)
+    assert.deepEqual(checkBoundaries(root).errors, [], declaration)
+  }
+  put('backend/src/modules/payments/payment.service.ts', 'import "../orders/order.public.js"')
+  assert.ok(checkBoundaries(root).errors.some((error) => error.includes('public contract')))
+  put(
+    'backend/src/modules/payments/payment.service.ts',
+    'const dependency = "../orders/order.service.js"; import(dependency)',
+  )
+  assert.ok(checkBoundaries(root).errors.some((error) => error.includes('static string literals')))
+})
+
+test('REFACTOR-BOUNDARY-02: public contracts contain types, not implementation barrels or hidden model types', (t) => {
+  const { root, put } = fixture(t)
+  put(
+    'backend/package.json',
+    JSON.stringify({ private: true, dependencies: { mongoose: '9.11.2' } }),
+  )
+  put('backend/src/modules/orders/order.service.ts', 'export const read = 1')
+  for (const declaration of [
+    'export {read} from "./order.service.js"',
+    'export type {read} from "./order.service.js"',
+    'export type * from "./order.types.js"',
+    'export const value = 1',
+    'export class OrderRead {}',
+    'export type Read = typeof import("./order.service.js").read',
+    'export type Row = import("mongoose").HydratedDocument<{}>',
+    'import type {Model} from "mongoose"; export type Leaked = Model<{}>',
+    'import type * as Mongo from "mongoose"; export type Leaked = Mongo.Connection',
+  ]) {
+    put('backend/src/modules/orders/order.public.ts', declaration)
+    assert.ok(
+      checkBoundaries(root).errors.some((error) => error.includes('public contracts')),
+      declaration,
+    )
+  }
+  put(
+    'backend/src/modules/orders/order.types.ts',
+    'import type {HydratedDocument} from "mongoose"; export type Row = HydratedDocument<{}>',
+  )
+  put('backend/src/modules/orders/order.public.ts', 'export type {Row} from "./order.types.js"')
+  assert.ok(
+    checkBoundaries(root).errors.some((error) => error.includes('Mongoose models/documents')),
+  )
+  put(
+    'backend/src/modules/orders/order.public.ts',
+    'import type {ClientSession} from "mongoose"; export interface OrderRead { read(session: ClientSession): Promise<void> }',
+  )
+  assert.deepEqual(checkBoundaries(root).errors, [])
+  put('backend/src/modules/orders/internal/order.public.ts', 'export interface Internal {}')
+  assert.ok(checkBoundaries(root).errors.some((error) => error.includes('owning module root')))
+})
+
+test('REFACTOR-BOUNDARY-03: root assembly is allowed while domain and technical helpers cannot hide composition', (t) => {
+  const { root, put } = fixture(t)
+  put(
+    'backend/src/modules/orders/order.composition.ts',
+    'export function createOrders() { const service = {}; return {service} }',
+  )
+  put('backend/src/setup.ts', 'import {createOrders} from "./modules/orders/order.composition.js"')
+  put('backend/src/modules/payments/payment.public.ts', 'export interface OrderRead {}')
+  assert.deepEqual(checkBoundaries(root).errors, [])
+  put(
+    'backend/src/jobs/helper.ts',
+    'import type {createOrders} from "../modules/orders/order.composition.js"',
+  )
+  assert.ok(checkBoundaries(root).errors.some((error) => error.includes('only root setup/server')))
+  put('backend/src/jobs/helper.ts', '')
+  put('backend/src/jobs/helper.composition.ts', 'import "../modules/orders/order.composition.js"')
+  assert.ok(checkBoundaries(root).errors.some((error) => error.includes('only root setup/server')))
+  put('backend/src/jobs/helper.composition.ts', '')
+  put('backend/src/modules/orders/private.composition.ts', 'import "./order.composition.js"')
+  assert.deepEqual(checkBoundaries(root).errors, [])
+  put('backend/src/helper.ts', 'export {createOrders} from "./modules/orders/order.composition.js"')
+  put('backend/src/modules/payments/payment.service.ts', 'import "../../helper.js"')
+  assert.ok(checkBoundaries(root).errors.some((error) => error.includes('neutral root helpers')))
+})
+
+test('REFACTOR-BOUNDARY-04: retired inventories cannot grant private implementation permission', (t) => {
+  const { root, put } = fixture(t)
+  put(
+    'backend/src/modules/orders/order.service.ts',
+    'export const read = 1; export const write = 2',
+  )
+  put(
+    'backend/src/modules/payments/payment.service.ts',
+    'import {read} from "../orders/order.service.js"',
+  )
+  const file = 'scripts/ci/backend-boundary-allowances.json'
+  const key =
+    'modules/payments/payment.service.ts -> modules/orders/order.service.ts (runtime; import; read)'
+  for (const imports of [{ [key]: 'WP10' }, { [key]: 'all' }, {}]) {
+    put(file, JSON.stringify({ version: 1, imports, cycles: {} }))
+    const result = checkBoundaries(root)
+    assert.equal(result.remainingAllowances, 0)
+    assert.ok(result.errors.some((error) => error.includes('public contract')))
+    assert.ok(
+      result.errors.some((error) => error.includes('legacy migration inventories are retired')),
+    )
+  }
+  put('backend/src/modules/payments/payment.service.ts', '')
+  assert.ok(
+    checkBoundaries(root).errors.some((error) =>
+      error.includes('legacy migration inventories are retired'),
+    ),
+  )
+  rmSync(join(root, file))
+  assert.deepEqual(checkBoundaries(root).errors, [])
+})
+
+test('REFACTOR-BOUNDARY-05: legacy permission never waives persistence or stock restrictions', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/modules/orders/order.model.ts', 'export const model = 1')
+  put(
+    'backend/src/modules/payments/payment.service.ts',
+    'import {model} from "../orders/order.model.js"',
+  )
+  const key = checkBoundaries(root).migrationViolations.find((v) => v.kind === 'imports').key
+  put(
+    'scripts/ci/backend-boundary-allowances.json',
+    JSON.stringify({ version: 1, imports: { [key]: 'WP10' }, cycles: {} }),
+  )
+  assert.ok(checkBoundaries(root).errors.some((error) => error.includes('private persistence')))
+  put('backend/src/modules/catalog/products/variant.service.ts', 'export const stock = 1')
+  put(
+    'backend/src/modules/payments/payment.service.ts',
+    'import "../catalog/products/variant.service.js"',
+  )
+  const stockKey = checkBoundaries(root).migrationViolations.find((v) => v.kind === 'imports').key
+  put(
+    'scripts/ci/backend-boundary-allowances.json',
+    JSON.stringify({ version: 1, imports: { [stockKey]: 'WP10' }, cycles: {} }),
+  )
+  assert.ok(
+    checkBoundaries(root).errors.some((error) => error.includes('stock counter capability')),
+  )
+  put('backend/src/modules/payments/payment.service.ts', '')
+  rmSync(join(root, 'scripts/ci/backend-boundary-allowances.json'))
+  put(
+    'backend/src/modules/inventory/inventory.service.ts',
+    'import "../catalog/products/variant.service.js"',
+  )
+  put('backend/src/setup.ts', 'import "./modules/catalog/products/variant.service.js"')
+  assert.deepEqual(checkBoundaries(root).errors, [])
+})
+
+test('REFACTOR-BOUNDARY-06: runtime, type-only, re-export and dynamic source cycles are detected', (t) => {
+  const { root, put } = fixture(t)
+  const a = 'backend/src/modules/orders/a.ts'
+  const b = 'backend/src/modules/orders/b.ts'
+  put(a, 'export * from "./b.js"')
+  put(b, 'import("./a.js")')
+  assert.ok(checkBoundaries(root).errors.some((error) => error.includes('import cycle (runtime:')))
+  put(a, 'type Ref = import("./b.js").B; export interface A {}')
+  put(b, 'import type {A} from "./a.js"; export interface B {}')
+  const key = 'type: modules/orders/a.ts <-> modules/orders/b.ts'
+  assert.ok(checkBoundaries(root).errors.some((error) => error.includes('import cycle (type:')))
+  put(
+    'scripts/ci/backend-boundary-allowances.json',
+    JSON.stringify({ version: 1, imports: {}, cycles: { [key]: 'WP09' } }),
+  )
+  assert.ok(checkBoundaries(root).errors.some((error) => error.includes('import cycle (type:')))
+  assert.equal(checkBoundaries(root).remainingAllowances, 0)
+  put(a, 'import "./b.js"')
+  put(b, 'import "./a.js"')
+  assert.ok(checkBoundaries(root).errors.some((error) => error.includes('import cycle (runtime:')))
+  put(
+    'scripts/ci/backend-boundary-allowances.json',
+    JSON.stringify({
+      version: 1,
+      imports: {},
+      cycles: { [key.replace('type:', 'runtime:')]: 'WP09' },
+    }),
+  )
+  assert.ok(
+    checkBoundaries(root).errors.some((error) =>
+      error.includes('legacy migration inventories are retired'),
+    ),
+  )
+  put(
+    'scripts/ci/backend-boundary-allowances.json',
+    JSON.stringify({ version: 1, imports: {}, cycles: { [key]: 'WP09' } }),
+  )
+  put(a, 'export interface A {}')
+  put(b, 'export interface B {}')
+  assert.ok(
+    checkBoundaries(root).errors.some((error) =>
+      error.includes('legacy migration inventories are retired'),
+    ),
+  )
+})
+
+test('REFACTOR-BOUNDARY-07: configuration cannot relay domain implementations and providers use public types', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/modules/orders/order.service.ts', 'export const read = 1')
+  put('backend/src/config/helper.ts', 'export {read} from "../modules/orders/order.service.js"')
+  assert.ok(checkBoundaries(root).errors.some((error) => error.includes('public contract')))
+  put('backend/src/config/helper.ts', '')
+  put('backend/src/modules/orders/order.public.ts', 'export interface Read {}')
+  put('backend/src/modules/orders/order.schema.ts', 'export const schema = 1')
+  put(
+    'backend/src/config/operations.ts',
+    'import "../modules/orders/order.schema.js"; import type {Read} from "../modules/orders/order.public.js"',
+  )
+  put(
+    'backend/src/providers/gateway/gateway.client.ts',
+    'import type {Read} from "../../modules/orders/order.public.js"',
+  )
+  assert.deepEqual(checkBoundaries(root).errors, [])
+  put(
+    'backend/src/providers/gateway/gateway.client.ts',
+    'import type {read} from "../../modules/orders/order.service.js"',
+  )
+  assert.ok(checkBoundaries(root).errors.some((error) => error.includes('public contract')))
 })

@@ -1,12 +1,13 @@
-import { pageMeta } from '../../shared/pagination.js'
-import { Types, type ClientSession, type Connection } from 'mongoose'
+import { type ClientSession, type Connection, Types } from 'mongoose'
 import { z } from 'zod'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
-import { paymentRecordModels } from './payment-record.model.js'
-import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
-import { paymentAmounts, paymentModel, type Payment } from './payment.model.js'
+import { pageMeta } from '../../shared/pagination.js'
+import { paymentRecordModels } from './collections/payment-record.model.js'
+import { verifyPaymentRecordPersistence } from './collections/payment-record.persistence.js'
+import { type Payment, paymentAmounts, paymentModel } from './payment.model.js'
 import { verifyPaymentPersistence } from './payment.persistence.js'
+
 const input = z.strictObject({
   orderId: z.string().regex(/^[a-f0-9]{24}$/),
   method: z.enum(['cod', 'online']),
@@ -14,7 +15,7 @@ const input = z.strictObject({
 })
 
 // Read-only snapshot: only an existing, linked, independently verified collection can fund a quote.
-export function refundPaymentSnapshotAccess(connection: Connection) {
+function refundPaymentSnapshotAccess(connection: Connection) {
   const payments = paymentModel(connection),
     { collections } = paymentRecordModels(connection)
   return async (session: ClientSession, orderId: string, sourceCollectionId: string) => {
@@ -53,8 +54,9 @@ export function refundPaymentSnapshotAccess(connection: Connection) {
     }
   }
 }
+
 // Detached correction balances for a verified collection linked to this order's payment.
-export function correctionPaymentSnapshotAccess(connection: Connection) {
+function correctionPaymentSnapshotAccess(connection: Connection) {
   const payments = paymentModel(connection),
     { collections } = paymentRecordModels(connection)
   return async (session: ClientSession, orderId: string, sourceCollectionId: string) => {
@@ -83,7 +85,7 @@ export function correctionPaymentSnapshotAccess(connection: Connection) {
 }
 
 // Refunds receive detached verified funding and guarded class-specific reservation operations.
-export function refundFundingAccess(connection: Connection) {
+function refundFundingAccess(connection: Connection) {
   const payments = paymentModel(connection),
     { collections } = paymentRecordModels(connection)
   const money = z.int().nonnegative().max(Number.MAX_SAFE_INTEGER)
@@ -297,9 +299,10 @@ export function refundFundingAccess(connection: Connection) {
     },
   }
 }
+
 // Trusted checkout capability only; owning coordinator binds these facts to the canonical order.
 // No collection/attempt or Paid transition exists in this service.
-export function checkoutPaymentAccess(connection: Connection) {
+function checkoutPaymentAccess(connection: Connection) {
   const model = paymentModel(connection)
   return {
     async create(session: ClientSession, raw: unknown) {
@@ -357,7 +360,7 @@ export function checkoutPaymentAccess(connection: Connection) {
   }
 }
 
-export function paymentMethodBalanceAccess(connection: Connection) {
+function paymentMethodBalanceAccess(connection: Connection) {
   const model = paymentModel(connection)
   return async (session: ClientSession, orderId: string) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
@@ -376,7 +379,7 @@ export function paymentMethodBalanceAccess(connection: Connection) {
 }
 
 // Required fence for unpaid allocation refresh/shortfall. All funding/expiry decisions serialize here.
-export function paymentInitiationEligibilityAccess(connection: Connection) {
+function paymentInitiationEligibilityAccess(connection: Connection) {
   const payments = paymentModel(connection),
     { attempts } = paymentRecordModels(connection)
   return async (session: ClientSession, orderId: string) => {
@@ -408,10 +411,7 @@ export function paymentInitiationEligibilityAccess(connection: Connection) {
   }
 }
 
-export function fulfillmentPaymentAccess(
-  connection: Connection,
-  clock: () => Date = () => new Date(),
-) {
+function fulfillmentPaymentAccess(connection: Connection, clock: () => Date = () => new Date()) {
   const payments = paymentModel(connection)
   const access = async (
     session: ClientSession,
@@ -448,7 +448,7 @@ export function fulfillmentPaymentAccess(
   })
 }
 
-export function customerPaymentSummaryAccess(
+function customerPaymentSummaryAccess(
   connection: Connection,
   clock: () => Date = () => new Date(),
 ) {
@@ -523,7 +523,7 @@ export function customerPaymentSummaryAccess(
   )
 }
 
-export function cancellationPaymentAccess(connection: Connection) {
+function cancellationPaymentAccess(connection: Connection) {
   return async (
     session: ClientSession,
     input: {
@@ -554,7 +554,7 @@ export function cancellationPaymentAccess(connection: Connection) {
 }
 
 // Reconstruct the actual full-funding event from canonical verified sources, never fulfillment time.
-export function verifiedFullPaymentTimeAccess(
+function verifiedFullPaymentTimeAccess(
   connection: Connection,
   clock: () => Date = () => new Date(),
 ) {
@@ -601,12 +601,16 @@ export function verifiedFullPaymentTimeAccess(
   }
 }
 
-export function paymentReportAccess(connection: Connection) {
+function paymentReportAccess(connection: Connection) {
   const { collections, intake } = paymentRecordModels(connection),
     payments = paymentModel(connection)
   return async (
     session: ClientSession,
-    period: { from: Date; to: Date; asOf: Date },
+    period: {
+      from: Date
+      to: Date
+      asOf: Date
+    },
     codOrderIds: string[],
   ) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
@@ -630,7 +634,9 @@ export function paymentReportAccess(connection: Connection) {
       .maxTimeMS(5000)
       .session(session)
     const unmatched = await intake
-      .aggregate<{ amount: number }>([
+      .aggregate<{
+        amount: number
+      }>([
         {
           $match: {
             matchingStatus: 'unmatched',
@@ -643,7 +649,9 @@ export function paymentReportAccess(connection: Connection) {
       .option({ maxTimeMS: 5000 })
       .session(session)
     const balances = await collections
-      .aggregate<{ unassigned: number }>([
+      .aggregate<{
+        unassigned: number
+      }>([
         { $match: { verifiedAt: { $lte: period.asOf } } },
         { $group: { _id: null, unassigned: { $sum: '$unassignedAllocatedPoisha' } } },
       ])
@@ -671,12 +679,15 @@ export function paymentReportAccess(connection: Connection) {
   }
 }
 
-export function paymentExceptionQueueAccess(connection: Connection) {
+function paymentExceptionQueueAccess(connection: Connection) {
   const payments = paymentModel(connection),
     { attempts } = paymentRecordModels(connection)
   return async (
     session: ClientSession,
-    input: { page: number; pageSize: number },
+    input: {
+      page: number
+      pageSize: number
+    },
     reconciliation: boolean,
   ) => {
     await verifyPaymentPersistence(connection)
@@ -723,4 +734,19 @@ export function paymentExceptionQueueAccess(connection: Connection) {
       pagination: pageMeta(input, await payments.countDocuments(filter).session(session)),
     }
   }
+}
+
+export {
+  cancellationPaymentAccess,
+  checkoutPaymentAccess,
+  correctionPaymentSnapshotAccess,
+  customerPaymentSummaryAccess,
+  fulfillmentPaymentAccess,
+  paymentExceptionQueueAccess,
+  paymentInitiationEligibilityAccess,
+  paymentMethodBalanceAccess,
+  paymentReportAccess,
+  refundFundingAccess,
+  refundPaymentSnapshotAccess,
+  verifiedFullPaymentTimeAccess,
 }

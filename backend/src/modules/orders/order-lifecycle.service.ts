@@ -1,22 +1,33 @@
-import { createRegistrationNotifications } from '../notifications/notification.service.js'
-import { createDeliveryDeadlineService } from './delivery-deadline.service.js'
 import { createHash } from 'node:crypto'
-import { Types, type ClientSession, type Connection } from 'mongoose'
-import type { AdminAccountAccess } from '../auth/admin-account.service.js'
-import type { fulfillmentPaymentAccess } from '../payments/payment.service.js'
-import type { fulfillmentAllocationService } from '../checkout/fulfillment-allocation.service.js'
-import { createAuditWriter, auditOperationReader } from '../audit/audit.service.js'
-import { paymentInitiationKey } from '../payments/payment-initiation.schema.js'
-import { orderModels, type Order } from './order.model.js'
-import { verifyOrderPersistence } from './order.persistence.js'
-import { orderAllocationBinding } from './order.service.js'
-import { orderId, assertFulfillmentTransition } from './order.schema.js'
-import { deliveryDeadline } from './delivery-deadline.schema.js'
-import { lifecycleInput, lifecycleResult } from './order-lifecycle.schema.js'
+import { type ClientSession, type Connection, Types } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
+import {
+  resourceId as orderId,
+  idempotencyKey as paymentInitiationKey,
+} from '../../shared/validation.js'
+import type { AuditAccess } from '../audit/audit.public.js'
+import type { AdminAccountAccess } from '../auth/auth.public.js'
+import type { NotificationIntentsFactory } from '../notifications/notification.public.js'
+
+import type { FulfillmentPaymentAccess } from '../payments/payment.public.js'
+
+import { deliveryDeadline } from './delivery-deadline.schema.js'
+import { createDeliveryDeadlineService } from './delivery-deadline.service.js'
+import { type Order, orderModels } from './order.model.js'
+import { verifyOrderPersistence } from './order.persistence.js'
+import { assertFulfillmentTransition } from './order.schema.js'
+import { orderAllocationBinding } from './order.service.js'
+import type { createFulfillmentAllocationService } from './order-allocation.service.js'
+import { lifecycleInput, lifecycleResult } from './order-lifecycle.schema.js'
+
 const hash = (v: string) => createHash('sha256').update(v).digest('hex')
-const view = (r: Order & { _id: Types.ObjectId }) =>
+
+const view = (
+  r: Order & {
+    _id: Types.ObjectId
+  },
+) =>
   lifecycleResult.parse({
     id: r._id.toHexString(),
     fulfillmentStatus: r.fulfillmentStatus,
@@ -25,17 +36,20 @@ const view = (r: Order & { _id: Types.ObjectId }) =>
     ...(r.shippedAt ? { shippedAt: r.shippedAt.toISOString() } : {}),
     ...(r.deliveredAt ? { deliveredAt: r.deliveredAt.toISOString() } : {}),
   })
-export function orderLifecycleService(
+
+function createOrderLifecycleService(
   connection: Connection,
   admin: AdminAccountAccess,
-  payment: ReturnType<typeof fulfillmentPaymentAccess>,
-  allocation: ReturnType<typeof fulfillmentAllocationService>,
+  payment: FulfillmentPaymentAccess,
+  allocation: ReturnType<typeof createFulfillmentAllocationService>,
+  auditAccess: AuditAccess,
+  moduleAccess: { createNotificationService: NotificationIntentsFactory },
   approvedDeadline?: (session: ClientSession, basis: unknown) => Promise<void>,
   clock: () => Date = () => new Date(),
 ) {
   const { orders } = orderModels(connection),
-    audit = createAuditWriter(connection),
-    lookup = auditOperationReader(connection)
+    audit = auditAccess.write,
+    lookup = auditAccess.lookup
   return {
     async transition(token: string | undefined, rawId: unknown, raw: unknown, key: unknown) {
       const id = parseInput(orderId, rawId),
@@ -167,10 +181,10 @@ export function orderLifecycleService(
                 ? 'delivery_completion'
                 : undefined
         if (eventType)
-          await createRegistrationNotifications(connection, clock).enqueueCommerce(
+          await moduleAccess.createNotificationService(clock).enqueueCommerce(
             {
-              orderId: row._id,
-              ...(row.userId ? { userId: row.userId } : {}),
+              orderId: row._id.toHexString(),
+              ...(row.userId ? { userId: row.userId.toHexString() } : {}),
               email: row.customerSnapshot.emailNormalized,
               name: row.customerSnapshot.name,
               eventType,
@@ -192,3 +206,5 @@ export function orderLifecycleService(
     },
   }
 }
+
+export { createOrderLifecycleService }

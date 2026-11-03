@@ -1,8 +1,11 @@
+import { z } from 'zod'
 import { validateClamAvOptions } from '../providers/antivirus/clamav.schema.js'
 import { validateCloudinaryOptions } from '../providers/cloudinary/cloudinary.schema.js'
-import { z } from 'zod'
 import { ConfigurationError } from '../shared/errors/configuration-error.js'
-export const mediaPolicySchema = z.strictObject({
+
+type MediaPolicy = z.infer<typeof mediaPolicySchema>
+
+const mediaPolicySchema = z.strictObject({
   maxBytes: z
     .int()
     .min(1)
@@ -18,14 +21,13 @@ export const mediaPolicySchema = z.strictObject({
     .max(7 * 86400),
   privateUrlTtlSeconds: z.int().min(1).max(300),
 })
-export type MediaPolicy = z.infer<typeof mediaPolicySchema>
-export function validateMediaPolicy(input: unknown): Readonly<MediaPolicy> {
+function validateMediaPolicy(input: unknown): Readonly<MediaPolicy> {
   const parsed = mediaPolicySchema.safeParse(input)
   if (!parsed.success) throw new ConfigurationError(['media_policy'])
   return Object.freeze({ ...parsed.data, allowedFormats: [...new Set(parsed.data.allowedFormats)] })
 }
 // No policy defaults or activation from an unapproved environment configuration.
-export function loadMediaConfiguration(environment: NodeJS.ProcessEnv) {
+function loadMediaConfiguration(environment: NodeJS.ProcessEnv) {
   let policy: unknown
   try {
     policy = JSON.parse(environment.MEDIA_POLICY_JSON ?? '')
@@ -56,7 +58,7 @@ export function loadMediaConfiguration(environment: NodeJS.ProcessEnv) {
 }
 
 // Maintenance is independent of upload admission. It cannot create or rescan an upload.
-export function loadMediaMaintenanceConfiguration(env: NodeJS.ProcessEnv) {
+function loadMediaMaintenanceConfiguration(env: NodeJS.ProcessEnv) {
   if (env.MEDIA_MAINTENANCE_ENABLED === undefined || env.MEDIA_MAINTENANCE_ENABLED === 'false')
     return undefined
   if (
@@ -93,4 +95,12 @@ export function loadMediaMaintenanceConfiguration(env: NodeJS.ProcessEnv) {
       timeoutMs: integer('MEDIA_PROVIDER_TIMEOUT_MS'),
     }),
   }
+}
+
+export type { MediaPolicy }
+export {
+  loadMediaConfiguration,
+  loadMediaMaintenanceConfiguration,
+  mediaPolicySchema,
+  validateMediaPolicy,
 }

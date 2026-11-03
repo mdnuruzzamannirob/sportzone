@@ -3,7 +3,7 @@ import { validateRetryPolicy } from '../modules/notifications/notification.schem
 import { validateEmailOptions } from '../providers/email/resend.schema.js'
 import { ConfigurationError } from '../shared/errors/configuration-error.js'
 
-export function loadNotificationWorker(environment: NodeJS.ProcessEnv) {
+function loadNotificationWorker(environment: NodeJS.ProcessEnv) {
   const number = (name: string) =>
     /^[1-9]\d*$/.test(environment[name] ?? '') ? Number(environment[name]) : NaN
   if (environment.EMAIL_DELIVERY_ENABLED !== 'true' || environment.EMAIL_PROVIDER !== 'resend')
@@ -60,3 +60,5 @@ export function loadNotificationWorker(environment: NodeJS.ProcessEnv) {
     afterSalesEnabled,
   }
 }
+
+export { loadNotificationWorker }

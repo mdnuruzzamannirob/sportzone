@@ -1,14 +1,35 @@
-import { Schema, type Connection, type Types } from 'mongoose'
+import { type Connection, Schema, type Types } from 'mongoose'
+import type { z } from 'zod'
 import {
   integerField,
   mutableSchemaOptions,
   optionalObjectIdField,
 } from '../../shared/database/schema.js'
-import type { z } from 'zod'
-import type { checkoutCommercialSnapshot } from './checkout.schema.js'
+import type { CheckoutCommercialSnapshotSchema } from './checkout.schema.js'
+
+type CheckoutQuote = {
+  scopeType: 'customer' | 'guest_context'
+  scopeKeyHash: string
+  requestFingerprint: string
+  commercialSnapshot: z.output<CheckoutCommercialSnapshotSchema>
+  commercialDigest: string
+  quotedAt: Date
+  expiresAt: Date
+  status: 'open' | 'consumed'
+  revision: number
+  checkoutIntentId?: Types.ObjectId
+  orderId?: Types.ObjectId
+  consumedAt?: Date
+  createdAt?: Date
+  updatedAt?: Date
+}
+
 const embedded = { _id: false, strict: 'throw', versionKey: false, minimize: false } as const
+
 const text = { type: String, required: true } as const
+
 const money = { ...integerField(), required: true }
+
 const address = new Schema(
   {
     recipient: text,
@@ -21,10 +42,12 @@ const address = new Schema(
   },
   embedded,
 )
+
 const selection = new Schema(
   { variantId: text, quantity: { ...integerField(1), required: true } },
   embedded,
 )
+
 const line = new Schema(
   {
     id: text,
@@ -44,6 +67,7 @@ const line = new Schema(
   },
   embedded,
 )
+
 const deadline = new Schema(
   {
     status: text,
@@ -58,10 +82,12 @@ const deadline = new Schema(
   },
   embedded,
 )
+
 const timingRule = new Schema(
   { startEvent: text, calendarDays: { ...integerField(1), required: true } },
   embedded,
 )
+
 const basis = new Schema(
   {
     rule: {
@@ -114,6 +140,7 @@ const basis = new Schema(
   },
   embedded,
 )
+
 const method = new Schema(
   {
     channel: text,
@@ -125,7 +152,8 @@ const method = new Schema(
   },
   embedded,
 )
-const snapshot = new Schema<z.output<typeof checkoutCommercialSnapshot>>(
+
+const snapshot = new Schema<z.output<CheckoutCommercialSnapshotSchema>>(
   {
     draft: {
       type: new Schema(
@@ -198,22 +226,7 @@ const snapshot = new Schema<z.output<typeof checkoutCommercialSnapshot>>(
   },
   embedded,
 )
-export type CheckoutQuote = {
-  scopeType: 'customer' | 'guest_context'
-  scopeKeyHash: string
-  requestFingerprint: string
-  commercialSnapshot: z.output<typeof checkoutCommercialSnapshot>
-  commercialDigest: string
-  quotedAt: Date
-  expiresAt: Date
-  status: 'open' | 'consumed'
-  revision: number
-  checkoutIntentId?: Types.ObjectId
-  orderId?: Types.ObjectId
-  consumedAt?: Date
-  createdAt?: Date
-  updatedAt?: Date
-}
+
 const schema = new Schema<CheckoutQuote>(
   {
     scopeType: {
@@ -236,7 +249,9 @@ const schema = new Schema<CheckoutQuote>(
   },
   mutableSchemaOptions,
 )
+
 schema.index({ scopeType: 1, scopeKeyHash: 1, expiresAt: 1 }, { name: 'quote_scope_expiry' })
+
 schema.index(
   { checkoutIntentId: 1 },
   {
@@ -245,6 +260,7 @@ schema.index(
     name: 'quote_intent_unique',
   },
 )
+
 schema.index(
   { orderId: 1 },
   {
@@ -253,8 +269,12 @@ schema.index(
     name: 'quote_order_unique',
   },
 )
-export function checkoutQuoteModel(connection: Connection) {
+
+function checkoutQuoteModel(connection: Connection) {
   return connection.models.CheckoutQuote
     ? connection.model<CheckoutQuote>('CheckoutQuote')
     : connection.model<CheckoutQuote>('CheckoutQuote', schema, 'checkoutQuotes')
 }
+
+export type { CheckoutQuote }
+export { checkoutQuoteModel }

@@ -1,35 +1,36 @@
 import { createHash } from 'node:crypto'
-import { Types, type ClientSession, type Connection } from 'mongoose'
+import { type ClientSession, type Connection, Types } from 'mongoose'
 import { z } from 'zod'
-import type { AdminAccountAccess } from '../auth/admin-account.service.js'
-import type { recoveryReceiptService } from '../inventory/recovery-receipt.service.js'
-import type { cancellationPaymentAccess } from '../payments/payment.service.js'
-import { createAuditWriter, auditOperationReader } from '../audit/audit.service.js'
-import { createRegistrationNotifications } from '../notifications/notification.service.js'
-import { paymentInitiationKey } from '../payments/payment-initiation.schema.js'
-import { orderModels } from './order.model.js'
-import { verifyOrderPersistence } from './order.persistence.js'
-import { orderId } from './order.schema.js'
+import { ApiError } from '../../shared/errors/app-error.js'
+import { parseInput } from '../../shared/middleware/validate.js'
+import {
+  resourceId as orderId,
+  idempotencyKey as paymentInitiationKey,
+} from '../../shared/validation.js'
+import type { AuditAccess } from '../audit/audit.public.js'
+import type { AdminAccountAccess } from '../auth/auth.public.js'
+import type { RecoveryReceiptService } from '../inventory/inventory.public.js'
+import type { NotificationIntentsFactory } from '../notifications/notification.public.js'
+
+import type { CancellationPaymentAccess } from '../payments/payment.public.js'
+
 import { deliveryExceptionModel } from './delivery-exception.model.js'
 import { verifyDeliveryExceptionPersistence } from './delivery-exception.persistence.js'
 import { exceptionInput, exceptionResolution, exceptionView } from './delivery-exception.schema.js'
-import { ApiError } from '../../shared/errors/app-error.js'
-import { parseInput } from '../../shared/middleware/validate.js'
+import { orderModels } from './order.model.js'
+import { verifyOrderPersistence } from './order.persistence.js'
+import type { DeliveryDispositionVerifier } from './order.public.js'
+
 const hash = (s: string) => createHash('sha256').update(s).digest('hex')
-export function deliveryExceptionService(
+
+function createDeliveryExceptionService(
   connection: Connection,
   admin: AdminAccountAccess,
-  payment: ReturnType<typeof cancellationPaymentAccess>,
-  restore: ReturnType<typeof recoveryReceiptService>,
-  verifyDisposition?: (
-    session: ClientSession,
-    input: {
-      orderId: string
-      exceptionId: string
-      shippedAt: Date
-      disposition: NonNullable<ReturnType<typeof exceptionResolution.parse>['disposition']>
-    },
-  ) => Promise<unknown>,
+  payment: CancellationPaymentAccess,
+  restore: RecoveryReceiptService,
+  auditAccess: AuditAccess,
+  moduleAccess: { createNotificationService: NotificationIntentsFactory },
+  verifyDisposition?: DeliveryDispositionVerifier,
   refunds?: (
     session: ClientSession,
     input: {
@@ -44,8 +45,8 @@ export function deliveryExceptionService(
 ) {
   const model = deliveryExceptionModel(connection),
     { orders } = orderModels(connection),
-    audit = createAuditWriter(connection),
-    lookup = auditOperationReader(connection)
+    audit = auditAccess.write,
+    lookup = auditAccess.lookup
   const view = (row: InstanceType<typeof model>) =>
     exceptionView.parse({
       id: row._id.toHexString(),
@@ -265,10 +266,10 @@ export function deliveryExceptionService(
             transitionOptions,
           )
           if (changed.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
-          await createRegistrationNotifications(connection, clock).enqueueCommerce(
+          await moduleAccess.createNotificationService(clock).enqueueCommerce(
             {
-              orderId: row._id,
-              ...(row.userId ? { userId: row.userId } : {}),
+              orderId: row._id.toHexString(),
+              ...(row.userId ? { userId: row.userId.toHexString() } : {}),
               email: row.customerSnapshot.emailNormalized,
               name: row.customerSnapshot.name,
               eventType: 'order_cancellation',
@@ -320,3 +321,5 @@ export function deliveryExceptionService(
     },
   }
 }
+
+export { createDeliveryExceptionService }

@@ -1,34 +1,47 @@
-import { cancellationQuery } from './cancellation.schema.js'
-import { createRegistrationNotifications } from '../notifications/notification.service.js'
 import { createHash } from 'node:crypto'
-import { Types, type Connection, type ClientSession } from 'mongoose'
-import type { AdminAccountAccess } from '../auth/admin-account.service.js'
-import type {
-  orderScopeAccess,
-  PaymentInitiationCredentials,
-} from '../auth/checkout-access.service.js'
-import type { cancellationAllocationService } from '../checkout/cancellation-allocation.service.js'
-import type { cancellationPaymentAccess } from '../payments/payment.service.js'
-import { createAuditWriter, auditOperationReader } from '../audit/audit.service.js'
-import { paymentInitiationKey } from '../payments/payment-initiation.schema.js'
-import { orderModels } from './order.model.js'
-import { orderId } from './order.schema.js'
-import { orderOwnerFilter } from './order-read.service.js'
-import { orderAllocationBinding } from './order.service.js'
-import { verifyOrderPersistence } from './order.persistence.js'
-import { cancellationModel } from './cancellation.model.js'
-import { verifyCancellationPersistence } from './cancellation.persistence.js'
-import { cancellationInput, cancellationDecision, cancellationView } from './cancellation.schema.js'
+import { type ClientSession, type Connection, Types } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { pageMeta } from '../../shared/pagination.js'
+import {
+  resourceId as orderId,
+  idempotencyKey as paymentInitiationKey,
+} from '../../shared/validation.js'
+import type { AuditAccess } from '../audit/audit.public.js'
+import type {
+  AdminAccountAccess,
+  OrderScopeAccess,
+  PaymentInitiationCredentials,
+} from '../auth/auth.public.js'
+import type { NotificationIntentsFactory } from '../notifications/notification.public.js'
+
+import type { CancellationPaymentAccess } from '../payments/payment.public.js'
+
+import { cancellationModel } from './cancellation.model.js'
+import { verifyCancellationPersistence } from './cancellation.persistence.js'
+import {
+  cancellationDecision,
+  cancellationInput,
+  cancellationQuery,
+  cancellationView,
+} from './cancellation.schema.js'
+import { orderModels } from './order.model.js'
+import { verifyOrderPersistence } from './order.persistence.js'
+
+import { orderAllocationBinding } from './order.service.js'
+import type { createCancellationAllocationService } from './order-allocation.service.js'
+import { orderOwnerFilter } from './order-read.service.js'
+
 const hash = (s: string) => createHash('sha256').update(s).digest('hex')
-export function cancellationService(
+
+function createCancellationService(
   connection: Connection,
-  scope: ReturnType<typeof orderScopeAccess>,
+  scope: OrderScopeAccess,
   admin: AdminAccountAccess,
-  release: ReturnType<typeof cancellationAllocationService>,
-  payment: ReturnType<typeof cancellationPaymentAccess>,
+  release: ReturnType<typeof createCancellationAllocationService>,
+  payment: CancellationPaymentAccess,
+  auditAccess: AuditAccess,
+  moduleAccess: { createNotificationService: NotificationIntentsFactory },
   refunds?: (
     session: ClientSession,
     input: {
@@ -43,8 +56,8 @@ export function cancellationService(
 ) {
   const { orders } = orderModels(connection),
     requests = cancellationModel(connection),
-    audit = createAuditWriter(connection),
-    lookup = auditOperationReader(connection)
+    audit = auditAccess.write,
+    lookup = auditAccess.lookup
   const view = (r: InstanceType<typeof requests>) =>
     cancellationView.parse({
       id: r._id.toHexString(),
@@ -277,10 +290,10 @@ export function cancellationService(
             { session },
           )
           if (changed.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
-          await createRegistrationNotifications(connection, clock).enqueueCommerce(
+          await moduleAccess.createNotificationService(clock).enqueueCommerce(
             {
-              orderId: order._id,
-              ...(order.userId ? { userId: order.userId } : {}),
+              orderId: order._id.toHexString(),
+              ...(order.userId ? { userId: order.userId.toHexString() } : {}),
               email: order.customerSnapshot.emailNormalized,
               name: order.customerSnapshot.name,
               eventType: 'order_cancellation',
@@ -317,3 +330,5 @@ export function cancellationService(
     },
   }
 }
+
+export { createCancellationService }

@@ -130,13 +130,13 @@ retain their own approver, environment, artifacts, blockers and explicit decisio
 
 ## 3. Project progress dashboard
 
-The register contains 211 tasks across twelve requirement groups. Application-stage execution is defined in §1; accepted IDs and evidence remain historical. Update totals when tasks are added or statuses change.
+The register contains 218 tasks across twelve requirement groups. Application-stage execution is defined in §1; accepted IDs and evidence remain historical. Update totals when tasks are added or statuses change.
 
 | Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |    Done | Deferred |
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | ------: | -------: |
 | 01 — Requirements Finalization and Planning   |      24 |           0 |     0 |           0 |       0 |         0 |      24 |        0 |
 | 02 — UI/UX Design                             |      17 |           1 |     0 |           0 |       0 |         0 |      16 |        0 |
-| 03 — Authentication and Core Backend          |      23 |           0 |     0 |           1 |       0 |         0 |      22 |        0 |
+| 03 — Authentication and Core Backend          |      30 |           0 |     0 |           1 |       0 |         0 |      29 |        0 |
 | 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       0 |         0 |      12 |        1 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           8 |     0 |           0 |       0 |         0 |       9 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |           6 |     0 |           0 |       0 |         0 |      16 |        0 |
@@ -146,7 +146,7 @@ The register contains 211 tasks across twelve requirement groups. Application-st
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |       0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |       0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |       0 |        0 |
-| **Total**                                     | **211** |      **74** | **0** |       **1** |   **0** |     **0** | **134** |    **2** |
+| **Total**                                     | **218** |      **74** | **0** |       **1** |   **0** |     **0** | **141** |    **2** |
 
 ## 4. Milestone tracker
 
@@ -531,7 +531,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
 
 ### Phase 03 — Authentication and core backend
 
-**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 03. **Associated gate:** M1. **Tasks:** 23.
+**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 03. **Associated gate:** M1. **Tasks:** 30.
 
 - [x] **P03-001 — Bootstrap modular Express API and shared middleware**\
   **Status:** `Done` · **Area:** Backend/core · **Owner:** Codex\
@@ -718,6 +718,70 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Deliverable:** Close the nine specified API operations absent from runtime at whole-backend audit; preserve current canonical identity, collection, order and refund authorities. Include real HTTP composition, strict DTO/auth/CSRF/idempotency/CAS, transaction/race/recovery tests and generated artifacts.\
   **Acceptance:** All nine operations implemented with positive/negative evidence; receipt linking/allocation cannot create unverified money or bypass source/refund caps; customer refund submission cannot approve or dispatch payout; email verification is purpose-bound, expiring, replay-safe and delivered through the protected outbox. No stub, fake admin or unsafe gate bypass.\
   **Evidence:** [All nine gap closures, runtime inventory and verification](./evidence/P03-022-backend-completion.md). Final backend CI Passed: 811 unit, 186 contract, 1,258 integration and 83 tooling cases; build/smoke/types/lint/boundaries/format, security and documentation checks Passed. Executor diff review completed under Tasks §2. All existing local-only DTOs are also promoted under P03-022 technical verification; stage/external acceptance remains separate.
+
+- [x] **P03-024 — Inventory the existing backend for the approved refactor (WP00)**\
+  **Status:** `Done` · **Area:** Backend/refactor baseline · **Owner:** Codex\
+  **Stage:** `Backend`\
+  **Sources:** Backend Refactor Plan WP00; Architecture §§4/6; Testing §15.5\
+  **Depends on:** `P01-024`, `P03-023`; owner-authorized backend refactor plan\
+  **Deliverable:** Current source/test/script/contract/runtime inventory, dependency and capability map, canonical persistence fingerprints, current-to-target ownership and selected baseline checks.\
+  **Acceptance:** Every backend area and entry point is accounted for; baseline revision/results and limits are reproducible; no runtime/feature changes or prior acceptance overwritten.\
+  **Evidence:** [WP00 inventory, selected checks, findings and executor review](./evidence/P03-021-backend-refactor.md#p03-024--wp00-follow-up-baseline-3-november-2026). Completed 3 November 2026 under Tasks §2: 491 backend files, 170 operations, 41 scripts, canonical persistence fingerprints and current-to-target consumers. Typecheck/boundaries/API freshness, 60 selected unit and three selected contract-inventory cases Passed; backend fingerprint unchanged. WP01 specification/boundary reconciliation is next; no runtime/feature or stage acceptance is claimed.
+
+- [x] **P03-025 — Reconcile backend refactor contracts and enforce import boundaries (WP01)**\
+  **Status:** `Done` · **Area:** Backend/refactor enforcement · **Owner:** Codex\
+  **Stage:** `Backend`\
+  **Sources:** Backend Refactor Plan WP01; Architecture §§4/6; Database §§3.1/4.2; API §2.2; Testing §15.5\
+  **Depends on:** `P03-024`\
+  **Deliverable:** Reconciled target ownership/file/dependency rules and executable public-contract/composition/cycle checks with exact legacy migration allowances in existing tooling.\
+  **Acceptance:** Positive/negative import fixtures and current tree checks pass; new private edges, enlarged imports, stale allowances and new cycles fail. Preserve existing persistence/provider/stock safeguards and runtime behavior; no business source moves.\
+  **Evidence:** [WP01 reconciliation, exact allowances, verification and executor review](./evidence/P03-021-backend-refactor.md#p03-025--wp01-contracts-and-enforcement-3-november-2026). Completed 3 November 2026 under Tasks §2. Existing checker/fixtures enforce public types, composition and source cycles; 356 import signatures and one type component have removal owners. Final affected boundary regression: 47 Passed. Initial full tooling run: 87 Passed/3 process failures; the same three failed on untouched control and all Passed outside the sandbox. Boundary/style/format/API-freshness/docs checks Passed; all 491 backend inputs unchanged. Next: WP02 technical foundation/reuse; no application/external acceptance implied.
+
+- [x] **P03-026 — Refactor technical configuration and reusable mechanics (WP02)**\
+  **Status:** `Done` · **Area:** Backend/technical foundation · **Owner:** Codex\
+  **Stage:** `Backend`\
+  **Sources:** Backend Refactor Plan WP02; Architecture §§4/6; API §§3–4; Testing §15.5\
+  **Depends on:** `P03-025`\
+  **Deliverable:** Remove config-to-private-service coupling, reuse technical crypto/digest mechanics, preserve auth-owned proof binding and expose an explicit operations verifier contract; review existing shared guards without speculative rewrites.\
+  **Acceptance:** Environment keys/defaults/errors, cookies, proof ciphertext/binding compatibility, transaction/identity safeguards and generated contracts remain unchanged. Remove WP02 allowances and pass affected type/style/boundary/config/auth/integration checks with actual evidence.\
+  **Evidence:** [WP02 verification and executor review](./evidence/P03-021-backend-refactor.md#p03-026--wp02-technical-foundation-3-november-2026). Completed 3 November 2026 under Tasks §2: 219 unit and 155 isolated MongoDB integration cases Passed; compiled smoke, type/build/style/boundaries and API freshness Passed. Five WP02 allowances removed; 352 remain for later packages.
+
+- [x] **P03-027 — Refactor delivery module and consumer contracts (WP03)**\
+  **Status:** `Done` · **Area:** Backend/delivery · **Owner:** Codex\
+  **Stage:** `Backend`\
+  **Sources:** Backend Refactor Plan WP03; Architecture §§4/6; API §§4.7/14.3; Database §7.6; Testing §15.5\
+  **Depends on:** `P03-026`\
+  **Deliverable:** Separate delivery HTTP controllers from route/middleware registration, inject auth middleware, publish narrow coverage/charge and admin transaction contracts, retain cohesive services and canonical persistence.\
+  **Acceptance:** Coverage precedence, inactive-area rejection, charge history, revision/idempotency/audit/transaction fences and HTTP contracts remain unchanged; remove owning allowances and verify affected consumers.\
+  **Evidence:** [WP03 checks, review and Git limitation](./evidence/P03-021-backend-refactor.md#p03-027--wp03-delivery-pilot-3-november-2026). Completed 3 November 2026 under Tasks §2: 124 unit, 428 isolated integration and 48 boundary cases Passed; 183 contract cases initially Passed and three sandbox failures Passed on targeted outside-sandbox rerun. Type/build/lint/format/smoke/API freshness Passed; seven allowances removed, 345 remain.
+
+- [x] **P03-028 — Refactor identity, customer and technical health boundaries (WP04)**\
+  **Status:** `Done` · **Area:** Backend/auth/customers/health · **Owner:** Codex\
+  **Stage:** `Backend`\
+  **Sources:** Backend Refactor Plan WP04; Architecture §§4/6/9; API §§4/14; Database §5; Testing §15.5\
+  **Depends on:** `P03-027`\
+  **Deliverable:** Inject guest-order/audit capabilities into auth, publish narrow detached identity/notification contracts, isolate customer HTTP, reuse credential handlers/admin access and move health to its technical owner.\
+  **Acceptance:** One canonical identity store; unchanged session/CSRF/origin/proof/revocation/privacy/coverage behavior and health/API contracts. No new activation; owning boundary allowances removed and affected checks recorded.\
+  **Evidence:** [WP04 results, fixture correction and review](./evidence/P03-021-backend-refactor.md#p03-028--wp04-identity-customer-and-technical-health-3-november-2026). Completed 3 November 2026 under Tasks §2: 311 unit and 186 contract cases Passed; integration initially 812 Passed/1 existing Markdown-parser failure, corrected identity suite 40/40 Passed. All 813 distinct integration cases covered by valid results. 49 boundary cases and final identity fixture Passed; type/build/lint/format/smoke/API freshness Passed. Removed 26 allowances; 319 remain.
+
+- [x] **P03-029 — Review and correct completed backend refactor packages (WP00–WP04)**\
+  **Status:** `Done` · **Area:** Backend/completed-package review · **Owner:** Codex\
+  **Stage:** `Backend`\
+  **Sources:** Backend Refactor Plan §§3–6/WP00–WP04; Architecture §§4–6; API/Database/Testing owning contracts\
+  **Depends on:** `P03-028`\
+  **Deliverable:** Recheck recorded exits and executable ownership; correct naming, audience-only route fragmentation, split delivery/account capabilities and opaque branches, preserving existing behavior and canonical persistence.\
+  **Acceptance:** Record findings and dispositions, migrate all actual consumers/contracts/tools with removed files, enforce boundaries and pass affected regressions without changing business/security/financial contracts.\
+  **Evidence:** [Review findings, corrections and consolidated verification](./evidence/P03-021-backend-refactor.md#p03-029--completed-wp00wp04-review-and-corrections-3-november-2026). Completed 3 November 2026 under Tasks §2. Four source files consolidated away; canonical names/consumers aligned and 27 private-type allowances removed. 314 unit cases with final 50-case proof recheck, 856 integration, 186 contract and 49 tooling cases Passed; type/build/style/format/smoke and preservation checks Passed. 292 allowances remain for later packages.
+
+- [x] **P03-030 — Owner-directed whole-module source batch and deferred verification**\
+  **Status:** `Done` · **Area:** Backend/module layer and staged integration · **Owner:** Codex\
+  **Stage:** `Backend`\
+  **Sources:** Owner-selected batching order; Implementation Plan §3.6; Backend Refactor Plan §§3–9\
+  **Depends on:** `P03-029`\
+  **Deliverable:** Organize all twenty module owners, consolidate cohesive code and separate HTTP mapping; follow with remaining src wiring/contracts, outside-src consumer migration and final consolidated verification.\
+  **Acceptance:** Final behavior/security/financial checks and consumer/boundary/CI reconciliation completed under Tasks §2. Owner explicitly deferred Docker image verification from this refactor closeout; container CI/release requirements and P03-022/external acceptance are unchanged. No commit/push/branch/PR mutation.\
+  **Evidence:** [Owner-authorized refactor closeout and environment cleanup](./evidence/P03-021-backend-refactor.md#owner-authorized-refactor-closeout-and-environment-cleanup--3-november-2026). Module/src/outside-src phases and final local verification/fixes complete: 814 unit, 186 contract, 92 tooling and 1,273 distinct integration cases have passing observations through full run plus affected rechecks. Type/build/lint/format/boundaries/smoke/security Passed. Docker check remains unverified and is deferred by the owner; it is not reported as Passed. Environment defaults and manifest organization validated; provider/policy activation remains explicit.
+
 
 ### Phase 04 — Product catalog and inventory
 
@@ -2655,3 +2719,59 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 
 
 **2 November 2026 — Whole-backend implementation audit:** Input revision `5fbf8e1` consolidated backend CI Passed (811 unit, 112 contract, 1,234 integration), but full specification/runtime comparison found nine absent operations. P03-023 In Progress → Done after implementing all nine with owning contracts and actual HTTP/domain tests; all 170 specified operations now have runtime registration. Final backend CI Passed: 811 unit, 186 contract, 1,258 integration and 83 tooling cases, build/smoke/static checks; security/documentation checks Passed and executor diff review completed. P03-022 also promotes all 63 existing local-only DTOs: generated contracts now cover all 170 operations. Final post-promotion backend CI Passed (811 unit, 186 contract, 1,258 integration, 83 tooling); actual stage/external acceptance remains separate. [Inventory, observed checks and acceptance boundaries](./evidence/P03-022-backend-completion.md). Overall: 211 tasks, 134 Done, 74 Not Started, 1 In Progress, 2 Deferred. No backend-stage or milestone acceptance is self-approved.
+
+
+**3 November 2026 — P03-024 / WP00 refactor baseline:** New refactor-specific task Not Started → In Progress → Done under Tasks §2 following the owner-authorized plan and first-package execution request. Inventoried 491 backend files, 170 business operations, 41 scripts, canonical schema/index/validator fingerprints and current-to-target consumer mappings. Selected checks Passed: typecheck, boundaries, four-artifact freshness, 60 unit cases and three route-inventory cases; 183 unselected contract cases were Not Run. Recorded the refund type-only component, source-defined 39-collection inventory discrepancy and activation-prose reconciliation without modifying runtime or features. [Evidence and executor review](./evidence/P03-021-backend-refactor.md#p03-024--wp00-follow-up-baseline-3-november-2026). Executor/reviewer: Codex. Overall: 212 tasks, 135 Done, 74 Not Started, 1 In Progress, 2 Deferred. Historical accepted tasks, staged owner changes and P03-022/external/milestone gates remain unchanged. Next: WP01 owning-specification reconciliation and executable boundary rules.
+
+
+**3 November 2026 — P03-025 / WP01 refactor contracts:** Not Started → In Progress → Done under Tasks §2 after owner authorization to execute the next package. Reconciled owning Architecture/Database/API/Plan/Testing rules; corrected the existing collection inventory to 39 without creating storage. Extended the existing import checker/fixtures and added one exact legacy data inventory: 356 imports and one type-cycle component, all with removal packages; new/stale violations fail without waiving persistence/provider/stock safeguards. Initial tooling run: 87 Passed/3 process failures; untouched control reproduced all three and targeted outside-sandbox rerun Passed all three. Final affected boundary regression: 47 Passed; current boundaries, API freshness, tooling lint/format and documentation checks Passed. [Observed results, review and limits](./evidence/P03-021-backend-refactor.md#p03-025--wp01-contracts-and-enforcement-3-november-2026). Executor/reviewer: Codex. Overall: 213 tasks, 136 Done, 74 Not Started, 1 In Progress, 2 Deferred. All 491 backend files and existing feature activation remain unchanged; concurrent planning/staged edits preserved. P03-022/external/milestone gates remain unchanged. Next: WP02 technical foundation/reuse.
+
+
+**3 November 2026 — P03-026 / WP02 technical foundation:** Not Started → In Progress → Done under Tasks §2. Removed five config/private implementation dependencies through existing configuration ownership, shared crypto mechanics and an explicit orders verifier type. Preserved proof binding/ciphertext, environment behavior, canonical persistence and API artifacts. 219 unit and 155 isolated MongoDB integration cases, compiled smoke, type/build/style/boundary/API checks Passed. [Evidence and limits](./evidence/P03-021-backend-refactor.md#p03-026--wp02-technical-foundation-3-november-2026). Executor/reviewer: Codex. Overall: 214 tasks, 137 Done, 74 Not Started, 1 In Progress, 2 Deferred. P03-022 and application/external/milestone acceptance unchanged. Next: WP03 delivery pilot.
+
+
+**3 November 2026 — P03-027 / WP03 delivery pilot:** Not Started → In Progress → Done under Tasks §2. Extracted HTTP controllers, injected existing auth middleware, added consumed auth/delivery public types and migrated three delivery consumers; retained canonical persistence and cohesive management/read services. Seven allowances removed, 345 remain. 124 unit, 428 isolated integration and 48 boundary cases Passed; contract run initially 183 Passed/3 sandbox failures, targeted three-case outside-sandbox recheck Passed. Type/build/style/format/API freshness/smoke Passed. [Evidence and Git HEAD limitation](./evidence/P03-021-backend-refactor.md#p03-027--wp03-delivery-pilot-3-november-2026). Executor/reviewer: Codex. Overall: 215 tasks, 138 Done, 74 Not Started, 1 In Progress, 2 Deferred. Git metadata was not repaired; index diff and independently verified baseline snapshots support source review. P03-022/external/stage gates unchanged. Next: WP04 identity/customer/technical health.
+
+
+**3 November 2026 — P03-028 / WP04 identity/customer/health:** Not Started → In Progress → Done under Tasks §2. Root injects order/audit capabilities; auth exposes detached customer and notification contracts, shared credential handlers replace duplication, media-admin access is consolidated and health moves to its technical boundary. Canonical identity/schema/API/security behavior retained. 311 unit/186 contract cases Passed; 813 distinct integration cases verified through initial 812 Passed/1 parser failure plus corrected identity 40-case recheck. 49 boundary cases, final health-boundary fixture, type/build/style/format/smoke Passed. [Evidence, initial failure and review](./evidence/P03-021-backend-refactor.md#p03-028--wp04-identity-customer-and-technical-health-3-november-2026). 26 allowances removed; 319 remain. Executor/reviewer: Codex. Overall: 216 tasks, 139 Done, 74 Not Started, 1 In Progress, 2 Deferred. P03-022/external/stage/milestone gates unchanged. Next: WP05 audit/notification/media foundations.
+
+
+**3 November 2026 — P03-029 / completed WP00–WP04 review:** Not Started → In Progress → Done under Tasks §2. Reviewed original exits and corrected naming/cohesion gaps: consolidated credential/customer audience routes, account-access and delivery capabilities; aligned service/controller types/factories and migrated actual consumers. Removed four source files and 27 legacy private-type allowances without new exemptions. 314 unit cases plus overlapping 50-case proof recheck, 856 integration, 186 contract and 49 tooling cases Passed; final type/build/style/format/smoke, preservation and docs checks Passed. [Findings and dispositions](./evidence/P03-021-backend-refactor.md#p03-029--completed-wp00wp04-review-and-corrections-3-november-2026). Executor/reviewer: Codex. Overall: 217 tasks, 140 Done, 74 Not Started, 1 In Progress, 2 Deferred. Original package evidence retained; 292 allowances remain. No application/external/milestone acceptance implied. Next: WP05.
+
+
+**3 November 2026 — P03-030 / owner-directed module batch:** Not Started → In Progress. Owner replaced per-package test execution with modules → remaining src → outside-src batches → final tests/review/fix. Organized all twenty module folders, product-owned variants and financial subfolders; reduced module source files 275 → 251, separated HTTP handlers and corrected mixed-owner routes. Necessary src caller references synchronized; source-only TypeScript/module lint/format Passed and static runtime imports acyclic. [Structural record and explicit deferred work](./evidence/P03-021-backend-refactor.md#p03-030--whole-module-structural-pass-3-november-2026). Tests, contracts, scripts and tooling not edited or executed; public-contract/composition cleanup, exact allowance migration and final acceptance remain pending. No Git/PR mutations. Overall: 218 tasks, 140 Done, 74 Not Started, 2 In Progress, 2 Deferred. No feature, package, application or milestone acceptance implied.
+
+
+**3 November 2026 — P03-030 / full src structural closeout:** Src phase complete; task stays In Progress.
+Completed typed cross-module injection/schema assembly, detached proof/media/notification contracts and
+Returns HTTP mapping; removed unused construction, duplicate DTOs and generic/numeric handler names.
+Source TypeScript/lint/format Passed for 311 files. Existing checker reports zero source violations,
+zero active legacy allowances and no type/runtime cycles; its repository gate still fails for 292 stale
+outside-src allowances. Static persistence/route/validation inventories retained; behavior tests were
+not run. [Source evidence and consumer migration ledger](./evidence/P03-021-backend-refactor.md#src-structural-closeout--3-november-2026).
+Outside-src batches and final tests/review/fix remain next. No Git/PR mutation or application/milestone
+acceptance. Overall unchanged: 218 tasks, 140 Done, 74 Not Started, 2 In Progress, 2 Deferred.
+
+
+**3 November 2026 — P03-030 / outside-src structural closeout:** Contracts, tests, operator scripts and
+Docker/CI consumers migrated. Preserved static case/assertion inventories and all four API artifacts;
+retired stale boundary allowances. Backend typecheck/lint/build/format/API freshness and boundaries
+Passed. [Evidence and explicit verification limits](./evidence/P03-021-backend-refactor.md#outside-src-structural-closeout--3-november-2026).
+Final tests/review/fix remain next; In Progress, task counts and acceptance gates unchanged. No Git mutation.
+
+
+**3 November 2026 — P03-030 / final local verification:** Corrected auth string-ID persistence
+conversion and stale route/stock test inventories; reviewed exact synthetic scanner findings.
+814 unit, 186 contract, 92 tooling and 1,273 distinct integration cases verified through recorded full
+run/rechecks; type/build/style/boundaries/smoke/security Passed. Docker daemon access prevents image
+verification; task remains In Progress, counts unchanged. [Initial failures, corrections, passing rechecks and blocker](./evidence/P03-021-backend-refactor.md#final-backend-verification-and-corrections--3-november-2026).
+No Git/PR mutation or P03-022/external/milestone acceptance.
+
+
+**3 November 2026 — P03-030 / owner-authorized refactor closeout:** In Progress → Done under Tasks §2.
+Owner explicitly deferred the unavailable Docker check for this refactor completion. Local verification
+and corrections remain evidenced; Docker is not marked Passed or removed from CI/release requirements.
+Organized private/example environment keys and technical local defaults; preserved existing credentials,
+feature switches, script commands and pinned packages. [Closeout and checks](./evidence/P03-021-backend-refactor.md#owner-authorized-refactor-closeout-and-environment-cleanup--3-november-2026).
+Executor/reviewer: Codex. Overall: 218 tasks, 141 Done, 74 Not Started, 1 In Progress, 2 Deferred.
+P03-022, external qualification and milestone acceptance unchanged. No Git mutation.

@@ -1,10 +1,13 @@
-import { Schema, type Connection } from 'mongoose'
+import { type Connection, Schema } from 'mongoose'
 import { mutableSchemaOptions } from '../../shared/database/schema.js'
+
+type NotificationModel = ReturnType<typeof createNotificationModel>
 
 const recipient = new Schema(
   { emailNormalized: { type: String, required: true }, displayName: String },
   { _id: false, strict: 'throw' },
 )
+
 const schema = new Schema(
   {
     eventKey: { type: String, required: true },
@@ -75,10 +78,16 @@ const schema = new Schema(
   },
   { ...mutableSchemaOptions, minimize: false },
 )
+
 schema.index({ eventKey: 1 }, { name: 'notifications_event_key_unique', unique: true })
+
 schema.index({ status: 1, nextAttemptAt: 1 }, { name: 'notifications_retry_queue' })
+
 schema.index({ status: 1, claimExpiresAt: 1 }, { name: 'notifications_claim_expiry' })
-export function createNotificationModel(connection: Connection) {
+
+function createNotificationModel(connection: Connection) {
   return connection.model('RegistrationNotification', schema, 'notifications')
 }
-export type NotificationModel = ReturnType<typeof createNotificationModel>
+
+export type { NotificationModel }
+export { createNotificationModel }

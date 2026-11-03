@@ -1,11 +1,11 @@
-export type DatabaseFailureReason =
+type DatabaseFailureReason =
   | 'AUTHENTICATION_FAILED'
   | 'TLS_HANDSHAKE_FAILED'
   | 'DNS_FAILED'
   | 'NETWORK_UNREACHABLE'
   | 'SERVER_SELECTION_FAILED'
 
-export class DatabaseError extends Error {
+class DatabaseError extends Error {
   constructor(
     readonly code:
       | 'INVALID_CONFIGURATION'
@@ -19,3 +19,6 @@ export class DatabaseError extends Error {
     super(`Database operation failed: ${code}.`)
   }
 }
+
+export type { DatabaseFailureReason }
+export { DatabaseError }

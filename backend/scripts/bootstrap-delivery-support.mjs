@@ -1,11 +1,12 @@
-import { loadEnvironment } from '../dist/config/env.js'
 import { openDatabase } from '../dist/config/database.js'
+import { loadEnvironment } from '../dist/config/env.js'
+import { createNotificationService } from '../dist/modules/notifications/notification.service.js'
 import { initializeDeliveryExceptionPersistence } from '../dist/modules/orders/delivery-exception.persistence.js'
 import {
   initializeComplaintPersistence,
   upgradeComplaintPersistence,
-} from '../dist/modules/support/complaint.persistence.js'
-import { createRegistrationNotifications } from '../dist/modules/notifications/notification.service.js'
+} from '../dist/modules/support/support.persistence.js'
+
 let connection
 try {
   const args = process.argv.slice(2)
@@ -17,7 +18,7 @@ try {
   await initializeDeliveryExceptionPersistence(connection)
   if (process.argv.includes('--complaints')) await upgradeComplaintPersistence(connection)
   else await initializeComplaintPersistence(connection)
-  await createRegistrationNotifications(connection).migrateFoundation()
+  await createNotificationService(connection).migrateFoundation()
   console.log(
     'Delivery/support persistence ready; no closure, refund, restock or email activation enabled.',
   )

@@ -7,7 +7,8 @@ import type {
 } from './session.service.js'
 
 const names = { customer: 'sz_customer_sid', admin: 'sz_admin_sid' } as const
-export function readSessionCookie(header: string | undefined, kind: SessionKind) {
+
+function readSessionCookie(header: string | undefined, kind: SessionKind) {
   const entries = (header ?? '')
     .split(';')
     .map((entry) => entry.trim())
@@ -16,6 +17,7 @@ export function readSessionCookie(header: string | undefined, kind: SessionKind)
   const token = entries[0]?.slice(entries[0].indexOf('=') + 1)
   return token && /^[A-Za-z0-9_-]{43}$/.test(token) ? token : undefined
 }
+
 declare global {
   namespace Express {
     interface Locals {
@@ -23,7 +25,8 @@ declare global {
     }
   }
 }
-export function createSessionHttp(service: SessionService, clock: () => Date = () => new Date()) {
+
+function createSessionHttp(service: SessionService, clock: () => Date = () => new Date()) {
   return {
     setCookie(res: Response, issued: IssuedSession) {
       res.cookie(names[issued.kind], issued.token, {
@@ -46,3 +49,5 @@ export function createSessionHttp(service: SessionService, clock: () => Date = (
     },
   }
 }
+
+export { createSessionHttp, readSessionCookie }

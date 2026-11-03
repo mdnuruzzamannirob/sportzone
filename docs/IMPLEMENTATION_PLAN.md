@@ -174,19 +174,36 @@ Do not assign arbitrary completion dates. Estimate work after evaluating develop
 
 ### 3.6 Engineering foundation and incremental refactor
 
+The owner's current backend batching sequence is **module-layer organization → remaining src
+composition/integration → outside-src tests/contracts/scripts/tooling in bounded batches → consolidated
+test/review/fix**. Intermediate module moves may therefore leave outside-src consumer paths and the
+legacy boundary inventory awaiting their owning pass. Keep source-only TypeScript/lint/format checks
+separate from behavior verification; defer test execution/review as requested and record it as Not Run.
+Do not claim a work-package/application closeout from structural checks alone. Preserve a current-to-target
+migration record and reconcile all consumers, public capabilities, boundary allowances and CI discovery
+before final acceptance. This staging changes local work order, not product/security/financial contracts
+or release gates. Do not commit, push or change branches/PRs without a new explicit owner instruction.
+
+
+The owner-selected whole-backend follow-up is detailed in the
+[Backend refactor plan](./BACKEND_REFACTOR_PLAN.md). It defines the target decisions, current-to-target
+reconciliation, dependent work packages and verification/rollback requirements. Its first implementation
+packages reconcile the owning specifications and task mapping; it does not replace accepted historical
+refactor evidence, change task status or waive application/external acceptance.
+
 Refactor one application at a time to the approved feature-based structure. [Architecture §§4–6](./ARCHITECTURE.md#4-project-structure) define target
 trees/naming/ownership. The task register records migration progress and acceptance; prior refactor evidence does not establish parity for a subsequent source move.
 
 P01-018, P03-021, P02-015, P02-016 and P01-019 retain their historical refactor order and acceptance in Tasks/evidence. Ongoing work follows §3.1: foundation → backend → admin → storefront. Make source moves only when a concrete ownership or maintainability issue requires them; preserve compatible imports, tooling and behavior. Do not create empty planned modules or repeat completed migrations.
 
-| Area                             | Required organization / continuity                                                                                     |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Backend runtime                  | setup.ts/routes.ts with cross-domain wiring at root; config/env.ts and config/database.ts                              |
-| Backend technical code           | One shared/ boundary for errors, logging, middleware and database mechanics                                            |
-| Backend providers/operator tools | providers/ client/schema pairs; scripts/ Node entry points with existing input/environment restrictions                |
-| Backend domains                  | Auth subfeatures, catalog products/variants/categories, cohesive media services; one model registration per collection |
-| Storefront                       | Target route/feature/transport tree; account group adds no URL segment; migrate browser discovery together             |
-| Admin                            | Target router/guard/feature tree; backend auth remains mandatory                                                       |
+| Area                             | Required organization / continuity                                                                                                                                                                     |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Backend runtime                  | setup.ts/routes.ts with cross-domain wiring at root; config/env.ts and config/database.ts                                                                                                              |
+| Backend technical code           | One shared/ boundary for errors, logging, middleware and database mechanics                                                                                                                            |
+| Backend providers/operator tools | providers/ client/schema pairs; scripts/ Node entry points with existing input/environment restrictions                                                                                                |
+| Backend domains                  | Twenty modules; auth subfeatures, product-owned variants and sibling categories, separate wishlist, payment attempts/collections and refund obligations/payouts; one model registration per collection |
+| Storefront                       | Target route/feature/transport tree; account group adds no URL segment; migrate browser discovery together                                                                                             |
+| Admin                            | Target router/guard/feature tree; backend auth remains mandatory                                                                                                                                       |
 
 Current implementation and acceptance are recorded by the corresponding task; this table defines ownership,
 not a second progress register. Unimplemented domains do not need empty folders or templates.
@@ -199,7 +216,13 @@ Do not invent a second collection or use a generic repository layer to conceal o
 
 Update automated checks for frontend/backend isolation, nested module/private persistence boundaries,
 controllers→models, shared→modules and provider/business separation with negative fixtures. Keep
-Biome/TypeScript/Vitest/browser tooling and one locked graph; no new frameworks or infrastructure.
+type-only public contracts, root/private composition and runtime/type source-cycle checks executable.
+The existing checker owns `scripts/ci/backend-boundary-allowances.json`: exact source/target/mode/kind/symbol
+entries and type-cycle components have removal packages; new violations and stale entries fail. Remove
+allowances during the owning package, with none left at technical closeout. The inventory is migration
+data, not a permanent permission list or an automatically regenerated snapshot. Preserve stronger
+stock/provider/private-persistence rules throughout migration. Keep Biome/TypeScript/Vitest/browser
+tooling and one locked graph; no new frameworks or infrastructure.
 Update ci-workspaces.json only for actual script/inventory changes; no skipped/passing placeholders.
 Retain existing pure shared utilities/reusable UI and operator entry points until consumers and
 compatibility are verified. Tests stay outside src/; preserve browser/theme/accessibility coverage.

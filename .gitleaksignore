@@ -1,0 +1,4 @@
+# Reviewed synthetic AES-GCM compatibility ciphertext with a public sequential key.
+# Exact historical/current findings only; no credential, file or directory waiver.
+203647bf292b8bdba3d9dfbe9052dff5391e3b60:backend/tests/unit/recovery.test.ts:generic-api-key:79
+backend/tests/unit/auth/recovery.test.ts:generic-api-key:81

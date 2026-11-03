@@ -1,39 +1,52 @@
 import type { ClientSession, Connection, HydratedDocument } from 'mongoose'
-import type { AdminAccountAccess } from '../auth/admin-account.service.js'
-import { adminOrderQuery, adminOrderDetail } from './order-read.schema.js'
-import type { CustomerAccountAccess } from '../auth/customer-account.service.js'
-import type {
-  orderScopeAccess,
-  PaymentInitiationCredentials,
-  OrderPrincipal,
-} from '../auth/checkout-access.service.js'
-import type { customerPaymentSummaryAccess } from '../payments/payment.service.js'
-import type { orderPolicySnapshotAccess } from '../checkout/checkout-quote.service.js'
-import { orderModels, type Order } from './order.model.js'
-import { verifyOrderPersistence } from './order.persistence.js'
-import { orderId } from './order.schema.js'
-import {
-  orderReadQuery,
-  orderReadSummary,
-  orderStatusView,
-  customerOrderDetail,
-  customerDeliveryEvents,
-  customerPaymentHistory,
-} from './order-read.schema.js'
-import { createDeliveryDeadlineService } from './delivery-deadline.service.js'
-import { pageMeta } from '../../shared/pagination.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
-export const orderOwnerFilter = (id: string, principal: OrderPrincipal) => {
+import { pageMeta } from '../../shared/pagination.js'
+import { resourceId as orderId } from '../../shared/validation.js'
+import type {
+  AdminAccountAccess,
+  CustomerAccountAccess,
+  OrderPrincipal,
+  OrderScopeAccess,
+  PaymentInitiationCredentials,
+} from '../auth/auth.public.js'
+import type { OrderPolicySnapshotAccess } from '../checkout/checkout.public.js'
+import type { CustomerPaymentSummaryAccess } from '../payments/payment.public.js'
+import { createDeliveryDeadlineService } from './delivery-deadline.service.js'
+import { type Order, orderModels } from './order.model.js'
+import { verifyOrderPersistence } from './order.persistence.js'
+import type {
+  AdminOrderDetailSchema,
+  AdminOrderQuerySchema,
+  CustomerDeliveryEventsSchema,
+  CustomerOrderDetailSchema,
+  CustomerPaymentHistorySchema,
+  OrderReadSummarySchema,
+  OrderStatusViewSchema,
+} from './order-read.schema.js'
+
+import { orderReadQuery } from './order-read.schema.js'
+
+const orderOwnerFilter = (id: string, principal: OrderPrincipal) => {
   if (principal.kind === 'guest_order' && principal.orderId !== id) throw new ApiError('NOT_FOUND')
   return { _id: id, userId: principal.kind === 'customer' ? principal.userId : null }
 }
-export function orderReadService(
+
+function createOrderReadService(
   connection: Connection,
   customers: CustomerAccountAccess,
-  access: ReturnType<typeof orderScopeAccess>,
-  payment: ReturnType<typeof customerPaymentSummaryAccess>,
-  policies: ReturnType<typeof orderPolicySnapshotAccess>,
+  access: OrderScopeAccess,
+  payment: CustomerPaymentSummaryAccess,
+  policies: OrderPolicySnapshotAccess,
+  moduleAccess: {
+    schemaAdminOrderDetail: AdminOrderDetailSchema
+    schemaAdminOrderQuery: AdminOrderQuerySchema
+    schemaCustomerDeliveryEvents: CustomerDeliveryEventsSchema
+    schemaCustomerOrderDetail: CustomerOrderDetailSchema
+    schemaCustomerPaymentHistory: CustomerPaymentHistorySchema
+    schemaOrderReadSummary: OrderReadSummarySchema
+    schemaOrderStatusView: OrderStatusViewSchema
+  },
   clock: () => Date = () => new Date(),
   administrative?: {
     accounts: AdminAccountAccess
@@ -52,7 +65,7 @@ export function orderReadService(
       ...(row.confirmedAt ? { confirmedAt: row.confirmedAt.toISOString() } : {}),
     })
   const summary = (row: HydratedDocument<Order>, paymentStatus: string) =>
-    orderReadSummary.parse({
+    moduleAccess.schemaOrderReadSummary.parse({
       id: row._id.toHexString(),
       orderNumber: row.orderNumber,
       fulfillmentStatus: row.fulfillmentStatus,
@@ -75,7 +88,7 @@ export function orderReadService(
     if (pay.expectedPoisha !== row.pricingSnapshot.finalTotalPoisha)
       throw new ApiError('SERVICE_UNAVAILABLE')
     if (statusOnly)
-      return orderStatusView.parse({
+      return moduleAccess.schemaOrderStatusView.parse({
         fulfillmentStatus: row.fulfillmentStatus,
         ...(row.fulfillmentHold ? { fulfillmentHold: row.fulfillmentHold } : {}),
         paymentSummary: pay,
@@ -97,7 +110,7 @@ export function orderReadService(
         !row.shippedAt &&
         !row.shipment?.dispatchReference &&
         !row.cancelledAt
-    return customerOrderDetail.parse({
+    return moduleAccess.schemaCustomerOrderDetail.parse({
       ...summary(row, pay.status),
       items: row.items.map((i) => ({
         id: i.id.toHexString(),
@@ -157,7 +170,7 @@ export function orderReadService(
           await verifyOrderPersistence(connection)
           const row = await orders.findById(id).session(session)
           if (!row) throw new ApiError('NOT_FOUND')
-          return adminOrderDetail.parse({
+          return moduleAccess.schemaAdminOrderDetail.parse({
             ...(await detail(session, row)),
             allocationSummary: await administrative.allocation(session, id),
             // State candidates are advisory. Mutation services recheck funding, policy and allocation.
@@ -180,7 +193,7 @@ export function orderReadService(
       )
     },
     async adminList(token: string | undefined, raw: unknown) {
-      const q = parseInput(adminOrderQuery, raw)
+      const q = parseInput(moduleAccess.schemaAdminOrderQuery, raw)
       if (!administrative) throw new ApiError('SERVICE_UNAVAILABLE')
       return administrative.accounts.owned(
         token,
@@ -261,8 +274,8 @@ export function orderReadService(
       )
     },
     async deliveryEvents(credentials: PaymentInitiationCredentials, rawId: unknown) {
-      const full = customerOrderDetail.parse(await this.read(credentials, rawId))
-      return customerDeliveryEvents.parse({
+      const full = moduleAccess.schemaCustomerOrderDetail.parse(await this.read(credentials, rawId))
+      return moduleAccess.schemaCustomerDeliveryEvents.parse({
         status: full.fulfillmentStatus,
         ...(full.deliveryEstimate ? { estimate: full.deliveryEstimate } : {}),
         deadline: full.deliveryDeadline,
@@ -275,7 +288,7 @@ export function orderReadService(
         await verifyOrderPersistence(connection)
         if (!(await orders.exists(orderOwnerFilter(id, principal)).session(session)))
           throw new ApiError('NOT_FOUND')
-        return customerPaymentHistory.parse(await payment.history(session, id))
+        return moduleAccess.schemaCustomerPaymentHistory.parse(await payment.history(session, id))
       })
     },
     async read(credentials: PaymentInitiationCredentials, rawId: unknown, statusOnly = false) {
@@ -289,3 +302,5 @@ export function orderReadService(
     },
   }
 }
+
+export { createOrderReadService, orderOwnerFilter }

@@ -1,5 +1,3 @@
-import { localOperations } from '../../contracts/local-operations.js'
-import { createContractCheckedApp } from '../helpers/contracts.js'
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import {
@@ -26,6 +24,7 @@ import {
   wireSchema,
   writeArtifacts,
 } from '../../contracts/generate.js'
+import { localOperations } from '../../contracts/local-operations.js'
 import {
   assertOperationParity,
   operationId,
@@ -33,6 +32,8 @@ import {
   transportOperations,
 } from '../../contracts/registry.js'
 import { createApp } from '../../src/app.js'
+import { createContractCheckedApp } from '../helpers/contracts.js'
+
 import { localOnlyRouters, registeredOperations, registeredRouter } from './routes.fixture.js'
 
 const markdown = readFileSync(resolve('../docs/API.md'), 'utf8')
@@ -123,52 +124,41 @@ describe('executable API contract registry', () => {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
         const file = `${dir}/${entry.name}`
         if (entry.isDirectory()) visit(file)
-        else if (file.endsWith('.routes.ts')) actual.push(file.replace('src/modules/', ''))
+        else if (file.endsWith('.routes.ts')) actual.push(file.replace(/^src\/(?:modules\/)?/, ''))
       }
     }
     visit('src/modules')
+    visit('src/health')
     expect(actual.sort()).toEqual(
       [
-        'auth/credentials/admin-auth.routes.ts',
-        'auth/credentials/customer-auth.routes.ts',
+        'audit/audit.routes.ts',
+        'auth/credentials/credential.routes.ts',
         'auth/guest-access/guest-access.routes.ts',
         'auth/recovery/password-recovery.routes.ts',
         'auth/sessions/browser-security.routes.ts',
         'auth/verification/email-change.routes.ts',
         'auth/verification/email-verification.routes.ts',
-        'catalog/catalog.routes.ts',
-        'catalog/categories/category-admin.routes.ts',
-        'catalog/products/product-admin.routes.ts',
         'cart/cart.routes.ts',
-        'cart/wishlist.routes.ts',
+        'catalog/catalog.routes.ts',
+        'catalog/categories/category.routes.ts',
+        'catalog/products/product.routes.ts',
         'checkout/checkout.routes.ts',
         'customers/customer.routes.ts',
-        'customers/customer-admin.routes.ts',
         'delivery/delivery.routes.ts',
-        'health/health.routes.ts',
-        'inventory/inventory-admin.routes.ts',
+        'inventory/inventory.routes.ts',
         'media/media.routes.ts',
-        'payments/payment-methods.routes.ts',
-        'payments/payment-initiation.routes.ts',
-        'payments/payment-callback.routes.ts',
-        'payments/payment-risk.routes.ts',
-        'orders/order-read.routes.ts',
-        'orders/order-admin.routes.ts',
-        'orders/cancellation.routes.ts',
-        'payments/payment-monitor.routes.ts',
-        'payments/payment-matching.routes.ts',
-        'promotions/coupon-admin.routes.ts',
-        'promotions/coupon-preview.routes.ts',
-        'returns/return-history.routes.ts',
+        'notifications/notification.routes.ts',
+        'orders/order.routes.ts',
+        'payments/payment.routes.ts',
+        'promotions/promotion.routes.ts',
         'refunds/refund.routes.ts',
-        'refunds/refund-request.routes.ts',
-        'refunds/refund-history.routes.ts',
+        'reports/report.routes.ts',
         'returns/return.routes.ts',
         'reviews/review.routes.ts',
-        'settings/settings.routes.ts',
-        'support/support-read.routes.ts',
+        'settings/setting.routes.ts',
         'support/support.routes.ts',
-        'reports/report.routes.ts',
+        'wishlist/wishlist.routes.ts',
+        'health/health.routes.ts',
       ].sort(),
     )
   })

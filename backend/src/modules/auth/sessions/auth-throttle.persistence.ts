@@ -1,10 +1,17 @@
 import { isDeepStrictEqual } from 'node:util'
 import type { Connection } from 'mongoose'
 
-export type QuotaStore = {
+type QuotaStore = {
   verify?(): Promise<void>
   increment(key: string, expiresAt: Date, limit: number): Promise<number>
 }
+
+type Bucket = {
+  _id: string
+  count: number
+  expiresAt: Date
+}
+
 const validator = {
   $jsonSchema: {
     bsonType: 'object',
@@ -22,8 +29,8 @@ const validator = {
     },
   },
 }
-type Bucket = { _id: string; count: number; expiresAt: Date }
-export function createAuthQuotaStore(connection: Connection) {
+
+function createAuthQuotaStore(connection: Connection) {
   if (!connection.db) throw new Error('Auth throttle persistence unavailable.')
   const db = connection.db,
     collection = db.collection<Bucket>('authRateLimits')
@@ -114,3 +121,6 @@ export function createAuthQuotaStore(connection: Connection) {
     },
   }
 }
+
+export type { QuotaStore }
+export { createAuthQuotaStore }

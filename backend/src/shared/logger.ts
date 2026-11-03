@@ -1,7 +1,7 @@
-import type { SecurityAction } from './security-actions.js'
 import { randomUUID } from 'node:crypto'
 import type { ErrorCode } from './errors/app-error.js'
 import { DatabaseError } from './errors/database-error.js'
+import type { SecurityAction } from './security-actions.js'
 
 type LifecycleEvent =
   | 'starting'
@@ -13,6 +13,7 @@ type LifecycleEvent =
   | 'database_connected'
   | 'database_disconnected'
   | 'database_error'
+
 type RequestEvent = {
   requestId: string
   method: string
@@ -23,9 +24,15 @@ type RequestEvent = {
   securityReason?: 'rate_limited' | 'throttle_unavailable'
   errorCode?: ErrorCode
 }
+
+type Logger = ReturnType<typeof createLogger>
+
 const methods = new Set(['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'])
-export function createLogger(
-  config: { APP_ENV: 'local' | 'test' | 'staging' | 'production'; RELEASE_ID: string },
+function createLogger(
+  config: {
+    APP_ENV: 'local' | 'test' | 'staging' | 'production'
+    RELEASE_ID: string
+  },
   sink: (line: string) => void = (line) => {
     process.stdout.write(`${line}\n`)
   },
@@ -94,8 +101,7 @@ export function createLogger(
     },
   }
 }
-export type Logger = ReturnType<typeof createLogger>
-export function logConfigurationFailure(
+function logConfigurationFailure(
   fields: readonly string[],
   sink: (line: string) => void = (line) => {
     process.stderr.write(`${line}\n`)
@@ -116,3 +122,6 @@ export function logConfigurationFailure(
     }),
   )
 }
+
+export type { Logger }
+export { createLogger, logConfigurationFailure }

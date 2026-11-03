@@ -1,14 +1,14 @@
-import { paymentCallbackOptions } from '../modules/payments/payment-callback.schema.js'
-import { readFile } from 'node:fs/promises'
-import { resolve, dirname } from 'node:path'
 import { createHash } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
+import { dirname, resolve } from 'node:path'
 import { z } from 'zod'
-import { paymentChannelApproval } from '../modules/payments/payment-eligibility.schema.js'
+import { paymentChannelApproval } from '../modules/payments/attempts/payment-eligibility.schema.js'
+import { paymentCallbackOptions } from '../modules/payments/collections/payment-callback.schema.js'
 import { validateSslcommerzOptions } from '../providers/sslcommerz/sslcommerz.schema.js'
 import { ConfigurationError } from '../shared/errors/configuration-error.js'
 
 // Explicit composition only: loading this adapter does not expose payment APIs or enable channels.
-export function loadSslcommerzOptions(environment: NodeJS.ProcessEnv) {
+function loadSslcommerzOptions(environment: NodeJS.ProcessEnv) {
   if (
     environment.SSLCOMMERZ_ADAPTER_ENABLED === undefined ||
     environment.SSLCOMMERZ_ADAPTER_ENABLED === 'false'
@@ -29,7 +29,7 @@ export function loadSslcommerzOptions(environment: NodeJS.ProcessEnv) {
 }
 
 // This is an operator-maintained approval register, not an API-editable enablement flag.
-export async function loadPaymentChannelApprovals(environment: NodeJS.ProcessEnv) {
+async function loadPaymentChannelApprovals(environment: NodeJS.ProcessEnv) {
   if (!environment.PAYMENT_CHANNEL_APPROVALS_FILE) return []
   try {
     const options = loadSslcommerzOptions(environment)
@@ -67,7 +67,7 @@ export async function loadPaymentChannelApprovals(environment: NodeJS.ProcessEnv
 }
 
 // Real staging/live collection must wait for independently reviewed callback/verification integration.
-export function loadPaymentInitiationOptions(environment: NodeJS.ProcessEnv) {
+function loadPaymentInitiationOptions(environment: NodeJS.ProcessEnv) {
   if (
     environment.PAYMENT_INITIATION_ENABLED === undefined ||
     environment.PAYMENT_INITIATION_ENABLED === 'false'
@@ -85,7 +85,7 @@ export function loadPaymentInitiationOptions(environment: NodeJS.ProcessEnv) {
   return options
 }
 
-export function loadPaymentCallbackOptions(environment: NodeJS.ProcessEnv) {
+function loadPaymentCallbackOptions(environment: NodeJS.ProcessEnv) {
   if (
     environment.PAYMENT_CALLBACKS_ENABLED === undefined ||
     environment.PAYMENT_CALLBACKS_ENABLED === 'false'
@@ -115,7 +115,7 @@ export function loadPaymentCallbackOptions(environment: NodeJS.ProcessEnv) {
   }
 }
 
-export function loadPaymentProcessingOptions(environment: NodeJS.ProcessEnv) {
+function loadPaymentProcessingOptions(environment: NodeJS.ProcessEnv) {
   if (
     environment.PAYMENT_PROCESSING_ENABLED === undefined ||
     environment.PAYMENT_PROCESSING_ENABLED === 'false'
@@ -131,4 +131,27 @@ export function loadPaymentProcessingOptions(environment: NodeJS.ProcessEnv) {
   const options = loadSslcommerzOptions(environment)
   if (!options) throw new ConfigurationError(['payment_processing_activation'])
   return options
+}
+
+const paymentReconciliationOptions = z
+  .strictObject({
+    batchSize: z.int().min(1).max(100),
+    leaseMs: z.int().min(1000).max(3600000),
+    pollIntervalMs: z.int().min(1000).max(86400000),
+    terminalPollIntervalMs: z.int().min(1000).max(604800000),
+    escalateAfterMs: z.int().min(1000).max(2592000000),
+  })
+  .refine(
+    (value) =>
+      value.terminalPollIntervalMs >= value.pollIntervalMs &&
+      value.escalateAfterMs >= value.pollIntervalMs,
+  )
+
+export {
+  loadPaymentCallbackOptions,
+  loadPaymentChannelApprovals,
+  loadPaymentInitiationOptions,
+  loadPaymentProcessingOptions,
+  loadSslcommerzOptions,
+  paymentReconciliationOptions,
 }

@@ -2,7 +2,7 @@ import type { Request, RequestHandler, Response } from 'express'
 import type { z } from 'zod'
 import { ApiError } from '../errors/app-error.js'
 
-export function parseInput<T extends z.ZodType>(schema: T, input: unknown): z.output<T> {
+function parseInput<T extends z.ZodType>(schema: T, input: unknown): z.output<T> {
   const result = schema.safeParse(input)
   if (!result.success)
     throw new ApiError(
@@ -22,7 +22,7 @@ export function parseInput<T extends z.ZodType>(schema: T, input: unknown): z.ou
 }
 
 // Express 5 forwards async rejection. Never overwrite its read-only query getter.
-export function validate<T extends z.ZodType>(
+function validate<T extends z.ZodType>(
   schema: T,
   source: 'body' | 'params' | 'query',
   controller: (input: z.output<T>, req: Request, res: Response) => void | Promise<void>,
@@ -31,3 +31,5 @@ export function validate<T extends z.ZodType>(
     await controller(parseInput(schema, req[source]), req, res)
   }
 }
+
+export { parseInput, validate }

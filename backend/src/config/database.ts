@@ -1,10 +1,9 @@
-import { createConnection, type Connection } from 'mongoose'
+import { type Connection, createConnection } from 'mongoose'
 
 import { DatabaseError, type DatabaseFailureReason } from '../shared/errors/database-error.js'
-export { DatabaseError } from '../shared/errors/database-error.js'
 
 // Reduce driver diagnostics to a fixed private operator vocabulary; never expose raw messages.
-export function classifyDatabaseFailure(failure: unknown): DatabaseFailureReason {
+function classifyDatabaseFailure(failure: unknown): DatabaseFailureReason {
   const property = (value: unknown, key: string): unknown =>
     value !== null && typeof value === 'object' ? Reflect.get(value, key) : undefined
   const nodes: unknown[] = [failure, property(failure, 'cause')]
@@ -30,7 +29,7 @@ export function classifyDatabaseFailure(failure: unknown): DatabaseFailureReason
 }
 
 // Configuration receives secrets privately; errors never include URI/driver diagnostics.
-export async function openDatabase(uri: string, dbName: string): Promise<Connection> {
+async function openDatabase(uri: string, dbName: string): Promise<Connection> {
   if (
     !/^mongodb(?:\+srv)?:\/\//.test(uri) ||
     !/^[a-z][a-z0-9_]{0,62}$/.test(dbName) ||
@@ -70,3 +69,6 @@ export async function openDatabase(uri: string, dbName: string): Promise<Connect
     throw new DatabaseError('CONNECTION_FAILED', classifyDatabaseFailure(error))
   }
 }
+
+export { DatabaseError } from '../shared/errors/database-error.js'
+export { classifyDatabaseFailure, openDatabase }

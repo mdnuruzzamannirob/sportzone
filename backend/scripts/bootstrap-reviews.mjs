@@ -1,5 +1,5 @@
-import { loadEnvironment } from '../dist/config/env.js'
 import { openDatabase } from '../dist/config/database.js'
+import { loadEnvironment } from '../dist/config/env.js'
 import { initializeReviewPersistence } from '../dist/modules/reviews/review.persistence.js'
 
 let connection

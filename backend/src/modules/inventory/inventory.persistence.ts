@@ -1,16 +1,18 @@
-import type { Connection } from 'mongoose'
 import { isDeepStrictEqual } from 'node:util'
+import type { Connection } from 'mongoose'
 import { verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 import { inventoryMovementModel, inventoryReservationModel } from './inventory.model.js'
 
 const objectId = { bsonType: 'objectId' }
+
 const integer = {
   bsonType: ['int', 'long', 'double'],
   minimum: -Number.MAX_SAFE_INTEGER,
   maximum: Number.MAX_SAFE_INTEGER,
   multipleOf: 1,
 }
-export const inventoryMovementValidator = {
+
+const inventoryMovementValidator = {
   $jsonSchema: {
     bsonType: 'object',
     additionalProperties: false,
@@ -62,10 +64,12 @@ export const inventoryMovementValidator = {
     },
   },
 }
+
 async function collectionState(connection: Connection) {
   if (!connection.db) throw new Error('Inventory database is unavailable.')
   return connection.db.listCollections({ name: 'inventoryMovements' }, { nameOnly: false }).next()
 }
+
 function compatible(existing: Awaited<ReturnType<typeof collectionState>>) {
   return (
     existing &&
@@ -74,13 +78,15 @@ function compatible(existing: Awaited<ReturnType<typeof collectionState>>) {
     existing.options?.validationAction === 'error'
   )
 }
-export async function verifyInventoryPersistence(connection: Connection) {
+
+async function verifyInventoryPersistence(connection: Connection) {
   if (!compatible(await collectionState(connection)))
     throw new Error('Inventory validator unavailable.')
   await verifyDeclaredIndexes(inventoryMovementModel(connection))
 }
+
 // Explicit additive bootstrap only; existing validators/indexes/history are never replaced or dropped.
-export async function initializeInventoryPersistence(connection: Connection) {
+async function initializeInventoryPersistence(connection: Connection) {
   const existing = await collectionState(connection)
   if (existing && !compatible(existing))
     throw new Error('Inventory collection requires a reviewed migration.')
@@ -96,7 +102,7 @@ export async function initializeInventoryPersistence(connection: Connection) {
   await verifyInventoryPersistence(connection)
 }
 
-export const inventoryReservationValidator = {
+const inventoryReservationValidator = {
   $jsonSchema: {
     bsonType: 'object',
     additionalProperties: false,
@@ -168,7 +174,8 @@ export const inventoryReservationValidator = {
     $or: [{ $ne: ['$status', 'held'] }, { $eq: ['$expiresAt', { $add: ['$heldAt', 900000] }] }],
   },
 }
-export async function verifyAllocationPersistence(connection: Connection) {
+
+async function verifyAllocationPersistence(connection: Connection) {
   await verifyInventoryPersistence(connection)
   if (!connection.db) throw new Error('Inventory database is unavailable.')
   const collection = await connection.db
@@ -183,7 +190,8 @@ export async function verifyAllocationPersistence(connection: Connection) {
     throw new Error('Inventory reservation validator unavailable.')
   await verifyDeclaredIndexes(inventoryReservationModel(connection))
 }
-export async function initializeAllocationPersistence(connection: Connection) {
+
+async function initializeAllocationPersistence(connection: Connection) {
   if (!connection.db) throw new Error('Inventory database is unavailable.')
   const collection = await connection.db
     .listCollections({ name: 'inventoryReservations' }, { nameOnly: false })
@@ -204,4 +212,13 @@ export async function initializeAllocationPersistence(connection: Connection) {
     })
   await inventoryReservationModel(connection).createIndexes()
   await verifyAllocationPersistence(connection)
+}
+
+export {
+  initializeAllocationPersistence,
+  initializeInventoryPersistence,
+  inventoryMovementValidator,
+  inventoryReservationValidator,
+  verifyAllocationPersistence,
+  verifyInventoryPersistence,
 }

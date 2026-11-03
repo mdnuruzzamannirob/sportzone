@@ -1,17 +1,18 @@
-import type { refundMessageService } from './refund-message.service.js'
-import type { orderMessageService } from './order-message.service.js'
-import type { paymentMessageService } from './payment-message.service.js'
-import type { returnMessageService } from './return-message.service.js'
-import type { GuestProofDelivery } from '../auth/guest-access/guest-proof-delivery.service.js'
 import { createHash } from 'node:crypto'
 import { assertOutsideTransaction } from '../../shared/database/transaction.js'
-import { validateRetryPolicy, type RetryPolicy } from './notification.schema.js'
+import type { GuestProofDelivery, ResetDelivery } from '../auth/auth.public.js'
+import { type RetryPolicy, validateRetryPolicy } from './notification.schema.js'
+import type { NotificationService } from './notification.service.js'
 import type { EmailAdapter, EmailMessage } from './notification.types.js'
-import type { ResetDelivery } from '../auth/verification/proof-delivery.service.js'
-import type { RegistrationNotifications } from './notification.service.js'
+import type {
+  createOrderMessageService,
+  createPaymentMessageService,
+  createRefundMessageService,
+  createReturnMessageService,
+} from './notification-template.js'
 
-export function createNotificationDeliveryService(
-  store: RegistrationNotifications,
+function createNotificationDeliveryService(
+  store: NotificationService,
   adapter: EmailAdapter,
   input: RetryPolicy,
   clock: () => Date = () => new Date(),
@@ -19,10 +20,10 @@ export function createNotificationDeliveryService(
   emailChangeDelivery?: ResetDelivery,
   adminResetDelivery?: ResetDelivery,
   guestDelivery?: GuestProofDelivery,
-  paymentDelivery?: ReturnType<typeof paymentMessageService>,
-  commerceDelivery?: ReturnType<typeof orderMessageService>,
-  returnDelivery?: ReturnType<typeof returnMessageService>,
-  refundDelivery?: ReturnType<typeof refundMessageService>,
+  paymentDelivery?: ReturnType<typeof createPaymentMessageService>,
+  commerceDelivery?: ReturnType<typeof createOrderMessageService>,
+  returnDelivery?: ReturnType<typeof createReturnMessageService>,
+  refundDelivery?: ReturnType<typeof createRefundMessageService>,
   emailVerificationDelivery?: ResetDelivery,
 ) {
   const settings = validateRetryPolicy(input)
@@ -63,7 +64,14 @@ export function createNotificationDeliveryService(
         const idempotencyKey = `sz-notification-${createHash('sha256').update(claim.eventKey).digest('hex')}`
         let message: Omit<EmailMessage, 'idempotencyKey'> | undefined
         try {
-          const userClaim = claim.userId ? { ...claim, userId: claim.userId } : undefined
+          const userClaim = claim.userId
+            ? {
+                id: claim.id.toHexString(),
+                userId: claim.userId.toHexString(),
+                challengeId: claim.challengeId?.toHexString(),
+                recipient: claim.recipient,
+              }
+            : undefined
           message = [
             'order_received',
             'order_confirmation',
@@ -79,7 +87,12 @@ export function createNotificationDeliveryService(
                 : claim.eventType.startsWith('payment_')
                   ? await paymentDelivery?.message(claim)
                   : claim.eventType === 'guest_order_access'
-                    ? await guestDelivery?.message(claim)
+                    ? await guestDelivery?.message({
+                        id: claim.id.toHexString(),
+                        orderId: claim.orderId?.toHexString(),
+                        challengeId: claim.challengeId?.toHexString(),
+                        recipient: claim.recipient,
+                      })
                     : !userClaim
                       ? undefined
                       : claim.templateVersion === 'admin-password-reset-v1'
@@ -124,3 +137,5 @@ export function createNotificationDeliveryService(
     },
   }
 }
+
+export { createNotificationDeliveryService }

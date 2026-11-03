@@ -1,9 +1,11 @@
 import { z } from 'zod'
-import { readProtectedFile } from '../shared/protected-file.js'
-import { claimId as id, claimText } from '../modules/returns/return.schema.js'
+import { claimText, claimId as id } from '../modules/returns/return.schema.js'
 import { ConfigurationError } from '../shared/errors/configuration-error.js'
+import { readProtectedFile } from '../shared/protected-file.js'
 
-export const returnOperationsOptions = z.strictObject({
+type ReturnOperationsOptions = z.output<typeof returnOperationsOptions>
+
+const returnOperationsOptions = z.strictObject({
   policyVersion: z.string().trim().min(1).max(100),
   exceptions: z
     .array(
@@ -15,8 +17,7 @@ export const returnOperationsOptions = z.strictObject({
     )
     .max(1000),
 })
-export type ReturnOperationsOptions = z.output<typeof returnOperationsOptions>
-export async function loadReturnOperationsOptions(
+async function loadReturnOperationsOptions(
   env: NodeJS.ProcessEnv,
 ): Promise<ReturnOperationsOptions | undefined> {
   if (env.RETURN_OPERATIONS_ENABLED === undefined || env.RETURN_OPERATIONS_ENABLED === 'false')
@@ -46,7 +47,7 @@ export async function loadReturnOperationsOptions(
   }
 }
 
-export function loadAfterSalesHistory(env: NodeJS.ProcessEnv): boolean {
+function loadAfterSalesHistory(env: NodeJS.ProcessEnv): boolean {
   if (env.AFTER_SALES_HISTORY_ENABLED === undefined || env.AFTER_SALES_HISTORY_ENABLED === 'false')
     return false
   if (
@@ -59,3 +60,6 @@ export function loadAfterSalesHistory(env: NodeJS.ProcessEnv): boolean {
     throw new ConfigurationError(['after_sales_history_configuration'])
   return true
 }
+
+export type { ReturnOperationsOptions }
+export { loadAfterSalesHistory, loadReturnOperationsOptions, returnOperationsOptions }

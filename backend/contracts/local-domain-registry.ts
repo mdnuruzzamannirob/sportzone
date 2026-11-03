@@ -1,101 +1,99 @@
 import { z } from 'zod'
-import type { Operation } from './registry.js'
-import { paginationSchema } from '../src/shared/pagination.js'
-import { orderId } from '../src/modules/orders/order.schema.js'
-import {
-  adminOrderQuery,
-  adminOrderDetail,
-  orderReadSummary,
-  orderReadQuery,
-  customerAdminOrderSummary,
-} from '../src/modules/orders/order-read.schema.js'
-import { lifecycleInput } from '../src/modules/orders/order-lifecycle.schema.js'
-import {
-  cancellationInput,
-  cancellationDecision,
-  cancellationView,
-  cancellationQuery,
-} from '../src/modules/orders/cancellation.schema.js'
-import {
-  exceptionInput,
-  exceptionResolution,
-  exceptionView,
-} from '../src/modules/orders/delivery-exception.schema.js'
-import {
-  codCollectionInput,
-  codCollectionSummary,
-} from '../src/modules/payments/cod-collection.schema.js'
-import {
-  claimCommand,
-  claimHistoryQuery,
-  claimHistoryView,
-  claimAdminView,
-  claimEligibilityView,
-  claimReviewInput,
-  claimReceiptInput,
-  claimInspectionInput,
-  claimCompleteInput,
-  claimUploadResult,
-  claimPrivateUrl,
-} from '../src/modules/returns/return.schema.js'
-import { claimEvidenceForm } from '../src/modules/media/media.schema.js'
-import { refundGroupInput } from '../src/modules/refunds/refund-reservation.schema.js'
-import {
-  refundAdminQuery,
-  refundAdminView,
-  refundAdminDetail,
-  refundGroupView,
-  refundPayoutInput,
-  refundPayoutView,
-  refundReconcileView,
-  refundReasonInput,
-  refundManualInput,
-  refundReviewInput,
-  refundHistoryQuery,
-  refundHistoryView,
-  refundOrderHistory,
-} from '../src/modules/refunds/refund-api.schema.js'
+import { auditQuery, auditView } from '../src/modules/audit/audit.schema.js'
 import {
   customerAdminQuery,
-  customerStatusDecision,
-  customerStatusResult,
   customerAdminView,
-  customerPrivacyView,
   customerPrivacyDecision,
   customerPrivacyResult,
-} from '../src/modules/auth/customer-admin.schema.js'
-import {
-  reviewCreate,
-  reviewEdit,
-  reviewModeration,
-  reviewView,
-  adminReviewView,
-  reviewAdminQuery,
-} from '../src/modules/reviews/review.schema.js'
-import {
-  complaintIntakeInput,
-  complaintAccepted,
-  complaintView,
-  complaintResolution,
-  complaintAdminQuery,
-  complaintAdminDetail,
-} from '../src/modules/support/complaint.schema.js'
+  customerPrivacyView,
+  customerStatusDecision,
+  customerStatusResult,
+} from '../src/modules/auth/account-management.schema.js'
+import { claimEvidenceForm } from '../src/modules/media/media.schema.js'
 import {
   notificationAdminQuery,
   notificationAdminView,
   notificationRetryInput,
   notificationRetryResult,
 } from '../src/modules/notifications/notification.schema.js'
-import { auditQuery, auditView } from '../src/modules/audit/audit-query.schema.js'
 import {
-  reportQuery,
-  reportDashboard,
-  salesReport,
+  cancellationDecision,
+  cancellationInput,
+  cancellationQuery,
+  cancellationView,
+} from '../src/modules/orders/cancellation.schema.js'
+import {
+  exceptionInput,
+  exceptionResolution,
+  exceptionView,
+} from '../src/modules/orders/delivery-exception.schema.js'
+import { orderId } from '../src/modules/orders/order.schema.js'
+import { lifecycleInput } from '../src/modules/orders/order-lifecycle.schema.js'
+import { orderReadQuery } from '../src/modules/orders/order-read.schema.js'
+import {
+  codCollectionInput,
+  codCollectionSummary,
+} from '../src/modules/payments/collections/cod-collection.schema.js'
+import { refundGroupInput } from '../src/modules/refunds/obligations/refund-reservation.schema.js'
+import {
+  refundAdminDetail,
+  refundAdminQuery,
+  refundAdminView,
+  refundGroupView,
+  refundHistoryQuery,
+  refundHistoryView,
+  refundManualInput,
+  refundOrderHistory,
+  refundPayoutInput,
+  refundPayoutView,
+  refundReasonInput,
+  refundReconcileView,
+  refundReviewInput,
+} from '../src/modules/refunds/refund-api.schema.js'
+import {
   collectionReport,
-  refundReport,
-  operationalQuery,
   operationalItem,
+  operationalQuery,
+  refundReport,
+  reportQuery,
+  salesReport,
 } from '../src/modules/reports/report.schema.js'
+import {
+  claimAdminView,
+  claimCommand,
+  claimCompleteInput,
+  claimEligibilityView,
+  claimHistoryQuery,
+  claimHistoryView,
+  claimInspectionInput,
+  claimPrivateUrl,
+  claimReceiptInput,
+  claimReviewInput,
+  claimUploadResult,
+} from '../src/modules/returns/return.schema.js'
+import {
+  adminReviewView,
+  reviewAdminQuery,
+  reviewCreate,
+  reviewEdit,
+  reviewModeration,
+  reviewView,
+} from '../src/modules/reviews/review.schema.js'
+import {
+  complaintAccepted,
+  complaintAdminDetail,
+  complaintAdminQuery,
+  complaintIntakeInput,
+  complaintResolution,
+  complaintView,
+} from '../src/modules/support/support.schema.js'
+import { orderReadSchemas, reportSchemas } from '../src/setup.js'
+import { paginationSchema } from '../src/shared/pagination.js'
+import type { Operation } from './registry.js'
+
+const { adminOrderQuery, adminOrderDetail, orderReadSummary, customerAdminOrderSummary } =
+  orderReadSchemas
+const { reportDashboard } = reportSchemas
 const empty = z.strictObject({})
 // Pure transport metadata for real, explicitly local/test-admitted domain routers.
 // Every DTO/input is owned by its runtime module; no model or listening application is imported.
@@ -129,7 +127,7 @@ function route(
     ...options,
   }
 }
-export const localDomainOperations: readonly Operation[] = [
+const localDomainOperations: readonly Operation[] = [
   route('GET', '/admin/dashboard', reportDashboard, { query: reportQuery }),
   route('GET', '/admin/reports/sales', salesReport, { query: reportQuery }),
   route('GET', '/admin/reports/collections', collectionReport, { query: reportQuery }),
@@ -328,3 +326,5 @@ export const localDomainOperations: readonly Operation[] = [
     idempotency: true,
   }),
 ]
+
+export { localDomainOperations }

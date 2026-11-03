@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { builtinModules } from 'node:module'
 import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -15,8 +15,9 @@ function sourceFiles(dir) {
 }
 function imports(source) {
   const results = []
-  const add = (node, typeOnly = false) => {
-    if (node && ts.isStringLiteralLike(node)) results.push({ specifier: node.text, typeOnly })
+  const add = (node, typeOnly = false, kind = 'import', names = []) => {
+    if (node && ts.isStringLiteralLike(node))
+      results.push({ specifier: node.text, typeOnly, kind, names: names.sort() })
   }
   const visit = (node) => {
     if (ts.isImportDeclaration(node)) {
@@ -27,7 +28,20 @@ function imports(source) {
         ts.isNamedImports(bindings) &&
         bindings.elements.length > 0 &&
         bindings.elements.every((item) => item.isTypeOnly)
-      add(node.moduleSpecifier, Boolean(clause?.isTypeOnly || (!clause?.name && namedTypes)))
+      const names = []
+      if (clause?.name) names.push('default')
+      if (bindings && ts.isNamespaceImport(bindings)) names.push('*')
+      if (bindings && ts.isNamedImports(bindings))
+        for (const item of bindings.elements)
+          names.push(
+            `${item.propertyName?.text ?? item.name.text}${item.isTypeOnly ? ':type' : ''}`,
+          )
+      add(
+        node.moduleSpecifier,
+        Boolean(clause?.isTypeOnly || (!clause?.name && namedTypes)),
+        'import',
+        names,
+      )
     }
     if (ts.isExportDeclaration(node)) {
       const namedTypes =
@@ -35,21 +49,68 @@ function imports(source) {
         ts.isNamedExports(node.exportClause) &&
         node.exportClause.elements.length > 0 &&
         node.exportClause.elements.every((item) => item.isTypeOnly)
-      add(node.moduleSpecifier, Boolean(node.isTypeOnly || namedTypes))
+      const names =
+        node.exportClause && ts.isNamedExports(node.exportClause)
+          ? node.exportClause.elements.map(
+              (item) =>
+                `${item.propertyName?.text ?? item.name.text}${item.isTypeOnly ? ':type' : ''}`,
+            )
+          : ['*']
+      add(node.moduleSpecifier, Boolean(node.isTypeOnly || namedTypes), 'export', names)
     }
     if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference))
-      add(node.moduleReference.expression, node.isTypeOnly)
+      add(node.moduleReference.expression, node.isTypeOnly, 'import-equals', ['*'])
+    if (ts.isImportTypeNode(node) && ts.isLiteralTypeNode(node.argument))
+      add(node.argument.literal, true, 'import-type', [node.qualifier?.getText(source) ?? '*'])
     if (
       ts.isCallExpression(node) &&
       (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
         node.expression.getText(source) === 'require')
     )
-      add(node.arguments[0])
+      add(node.arguments[0], false, 'dynamic-or-require', ['*'])
     ts.forEachChild(node, visit)
   }
   visit(source)
   return results
 }
+
+function stronglyConnected(edges, includeTypes) {
+  const numbers = new Map()
+  const low = new Map()
+  const stack = []
+  const active = new Set()
+  const components = []
+  let number = 0
+  const visit = (file) => {
+    numbers.set(file, number)
+    low.set(file, number++)
+    stack.push(file)
+    active.add(file)
+    for (const edge of edges.get(file) ?? []) {
+      if (!edge.target || !edges.has(edge.target) || (!includeTypes && edge.typeOnly)) continue
+      if (!numbers.has(edge.target)) {
+        visit(edge.target)
+        low.set(file, Math.min(low.get(file), low.get(edge.target)))
+      } else if (active.has(edge.target))
+        low.set(file, Math.min(low.get(file), numbers.get(edge.target)))
+    }
+    if (low.get(file) !== numbers.get(file)) return
+    const component = []
+    let member
+    do {
+      member = stack.pop()
+      active.delete(member)
+      component.push(member)
+    } while (member !== file)
+    const selfImport = (edges.get(file) ?? []).some(
+      (edge) => edge.target === file && (includeTypes || !edge.typeOnly),
+    )
+    if (component.length > 1 || selfImport) components.push(component.sort())
+  }
+  for (const file of edges.keys()) if (!numbers.has(file)) visit(file)
+  return components
+}
+
 export function checkBoundaries(root = process.cwd()) {
   root = resolve(root)
   const errors = []
@@ -72,7 +133,48 @@ export function checkBoundaries(root = process.cwd()) {
     /\/(?:models|persistence)(?:\/|\.)/.test(path)
   const moduleOwner = (path) =>
     isWithin(path, moduleRoot) ? relative(moduleRoot, path).split('/')[0] : undefined
+  const isPublicContract = (path) =>
+    Boolean(
+      moduleOwner(path) &&
+        dirname(path) === join(moduleRoot, moduleOwner(path)) &&
+        path.endsWith('.public.ts'),
+    )
+  const allowanceFile = join(root, 'scripts/ci/backend-boundary-allowances.json')
+  if (existsSync(allowanceFile))
+    errors.push(
+      'scripts/ci/backend-boundary-allowances.json: legacy migration inventories are retired; remove this file',
+    )
+  const migrationViolations = []
+  const migrationViolation = (kind, key, message) => {
+    migrationViolations.push({ kind, key, message })
+    errors.push(message)
+  }
+  const inspectContractMongoose = (file, label) => {
+    for (const edge of imports(sources.get(file)))
+      if (
+        edge.specifier === 'mongoose' &&
+        (edge.names.length !== 1 || edge.names[0].replace(/:type$/, '') !== 'ClientSession')
+      )
+        errors.push(
+          `${label}: public contracts may expose ClientSession, not Mongoose models/documents/connections`,
+        )
+  }
   for (const [file, source] of sources) {
+    if (isWithin(file, backendSource)) {
+      const inspectDynamic = (node) => {
+        if (
+          ts.isCallExpression(node) &&
+          (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
+            node.expression.getText(source) === 'require') &&
+          (!node.arguments[0] || !ts.isStringLiteralLike(node.arguments[0]))
+        )
+          errors.push(
+            `${relative(root, file)}: backend dependency specifiers must be static string literals`,
+          )
+        ts.forEachChild(node, inspectDynamic)
+      }
+      inspectDynamic(source)
+    }
     if (
       !/^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)*\.[cm]?[jt]sx?$/.test(
         basename(file),
@@ -149,7 +251,7 @@ export function checkBoundaries(root = process.cwd()) {
       ...manifest.optionalDependencies,
     }
     const targets = []
-    for (const { specifier, typeOnly } of imports(source)) {
+    for (const { specifier, typeOnly, kind, names } of imports(source)) {
       const label = relative(root, file)
       if (!specifier.startsWith('.') && !specifier.startsWith('@/')) {
         const packageName = specifier.startsWith('@')
@@ -170,7 +272,7 @@ export function checkBoundaries(root = process.cwd()) {
           (packageName === 'mongoose' || workspaces.includes(packageName))
         )
           errors.push(`${label}: frontend cannot import another application or persistence`)
-        targets.push({ specifier, builtin, typeOnly })
+        targets.push({ specifier, builtin, typeOnly, kind, names })
         continue
       }
       const path = specifier.startsWith('@/')
@@ -196,7 +298,58 @@ export function checkBoundaries(root = process.cwd()) {
         errors.push(`${label}: use the owning module's service instead of its private persistence`)
       if (extname(path).match(/^\.[cm]?[jt]sx?$/) && !target)
         errors.push(`${label}: unresolved source import ${specifier}`)
-      targets.push({ specifier, target, typeOnly })
+      const foreignImplementation =
+        target &&
+        moduleOwner(file) &&
+        moduleOwner(target) &&
+        moduleOwner(file) !== moduleOwner(target) &&
+        !(typeOnly && isPublicContract(target)) &&
+        !(
+          moduleOwner(file) === 'inventory' &&
+          ['modules/catalog/products/variant.service.ts'].includes(relative(backendSource, target))
+        )
+      const providerImplementation =
+        target &&
+        moduleOwner(file) &&
+        typeOnly &&
+        isWithin(target, join(backendSource, 'providers')) &&
+        target.endsWith('.client.ts')
+      const providerContract =
+        target &&
+        isWithin(file, join(backendSource, 'providers')) &&
+        moduleOwner(target) &&
+        typeOnly &&
+        !isPublicContract(target)
+      const configurationImplementation =
+        target &&
+        isWithin(file, join(backendSource, 'config')) &&
+        moduleOwner(target) &&
+        !(typeOnly && isPublicContract(target)) &&
+        !target.endsWith('.schema.ts')
+      if (
+        foreignImplementation ||
+        providerImplementation ||
+        providerContract ||
+        configurationImplementation
+      ) {
+        const key = `${relative(backendSource, file)} -> ${relative(backendSource, target)} (${typeOnly ? 'type' : 'runtime'}; ${kind}; ${names.join(',')})`
+        migrationViolation(
+          'imports',
+          key,
+          `${label}: cross-module imports require the owner's type-only public contract; inject runtime capabilities (${relative(backendSource, target)})`,
+        )
+      }
+      if (
+        target &&
+        moduleOwner(file) &&
+        isWithin(target, backendSource) &&
+        !moduleOwner(target) &&
+        !['config', 'shared', 'providers'].some((dir) => isWithin(target, join(backendSource, dir)))
+      )
+        errors.push(
+          `${label}: domain modules cannot depend on root/health/job wiring or neutral root helpers`,
+        )
+      targets.push({ specifier, target, typeOnly, kind, names })
     }
     edges.set(file, targets)
   }
@@ -218,14 +371,16 @@ export function checkBoundaries(root = process.cwd()) {
     const label = relative(root, file)
     if (
       moduleOwner(file) !== 'inventory' &&
-      (moduleOwner(file) || isWithin(file, join(backendSource, 'jobs')))
+      !['setup.ts', 'server.ts'].includes(relative(backendSource, file))
     ) {
       walk(
         file,
         (target, edge) => {
           if (
             !edge.typeOnly &&
-            target === join(backendSource, 'modules/catalog/variants/variant.service.ts')
+            ['modules/catalog/products/variant.service.ts'].some(
+              (path) => target === join(backendSource, path),
+            )
           )
             errors.push(
               `${label}: stock counter capability is private to inventory; use inventory services`,
@@ -234,6 +389,51 @@ export function checkBoundaries(root = process.cwd()) {
         (target, edge) =>
           edge.typeOnly || (moduleOwner(target) === 'inventory' && target.endsWith('.service.ts')),
       )
+    }
+    if (!['setup.ts', 'server.ts'].includes(relative(backendSource, file))) {
+      for (const edge of edges.get(file) ?? [])
+        if (
+          edge.target?.endsWith('.composition.ts') &&
+          !(
+            file.endsWith('.composition.ts') &&
+            moduleOwner(file) &&
+            moduleOwner(file) === moduleOwner(edge.target)
+          )
+        )
+          errors.push(`${label}: only root setup/server may consume module composition`)
+    }
+    if (file.endsWith('.public.ts')) {
+      if (!isPublicContract(file))
+        errors.push(`${label}: public contracts belong at the owning module root`)
+      for (const statement of sources.get(file).statements) {
+        const typeExport =
+          ts.isExportDeclaration(statement) &&
+          statement.exportClause &&
+          ts.isNamedExports(statement.exportClause) &&
+          (statement.isTypeOnly || statement.exportClause.elements.every((item) => item.isTypeOnly))
+        if (
+          ts.isInterfaceDeclaration(statement) ||
+          ts.isTypeAliasDeclaration(statement) ||
+          ts.isImportDeclaration(statement) ||
+          typeExport ||
+          ts.isEmptyStatement(statement)
+        )
+          continue
+        errors.push(
+          `${label}: public contracts contain only types and interfaces, not runtime implementations`,
+        )
+      }
+      for (const edge of edges.get(file) ?? [])
+        if (!edge.typeOnly)
+          errors.push(`${label}: public contracts use explicit type-only imports/exports`)
+      walk(file, (target) => {
+        if (/\.(?:service|model|persistence|composition)\.ts$/.test(target))
+          errors.push(
+            `${label}: public contracts cannot derive from private implementation or persistence`,
+          )
+        inspectContractMongoose(target, label)
+      })
+      inspectContractMongoose(file, label)
     }
     if (isWithin(file, join(backendSource, 'shared'))) {
       walk(file, (target) => {
@@ -311,6 +511,20 @@ export function checkBoundaries(root = process.cwd()) {
       )
     }
   }
+  const backendEdges = new Map([...edges].filter(([file]) => isWithin(file, backendSource)))
+  const runtimeCycles = stronglyConnected(backendEdges, false)
+  const runtimeKeys = new Set(runtimeCycles.map((group) => group.join('\0')))
+  for (const [kind, groups] of [
+    ['runtime', runtimeCycles],
+    [
+      'type',
+      stronglyConnected(backendEdges, true).filter((group) => !runtimeKeys.has(group.join('\0'))),
+    ],
+  ])
+    for (const group of groups) {
+      const key = `${kind}: ${group.map((file) => relative(backendSource, file)).join(' <-> ')}`
+      migrationViolation('cycles', key, `backend source import cycle (${key})`)
+    }
   for (const owner of ['storefront', 'admin']) {
     const sourceRoot = join(root, owner, 'src')
     const featureRoot = join(sourceRoot, 'features')
@@ -385,11 +599,18 @@ export function checkBoundaries(root = process.cwd()) {
     }
   }
   for (const file of browserRoots) visitClient(file)
-  return { files: files.length, errors: [...new Set(errors)] }
+  return {
+    files: files.length,
+    errors: [...new Set(errors)],
+    migrationViolations,
+    remainingAllowances: 0,
+  }
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   const result = checkBoundaries()
   for (const error of result.errors) console.error(error)
-  console.log(`Source boundaries: ${result.files} files, ${result.errors.length} errors`)
+  console.log(
+    `Source boundaries: ${result.files} files, ${result.errors.length} errors; ${result.remainingAllowances} exact legacy allowances remain`,
+  )
   process.exitCode = result.errors.length ? 1 : 0
 }

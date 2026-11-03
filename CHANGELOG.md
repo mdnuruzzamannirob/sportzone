@@ -8,6 +8,148 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 3 November 2026 — Explicit backend lint fix/check scripts
+
+- Backend lint/format apply safe fixes; lint:check/format:check validate without edits. CI uses
+  lint:check and enforces its inventory entry when that script exists.
+
+## 3 November 2026 — Backend formatting, env examples and CI scope
+
+- Added backend format/format:check scripts and executable CI coverage for backend JSON configuration.
+- Populated local/staging env templates with illustrative values; preserved actual private configuration.
+- Commented frontend/browser hosted steps for the owner-selected backend stage, retaining security,
+  backend checks, image gate and future integrated verification requirements.
+- [Changes and verification](docs/evidence/P03-021-backend-refactor.md#environment-examples-workspace-formatting-and-backend-stage-ci--3-november-2026).
+
+## 3 November 2026 — Backend refactor closed; local configuration organized
+
+- Organized env keys and local technical defaults, preserving private credentials and explicit feature
+  admission. Grouped root/backend manifest scripts and dependencies without command/version changes.
+- P03-030 Done after local regression/fixes and owner-directed Docker deferral. Image verification
+  remains unverified; CI/release and P03-022/external acceptance are unchanged.
+- [Closeout evidence](docs/evidence/P03-021-backend-refactor.md#owner-authorized-refactor-closeout-and-environment-cleanup--3-november-2026).
+
+## 3 November 2026 — Backend final local verification and fixes
+
+- Corrected detached proof IDs at auth persistence queries; updated existing route/stock parity fixtures.
+  Recorded exact reviewed synthetic encryption-vector scanner fingerprints without broad exclusions.
+- Local unit/contract/integration/tooling regression, compiled smoke, static checks and security pass
+  through the recorded full run and affected rechecks. Docker image verification is blocked by daemon
+  permissions; P03-030 remains In Progress, with no stage/provider/release acceptance.
+- [Results, resolved failures and remaining blocker](docs/evidence/P03-021-backend-refactor.md#final-backend-verification-and-corrections--3-november-2026).
+
+## 3 November 2026 — Backend outside-src structural closeout
+
+- Migrated contract/operator/test consumers; organized suites by owner and split commerce scenarios
+  into workflow files with reusable fixtures. Preserved generated API artifacts and operator commands.
+- Synchronized Docker/CI script dependencies and retired stale boundary waivers; current boundaries,
+  backend compilation/build/lint and API freshness pass.
+- [Structural evidence and deferred verification](docs/evidence/P03-021-backend-refactor.md#outside-src-structural-closeout--3-november-2026).
+  Runtime tests/review/fixes remain pending; P03-030 stays In Progress. No commit/push or release acceptance.
+
+## 3 November 2026 — Backend src structural closeout
+
+- Completed root-wired owner capabilities and reusable schema assembly; detached proof, notification
+  and claim-media contracts. Finished Returns controllers and removed redundant constructor arguments,
+  forwarding adapters, DTO duplication and generic/numeric handler names.
+- Source compilation/lint/format Passed for 311 files; zero source boundary violations, active legacy
+  allowances or type/runtime cycles. The unfiltered boundary gate still fails on 292 stale outside-src
+  allowance entries, whose migration remains in the next batch.
+- Recorded [source checks and the outside-src migration ledger](docs/evidence/P03-021-backend-refactor.md#src-structural-closeout--3-november-2026).
+  Tests/review and outside-src consumers remain deferred; P03-030 stays In Progress. No Git/PR changes
+  or backend/application/release acceptance.
+
+## 3 November 2026 — Backend src architecture work in progress
+
+- Separated server lifecycle from configured application composition; injected auth HTTP and audit
+  capabilities, detached public DTO/provider/job contracts, and consolidated shared input validation.
+- Standardized bottom exports across src. Source compilation, lint and format passed for 308 files;
+  runtime imports are acyclic. Full src remains unfinished: 47 source boundary violations and stale
+  allowance inventory still require resolution. Tests/review and outside-src consumers remain deferred.
+- Updated the [existing P03-030 evidence](docs/evidence/P03-021-backend-refactor.md#remaining-src-architecture-work--ongoing-3-november-2026).
+  No commit/push/branch/PR operations or application acceptance.
+
+## 3 November 2026 — Whole-module structural batch
+
+- Organized all twenty module owners, extracted wishlist, placed variants under products and separated
+  payment attempts/collections and refund obligations/payouts. Consolidated cohesive services/schemas,
+  separated HTTP handlers and moved audit/notification/delivery-exception routes to their owners.
+- Module source count 275 → 251; source-only compilation/module lint/format passed. No tests executed,
+  no test/contract/script/tooling edits, and no commit/push/PR changes in this batch.
+- Recorded the [owner-directed staged sequence and remaining verification](docs/evidence/P03-021-backend-refactor.md#p03-030--whole-module-structural-pass-3-november-2026).
+  Full src integration, outside-src consumer migration and consolidated behavior review remain pending.
+
+## 3 November 2026 — Completed backend package review corrections
+
+- Reviewed WP00–WP04 and corrected naming/cohesion gaps: consolidated credential/customer route files,
+  account access and delivery coverage; aligned factories/types and all executable consumers.
+- Recorded adopted-owner file conventions in Architecture/Refactor Plan; four source files removed,
+  27 private-type allowances eliminated, no API/database/security behavior changed.
+- Recorded [P03-029 findings and verification](docs/evidence/P03-021-backend-refactor.md#p03-029--completed-wp00wp04-review-and-corrections-3-november-2026):
+  856 integration cases Passed alongside affected unit/contract/boundary and preservation checks.
+
+## 3 November 2026 — Identity, customer and technical health refactor
+
+- Injected order/audit capabilities into auth; introduced detached identity/notification contracts and
+  customer HTTP controllers. Reused credential handlers and consolidated media-admin authorization.
+- Moved health outside business modules, preserving HTTP behavior and executable route inventory;
+  retained canonical models/security fences and removed 26 legacy boundary allowances.
+- Recorded [WP04/P03-028 verification](docs/evidence/P03-021-backend-refactor.md#p03-028--wp04-identity-customer-and-technical-health-3-november-2026),
+  including a corrected Markdown-spacing parser in the existing identity index test. No new test file,
+  package, collection or feature activation.
+
+## 3 November 2026 — Local Git recovery
+
+- Recovered the exact original HEAD commit after zero-byte Git object corruption; preserved history,
+  index and all 827 worktree files. Full object integrity verification passed after backed-up repair.
+- Retained the original [WP03 verification record and recovery details](docs/evidence/P03-021-backend-refactor.md#p03-027--wp03-delivery-pilot-3-november-2026).
+
+## 3 November 2026 — Delivery module refactor pilot
+
+- Separated delivery HTTP controllers from middleware/route registration; root setup injects existing
+  auth guards. Published narrow auth/delivery types and migrated coverage consumers off private types.
+- Retained charge/coverage behavior and canonical persistence; normalized module exports and reused
+  the shared digest. Seven legacy allowances removed; no new dependency or API/data contract.
+- Recorded [WP03/P03-027 verification and limits](docs/evidence/P03-021-backend-refactor.md#p03-027--wp03-delivery-pilot-3-november-2026),
+  including passing affected tests, targeted sandbox rechecks and an unreadable Git HEAD object.
+
+## 3 November 2026 — Backend technical foundation refactor
+
+- Moved session/browser option validation into existing configuration ownership; extracted reusable
+  encryption/keyring and JSON digest mechanics while retaining auth-owned proof binding.
+- Replaced service-derived operations configuration typing with an explicit orders public contract;
+  removed five legacy allowances. No environment, API or persistence contract changed.
+- Recorded [WP02/P03-026 checks and review](docs/evidence/P03-021-backend-refactor.md#p03-026--wp02-technical-foundation-3-november-2026):
+  219 unit and 155 isolated integration cases plus compiled smoke passed; stage acceptance remains separate.
+
+## 3 November 2026 — Backend refactor contracts and boundary enforcement
+
+- Reconciled the selected module/file/dependency target in Architecture, Database, API, Implementation Plan
+  and Testing; corrected the existing collection inventory to 39 without schema or runtime changes.
+- Extended the existing checker/fixtures for public type contracts, private composition, inline/dynamic
+  imports and source cycles. Added one exact migration data inventory with owning removal packages;
+  new violations and stale allowances fail without waiving stock/provider/persistence safeguards.
+- Recorded [WP01/P03-025 verification and limits](docs/evidence/P03-021-backend-refactor.md#p03-025--wp01-contracts-and-enforcement-3-november-2026),
+  including three process-test failures reproduced on untouched HEAD and passing outside-sandbox reruns.
+  Backend runtime inputs, generated APIs, feature activation and stage/external acceptance remain unchanged.
+
+## 3 November 2026 — Backend refactor baseline inventory
+
+- Completed WP00/P03-024 inventory and impact mapping: 491 backend files, 170 operations, 41 scripts,
+  canonical persistence fingerprints and affected tooling/worker consumers; runtime code remains unchanged.
+- Reused the [existing refactor evidence record](docs/evidence/P03-021-backend-refactor.md#p03-024--wp00-follow-up-baseline-3-november-2026)
+  for selected baseline results, type-only coupling and collection/activation documentation discrepancies.
+  Existing staged planning changes and all application/external acceptance gates are preserved.
+
+## 3 November 2026 — Whole-backend refactor planning
+
+- Added the [backend refactor plan](docs/BACKEND_REFACTOR_PLAN.md) covering the selected module boundaries,
+  file/reuse conventions, dependency and workflow rules, complete migration packages, verification and rollback.
+- Linked the plan from Implementation Plan §3.6 and identified owning-specification differences to reconcile
+  before code changes. Documentation only; no backend refactor, task acceptance or release is claimed.
+- Clarified refactor-only execution: preserve existing behavior, change files only for demonstrated reasons,
+  reuse tests/records and select affected checks; missing features and unrelated fixes are separate scope.
+
 ## 2 November 2026 — Whole-backend implementation audit and API gap closure
 
 - Audited all 170 specified operations against runtime; identified nine missing surfaces despite earlier task completion records.

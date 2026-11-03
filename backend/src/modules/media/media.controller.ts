@@ -1,7 +1,8 @@
 import type { Request, Response } from 'express'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { respond } from '../../shared/responses.js'
-import { readSessionCookie } from '../auth/sessions/session.http.js'
+import type { SessionCookies } from '../auth/auth.public.js'
+
 import type { MediaService } from './media.service.js'
 import type { MediaFile } from './media.types.js'
 
@@ -36,6 +37,7 @@ async function multipartForm(req: import('express').Request, maxBytes: number) {
     throw new ApiError('INVALID_REQUEST')
   }
 }
+
 async function mediaFile(
   file: FormDataEntryValue | null | undefined,
   maxBytes: number,
@@ -48,7 +50,8 @@ async function mediaFile(
     bytes: new Uint8Array(await file.arrayBuffer()),
   }
 }
-export async function claimEvidenceMultipart(req: import('express').Request, maxBytes: number) {
+
+async function claimEvidenceMultipart(req: import('express').Request, maxBytes: number) {
   const form = await multipartForm(req, maxBytes)
   const entries = [...form.entries()]
   if (
@@ -66,19 +69,21 @@ export async function claimEvidenceMultipart(req: import('express').Request, max
     },
   }
 }
+
 async function multipart(req: import('express').Request, maxBytes: number) {
   const form = await multipartForm(req, maxBytes)
   if ([...form.keys()].length !== 1 || form.getAll('file').length !== 1)
     throw new ApiError('VALIDATION_FAILED')
   return mediaFile(form.get('file'), maxBytes)
 }
-export function createMediaController(service: MediaService, maxBytes: number) {
+
+function createMediaController(service: MediaService, maxBytes: number, cookies: SessionCookies) {
   return {
     async upload(req: Request, res: Response) {
       const file = await multipart(req, maxBytes)
       respond(
         res,
-        await service.uploadPublic(readSessionCookie(req.get('Cookie'), 'admin'), file),
+        await service.uploadPublic(cookies.readSessionCookie(req.get('Cookie'), 'admin'), file),
         200,
       )
     },
@@ -90,10 +95,12 @@ export function createMediaController(service: MediaService, maxBytes: number) {
       )
         throw new ApiError('INVALID_REQUEST')
       const deleted = await service.cleanup(req.params.assetId, {
-        adminCredential: readSessionCookie(req.get('Cookie'), 'admin'),
+        adminCredential: cookies.readSessionCookie(req.get('Cookie'), 'admin'),
       })
       if (!deleted) throw new ApiError('SERVICE_UNAVAILABLE')
       res.status(204).end()
     },
   }
 }
+
+export { claimEvidenceMultipart, createMediaController }

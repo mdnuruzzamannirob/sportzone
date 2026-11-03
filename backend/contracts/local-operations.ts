@@ -1,6 +1,6 @@
 // Independent local/test-only registration inventory, verified against actual routers.
 // Owning DTOs are registered through local-domain-registry.ts and the main executable registry.
-export const localOperations = [
+const localOperations = [
   { method: 'GET', path: '/admin/dashboard' },
   { method: 'GET', path: '/admin/reports/sales' },
   { method: 'GET', path: '/admin/reports/collections' },
@@ -65,3 +65,5 @@ export const localOperations = [
   { method: 'GET', path: '/admin/reviews' },
   { method: 'POST', path: '/admin/reviews/{reviewId}/moderation' },
 ] as const
+
+export { localOperations }

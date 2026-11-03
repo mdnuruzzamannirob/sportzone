@@ -1,8 +1,11 @@
 import { z } from 'zod'
-import { refundApproval } from '../modules/refunds/refund-reservation.schema.js'
+import { refundApproval } from '../modules/refunds/obligations/refund-reservation.schema.js'
 import { ConfigurationError } from '../shared/errors/configuration-error.js'
 import { readProtectedFile } from '../shared/protected-file.js'
 import { loadDeliveryDeadlinePolicy } from './delivery.js'
+
+type OrderOperationsOptions = NonNullable<Awaited<ReturnType<typeof loadOrderOperationsOptions>>>
+
 const id = z.string().regex(/^[a-f0-9]{24}$/)
 const authorization = z.strictObject({
   orderId: id,
@@ -16,7 +19,7 @@ const manifest = z.strictObject({
   version: z.literal(1),
   authorizations: z.array(authorization).max(1000),
 })
-export async function loadOrderOperationsOptions(env: NodeJS.ProcessEnv) {
+async function loadOrderOperationsOptions(env: NodeJS.ProcessEnv) {
   if (env.ORDER_OPERATIONS_ENABLED === undefined || env.ORDER_OPERATIONS_ENABLED === 'false')
     return undefined
   try {
@@ -46,6 +49,6 @@ export async function loadOrderOperationsOptions(env: NodeJS.ProcessEnv) {
     throw new ConfigurationError(['order_operations_authority'])
   }
 }
-export type OrderOperationsOptions = NonNullable<
-  Awaited<ReturnType<typeof loadOrderOperationsOptions>>
->
+
+export type { OrderOperationsOptions }
+export { loadOrderOperationsOptions }

@@ -1,16 +1,17 @@
 import type { Connection } from 'mongoose'
 import { z } from 'zod'
-import { verifyMediaPersistence, type MediaService } from '../modules/media/media.service.js'
+import type { MediaMaintenance } from '../modules/media/media.public.js'
+import { assertOutsideTransaction, inTransaction } from '../shared/database/transaction.js'
 import { jobLeaseService } from '../shared/jobs/job-lease.service.js'
-import { inTransaction, assertOutsideTransaction } from '../shared/database/transaction.js'
 import { parseInput } from '../shared/middleware/validate.js'
-export const mediaMaintenanceOptions = z.strictObject({
+
+const mediaMaintenanceOptions = z.strictObject({
   batchSize: z.int().min(1).max(100),
   leaseMs: z.int().min(1000).max(3600000),
 })
-export function mediaMaintenanceJob(
+function mediaMaintenanceJob(
   connection: Connection,
-  media: Pick<MediaService, 'maintenanceBatch'>,
+  media: MediaMaintenance,
   raw: unknown,
   clock: () => Date = () => new Date(),
 ) {
@@ -19,10 +20,17 @@ export function mediaMaintenanceJob(
   return {
     async run() {
       assertOutsideTransaction()
-      await verifyMediaPersistence(connection)
+      await media.verifyPersistence()
       const claim = await leases.acquire()
       if (!claim)
-        return { acquired: false, examined: 0, deleted: 0, reconciled: 0, pending: 0, blocked: 0 }
+        return {
+          acquired: false,
+          examined: 0,
+          deleted: 0,
+          reconciled: 0,
+          pending: 0,
+          blocked: 0,
+        }
       try {
         const fence = () =>
           inTransaction(connection, (session) => leases.fence(session, claim.owner))
@@ -37,3 +45,5 @@ export function mediaMaintenanceJob(
     },
   }
 }
+
+export { mediaMaintenanceJob, mediaMaintenanceOptions }

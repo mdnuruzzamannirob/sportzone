@@ -1,26 +1,28 @@
-import {
-  emailVerificationInput,
-  emailVerificationConfirmation,
-} from './email-verification.schema.js'
 import { randomBytes } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
-import { Types, type Connection } from 'mongoose'
+import { type Connection, Types } from 'mongoose'
 import type { RecoveryOptions } from '../../../config/security.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
-import type { RegistrationNotifications } from '../../notifications/notification.service.js'
+import type { IdentityNotifications } from '../../notifications/notification.public.js'
 import type { IdentityModels } from '../auth.model.js'
 import type { BrowserSecurity } from '../sessions/browser-security.service.js'
-import { consumeUserChallenge, ChallengeUnavailableError } from '../sessions/session.persistence.js'
-import { proofHash } from './proof.crypto.js'
-export function createEmailVerificationService(
+import { ChallengeUnavailableError, consumeUserChallenge } from '../sessions/session.persistence.js'
+import {
+  emailVerificationConfirmation,
+  emailVerificationInput,
+} from './email-verification.schema.js'
+import { createProofCodec, proofHash } from './proof.crypto.js'
+
+function createEmailVerificationService(
   connection: Connection,
   models: IdentityModels,
   security: BrowserSecurity,
-  notifications: RegistrationNotifications,
+  notifications: Pick<IdentityNotifications, 'enqueueEmailVerification'>,
   options: RecoveryOptions,
   clock: () => Date = () => new Date(),
 ) {
+  const encryption = createProofCodec(options.encryption)
   return {
     async request(raw: unknown, context: string, csrf: string) {
       const input = parseInput(emailVerificationInput, raw),
@@ -86,7 +88,7 @@ export function createEmailVerificationService(
             scopeRevisionAtIssue: revision,
             expiresAt,
             deliveryNotificationId: notificationId,
-            deliveryEnvelope: options.encryption.encrypt(proof, {
+            deliveryEnvelope: encryption.encrypt(proof, {
               id: id.toHexString(),
               userId: user._id.toHexString(),
               email: input.email,
@@ -98,7 +100,12 @@ export function createEmailVerificationService(
             updatedAt: now,
           }).save({ session })
           await notifications.enqueueEmailVerification(
-            { id: notificationId, challengeId: id, userId: user._id, email: input.email },
+            {
+              id: notificationId.toHexString(),
+              challengeId: id.toHexString(),
+              userId: user._id.toHexString(),
+              email: input.email,
+            },
             session,
           )
           return { accepted: true as const }
@@ -147,3 +154,5 @@ export function createEmailVerificationService(
     },
   }
 }
+
+export { createEmailVerificationService }

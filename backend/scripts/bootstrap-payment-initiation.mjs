@@ -1,13 +1,14 @@
-import { createRegistrationNotifications } from '../dist/modules/notifications/notification.service.js'
-import { initializeJobLeases } from '../dist/shared/jobs/job-lease.model.js'
-import { initializeCorrectionPersistence } from '../dist/modules/refunds/refund.persistence.js'
-import { migrateIdentityPostalCode } from '../dist/modules/auth/identity.persistence.js'
-import { migrateOrderPostalCode } from '../dist/modules/orders/order.persistence.js'
-import { loadEnvironment } from '../dist/config/env.js'
 import { openDatabase } from '../dist/config/database.js'
-import { initializePaymentRecordPersistence } from '../dist/modules/payments/payment-record.persistence.js'
-import { initializePaymentInitiationPersistence } from '../dist/modules/payments/payment-initiation.persistence.js'
+import { loadEnvironment } from '../dist/config/env.js'
 import { initializeAuditPersistence } from '../dist/modules/audit/audit.persistence.js'
+import { migrateIdentityPostalCode } from '../dist/modules/auth/identity.persistence.js'
+import { createNotificationService } from '../dist/modules/notifications/notification.service.js'
+import { migrateOrderPostalCode } from '../dist/modules/orders/order.persistence.js'
+import { initializePaymentInitiationPersistence } from '../dist/modules/payments/attempts/payment-initiation.persistence.js'
+import { initializePaymentRecordPersistence } from '../dist/modules/payments/collections/payment-record.persistence.js'
+import { initializeCorrectionPersistence } from '../dist/modules/refunds/refund.persistence.js'
+import { initializeJobLeases } from '../dist/shared/jobs/job-lease.model.js'
+
 let connection
 let stage = 'configuration'
 try {
@@ -30,7 +31,7 @@ try {
   stage = 'leases'
   await initializeJobLeases(connection)
   stage = 'notifications'
-  await createRegistrationNotifications(connection).migrateFoundation()
+  await createNotificationService(connection).migrateFoundation()
   console.log('Payment initiation persistence ready; no HTTP/provider activation enabled.')
 } catch {
   console.error(

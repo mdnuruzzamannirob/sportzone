@@ -1,42 +1,62 @@
-import { emailVerificationRoutes } from './verification/email-verification.routes.js'
-import { createEmailVerificationService } from './verification/email-verification.service.js'
-import { createEmailVerificationDelivery } from './verification/proof-delivery.service.js'
-import { guestOrderAccess } from '../orders/order.service.js'
-import { guestSessionService } from './guest-access/guest-session.service.js'
-import { guestAccessService } from './guest-access/guest-access.service.js'
-import { guestAccessRoutes } from './guest-access/guest-access.routes.js'
-import { guestProofDelivery } from './guest-access/guest-proof-delivery.service.js'
-import { adminTransactionAccess, createAdminAccountAccess } from './admin-account.service.js'
 import { Router } from 'express'
 import type { Connection } from 'mongoose'
 import type { IdentityConfig, RuntimeConfig } from '../../config/env.js'
-import type { RegistrationNotifications } from '../notifications/notification.service.js'
+import type { AuditOperationReader, AuditWriter } from '../audit/audit.public.js'
+import type { IdentityNotifications } from '../notifications/notification.public.js'
+import type { GuestOrderAccess } from '../orders/order.public.js'
+import {
+  adminTransactionAccess,
+  createAdminAccountAccess,
+  createCustomerAccountAccess,
+  createMediaAdminAccess,
+} from './account-access.service.js'
+import {
+  createAccountManagementService,
+  customerReportAccess,
+} from './account-management.service.js'
 import { createIdentityModels } from './auth.model.js'
-import { adminRoutes } from './credentials/admin-auth.routes.js'
-import { createCustomerService } from './credentials/credentials.service.js'
-import { customerRoutes } from './credentials/customer-auth.routes.js'
-import { createCustomerAccountAccess } from './customer-account.service.js'
+import type {
+  AdminAccountAccess,
+  CustomerHistories,
+  SessionCookies,
+  SessionHttp,
+} from './auth.public.js'
+import {
+  createAdminCredentialRoutes,
+  createCustomerCredentialRoutes,
+} from './credentials/credential.routes.js'
+import { createCredentialService } from './credentials/credential.service.js'
+import { createGuestAccessRoutes } from './guest-access/guest-access.routes.js'
+import { createGuestAccessService } from './guest-access/guest-access.service.js'
+import { guestProofDelivery } from './guest-access/guest-proof-delivery.service.js'
+import { createGuestSessionService, readGuestCookie } from './guest-access/guest-session.service.js'
 import { verifyIdentityPersistence } from './identity.persistence.js'
-import { createMediaAdminAccess } from './media-access.service.js'
-import { recoveryRoutes } from './recovery/password-recovery.routes.js'
+import { createRecoveryRoutes } from './recovery/password-recovery.routes.js'
 import { createRecoveryService } from './recovery/password-recovery.service.js'
 import { createAuthQuotaStore } from './sessions/auth-throttle.persistence.js'
 import { createAuthThrottle } from './sessions/auth-throttle.service.js'
-import { browserSecurityRoutes } from './sessions/browser-security.routes.js'
-import { createBrowserSecurity } from './sessions/browser-security.service.js'
+import { createBrowserSecurityRoutes } from './sessions/browser-security.routes.js'
+import { createBrowserSecurity, readContextCookie } from './sessions/browser-security.service.js'
+import { createSessionHttp, readSessionCookie } from './sessions/session.http.js'
 import { createSessionService } from './sessions/session.service.js'
-import { emailChangeRoutes } from './verification/email-change.routes.js'
+import { createEmailChangeRoutes } from './verification/email-change.routes.js'
 import { createEmailChangeService } from './verification/email-change.service.js'
+import { createEmailVerificationRoutes } from './verification/email-verification.routes.js'
+import { createEmailVerificationService } from './verification/email-verification.service.js'
 import {
   createAdminResetDelivery,
   createEmailChangeDelivery,
+  createEmailVerificationDelivery,
   createResetDelivery,
 } from './verification/proof-delivery.service.js'
 
-export async function createAuthRuntime(
+const sessionCookies: SessionCookies = { readSessionCookie, readContextCookie, readGuestCookie }
+
+async function createAuthRuntime(
   connection: Connection,
   config: RuntimeConfig,
-  notifications: RegistrationNotifications,
+  notifications: IdentityNotifications,
+  guestOrders: GuestOrderAccess,
 ) {
   const models = createIdentityModels(connection)
   await verifyIdentityPersistence(connection, models)
@@ -44,13 +64,13 @@ export async function createAuthRuntime(
   const options = config.identity
   if (!options) throw new Error('Validated identity configuration required.')
   const sessions = createSessionService(connection, models, options.sessions)
+  const http: SessionHttp = { ...createSessionHttp(sessions), ...sessionCookies }
   const security = createBrowserSecurity(connection, models, sessions, options.browser)
   const quota = createAuthQuotaStore(connection)
   await quota.verify()
   const throttle = createAuthThrottle(quota, config.SESSION_SECRET)
-  const guestOrders = guestOrderAccess(connection)
   const guestSessions = options.guest
-    ? guestSessionService(
+    ? createGuestSessionService(
         connection,
         models,
         options.sessions,
@@ -62,7 +82,7 @@ export async function createAuthRuntime(
   const router = Router()
   // Separate bootstrap adapters select their audience from the registered route.
   router.use(
-    browserSecurityRoutes(security, sessions, guestSessions, (req, res, next) =>
+    createBrowserSecurityRoutes(security, sessions, guestSessions, (req, res, next) =>
       throttle.middleware(req.path.startsWith('/admin/') ? 'admin' : 'customer', 'bootstrap')(
         req,
         res,
@@ -72,8 +92,8 @@ export async function createAuthRuntime(
   )
   if (options.guest && guestSessions)
     router.use(
-      guestAccessRoutes(
-        guestAccessService(
+      createGuestAccessRoutes(
+        createGuestAccessService(
           models,
           security,
           guestSessions,
@@ -88,8 +108,8 @@ export async function createAuthRuntime(
     )
   if (config.CUSTOMER_AUTH_ENABLED)
     router.use(
-      customerRoutes(
-        createCustomerService(models, sessions, security, notifications),
+      createCustomerCredentialRoutes(
+        createCredentialService(models, sessions, security, notifications),
         security,
         sessions,
         throttle.middleware('customer', 'credentials'),
@@ -97,7 +117,7 @@ export async function createAuthRuntime(
     )
   if (options.emailVerification)
     router.use(
-      emailVerificationRoutes(
+      createEmailVerificationRoutes(
         createEmailVerificationService(
           connection,
           models,
@@ -111,7 +131,7 @@ export async function createAuthRuntime(
     )
   if (options.recovery)
     router.use(
-      recoveryRoutes(
+      createRecoveryRoutes(
         createRecoveryService(
           connection,
           models,
@@ -127,7 +147,7 @@ export async function createAuthRuntime(
     )
   if (options.emailChange)
     router.use(
-      emailChangeRoutes(
+      createEmailChangeRoutes(
         createEmailChangeService(connection, models, sessions, notifications, options.emailChange),
         security,
         sessions,
@@ -136,8 +156,8 @@ export async function createAuthRuntime(
     )
   if (options.adminRecovery)
     router.use(
-      adminRoutes(
-        createCustomerService(models, sessions, security, notifications, 'admin'),
+      createAdminCredentialRoutes(
+        createCredentialService(models, sessions, security, notifications, 'admin'),
         createRecoveryService(
           connection,
           models,
@@ -159,6 +179,7 @@ export async function createAuthRuntime(
     )
   return {
     router,
+    http,
     sessions,
     security,
     throttle,
@@ -174,18 +195,17 @@ export async function createAuthRuntime(
 }
 
 // Keep private model construction inside auth; callers receive narrow delivery capabilities.
-export function composeProofDeliveries(
+function composeProofDeliveries(
   connection: Connection,
   options: IdentityConfig | undefined,
+  guestOrders: GuestOrderAccess,
 ) {
   const models = createIdentityModels(connection)
   return {
     verify: options?.emailVerification
       ? createEmailVerificationDelivery(models, options.emailVerification)
       : undefined,
-    guest: options?.guest
-      ? guestProofDelivery(models, guestOrderAccess(connection), options.guest)
-      : undefined,
+    guest: options?.guest ? guestProofDelivery(models, guestOrders, options.guest) : undefined,
     reset: options?.recovery ? createResetDelivery(models, options.recovery) : undefined,
     emailChange: options?.emailChange
       ? createEmailChangeDelivery(models, options.emailChange)
@@ -195,3 +215,28 @@ export function composeProofDeliveries(
       : undefined,
   }
 }
+
+function customerAdministrationAccess(
+  connection: Connection,
+  admins: AdminAccountAccess,
+  clock: () => Date,
+  histories: CustomerHistories,
+  audit: AuditWriter,
+  lookup: AuditOperationReader,
+) {
+  const models = createIdentityModels(connection)
+  return {
+    customers: createAccountManagementService(
+      connection,
+      models,
+      admins,
+      audit,
+      lookup,
+      clock,
+      histories,
+    ),
+    registeredCustomers: customerReportAccess(connection, models),
+  }
+}
+
+export { composeProofDeliveries, createAuthRuntime, customerAdministrationAccess, sessionCookies }

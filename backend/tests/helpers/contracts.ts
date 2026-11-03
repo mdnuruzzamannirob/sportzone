@@ -5,7 +5,8 @@ import { createApp } from '../../src/app.js'
 
 // Run real scenario responses through the same owning DTOs that generate the client contracts.
 // A mismatch becomes a failed HTTP scenario without logging any response contents.
-export function createContractCheckedApp(options: Parameters<typeof createApp>[0] = {}) {
+
+function createContractCheckedApp(options: Parameters<typeof createApp>[0] = {}) {
   if (!options.apiRouter) return createApp(options)
   const checked = Router()
   checked.use((req, res, next) => {
@@ -39,3 +40,5 @@ export function createContractCheckedApp(options: Parameters<typeof createApp>[0
   checked.use(options.apiRouter)
   return createApp({ ...options, apiRouter: checked })
 }
+
+export { createContractCheckedApp }

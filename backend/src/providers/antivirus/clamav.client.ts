@@ -1,10 +1,10 @@
 import { createConnection } from 'node:net'
 import type { z } from 'zod'
-import { type optionsSchema, validateClamAvOptions } from './clamav.schema.js'
-export { validateClamAvOptions } from './clamav.schema.js'
+import type { MediaScanner } from '../../modules/media/media.public.js'
 import { assertOutsideTransaction } from '../../shared/database/transaction.js'
-import type { MediaScanner } from '../../modules/media/media.types.js'
-export function createClamAvScanner(input: z.infer<typeof optionsSchema>): MediaScanner {
+import { type optionsSchema, validateClamAvOptions } from './clamav.schema.js'
+
+function createClamAvScanner(input: z.infer<typeof optionsSchema>): MediaScanner {
   const settings = validateClamAvOptions(input)
   return async (bytes) => {
     assertOutsideTransaction()
@@ -55,7 +55,7 @@ export function createClamAvScanner(input: z.infer<typeof optionsSchema>): Media
 }
 
 // Read-only operator probe; callers must know the scanner's timezone when interpreting its date.
-export async function inspectClamAvVersion(input: z.infer<typeof optionsSchema>) {
+async function inspectClamAvVersion(input: z.infer<typeof optionsSchema>) {
   assertOutsideTransaction()
   const settings = validateClamAvOptions(input)
   return new Promise<string | undefined>((resolve) => {
@@ -81,3 +81,6 @@ export async function inspectClamAvVersion(input: z.infer<typeof optionsSchema>)
     })
   })
 }
+
+export { validateClamAvOptions } from './clamav.schema.js'
+export { createClamAvScanner, inspectClamAvVersion }

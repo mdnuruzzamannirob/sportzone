@@ -4,7 +4,7 @@ import type { IdentityModels } from '../auth.model.js'
 import type { SessionIdentity, SessionKind } from './session.service.js'
 
 // Service boundary: route guards are never proof that a later mutation is authorized.
-export async function authorizeAccount(
+async function authorizeAccount(
   models: IdentityModels,
   identity: SessionIdentity,
   kind: SessionKind,
@@ -37,7 +37,6 @@ export async function authorizeAccount(
     .session(transaction)
   if (!user) throw new ApiError('AUTH_REQUIRED')
   if (!fence) return user
-
   // Real writes serialize with logout and principal changes. Monotonic timestamps
   // prevent a same-clock no-op; neither write extends the credential lifetime.
   const touch = (updatedAt: Date) => new Date(Math.max(now.getTime(), updatedAt.getTime() + 1))
@@ -66,3 +65,5 @@ export async function authorizeAccount(
   user.updatedAt = updatedAt
   return user
 }
+
+export { authorizeAccount }

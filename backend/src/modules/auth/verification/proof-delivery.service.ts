@@ -1,7 +1,9 @@
-import type { Types } from 'mongoose'
+import { Types } from 'mongoose'
 import type { IdentityModels } from '../auth.model.js'
-import { proofHash, type ProofEnvelope } from './proof.crypto.js'
 import type { RecoveryOptions } from '../recovery/password-recovery.service.js'
+import { createProofCodec, type ProofEnvelope, proofHash } from './proof.crypto.js'
+
+type ResetDelivery = ReturnType<typeof createResetDelivery>
 
 function createDelivery(
   models: IdentityModels,
@@ -10,6 +12,7 @@ function createDelivery(
   purpose: 'password_reset' | 'email_change' | 'email_verify',
   kind: 'customer' | 'admin' = 'customer',
 ) {
+  const encryption = createProofCodec(options.encryption)
   if (
     new URL(options.storefrontOrigin).protocol !== 'https:' ||
     new URL(options.storefrontOrigin).origin !== options.storefrontOrigin
@@ -42,21 +45,21 @@ function createDelivery(
         )
     },
     async message(claim: {
-      id: Types.ObjectId
-      userId: Types.ObjectId
-      challengeId?: Types.ObjectId | null | undefined
+      id: string
+      userId: string
+      challengeId?: string | null | undefined
       recipient: string
     }) {
       if (!claim.challengeId) throw new Error('Proof delivery unavailable.')
       const challenge = await models.challenges
         .findOne({
-          _id: claim.challengeId,
+          _id: new Types.ObjectId(claim.challengeId),
           purpose,
-          userId: claim.userId,
+          userId: new Types.ObjectId(claim.userId),
           ...(purpose !== 'email_change'
             ? { emailNormalized: claim.recipient }
             : { targetEmailNormalized: claim.recipient }),
-          deliveryNotificationId: claim.id,
+          deliveryNotificationId: new Types.ObjectId(claim.id),
           expiresAt: { $gt: clock() },
           consumedAt: { $exists: false },
           invalidatedAt: { $exists: false },
@@ -85,14 +88,14 @@ function createDelivery(
         ciphertext: Buffer.from(challenge.deliveryEnvelope.ciphertext),
         authTag: Buffer.from(challenge.deliveryEnvelope.authTag),
       }
-      const proof = options.encryption.decrypt(envelope, binding)
+      const proof = encryption.decrypt(envelope, binding)
       if (
         proofHash(proof, kind === 'admin' ? 'admin_password_reset' : purpose) !==
         challenge.secretHash
       )
         throw new Error('Proof delivery unavailable.')
       const eligible = await models.users.exists({
-        _id: claim.userId,
+        _id: new Types.ObjectId(claim.userId),
         role: kind,
         status: 'active',
         emailNormalized: challenge.emailNormalized,
@@ -114,26 +117,35 @@ function createDelivery(
     },
   }
 }
-export const createResetDelivery = (
+
+const createResetDelivery = (
   models: IdentityModels,
   options: RecoveryOptions,
   clock: () => Date = () => new Date(),
 ) => createDelivery(models, options, clock, 'password_reset')
-export const createEmailChangeDelivery = (
+
+const createEmailChangeDelivery = (
   models: IdentityModels,
   options: RecoveryOptions,
   clock: () => Date = () => new Date(),
 ) => createDelivery(models, options, clock, 'email_change')
-export type ResetDelivery = ReturnType<typeof createResetDelivery>
 
-export const createAdminResetDelivery = (
+const createAdminResetDelivery = (
   models: IdentityModels,
   options: RecoveryOptions,
   clock: () => Date = () => new Date(),
 ) => createDelivery(models, options, clock, 'password_reset', 'admin')
 
-export const createEmailVerificationDelivery = (
+const createEmailVerificationDelivery = (
   models: IdentityModels,
   options: RecoveryOptions,
   clock: () => Date = () => new Date(),
 ) => createDelivery(models, options, clock, 'email_verify')
+
+export type { ResetDelivery }
+export {
+  createAdminResetDelivery,
+  createEmailChangeDelivery,
+  createEmailVerificationDelivery,
+  createResetDelivery,
+}

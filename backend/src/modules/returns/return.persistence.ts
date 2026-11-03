@@ -1,32 +1,38 @@
-import type { Connection } from 'mongoose'
 import { isDeepStrictEqual } from 'node:util'
+import type { Connection } from 'mongoose'
 import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 import { returnModel } from './return.model.js'
+
 const oid = { bsonType: 'objectId' },
   date = { bsonType: 'date' }
+
 const integer = {
   bsonType: ['int', 'long', 'double'],
   minimum: 0,
   maximum: Number.MAX_SAFE_INTEGER,
   multipleOf: 1,
 }
+
 const text = (maxLength: number) => ({
   bsonType: 'string',
   minLength: 1,
   maxLength,
 })
+
 const object = (properties: Record<string, unknown>, required: string[]) => ({
   bsonType: 'object',
   additionalProperties: false,
   properties,
   required,
 })
+
 const ordinals = {
   bsonType: 'array',
   maxItems: 50,
   uniqueItems: true,
   items: { ...integer, minimum: 1, maximum: 50 },
 }
+
 function validator(lifecycle: boolean, physical = false, batches = false) {
   return {
     $expr: {
@@ -362,11 +368,16 @@ function validator(lifecycle: boolean, physical = false, batches = false) {
     ),
   }
 }
-export const foundationReturnValidator = validator(false)
-export const reviewReturnValidator = validator(true)
-export const singleReceiptReturnValidator = validator(true, true)
-export const returnValidator = validator(true, true, true)
-export async function verifyReturnPersistence(connection: Connection) {
+
+const foundationReturnValidator = validator(false)
+
+const reviewReturnValidator = validator(true)
+
+const singleReceiptReturnValidator = validator(true, true)
+
+const returnValidator = validator(true, true, true)
+
+async function verifyReturnPersistence(connection: Connection) {
   const row = await connection.db
     ?.listCollections({ name: 'returnRequests' }, { nameOnly: false })
     .next()
@@ -379,7 +390,8 @@ export async function verifyReturnPersistence(connection: Connection) {
     throw new Error('Return persistence requires reviewed bootstrap')
   await verifyDeclaredIndexes(returnModel(connection))
 }
-export async function initializeReturnPersistence(connection: Connection) {
+
+async function initializeReturnPersistence(connection: Connection) {
   if (!connection.db) throw new Error('Database unavailable')
   if (!(await connection.db.listCollections({ name: 'returnRequests' }).hasNext()))
     await connection.db.createCollection('returnRequests', {
@@ -401,7 +413,7 @@ export async function initializeReturnPersistence(connection: Connection) {
 }
 
 // Explicit local/test script owns this additive upgrade; ordinary startup never repairs drift.
-export async function upgradeReturnLifecyclePersistence(connection: Connection) {
+async function upgradeReturnLifecyclePersistence(connection: Connection) {
   if (!connection.db) throw new Error('Database unavailable')
   const row = await connection.db
     .listCollections({ name: 'returnRequests' }, { nameOnly: false })
@@ -426,4 +438,14 @@ export async function upgradeReturnLifecyclePersistence(connection: Connection) 
     validationAction: 'error',
   })
   await verifyReturnPersistence(connection)
+}
+
+export {
+  foundationReturnValidator,
+  initializeReturnPersistence,
+  returnValidator,
+  reviewReturnValidator,
+  singleReceiptReturnValidator,
+  upgradeReturnLifecyclePersistence,
+  verifyReturnPersistence,
 }

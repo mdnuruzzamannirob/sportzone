@@ -1,9 +1,10 @@
-import { localOperations } from './local-operations.js'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { z } from 'zod'
 import { errorDefinitions } from '../src/shared/errors/app-error.js'
+import { localOperations } from './local-operations.js'
+
 import {
   assertOperationParity,
   type Operation,
@@ -15,7 +16,7 @@ import {
 type Schema = Record<string, unknown>
 // Never replace an unsupported schema with {}. Wire inputs use Zod's input mode;
 // runtime refinements/normalization remain authoritative and are documented explicitly.
-export function wireSchema(schema: z.core.$ZodType): Schema {
+function wireSchema(schema: z.core.$ZodType): Schema {
   if (schema instanceof z.ZodUnion) {
     const options = schema.options.filter((item) => !(item instanceof z.ZodUndefined))
     if (options.length === 1 && options[0]) return wireSchema(options[0])
@@ -227,7 +228,7 @@ function openOperation(op: Operation) {
   }
 }
 
-export function generateArtifacts(apiMarkdown: string) {
+function generateArtifacts(apiMarkdown: string) {
   assertOperationParity(operations)
   const matrix = apiMarkdown.split('### D.3 Endpoint response/status/error matrix')[1]
   if (!matrix) throw new Error('Missing canonical API operation matrix')
@@ -424,10 +425,10 @@ export function generateArtifacts(apiMarkdown: string) {
     },
   }
 }
-export function serialize(value: unknown) {
+function serialize(value: unknown) {
   return `${JSON.stringify(value, null, 2)}\n`
 }
-export function writeArtifacts(workspace: string, check: boolean) {
+function writeArtifacts(workspace: string, check: boolean) {
   const artifacts = generateArtifacts(readFileSync(resolve(workspace, '../docs/API.md'), 'utf8'))
   if (!check) mkdirSync(resolve(workspace, 'api'), { recursive: true })
   for (const [name, artifact] of Object.entries(artifacts)) {
@@ -448,3 +449,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     `API artifacts ${args.length ? 'verified' : 'generated'}: ${writeArtifacts(process.cwd(), args.length === 1)}`,
   )
 }
+
+export { generateArtifacts, serialize, wireSchema, writeArtifacts }

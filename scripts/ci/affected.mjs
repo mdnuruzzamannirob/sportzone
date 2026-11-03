@@ -40,9 +40,19 @@ export function containerInputsChanged(paths) {
     'backend/scripts/staging-catalog.mjs',
     'backend/scripts/notification-worker.mjs',
     'backend/scripts/expire-reservations.mjs',
+    'backend/scripts/reconcile-payments.mjs',
+    'backend/scripts/reconcile-refunds.mjs',
+    'backend/scripts/media-maintenance.mjs',
   ])
   return (
-    !paths.length || paths.some((path) => path.startsWith('backend/Dockerfile') || inputs.has(path))
+    !paths.length ||
+    paths.some(
+      (path) =>
+        path.startsWith('backend/Dockerfile') ||
+        path.startsWith('backend/src/') ||
+        path.startsWith('backend/scripts/lib/') ||
+        inputs.has(path),
+    )
   )
 }
 

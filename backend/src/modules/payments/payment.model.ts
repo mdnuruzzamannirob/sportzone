@@ -1,26 +1,7 @@
-import { Schema, type Connection, type Types } from 'mongoose'
+import { type Connection, Schema, type Types } from 'mongoose'
 import { integerField, mutableSchemaOptions } from '../../shared/database/schema.js'
-export const paymentStates = [
-  'pending',
-  'paid',
-  'failed',
-  'cancelled',
-  'partially_refunded',
-  'refunded',
-] as const
-export const paymentAmounts = [
-  'verifiedCollectedPoisha',
-  'merchandiseFundedPoisha',
-  'correctionCollectedPoisha',
-  'unassignedCollectedPoisha',
-  'merchandiseRefundHeldPoisha',
-  'merchandiseRefundCompletedPoisha',
-  'correctionRefundHeldPoisha',
-  'correctionRefundCompletedPoisha',
-  'deliveryRefundHeldPoisha',
-  'deliveryRefundCompletedPoisha',
-] as const
-export type Payment = {
+
+type Payment = {
   orderId: Types.ObjectId
   method: 'cod' | 'online'
   expectedPoisha: number
@@ -32,9 +13,33 @@ export type Payment = {
   createdAt?: Date
   updatedAt?: Date
 } & Record<(typeof paymentAmounts)[number], number>
+
+const paymentStates = [
+  'pending',
+  'paid',
+  'failed',
+  'cancelled',
+  'partially_refunded',
+  'refunded',
+] as const
+
+const paymentAmounts = [
+  'verifiedCollectedPoisha',
+  'merchandiseFundedPoisha',
+  'correctionCollectedPoisha',
+  'unassignedCollectedPoisha',
+  'merchandiseRefundHeldPoisha',
+  'merchandiseRefundCompletedPoisha',
+  'correctionRefundHeldPoisha',
+  'correctionRefundCompletedPoisha',
+  'deliveryRefundHeldPoisha',
+  'deliveryRefundCompletedPoisha',
+] as const
+
 const amounts = Object.fromEntries(
   paymentAmounts.map((name) => [name, { ...integerField(), required: true }]),
 )
+
 const schema = new Schema<Payment>(
   {
     orderId: { type: Schema.Types.ObjectId, required: true, immutable: true },
@@ -58,10 +63,16 @@ const schema = new Schema<Payment>(
   },
   mutableSchemaOptions,
 )
+
 schema.index({ orderId: 1 }, { unique: true, name: 'payment_order_unique' })
+
 schema.index({ paymentStatus: 1, updatedAt: -1 }, { name: 'payment_status_updated' })
-export function paymentModel(connection: Connection) {
+
+function paymentModel(connection: Connection) {
   return connection.models.Payment
     ? connection.model<Payment>('Payment')
     : connection.model<Payment>('Payment', schema, 'payments')
 }
+
+export type { Payment }
+export { paymentAmounts, paymentModel, paymentStates }

@@ -1,9 +1,10 @@
-import { loadEnvironment } from '../dist/config/env.js'
 import { openDatabase } from '../dist/config/database.js'
+import { loadEnvironment } from '../dist/config/env.js'
 import {
   initializeReturnPersistence,
   upgradeReturnLifecyclePersistence,
 } from '../dist/modules/returns/return.persistence.js'
+
 let connection
 try {
   const config = loadEnvironment(process.env)

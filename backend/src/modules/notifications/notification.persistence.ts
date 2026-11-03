@@ -1,8 +1,8 @@
-import type { Connection } from 'mongoose'
 import { isDeepStrictEqual } from 'node:util'
+import type { Connection } from 'mongoose'
 import type { NotificationModel } from './notification.model.js'
 
-export function createNotificationPersistence(connection: Connection, model: NotificationModel) {
+function createNotificationPersistence(connection: Connection, model: NotificationModel) {
   return {
     // Explicit additive bootstrap, never automatic HTTP startup or deletion.
     async initialize() {
@@ -85,7 +85,7 @@ export function createNotificationPersistence(connection: Connection, model: Not
   }
 }
 
-export const legacyRegistrationNotificationValidator = {
+const legacyRegistrationNotificationValidator = {
   $jsonSchema: {
     bsonType: 'object',
     additionalProperties: false,
@@ -138,7 +138,7 @@ export const legacyRegistrationNotificationValidator = {
 }
 
 // Immutable known predecessor above; extend only the current validator for this additive migration.
-export const foundationNotificationValidator = {
+const foundationNotificationValidator = {
   $jsonSchema: {
     ...legacyRegistrationNotificationValidator.$jsonSchema,
     properties: {
@@ -151,7 +151,7 @@ export const foundationNotificationValidator = {
 }
 
 // P03-010 additive event/payload contract; known foundation predecessor remains immutable.
-export const passwordResetNotificationValidator = {
+const passwordResetNotificationValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -186,7 +186,7 @@ export const passwordResetNotificationValidator = {
 }
 
 // Additive P03-011 contract; preserve exact known predecessor validators above.
-export const emailChangeNotificationValidator = {
+const emailChangeNotificationValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -230,7 +230,7 @@ export const emailChangeNotificationValidator = {
 }
 
 // P03-012 adds an admin-specific reset template without changing challenge purpose.
-export const adminResetNotificationValidator = {
+const adminResetNotificationValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -281,7 +281,7 @@ export const adminResetNotificationValidator = {
 }
 
 // Additive checkout receipt event; retain every exact known predecessor for explicit migration.
-export const orderReceivedNotificationValidator = {
+const orderReceivedNotificationValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -330,7 +330,7 @@ export const orderReceivedNotificationValidator = {
 }
 
 // Guest proofs retain challenge-only payloads, with order scope instead of account scope.
-export const guestNotificationValidator = {
+const guestNotificationValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -391,7 +391,8 @@ const paymentPayload = {
     },
   },
 }
-export const paymentNotificationValidator = {
+
+const paymentNotificationValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -458,7 +459,7 @@ export const paymentNotificationValidator = {
 }
 
 // Commerce expansion preserves the exact payment predecessor and all proof branch restrictions.
-export const commerceNotificationValidator = {
+const commerceNotificationValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -544,7 +545,7 @@ export const commerceNotificationValidator = {
 }
 
 // Additive private return events retain the exact prior commerce validator as a predecessor.
-export const returnNotificationValidator = {
+const returnNotificationValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -644,7 +645,7 @@ export const returnNotificationValidator = {
 } as const
 
 // Additive successor; exact prior return schema remains an accepted migration predecessor.
-export const refundNotificationValidator = {
+const refundNotificationValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -710,7 +711,7 @@ export const refundNotificationValidator = {
 }
 
 // Exact additive proof-notification successor; historical event shapes stay unchanged.
-export const registrationNotificationValidator = {
+const registrationNotificationValidator = {
   $or: [
     refundNotificationValidator,
     {
@@ -735,4 +736,20 @@ export const registrationNotificationValidator = {
       ],
     },
   ],
+}
+
+export {
+  adminResetNotificationValidator,
+  commerceNotificationValidator,
+  createNotificationPersistence,
+  emailChangeNotificationValidator,
+  foundationNotificationValidator,
+  guestNotificationValidator,
+  legacyRegistrationNotificationValidator,
+  orderReceivedNotificationValidator,
+  passwordResetNotificationValidator,
+  paymentNotificationValidator,
+  refundNotificationValidator,
+  registrationNotificationValidator,
+  returnNotificationValidator,
 }

@@ -1,7 +1,8 @@
-import type { Connection } from 'mongoose'
 import { isDeepStrictEqual } from 'node:util'
+import type { Connection } from 'mongoose'
 import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 import { refundModel } from './refund.model.js'
+
 const id = { bsonType: 'objectId' },
   integer = {
     bsonType: ['int', 'long', 'double'],
@@ -9,6 +10,7 @@ const id = { bsonType: 'objectId' },
     maximum: Number.MAX_SAFE_INTEGER,
     multipleOf: 1,
   }
+
 // Canonical refunds, initially only the nonpaying correction-intent capability. Full approval/payout
 // remains owned by refunds. An unreserved review intent is not a reservation or permission to pay.
 const refundShape = {
@@ -55,11 +57,15 @@ const refundShape = {
     },
   },
 }
-export const precedingRefundValidator = {
+
+const precedingRefundValidator = {
   $and: [refundShape, { $expr: { $eq: ['$amountPoisha', '$correctionAmountPoisha'] } }],
 }
+
 const text = (maxLength: number) => ({ bsonType: 'string', minLength: 1, maxLength })
+
 const date = { bsonType: 'date' }
+
 const currentShape = {
   $jsonSchema: {
     ...refundShape.$jsonSchema,
@@ -142,7 +148,8 @@ const currentShape = {
     },
   },
 }
-export const refundValidator = {
+
+const refundValidator = {
   $and: [
     currentShape,
     {
@@ -282,7 +289,8 @@ export const refundValidator = {
     },
   ],
 }
-export async function verifyCorrectionPersistence(connection: Connection) {
+
+async function verifyCorrectionPersistence(connection: Connection) {
   const collection = await connection.db
     ?.listCollections({ name: 'refunds' }, { nameOnly: false })
     .next()
@@ -301,7 +309,8 @@ export async function verifyCorrectionPersistence(connection: Connection) {
   )
     throw new Error('Refund intents cannot expire')
 }
-export async function initializeCorrectionPersistence(connection: Connection) {
+
+async function initializeCorrectionPersistence(connection: Connection) {
   if (!connection.db) throw new Error('Database unavailable')
   if (!(await connection.db.listCollections({ name: 'refunds' }).hasNext()))
     await connection.db.createCollection('refunds', {
@@ -319,7 +328,7 @@ export async function initializeCorrectionPersistence(connection: Connection) {
 }
 
 // Explicit additive migration only. Existing immutable correction intents remain byte-for-byte.
-export async function migrateRefundPersistence(connection: Connection) {
+async function migrateRefundPersistence(connection: Connection) {
   if (!connection.db) throw new Error('Database unavailable')
   const row = await connection.db.listCollections({ name: 'refunds' }, { nameOnly: false }).next()
   if (!row) return initializeCorrectionPersistence(connection)
@@ -343,4 +352,12 @@ export async function migrateRefundPersistence(connection: Connection) {
     validationAction: 'error',
   })
   await verifyCorrectionPersistence(connection)
+}
+
+export {
+  initializeCorrectionPersistence,
+  migrateRefundPersistence,
+  precedingRefundValidator,
+  refundValidator,
+  verifyCorrectionPersistence,
 }

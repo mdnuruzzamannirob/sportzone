@@ -26,6 +26,7 @@ COPY --from=production-dependencies /app/backend/package.json ./package.json
 COPY --from=production-dependencies /app/backend/node_modules ./node_modules
 COPY --from=build /app/backend/dist ./dist
 COPY backend/scripts/notification-worker.mjs backend/scripts/expire-reservations.mjs backend/scripts/reconcile-payments.mjs backend/scripts/reconcile-refunds.mjs backend/scripts/media-maintenance.mjs backend/scripts/container-health.mjs backend/scripts/staging-inventory.mjs backend/scripts/staging-catalog.mjs ./scripts/
+COPY backend/scripts/lib ./scripts/lib
 USER node
 EXPOSE 4000
 STOPSIGNAL SIGTERM

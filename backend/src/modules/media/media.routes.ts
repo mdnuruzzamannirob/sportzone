@@ -1,18 +1,17 @@
-import { Router, type RequestHandler } from 'express'
-import type { BrowserSecurity } from '../auth/sessions/browser-security.service.js'
-import { createSessionHttp } from '../auth/sessions/session.http.js'
-import type { SessionService } from '../auth/sessions/session.service.js'
-import type { MediaService } from './media.service.js'
+import { type RequestHandler, Router } from 'express'
+import type { BrowserSecurity, SessionHttp } from '../auth/auth.public.js'
 import { createMediaController } from './media.controller.js'
-export function mediaRoutes(
+import type { MediaService } from './media.service.js'
+
+function createMediaRoutes(
   service: MediaService,
   security: BrowserSecurity,
-  sessions: SessionService,
+  sessionHttp: SessionHttp,
   maxBytes: number,
   throttle: RequestHandler,
 ) {
   const router = Router(),
-    http = createSessionHttp(sessions)
+    http = sessionHttp
   const paths = ['/admin/media/uploads', '/admin/media/:assetId']
   for (const path of paths) router.options(path, security.cors('admin'))
   router.use(
@@ -22,8 +21,10 @@ export function mediaRoutes(
     http.require('admin'),
     throttle,
   )
-  const controller = createMediaController(service, maxBytes)
+  const controller = createMediaController(service, maxBytes, sessionHttp)
   router.post('/admin/media/uploads', controller.upload)
   router.delete('/admin/media/:assetId', controller.remove)
   return router
 }
+
+export { createMediaRoutes }

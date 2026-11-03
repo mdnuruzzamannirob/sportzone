@@ -1,14 +1,15 @@
-import { z } from 'zod'
-import { readProtectedFile } from '../shared/protected-file.js'
-import { ConfigurationError } from '../shared/errors/configuration-error.js'
-import { ApiError } from '../shared/errors/app-error.js'
 import { createHash } from 'node:crypto'
+import { z } from 'zod'
 import { exceptionResolution } from '../modules/orders/delivery-exception.schema.js'
-import type { deliveryExceptionService } from '../modules/orders/delivery-exception.service.js'
-export type OperationsOptions = {
-  verifyDisposition?: Parameters<typeof deliveryExceptionService>[4]
+import type { DeliveryDispositionVerifier } from '../modules/orders/order.public.js'
+import { ApiError } from '../shared/errors/app-error.js'
+import { ConfigurationError } from '../shared/errors/configuration-error.js'
+import { readProtectedFile } from '../shared/protected-file.js'
+
+type OperationsOptions = {
+  verifyDisposition?: DeliveryDispositionVerifier
 }
-export function loadOperationsOptions(env: NodeJS.ProcessEnv): OperationsOptions | undefined {
+function loadOperationsOptions(env: NodeJS.ProcessEnv): OperationsOptions | undefined {
   if (env.BACKEND_OPERATIONS_ENABLED === undefined || env.BACKEND_OPERATIONS_ENABLED === 'false')
     return undefined
   if (
@@ -52,3 +53,6 @@ export function loadOperationsOptions(env: NodeJS.ProcessEnv): OperationsOptions
   }
   return { verifyDisposition }
 }
+
+export type { OperationsOptions }
+export { loadOperationsOptions }

@@ -4,23 +4,24 @@ import type {
   MediaProvider,
   ProviderAsset,
 } from '../../src/modules/media/media.types.js'
-export const mediaPolicy: MediaPolicy = {
+
+const mediaPolicy: MediaPolicy = {
   maxBytes: 1024,
   maxPixels: 10000,
   allowedFormats: ['png', 'jpg', 'webp'],
   temporaryTtlSeconds: 60,
   privateUrlTtlSeconds: 30,
 }
-export const png = Buffer.from(
+const png = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/a9sAAAAASUVORK5CYII=',
   'base64',
 )
-export const imageFile = (): MediaFile => ({
+const imageFile = (): MediaFile => ({
   name: 'synthetic.png',
   mimeType: 'image/png',
   bytes: Uint8Array.from(png),
 })
-export function fakeMediaProvider() {
+function fakeMediaProvider() {
   const assets = new Map<string, ProviderAsset>()
   const state = {
     uploads: 0,
@@ -63,3 +64,5 @@ export function fakeMediaProvider() {
   }
   return { assets, state, adapter }
 }
+
+export { fakeMediaProvider, imageFile, mediaPolicy, png }

@@ -70,7 +70,9 @@ export function workspacePlan(root, selected = names) {
       }
       if (
         !Array.isArray(entry.checks) ||
-        !baseChecks.every((c) => entry.checks.includes(c)) ||
+        !baseChecks.every((c) =>
+          entry.checks.includes(c === 'lint' && pkg.scripts?.['lint:check'] ? 'lint:check' : c),
+        ) ||
         new Set(entry.checks).size !== entry.checks.length
       )
         throw new Error(`${name}: missing required CI checks`)

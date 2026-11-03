@@ -3,7 +3,7 @@ import { open } from 'node:fs/promises'
 import { isAbsolute } from 'node:path'
 
 // Operator-controlled files only. Paths must come from protected configuration, never requests.
-export async function readProtectedFile(path: string, limit: number) {
+async function readProtectedFile(path: string, limit: number) {
   if (!isAbsolute(path)) throw new Error('Invalid protected path')
   const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW)
   try {
@@ -30,3 +30,5 @@ export async function readProtectedFile(path: string, limit: number) {
     await handle.close()
   }
 }
+
+export { readProtectedFile }

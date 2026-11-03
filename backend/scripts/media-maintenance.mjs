@@ -1,10 +1,11 @@
-import { mediaMaintenanceDeletionAllowed } from '../dist/modules/media/cleanup.service.js'
+import { openDatabase } from '../dist/config/database.js'
 import { loadEnvironment } from '../dist/config/env.js'
 import { loadMediaMaintenanceConfiguration } from '../dist/config/media.js'
-import { openDatabase } from '../dist/config/database.js'
+import { mediaMaintenanceJob } from '../dist/jobs/media-maintenance.job.js'
+import { mediaMaintenanceDeletionAllowed } from '../dist/modules/media/cleanup.service.js'
 import { createMediaService } from '../dist/modules/media/media.service.js'
 import { createCloudinaryAdapter } from '../dist/providers/cloudinary/cloudinary.client.js'
-import { mediaMaintenanceJob } from '../dist/jobs/media-maintenance.job.js'
+
 let connection
 try {
   const config = loadEnvironment(process.env),

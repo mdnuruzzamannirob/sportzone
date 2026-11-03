@@ -1,25 +1,27 @@
 import { randomBytes } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
 import { Types } from 'mongoose'
-import type { IdentityModels } from '../auth.model.js'
-import type { BrowserSecurity } from '../sessions/browser-security.service.js'
-import type { RegistrationNotifications } from '../../notifications/notification.service.js'
-import type { guestOrderAccess } from '../../orders/order.service.js'
-import type { GuestSessions } from './guest-session.service.js'
 import type { GuestAccessOptions } from '../../../config/security.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
-import { proofHash } from '../verification/proof.crypto.js'
+import type { IdentityNotifications } from '../../notifications/notification.public.js'
+import type { GuestOrderAccess } from '../../orders/order.public.js'
+import type { IdentityModels } from '../auth.model.js'
+import type { BrowserSecurity } from '../sessions/browser-security.service.js'
+import { createProofCodec, proofHash } from '../verification/proof.crypto.js'
 import { guestChallengeInput, guestExchangeInput } from './guest-access.schema.js'
-export function guestAccessService(
+import type { GuestSessions } from './guest-session.service.js'
+
+function createGuestAccessService(
   models: IdentityModels,
   security: BrowserSecurity,
   sessions: GuestSessions,
-  orders: ReturnType<typeof guestOrderAccess>,
-  notifications: RegistrationNotifications,
+  orders: Pick<GuestOrderAccess, 'verifyPersistence' | 'lookup' | 'issue' | 'consume'>,
+  notifications: Pick<IdentityNotifications, 'verifyIndexes' | 'enqueueGuestAccess'>,
   options: GuestAccessOptions,
   clock: () => Date = () => new Date(),
 ) {
+  const encryption = createProofCodec(options.encryption)
   return {
     async request(raw: unknown, context: string, csrf: string) {
       const input = parseInput(guestChallengeInput, raw),
@@ -66,7 +68,7 @@ export function guestAccessService(
             deliveryNotificationId: notificationId,
             createdAt: now,
             updatedAt: now,
-            deliveryEnvelope: options.encryption.encrypt(proof, {
+            deliveryEnvelope: encryption.encrypt(proof, {
               id: id.toHexString(),
               purpose: 'guest_order_access',
               orderId: order.id,
@@ -77,9 +79,9 @@ export function guestAccessService(
           }).save({ session })
           await notifications.enqueueGuestAccess(
             {
-              id: notificationId,
-              challengeId: id,
-              orderId: new Types.ObjectId(order.id),
+              id: notificationId.toHexString(),
+              challengeId: id.toHexString(),
+              orderId: order.id,
               email: order.email,
             },
             session,
@@ -134,3 +136,5 @@ export function guestAccessService(
     },
   }
 }
+
+export { createGuestAccessService }

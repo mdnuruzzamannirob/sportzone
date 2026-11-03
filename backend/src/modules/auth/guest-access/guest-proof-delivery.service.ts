@@ -1,14 +1,18 @@
-import type { Types } from 'mongoose'
-import type { IdentityModels } from '../auth.model.js'
+import { Types } from 'mongoose'
 import type { GuestAccessOptions } from '../../../config/security.js'
-import type { guestOrderAccess } from '../../orders/order.service.js'
-import { proofHash, type ProofEnvelope } from '../verification/proof.crypto.js'
-export function guestProofDelivery(
+import type { GuestOrderAccess } from '../../orders/order.public.js'
+import type { IdentityModels } from '../auth.model.js'
+import { createProofCodec, type ProofEnvelope, proofHash } from '../verification/proof.crypto.js'
+
+type GuestProofDelivery = ReturnType<typeof guestProofDelivery>
+
+function guestProofDelivery(
   models: IdentityModels,
-  orders: ReturnType<typeof guestOrderAccess>,
+  orders: Pick<GuestOrderAccess, 'verify'>,
   options: GuestAccessOptions,
   clock: () => Date = () => new Date(),
 ) {
+  const encryption = createProofCodec(options.encryption)
   if (
     new URL(options.storefrontOrigin).protocol !== 'https:' ||
     new URL(options.storefrontOrigin).origin !== options.storefrontOrigin
@@ -42,19 +46,19 @@ export function guestProofDelivery(
         )
     },
     async message(claim: {
-      id: Types.ObjectId
-      orderId?: Types.ObjectId | null | undefined
-      challengeId?: Types.ObjectId | null | undefined
+      id: string
+      orderId?: string | null | undefined
+      challengeId?: string | null | undefined
       recipient: string
     }) {
       if (!claim.orderId || !claim.challengeId) throw new Error('Guest proof delivery unavailable')
       const challenge = await models.challenges
         .findOne({
-          _id: claim.challengeId,
+          _id: new Types.ObjectId(claim.challengeId),
           purpose: 'guest_order_access',
-          orderId: claim.orderId,
+          orderId: new Types.ObjectId(claim.orderId),
           emailNormalized: claim.recipient,
-          deliveryNotificationId: claim.id,
+          deliveryNotificationId: new Types.ObjectId(claim.id),
           expiresAt: { $gt: clock() },
           consumedAt: { $exists: false },
           invalidatedAt: { $exists: false },
@@ -70,7 +74,7 @@ export function guestProofDelivery(
         ciphertext: Buffer.from(challenge.deliveryEnvelope.ciphertext),
         authTag: Buffer.from(challenge.deliveryEnvelope.authTag),
       }
-      const proof = options.encryption.decrypt(envelope, {
+      const proof = encryption.decrypt(envelope, {
         id: challenge._id.toHexString(),
         purpose: 'guest_order_access',
         orderId: challenge.orderId.toHexString(),
@@ -97,4 +101,6 @@ export function guestProofDelivery(
     },
   }
 }
-export type GuestProofDelivery = ReturnType<typeof guestProofDelivery>
+
+export type { GuestProofDelivery }
+export { guestProofDelivery }

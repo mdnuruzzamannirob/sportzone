@@ -1,7 +1,7 @@
 import { isDeepStrictEqual } from 'node:util'
 import type { Connection } from 'mongoose'
-import { cartModel } from './cart.model.js'
 import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../shared/database/indexes.js'
+import { cartModel } from './cart.model.js'
 
 const integer = {
   bsonType: ['int', 'long', 'double'],
@@ -9,7 +9,8 @@ const integer = {
   maximum: Number.MAX_SAFE_INTEGER,
   multipleOf: 1,
 }
-export const cartValidator = {
+
+const cartValidator = {
   $jsonSchema: {
     bsonType: 'object',
     additionalProperties: false,
@@ -38,6 +39,7 @@ export const cartValidator = {
   },
   $expr: { $eq: [{ $size: '$items' }, { $size: { $setUnion: ['$items.variantId', []] } }] },
 }
+
 async function verifyOptions(connection: Connection) {
   const collection = await connection.db
     ?.listCollections({ name: 'carts' }, { nameOnly: false })
@@ -50,7 +52,8 @@ async function verifyOptions(connection: Connection) {
   )
     throw new Error('Cart persistence requires reviewed bootstrap/migration.')
 }
-export async function initializeCartPersistence(connection: Connection) {
+
+async function initializeCartPersistence(connection: Connection) {
   if (!connection.db) throw new Error('Database unavailable')
   const exists = await connection.db.listCollections({ name: 'carts' }).hasNext()
   if (!exists)
@@ -62,7 +65,10 @@ export async function initializeCartPersistence(connection: Connection) {
   await verifyOptions(connection)
   await createDeclaredIndexes(cartModel(connection))
 }
-export async function verifyCartPersistence(connection: Connection) {
+
+async function verifyCartPersistence(connection: Connection) {
   await verifyOptions(connection)
   await verifyDeclaredIndexes(cartModel(connection))
 }
+
+export { cartValidator, initializeCartPersistence, verifyCartPersistence }

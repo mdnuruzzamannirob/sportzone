@@ -1,7 +1,7 @@
-import { Schema, Types, type SchemaOptions } from 'mongoose'
+import { Schema, type SchemaOptions, Types } from 'mongoose'
 
 // Explicit business revisions belong to each owning schema, not Mongoose __v.
-export const mutableSchemaOptions = {
+const mutableSchemaOptions = {
   strict: 'throw',
   strictQuery: 'throw',
   timestamps: true,
@@ -12,7 +12,7 @@ export const mutableSchemaOptions = {
 } as const satisfies SchemaOptions
 
 // API validation still owns shape/normalization. Persistence rejects numeric coercion.
-export function integerField(min = 0) {
+function integerField(min = 0) {
   if (!Number.isSafeInteger(min)) throw new TypeError('Invalid integer bound')
   return {
     type: Number,
@@ -30,7 +30,7 @@ export function integerField(min = 0) {
 }
 
 // Nullable references must be explicitly declared by the owning model instead.
-export function optionalObjectIdField() {
+function optionalObjectIdField() {
   return {
     type: Schema.Types.ObjectId,
     default: undefined,
@@ -40,3 +40,5 @@ export function optionalObjectIdField() {
     },
   }
 }
+
+export { integerField, mutableSchemaOptions, optionalObjectIdField }

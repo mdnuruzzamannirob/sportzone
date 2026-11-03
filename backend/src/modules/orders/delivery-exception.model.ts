@@ -1,8 +1,12 @@
-import { Schema, type Connection, type InferSchemaType } from 'mongoose'
+import { type Connection, type InferSchemaType, Schema } from 'mongoose'
 import { integerField, mutableSchemaOptions } from '../../shared/database/schema.js'
 import { ApiError } from '../../shared/errors/app-error.js'
+
+type DeliveryException = InferSchemaType<typeof schema>
+
 const oid = { type: Schema.Types.ObjectId, required: true },
   embedded = { _id: false, strict: 'throw' } as const
+
 const schema = new Schema(
   {
     orderId: { ...oid, immutable: true },
@@ -54,22 +58,26 @@ const schema = new Schema(
   },
   mutableSchemaOptions,
 )
+
 schema.index({ orderId: 1, status: 1, createdAt: -1 }, { name: 'delivery_exception_order_history' })
+
 schema.index(
   { orderId: 1, operationKey: 1 },
   { unique: true, name: 'delivery_exception_operation_unique' },
 )
+
 schema.pre('save', function () {
   if (!this.isNew) throw new ApiError('STATE_CONFLICT')
 })
+
 schema.pre(
   ['deleteOne', 'deleteMany', 'findOneAndDelete', 'replaceOne', 'findOneAndReplace'],
   () => {
     throw new ApiError('STATE_CONFLICT')
   },
 )
-type DeliveryException = InferSchemaType<typeof schema>
-export function deliveryExceptionModel(connection: Connection) {
+
+function deliveryExceptionModel(connection: Connection) {
   return connection.models.DeliveryException
     ? connection.model<DeliveryException>('DeliveryException')
     : connection.model<DeliveryException>('DeliveryException', schema, 'deliveryExceptions')
@@ -78,6 +86,7 @@ export function deliveryExceptionModel(connection: Connection) {
 schema.pre('deleteOne', { document: true, query: false }, () => {
   throw new ApiError('STATE_CONFLICT')
 })
+
 schema.pre(['updateOne', 'updateMany', 'findOneAndUpdate'], function () {
   const filter = this.getFilter(),
     update = this.getUpdate()
@@ -108,3 +117,5 @@ schema.pre(['updateOne', 'updateMany', 'findOneAndUpdate'], function () {
         throw new ApiError('STATE_CONFLICT')
   }
 })
+
+export { deliveryExceptionModel }

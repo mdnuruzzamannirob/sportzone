@@ -1,34 +1,39 @@
-import { reportViews, operationalItem } from './report.schema.js'
-import { reportQuery as query, operationalQuery } from './report.schema.js'
 import type { ClientSession } from 'mongoose'
-import type { AdminAccountAccess } from '../auth/admin-account.service.js'
-import type { orderReportAccess } from '../orders/order.service.js'
-import type {
-  paymentReportAccess,
-  customerPaymentSummaryAccess,
-} from '../payments/payment.service.js'
-import type { refundReportAccess } from '../refunds/refund-history.service.js'
-import type { catalogReportAccess } from '../catalog/products/product.service.js'
-import { calculateFinancialReport } from './report-calculation.service.js'
-import { parseInput } from '../../shared/middleware/validate.js'
 import { ApiError } from '../../shared/errors/app-error.js'
+import { parseInput } from '../../shared/middleware/validate.js'
+import type { AdminAccountAccess } from '../auth/auth.public.js'
+import type { CatalogReportAccess } from '../catalog/catalog.public.js'
+import type { OrderReportAccess } from '../orders/order.public.js'
+import type {
+  CustomerPaymentSummaryAccess,
+  PaymentReportAccess,
+} from '../payments/payment.public.js'
+import type { RefundReportAccess } from '../refunds/refund.public.js'
+import type { ReportViewsSchema } from './report.schema.js'
+
+import { operationalItem, operationalQuery, reportQuery as query } from './report.schema.js'
+import { calculateFinancialReport } from './report-calculation.js'
+
 const date = (s: string) => new Date(s.length === 10 ? `${s}T00:00:00+06:00` : s)
+
 const safeMoney = (n: number) => {
   if (!Number.isSafeInteger(n) || n < 0) throw new ApiError('SERVICE_UNAVAILABLE')
   return n
 }
-export function reportService(
+
+function createReportService(
   admins: AdminAccountAccess,
   deps: {
-    paymentSummary: ReturnType<typeof customerPaymentSummaryAccess>
-    orders: ReturnType<typeof orderReportAccess>
-    payments: ReturnType<typeof paymentReportAccess>
-    refunds: ReturnType<typeof refundReportAccess>
-    catalog: ReturnType<typeof catalogReportAccess>
+    paymentSummary: CustomerPaymentSummaryAccess
+    orders: OrderReportAccess
+    payments: PaymentReportAccess
+    refunds: RefundReportAccess
+    catalog: CatalogReportAccess
     threshold(session: ClientSession): Promise<number>
     customers(session: ClientSession): Promise<number>
     pendingReturns(session: ClientSession): Promise<number>
   },
+  moduleAccess: { schemaReportViews: ReportViewsSchema },
   clock: () => Date = () => new Date(),
 ) {
   return {
@@ -182,19 +187,25 @@ export function reportService(
         },
         false,
       )
-      return reportViews[kind].parse(result)
+      return moduleAccess.schemaReportViews[kind].parse(result)
     },
   }
 }
 
-export function operationalQueueService(
+function createOperationalQueueService(
   admins: AdminAccountAccess,
   readers: Record<
     'stock' | 'payments' | 'refunds' | 'reconciliation',
     (
       session: ClientSession,
-      query: { page: number; pageSize: number },
-    ) => Promise<{ items: unknown[]; pagination: import('../../shared/pagination.js').PageMeta }>
+      query: {
+        page: number
+        pageSize: number
+      },
+    ) => Promise<{
+      items: unknown[]
+      pagination: import('../../shared/pagination.js').PageMeta
+    }>
   >,
 ) {
   return {
@@ -211,3 +222,5 @@ export function operationalQueueService(
     },
   }
 }
+
+export { createOperationalQueueService, createReportService }

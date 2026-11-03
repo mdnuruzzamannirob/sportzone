@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import { ConfigurationError } from '../../shared/errors/configuration-error.js'
 
+type CloudinaryOptions = z.infer<typeof optionsSchema>
+
 const optionsSchema = z.strictObject({
   cloudName: z.string().regex(/^[a-z0-9_-]{1,64}$/),
   apiKey: z.string().regex(/^[0-9]{1,64}$/),
@@ -11,14 +13,13 @@ const optionsSchema = z.strictObject({
     .regex(/^[A-Za-z0-9_-]+$/),
   timeoutMs: z.int().min(1).max(60000),
 })
-export type CloudinaryOptions = z.infer<typeof optionsSchema>
-export function validateCloudinaryOptions(input: unknown): Readonly<CloudinaryOptions> {
+function validateCloudinaryOptions(input: unknown): Readonly<CloudinaryOptions> {
   const parsed = optionsSchema.safeParse(input)
   if (!parsed.success) throw new ConfigurationError(['cloudinary_configuration'])
   return Object.freeze(parsed.data)
 }
-export const identity = /^sportzone\/[a-f0-9]{24}$/
-export const assetSchema = z.object({
+const identity = /^sportzone\/[a-f0-9]{24}$/
+const assetSchema = z.object({
   public_id: z.string(),
   resource_type: z.literal('image'),
   type: z.enum(['upload', 'authenticated']),
@@ -31,4 +32,7 @@ export const assetSchema = z.object({
   }),
 })
 
-export const deletionSchema = z.object({ result: z.enum(['ok', 'not found']) })
+const deletionSchema = z.object({ result: z.enum(['ok', 'not found']) })
+
+export type { CloudinaryOptions }
+export { assetSchema, deletionSchema, identity, validateCloudinaryOptions }

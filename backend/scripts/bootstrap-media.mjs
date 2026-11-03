@@ -1,7 +1,8 @@
-import { loadEnvironment } from '../dist/config/env.js'
 import { openDatabase } from '../dist/config/database.js'
+import { loadEnvironment } from '../dist/config/env.js'
 import { initializeMediaPersistence } from '../dist/modules/media/media.persistence.js'
 import { initializeJobLeases } from '../dist/shared/jobs/job-lease.model.js'
+
 let connection
 try {
   const config = loadEnvironment(process.env)

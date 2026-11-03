@@ -1,17 +1,20 @@
 import { z } from 'zod'
-import { orderId } from './order.schema.js'
-import { lifecycleText } from './order-lifecycle.schema.js'
-export const exceptionType = z.enum(['delay', 'failed_attempt', 'final_non_delivery'])
-export const exceptionContact = z.strictObject({
+import { singleLineText as lifecycleText, resourceId as orderId } from '../../shared/validation.js'
+
+const exceptionType = z.enum(['delay', 'failed_attempt', 'final_non_delivery'])
+
+const exceptionContact = z.strictObject({
   channel: z.enum(['phone', 'email', 'sms', 'in_person']),
   outcome: lifecycleText,
 })
-export const exceptionInput = z.strictObject({
+
+const exceptionInput = z.strictObject({
   type: exceptionType,
   reason: lifecycleText,
   contact: exceptionContact.optional(),
 })
-export const exceptionDisposition = z
+
+const exceptionDisposition = z
   .strictObject({
     orderItemId: orderId,
     quantity: z.int().min(1).max(50),
@@ -23,7 +26,8 @@ export const exceptionDisposition = z
       r.inspectedResellableQty <= r.quantity &&
       (r.custody === 'recovered' || r.inspectedResellableQty === 0),
   )
-export const exceptionResolution = z.strictObject({
+
+const exceptionResolution = z.strictObject({
   resolution: lifecycleText,
   disposition: z
     .array(exceptionDisposition)
@@ -35,7 +39,8 @@ export const exceptionResolution = z.strictObject({
     .optional(),
   contactOutcome: lifecycleText.optional(),
 })
-export const exceptionView = z.strictObject({
+
+const exceptionView = z.strictObject({
   id: orderId,
   orderId,
   type: exceptionType,
@@ -45,3 +50,12 @@ export const exceptionView = z.strictObject({
   resolvedAt: z.iso.datetime().optional(),
   resolution: lifecycleText.optional(),
 })
+
+export {
+  exceptionContact,
+  exceptionDisposition,
+  exceptionInput,
+  exceptionResolution,
+  exceptionType,
+  exceptionView,
+}

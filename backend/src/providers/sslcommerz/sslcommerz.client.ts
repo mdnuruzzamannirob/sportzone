@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import type { z } from 'zod'
+import type { PaymentGateway } from '../../modules/payments/payment.public.js'
 import { assertOutsideTransaction } from '../../shared/database/transaction.js'
 import {
   bdtDecimal,
@@ -9,6 +10,7 @@ import {
   refundInitiationResponse,
   refundStatusQuery,
   refundStatusResponse,
+  type SslcommerzOptions,
   sessionAcceptance,
   sessionFailure,
   sessionQuery,
@@ -17,7 +19,6 @@ import {
   transactionResponse,
   validateSslcommerzOptions,
   validationQuery,
-  type SslcommerzOptions,
 } from './sslcommerz.schema.js'
 
 const uncertain = { kind: 'uncertain', code: 'PROVIDER_UNCERTAIN' } as const
@@ -27,10 +28,10 @@ const hash = (value: string | Uint8Array) => createHash('sha256').update(value).
 
 // No domain decisions or database writes. No automatic retry, redirects, caller-controlled endpoints
 // or raw provider/credential-bearing URL logging. The caller must persist intent before initiation.
-export function createSslcommerzAdapter(
+function createSslcommerzAdapter(
   settings: SslcommerzOptions,
   transport: typeof fetch = fetch,
-) {
+): PaymentGateway {
   const options = validateSslcommerzOptions(settings),
     origin =
       options.mode === 'live'
@@ -326,3 +327,5 @@ export function createSslcommerzAdapter(
     },
   }
 }
+
+export { createSslcommerzAdapter }

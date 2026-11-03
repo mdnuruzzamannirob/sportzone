@@ -1,10 +1,11 @@
-import { loadEnvironment } from '../dist/config/env.js'
 import { openDatabase } from '../dist/config/database.js'
+import { loadEnvironment } from '../dist/config/env.js'
+import { initializeAuditPersistence } from '../dist/modules/audit/audit.persistence.js'
 import {
   initializeOrderPersistence,
   migrateOrderPrepaidTiming,
 } from '../dist/modules/orders/order.persistence.js'
-import { initializeAuditPersistence } from '../dist/modules/audit/audit.persistence.js'
+
 let connection
 try {
   const config = loadEnvironment(process.env)

@@ -1,7 +1,7 @@
-import { loadEnvironment } from '../dist/config/env.js'
 import { openDatabase } from '../dist/config/database.js'
-import { composeNotificationWorker } from '../dist/setup.js'
+import { loadEnvironment } from '../dist/config/env.js'
 import { loadNotificationWorker } from '../dist/config/notifications.js'
+import { composeNotificationWorker } from '../dist/setup.js'
 
 let connection
 try {

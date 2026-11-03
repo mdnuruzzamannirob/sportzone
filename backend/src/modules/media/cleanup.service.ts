@@ -1,10 +1,10 @@
-import { ApiError } from '../../shared/errors/app-error.js'
 import { assertOutsideTransaction, inTransaction } from '../../shared/database/transaction.js'
-import { key, type MediaContext } from './media.context.js'
+import { ApiError } from '../../shared/errors/app-error.js'
 import { createMediaAuthorization } from './access.service.js'
+import { key, type MediaContext } from './media.context.js'
 import type { MediaAsset } from './media.model.js'
 
-export function createMediaCleanup(
+function createMediaCleanup(
   context: MediaContext,
   reconcileUpload: (assetId: string) => Promise<MediaAsset['status']>,
 ) {
@@ -54,7 +54,12 @@ export function createMediaCleanup(
       }
       return report
     },
-    async cleanup(assetId: string, authority?: { adminCredential: string | undefined }) {
+    async cleanup(
+      assetId: string,
+      authority?: {
+        adminCredential: string | undefined
+      },
+    ) {
       assertOutsideTransaction()
       const claimed = await inTransaction(connection, async (session) => {
         const asset = await model.findById(key(assetId)).session(session).orFail()
@@ -116,7 +121,7 @@ export function createMediaCleanup(
 }
 
 // Abandoned private evidence is never expired without its explicit per-asset retention decision.
-export function mediaMaintenanceDeletionAllowed(asset: Readonly<MediaAsset>, now: Date) {
+function mediaMaintenanceDeletionAllowed(asset: Readonly<MediaAsset>, now: Date) {
   return (
     Number.isFinite(now.getTime()) &&
     ['temporary', 'quarantined', 'deleting'].includes(asset.status) &&
@@ -128,3 +133,5 @@ export function mediaMaintenanceDeletionAllowed(asset: Readonly<MediaAsset>, now
       : Boolean(asset.retainUntil && asset.retainUntil <= now))
   )
 }
+
+export { createMediaCleanup, mediaMaintenanceDeletionAllowed }

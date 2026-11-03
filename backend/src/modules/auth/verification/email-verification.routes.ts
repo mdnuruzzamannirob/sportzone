@@ -1,15 +1,15 @@
-import { Router, type RequestHandler } from 'express'
-import { z } from 'zod'
-import { parseInput } from '../../../shared/middleware/validate.js'
-import { respond } from '../../../shared/responses.js'
+import { type RequestHandler, Router } from 'express'
 import type { BrowserSecurity } from '../sessions/browser-security.service.js'
-import { readContextCookie } from '../sessions/browser-security.service.js'
+import { createEmailVerificationController } from './email-verification.controller.js'
 import type { createEmailVerificationService } from './email-verification.service.js'
-export function emailVerificationRoutes(
+
+function createEmailVerificationRoutes(
   service: ReturnType<typeof createEmailVerificationService>,
   security: BrowserSecurity,
   throttle: RequestHandler,
 ) {
+  const controller = createEmailVerificationController()
+
   const router = Router(),
     cors = security.cors('storefront')
   for (const [path, action] of [
@@ -22,18 +22,10 @@ export function emailVerificationRoutes(
       cors,
       throttle,
       security.require('storefront', 'context'),
-      async (req, res) => {
-        parseInput(z.strictObject({}), req.query)
-        respond(
-          res,
-          await action(
-            req.body,
-            readContextCookie(req.get('Cookie'), 'storefront') ?? '',
-            req.get('X-CSRF-Token') ?? '',
-          ),
-        )
-      },
+      controller.verifyEmail(action),
     )
   }
   return router
 }
+
+export { createEmailVerificationRoutes }

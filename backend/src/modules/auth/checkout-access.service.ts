@@ -1,20 +1,16 @@
 import { createHash } from 'node:crypto'
 import type { ClientSession } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
-import type { CustomerAccountAccess, CustomerProfile } from './customer-account.service.js'
+import type { CustomerAccountAccess } from './account-access.service.js'
+import type {
+  CheckoutCredentials,
+  CheckoutPrincipal,
+  OrderPrincipal,
+  PaymentInitiationCredentials,
+} from './auth.public.js'
 import type { BrowserSecurity } from './sessions/browser-security.service.js'
-export type CheckoutCredentials = {
-  customerPresent: boolean
-  customerToken?: string | undefined
-  contextToken?: string | undefined
-  csrfToken?: string | undefined
-}
-export type CheckoutPrincipal = {
-  scopeType: 'customer' | 'guest_context'
-  scopeKeyHash: string
-  profile?: CustomerProfile
-}
-export function checkoutAccess(customers: CustomerAccountAccess, security: BrowserSecurity) {
+
+function checkoutAccess(customers: CustomerAccountAccess, security: BrowserSecurity) {
   return {
     async owned<T>(
       credentials: CheckoutCredentials,
@@ -44,7 +40,7 @@ export function checkoutAccess(customers: CustomerAccountAccess, security: Brows
   }
 }
 
-export function paymentMethodAccess(
+function paymentMethodAccess(
   customers: Pick<CustomerAccountAccess, 'owned'>,
   guests?: Pick<import('./guest-access/guest-session.service.js').GuestSessions, 'owned'>,
 ) {
@@ -57,7 +53,10 @@ export function paymentMethodAccess(
       },
       orderId: string,
       work: (
-        scope: { customerId?: string; guestOrderId?: string },
+        scope: {
+          customerId?: string
+          guestOrderId?: string
+        },
         session: ClientSession,
       ) => Promise<T>,
     ) {
@@ -75,19 +74,16 @@ export function paymentMethodAccess(
   }
 }
 
-export type PaymentInitiationCredentials = {
-  customerPresent: boolean
-  customerToken?: string | undefined
-  guestToken?: string | undefined
-  csrfToken?: string | undefined
-}
-export function paymentInitiationAuthAccess(
+function paymentInitiationAuthAccess(
   customers: CustomerAccountAccess,
   sessions: import('./sessions/session.service.js').SessionService,
   order: (
     session: ClientSession,
     orderId: string,
-    scope: { customerId?: string; guestOrderId?: string },
+    scope: {
+      customerId?: string
+      guestOrderId?: string
+    },
   ) => Promise<unknown>,
   guests?: Pick<import('./guest-access/guest-session.service.js').GuestSessions, 'owned'>,
 ) {
@@ -147,10 +143,7 @@ export function paymentInitiationAuthAccess(
   }
 }
 
-export type OrderPrincipal =
-  | { kind: 'customer'; userId: string }
-  | { kind: 'guest_order'; guestSessionId: string; orderId: string }
-export function orderScopeAccess(
+function orderScopeAccess(
   customers: CustomerAccountAccess,
   sessions: import('./sessions/session.service.js').SessionService,
   guests?: Pick<import('./guest-access/guest-session.service.js').GuestSessions, 'owned'> &
@@ -258,3 +251,6 @@ export function orderScopeAccess(
     },
   }
 }
+
+export type { CheckoutCredentials, CheckoutPrincipal, OrderPrincipal, PaymentInitiationCredentials }
+export { checkoutAccess, orderScopeAccess, paymentInitiationAuthAccess, paymentMethodAccess }
