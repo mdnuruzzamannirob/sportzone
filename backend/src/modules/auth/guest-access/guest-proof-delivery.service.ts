@@ -1,11 +1,11 @@
 import type { Types } from 'mongoose'
 import type { IdentityModels } from '../auth.model.js'
 import type { GuestAccessOptions } from '../../../config/security.js'
-import type { guestOrderAccess } from '../../orders/order.service.js'
+import type { GuestOrderAccess } from '../../orders/order.public.js'
 import { createProofCodec, proofHash, type ProofEnvelope } from '../verification/proof.crypto.js'
 function guestProofDelivery(
   models: IdentityModels,
-  orders: ReturnType<typeof guestOrderAccess>,
+  orders: Pick<GuestOrderAccess, 'verify'>,
   options: GuestAccessOptions,
   clock: () => Date = () => new Date(),
 ) {

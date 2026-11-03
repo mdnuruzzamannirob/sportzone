@@ -7,7 +7,7 @@ import { changeInput, confirmation, issuance } from './password-recovery.schema.
 import { inTransaction } from '../../../shared/database/transaction.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
-import type { RegistrationNotifications } from '../../notifications/notification.service.js'
+import type { IdentityNotifications } from '../../notifications/notification.public.js'
 import type { IdentityModels } from '../auth.model.js'
 import { hashPassword, verifyPassword } from '../credentials/password.service.js'
 import type { BrowserSecurity } from '../sessions/browser-security.service.js'
@@ -20,7 +20,7 @@ function createRecoveryService(
   models: IdentityModels,
   sessions: SessionService,
   security: BrowserSecurity,
-  notifications: RegistrationNotifications,
+  notifications: Pick<IdentityNotifications, 'enqueuePasswordReset'>,
   options: RecoveryOptions,
   clock: () => Date = () => new Date(),
   kind: SessionKind = 'customer',
@@ -120,9 +120,9 @@ function createRecoveryService(
           }).save({ session })
           await notifications.enqueuePasswordReset(
             {
-              id: notificationId,
-              challengeId: id,
-              userId: user._id,
+              id: notificationId.toHexString(),
+              challengeId: id.toHexString(),
+              userId: user._id.toHexString(),
               email: input.email,
             },
             session,

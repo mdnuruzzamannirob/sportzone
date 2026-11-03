@@ -173,7 +173,7 @@ export function complaintService(
     async mine(
       token: string | undefined,
       raw: unknown,
-      customers: import('../auth/customer-account.service.js').CustomerAccountAccess,
+      customers: import('../auth/auth.public.js').CustomerAccountAccess,
     ) {
       const input = parseInput(paginationSchema, raw)
       return customers.owned(

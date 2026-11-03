@@ -102,7 +102,7 @@ const principal = (key: 'kind' | 'purpose', values: string[], revision = false) 
 })
 
 // Raw MongoDB writes must enforce shape/scope too; authorization remains service-owned.
-export const identityCollectionValidators = {
+const identityCollectionValidators = {
   users: {
     $jsonSchema: object(
       {
@@ -268,10 +268,7 @@ export const identityCollectionValidators = {
 }
 
 // Explicit empty-environment bootstrap only; existing validators require a reviewed migration.
-export async function initializeIdentityPersistence(
-  connection: Connection,
-  models: IdentityModels,
-) {
+async function initializeIdentityPersistence(connection: Connection, models: IdentityModels) {
   if (!connection.db) throw new Error('Identity database is unavailable.')
   for (const [name, validator] of Object.entries(identityCollectionValidators)) {
     const existing = await connection.db.listCollections({ name }, { nameOnly: false }).next()
@@ -301,7 +298,7 @@ export async function initializeIdentityPersistence(
 }
 
 // Read-only readiness: never creates collections/indexes or changes validators.
-export async function verifyIdentityPersistence(connection: Connection, models: IdentityModels) {
+async function verifyIdentityPersistence(connection: Connection, models: IdentityModels) {
   if (!connection.db) throw new Error('Identity persistence unavailable.')
   for (const [name, validator] of Object.entries(identityCollectionValidators)) {
     const existing = await connection.db.listCollections({ name }, { nameOnly: false }).next()
@@ -317,7 +314,7 @@ export async function verifyIdentityPersistence(connection: Connection, models: 
 }
 
 // Explicit additive rollout for the owner-approved optional postalCode. No HTTP auto-migration.
-export async function migrateIdentityPostalCode(connection: Connection) {
+async function migrateIdentityPostalCode(connection: Connection) {
   const db = connection.db
   if (!db) throw new Error('Identity database unavailable')
   const row = await db.listCollections({ name: 'users' }, { nameOnly: false }).next()
@@ -340,4 +337,11 @@ export async function migrateIdentityPostalCode(connection: Connection) {
       validationLevel: 'strict',
       validationAction: 'error',
     })
+}
+
+export {
+  identityCollectionValidators,
+  initializeIdentityPersistence,
+  verifyIdentityPersistence,
+  migrateIdentityPostalCode,
 }

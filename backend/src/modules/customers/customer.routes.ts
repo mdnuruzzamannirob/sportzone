@@ -1,20 +1,13 @@
+import { profileController } from './customer.controller.js'
+import type { BrowserRouteAccess } from '../auth/auth.public.js'
 import { type RequestHandler, Router } from 'express'
 import { z } from 'zod'
 import { parseInput } from '../../shared/middleware/validate.js'
-import { respond } from '../../shared/responses.js'
-import type { BrowserSecurity } from '../auth/sessions/browser-security.service.js'
-import { createSessionHttp, readSessionCookie } from '../auth/sessions/session.http.js'
-import type { SessionService } from '../auth/sessions/session.service.js'
-import { addressId } from './customer.schema.js'
 import type { ProfileService } from './customer.service.js'
 
-export function profileRoutes(
-  service: ProfileService,
-  security: BrowserSecurity,
-  sessions: SessionService,
-) {
-  const router = Router(),
-    http = createSessionHttp(sessions)
+function profileRoutes(service: ProfileService, security: BrowserRouteAccess) {
+  const router = Router()
+  const controller = profileController(service, security.readToken)
   const paths = [
     '/me',
     '/me/addresses',
@@ -27,49 +20,18 @@ export function profileRoutes(
     next()
   }
   for (const path of paths) {
-    router.options(path, security.cors('storefront'))
+    router.options(path, security.cors)
   }
-  router.use(
-    '/me',
-    security.cors('storefront'),
-    security.require('storefront', 'customer'),
-    http.require('customer'),
-    noQuery,
-  )
-  const token = (req: import('express').Request) => readSessionCookie(req.get('Cookie'), 'customer')
-  const id = (req: import('express').Request) =>
-    parseInput(z.strictObject({ addressId }), req.params).addressId
-  const empty = (value: unknown) => parseInput(z.union([z.undefined(), z.strictObject({})]), value)
-  router.get('/me', async (req, res) => {
-    parseInput(z.undefined(), req.body)
-    respond(res, await service.read(token(req)))
-  })
-  router.patch('/me', async (req, res) => {
-    respond(res, await service.patch(token(req), req.body))
-  })
-  router.get('/me/addresses', async (req, res) => {
-    parseInput(z.undefined(), req.body)
-    respond(res, await service.list(token(req)))
-  })
-  router.post('/me/addresses', async (req, res) => {
-    const created = await service.add(token(req), req.body)
-    res.setHeader('Location', `/api/v1/me/addresses/${created.id}`)
-    respond(res, created, 201)
-  })
-  router.patch('/me/addresses/:addressId', async (req, res) => {
-    respond(res, await service.edit(token(req), id(req), req.body))
-  })
-  router.delete('/me/addresses/:addressId', async (req, res) => {
-    empty(req.body)
-    await service.remove(token(req), id(req))
-    res.status(204).end()
-  })
-  router.post('/me/addresses/:addressId/default', async (req, res) => {
-    empty(req.body)
-    respond(res, await service.setDefault(token(req), id(req)))
-  })
-  router.post('/me/deletion-requests', async (req, res) => {
-    respond(res, await service.requestDeletion(token(req), req.body))
-  })
+  router.use('/me', security.cors, security.requireBrowser, security.requireSession, noQuery)
+  router.get('/me', controller.read)
+  router.patch('/me', controller.patch)
+  router.get('/me/addresses', controller.list)
+  router.post('/me/addresses', controller.add)
+  router.patch('/me/addresses/:addressId', controller.edit)
+  router.delete('/me/addresses/:addressId', controller.remove)
+  router.post('/me/addresses/:addressId/default', controller.setDefault)
+  router.post('/me/deletion-requests', controller.requestDeletion)
   return router
 }
+
+export { profileRoutes }

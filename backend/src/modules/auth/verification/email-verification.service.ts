@@ -8,7 +8,7 @@ import { Types, type Connection } from 'mongoose'
 import type { RecoveryOptions } from '../../../config/security.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
-import type { RegistrationNotifications } from '../../notifications/notification.service.js'
+import type { IdentityNotifications } from '../../notifications/notification.public.js'
 import type { IdentityModels } from '../auth.model.js'
 import type { BrowserSecurity } from '../sessions/browser-security.service.js'
 import { consumeUserChallenge, ChallengeUnavailableError } from '../sessions/session.persistence.js'
@@ -17,7 +17,7 @@ function createEmailVerificationService(
   connection: Connection,
   models: IdentityModels,
   security: BrowserSecurity,
-  notifications: RegistrationNotifications,
+  notifications: Pick<IdentityNotifications, 'enqueueEmailVerification'>,
   options: RecoveryOptions,
   clock: () => Date = () => new Date(),
 ) {
@@ -99,7 +99,12 @@ function createEmailVerificationService(
             updatedAt: now,
           }).save({ session })
           await notifications.enqueueEmailVerification(
-            { id: notificationId, challengeId: id, userId: user._id, email: input.email },
+            {
+              id: notificationId.toHexString(),
+              challengeId: id.toHexString(),
+              userId: user._id.toHexString(),
+              email: input.email,
+            },
             session,
           )
           return { accepted: true as const }

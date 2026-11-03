@@ -1,7 +1,7 @@
 import type { IdentityModels } from '../auth.model.js'
 type User = InstanceType<IdentityModels['users']>
 type Address = User['addresses'][number]
-export function addressDto(address: Address) {
+function addressDto(address: Address) {
   return {
     id: address.id.toHexString(),
     recipient: address.recipient,
@@ -14,7 +14,7 @@ export function addressDto(address: Address) {
     isDefault: address.isDefault,
   }
 }
-export function accountDto(user: User) {
+function accountDto(user: User) {
   return {
     id: user._id.toHexString(),
     name: user.name,
@@ -25,3 +25,5 @@ export function accountDto(user: User) {
     status: user.status,
   }
 }
+
+export { addressDto, accountDto }

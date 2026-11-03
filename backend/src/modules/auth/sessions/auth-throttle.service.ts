@@ -15,7 +15,7 @@ type Group =
   | 'checkout'
   | 'guest'
   | 'complaint'
-export function createAuthThrottle(store: QuotaStore, secret: string, clock = Date.now) {
+function createAuthThrottle(store: QuotaStore, secret: string, clock = Date.now) {
   if (!/^[a-f0-9]{64}$/.test(secret)) throw new Error('Invalid auth throttle configuration.')
   async function consume(audience: Audience, group: Group, network: string, target?: string) {
     // Verify before admission: never implicitly recreate missing protection state.
@@ -78,7 +78,7 @@ export function createAuthThrottle(store: QuotaStore, secret: string, clock = Da
 }
 
 // Local process guard, not a multi-replica abuse-control claim. Trusted proxy remains disabled.
-export function localAuthRateLimit(clock: () => number = Date.now, maximum = 10): RequestHandler {
+function localAuthRateLimit(clock: () => number = Date.now, maximum = 10): RequestHandler {
   const buckets = new Map<string, { count: number; until: number }>()
   return (req, _res, next) => {
     const now = clock()
@@ -100,7 +100,7 @@ export function localAuthRateLimit(clock: () => number = Date.now, maximum = 10)
   }
 }
 
-export function createPaymentCallbackThrottle(
+function createPaymentCallbackThrottle(
   connection: Connection,
   secret: string,
   limit: number,
@@ -138,3 +138,5 @@ export function createPaymentCallbackThrottle(
     }
   }
 }
+
+export { createAuthThrottle, localAuthRateLimit, createPaymentCallbackThrottle }

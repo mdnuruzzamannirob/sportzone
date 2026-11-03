@@ -5,7 +5,7 @@ import { respond } from '../../../shared/responses.js'
 import type { BrowserSecurity } from '../sessions/browser-security.service.js'
 import { readContextCookie } from '../sessions/browser-security.service.js'
 import type { createEmailVerificationService } from './email-verification.service.js'
-export function emailVerificationRoutes(
+function emailVerificationRoutes(
   service: ReturnType<typeof createEmailVerificationService>,
   security: BrowserSecurity,
   throttle: RequestHandler,
@@ -37,3 +37,5 @@ export function emailVerificationRoutes(
   }
   return router
 }
+
+export { emailVerificationRoutes }

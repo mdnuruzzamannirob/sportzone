@@ -27,16 +27,16 @@ const logout = z.strictObject({ revoked: z.literal(true), csrfToken: opaque })
 const addressParams = z.strictObject({ addressId: id })
 const noParams = z.strictObject({})
 
-export const challengePurpose = z.enum([
+const challengePurpose = z.enum([
   'email_verify',
   'email_change',
   'password_reset',
   'guest_order_access',
 ])
-export type ChallengePurpose = z.infer<typeof challengePurpose>
+type ChallengePurpose = z.infer<typeof challengePurpose>
 
 // Required service policies: transport validation cannot invent password policy or coverage.
-export function createIdentityContracts(policy: {
+function createIdentityContracts(policy: {
   newPassword: z.ZodType<string, string>
   phone: z.ZodType<string, string>
   servesArea: (districtKey: string, areaKey: string) => boolean
@@ -214,14 +214,14 @@ export function createIdentityContracts(policy: {
 }
 
 // A server-output defect must never be reported as invalid client input.
-export function parseIdentityResponse<T extends z.ZodType>(schema: T, value: unknown): z.output<T> {
+function parseIdentityResponse<T extends z.ZodType>(schema: T, value: unknown): z.output<T> {
   const result = schema.safeParse(value)
   if (!result.success) throw new ApiError('INTERNAL_ERROR')
   return result.data
 }
 
 // Pure state precondition only: hash verification and atomic consumption remain mandatory.
-export function isChallengeCurrent(
+function isChallengeCurrent(
   state: {
     purpose: ChallengePurpose
     scopeId: string
@@ -257,3 +257,6 @@ export function isChallengeCurrent(
     state.invalidatedAt === undefined
   )
 }
+
+export { challengePurpose, createIdentityContracts, parseIdentityResponse, isChallengeCurrent }
+export type { ChallengePurpose }

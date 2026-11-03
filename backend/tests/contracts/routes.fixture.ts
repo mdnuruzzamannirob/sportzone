@@ -189,8 +189,7 @@ export function localOnlyRouters() {
         privacy: unused,
         decidePrivacy: unused,
       },
-      security,
-      sessions,
+      { cors: guard, requireBrowser: guard, requireSession: guard, readToken: () => undefined },
     ),
     supportReadRoutes({ adminList: unused }, { list: unused }, security, sessions),
     returnHistoryRoutes(
@@ -249,7 +248,12 @@ export function registeredRouter() {
     adminRoutes(credentials, recovery, security, sessions),
     recoveryRoutes(recovery, security, sessions),
     emailChangeRoutes(recovery, security, sessions),
-    profileRoutes(profile, security, sessions),
+    profileRoutes(profile, {
+      cors: guard,
+      requireBrowser: guard,
+      requireSession: guard,
+      readToken: () => undefined,
+    }),
     categoryAdminRoutes(
       { list: unused, create: unused, patch: unused, deactivate: unused },
       security,

@@ -4,7 +4,7 @@ import type { IdentityModels } from '../auth.model.js'
 import type { SessionIdentity, SessionKind } from './session.service.js'
 
 // Service boundary: route guards are never proof that a later mutation is authorized.
-export async function authorizeAccount(
+async function authorizeAccount(
   models: IdentityModels,
   identity: SessionIdentity,
   kind: SessionKind,
@@ -66,3 +66,5 @@ export async function authorizeAccount(
   user.updatedAt = updatedAt
   return user
 }
+
+export { authorizeAccount }

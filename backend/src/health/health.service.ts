@@ -1,9 +1,9 @@
 import { timingSafeEqual } from 'node:crypto'
-export type HealthDependencies = {
+type HealthDependencies = {
   monitorToken?: string
   isReady: () => Promise<boolean>
 }
-export function createHealthService({ monitorToken, isReady }: HealthDependencies) {
+function createHealthService({ monitorToken, isReady }: HealthDependencies) {
   const expected =
     monitorToken && /^[a-f0-9]{64}$/.test(monitorToken)
       ? Buffer.from(monitorToken, 'hex')
@@ -22,3 +22,6 @@ export function createHealthService({ monitorToken, isReady }: HealthDependencie
     },
   }
 }
+
+export { createHealthService }
+export type { HealthDependencies }

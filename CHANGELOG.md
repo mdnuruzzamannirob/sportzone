@@ -8,6 +8,16 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 3 November 2026 — Identity, customer and technical health refactor
+
+- Injected order/audit capabilities into auth; introduced detached identity/notification contracts and
+  customer HTTP controllers. Reused credential handlers and consolidated media-admin authorization.
+- Moved health outside business modules, preserving HTTP behavior and executable route inventory;
+  retained canonical models/security fences and removed 26 legacy boundary allowances.
+- Recorded [WP04/P03-028 verification](docs/evidence/P03-021-backend-refactor.md#p03-028--wp04-identity-customer-and-technical-health-3-november-2026),
+  including a corrected Markdown-spacing parser in the existing identity index test. No new test file,
+  package, collection or feature activation.
+
 ## 3 November 2026 — Local Git recovery
 
 - Recovered the exact original HEAD commit after zero-byte Git object corruption; preserved history,

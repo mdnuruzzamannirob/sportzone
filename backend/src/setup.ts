@@ -1,3 +1,5 @@
+import { guestOrderAccess } from './modules/orders/order.service.js'
+import { auditOperationReader } from './modules/audit/audit.service.js'
 import { createSessionHttp, readSessionCookie } from './modules/auth/sessions/session.http.js'
 import {
   refundRequestOrderAccess,
@@ -32,7 +34,7 @@ import {
 import { catalogReportAccess } from './modules/catalog/products/product.service.js'
 import { reportThresholdAccess } from './modules/settings/settings.service.js'
 import { returnReportAccess } from './modules/returns/return.service.js'
-import { customerAdministrationAccess } from './modules/auth/customer-admin.service.js'
+import { customerAdministrationAccess } from './modules/auth/auth.composition.js'
 import { customerAdminRoutes } from './modules/customers/customer-admin.routes.js'
 import { complaintService } from './modules/support/complaint.service.js'
 import { supportReadRoutes } from './modules/support/support-read.routes.js'
@@ -128,7 +130,7 @@ import {
 } from './modules/delivery/delivery-coverage.service.js'
 import { deliveryAreaRoutes, deliveryRoutes } from './modules/delivery/delivery.routes.js'
 import { deliveryService } from './modules/delivery/delivery.service.js'
-import type { HealthDependencies } from './modules/health/health.service.js'
+import type { HealthDependencies } from './health/health.service.js'
 import { allocationService } from './modules/inventory/allocation.service.js'
 import { inventoryAdminRoutes } from './modules/inventory/inventory-admin.routes.js'
 import { inventoryAdminService } from './modules/inventory/inventory-admin.service.js'
@@ -648,6 +650,8 @@ export function composeOperationsRoutes(
           : kind === 'claims'
             ? claims.forCustomer(session, id, raw)
             : history.forCustomer(session, id, raw),
+      createAuditWriter(connection),
+      auditOperationReader(connection),
     ),
     complaints = complaintService(
       connection,
@@ -710,7 +714,12 @@ export function composeOperationsRoutes(
       reconciliation: (session, q) => payments(session, q, true),
     })
   return [
-    customerAdminRoutes(administration.customers, auth.security, auth.sessions),
+    customerAdminRoutes(administration.customers, {
+      cors: auth.security.cors('admin'),
+      requireBrowser: auth.security.require('admin', 'admin'),
+      requireSession: createSessionHttp(auth.sessions).require('admin'),
+      readToken: (header) => readSessionCookie(header, 'admin'),
+    }),
     supportReadRoutes(
       complaints,
       auditQueryService(connection, auth.adminAccounts),
@@ -907,7 +916,12 @@ export async function composeIdentityRoutes(
   operations?: OperationsOptions,
 ) {
   const notifications = createRegistrationNotifications(connection)
-  const auth = await createAuthRuntime(connection, config, notifications)
+  const auth = await createAuthRuntime(
+    connection,
+    config,
+    notifications,
+    guestOrderAccess(connection),
+  )
   if (operations) {
     if (!config.CUSTOMER_AUTH_ENABLED || !config.ADMIN_AUTH_ENABLED)
       throw new ApiError('SERVICE_UNAVAILABLE')
@@ -999,8 +1013,12 @@ export async function composeIdentityRoutes(
     auth.router.use(
       profileRoutes(
         createProfileService(auth.customerAccounts, createAddressCoverage(connection)),
-        auth.security,
-        auth.sessions,
+        {
+          cors: auth.security.cors('storefront'),
+          requireBrowser: auth.security.require('storefront', 'customer'),
+          requireSession: createSessionHttp(auth.sessions).require('customer'),
+          readToken: (header) => readSessionCookie(header, 'customer'),
+        },
       ),
     )
   if (config.CUSTOMER_AUTH_ENABLED && ['local', 'test'].includes(config.APP_ENV))
@@ -1449,7 +1467,7 @@ export async function composeNotificationWorker(
   const adapter = 'adapter' in options ? options.adapter : createResendAdapter(options.email)
   const store = createRegistrationNotifications(connection)
   await store.verifyIndexes()
-  const delivery = composeProofDeliveries(connection, config.identity)
+  const delivery = composeProofDeliveries(connection, config.identity, guestOrderAccess(connection))
   return createNotificationDeliveryService(
     store,
     adapter,

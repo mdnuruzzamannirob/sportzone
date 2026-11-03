@@ -1,7 +1,10 @@
+import { customerAdminService, customerReportAccess } from './customer-admin.service.js'
+import type { AdminAccountAccess, CustomerHistories } from './auth.public.js'
+import type { AuditWriter, AuditOperationReader } from '../audit/audit.public.js'
 import { emailVerificationRoutes } from './verification/email-verification.routes.js'
 import { createEmailVerificationService } from './verification/email-verification.service.js'
 import { createEmailVerificationDelivery } from './verification/proof-delivery.service.js'
-import { guestOrderAccess } from '../orders/order.service.js'
+import type { GuestOrderAccess } from '../orders/order.public.js'
 import { guestSessionService } from './guest-access/guest-session.service.js'
 import { guestAccessService } from './guest-access/guest-access.service.js'
 import { guestAccessRoutes } from './guest-access/guest-access.routes.js'
@@ -10,14 +13,14 @@ import { adminTransactionAccess, createAdminAccountAccess } from './admin-accoun
 import { Router } from 'express'
 import type { Connection } from 'mongoose'
 import type { IdentityConfig, RuntimeConfig } from '../../config/env.js'
-import type { RegistrationNotifications } from '../notifications/notification.service.js'
+import type { IdentityNotifications } from '../notifications/notification.public.js'
 import { createIdentityModels } from './auth.model.js'
 import { adminRoutes } from './credentials/admin-auth.routes.js'
 import { createCustomerService } from './credentials/credentials.service.js'
 import { customerRoutes } from './credentials/customer-auth.routes.js'
 import { createCustomerAccountAccess } from './customer-account.service.js'
 import { verifyIdentityPersistence } from './identity.persistence.js'
-import { createMediaAdminAccess } from './media-access.service.js'
+import { createMediaAdminAccess } from './admin-account.service.js'
 import { recoveryRoutes } from './recovery/password-recovery.routes.js'
 import { createRecoveryService } from './recovery/password-recovery.service.js'
 import { createAuthQuotaStore } from './sessions/auth-throttle.persistence.js'
@@ -33,10 +36,11 @@ import {
   createResetDelivery,
 } from './verification/proof-delivery.service.js'
 
-export async function createAuthRuntime(
+async function createAuthRuntime(
   connection: Connection,
   config: RuntimeConfig,
-  notifications: RegistrationNotifications,
+  notifications: IdentityNotifications,
+  guestOrders: GuestOrderAccess,
 ) {
   const models = createIdentityModels(connection)
   await verifyIdentityPersistence(connection, models)
@@ -48,7 +52,6 @@ export async function createAuthRuntime(
   const quota = createAuthQuotaStore(connection)
   await quota.verify()
   const throttle = createAuthThrottle(quota, config.SESSION_SECRET)
-  const guestOrders = guestOrderAccess(connection)
   const guestSessions = options.guest
     ? guestSessionService(
         connection,
@@ -174,18 +177,17 @@ export async function createAuthRuntime(
 }
 
 // Keep private model construction inside auth; callers receive narrow delivery capabilities.
-export function composeProofDeliveries(
+function composeProofDeliveries(
   connection: Connection,
   options: IdentityConfig | undefined,
+  guestOrders: GuestOrderAccess,
 ) {
   const models = createIdentityModels(connection)
   return {
     verify: options?.emailVerification
       ? createEmailVerificationDelivery(models, options.emailVerification)
       : undefined,
-    guest: options?.guest
-      ? guestProofDelivery(models, guestOrderAccess(connection), options.guest)
-      : undefined,
+    guest: options?.guest ? guestProofDelivery(models, guestOrders, options.guest) : undefined,
     reset: options?.recovery ? createResetDelivery(models, options.recovery) : undefined,
     emailChange: options?.emailChange
       ? createEmailChangeDelivery(models, options.emailChange)
@@ -195,3 +197,21 @@ export function composeProofDeliveries(
       : undefined,
   }
 }
+
+function customerAdministrationAccess(
+  connection: Connection,
+  admins: AdminAccountAccess,
+  clock: () => Date,
+  histories: CustomerHistories,
+  audit: AuditWriter,
+  lookup: AuditOperationReader,
+) {
+  const models = createIdentityModels(connection)
+  return {
+    customers: customerAdminService(connection, models, admins, audit, lookup, clock, histories),
+    registeredCustomers: customerReportAccess(connection, models),
+  }
+}
+
+export { customerAdministrationAccess }
+export { createAuthRuntime, composeProofDeliveries }

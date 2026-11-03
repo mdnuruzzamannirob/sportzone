@@ -8,7 +8,7 @@ import { readContextCookie, type BrowserSecurity } from './browser-security.serv
 
 // Guest persistence is owned by P06-015; this adapter must verify the exact order scope,
 // expiry and revocation. Never substitute a customer/browser credential for a guest one.
-export type GuestCsrfAdapter = {
+type GuestCsrfAdapter = {
   refresh(cookie: string | undefined): Promise<{ csrfToken: string; expiresAt: Date }>
   verify(cookie: string | undefined, csrf: string | undefined): Promise<boolean>
 }
@@ -20,7 +20,7 @@ function guestToken(header: string | undefined) {
   const token = entries.length === 1 ? entries[0]?.slice('sz_guest_order_sid='.length) : undefined
   return token && /^[A-Za-z0-9_-]{43}$/.test(token) ? token : undefined
 }
-export function browserSecurityRoutes(
+function browserSecurityRoutes(
   security: BrowserSecurity,
   sessions: SessionService,
   guest?: GuestCsrfAdapter,
@@ -77,7 +77,7 @@ export function browserSecurityRoutes(
   }
   return router
 }
-export function requireGuestCsrf(
+function requireGuestCsrf(
   security: BrowserSecurity,
   guest: GuestCsrfAdapter,
 ): import('express').RequestHandler {
@@ -108,3 +108,6 @@ export function requireGuestCsrf(
     })
   }
 }
+
+export { browserSecurityRoutes, requireGuestCsrf }
+export type { GuestCsrfAdapter }

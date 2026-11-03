@@ -1,3 +1,4 @@
+import type { GuestOrderAccess } from './order.public.js'
 import type { customerPaymentSummaryAccess } from '../payments/payment.service.js'
 import { paginationSchema, pageMeta } from '../../shared/pagination.js'
 import { deliveryExceptionModel } from './delivery-exception.model.js'
@@ -243,7 +244,7 @@ export function expiredOrderAllocationAccess(
   }
 }
 
-export function guestOrderAccess(connection: Connection) {
+export function guestOrderAccess(connection: Connection): GuestOrderAccess {
   const { orders } = orderModels(connection)
   return {
     verifyPersistence: () => verifyOrderPersistence(connection),

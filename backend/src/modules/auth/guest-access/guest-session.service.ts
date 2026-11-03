@@ -6,7 +6,7 @@ import { validateSessionOptions } from '../sessions/session.service.js'
 import { inTransaction } from '../../../shared/database/transaction.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { proofPattern } from '../verification/proof.crypto.js'
-export function guestSessionService(
+function guestSessionService(
   connection: Connection,
   models: IdentityModels,
   options: SessionOptions,
@@ -166,8 +166,8 @@ export function guestSessionService(
     } as const,
   }
 }
-export type GuestSessions = ReturnType<typeof guestSessionService>
-export function readGuestCookie(header: string | undefined) {
+type GuestSessions = ReturnType<typeof guestSessionService>
+function readGuestCookie(header: string | undefined) {
   const entries = (header ?? '')
     .split(';')
     .map((value) => value.trim())
@@ -175,3 +175,6 @@ export function readGuestCookie(header: string | undefined) {
   const token = entries.length === 1 ? entries[0]?.slice('sz_guest_order_sid='.length) : undefined
   return token && proofPattern.test(token) ? token : undefined
 }
+
+export { guestSessionService, readGuestCookie }
+export type { GuestSessions }

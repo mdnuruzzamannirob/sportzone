@@ -1,3 +1,7 @@
+import {
+  createSessionHttp,
+  readSessionCookie,
+} from '../../src/modules/auth/sessions/session.http.js'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { Router } from 'express'
 import { Types } from 'mongoose'
@@ -106,7 +110,14 @@ beforeAll(async () => {
     clock,
   )
   const router = Router()
-  router.use(profileRoutes(service, security, sessions))
+  router.use(
+    profileRoutes(service, {
+      cors: security.cors('storefront'),
+      requireBrowser: security.require('storefront', 'customer'),
+      requireSession: createSessionHttp(sessions).require('customer'),
+      readToken: (header) => readSessionCookie(header, 'customer'),
+    }),
+  )
   app = createApp({ apiRouter: router })
 })
 beforeEach(async () => {

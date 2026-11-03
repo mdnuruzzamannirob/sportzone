@@ -3,14 +3,14 @@ import { inTransaction } from '../../../shared/database/transaction.js'
 import type { IdentityModels } from '../auth.model.js'
 
 type UserPurpose = 'email_verify' | 'email_change' | 'password_reset'
-export class ChallengeUnavailableError extends Error {
+class ChallengeUnavailableError extends Error {
   constructor() {
     super('Challenge is unavailable.')
   }
 }
 // Internal digests only: caller verifies proof provenance and supplies its route-selected role.
 // The effect callback is sequential DB-only and may run again on transaction retry.
-export async function consumeUserChallenge<T>(
+async function consumeUserChallenge<T>(
   connection: Connection,
   models: IdentityModels,
   input: {
@@ -78,7 +78,7 @@ export async function consumeUserChallenge<T>(
 }
 
 // Credential lookup primitives, not cookie authentication or permission grants.
-export async function findActiveUserSession(
+async function findActiveUserSession(
   models: IdentityModels,
   input: {
     tokenHash: string
@@ -105,7 +105,7 @@ export async function findActiveUserSession(
   return user ? session : null
 }
 
-export async function findActiveBrowserContext(
+async function findActiveBrowserContext(
   models: IdentityModels,
   input: {
     contextTokenHash: string
@@ -120,4 +120,11 @@ export async function findActiveBrowserContext(
     expiresAt: { $gt: input.now },
     rotatedAt: { $exists: false },
   })
+}
+
+export {
+  ChallengeUnavailableError,
+  consumeUserChallenge,
+  findActiveUserSession,
+  findActiveBrowserContext,
 }

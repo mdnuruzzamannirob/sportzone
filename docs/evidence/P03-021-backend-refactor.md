@@ -582,3 +582,124 @@ Final repository documentation/link and working-tree whitespace checks are recor
 
 P03-027 completes WP03 under Tasks §2. Next is WP04 identity/customer/technical-health boundaries;
 P03-022 and application/external/milestone acceptance remain unchanged.
+
+## P03-028 — WP04 identity, customer and technical health, 3 November 2026
+
+Scope: Backend Refactor Plan WP04; Architecture §§4/6/9; API §§4/14; Database §5;
+Testing §15.5. Input revision `ff8ed37a27c89ca13cc9b20988ae32e927ea6c83`, clean working tree
+on `codex/backend-refactor-wp03`. Executor/reviewer: Codex. No product feature, environment
+activation, collection, package or framework was added.
+
+### Ownership, cohesion and actual consumers
+
+- Auth composition receives the existing guest-order capability from root setup for both HTTP and
+  proof delivery workers. It no longer constructs commerce services. `orders/order.public.ts` exposes
+  only detached order identity/revision operations and ClientSession, never a model or query builder.
+- Auth customer administration receives audit append/operation lookup capabilities, expressed in the
+  new `audit/audit.public.ts`. The original transaction-scoped writer/readers are constructed in root
+  setup; private identity-model assembly moved from the service into existing auth composition.
+- Extended `auth.public.ts` with detached account/profile, owned customer transaction, administration
+  and browser-route capabilities. Profiles/addresses/deletion intake stay in customers; credentials,
+  status/security revisions, privacy decisions and session revocation remain auth-owned. The same
+  canonical user model persists allowed profile fields through the existing guarded save capability.
+  Existing account-access type exports remain compatible for isolated consumers.
+- Customer HTTP handlers live in one `customer.controller.ts`, with profile and admin factories in
+  the same owning HTTP file. Routes register endpoints and middleware; root injects the existing
+  audience-specific CORS/browser/session/token-reader capabilities in the original order. Admin reads
+  retain their original session/CORS checks; browser-CSRF protection remains on mutations.
+- One shared `credentials/credentials.controller.ts` replaces duplicated customer/admin login,
+  session and logout mapping. Registration is still registered only on the customer router; admin
+  provisioning remains private. Recovery/verification/guest services keep their distinct policies.
+  Small purpose-specific routers keep their local transport adapters instead of adding template files.
+- Logout context/session selection moved intact into browser-security ownership. An initial local
+  arrangement in session.http produced a runtime cycle, caught by the checker and corrected before
+  verification. No runtime cycle was allowlisted. Merged the small media-admin principal service into
+  existing admin-account.service.ts, updated all four test consumers and removed its obsolete file.
+- New `notifications/notification.public.ts` defines the actually consumed identity-intent capability.
+  Auth passes string IDs; notifications converts them to the same ObjectIds inside its owner before
+  persistence. Existing ObjectId callers still work. Event keys, template versions, reference-only
+  proof payloads, transaction assertions and notification records are unchanged. Each purpose-specific
+  service receives only its required methods through Pick; proof delivery cannot issue/consume orders.
+  Final type narrowing emitted byte-identical JavaScript to the tested revision, verified by hashes.
+  No forwarding factory
+  or separate implementation file was introduced for this adaptation.
+- Existing cart/wishlist/order-read/review/support account-type consumers now import auth.public.ts.
+  No related workflow was rewritten. Auth/customer/health declarations list named exports at the bottom;
+  many touched files contain only this export-style normalization.
+- Moved the two health files from modules/health to `src/health/`. Root app/router/setup imports and
+  executable route-inventory coverage follow the move. Build cleanup removes stale dist paths;
+  compiled HTTP live/restricted-ready/shutdown checks pass with unchanged URLs and authentication.
+
+Auth still contains **42 source files**, with one real HTTP reuse file replacing the removed tiny
+media-access service. Customers adds one real controller; audit/notifications each add one consumed
+public type contract. Health is a move, not a duplicate. No test file was added or removed: existing
+fixtures/imports were updated, with one new negative case in the existing tooling suite. No empty
+folders, speculative DTO/constants/utils/classes or parallel architecture document was created.
+
+Removed all **19 WP04 allowances**, plus seven now-obsolete account-type consumer allowances owned by
+later packages. **319 remain: 318 import signatures and one type cycle**. Existing checker enforcement
+and the added identity fixture reject auth→private order/audit, customer HTTP→identity model and
+module→technical health imports, while allowing public types and root construction. No exceptions added.
+Architecture/API/Database/Operations contracts remain settled; implementation now follows their chosen
+ownership/health layout without changing behavior. Existing CI/build/test globs already cover these
+paths; no check inventory or script name changed.
+
+### Verification and one existing fixture defect
+
+Node v24.20.0/npm 11.19.0. Real database tests use isolated transaction-capable MongoDB 8.0.16,
+`MONGOMS_DISTRO=ubuntu-24.04`; loopback/process suites ran outside sandbox restrictions. No live
+provider, developer/production database or financial effect was used.
+
+| Command/check | Observed result |
+| --- | --- |
+| `npm run typecheck --workspace=backend` | Passed after reconciling detached types with existing nullable/completed stored states and fixing the value import; no stored-state contract was changed |
+| `npm run build --workspace=backend` | Passed; new technical health files emitted and obsolete health/media-access artifacts absent |
+| `npm run lint --workspace=backend` | Passed: 488 files |
+| `npm run lint:boundaries` | Passed: 435 source files, zero errors, 319 exact allowances |
+| `npm run format:backend` | Passed: 504 files |
+| `node_modules/.bin/biome lint tests/tooling/development.test.mjs --error-on-warnings` | Passed |
+| `node --test --test-isolation=none --test-name-pattern='BOUNDARY\|STRUCTURE\|TOOL-0[1-5]' tests/tooling/development.test.mjs` | Passed: 49 cases |
+| `node --test --test-isolation=none --test-name-pattern='IDENTITY-BOUNDARY' tests/tooling/development.test.mjs` | Passed: final one-case recheck after extending the new negative fixture to the actual technical health path |
+| Affected unit command below | Passed: 311 cases / 14 files |
+| Affected integration command below | Initial: 812 Passed / 1 Failed out of 813 cases, 22 files; preserve this result as a failed initial run |
+| Identity suite recheck below | Passed: all 40 cases after the local fixture-parser correction; other 773 passing cases have unchanged inputs. All 813 distinct integration cases are covered by these valid results, not a claimed clean rerun of all 22 suites. |
+| `npm run test:contract --workspace=backend` | Passed: all four artifacts fresh and all 186 contract cases; real route inventory includes technical health |
+| `npm run test:smoke --workspace=backend` | Passed: redacted invalid config, actual startup/live/restricted readiness/graceful shutdown |
+| Preservation comparison | Passed: 69 model/persistence/validator/API-artifact/manifest/health inputs; changed definitions differ only in export style, health import location adjusted only for the move |
+
+The single integration failure was a pre-existing whitespace-sensitive Markdown parser in
+identity.test.ts: it expected one space between table cells and found zero documented indexes after
+column alignment. The unchanged original parser reproduces zero rows against the unchanged Database
+specification. Updated only that existing parser to tolerate horizontal padding and trim its options
+cell. Assertions still require all ten exact names/keys, uniqueness/TTL options, ten live indexes,
+four unique indexes, three TTL indexes and strict collection validators. No database assertion or
+specification was weakened. The complete 40-case identity suite then passed on real MongoDB.
+
+Commands (repository root):
+
+```sh
+npm run test:unit --workspace=backend -- tests/unit/admin-auth.test.ts tests/unit/app.test.ts tests/unit/auth-rate-limit.test.ts tests/unit/browser-security.test.ts tests/unit/composition.test.ts tests/unit/container-health.test.ts tests/unit/email-change.test.ts tests/unit/guest-access.test.ts tests/unit/identity-contracts.test.ts tests/unit/notifications.test.ts tests/unit/passwords.test.ts tests/unit/profile.test.ts tests/unit/recovery.test.ts tests/unit/sessions.test.ts --reporter=default --reporter=json --outputFile=../test-results/backend-refactor/wp04-unit.json
+MONGOMS_DISTRO=ubuntu-24.04 npm exec --workspace=backend -- vitest run --config vitest.integration.config.ts --reporter=default --reporter=json --outputFile=../test-results/backend-refactor/wp04-integration.json tests/integration/admin-auth.test.ts tests/integration/auth-rate-limit.test.ts tests/integration/authorization.test.ts tests/integration/browser-security.test.ts tests/integration/customer.test.ts tests/integration/email-change.test.ts tests/integration/email-verification.test.ts tests/integration/guest-access.test.ts tests/integration/identity.test.ts tests/integration/profile.test.ts tests/integration/recovery.test.ts tests/integration/sessions.test.ts tests/integration/notifications.test.ts tests/integration/composition.test.ts tests/integration/runtime.test.ts tests/integration/checkout-quote.test.ts tests/integration/cart.test.ts tests/integration/wishlist.test.ts tests/integration/media.test.ts tests/integration/settings.test.ts tests/integration/category-admin.test.ts tests/integration/product-admin.test.ts
+MONGOMS_DISTRO=ubuntu-24.04 npm exec --workspace=backend -- vitest run --config vitest.integration.config.ts tests/integration/identity.test.ts --reporter=default --reporter=json --outputFile=../test-results/backend-refactor/wp04-identity-recheck.json
+```
+
+Table escaping is Markdown only; test filters use literal `|`. Existing cases verify identity bootstrap,
+admin provisioning, audience separation, login/logout/CSRF, proof binding/rotation/replay, credential and
+email-change races, revocation and audit rollback, customer privacy/suspension, current coverage,
+registration notification durability, private media, worker composition, canonical financial snapshots
+and actual compiled operator entry points. No new feature or refactor-only test suite was added.
+
+Artifacts: [unit](../../test-results/backend-refactor/wp04-unit.json),
+[initial integration](../../test-results/backend-refactor/wp04-integration.json),
+[identity recheck](../../test-results/backend-refactor/wp04-identity-recheck.json),
+[parser reproduction](../../test-results/backend-refactor/wp04-index-parser.json),
+[preservation](../../test-results/backend-refactor/wp04-preservation.json),
+[check summary](../../test-results/backend-refactor/wp04-checks.json).
+These are ignored local output, not additional project documents. Full backend/tooling regression,
+frontend/browser, live providers, deployment and external qualification were Not Run for this package.
+
+Executor reviewed the actual diff and new files, HTTP middleware order, retained export consumers,
+private persistence, narrow string-id adapters, original notification keys/payloads, model/schema/index
+normalization and purpose-specific security fences. Type/format/docs/whitespace checks are recorded
+on the final revision. P03-028 completes WP04 under Tasks §2. Next: WP05 audit/notification/media
+foundations; P03-022 and application/external/milestone acceptance remain unchanged.

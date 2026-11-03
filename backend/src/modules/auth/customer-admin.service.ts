@@ -4,16 +4,19 @@ import {
   customerStatusDecision as decisionSchema,
   customerPrivacyDecision,
 } from './customer-admin.schema.js'
-import { createIdentityModels } from './auth.model.js'
 import type { Connection } from 'mongoose'
 import { z } from 'zod'
 import type { IdentityModels } from './auth.model.js'
-import type { AdminAccountAccess } from './admin-account.service.js'
+import type {
+  AdminAccountAccess,
+  CustomerAdministration,
+  CustomerHistories,
+} from './auth.public.js'
 import { verifyIdentityPersistence } from './identity.persistence.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { createHash } from 'node:crypto'
-import { createAuditWriter, auditOperationReader } from '../audit/audit.service.js'
+import type { AuditWriter, AuditOperationReader } from '../audit/audit.public.js'
 import { pageMeta } from '../../shared/pagination.js'
 
 const id = z.string().regex(/^[a-f0-9]{24}$/)
@@ -30,20 +33,15 @@ function maskedEmail(email: string) {
   return `${email[0]}***@${email.slice(at + 1)}`
 }
 // Private administration capability; deletion and financial history remain separately authorized.
-export function customerAdminService(
+function customerAdminService(
   connection: Connection,
   models: IdentityModels,
   admins: AdminAccountAccess,
+  audit: AuditWriter,
+  lookup: AuditOperationReader,
   clock: () => Date = () => new Date(),
-  histories?: (
-    session: import('mongoose').ClientSession,
-    customerId: string,
-    kind: 'orders' | 'claims' | 'refunds',
-    raw: unknown,
-  ) => Promise<{ items: unknown[]; pagination: ReturnType<typeof pageMeta> }>,
-) {
-  const audit = createAuditWriter(connection),
-    lookup = auditOperationReader(connection)
+  histories?: CustomerHistories,
+): CustomerAdministration {
   const view = (row: InstanceType<IdentityModels['users']>) =>
     customerAdminView.parse({
       id: row._id.toHexString(),
@@ -305,23 +303,11 @@ export function customerAdminService(
   }
 }
 
-export function customerReportAccess(connection: Connection, models: IdentityModels) {
+function customerReportAccess(connection: Connection, models: IdentityModels) {
   return async (session: import('mongoose').ClientSession) => {
     await verifyIdentityPersistence(connection, models)
     return models.users.countDocuments({ role: 'customer' }).maxTimeMS(5000).session(session)
   }
 }
 
-// Auth retains persistence ownership; the root receives only administration/count capabilities.
-export function customerAdministrationAccess(
-  connection: Connection,
-  admins: AdminAccountAccess,
-  clock: () => Date,
-  histories: NonNullable<Parameters<typeof customerAdminService>[4]>,
-) {
-  const models = createIdentityModels(connection)
-  return {
-    customers: customerAdminService(connection, models, admins, clock, histories),
-    registeredCustomers: customerReportAccess(connection, models),
-  }
-}
+export { customerAdminService, customerReportAccess }

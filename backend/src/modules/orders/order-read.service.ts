@@ -1,7 +1,7 @@
 import type { ClientSession, Connection, HydratedDocument } from 'mongoose'
 import type { AdminAccountAccess } from '../auth/admin-account.service.js'
 import { adminOrderQuery, adminOrderDetail } from './order-read.schema.js'
-import type { CustomerAccountAccess } from '../auth/customer-account.service.js'
+import type { CustomerAccountAccess } from '../auth/auth.public.js'
 import type {
   orderScopeAccess,
   PaymentInitiationCredentials,

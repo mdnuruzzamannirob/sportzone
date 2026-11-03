@@ -7,7 +7,7 @@ import { localAuthRateLimit } from '../sessions/auth-throttle.service.js'
 import type { EmailChangeService } from './email-change.service.js'
 import { createSessionHttp, readSessionCookie } from '../sessions/session.http.js'
 import type { SessionService } from '../sessions/session.service.js'
-export function emailChangeRoutes(
+function emailChangeRoutes(
   service: EmailChangeService,
   security: BrowserSecurity,
   sessions: SessionService,
@@ -35,3 +35,5 @@ export function emailChangeRoutes(
   })
   return router
 }
+
+export { emailChangeRoutes }

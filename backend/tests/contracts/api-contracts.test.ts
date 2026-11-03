@@ -123,10 +123,11 @@ describe('executable API contract registry', () => {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
         const file = `${dir}/${entry.name}`
         if (entry.isDirectory()) visit(file)
-        else if (file.endsWith('.routes.ts')) actual.push(file.replace('src/modules/', ''))
+        else if (file.endsWith('.routes.ts')) actual.push(file.replace(/^src\/(?:modules\/)?/, ''))
       }
     }
     visit('src/modules')
+    visit('src/health')
     expect(actual.sort()).toEqual(
       [
         'auth/credentials/admin-auth.routes.ts',

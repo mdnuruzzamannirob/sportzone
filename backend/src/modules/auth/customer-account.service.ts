@@ -1,3 +1,4 @@
+import type { CustomerProfile, CustomerAccountAccess } from './auth.public.js'
 import { Types, type ClientSession, type Connection } from 'mongoose'
 import { inTransaction } from '../../shared/database/transaction.js'
 import { ApiError } from '../../shared/errors/app-error.js'
@@ -6,21 +7,13 @@ import { accountDto } from './credentials/account.dto.js'
 import type { IdentityModels } from './auth.model.js'
 import type { SessionService } from './sessions/session.service.js'
 
-type User = InstanceType<IdentityModels['users']>
-type Deletion = NonNullable<User['deletionRequest']>
-type Account = ReturnType<typeof accountDto>
-export type CustomerProfile = Pick<Account, 'name' | 'phone' | 'addresses'> &
-  Readonly<Omit<Account, 'name' | 'phone' | 'addresses'>> & {
-    deletionRequest?: Omit<Deletion, 'id'> & { id: string }
-  }
-
 // Only detached profile data and transaction-scoped operations cross this boundary.
-export function createCustomerAccountAccess(
+function createCustomerAccountAccess(
   connection: Connection,
   models: IdentityModels,
   sessions: SessionService,
   clock: () => Date = () => new Date(),
-) {
+): CustomerAccountAccess {
   return {
     async authorizeInSession(
       token: string | undefined,
@@ -114,4 +107,6 @@ export function createCustomerAccountAccess(
     },
   }
 }
-export type CustomerAccountAccess = ReturnType<typeof createCustomerAccountAccess>
+
+export type { CustomerProfile, CustomerAccountAccess }
+export { createCustomerAccountAccess }

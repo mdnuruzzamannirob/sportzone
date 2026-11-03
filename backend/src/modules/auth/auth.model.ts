@@ -272,7 +272,7 @@ contextSchema.index(
 contextSchema.index({ expiresAt: 1 }, { name: 'browser_contexts_expiry', expireAfterSeconds: 0 })
 
 // Connection-owned models only. No global connection or automatic collection/index rollout.
-export function createIdentityModels(connection: Connection) {
+function createIdentityModels(connection: Connection) {
   return {
     users: connection.model('IdentityUser', userSchema, 'users'),
     sessions: connection.model('IdentitySession', sessionSchema, 'sessions'),
@@ -280,4 +280,7 @@ export function createIdentityModels(connection: Connection) {
     contexts: connection.model('IdentityBrowserContext', contextSchema, 'browserContexts'),
   }
 }
-export type IdentityModels = ReturnType<typeof createIdentityModels>
+type IdentityModels = ReturnType<typeof createIdentityModels>
+
+export { createIdentityModels }
+export type { IdentityModels }

@@ -102,7 +102,7 @@ describe('identity model and database contracts', () => {
     )
     const declared = [
       ...table.matchAll(
-        /\| (users|sessions|authChallenges|browserContexts) \| `([^`]+)` \| `([^`]+)` \| ([^\n]+) \|/g,
+        /^\|[ \t]*(users|sessions|authChallenges|browserContexts)[ \t]*\|[ \t]*`([^`]+)`[ \t]*\|[ \t]*`([^`]+)`[ \t]*\|[ \t]*([^|\n]*?)[ \t]*\|/gm,
       ),
     ]
     expect(declared).toHaveLength(10)
@@ -113,7 +113,7 @@ describe('identity model and database contracts', () => {
           [...String(key).matchAll(/(\w+):(-?1)/g)].map((m) => [m[1], Number(m[2])]),
         ),
       )
-      expect(found?.unique === true).toBe(options === 'unique')
+      expect(found?.unique === true).toBe(options?.trim() === 'unique')
       expect(found?.expireAfterSeconds).toBe(options?.includes('TTL') ? 0 : undefined)
     }
     expect(indexes).toHaveLength(10)

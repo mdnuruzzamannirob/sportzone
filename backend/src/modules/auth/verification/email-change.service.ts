@@ -5,7 +5,7 @@ import type { RecoveryOptions } from '../../../config/security.js'
 import { inTransaction } from '../../../shared/database/transaction.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
-import type { RegistrationNotifications } from '../../notifications/notification.service.js'
+import type { IdentityNotifications } from '../../notifications/notification.public.js'
 import type { IdentityModels } from '../auth.model.js'
 import { accountDto } from '../credentials/account.dto.js'
 import { authorizeAccount } from '../sessions/authorization.service.js'
@@ -19,7 +19,7 @@ function createEmailChangeService(
   connection: Connection,
   models: IdentityModels,
   sessions: SessionService,
-  notifications: RegistrationNotifications,
+  notifications: Pick<IdentityNotifications, 'enqueueEmailChange'>,
   options: RecoveryOptions,
   clock: () => Date = () => new Date(),
 ) {
@@ -107,9 +107,9 @@ function createEmailChangeService(
           }).save({ session })
           await notifications.enqueueEmailChange(
             {
-              id: notificationId,
-              userId: user._id,
-              challengeId: id,
+              id: notificationId.toHexString(),
+              userId: user._id.toHexString(),
+              challengeId: id.toHexString(),
               email: input.newEmail,
             },
             session,

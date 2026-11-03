@@ -14,7 +14,7 @@ import { initializeIdentityPersistence } from '../../src/modules/auth/identity.p
 import { createSessionService } from '../../src/modules/auth/sessions/session.service.js'
 import { createBrowserSecurity } from '../../src/modules/auth/sessions/browser-security.service.js'
 import { createAdminAccountAccess } from '../../src/modules/auth/admin-account.service.js'
-import { createMediaAdminAccess } from '../../src/modules/auth/media-access.service.js'
+import { createMediaAdminAccess } from '../../src/modules/auth/admin-account.service.js'
 import { initializeAuditPersistence } from '../../src/modules/audit/audit.persistence.js'
 import { createAuditWriter } from '../../src/modules/audit/audit.service.js'
 import { categoryModel } from '../../src/modules/catalog/categories/category.model.js'

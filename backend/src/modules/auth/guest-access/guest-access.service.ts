@@ -3,8 +3,8 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { Types } from 'mongoose'
 import type { IdentityModels } from '../auth.model.js'
 import type { BrowserSecurity } from '../sessions/browser-security.service.js'
-import type { RegistrationNotifications } from '../../notifications/notification.service.js'
-import type { guestOrderAccess } from '../../orders/order.service.js'
+import type { IdentityNotifications } from '../../notifications/notification.public.js'
+import type { GuestOrderAccess } from '../../orders/order.public.js'
 import type { GuestSessions } from './guest-session.service.js'
 import type { GuestAccessOptions } from '../../../config/security.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
@@ -15,8 +15,8 @@ function guestAccessService(
   models: IdentityModels,
   security: BrowserSecurity,
   sessions: GuestSessions,
-  orders: ReturnType<typeof guestOrderAccess>,
-  notifications: RegistrationNotifications,
+  orders: Pick<GuestOrderAccess, 'verifyPersistence' | 'lookup' | 'issue' | 'consume'>,
+  notifications: Pick<IdentityNotifications, 'verifyIndexes' | 'enqueueGuestAccess'>,
   options: GuestAccessOptions,
   clock: () => Date = () => new Date(),
 ) {
@@ -78,9 +78,9 @@ function guestAccessService(
           }).save({ session })
           await notifications.enqueueGuestAccess(
             {
-              id: notificationId,
-              challengeId: id,
-              orderId: new Types.ObjectId(order.id),
+              id: notificationId.toHexString(),
+              challengeId: id.toHexString(),
+              orderId: order.id,
               email: order.email,
             },
             session,

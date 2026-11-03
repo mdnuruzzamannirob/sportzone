@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { Types, type ClientSession, type Connection, type HydratedDocument } from 'mongoose'
-import type { CustomerAccountAccess } from '../auth/customer-account.service.js'
+import type { CustomerAccountAccess } from '../auth/auth.public.js'
 import type { productReviewAccess } from '../catalog/products/product.service.js'
 import { inTransaction } from '../../shared/database/transaction.js'
 import { ApiError } from '../../shared/errors/app-error.js'

@@ -1,6 +1,6 @@
 import express, { type Router } from 'express'
 import { randomUUID } from 'node:crypto'
-import type { HealthDependencies } from './modules/health/health.service.js'
+import type { HealthDependencies } from './health/health.service.js'
 import { createApiRouter } from './routes.js'
 import { ApiError } from './shared/errors/app-error.js'
 import type { Logger } from './shared/logger.js'

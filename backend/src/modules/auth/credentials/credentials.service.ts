@@ -1,21 +1,19 @@
 import { loginInput, registrationInput } from './credentials.schema.js'
 
-export { loginInput, registrationInput } from './credentials.schema.js'
-
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
-import type { RegistrationNotifications } from '../../notifications/notification.service.js'
+import type { IdentityNotifications } from '../../notifications/notification.public.js'
 import type { IdentityModels } from '../auth.model.js'
 import type { BrowserSecurity } from '../sessions/browser-security.service.js'
 import type { SessionKind, SessionService } from '../sessions/session.service.js'
 import { accountDto } from './account.dto.js'
 import { hashPassword, verifyPassword } from './password.service.js'
 
-export function createCustomerService(
+function createCustomerService(
   models: IdentityModels,
   sessions: SessionService,
   security: BrowserSecurity,
-  notifications: RegistrationNotifications,
+  notifications: Pick<IdentityNotifications, 'enqueue'>,
   kind: SessionKind = 'customer',
 ) {
   const audience = kind === 'admin' ? 'admin' : 'storefront'
@@ -35,7 +33,7 @@ export function createCustomerService(
           })
           await user.save({ session })
           await notifications.enqueue(
-            { userId: user._id, email: input.email, name: input.name },
+            { userId: user._id.toHexString(), email: input.email, name: input.name },
             session,
           )
           return { account: accountDto(user), verificationRequired: true }
@@ -91,4 +89,8 @@ export function createCustomerService(
     },
   }
 }
-export type CustomerService = ReturnType<typeof createCustomerService>
+type CustomerService = ReturnType<typeof createCustomerService>
+
+export { loginInput, registrationInput } from './credentials.schema.js'
+export { createCustomerService }
+export type { CustomerService }

@@ -1,4 +1,4 @@
-import type { ClientSession, Connection, Types } from 'mongoose'
+import { Types, type ClientSession, type Connection } from 'mongoose'
 import { randomUUID } from 'node:crypto'
 import type { DeliveryOutcome } from './notification.types.js'
 import { createNotificationModel } from './notification.model.js'
@@ -12,19 +12,23 @@ export function createRegistrationNotifications(
   return {
     ...createNotificationPersistence(connection, model),
     async enqueue(
-      input: { userId: Types.ObjectId; email: string; name: string },
+      input: { userId: Types.ObjectId | string; email: string; name: string },
       session: ClientSession,
     ) {
       if (!session.inTransaction())
         throw new Error('Notification intent requires business transaction.')
+      const intent = {
+        ...input,
+        userId: typeof input.userId === 'string' ? new Types.ObjectId(input.userId) : input.userId,
+      }
       await model.updateOne(
-        { eventKey: `registration:${input.userId.toHexString()}:v1` },
+        { eventKey: `registration:${intent.userId.toHexString()}:v1` },
         {
           $setOnInsert: {
-            userId: input.userId,
+            userId: intent.userId,
             recipient: {
-              emailNormalized: input.email,
-              displayName: input.name,
+              emailNormalized: intent.email,
+              displayName: intent.name,
             },
             eventType: 'registration',
             templateVersion: 'registration-v1',
@@ -222,23 +226,33 @@ export function createRegistrationNotifications(
     },
     async enqueueGuestAccess(
       input: {
-        id: Types.ObjectId
-        challengeId: Types.ObjectId
-        orderId: Types.ObjectId
+        id: Types.ObjectId | string
+        challengeId: Types.ObjectId | string
+        orderId: Types.ObjectId | string
         email: string
       },
       session: ClientSession,
     ) {
       if (!session.inTransaction())
         throw new Error('Notification intent requires business transaction.')
+      const intent = {
+        ...input,
+        id: typeof input.id === 'string' ? new Types.ObjectId(input.id) : input.id,
+        challengeId:
+          typeof input.challengeId === 'string'
+            ? new Types.ObjectId(input.challengeId)
+            : input.challengeId,
+        orderId:
+          typeof input.orderId === 'string' ? new Types.ObjectId(input.orderId) : input.orderId,
+      }
       await new model({
-        _id: input.id,
-        eventKey: `guest_order_access:${input.challengeId.toHexString()}:v1`,
-        orderId: input.orderId,
-        recipient: { emailNormalized: input.email },
+        _id: intent.id,
+        eventKey: `guest_order_access:${intent.challengeId.toHexString()}:v1`,
+        orderId: intent.orderId,
+        recipient: { emailNormalized: intent.email },
         eventType: 'guest_order_access',
         templateVersion: 'guest-order-access-v1',
-        payload: { challengeId: input.challengeId },
+        payload: { challengeId: intent.challengeId },
         status: 'queued',
         attemptCount: 0,
         nextAttemptAt: clock(),
@@ -246,9 +260,9 @@ export function createRegistrationNotifications(
     },
     async enqueuePasswordReset(
       input: {
-        id: Types.ObjectId
-        challengeId: Types.ObjectId
-        userId: Types.ObjectId
+        id: Types.ObjectId | string
+        challengeId: Types.ObjectId | string
+        userId: Types.ObjectId | string
         email: string
       },
       session: ClientSession,
@@ -256,14 +270,23 @@ export function createRegistrationNotifications(
     ) {
       if (!session.inTransaction())
         throw new Error('Notification intent requires business transaction.')
+      const intent = {
+        ...input,
+        id: typeof input.id === 'string' ? new Types.ObjectId(input.id) : input.id,
+        challengeId:
+          typeof input.challengeId === 'string'
+            ? new Types.ObjectId(input.challengeId)
+            : input.challengeId,
+        userId: typeof input.userId === 'string' ? new Types.ObjectId(input.userId) : input.userId,
+      }
       await new model({
-        _id: input.id,
-        eventKey: `password_reset:${input.challengeId.toHexString()}:v1`,
-        userId: input.userId,
-        recipient: { emailNormalized: input.email },
+        _id: intent.id,
+        eventKey: `password_reset:${intent.challengeId.toHexString()}:v1`,
+        userId: intent.userId,
+        recipient: { emailNormalized: intent.email },
         eventType: 'password_reset',
         templateVersion: kind === 'admin' ? 'admin-password-reset-v1' : 'password-reset-v1',
-        payload: { challengeId: input.challengeId },
+        payload: { challengeId: intent.challengeId },
         status: 'queued',
         attemptCount: 0,
         nextAttemptAt: clock(),
@@ -271,23 +294,32 @@ export function createRegistrationNotifications(
     },
     async enqueueEmailVerification(
       input: {
-        id: Types.ObjectId
-        challengeId: Types.ObjectId
-        userId: Types.ObjectId
+        id: Types.ObjectId | string
+        challengeId: Types.ObjectId | string
+        userId: Types.ObjectId | string
         email: string
       },
       session: ClientSession,
     ) {
       if (!session.inTransaction())
         throw new Error('Notification intent requires business transaction.')
+      const intent = {
+        ...input,
+        id: typeof input.id === 'string' ? new Types.ObjectId(input.id) : input.id,
+        challengeId:
+          typeof input.challengeId === 'string'
+            ? new Types.ObjectId(input.challengeId)
+            : input.challengeId,
+        userId: typeof input.userId === 'string' ? new Types.ObjectId(input.userId) : input.userId,
+      }
       await new model({
-        _id: input.id,
-        eventKey: `email_verify:${input.challengeId.toHexString()}:v1`,
-        userId: input.userId,
-        recipient: { emailNormalized: input.email },
+        _id: intent.id,
+        eventKey: `email_verify:${intent.challengeId.toHexString()}:v1`,
+        userId: intent.userId,
+        recipient: { emailNormalized: intent.email },
         eventType: 'email_verification',
         templateVersion: 'email-verification-v1',
-        payload: { challengeId: input.challengeId },
+        payload: { challengeId: intent.challengeId },
         status: 'queued',
         attemptCount: 0,
         nextAttemptAt: clock(),
@@ -295,23 +327,32 @@ export function createRegistrationNotifications(
     },
     async enqueueEmailChange(
       input: {
-        id: Types.ObjectId
-        challengeId: Types.ObjectId
-        userId: Types.ObjectId
+        id: Types.ObjectId | string
+        challengeId: Types.ObjectId | string
+        userId: Types.ObjectId | string
         email: string
       },
       session: ClientSession,
     ) {
       if (!session.inTransaction())
         throw new Error('Notification intent requires business transaction.')
+      const intent = {
+        ...input,
+        id: typeof input.id === 'string' ? new Types.ObjectId(input.id) : input.id,
+        challengeId:
+          typeof input.challengeId === 'string'
+            ? new Types.ObjectId(input.challengeId)
+            : input.challengeId,
+        userId: typeof input.userId === 'string' ? new Types.ObjectId(input.userId) : input.userId,
+      }
       await new model({
-        _id: input.id,
-        eventKey: `email_change:${input.challengeId.toHexString()}:v1`,
-        userId: input.userId,
-        recipient: { emailNormalized: input.email },
+        _id: intent.id,
+        eventKey: `email_change:${intent.challengeId.toHexString()}:v1`,
+        userId: intent.userId,
+        recipient: { emailNormalized: intent.email },
         eventType: 'email_change',
         templateVersion: 'email-change-v1',
-        payload: { challengeId: input.challengeId },
+        payload: { challengeId: intent.challengeId },
         status: 'queued',
         attemptCount: 0,
         nextAttemptAt: clock(),

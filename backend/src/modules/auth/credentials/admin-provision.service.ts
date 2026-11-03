@@ -7,12 +7,8 @@ import type { IdentityModels } from '../auth.model.js'
 import { hashPassword } from './password.service.js'
 
 // Reserved bootstrap identity, not a secret or a selectable public registration field.
-export const initialAdminId = () => new Types.ObjectId('535a00000000000000000001')
-export async function provisionInitialAdmin(
-  connection: Connection,
-  models: IdentityModels,
-  raw: unknown,
-) {
+const initialAdminId = () => new Types.ObjectId('535a00000000000000000001')
+async function provisionInitialAdmin(connection: Connection, models: IdentityModels, raw: unknown) {
   const input = parseInput(registrationInput, raw),
     passwordHash = await hashPassword(input.password)
   try {
@@ -35,3 +31,5 @@ export async function provisionInitialAdmin(
   }
   return { provisioned: true as const }
 }
+
+export { initialAdminId, provisionInitialAdmin }

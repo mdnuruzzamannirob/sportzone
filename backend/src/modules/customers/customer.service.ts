@@ -2,7 +2,7 @@ import { Types, type ClientSession } from 'mongoose'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import type { AddressCoverage } from '../delivery/delivery.public.js'
-import type { CustomerAccountAccess, CustomerProfile } from '../auth/customer-account.service.js'
+import type { CustomerAccountAccess, CustomerProfile } from '../auth/auth.public.js'
 import {
   profilePatch,
   addressInput,
@@ -14,7 +14,7 @@ import {
 const addressDto = (address: CustomerProfile['addresses'][number]) => ({
   ...address,
 })
-export function createProfileService(
+function createProfileService(
   access: CustomerAccountAccess,
   coverage: AddressCoverage,
   clock: () => Date = () => new Date(),
@@ -121,4 +121,7 @@ export function createProfileService(
     },
   }
 }
-export type ProfileService = ReturnType<typeof createProfileService>
+type ProfileService = ReturnType<typeof createProfileService>
+
+export { createProfileService }
+export type { ProfileService }

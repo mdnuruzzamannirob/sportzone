@@ -1,7 +1,7 @@
 import { Types, type Connection } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
-import type { CustomerAccountAccess } from '../auth/customer-account.service.js'
+import type { CustomerAccountAccess } from '../auth/auth.public.js'
 import type { catalogService } from '../catalog/catalog.service.js'
 import { cartModel } from './cart.model.js'
 import { verifyCartPersistence } from './cart.persistence.js'

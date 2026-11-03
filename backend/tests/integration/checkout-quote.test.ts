@@ -1,4 +1,9 @@
 import {
+  createSessionHttp,
+  readSessionCookie,
+} from '../../src/modules/auth/sessions/session.http.js'
+import { auditOperationReader } from '../../src/modules/audit/audit.service.js'
+import {
   refundRequestOrderAccess,
   closedRefundRequestAccess,
 } from '../../src/modules/orders/order.service.js'
@@ -5527,6 +5532,8 @@ it('customer admin local: detail requires active admin and returns masked custom
     db.connection,
     identities,
     createAdminAccountAccess(db.connection, identities, sessions),
+    createAuditWriter(db.connection),
+    auditOperationReader(db.connection),
   )
   const result = await service.detail(admin.credentials.customerToken, who.user._id.toHexString())
   expect(result).toMatchObject({
@@ -5559,8 +5566,17 @@ it('blocked customer audit: HTTP search/detail enforce admin and status decision
     db.connection,
     identities,
     createAdminAccountAccess(db.connection, identities, sessions),
+    createAuditWriter(db.connection),
+    auditOperationReader(db.connection),
   )
-  const root = createApp({ apiRouter: customerAdminRoutes(administration, security, sessions) })
+  const root = createApp({
+    apiRouter: customerAdminRoutes(administration, {
+      cors: security.cors('admin'),
+      requireBrowser: security.require('admin', 'admin'),
+      requireSession: createSessionHttp(sessions).require('admin'),
+      readToken: (header) => readSessionCookie(header, 'admin'),
+    }),
+  })
   const path = `/api/v1/admin/customers/${who.user._id}`
   await request(root).get(path).set('Cookie', who.cookie).expect(401)
   const detail = await request(root).get(path).set('Cookie', administrator.cookie).expect(200)
@@ -5613,8 +5629,17 @@ it('blocked customer audit: suspension revokes every customer session and old re
     db.connection,
     identities,
     createAdminAccountAccess(db.connection, identities, sessions),
+    createAuditWriter(db.connection),
+    auditOperationReader(db.connection),
   )
-  const root = createApp({ apiRouter: customerAdminRoutes(administration, security, sessions) })
+  const root = createApp({
+    apiRouter: customerAdminRoutes(administration, {
+      cors: security.cors('admin'),
+      requireBrowser: security.require('admin', 'admin'),
+      requireSession: createSessionHttp(sessions).require('admin'),
+      readToken: (header) => readSessionCookie(header, 'admin'),
+    }),
+  })
   const path = `/api/v1/admin/customers/${who.user._id}/status-decisions`
   const post = (to: string, key: string) =>
     request(root)
@@ -5648,7 +5673,13 @@ it('blocked customer audit: concurrent duplicate decisions have one effect and t
   const who = await customer(),
     administrator = await customer('admin')
   const admins = createAdminAccountAccess(db.connection, identities, sessions)
-  const administration = customerAdminService(db.connection, identities, admins)
+  const administration = customerAdminService(
+    db.connection,
+    identities,
+    admins,
+    createAuditWriter(db.connection),
+    auditOperationReader(db.connection),
+  )
   const id = who.user._id.toHexString(),
     command = { to: 'suspended', reason: 'Synthetic concurrent review' }
   await Promise.all([
@@ -5673,7 +5704,13 @@ it('blocked customer audit: concurrent duplicate decisions have one effect and t
       ),
   }
   await expect(
-    customerAdminService(db.connection, identities, failing).decideStatus(
+    customerAdminService(
+      db.connection,
+      identities,
+      failing,
+      createAuditWriter(db.connection),
+      auditOperationReader(db.connection),
+    ).decideStatus(
       administrator.credentials.customerToken,
       other.user._id.toHexString(),
       command,

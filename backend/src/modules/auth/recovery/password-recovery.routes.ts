@@ -9,7 +9,7 @@ import type { RecoveryService } from './password-recovery.service.js'
 import { createSessionHttp, readSessionCookie } from '../sessions/session.http.js'
 import type { SessionService } from '../sessions/session.service.js'
 
-export function recoveryRoutes(
+function recoveryRoutes(
   service: RecoveryService,
   security: BrowserSecurity,
   sessions: SessionService,
@@ -67,3 +67,5 @@ export function recoveryRoutes(
   )
   return router
 }
+
+export { recoveryRoutes }

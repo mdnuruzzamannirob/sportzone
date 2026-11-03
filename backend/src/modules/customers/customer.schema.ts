@@ -8,7 +8,7 @@ const text = (max: number) =>
     .min(1)
     .refine((value) => [...value].length <= max)
     .meta({ maxLength: max })
-export const bangladeshPhone = z
+const bangladeshPhone = z
   .string()
   .max(64)
   .transform((value, ctx) => {
@@ -25,14 +25,14 @@ export const bangladeshPhone = z
       return z.NEVER
     }
   })
-export const profilePatch = z
+const profilePatch = z
   .strictObject({
     name: text(120).optional(),
     phone: bangladeshPhone.optional(),
   })
   .refine((value) => Object.values(value).some((v) => v !== undefined))
 const key = text(64).refine((value) => !value.includes(':') && value !== '*')
-export const addressInput = z.strictObject({
+const addressInput = z.strictObject({
   recipient: text(120),
   phone: bangladeshPhone,
   districtKey: key,
@@ -41,9 +41,11 @@ export const addressInput = z.strictObject({
   postalCode: text(30).optional(),
   addressLine2: text(300).optional(),
 })
-export const addressPatch = addressInput
+const addressPatch = addressInput
   .extend({ isDefault: z.boolean() })
   .partial()
   .refine((value) => Object.values(value).some((v) => v !== undefined))
-export const addressId = z.string().regex(/^[a-f0-9]{24}$/)
-export const deletionInput = z.strictObject({ reason: text(2000).optional() })
+const addressId = z.string().regex(/^[a-f0-9]{24}$/)
+const deletionInput = z.strictObject({ reason: text(2000).optional() })
+
+export { bangladeshPhone, profilePatch, addressInput, addressPatch, addressId, deletionInput }

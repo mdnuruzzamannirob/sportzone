@@ -37,5 +37,19 @@ function createAdminAccountAccess(
     },
   }
 }
+
+function createMediaAdminAccess(
+  models: IdentityModels,
+  sessions: SessionService,
+  clock: () => Date = () => new Date(),
+) {
+  return async (credential: string | undefined, transaction: ClientSession) => {
+    const identity = await sessions.authenticate('admin', credential)
+    await authorizeAccount(models, identity, 'admin', transaction, clock())
+    return { kind: 'admin' as const, principalId: identity.userId }
+  }
+}
+
 export { adminTransactionAccess, createAdminAccountAccess }
 export type { AdminAccountAccess }
+export { createMediaAdminAccess }

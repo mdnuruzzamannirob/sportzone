@@ -6,7 +6,7 @@ import { ApiError } from '../../../shared/errors/app-error.js'
 const minScalars = 12,
   maxScalars = 128,
   maxBytes = 512
-export const newPasswordPolicy = z
+const newPasswordPolicy = z
   .string()
   .refine(
     (value) =>
@@ -33,7 +33,7 @@ function derive(password: string, salt: Buffer): Promise<Buffer> {
     })
   })
 }
-export async function hashPassword(password: string) {
+async function hashPassword(password: string) {
   if (!newPasswordPolicy.safeParse(password).success) throw new ApiError('VALIDATION_FAILED')
   const salt = randomBytes(16),
     key = await derive(password, salt)
@@ -42,7 +42,7 @@ export async function hashPassword(password: string) {
 // Fixed valid-cost fallback: missing/disabled/unsupported records still execute a KDF.
 const dummySalt = Buffer.alloc(16),
   dummyKey = Buffer.alloc(64)
-export async function verifyPassword(password: string, encoded: string | undefined) {
+async function verifyPassword(password: string, encoded: string | undefined) {
   if (!password || /[\uD800-\uDFFF]/u.test(password) || Buffer.byteLength(password, 'utf8') > 4096)
     return false
   const match = encoded?.match(/^scrypt\$v1\$131072\$8\$1\$([a-f0-9]{32})\$([a-f0-9]{128})$/)
@@ -51,3 +51,5 @@ export async function verifyPassword(password: string, encoded: string | undefin
   const actual = await derive(password, salt)
   return timingSafeEqual(expected, actual) && Boolean(match)
 }
+
+export { newPasswordPolicy, hashPassword, verifyPassword }

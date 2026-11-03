@@ -8,16 +8,16 @@ const reason = z
   .min(1)
   .max(2000)
   .refine((v) => [...v].every((c) => c.charCodeAt(0) >= 32 && c.charCodeAt(0) !== 127))
-export const customerAdminQuery = paginationSchema.safeExtend({
+const customerAdminQuery = paginationSchema.safeExtend({
   q: z.string().trim().min(1).max(120).optional(),
   status: status.optional(),
 })
-export const customerStatusDecision = z.strictObject({
+const customerStatusDecision = z.strictObject({
   to: z.enum(['active', 'suspended']),
   reason,
 })
-export const customerStatusResult = z.strictObject({ status })
-export const customerAdminView = z.strictObject({
+const customerStatusResult = z.strictObject({ status })
+const customerAdminView = z.strictObject({
   id,
   name: z.string(),
   emailMasked: z.string(),
@@ -27,7 +27,7 @@ export const customerAdminView = z.strictObject({
   createdAt: z.iso.datetime(),
 })
 const privacyStatus = z.enum(['requested', 'under_review', 'approved', 'rejected'])
-export const customerPrivacyView = z.strictObject({
+const customerPrivacyView = z.strictObject({
   customerId: id,
   request: z
     .strictObject({
@@ -40,11 +40,21 @@ export const customerPrivacyView = z.strictObject({
     .nullable(),
   retention: z.literal('required_order_financial_audit_and_legal_hold_records_retained'),
 })
-export const customerPrivacyDecision = z.strictObject({
+const customerPrivacyDecision = z.strictObject({
   decision: z.enum(['under_review', 'approve_deactivation', 'reject']),
   reason,
 })
-export const customerPrivacyResult = z.strictObject({
+const customerPrivacyResult = z.strictObject({
   status: privacyStatus,
   retained: z.literal(true),
 })
+
+export {
+  customerAdminQuery,
+  customerStatusDecision,
+  customerStatusResult,
+  customerAdminView,
+  customerPrivacyView,
+  customerPrivacyDecision,
+  customerPrivacyResult,
+}

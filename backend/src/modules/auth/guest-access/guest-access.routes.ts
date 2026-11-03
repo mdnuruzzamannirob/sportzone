@@ -14,7 +14,7 @@ import { readContextCookie } from '../sessions/browser-security.service.js'
 import { requireGuestCsrf } from '../sessions/browser-security.routes.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
 import { respond } from '../../../shared/responses.js'
-export function guestAccessRoutes(
+function guestAccessRoutes(
   service: ReturnType<typeof guestAccessService>,
   sessions: GuestSessions,
   security: BrowserSecurity,
@@ -117,3 +117,5 @@ export function guestAccessRoutes(
   })
   return router
 }
+
+export { guestAccessRoutes }

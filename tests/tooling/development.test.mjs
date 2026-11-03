@@ -770,6 +770,37 @@ test('DEPLOY-02: Vercel separates app builds, uses the locked workspace and expo
   }
 })
 
+test('IDENTITY-BOUNDARY-01: auth assembly and customer HTTP consume injected capabilities, never foreign implementations', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/modules/orders/order.service.ts', 'export const guestOrders = 1')
+  put('backend/src/modules/audit/audit.service.ts', 'export const audit = 1')
+  put('backend/src/modules/auth/auth.model.ts', 'export const model = 1')
+  put('backend/src/health/health.service.ts', 'export const health = 1')
+  for (const [file, declaration, expected] of [
+    ['auth/auth.composition', 'import "../orders/order.service.js"', 'public contract'],
+    ['auth/customer-admin.service', 'import "../audit/audit.service.js"', 'public contract'],
+    ['customers/customer.controller', 'import "../auth/auth.model.js"', 'private persistence'],
+    ['auth/auth.composition', 'import "../../health/health.service.js"', 'root/health'],
+  ]) {
+    put(`backend/src/modules/${file}.ts`, declaration)
+    assert.ok(
+      checkBoundaries(root).errors.some((error) => error.includes(expected)),
+      declaration,
+    )
+    put(`backend/src/modules/${file}.ts`, '')
+  }
+  put(
+    'backend/src/modules/orders/order.public.ts',
+    'export interface GuestOrders { verify(): Promise<boolean> }',
+  )
+  put(
+    'backend/src/modules/auth/auth.composition.ts',
+    'import type {GuestOrders} from "../orders/order.public.js"',
+  )
+  put('backend/src/setup.ts', 'import {guestOrders} from "./modules/orders/order.service.js"')
+  assert.deepEqual(checkBoundaries(root).errors, [])
+})
+
 test('DELIVERY-BOUNDARY-01: HTTP and coverage consumers cannot bypass private persistence or auth', (t) => {
   const { root, put } = fixture(t)
   put('backend/src/modules/delivery/delivery.model.ts', 'export const model = 1')

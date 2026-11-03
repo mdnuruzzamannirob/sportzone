@@ -130,13 +130,13 @@ retain their own approver, environment, artifacts, blockers and explicit decisio
 
 ## 3. Project progress dashboard
 
-The register contains 215 tasks across twelve requirement groups. Application-stage execution is defined in §1; accepted IDs and evidence remain historical. Update totals when tasks are added or statuses change.
+The register contains 216 tasks across twelve requirement groups. Application-stage execution is defined in §1; accepted IDs and evidence remain historical. Update totals when tasks are added or statuses change.
 
 | Phase                                         |   Total | Not Started | Ready | In Progress | Blocked | In Review |    Done | Deferred |
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | ------: | -------: |
 | 01 — Requirements Finalization and Planning   |      24 |           0 |     0 |           0 |       0 |         0 |      24 |        0 |
 | 02 — UI/UX Design                             |      17 |           1 |     0 |           0 |       0 |         0 |      16 |        0 |
-| 03 — Authentication and Core Backend          |      27 |           0 |     0 |           1 |       0 |         0 |      26 |        0 |
+| 03 — Authentication and Core Backend          |      28 |           0 |     0 |           1 |       0 |         0 |      27 |        0 |
 | 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       0 |         0 |      12 |        1 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           8 |     0 |           0 |       0 |         0 |       9 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |           6 |     0 |           0 |       0 |         0 |      16 |        0 |
@@ -146,7 +146,7 @@ The register contains 215 tasks across twelve requirement groups. Application-st
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |       0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |       0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |       0 |        0 |
-| **Total**                                     | **215** |      **74** | **0** |       **1** |   **0** |     **0** | **138** |    **2** |
+| **Total**                                     | **216** |      **74** | **0** |       **1** |   **0** |     **0** | **139** |    **2** |
 
 ## 4. Milestone tracker
 
@@ -531,7 +531,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
 
 ### Phase 03 — Authentication and core backend
 
-**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 03. **Associated gate:** M1. **Tasks:** 27.
+**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 03. **Associated gate:** M1. **Tasks:** 28.
 
 - [x] **P03-001 — Bootstrap modular Express API and shared middleware**\
   **Status:** `Done` · **Area:** Backend/core · **Owner:** Codex\
@@ -755,6 +755,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Coverage precedence, inactive-area rejection, charge history, revision/idempotency/audit/transaction fences and HTTP contracts remain unchanged; remove owning allowances and verify affected consumers.\
   **Evidence:** [WP03 checks, review and Git limitation](./evidence/P03-021-backend-refactor.md#p03-027--wp03-delivery-pilot-3-november-2026). Completed 3 November 2026 under Tasks §2: 124 unit, 428 isolated integration and 48 boundary cases Passed; 183 contract cases initially Passed and three sandbox failures Passed on targeted outside-sandbox rerun. Type/build/lint/format/smoke/API freshness Passed; seven allowances removed, 345 remain.
 
+- [x] **P03-028 — Refactor identity, customer and technical health boundaries (WP04)**\
+  **Status:** `Done` · **Area:** Backend/auth/customers/health · **Owner:** Codex\
+  **Stage:** `Backend`\
+  **Sources:** Backend Refactor Plan WP04; Architecture §§4/6/9; API §§4/14; Database §5; Testing §15.5\
+  **Depends on:** `P03-027`\
+  **Deliverable:** Inject guest-order/audit capabilities into auth, publish narrow detached identity/notification contracts, isolate customer HTTP, reuse credential handlers/admin access and move health to its technical owner.\
+  **Acceptance:** One canonical identity store; unchanged session/CSRF/origin/proof/revocation/privacy/coverage behavior and health/API contracts. No new activation; owning boundary allowances removed and affected checks recorded.\
+  **Evidence:** [WP04 results, fixture correction and review](./evidence/P03-021-backend-refactor.md#p03-028--wp04-identity-customer-and-technical-health-3-november-2026). Completed 3 November 2026 under Tasks §2: 311 unit and 186 contract cases Passed; integration initially 812 Passed/1 existing Markdown-parser failure, corrected identity suite 40/40 Passed. All 813 distinct integration cases covered by valid results. 49 boundary cases and final identity fixture Passed; type/build/lint/format/smoke/API freshness Passed. Removed 26 allowances; 319 remain.
 
 ### Phase 04 — Product catalog and inventory
 
@@ -2704,3 +2712,6 @@ with scoped reruns, and executor visual inspection completed. Independent owner 
 
 
 **3 November 2026 — P03-027 / WP03 delivery pilot:** Not Started → In Progress → Done under Tasks §2. Extracted HTTP controllers, injected existing auth middleware, added consumed auth/delivery public types and migrated three delivery consumers; retained canonical persistence and cohesive management/read services. Seven allowances removed, 345 remain. 124 unit, 428 isolated integration and 48 boundary cases Passed; contract run initially 183 Passed/3 sandbox failures, targeted three-case outside-sandbox recheck Passed. Type/build/style/format/API freshness/smoke Passed. [Evidence and Git HEAD limitation](./evidence/P03-021-backend-refactor.md#p03-027--wp03-delivery-pilot-3-november-2026). Executor/reviewer: Codex. Overall: 215 tasks, 138 Done, 74 Not Started, 1 In Progress, 2 Deferred. Git metadata was not repaired; index diff and independently verified baseline snapshots support source review. P03-022/external/stage gates unchanged. Next: WP04 identity/customer/technical health.
+
+
+**3 November 2026 — P03-028 / WP04 identity/customer/health:** Not Started → In Progress → Done under Tasks §2. Root injects order/audit capabilities; auth exposes detached customer and notification contracts, shared credential handlers replace duplication, media-admin access is consolidated and health moves to its technical boundary. Canonical identity/schema/API/security behavior retained. 311 unit/186 contract cases Passed; 813 distinct integration cases verified through initial 812 Passed/1 parser failure plus corrected identity 40-case recheck. 49 boundary cases, final health-boundary fixture, type/build/style/format/smoke Passed. [Evidence, initial failure and review](./evidence/P03-021-backend-refactor.md#p03-028--wp04-identity-customer-and-technical-health-3-november-2026). 26 allowances removed; 319 remain. Executor/reviewer: Codex. Overall: 216 tasks, 139 Done, 74 Not Started, 1 In Progress, 2 Deferred. P03-022/external/stage/milestone gates unchanged. Next: WP05 audit/notification/media foundations.
