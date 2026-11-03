@@ -13,8 +13,11 @@ import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
 import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
 import { createSessionService } from '../../src/modules/auth/sessions/session.service.js'
 import { createBrowserSecurity } from '../../src/modules/auth/sessions/browser-security.service.js'
-import { createAdminAccountAccess } from '../../src/modules/auth/admin-account.service.js'
-import { createMediaAdminAccess } from '../../src/modules/auth/admin-account.service.js'
+import {
+  createAdminAccountAccess,
+  createMediaAdminAccess,
+} from '../../src/modules/auth/account-access.service.js'
+
 import { initializeAuditPersistence } from '../../src/modules/audit/audit.persistence.js'
 import { createAuditWriter } from '../../src/modules/audit/audit.service.js'
 import { categoryModel } from '../../src/modules/catalog/categories/category.model.js'

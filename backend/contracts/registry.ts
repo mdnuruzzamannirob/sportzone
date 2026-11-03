@@ -161,10 +161,7 @@ import {
 } from '../src/modules/cart/cart.schema.js'
 import { z } from 'zod'
 import { createIdentityContracts } from '../src/modules/auth/auth.schema.js'
-import {
-  loginInput,
-  registrationInput,
-} from '../src/modules/auth/credentials/credentials.schema.js'
+import { loginInput, registrationInput } from '../src/modules/auth/credentials/credential.schema.js'
 import { newPasswordPolicy } from '../src/modules/auth/credentials/password.service.js'
 import {
   changeInput,

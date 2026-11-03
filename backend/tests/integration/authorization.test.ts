@@ -1,4 +1,4 @@
-import { createCustomerAccountAccess } from '../../src/modules/auth/customer-account.service.js'
+import { createCustomerAccountAccess } from '../../src/modules/auth/account-access.service.js'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { Types } from 'mongoose'
 import { beforeAll, afterAll, describe, expect, it, vi } from 'vitest'
@@ -6,8 +6,8 @@ import { authorizeAccount } from '../../src/modules/auth/sessions/authorization.
 import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
 import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
 import { createSessionService } from '../../src/modules/auth/sessions/session.service.js'
-import { createProfileService } from '../../src/modules/customers/customer.service.js'
-import { createAddressCoverage } from '../../src/modules/delivery/delivery-coverage.service.js'
+import { createCustomerService } from '../../src/modules/customers/customer.service.js'
+import { createAddressCoverage } from '../../src/modules/delivery/delivery.service.js'
 import { inTransaction } from '../../src/shared/database/transaction.js'
 import { isolatedDatabase } from '../helpers/database.js'
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
@@ -129,7 +129,7 @@ describe('P03-013 transaction authorization', () => {
       return identity
     })
     try {
-      const profiles = createProfileService(
+      const profiles = createCustomerService(
         createCustomerAccountAccess(fixture.connection, models, sessions, () => now),
         createAddressCoverage(fixture.connection),
         () => now,

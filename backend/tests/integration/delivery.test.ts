@@ -10,16 +10,19 @@ import { afterAll, beforeAll, beforeEach, expect, it } from 'vitest'
 import { createApp } from '../../src/app.js'
 import { createAuditWriter } from '../../src/modules/audit/audit.service.js'
 import { initializeAuditPersistence } from '../../src/modules/audit/audit.persistence.js'
-import { createAdminAccountAccess } from '../../src/modules/auth/admin-account.service.js'
+import { createAdminAccountAccess } from '../../src/modules/auth/account-access.service.js'
 import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
 import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
 import { createBrowserSecurity } from '../../src/modules/auth/sessions/browser-security.service.js'
 import { createSessionService } from '../../src/modules/auth/sessions/session.service.js'
 import { deliveryModels } from '../../src/modules/delivery/delivery.model.js'
 import { initializeDeliveryPersistence } from '../../src/modules/delivery/delivery.persistence.js'
-import { deliveryRoutes } from '../../src/modules/delivery/delivery.routes.js'
-import { deliveryService } from '../../src/modules/delivery/delivery.service.js'
-import { createAddressCoverage } from '../../src/modules/delivery/delivery-coverage.service.js'
+import { createDeliveryRoutes } from '../../src/modules/delivery/delivery.routes.js'
+import {
+  createDeliveryService,
+  createAddressCoverage,
+} from '../../src/modules/delivery/delivery.service.js'
+
 import { deliverySettingsGuard } from '../../src/modules/settings/delivery-settings.service.js'
 import { settingsModel } from '../../src/modules/settings/settings.model.js'
 import { initializeSettingsPersistence } from '../../src/modules/settings/settings.persistence.js'
@@ -29,7 +32,7 @@ let db: Awaited<ReturnType<typeof isolatedDatabase>>
 let identities: ReturnType<typeof createIdentityModels>
 let sessions: ReturnType<typeof createSessionService>
 let security: ReturnType<typeof createBrowserSecurity>
-let service: ReturnType<typeof deliveryService>
+let service: ReturnType<typeof createDeliveryService>
 let app: ReturnType<typeof createApp>
 let now: Date
 const base = '/api/v1/admin/delivery',
@@ -115,7 +118,7 @@ beforeEach(async () => {
   await initializeSettingsPersistence(db.connection, 5)
   await db.connection.db?.collection('auditLogs').deleteMany({})
   now = new Date()
-  service = deliveryService(
+  service = createDeliveryService(
     db.connection,
     createAdminAccountAccess(db.connection, identities, sessions),
     deliverySettingsGuard(db.connection),
@@ -124,7 +127,7 @@ beforeEach(async () => {
   )
   app = createApp({
     apiRouter: Router().use(
-      deliveryRoutes(service, {
+      createDeliveryRoutes(service, {
         cors: security.cors('admin'),
         requireBrowser: security.require('admin', 'admin'),
         requireSession: createSessionHttp(sessions).require('admin'),
@@ -375,7 +378,7 @@ it('rolls back the global guard, zone fences, window and successor if audit fail
     a = await zone(actor),
     first = await charge(actor, a.id),
     before = await settingsModel(db.connection).findOne({ key: 'primary' }).orFail()
-  const failed = deliveryService(
+  const failed = createDeliveryService(
     db.connection,
     createAdminAccountAccess(db.connection, identities, sessions),
     deliverySettingsGuard(db.connection),
@@ -530,7 +533,7 @@ it('rolls back scheduled activation and expiry when worker audit fails', async (
   const first = await charge(actor, a.id, { effectiveTo: boundary }),
     second = await charge(actor, a.id, { effectiveFrom: boundary })
   now = new Date(boundary)
-  const failed = deliveryService(
+  const failed = createDeliveryService(
     db.connection,
     createAdminAccountAccess(db.connection, identities, sessions),
     deliverySettingsGuard(db.connection),

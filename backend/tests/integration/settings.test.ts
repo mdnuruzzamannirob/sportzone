@@ -16,12 +16,15 @@ import { createApp } from '../../src/app.js'
 import type { PolicyApproval } from '../../src/config/settings.js'
 import { initializeAuditPersistence } from '../../src/modules/audit/audit.persistence.js'
 import { createAuditWriter } from '../../src/modules/audit/audit.service.js'
-import { createAdminAccountAccess } from '../../src/modules/auth/admin-account.service.js'
+import {
+  createAdminAccountAccess,
+  createMediaAdminAccess,
+} from '../../src/modules/auth/account-access.service.js'
 import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
 import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
 import { createBrowserSecurity } from '../../src/modules/auth/sessions/browser-security.service.js'
 import { createSessionService } from '../../src/modules/auth/sessions/session.service.js'
-import { createMediaAdminAccess } from '../../src/modules/auth/admin-account.service.js'
+
 import { initializeMediaPersistence } from '../../src/modules/media/media.persistence.js'
 import { createMediaService } from '../../src/modules/media/media.service.js'
 import { mediaModel } from '../../src/modules/media/media.model.js'

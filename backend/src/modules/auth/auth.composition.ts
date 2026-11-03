@@ -1,26 +1,41 @@
-import { customerAdminService, customerReportAccess } from './customer-admin.service.js'
+import {
+  createAccountManagementService,
+  customerReportAccess,
+} from './account-management.service.js'
 import type { AdminAccountAccess, CustomerHistories } from './auth.public.js'
 import type { AuditWriter, AuditOperationReader } from '../audit/audit.public.js'
 import { emailVerificationRoutes } from './verification/email-verification.routes.js'
 import { createEmailVerificationService } from './verification/email-verification.service.js'
-import { createEmailVerificationDelivery } from './verification/proof-delivery.service.js'
+import {
+  createEmailVerificationDelivery,
+  createAdminResetDelivery,
+  createEmailChangeDelivery,
+  createResetDelivery,
+} from './verification/proof-delivery.service.js'
 import type { GuestOrderAccess } from '../orders/order.public.js'
 import { guestSessionService } from './guest-access/guest-session.service.js'
 import { guestAccessService } from './guest-access/guest-access.service.js'
 import { guestAccessRoutes } from './guest-access/guest-access.routes.js'
 import { guestProofDelivery } from './guest-access/guest-proof-delivery.service.js'
-import { adminTransactionAccess, createAdminAccountAccess } from './admin-account.service.js'
+import {
+  adminTransactionAccess,
+  createAdminAccountAccess,
+  createCustomerAccountAccess,
+  createMediaAdminAccess,
+} from './account-access.service.js'
 import { Router } from 'express'
 import type { Connection } from 'mongoose'
 import type { IdentityConfig, RuntimeConfig } from '../../config/env.js'
 import type { IdentityNotifications } from '../notifications/notification.public.js'
 import { createIdentityModels } from './auth.model.js'
-import { adminRoutes } from './credentials/admin-auth.routes.js'
-import { createCustomerService } from './credentials/credentials.service.js'
-import { customerRoutes } from './credentials/customer-auth.routes.js'
-import { createCustomerAccountAccess } from './customer-account.service.js'
+import {
+  createAdminCredentialRoutes,
+  createCustomerCredentialRoutes,
+} from './credentials/credential.routes.js'
+import { createCredentialService } from './credentials/credential.service.js'
+
 import { verifyIdentityPersistence } from './identity.persistence.js'
-import { createMediaAdminAccess } from './admin-account.service.js'
+
 import { recoveryRoutes } from './recovery/password-recovery.routes.js'
 import { createRecoveryService } from './recovery/password-recovery.service.js'
 import { createAuthQuotaStore } from './sessions/auth-throttle.persistence.js'
@@ -30,11 +45,6 @@ import { createBrowserSecurity } from './sessions/browser-security.service.js'
 import { createSessionService } from './sessions/session.service.js'
 import { emailChangeRoutes } from './verification/email-change.routes.js'
 import { createEmailChangeService } from './verification/email-change.service.js'
-import {
-  createAdminResetDelivery,
-  createEmailChangeDelivery,
-  createResetDelivery,
-} from './verification/proof-delivery.service.js'
 
 async function createAuthRuntime(
   connection: Connection,
@@ -91,8 +101,8 @@ async function createAuthRuntime(
     )
   if (config.CUSTOMER_AUTH_ENABLED)
     router.use(
-      customerRoutes(
-        createCustomerService(models, sessions, security, notifications),
+      createCustomerCredentialRoutes(
+        createCredentialService(models, sessions, security, notifications),
         security,
         sessions,
         throttle.middleware('customer', 'credentials'),
@@ -139,8 +149,8 @@ async function createAuthRuntime(
     )
   if (options.adminRecovery)
     router.use(
-      adminRoutes(
-        createCustomerService(models, sessions, security, notifications, 'admin'),
+      createAdminCredentialRoutes(
+        createCredentialService(models, sessions, security, notifications, 'admin'),
         createRecoveryService(
           connection,
           models,
@@ -208,7 +218,15 @@ function customerAdministrationAccess(
 ) {
   const models = createIdentityModels(connection)
   return {
-    customers: customerAdminService(connection, models, admins, audit, lookup, clock, histories),
+    customers: createAccountManagementService(
+      connection,
+      models,
+      admins,
+      audit,
+      lookup,
+      clock,
+      histories,
+    ),
     registeredCustomers: customerReportAccess(connection, models),
   }
 }

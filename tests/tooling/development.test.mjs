@@ -409,7 +409,7 @@ test('OPERATIONS-BOUNDARY-01: support/report routes and readers retain private s
     ['reports/report.service', 'refunds/refund'],
     ['support/support.routes', 'support/complaint'],
     ['notifications/notification-admin.service', 'auth/auth'],
-    ['customers/customer-admin.routes', 'orders/order'],
+    ['customers/customer.routes', 'orders/order'],
   ]) {
     put(`backend/src/modules/${owner}.model.ts`, 'export const model = 1')
     put(`backend/src/modules/${reader}.ts`, `import "../${owner}.model.js"`)
@@ -425,7 +425,7 @@ test('OPERATIONS-BOUNDARY-01: support/report routes and readers retain private s
 test('BLOCKED-AUDIT-BOUNDARY-01: customer routes and reviews retain auth and audit persistence privacy', (t) => {
   const { root, put } = fixture(t)
   for (const [consumer, owner] of [
-    ['customers/customer-admin.routes', 'auth/auth'],
+    ['customers/customer.routes', 'auth/auth'],
     ['reviews/review.service', 'auth/auth'],
     ['reviews/review.service', 'audit/audit'],
   ]) {
@@ -804,7 +804,7 @@ test('IDENTITY-BOUNDARY-01: auth assembly and customer HTTP consume injected cap
 test('DELIVERY-BOUNDARY-01: HTTP and coverage consumers cannot bypass private persistence or auth', (t) => {
   const { root, put } = fixture(t)
   put('backend/src/modules/delivery/delivery.model.ts', 'export const model = 1')
-  put('backend/src/modules/delivery/delivery-coverage.service.ts', 'export const coverage = 1')
+  put('backend/src/modules/delivery/delivery.service.ts', 'export const coverage = 1')
   put('backend/src/modules/auth/sessions/session.http.ts', 'export const session = 1')
   for (const [consumer, declaration, expected] of [
     ['delivery/delivery.controller', 'import "./delivery.model.js"', 'delegate persistence'],
@@ -812,7 +812,7 @@ test('DELIVERY-BOUNDARY-01: HTTP and coverage consumers cannot bypass private pe
     ['customers/customer.service', 'import "../delivery/delivery.model.js"', 'private persistence'],
     [
       'checkout/checkout-quote.service',
-      'import type {coverage} from "../delivery/delivery-coverage.service.js"',
+      'import type {coverage} from "../delivery/delivery.service.js"',
       'public contract',
     ],
   ]) {

@@ -63,7 +63,7 @@ import {
   customerPrivacyView,
   customerPrivacyDecision,
   customerPrivacyResult,
-} from '../src/modules/auth/customer-admin.schema.js'
+} from '../src/modules/auth/account-management.schema.js'
 import {
   reviewCreate,
   reviewEdit,

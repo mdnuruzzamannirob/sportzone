@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { loginInput } from '../credentials/credentials.schema.js'
+import { loginInput } from '../credentials/credential.schema.js'
 import { newPasswordPolicy } from '../credentials/password.service.js'
 import { proofPattern } from '../verification/proof.crypto.js'
 

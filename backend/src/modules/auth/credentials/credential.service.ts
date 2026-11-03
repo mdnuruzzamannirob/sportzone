@@ -1,4 +1,4 @@
-import { loginInput, registrationInput } from './credentials.schema.js'
+import { loginInput, registrationInput } from './credential.schema.js'
 
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
@@ -9,7 +9,7 @@ import type { SessionKind, SessionService } from '../sessions/session.service.js
 import { accountDto } from './account.dto.js'
 import { hashPassword, verifyPassword } from './password.service.js'
 
-function createCustomerService(
+function createCredentialService(
   models: IdentityModels,
   sessions: SessionService,
   security: BrowserSecurity,
@@ -89,8 +89,8 @@ function createCustomerService(
     },
   }
 }
-type CustomerService = ReturnType<typeof createCustomerService>
+type CredentialService = ReturnType<typeof createCredentialService>
 
-export { loginInput, registrationInput } from './credentials.schema.js'
-export { createCustomerService }
-export type { CustomerService }
+export { loginInput, registrationInput } from './credential.schema.js'
+export { createCredentialService }
+export type { CredentialService }

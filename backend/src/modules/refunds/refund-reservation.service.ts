@@ -11,7 +11,7 @@ export { refundApproval } from './refund-reservation.schema.js'
 import { createHash } from 'node:crypto'
 import { Types, type ClientSession, type Connection } from 'mongoose'
 import { z } from 'zod'
-import type { AdminAccountAccess } from '../auth/admin-account.service.js'
+import type { AdminAccountAccess } from '../auth/auth.public.js'
 import type { refundFundingAccess } from '../payments/payment.service.js'
 import type { refundClaimSnapshotAccess } from '../returns/return.service.js'
 import type {

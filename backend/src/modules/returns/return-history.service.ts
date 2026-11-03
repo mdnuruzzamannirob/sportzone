@@ -7,7 +7,7 @@ import type {
 } from '../auth/checkout-access.service.js'
 import type { complaintOrderAccess, customerOrderHistoryAccess } from '../orders/order.service.js'
 import type { claimEvidenceMetadataAccess } from '../media/claim-evidence.service.js'
-import type { AdminAccountAccess } from '../auth/admin-account.service.js'
+import type { AdminAccountAccess } from '../auth/auth.public.js'
 import { pageMeta } from '../../shared/pagination.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'

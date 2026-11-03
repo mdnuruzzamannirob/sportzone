@@ -2,7 +2,7 @@ import { cancellationQuery } from './cancellation.schema.js'
 import { createRegistrationNotifications } from '../notifications/notification.service.js'
 import { createHash } from 'node:crypto'
 import { Types, type Connection, type ClientSession } from 'mongoose'
-import type { AdminAccountAccess } from '../auth/admin-account.service.js'
+import type { AdminAccountAccess } from '../auth/auth.public.js'
 import type {
   orderScopeAccess,
   PaymentInitiationCredentials,

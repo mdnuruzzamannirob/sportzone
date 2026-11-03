@@ -19,7 +19,7 @@ import { initializeIdentityPersistence } from '../../src/modules/auth/identity.p
 import { createSessionService } from '../../src/modules/auth/sessions/session.service.js'
 import { authorizeAccount } from '../../src/modules/auth/sessions/authorization.service.js'
 import { createBrowserSecurity } from '../../src/modules/auth/sessions/browser-security.service.js'
-import { createMediaAdminAccess } from '../../src/modules/auth/admin-account.service.js'
+import { createMediaAdminAccess } from '../../src/modules/auth/account-access.service.js'
 import { createCloudinaryAdapter } from '../../src/providers/cloudinary/cloudinary.client.js'
 import { createClamAvScanner } from '../../src/providers/antivirus/clamav.client.js'
 import { createMediaService } from '../../src/modules/media/media.service.js'

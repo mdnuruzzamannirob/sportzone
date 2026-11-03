@@ -9,19 +9,19 @@ import request from 'supertest'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createApp } from '../../src/app.js'
 import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
-import { createCustomerAccountAccess } from '../../src/modules/auth/customer-account.service.js'
+import { createCustomerAccountAccess } from '../../src/modules/auth/account-access.service.js'
 import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
 import { createBrowserSecurity } from '../../src/modules/auth/sessions/browser-security.service.js'
 import { createSessionService } from '../../src/modules/auth/sessions/session.service.js'
-import { profileRoutes } from '../../src/modules/customers/customer.routes.js'
-import { createProfileService } from '../../src/modules/customers/customer.service.js'
-import { createAddressCoverage } from '../../src/modules/delivery/delivery-coverage.service.js'
+import { createCustomerRoutes } from '../../src/modules/customers/customer.routes.js'
+import { createCustomerService } from '../../src/modules/customers/customer.service.js'
+import { createAddressCoverage } from '../../src/modules/delivery/delivery.service.js'
 import { isolatedDatabase } from '../helpers/database.js'
 
 let fixture: Awaited<ReturnType<typeof isolatedDatabase>>
 let models: ReturnType<typeof createIdentityModels>
 let sessions: ReturnType<typeof createSessionService>
-let service: ReturnType<typeof createProfileService>
+let service: ReturnType<typeof createCustomerService>
 let app: ReturnType<typeof createApp>
 let time = Date.now()
 const clock = () => new Date(time)
@@ -104,14 +104,14 @@ beforeAll(async () => {
     },
     clock,
   )
-  service = createProfileService(
+  service = createCustomerService(
     createCustomerAccountAccess(fixture.connection, models, sessions, clock),
     createAddressCoverage(fixture.connection, clock),
     clock,
   )
   const router = Router()
   router.use(
-    profileRoutes(service, {
+    createCustomerRoutes(service, {
       cors: security.cors('storefront'),
       requireBrowser: security.require('storefront', 'customer'),
       requireSession: createSessionHttp(sessions).require('customer'),

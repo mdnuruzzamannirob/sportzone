@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import type { Connection } from 'mongoose'
-import type { AdminAccountAccess } from '../auth/admin-account.service.js'
+import type { AdminAccountAccess } from '../auth/auth.public.js'
 import type { verifiedFundingOrderAccess } from '../orders/order.service.js'
 import type { paymentSettlementService } from './payment-settlement.service.js'
 import { createAuditWriter, auditOperationReader } from '../audit/audit.service.js'

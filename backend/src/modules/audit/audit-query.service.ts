@@ -1,7 +1,7 @@
 import { auditView } from './audit-query.schema.js'
 import { auditQuery as querySchema } from './audit-query.schema.js'
 import { Types, type Connection } from 'mongoose'
-import type { AdminAccountAccess } from '../auth/admin-account.service.js'
+import type { AdminAccountAccess } from '../auth/auth.public.js'
 import { pageMeta } from '../../shared/pagination.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { auditModel } from './audit.model.js'

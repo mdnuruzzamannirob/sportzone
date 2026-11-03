@@ -1,4 +1,4 @@
-import { createCustomerService } from '../../src/modules/auth/credentials/credentials.service.js'
+import { createCredentialService } from '../../src/modules/auth/credentials/credential.service.js'
 import { inTransaction } from '../../src/shared/database/transaction.js'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { Router } from 'express'
@@ -644,7 +644,7 @@ describe('verified customer email changes with real MongoDB and HTTP', () => {
       before = (await models.users.findById(owner.user._id))?.addresses.toObject()
     expect((await post('/confirm', { token: first.token }, owner)).status).toBe(200)
     expect((await models.users.findById(owner.user._id))?.addresses.toObject()).toEqual(before)
-    const auth = createCustomerService(models, sessions, security, notifications),
+    const auth = createCredentialService(models, sessions, security, notifications),
       ctx = await security.issueContext('storefront')
     await expect(
       auth.login({ email: owner.user.emailNormalized, password }, ctx.token, ctx.csrfToken),

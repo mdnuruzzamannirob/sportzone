@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import type { ClientSession } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
-import type { CustomerAccountAccess, CustomerProfile } from './customer-account.service.js'
+import type { CustomerAccountAccess, CustomerProfile } from './account-access.service.js'
 import type { BrowserSecurity } from './sessions/browser-security.service.js'
 type CheckoutCredentials = {
   customerPresent: boolean

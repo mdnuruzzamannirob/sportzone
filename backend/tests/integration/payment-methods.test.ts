@@ -15,7 +15,7 @@ import { inTransaction } from '../../src/shared/database/transaction.js'
 import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
 import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
 import { createSessionService } from '../../src/modules/auth/sessions/session.service.js'
-import { createCustomerAccountAccess } from '../../src/modules/auth/customer-account.service.js'
+import { createCustomerAccountAccess } from '../../src/modules/auth/account-access.service.js'
 import { guestSessionService } from '../../src/modules/auth/guest-access/guest-session.service.js'
 import { paymentMethodAccess } from '../../src/modules/auth/checkout-access.service.js'
 import {

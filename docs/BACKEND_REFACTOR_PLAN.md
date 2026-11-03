@@ -276,6 +276,25 @@ Do not create every listed file for every feature. A single local constant/helpe
 in its owning file. Do not add a second canonical user/variant schema to satisfy a template. Preserve
 existing meaningful media operation services rather than forcing a universal one-service-per-module rule.
 
+Concrete naming/consolidation for the adopted identity/customer/delivery owners:
+
+| Owner | Canonical files and entry points |
+| --- | --- |
+| Auth credentials | `credentials/credential.routes.ts`, `.controller.ts`, `.schema.ts`, `.service.ts`; `createCredentialService` / `createCredentialController`. Customer/admin router factories share the routes file while retaining independent activation. |
+| Auth account capabilities | `account-access.service.ts` holds related admin/customer/media transaction access; `account-management.service.ts` and `.schema.ts` own security administration. Persistence stays canonical and private. |
+| Customers | `customer.routes.ts`, `.controller.ts`, `.schema.ts`, `.service.ts`; `createCustomerService` / `createCustomerController`. Admin management HTTP uses the same owning route/controller files and injected auth capabilities. |
+| Delivery | `delivery.routes.ts`, `.controller.ts`, `.schema.ts`, `.service.ts`, `.model.ts`, `.persistence.ts`, `.public.ts`; `createDeliveryService` / `createDeliveryController`. Existing coverage read capabilities live in the same cohesive service file. |
+
+An audience or HTTP method alone does not justify another routes/controller file. Multiple router
+factories in the owning file may preserve different activation/security boundaries; consolidation
+must not make admin endpoints public or enable a disabled feature. Service/factory/type names must
+identify the same responsibility: credential operations are not a CustomerService, and the customer
+module is not named as a profile-only service when it also owns addresses and privacy intake.
+Purpose-specific verification, recovery and guest-security policies retain their distinct files;
+helper/service suffixes are chosen by real responsibility, not mechanically from a uniform template.
+A proposed illustrative tree is not an instruction to create every supporting file or collapse
+independent security/financial state machines. Operator scripts retain reviewed public entry points.
+
 ### 4.2 Implementation and export conventions
 
 - Kebab-case paths, singular resource/responsibility filenames, PascalCase types/classes, camelCase functions.

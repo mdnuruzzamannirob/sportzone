@@ -9,8 +9,8 @@ import { initializeIdentityPersistence } from '../../src/modules/auth/identity.p
 import { createSessionService } from '../../src/modules/auth/sessions/session.service.js'
 import { createBrowserSecurity } from '../../src/modules/auth/sessions/browser-security.service.js'
 import { browserSecurityRoutes } from '../../src/modules/auth/sessions/browser-security.routes.js'
-import { createCustomerService } from '../../src/modules/auth/credentials/credentials.service.js'
-import { customerRoutes } from '../../src/modules/auth/credentials/customer-auth.routes.js'
+import { createCredentialService } from '../../src/modules/auth/credentials/credential.service.js'
+import { createCustomerCredentialRoutes } from '../../src/modules/auth/credentials/credential.routes.js'
 import { createRegistrationNotifications } from '../../src/modules/notifications/notification.service.js'
 import { registrationNotificationValidator } from '../../src/modules/notifications/notification.persistence.js'
 import { composeIdentityRoutes } from '../../src/setup.js'
@@ -41,8 +41,8 @@ function makeApp() {
   const router = Router()
   router.use(browserSecurityRoutes(security, sessions))
   router.use(
-    customerRoutes(
-      createCustomerService(models, sessions, security, notifications),
+    createCustomerCredentialRoutes(
+      createCredentialService(models, sessions, security, notifications),
       security,
       sessions,
     ),

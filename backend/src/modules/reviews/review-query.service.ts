@@ -1,7 +1,7 @@
 import { adminReviewView } from './review.schema.js'
 import { Types, type ClientSession, type Connection } from 'mongoose'
 import type { CustomerAccountAccess } from '../auth/auth.public.js'
-import type { AdminAccountAccess } from '../auth/admin-account.service.js'
+import type { AdminAccountAccess } from '../auth/auth.public.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { paginationSchema, pageMeta } from '../../shared/pagination.js'
 import { ApiError } from '../../shared/errors/app-error.js'

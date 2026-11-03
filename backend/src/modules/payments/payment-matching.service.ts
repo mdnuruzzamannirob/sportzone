@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { Types, type Connection } from 'mongoose'
 import { z } from 'zod'
-import type { AdminAccountAccess } from '../auth/admin-account.service.js'
+import type { AdminAccountAccess } from '../auth/auth.public.js'
 import type { verifiedFundingOrderAccess } from '../orders/order.service.js'
 import type { verifiedAllocationService } from '../checkout/verified-allocation.service.js'
 import { correctionObligationService } from '../refunds/correction-obligation.service.js'

@@ -703,3 +703,108 @@ private persistence, narrow string-id adapters, original notification keys/paylo
 normalization and purpose-specific security fences. Type/format/docs/whitespace checks are recorded
 on the final revision. P03-028 completes WP04 under Tasks §2. Next: WP05 audit/notification/media
 foundations; P03-022 and application/external/milestone acceptance remain unchanged.
+
+## P03-029 — Completed WP00–WP04 review and corrections, 3 November 2026
+
+Owner requested a full review of completed refactor packages after identifying naming and file
+fragmentation concerns. Input revision: `5090fec`, clean tree on `codex/backend-refactor-wp03`.
+Executor/reviewer: Codex. This is a correction/review of completed engineering packages, not WP05
+implementation, a new business feature or backend-stage acceptance. Historical package results above
+remain accurate for their recorded revisions; this section supersedes their affected source paths.
+
+### Review findings and dispositions
+
+| Package | Finding | Disposition |
+| --- | --- | --- |
+| WP00 | Historical baseline/operation/model inventory remains evidence of its input revision, not a current filesystem manifest. | Preserved it; checked actual current consumers before moves and recorded explicit successor paths in Plan §4.1. No baseline regeneration conceals changes. |
+| WP01 | Public/private/composition/shared/provider/cycle checks work, but import direction alone cannot establish file cohesion or consistent names. | Rechecked the existing positive/negative suite; updated obsolete customer/delivery fixture paths. Migrated another 27 admin-access consumers to the existing public type and removed their exact allowances, never renamed them into new permissions. |
+| WP02 | Configuration/technical crypto ownership is sound; proofHash still contained an opaque nested namespace ternary inherited from the original implementation. | Replaced it with a private named namespace map; all five purposes, default and legacy fallback match the original hash output. AEAD/key/binding behavior stays untouched. |
+| WP03 | Delivery coverage factories were separated into a second service file despite sharing the same feature/persistence owner; factory/controller names did not follow a consistent construction convention. | Consolidated management/coverage into delivery.service.ts, removed delivery-coverage.service.ts, migrated all consumers and aligned createDeliveryService/createDeliveryController/router names. Replaced transition-input nested branching with explicit local guarded branches. |
+| WP04 | Auth credential service was named as customer service; customer service was named only as profile service. Audience-only routers and related account capabilities remained unnecessarily fragmented. | Singular credential.* files with CredentialService/createCredentialService; CustomerService/createCustomerService in customers. Customer/admin credential routers share credential.routes.ts, and customer/admin management routers share customer.routes.ts. Admin/customer/media account access now shares account-access.service.ts. Security administration is explicitly account-management.service.ts/.schema.ts. |
+| WP04 | Root assembly, proof policies, canonical identity ownership and technical health placement were already correct after the prior package. | Retained them. Independent router factories keep the original activation/guard order. Distinct email verification/change, recovery and guest policies are not mechanically collapsed to match an illustrative tree. |
+
+The review found a concrete organization/readability gap, not evidence that multiple files are
+universally wrong. The recorded Architecture §6.2/Plan §4.1 rules now identify the adopted owners'
+canonical files and explain that audience alone does not justify separate HTTP files. A proposal
+is not a mandate to generate every optional file or merge independent security/financial policies.
+No task/stage acceptance was inferred from a test count or folder tree alone.
+
+### Concrete changes and preservation
+
+- Auth: two audience credential route files → one credential.routes.ts; credential service/controller/
+  schema filenames and exported service/type names agree. Two account-access files → one owned file;
+  security administration has an explicit account-management basename. Actual constructors remain
+  cohesive capabilities over the same canonical identity, not a generic CRUD service.
+- Customers: profile/admin route files → customer.routes.ts; controller/service factories identify the
+  customer feature. Different router factories preserve distinct activation and server-side access.
+- Delivery: coverage/management source → delivery.service.ts, with narrow public contracts unchanged.
+  Existing canonical models/indexes and address/checkout/area-read semantics are retained.
+- Updated setup, composition, all runtime/type consumers, existing test imports and executable API
+  contract-generation/route-inventory inputs together. Removed obsolete files instead of leaving
+  forwarding adapters/barrels. Duplicate imports of moved owners were consolidated in nine consumers.
+- Source inventory decreases by **four files**: 435 → 431 checked source files. Auth 42 → 40,
+  customers 5 → 4, delivery 8 → 7; health remains two technical files. No source scaffolding, test file,
+  package, collection, HTTP operation or environment key was added by this correction.
+- All 27 removed allowances were stale private AdminAccountAccess imports. **292 remain: 291 exact
+  import signatures and one type-cycle component** for later packages. Zero new allowances.
+- Independent source comparison verifies ten moved service-function bodies unchanged: admin
+  transaction/account/media authorization, customer account access, account management, credential
+  operations, customer profile/address/intake operations, and all three delivery coverage factories.
+  Fifty-nine canonical persistence/API-artifact/manifest inputs retain their pre-review bytes or
+  original WP00 artifact fingerprints. Seven proof namespace/default/fallback outputs match.
+
+API/Database/Operations behavior and procedures did not change. No frontend application work was
+started. Existing operator scripts retain their entry points; clean build removes obsolete compiled
+source paths. Existing test matrices remain meaningful: no redundant test file was identified for
+safe removal and no security/concurrency assertion was deleted to reduce file count.
+
+### Observed verification
+
+Node v24.20.0/npm 11.19.0; isolated replica-set MongoDB 8.0.16 with
+`MONGOMS_DISTRO=ubuntu-24.04`. Loopback/process suites ran outside sandbox restrictions. No live
+provider, production/developer data or irreversible financial effect was used.
+
+| Command/check | Observed result |
+| --- | --- |
+| `npm run typecheck --workspace=backend` | Passed on final source, including updated tests/contracts |
+| `npm run build --workspace=backend` | Passed; clean dist contains canonical renamed/consolidated owners |
+| `npm run lint --workspace=backend` | Passed: 484 files |
+| `npm run lint:boundaries` | Passed: 431 source files, zero errors, 292 exact allowances |
+| `npm run format:backend` | Passed: 500 files |
+| `node --test --test-isolation=none --test-name-pattern='BOUNDARY\|STRUCTURE\|TOOL-0[1-5]' tests/tooling/development.test.mjs` | Passed: 49 cases after actual fixture-path updates |
+| Affected unit selection | Passed: 314 cases / 15 files; after proof readability cleanup only its three affected unit consumers were rerun, all 50 Passed. These are overlapping cases, not 364 distinct tests. |
+| Consolidated affected integration selection | Passed: all 856 cases / 24 files in one clean run, including the corrected index-parser case from WP04 |
+| `npm run test:contract --workspace=backend` | Passed: all four generated artifacts fresh, all 186 contract cases; executable route inventory follows both route consolidations |
+| `npm run test:smoke --workspace=backend` | Passed: compiled config-redaction/startup/live/restricted-ready/shutdown |
+| Source/policy preservation comparison | Passed: 59 persistence/artifact/manifest inputs, ten moved function bodies, seven proof namespace cases |
+
+Unit arguments under `tests/unit/`: admin-auth, app, auth-rate-limit, browser-security, composition,
+container-health, delivery, email-change, guest-access, identity-contracts, notifications, passwords,
+profile, recovery, sessions (each with `.test.ts`). Command:
+`npm run test:unit --workspace=backend -- <listed paths> --reporter=default --reporter=json --outputFile=../test-results/backend-refactor/completed-review-unit.json`.
+The post-cleanup three-file command used recovery/email-change/guest-access and wrote
+`completed-review-proof-unit.json`. Passing unchanged consumers were reused, not rerun for appearances.
+
+Integration arguments under `tests/integration/`: admin-auth, auth-rate-limit, authorization,
+browser-security, customer, email-change, email-verification, guest-access, identity, profile,
+recovery, sessions, notifications, composition, runtime, checkout-quote, cart, wishlist, media,
+settings, category-admin, product-admin, delivery, database (each with `.test.ts`). Command:
+`MONGOMS_DISTRO=ubuntu-24.04 npm exec --workspace=backend -- vitest run --config vitest.integration.config.ts --reporter=default --reporter=json --outputFile=../test-results/backend-refactor/completed-review-integration.json <listed paths>`.
+All file arguments include their `tests/unit/` or `tests/integration/` prefix. Table escaping is
+Markdown only; the Node test filter uses literal `|`.
+
+Artifacts: [unit](../../test-results/backend-refactor/completed-review-unit.json),
+[proof recheck](../../test-results/backend-refactor/completed-review-proof-unit.json),
+[integration](../../test-results/backend-refactor/completed-review-integration.json),
+[preservation](../../test-results/backend-refactor/completed-review-preservation.json),
+[check summary](../../test-results/backend-refactor/completed-review-checks.json).
+These are ignored local outputs. Full unrelated backend/tooling regression, frontend/browser,
+live providers, deployment and external qualification were Not Run; later modules still have their
+explicit remaining refactor packages and migration allowances.
+
+Executor reviewed the final actual diff/new paths, old-path consumer searches, middleware and
+activation ordering, canonical registration/contract fingerprints, purpose-bound proof behavior,
+transaction/revocation/audit fences and negative boundary fixtures. Final documentation/link,
+format and staged/unstaged whitespace checks are recorded with the handoff. P03-029 closes these
+completed-package findings under Tasks §2. P03-022 and application/external/milestone gates remain
+unchanged. Next planned implementation remains WP05.

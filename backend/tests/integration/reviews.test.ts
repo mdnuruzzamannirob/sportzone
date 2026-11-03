@@ -1,5 +1,8 @@
 import { createBrowserSecurity } from '../../src/modules/auth/sessions/browser-security.service.js'
-import { createAdminAccountAccess } from '../../src/modules/auth/admin-account.service.js'
+import {
+  createAdminAccountAccess,
+  createCustomerAccountAccess,
+} from '../../src/modules/auth/account-access.service.js'
 import { reviewQueryService } from '../../src/modules/reviews/review-query.service.js'
 import { reviewRoutes } from '../../src/modules/reviews/review.routes.js'
 import { spawnSync } from 'node:child_process'
@@ -22,7 +25,7 @@ import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
 import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
 import { createSessionService } from '../../src/modules/auth/sessions/session.service.js'
 import { authorizeAccount } from '../../src/modules/auth/sessions/authorization.service.js'
-import { createCustomerAccountAccess } from '../../src/modules/auth/customer-account.service.js'
+
 import { productModels } from '../../src/modules/catalog/products/product.model.js'
 import { initializeProductPersistence } from '../../src/modules/catalog/products/product.persistence.js'
 import { productReviewAccess } from '../../src/modules/catalog/products/product.service.js'

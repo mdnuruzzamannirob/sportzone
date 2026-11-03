@@ -2,7 +2,7 @@ import { createRegistrationNotifications } from '../notifications/notification.s
 import { createDeliveryDeadlineService } from './delivery-deadline.service.js'
 import { createHash } from 'node:crypto'
 import { Types, type ClientSession, type Connection } from 'mongoose'
-import type { AdminAccountAccess } from '../auth/admin-account.service.js'
+import type { AdminAccountAccess } from '../auth/auth.public.js'
 import type { fulfillmentPaymentAccess } from '../payments/payment.service.js'
 import type { fulfillmentAllocationService } from '../checkout/fulfillment-allocation.service.js'
 import { createAuditWriter, auditOperationReader } from '../audit/audit.service.js'

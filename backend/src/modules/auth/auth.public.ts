@@ -1,6 +1,6 @@
 import type { RequestHandler } from 'express'
 import type { z } from 'zod'
-import type { customerAdminView, customerPrivacyView } from './customer-admin.schema.js'
+import type { customerAdminView, customerPrivacyView } from './account-management.schema.js'
 import type { pageMeta } from '../../shared/pagination.js'
 import type { ClientSession } from 'mongoose'
 

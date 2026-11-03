@@ -35,7 +35,10 @@ import { catalogReportAccess } from './modules/catalog/products/product.service.
 import { reportThresholdAccess } from './modules/settings/settings.service.js'
 import { returnReportAccess } from './modules/returns/return.service.js'
 import { customerAdministrationAccess } from './modules/auth/auth.composition.js'
-import { customerAdminRoutes } from './modules/customers/customer-admin.routes.js'
+import {
+  createCustomerAdminRoutes,
+  createCustomerRoutes,
+} from './modules/customers/customer.routes.js'
 import { complaintService } from './modules/support/complaint.service.js'
 import { supportReadRoutes } from './modules/support/support-read.routes.js'
 import { supportRoutes } from './modules/support/support.routes.js'
@@ -121,15 +124,19 @@ import { checkoutRoutes } from './modules/checkout/checkout.routes.js'
 import { fulfillmentAllocationService } from './modules/checkout/fulfillment-allocation.service.js'
 import { paymentAllocationService } from './modules/checkout/payment-allocation.service.js'
 import { verifiedAllocationService } from './modules/checkout/verified-allocation.service.js'
-import { profileRoutes } from './modules/customers/customer.routes.js'
-import { createProfileService } from './modules/customers/customer.service.js'
+
+import { createCustomerService } from './modules/customers/customer.service.js'
 import {
   checkoutDeliveryAccess,
   createAddressCoverage,
   deliveryAreasAccess,
-} from './modules/delivery/delivery-coverage.service.js'
-import { deliveryAreaRoutes, deliveryRoutes } from './modules/delivery/delivery.routes.js'
-import { deliveryService } from './modules/delivery/delivery.service.js'
+  createDeliveryService,
+} from './modules/delivery/delivery.service.js'
+import {
+  createDeliveryAreaRoutes,
+  createDeliveryRoutes,
+} from './modules/delivery/delivery.routes.js'
+
 import type { HealthDependencies } from './health/health.service.js'
 import { allocationService } from './modules/inventory/allocation.service.js'
 import { inventoryAdminRoutes } from './modules/inventory/inventory-admin.routes.js'
@@ -714,7 +721,7 @@ export function composeOperationsRoutes(
       reconciliation: (session, q) => payments(session, q, true),
     })
   return [
-    customerAdminRoutes(administration.customers, {
+    createCustomerAdminRoutes(administration.customers, {
       cors: auth.security.cors('admin'),
       requireBrowser: auth.security.require('admin', 'admin'),
       requireSession: createSessionHttp(auth.sessions).require('admin'),
@@ -1011,8 +1018,8 @@ export async function composeIdentityRoutes(
     )
   if (config.CUSTOMER_AUTH_ENABLED)
     auth.router.use(
-      profileRoutes(
-        createProfileService(auth.customerAccounts, createAddressCoverage(connection)),
+      createCustomerRoutes(
+        createCustomerService(auth.customerAccounts, createAddressCoverage(connection)),
         {
           cors: auth.security.cors('storefront'),
           requireBrowser: auth.security.require('storefront', 'customer'),
@@ -1170,8 +1177,8 @@ export async function composeIdentityRoutes(
     )
   if (config.ADMIN_AUTH_ENABLED)
     auth.router.use(
-      deliveryRoutes(
-        deliveryService(
+      createDeliveryRoutes(
+        createDeliveryService(
           connection,
           auth.adminAccounts,
           deliverySettingsGuard(connection),
@@ -1385,7 +1392,7 @@ export async function composeApplication(
   )
   const content = settingsPublicRoutes(settings, policies, config.CORS_ALLOWED_ORIGINS)
   const apiRouter = createApiRouter(health, [
-    deliveryAreaRoutes(deliveryAreasAccess(connection), config.CORS_ALLOWED_ORIGINS),
+    createDeliveryAreaRoutes(deliveryAreasAccess(connection), config.CORS_ALLOWED_ORIGINS),
     catalog,
     content,
     ...(!identity

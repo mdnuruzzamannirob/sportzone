@@ -143,9 +143,10 @@ import { paymentSettlementService } from '../../src/modules/payments/payment-set
 import {
   adminTransactionAccess,
   createAdminAccountAccess,
-} from '../../src/modules/auth/admin-account.service.js'
-import { customerAdminService } from '../../src/modules/auth/customer-admin.service.js'
-import { customerAdminRoutes } from '../../src/modules/customers/customer-admin.routes.js'
+  createCustomerAccountAccess,
+} from '../../src/modules/auth/account-access.service.js'
+import { createAccountManagementService } from '../../src/modules/auth/account-management.service.js'
+import { createCustomerAdminRoutes } from '../../src/modules/customers/customer.routes.js'
 import { initializeCorrectionPersistence } from '../../src/modules/refunds/refund.persistence.js'
 import { createAuditWriter } from '../../src/modules/audit/audit.service.js'
 import { paymentProcessingService } from '../../src/modules/payments/payment-processing.service.js'
@@ -192,8 +193,11 @@ import {
 } from '../../src/modules/inventory/inventory.model.js'
 import { variantStockAccess } from '../../src/modules/catalog/variants/variant.service.js'
 import { initializeAuditPersistence } from '../../src/modules/audit/audit.persistence.js'
-import { deliveryAreasAccess } from '../../src/modules/delivery/delivery-coverage.service.js'
-import { deliveryAreaRoutes } from '../../src/modules/delivery/delivery.routes.js'
+import {
+  deliveryAreasAccess,
+  checkoutDeliveryAccess,
+} from '../../src/modules/delivery/delivery.service.js'
+import { createDeliveryAreaRoutes } from '../../src/modules/delivery/delivery.routes.js'
 import { loadEnvironment } from '../../src/config/env.js'
 import { createRegistrationNotifications } from '../../src/modules/notifications/notification.service.js'
 import { composeApplication } from '../../src/setup.js'
@@ -207,7 +211,7 @@ import { afterAll, beforeAll, beforeEach, expect, it } from 'vitest'
 import { createContractCheckedApp as createApp } from '../helpers/contracts.js'
 import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
 import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
-import { createCustomerAccountAccess } from '../../src/modules/auth/customer-account.service.js'
+
 import {
   checkoutAccess,
   type CheckoutCredentials,
@@ -221,7 +225,7 @@ import { categoryModel } from '../../src/modules/catalog/categories/category.mod
 import { productModels } from '../../src/modules/catalog/products/product.model.js'
 import { initializeProductPersistence } from '../../src/modules/catalog/products/product.persistence.js'
 import { attributeSignature } from '../../src/modules/catalog/variants/variant.schema.js'
-import { checkoutDeliveryAccess } from '../../src/modules/delivery/delivery-coverage.service.js'
+
 import { deliveryModels } from '../../src/modules/delivery/delivery.model.js'
 import { initializeDeliveryPersistence } from '../../src/modules/delivery/delivery.persistence.js'
 import { initializeSettingsPersistence } from '../../src/modules/settings/settings.persistence.js'
@@ -927,7 +931,7 @@ it('enforces persistent quote admission limits and rejects suspended customer ow
 })
 it('lists only active effective delivery areas with bounded filters and safe public CORS', async () => {
   const publicApp = createApp({
-    apiRouter: deliveryAreaRoutes(
+    apiRouter: createDeliveryAreaRoutes(
       deliveryAreasAccess(db.connection, () => now),
       [origin],
     ),
@@ -5528,7 +5532,7 @@ it('customer admin local: detail requires active admin and returns masked custom
   const who = await customer(),
     admin = await customer('admin'),
     other = await customer()
-  const service = customerAdminService(
+  const service = createAccountManagementService(
     db.connection,
     identities,
     createAdminAccountAccess(db.connection, identities, sessions),
@@ -5562,7 +5566,7 @@ it('customer admin local: detail requires active admin and returns masked custom
 it('blocked customer audit: HTTP search/detail enforce admin and status decisions require CSRF, key and strict input', async () => {
   const who = await customer(),
     administrator = await customer('admin')
-  const administration = customerAdminService(
+  const administration = createAccountManagementService(
     db.connection,
     identities,
     createAdminAccountAccess(db.connection, identities, sessions),
@@ -5570,7 +5574,7 @@ it('blocked customer audit: HTTP search/detail enforce admin and status decision
     auditOperationReader(db.connection),
   )
   const root = createApp({
-    apiRouter: customerAdminRoutes(administration, {
+    apiRouter: createCustomerAdminRoutes(administration, {
       cors: security.cors('admin'),
       requireBrowser: security.require('admin', 'admin'),
       requireSession: createSessionHttp(sessions).require('admin'),
@@ -5625,7 +5629,7 @@ it('blocked customer audit: suspension revokes every customer session and old re
   const who = await customer(),
     administrator = await customer('admin')
   const second = await sessions.issue('customer', who.user._id)
-  const administration = customerAdminService(
+  const administration = createAccountManagementService(
     db.connection,
     identities,
     createAdminAccountAccess(db.connection, identities, sessions),
@@ -5633,7 +5637,7 @@ it('blocked customer audit: suspension revokes every customer session and old re
     auditOperationReader(db.connection),
   )
   const root = createApp({
-    apiRouter: customerAdminRoutes(administration, {
+    apiRouter: createCustomerAdminRoutes(administration, {
       cors: security.cors('admin'),
       requireBrowser: security.require('admin', 'admin'),
       requireSession: createSessionHttp(sessions).require('admin'),
@@ -5673,7 +5677,7 @@ it('blocked customer audit: concurrent duplicate decisions have one effect and t
   const who = await customer(),
     administrator = await customer('admin')
   const admins = createAdminAccountAccess(db.connection, identities, sessions)
-  const administration = customerAdminService(
+  const administration = createAccountManagementService(
     db.connection,
     identities,
     admins,
@@ -5692,7 +5696,7 @@ it('blocked customer audit: concurrent duplicate decisions have one effect and t
       .countDocuments({ targetId: who.user._id, action: 'customer.status.decision' }),
   ).toBe(1)
   const other = await customer()
-  const failing: Parameters<typeof customerAdminService>[2] = {
+  const failing: Parameters<typeof createAccountManagementService>[2] = {
     owned: (token, work, mutating) =>
       admins.owned(
         token,
@@ -5704,7 +5708,7 @@ it('blocked customer audit: concurrent duplicate decisions have one effect and t
       ),
   }
   await expect(
-    customerAdminService(
+    createAccountManagementService(
       db.connection,
       identities,
       failing,

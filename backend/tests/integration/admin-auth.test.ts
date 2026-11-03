@@ -15,9 +15,9 @@ import {
 import { createSessionService } from '../../src/modules/auth/sessions/session.service.js'
 import { createBrowserSecurity } from '../../src/modules/auth/sessions/browser-security.service.js'
 import { browserSecurityRoutes } from '../../src/modules/auth/sessions/browser-security.routes.js'
-import { createCustomerService } from '../../src/modules/auth/credentials/credentials.service.js'
+import { createCredentialService } from '../../src/modules/auth/credentials/credential.service.js'
 import { createRecoveryService } from '../../src/modules/auth/recovery/password-recovery.service.js'
-import { adminRoutes } from '../../src/modules/auth/credentials/admin-auth.routes.js'
+import { createAdminCredentialRoutes } from '../../src/modules/auth/credentials/credential.routes.js'
 import { composeIdentityRoutes } from '../../src/setup.js'
 import {
   createAdminResetDelivery,
@@ -42,7 +42,7 @@ let models: ReturnType<typeof createIdentityModels>,
   sessions: ReturnType<typeof createSessionService>,
   security: ReturnType<typeof createBrowserSecurity>,
   notifications: ReturnType<typeof createRegistrationNotifications>
-let credentials: ReturnType<typeof createCustomerService>,
+let credentials: ReturnType<typeof createCredentialService>,
   recovery: ReturnType<typeof createRecoveryService>,
   customerRecovery: ReturnType<typeof createRecoveryService>,
   delivery: ReturnType<typeof createAdminResetDelivery>
@@ -177,7 +177,7 @@ beforeAll(async () => {
     },
     clock,
   )
-  credentials = createCustomerService(models, sessions, security, notifications, 'admin')
+  credentials = createCredentialService(models, sessions, security, notifications, 'admin')
   recovery = createRecoveryService(
     fixture.connection,
     models,
@@ -209,7 +209,7 @@ beforeEach(async () => {
   await fixture.connection.db?.collection('notifications').deleteMany({})
   const router = Router()
   router.use(browserSecurityRoutes(security, sessions))
-  router.use(adminRoutes(credentials, recovery, security, sessions))
+  router.use(createAdminCredentialRoutes(credentials, recovery, security, sessions))
   app = createApp({ apiRouter: router })
 })
 afterAll(async () => {
@@ -540,7 +540,7 @@ describe('private administrator credentials and recovery on real MongoDB/HTTP', 
     const admin = await user(),
       old = await sessions.issue('admin', admin._id),
       ctx = await security.issueContext('admin')
-    const broken = createCustomerService(
+    const broken = createCredentialService(
       models,
       {
         ...sessions,

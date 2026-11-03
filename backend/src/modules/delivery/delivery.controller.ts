@@ -6,7 +6,7 @@ import { zoneParams, chargeParams } from './delivery.schema.js'
 import type { DeliveryService } from './delivery.service.js'
 import type { DeliveryAreasAccess } from './delivery.public.js'
 
-function deliveryController(
+function createDeliveryController(
   service: DeliveryService,
   readToken: (header: string | undefined) => string | undefined,
 ) {
@@ -59,11 +59,11 @@ function deliveryController(
   return { zones, charges, createZone, patchZone, createCharge, transition }
 }
 
-function deliveryAreasController(read: DeliveryAreasAccess): RequestHandler {
+function createDeliveryAreasController(read: DeliveryAreasAccess): RequestHandler {
   return async (req, res) => {
     parseInput(z.undefined(), req.body)
     respond(res, await read(req.query))
   }
 }
 
-export { deliveryController, deliveryAreasController }
+export { createDeliveryController, createDeliveryAreasController }

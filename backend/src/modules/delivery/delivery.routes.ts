@@ -1,6 +1,6 @@
 import { ApiError } from '../../shared/errors/app-error.js'
 import { Router, type RequestHandler } from 'express'
-import { deliveryController, deliveryAreasController } from './delivery.controller.js'
+import { createDeliveryController, createDeliveryAreasController } from './delivery.controller.js'
 import type { DeliveryService } from './delivery.service.js'
 import type { DeliveryAreasAccess } from './delivery.public.js'
 
@@ -11,9 +11,9 @@ interface DeliveryRouteSecurity {
   readToken: (header: string | undefined) => string | undefined
 }
 
-function deliveryRoutes(service: DeliveryService, security: DeliveryRouteSecurity) {
+function createDeliveryRoutes(service: DeliveryService, security: DeliveryRouteSecurity) {
   const router = Router()
-  const controller = deliveryController(service, security.readToken)
+  const controller = createDeliveryController(service, security.readToken)
   for (const path of [
     '/admin/delivery/zones',
     '/admin/delivery/zones/:zoneId',
@@ -43,7 +43,7 @@ function deliveryRoutes(service: DeliveryService, security: DeliveryRouteSecurit
   return router
 }
 
-function deliveryAreaRoutes(read: DeliveryAreasAccess, origins: readonly string[]) {
+function createDeliveryAreaRoutes(read: DeliveryAreasAccess, origins: readonly string[]) {
   const router = Router()
   const cors: RequestHandler = (req, res, next) => {
     res.vary('Origin')
@@ -74,9 +74,9 @@ function deliveryAreaRoutes(read: DeliveryAreasAccess, origins: readonly string[
     next()
   }
   router.options('/delivery/areas', cors)
-  router.get('/delivery/areas', cors, deliveryAreasController(read))
+  router.get('/delivery/areas', cors, createDeliveryAreasController(read))
   return router
 }
 
-export { deliveryRoutes, deliveryAreaRoutes }
+export { createDeliveryRoutes, createDeliveryAreaRoutes }
 export type { DeliveryRouteSecurity }

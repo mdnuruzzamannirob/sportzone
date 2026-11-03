@@ -14,7 +14,7 @@ import {
 const addressDto = (address: CustomerProfile['addresses'][number]) => ({
   ...address,
 })
-function createProfileService(
+function createCustomerService(
   access: CustomerAccountAccess,
   coverage: AddressCoverage,
   clock: () => Date = () => new Date(),
@@ -121,7 +121,7 @@ function createProfileService(
     },
   }
 }
-type ProfileService = ReturnType<typeof createProfileService>
+type CustomerService = ReturnType<typeof createCustomerService>
 
-export { createProfileService }
-export type { ProfileService }
+export { createCustomerService }
+export type { CustomerService }

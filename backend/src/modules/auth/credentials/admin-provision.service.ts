@@ -2,7 +2,7 @@ import { Types, type Connection } from 'mongoose'
 import { inTransaction } from '../../../shared/database/transaction.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
-import { registrationInput } from './credentials.service.js'
+import { registrationInput } from './credential.service.js'
 import type { IdentityModels } from '../auth.model.js'
 import { hashPassword } from './password.service.js'
 

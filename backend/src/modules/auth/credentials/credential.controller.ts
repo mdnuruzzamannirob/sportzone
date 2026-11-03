@@ -5,10 +5,10 @@ import { respond } from '../../../shared/responses.js'
 import { readContextCookie, type BrowserSecurity } from '../sessions/browser-security.service.js'
 import { createSessionHttp, readSessionCookie } from '../sessions/session.http.js'
 import type { SessionKind, SessionService } from '../sessions/session.service.js'
-import type { CustomerService } from './credentials.service.js'
+import type { CredentialService } from './credential.service.js'
 
-function credentialsController(
-  service: CustomerService,
+function createCredentialController(
+  service: CredentialService,
   security: BrowserSecurity,
   sessions: SessionService,
   kind: SessionKind = 'customer',
@@ -50,4 +50,4 @@ function credentialsController(
   return { register, login, current, logout }
 }
 
-export { credentialsController }
+export { createCredentialController }

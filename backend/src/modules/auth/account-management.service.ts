@@ -1,9 +1,9 @@
-import { customerAdminView, customerPrivacyView } from './customer-admin.schema.js'
+import { customerAdminView, customerPrivacyView } from './account-management.schema.js'
 import {
   customerAdminQuery as querySchema,
   customerStatusDecision as decisionSchema,
   customerPrivacyDecision,
-} from './customer-admin.schema.js'
+} from './account-management.schema.js'
 import type { Connection } from 'mongoose'
 import { z } from 'zod'
 import type { IdentityModels } from './auth.model.js'
@@ -33,7 +33,7 @@ function maskedEmail(email: string) {
   return `${email[0]}***@${email.slice(at + 1)}`
 }
 // Private administration capability; deletion and financial history remain separately authorized.
-function customerAdminService(
+function createAccountManagementService(
   connection: Connection,
   models: IdentityModels,
   admins: AdminAccountAccess,
@@ -310,4 +310,4 @@ function customerReportAccess(connection: Connection, models: IdentityModels) {
   }
 }
 
-export { customerAdminService, customerReportAccess }
+export { createAccountManagementService, customerReportAccess }

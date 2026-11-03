@@ -4,7 +4,7 @@ import { Types, type ClientSession, type Connection } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { pageMeta } from '../../shared/pagination.js'
-import type { AdminAccountAccess } from '../auth/admin-account.service.js'
+import type { AdminAccountAccess } from '../auth/auth.public.js'
 import { couponModels } from './coupon.model.js'
 import { verifyCouponPersistence } from './coupon.persistence.js'
 import {

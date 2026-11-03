@@ -130,8 +130,7 @@ describe('executable API contract registry', () => {
     visit('src/health')
     expect(actual.sort()).toEqual(
       [
-        'auth/credentials/admin-auth.routes.ts',
-        'auth/credentials/customer-auth.routes.ts',
+        'auth/credentials/credential.routes.ts',
         'auth/guest-access/guest-access.routes.ts',
         'auth/recovery/password-recovery.routes.ts',
         'auth/sessions/browser-security.routes.ts',
@@ -144,7 +143,6 @@ describe('executable API contract registry', () => {
         'cart/wishlist.routes.ts',
         'checkout/checkout.routes.ts',
         'customers/customer.routes.ts',
-        'customers/customer-admin.routes.ts',
         'delivery/delivery.routes.ts',
         'health/health.routes.ts',
         'inventory/inventory-admin.routes.ts',

@@ -1,7 +1,7 @@
 import { reportViews, operationalItem } from './report.schema.js'
 import { reportQuery as query, operationalQuery } from './report.schema.js'
 import type { ClientSession } from 'mongoose'
-import type { AdminAccountAccess } from '../auth/admin-account.service.js'
+import type { AdminAccountAccess } from '../auth/auth.public.js'
 import type { orderReportAccess } from '../orders/order.service.js'
 import type {
   paymentReportAccess,

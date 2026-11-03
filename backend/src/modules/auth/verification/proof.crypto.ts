@@ -7,20 +7,17 @@ import {
 import { ConfigurationError } from '../../../shared/errors/configuration-error.js'
 
 const proofPattern = /^[A-Za-z0-9_-]{43}$/
-const proofHash = (
-  proof: string,
-  purpose:
-    | 'password_reset'
-    | 'email_verify'
-    | 'email_change'
-    | 'admin_password_reset'
-    | 'guest_order_access' = 'password_reset',
-) =>
-  createHash('sha256')
-    .update(
-      `sportzone:${purpose === 'password_reset' ? 'password-reset' : purpose === 'email_verify' ? 'email-verify' : purpose === 'email_change' ? 'email-change' : purpose === 'guest_order_access' ? 'guest-order-access' : 'admin-password-reset'}:v1:${proof}`,
-    )
-    .digest('hex')
+const proofNamespaces = {
+  password_reset: 'password-reset',
+  email_verify: 'email-verify',
+  email_change: 'email-change',
+  admin_password_reset: 'admin-password-reset',
+  guest_order_access: 'guest-order-access',
+} as const
+function proofHash(proof: string, purpose: keyof typeof proofNamespaces = 'password_reset') {
+  const namespace = proofNamespaces[purpose] ?? 'admin-password-reset'
+  return createHash('sha256').update(`sportzone:${namespace}:v1:${proof}`).digest('hex')
+}
 type ProofBinding = {
   id: string
   email: string

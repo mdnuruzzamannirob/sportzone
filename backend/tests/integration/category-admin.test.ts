@@ -9,10 +9,13 @@ import { createApp } from '../../src/app.js'
 import { loadEnvironment } from '../../src/config/env.js'
 import { initializeAuditPersistence } from '../../src/modules/audit/audit.persistence.js'
 import { createAuditWriter } from '../../src/modules/audit/audit.service.js'
-import { createAdminAccountAccess } from '../../src/modules/auth/admin-account.service.js'
+import {
+  createAdminAccountAccess,
+  createMediaAdminAccess,
+} from '../../src/modules/auth/account-access.service.js'
 import { createIdentityModels } from '../../src/modules/auth/auth.model.js'
 import { initializeIdentityPersistence } from '../../src/modules/auth/identity.persistence.js'
-import { createMediaAdminAccess } from '../../src/modules/auth/admin-account.service.js'
+
 import { createBrowserSecurity } from '../../src/modules/auth/sessions/browser-security.service.js'
 import { createSessionService } from '../../src/modules/auth/sessions/session.service.js'
 import { catalogRoutes } from '../../src/modules/catalog/catalog.routes.js'

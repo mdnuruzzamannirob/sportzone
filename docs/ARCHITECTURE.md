@@ -612,6 +612,12 @@ contract; do not introduce argument-forwarding factories, empty templates or gen
 Cross-module wiring stays in setup.ts. Use a module-local .composition.ts only for actual assembly
 of private models, services and routers; domain implementation/contracts never import that layer.
 Keep internal dependency types with their service/context when a separate file adds no boundary.
+Audience-specific customer/admin HTTP shares its owning resource routes/controller files; separate
+router factories preserve independent activation and guard order. Credentials use the singular
+credential file/factory basename, customer operations use customer, and delivery coverage/management
+share delivery.service.ts. Related auth account capabilities share account-access.service.ts;
+security administration stays in account-management.service.ts. These adopted-owner paths follow
+Backend Refactor Plan §4.1; do not apply a file-count template to distinct proof or financial policies.
 Configuration may import owning validation schemas or public types, not domain-service implementations;
 move reusable validation/crypto mechanics to an appropriate pure owner instead of executing workflows from config.
 Session/browser option validation and raw environment adapters belong in config/security.ts. Shared

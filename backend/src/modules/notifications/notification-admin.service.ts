@@ -3,7 +3,7 @@ import { notificationAdminQuery, notificationRetryInput } from './notification.s
 import { createHash } from 'node:crypto'
 import type { Connection } from 'mongoose'
 import { z } from 'zod'
-import type { AdminAccountAccess } from '../auth/admin-account.service.js'
+import type { AdminAccountAccess } from '../auth/auth.public.js'
 import { createNotificationModel } from './notification.model.js'
 import { createNotificationPersistence } from './notification.persistence.js'
 import { createAuditWriter, auditOperationReader } from '../audit/audit.service.js'

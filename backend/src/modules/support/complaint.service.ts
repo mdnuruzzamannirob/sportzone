@@ -8,7 +8,7 @@ import type {
   orderScopeAccess,
   PaymentInitiationCredentials,
 } from '../auth/checkout-access.service.js'
-import type { AdminAccountAccess } from '../auth/admin-account.service.js'
+import type { AdminAccountAccess } from '../auth/auth.public.js'
 import type { complaintOrderAccess } from '../orders/order.service.js'
 import { orderId } from '../orders/order.schema.js'
 import { createAuditWriter, auditOperationReader } from '../audit/audit.service.js'

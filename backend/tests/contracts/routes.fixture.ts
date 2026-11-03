@@ -10,7 +10,10 @@ import { returnRoutes } from '../../src/modules/returns/return.routes.js'
 import { orderAdminRoutes } from '../../src/modules/orders/order-admin.routes.js'
 import { orderReadRoutes } from '../../src/modules/orders/order-read.routes.js'
 import { supportReadRoutes } from '../../src/modules/support/support-read.routes.js'
-import { customerAdminRoutes } from '../../src/modules/customers/customer-admin.routes.js'
+import {
+  createCustomerAdminRoutes,
+  createCustomerRoutes,
+} from '../../src/modules/customers/customer.routes.js'
 import { cancellationRoutes } from '../../src/modules/orders/cancellation.routes.js'
 import { returnHistoryRoutes } from '../../src/modules/returns/return-history.routes.js'
 import { reviewRoutes } from '../../src/modules/reviews/review.routes.js'
@@ -20,9 +23,9 @@ import { paymentCallbackRoutes } from '../../src/modules/payments/payment-callba
 import { paymentInitiationRoutes } from '../../src/modules/payments/payment-initiation.routes.js'
 import { paymentMethodsRoutes } from '../../src/modules/payments/payment-methods.routes.js'
 import { guestAccessRoutes } from '../../src/modules/auth/guest-access/guest-access.routes.js'
-import { deliveryAreaRoutes } from '../../src/modules/delivery/delivery.routes.js'
+import { createDeliveryAreaRoutes } from '../../src/modules/delivery/delivery.routes.js'
 import { checkoutRoutes } from '../../src/modules/checkout/checkout.routes.js'
-import { deliveryRoutes } from '../../src/modules/delivery/delivery.routes.js'
+import { createDeliveryRoutes } from '../../src/modules/delivery/delivery.routes.js'
 import {
   settingsAdminRoutes,
   settingsPublicRoutes,
@@ -35,13 +38,16 @@ import { wishlistRoutes } from '../../src/modules/cart/wishlist.routes.js'
 import { cartRoutes } from '../../src/modules/cart/cart.routes.js'
 import type { RequestHandler, Router } from 'express'
 import { z } from 'zod'
-import { adminRoutes } from '../../src/modules/auth/credentials/admin-auth.routes.js'
-import { customerRoutes } from '../../src/modules/auth/credentials/customer-auth.routes.js'
+import {
+  createAdminCredentialRoutes,
+  createCustomerCredentialRoutes,
+} from '../../src/modules/auth/credentials/credential.routes.js'
+
 import { recoveryRoutes } from '../../src/modules/auth/recovery/password-recovery.routes.js'
 import { browserSecurityRoutes } from '../../src/modules/auth/sessions/browser-security.routes.js'
 import { emailChangeRoutes } from '../../src/modules/auth/verification/email-change.routes.js'
 import { catalogRoutes } from '../../src/modules/catalog/catalog.routes.js'
-import { profileRoutes } from '../../src/modules/customers/customer.routes.js'
+
 import { mediaRoutes } from '../../src/modules/media/media.routes.js'
 import { createApiRouter } from '../../src/routes.js'
 
@@ -180,7 +186,7 @@ export function localOnlyRouters() {
       sessions,
       'https://shop.example.test',
     ),
-    customerAdminRoutes(
+    createCustomerAdminRoutes(
       {
         list: unused,
         detail: unused,
@@ -243,12 +249,12 @@ export function registeredRouter() {
       security,
       guard,
     ),
-    customerRoutes(credentials, security, sessions),
+    createCustomerCredentialRoutes(credentials, security, sessions),
     emailVerificationRoutes({ request: unused, confirm: unused }, security, guard),
-    adminRoutes(credentials, recovery, security, sessions),
+    createAdminCredentialRoutes(credentials, recovery, security, sessions),
     recoveryRoutes(recovery, security, sessions),
     emailChangeRoutes(recovery, security, sessions),
-    profileRoutes(profile, {
+    createCustomerRoutes(profile, {
       cors: guard,
       requireBrowser: guard,
       requireSession: guard,
@@ -273,9 +279,9 @@ export function registeredRouter() {
       security,
       sessions,
     ),
-    deliveryAreaRoutes(unused, []),
+    createDeliveryAreaRoutes(unused, []),
     checkoutRoutes({ create: unused }, security, guard, { submitWithOutcome: unused }),
-    deliveryRoutes(
+    createDeliveryRoutes(
       {
         zones: unused,
         createZone: unused,

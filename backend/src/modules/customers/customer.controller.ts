@@ -3,10 +3,13 @@ import { z } from 'zod'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { respond } from '../../shared/responses.js'
 import { addressId } from './customer.schema.js'
-import type { ProfileService } from './customer.service.js'
+import type { CustomerService } from './customer.service.js'
 import type { BrowserRouteAccess, CustomerAdministration } from '../auth/auth.public.js'
 
-function profileController(service: ProfileService, readToken: BrowserRouteAccess['readToken']) {
+function createCustomerController(
+  service: CustomerService,
+  readToken: BrowserRouteAccess['readToken'],
+) {
   const token = (req: Request) => readToken(req.get('Cookie'))
   const id = (req: Request) => parseInput(z.strictObject({ addressId }), req.params).addressId
   const empty = (value: unknown) => parseInput(z.union([z.undefined(), z.strictObject({})]), value)
@@ -44,7 +47,7 @@ function profileController(service: ProfileService, readToken: BrowserRouteAcces
   return { read, patch, list, add, edit, remove, setDefault, requestDeletion }
 }
 
-function customerAdminController(
+function createCustomerAdminController(
   service: CustomerAdministration,
   readToken: BrowserRouteAccess['readToken'],
 ) {
@@ -104,4 +107,4 @@ function customerAdminController(
   return { history, privacy, decidePrivacy, list, detail, decideStatus }
 }
 
-export { profileController, customerAdminController }
+export { createCustomerController, createCustomerAdminController }
