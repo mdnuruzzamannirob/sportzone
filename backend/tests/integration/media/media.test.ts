@@ -438,7 +438,7 @@ it('uses bounded ClamAV INSTREAM transport and fails closed on scanner error/unk
   const server = createServer((socket) => {
     let input = Buffer.alloc(0)
     socket.on('data', (data) => {
-      input = Buffer.concat([input, data])
+      input = Buffer.concat([input, Buffer.isBuffer(data) ? data : Buffer.from(data)])
       if (input.length >= 10 + 4 + png.length + 4) {
         received = input
         socket.end(response)
