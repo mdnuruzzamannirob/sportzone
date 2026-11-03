@@ -8,10 +8,12 @@ import { readProtectedFile } from '../../../shared/protected-file.js'
 import { idempotencyKey as paymentInitiationKey } from '../../../shared/validation.js'
 import type { AuditAccess } from '../../audit/audit.public.js'
 import type { AdminAccountAccess } from '../../auth/auth.public.js'
-import type { VerifiedAllocationService } from '../../orders/order.public.js'
-import type { verifiedFundingOrderAccess } from '../../orders/order.service.js'
+import type {
+  VerifiedAllocationService,
+  VerifiedFundingOrderAccess,
+} from '../../orders/order.public.js'
+import type { CorrectionObligationFactory } from '../../refunds/refund.public.js'
 
-import { createCorrectionObligationService } from '../../refunds/obligations/correction-obligation.service.js'
 import { paymentInitiationModel } from '../attempts/payment-initiation.model.js'
 
 import { paymentModel } from '../payment.model.js'
@@ -27,9 +29,9 @@ import {
 import { collectionAmounts, paymentRecordModels } from './payment-record.model.js'
 import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
 
-const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex')
-
 type PaymentMatchingAuthority = (facts: Omit<MatchingFacts, 'verifiedAt'>) => Promise<void>
+
+const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex')
 
 function protectedPaymentMatchingEvidence(
   path: string,
@@ -57,9 +59,10 @@ function protectedPaymentMatchingEvidence(
 function createPaymentMatchingService(
   connection: Connection,
   admins: AdminAccountAccess,
-  orders: ReturnType<typeof verifiedFundingOrderAccess>,
+  orders: VerifiedFundingOrderAccess,
   allocation: VerifiedAllocationService,
   auditAccess: AuditAccess,
+  moduleAccess: { createCorrectionObligationService: CorrectionObligationFactory },
   verify?: PaymentMatchingAuthority,
   clock: () => Date = () => new Date(),
 ) {
@@ -68,7 +71,7 @@ function createPaymentMatchingService(
     initiations = paymentInitiationModel(connection),
     audit = auditAccess.write,
     lookup = auditAccess.lookup,
-    corrections = createCorrectionObligationService(connection, auditAccess)
+    corrections = moduleAccess.createCorrectionObligationService(auditAccess)
   const summary = (row: InstanceType<typeof collections>) =>
     collectionSummary.parse({
       id: row._id.toHexString(),

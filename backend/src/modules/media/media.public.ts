@@ -1,3 +1,4 @@
+import type { Request } from 'express'
 import type { ClientSession } from 'mongoose'
 
 type MediaFormat = 'png' | 'jpg' | 'webp'
@@ -119,8 +120,57 @@ type ClaimEvidenceMetadataAccess = (
   }[]
 >
 
+type MediaFile = { name: string; mimeType: string; bytes: Uint8Array }
+interface ClaimEvidenceAsset {
+  assetKind: 'public_media' | 'claim_evidence'
+  access: 'public' | 'private'
+  orderId?: string
+  claimType?: 'physical_return' | 'shortage'
+  orderItemIds: string[]
+  owner: { kind: 'admin' | 'customer' | 'guest_order'; principalId: string }
+}
+interface ClaimMediaAccess {
+  privateUrl(
+    credential: string | undefined,
+    assetId: string,
+    admin?: boolean,
+  ): Promise<{ url: string }>
+  verifyPersistence(): Promise<void>
+  attach(
+    credential: string | undefined,
+    assetId: string,
+    reference: { targetType: 'claim'; targetId: string; slot: string },
+    session: ClientSession,
+    mutateTarget: (asset: Readonly<ClaimEvidenceAsset>, session: ClientSession) => Promise<void>,
+  ): Promise<void>
+  uploadEvidence(
+    credential: string | undefined,
+    scope: { orderId: string; claimType: 'physical_return' | 'shortage'; orderItemIds: string[] },
+    file: MediaFile,
+  ): Promise<
+    | {
+        assetId: string
+        orderId: string | undefined
+        status: 'private'
+        expiresAt: Date | null | undefined
+      }
+    | { assetId: string; publicId: string; url: string; mimeType: string; size: number }
+  >
+}
+
+type ClaimEvidenceMultipart = (
+  req: Request,
+  maxBytes: number,
+) => Promise<{
+  file: MediaFile
+  input: { claimType: FormDataEntryValue | null; orderItemIds: FormDataEntryValue[] }
+}>
+
 export type {
   ClaimEvidenceMetadataAccess,
+  ClaimEvidenceMultipart,
+  ClaimMediaAccess,
+  MediaFile,
   MediaFormat,
   MediaLookup,
   MediaMaintenance,

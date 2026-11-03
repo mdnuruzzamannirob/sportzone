@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import { ConfigurationError } from '../../shared/errors/configuration-error.js'
 
+type SslcommerzOptions = z.infer<typeof optionsSchema>
+
 const text = (max: number) =>
   z
     .string()
@@ -40,7 +42,6 @@ const optionsSchema = z
     timeoutMs: z.int().min(1).max(60000),
   })
   .refine((value) => value.mode === (value.appEnv === 'production' ? 'live' : 'sandbox'))
-type SslcommerzOptions = z.infer<typeof optionsSchema>
 function validateSslcommerzOptions(raw: unknown): Readonly<SslcommerzOptions> {
   const parsed = optionsSchema.safeParse(raw)
   if (!parsed.success) throw new ConfigurationError(['sslcommerz_configuration'])

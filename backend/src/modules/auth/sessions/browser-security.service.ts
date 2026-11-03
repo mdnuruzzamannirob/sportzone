@@ -13,6 +13,8 @@ import type { SessionKind, SessionService } from './session.service.js'
 
 type BrowserAudience = 'storefront' | 'admin'
 
+type BrowserSecurity = ReturnType<typeof createBrowserSecurity>
+
 const opaque = /^[A-Za-z0-9_-]{43}$/
 
 const contextNames = {
@@ -244,8 +246,6 @@ function createBrowserSecurity(
     },
   }
 }
-
-type BrowserSecurity = ReturnType<typeof createBrowserSecurity>
 
 function logoutProtection(
   security: BrowserSecurity,

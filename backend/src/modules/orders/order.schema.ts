@@ -2,8 +2,14 @@ import { z } from 'zod'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { resourceId as orderId, boundedText as text } from '../../shared/validation.js'
+import type { CheckoutCommercialSnapshotSchema } from '../checkout/checkout.public.js'
+import type { PricingInputSchema } from '../promotions/promotion.public.js'
 
-import { checkoutCommercialSnapshot } from '../checkout/checkout.schema.js'
+type OrderCreationProofSchema = ReturnType<typeof createOrderSchemas>['orderCreationProof']
+
+type OrderAllocationBindingSchema = ReturnType<typeof createOrderAllocationBindingSchema>
+
+type FulfillmentStatusSchema = typeof fulfillmentStatus
 
 const fulfillmentStatus = z.enum([
   'pending',
@@ -26,17 +32,6 @@ const orderCreateCommand = z.strictObject({
   orderId,
   checkoutIntentId: orderId,
   operationKey: z.string().min(1).max(128),
-})
-
-const orderCreationProof = z.strictObject({
-  orderId,
-  checkoutIntentId: orderId,
-  quoteId: orderId,
-  userId: orderId.nullable(),
-  acceptedAt: z.iso.datetime({ offset: true }),
-  commercialDigest: z.string().regex(/^[a-f0-9]{64}$/),
-  snapshot: checkoutCommercialSnapshot,
-  notes: z.string().trim().max(2000).optional(),
 })
 
 const transitionRequest = z.strictObject({
@@ -76,13 +71,56 @@ const initialOrderResult = z.strictObject({
   revision: z.literal(0),
 })
 
+function createOrderSchemas({
+  checkoutCommercialSnapshot,
+}: {
+  checkoutCommercialSnapshot: CheckoutCommercialSnapshotSchema
+}) {
+  const orderCreationProof = z.strictObject({
+    orderId,
+    checkoutIntentId: orderId,
+    quoteId: orderId,
+    userId: orderId.nullable(),
+    acceptedAt: z.iso.datetime({ offset: true }),
+    commercialDigest: z.string().regex(/^[a-f0-9]{64}$/),
+    snapshot: checkoutCommercialSnapshot,
+    notes: z.string().trim().max(2000).optional(),
+  })
+  return { orderCreationProof }
+}
+
+function createOrderAllocationBindingSchema(pricingInput: PricingInputSchema) {
+  const id = orderId
+  const orderAllocationBinding = z.strictObject({
+    orderId: id,
+    placedAt: z.date().optional(),
+    generation: z.int().min(1),
+    userId: id.optional(),
+    pricing: pricingInput.safeExtend({ coupon: z.undefined().optional() }),
+    coupon: z
+      .strictObject({
+        couponId: id,
+        code: z.string(),
+        type: z.enum(['fixed', 'percentage']),
+        value: z.int().min(1),
+        version: z.int().nonnegative(),
+        discountPoisha: z.int().nonnegative(),
+        eligibleLineIds: z.array(id).min(1),
+      })
+      .optional(),
+  })
+  return orderAllocationBinding
+}
+
+export type { FulfillmentStatusSchema, OrderAllocationBindingSchema, OrderCreationProofSchema }
 export {
   assertFulfillmentTransition,
+  createOrderAllocationBindingSchema,
+  createOrderSchemas,
   fulfillmentHold,
   fulfillmentStatus,
   initialOrderResult,
   orderCreateCommand,
-  orderCreationProof,
   orderId,
   transitionRequest,
 }

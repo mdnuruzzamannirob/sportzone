@@ -87,7 +87,7 @@ function createOrderAdminController(
     const result = await reads.adminList(token(req.get('Cookie')), req.query)
     respond(res, result.items, 200, result.pagination)
   }
-  const getAdminOrders2: RequestHandler = async (req, res) => {
+  const getAdminOrder: RequestHandler = async (req, res) => {
     parseInput(z.undefined(), req.body)
     parseInput(z.strictObject({}), req.query)
     const { orderId: id } = parseInput(z.strictObject({ orderId }), req.params)
@@ -109,7 +109,7 @@ function createOrderAdminController(
   }
   return {
     getAdminOrders,
-    getAdminOrders2,
+    getAdminOrder,
     postOrdersFulfillmentTransitions,
     postPaymentsCodCollections,
   }
@@ -138,7 +138,7 @@ function createOrderReadController(
     )
     respond(res, items, 200, pagination)
   }
-  const getAction =
+  const getOrderView =
     (status: boolean): RequestHandler =>
     async (req, res) => {
       parseInput(z.undefined(), req.body)
@@ -154,7 +154,7 @@ function createOrderReadController(
       const params = parseInput(z.strictObject({ orderId }), req.params)
       respond(res, await service[method](credentials(req), params.orderId))
     }
-  return { getOrders, getAction, getOrderEvents }
+  return { getOrders, getOrderView, getOrderEvents }
 }
 
 function createDeliveryExceptionController(

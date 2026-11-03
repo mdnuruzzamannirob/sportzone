@@ -1,6 +1,8 @@
 import { type Connection, Schema } from 'mongoose'
 import { mutableSchemaOptions } from '../../shared/database/schema.js'
 
+type NotificationModel = ReturnType<typeof createNotificationModel>
+
 const recipient = new Schema(
   { emailNormalized: { type: String, required: true }, displayName: String },
   { _id: false, strict: 'throw' },
@@ -86,8 +88,6 @@ schema.index({ status: 1, claimExpiresAt: 1 }, { name: 'notifications_claim_expi
 function createNotificationModel(connection: Connection) {
   return connection.model('RegistrationNotification', schema, 'notifications')
 }
-
-type NotificationModel = ReturnType<typeof createNotificationModel>
 
 export type { NotificationModel }
 export { createNotificationModel }

@@ -1,15 +1,36 @@
 import { z } from 'zod'
 import { bangladeshPhone, boundedText as text } from '../../shared/validation.js'
+import type { AttributesSchema } from '../catalog/catalog.public.js'
+import type { AddressInputSchema } from '../customers/customer.public.js'
+import type { DeliveryDeadlineBasisSchema, DeliveryDeadlineSchema } from '../orders/order.public.js'
+import type {
+  PaymentChannelSchema,
+  PaymentMethodEligibilitySchema,
+} from '../payments/payment.public.js'
+import type { CouponCodeSchema } from '../promotions/promotion.public.js'
+import type { PolicyTypeSchema } from '../settings/setting.public.js'
 
-import { attributes } from '../catalog/products/variant.schema.js'
-import { addressInput } from '../customers/customer.schema.js'
-import { deliveryDeadline, deliveryDeadlineBasis } from '../orders/delivery-deadline.schema.js'
-import {
-  paymentChannel,
-  paymentMethodEligibility,
-} from '../payments/attempts/payment-eligibility.schema.js'
-import { couponCode } from '../promotions/promotion.schema.js'
-import { policyType } from '../settings/setting.schema.js'
+type CheckoutCommercialSnapshotSchema = ReturnType<
+  typeof createCheckoutSchemas
+>['checkoutCommercialSnapshot']
+
+type CheckoutQuoteSchema = ReturnType<typeof createCheckoutSchemas>['checkoutQuote']
+
+type CheckoutQuoteInputSchema = ReturnType<typeof createCheckoutSchemas>['checkoutQuoteInput']
+
+type CheckoutSubmitInputSchema = ReturnType<typeof createCheckoutSchemas>['checkoutSubmitInput']
+
+type NormalizedCheckoutDraftSchema = ReturnType<
+  typeof createCheckoutSchemas
+>['normalizedCheckoutDraft']
+
+type QuoteCouponSnapshotSchema = ReturnType<typeof createCheckoutSchemas>['quoteCouponSnapshot']
+
+type QuoteLineSchema = ReturnType<typeof createCheckoutSchemas>['quoteLine']
+
+type QuotePolicyRefSchema = ReturnType<typeof createCheckoutSchemas>['quotePolicyRef']
+
+type QuoteTotalsSchema = typeof quoteTotals
 
 const quoteId = z.string().regex(/^[a-f0-9]{24}$/)
 
@@ -21,52 +42,6 @@ const items = z
   .max(40)
   .refine((v) => new Set(v.map((row) => row.variantId)).size === v.length)
 
-const checkoutQuoteInput = z
-  .strictObject({
-    items,
-    recipient: addressInput.optional(),
-    savedAddressId: quoteId.optional(),
-    email: z.string().trim().email().max(254).toLowerCase().optional(),
-    contactPhone: bangladeshPhone.optional(),
-    couponCode: couponCode.optional(),
-    method: paymentChannel,
-  })
-  .refine((v) => Boolean(v.recipient) !== Boolean(v.savedAddressId))
-
-const checkoutSubmitInput = checkoutQuoteInput.safeExtend({
-  quoteId,
-  acceptedTermsVersion: z.string().min(1).max(100),
-  acceptedPolicyVersionIds: z
-    .array(z.string().min(1).max(100))
-    .min(1)
-    .max(7)
-    .refine((v) => new Set(v).size === v.length),
-  notes: z.string().trim().max(2000).optional(),
-})
-
-const quoteLine = z.strictObject({
-  id: quoteId,
-  productId: quoteId,
-  variantId: quoteId,
-  productName: text(120),
-  sku: z.string().min(1).max(64),
-  variantAttributes: attributes,
-  quantity: z.int().min(1).max(50),
-  regularUnitPoisha: money,
-  effectiveUnitPoisha: money,
-  regularLinePoisha: money,
-  productDiscountPoisha: money,
-  couponAllocatedPoisha: money,
-  netMerchandisePoisha: money,
-  couponEligible: z.boolean(),
-})
-
-const quotePolicyRef = z.strictObject({
-  type: policyType,
-  version: z.string().min(1).max(100),
-  effectiveAt: z.iso.datetime({ offset: true }),
-})
-
 const quoteTotals = z.strictObject({
   regularSubtotalPoisha: money,
   productDiscountPoisha: money,
@@ -77,65 +52,141 @@ const quoteTotals = z.strictObject({
   currency: z.literal('BDT'),
 })
 
-const checkoutQuote = quoteTotals.extend({
-  quoteId,
-  items: z.array(quoteLine).min(1).max(40),
-  deliveryEstimate: z.iso.datetime({ offset: true }).optional(),
-  quoteExpiresAt: z.iso.datetime({ offset: true }),
+function createCheckoutSchemas({
+  attributes,
+  addressInput,
+  deliveryDeadlineBasis,
   deliveryDeadline,
-  availableMethods: z.array(paymentMethodEligibility).length(4),
-  policyVersions: z.array(quotePolicyRef).min(1).max(7),
-})
+  paymentChannel,
+  paymentMethodEligibility,
+  couponCode,
+  policyType,
+}: {
+  attributes: AttributesSchema
+  addressInput: AddressInputSchema
+  deliveryDeadline: DeliveryDeadlineSchema
+  deliveryDeadlineBasis: DeliveryDeadlineBasisSchema
+  paymentChannel: PaymentChannelSchema
+  paymentMethodEligibility: PaymentMethodEligibilitySchema
+  couponCode: CouponCodeSchema
+  policyType: PolicyTypeSchema
+}) {
+  const checkoutQuoteInput = z
+    .strictObject({
+      items,
+      recipient: addressInput.optional(),
+      savedAddressId: quoteId.optional(),
+      email: z.string().trim().email().max(254).toLowerCase().optional(),
+      contactPhone: bangladeshPhone.optional(),
+      couponCode: couponCode.optional(),
+      method: paymentChannel,
+    })
+    .refine((v) => Boolean(v.recipient) !== Boolean(v.savedAddressId))
 
-const normalizedCheckoutDraft = z.strictObject({
-  items,
-  recipient: addressInput,
-  customer: z.strictObject({
-    name: text(120),
-    email: z.email().max(254),
-    phone: bangladeshPhone,
-  }),
-  couponCode: couponCode.optional(),
-  method: paymentChannel,
-})
+  const checkoutSubmitInput = checkoutQuoteInput.safeExtend({
+    quoteId,
+    acceptedTermsVersion: z.string().min(1).max(100),
+    acceptedPolicyVersionIds: z
+      .array(z.string().min(1).max(100))
+      .min(1)
+      .max(7)
+      .refine((v) => new Set(v).size === v.length),
+    notes: z.string().trim().max(2000).optional(),
+  })
 
-const quoteCouponSnapshot = z.strictObject({
-  couponId: quoteId,
-  code: couponCode,
-  type: z.enum(['fixed', 'percentage']),
-  value: money.min(1),
-  termsVersion: money,
-  eligibleSubtotalPoisha: money,
-  discountPoisha: money,
-})
+  const quoteLine = z.strictObject({
+    id: quoteId,
+    productId: quoteId,
+    variantId: quoteId,
+    productName: text(120),
+    sku: z.string().min(1).max(64),
+    variantAttributes: attributes,
+    quantity: z.int().min(1).max(50),
+    regularUnitPoisha: money,
+    effectiveUnitPoisha: money,
+    regularLinePoisha: money,
+    productDiscountPoisha: money,
+    couponAllocatedPoisha: money,
+    netMerchandisePoisha: money,
+    couponEligible: z.boolean(),
+  })
 
-const checkoutCommercialSnapshot = z.strictObject({
-  draft: normalizedCheckoutDraft,
-  items: z.array(quoteLine).min(1).max(40),
-  pricing: quoteTotals,
-  coupon: quoteCouponSnapshot.optional(),
-  delivery: z.strictObject({
-    zoneId: quoteId,
-    chargeRuleId: quoteId,
-    coverageKey: z.string().min(1).max(129),
-    amountPoisha: money,
-    ruleVersion: money,
-  }),
-  deadlineBasis: deliveryDeadlineBasis,
-  deliveryDeadline,
-  availableMethods: z.array(paymentMethodEligibility).length(4),
-  policyVersions: z.array(quotePolicyRef).min(1).max(7),
-})
+  const quotePolicyRef = z.strictObject({
+    type: policyType,
+    version: z.string().min(1).max(100),
+    effectiveAt: z.iso.datetime({ offset: true }),
+  })
 
-export {
-  checkoutCommercialSnapshot,
-  checkoutQuote,
-  checkoutQuoteInput,
-  checkoutSubmitInput,
-  normalizedCheckoutDraft,
-  quoteCouponSnapshot,
-  quoteId,
-  quoteLine,
-  quotePolicyRef,
-  quoteTotals,
+  const checkoutQuote = quoteTotals.extend({
+    quoteId,
+    items: z.array(quoteLine).min(1).max(40),
+    deliveryEstimate: z.iso.datetime({ offset: true }).optional(),
+    quoteExpiresAt: z.iso.datetime({ offset: true }),
+    deliveryDeadline,
+    availableMethods: z.array(paymentMethodEligibility).length(4),
+    policyVersions: z.array(quotePolicyRef).min(1).max(7),
+  })
+
+  const normalizedCheckoutDraft = z.strictObject({
+    items,
+    recipient: addressInput,
+    customer: z.strictObject({
+      name: text(120),
+      email: z.email().max(254),
+      phone: bangladeshPhone,
+    }),
+    couponCode: couponCode.optional(),
+    method: paymentChannel,
+  })
+
+  const quoteCouponSnapshot = z.strictObject({
+    couponId: quoteId,
+    code: couponCode,
+    type: z.enum(['fixed', 'percentage']),
+    value: money.min(1),
+    termsVersion: money,
+    eligibleSubtotalPoisha: money,
+    discountPoisha: money,
+  })
+
+  const checkoutCommercialSnapshot = z.strictObject({
+    draft: normalizedCheckoutDraft,
+    items: z.array(quoteLine).min(1).max(40),
+    pricing: quoteTotals,
+    coupon: quoteCouponSnapshot.optional(),
+    delivery: z.strictObject({
+      zoneId: quoteId,
+      chargeRuleId: quoteId,
+      coverageKey: z.string().min(1).max(129),
+      amountPoisha: money,
+      ruleVersion: money,
+    }),
+    deadlineBasis: deliveryDeadlineBasis,
+    deliveryDeadline,
+    availableMethods: z.array(paymentMethodEligibility).length(4),
+    policyVersions: z.array(quotePolicyRef).min(1).max(7),
+  })
+  return {
+    checkoutCommercialSnapshot,
+    checkoutQuote,
+    checkoutQuoteInput,
+    checkoutSubmitInput,
+    normalizedCheckoutDraft,
+    quoteCouponSnapshot,
+    quoteLine,
+    quotePolicyRef,
+  }
 }
+
+export type {
+  CheckoutCommercialSnapshotSchema,
+  CheckoutQuoteInputSchema,
+  CheckoutQuoteSchema,
+  CheckoutSubmitInputSchema,
+  NormalizedCheckoutDraftSchema,
+  QuoteCouponSnapshotSchema,
+  QuoteLineSchema,
+  QuotePolicyRefSchema,
+  QuoteTotalsSchema,
+}
+export { createCheckoutSchemas, quoteId, quoteTotals }

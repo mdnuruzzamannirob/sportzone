@@ -34,7 +34,7 @@ function createProductAdminRoutes(
     )
 
   router.get('/admin/products', controller.getAdminProducts)
-  router.get('/admin/products/:productId', controller.getAdminProducts2)
+  router.get('/admin/products/:productId', controller.getAdminProduct)
   router.post('/admin/products', controller.postAdminProducts)
   router.patch('/admin/products/:productId', controller.patchAdminProducts)
   router.post('/admin/products/:productId/deactivate', controller.postProductsDeactivate)

@@ -6,6 +6,8 @@ import {
 } from '../../shared/database/schema.js'
 import { policyContent, policyStatus, policyType } from './setting.schema.js'
 
+type PolicyDocument = InferSchemaType<typeof schema>
+
 const operation = new Schema(
   {
     keyDigest: { type: String, required: true },
@@ -58,8 +60,6 @@ schema.index({ type: 1, version: 1 }, { unique: true, name: 'policy_type_version
 schema.index({ type: 1, status: 1, effectiveAt: -1 }, { name: 'policy_type_status_effective' })
 
 schema.index({ type: 1, publishedAt: -1 }, { name: 'policy_type_published' })
-
-type PolicyDocument = InferSchemaType<typeof schema>
 
 function policyModel(connection: Connection) {
   return connection.models.PolicyDocument

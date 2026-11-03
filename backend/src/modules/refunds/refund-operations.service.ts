@@ -4,7 +4,8 @@ import { z } from 'zod'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { pageMeta } from '../../shared/pagination.js'
-import { refundStatusTimelineAccess } from '../audit/audit.service.js'
+import type { RefundStatusTimeline } from '../audit/audit.public.js'
+
 import type { AdminAccountAccess } from '../auth/auth.public.js'
 import type { RefundFundingAccess } from '../payments/payment.public.js'
 
@@ -31,12 +32,13 @@ function createRefundOperationsService(
   admins: AdminAccountAccess,
   funding: RefundFundingAccess,
   reservation: ReturnType<typeof createRefundReservationService>,
+  moduleAccess: { refundStatusTimelineAccess: RefundStatusTimeline },
   dispatch?: ReturnType<typeof createRefundDispatchService>,
   recovery?: ReturnType<typeof createRefundRecoveryService>,
 ) {
   const refunds = refundModel(connection),
     attempts = refundAttemptModel(connection),
-    timeline = refundStatusTimelineAccess(connection)
+    timeline = moduleAccess.refundStatusTimelineAccess
   async function ready() {
     try {
       await verifyCorrectionPersistence(connection)

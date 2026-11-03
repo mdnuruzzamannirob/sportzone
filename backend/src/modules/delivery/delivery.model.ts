@@ -5,6 +5,10 @@ import {
   optionalObjectIdField,
 } from '../../shared/database/schema.js'
 
+type DeliveryZone = InferSchemaType<typeof zoneSchema>
+
+type DeliveryCharge = InferSchemaType<typeof chargeSchema>
+
 const zoneSchema = new Schema(
   {
     name: { type: String, required: true, maxlength: 120 },
@@ -91,10 +95,6 @@ chargeSchema.index({ status: 1, effectiveFrom: 1 }, { name: 'delivery_due_start'
 chargeSchema.index({ status: 1, effectiveTo: 1 }, { name: 'delivery_due_end' })
 
 chargeSchema.index({ createdAt: -1, _id: -1 }, { name: 'delivery_charge_list' })
-
-type DeliveryZone = InferSchemaType<typeof zoneSchema>
-
-type DeliveryCharge = InferSchemaType<typeof chargeSchema>
 
 function deliveryModels(connection: Connection) {
   return {

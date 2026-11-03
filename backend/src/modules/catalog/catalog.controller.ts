@@ -13,7 +13,7 @@ function createCatalogController(service: ReturnType<typeof createCatalogService
     const result = await service.products(req.query)
     respond(res, result.data, 200, result.page)
   }
-  const getProducts2: RequestHandler = async (req, res) => {
+  const getProduct: RequestHandler = async (req, res) => {
     parseInput(z.strictObject({}), req.query)
     respond(res, await service.product(String(req.params.slug)))
   }
@@ -21,11 +21,11 @@ function createCatalogController(service: ReturnType<typeof createCatalogService
     const result = await service.categories(req.query)
     respond(res, result.data, 200, result.page)
   }
-  const getCategories2: RequestHandler = async (req, res) => {
+  const getCategory: RequestHandler = async (req, res) => {
     parseInput(z.strictObject({}), req.query)
     respond(res, await service.category(String(req.params.slug)))
   }
-  return { getStorefrontHome, getProducts, getProducts2, getCategories, getCategories2 }
+  return { getStorefrontHome, getProducts, getProduct, getCategories, getCategory }
 }
 
 export { createCatalogController }

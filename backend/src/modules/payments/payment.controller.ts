@@ -168,7 +168,7 @@ function createPaymentMonitorController(
       ),
     )
   }
-  const postAction: RequestHandler = async (req, res) => {
+  const requestPaymentReconciliation: RequestHandler = async (req, res) => {
     const { paymentId } = parseInput(paymentRiskParams, req.params)
     parseInput(z.strictObject({}), req.query)
     respond(
@@ -190,7 +190,12 @@ function createPaymentMonitorController(
     )
     respond(res, result.items, 200, result.pagination)
   }
-  return { getAdminPayments, getPaymentDetail, postAction, getAdminProviderReceipts }
+  return {
+    getAdminPayments,
+    getPaymentDetail,
+    requestPaymentReconciliation,
+    getAdminProviderReceipts,
+  }
 }
 
 function createPaymentRiskController(

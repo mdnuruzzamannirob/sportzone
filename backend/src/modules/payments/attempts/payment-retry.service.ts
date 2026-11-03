@@ -1,7 +1,11 @@
 import type { Connection } from 'mongoose'
 import type { AuditAccess } from '../../audit/audit.public.js'
-import type { VerifiedAllocationService } from '../../orders/order.public.js'
-import type { verifiedFundingOrderAccess } from '../../orders/order.service.js'
+import type { NotificationIntentsFactory } from '../../notifications/notification.public.js'
+import type {
+  VerifiedAllocationService,
+  VerifiedFundingOrderAccess,
+} from '../../orders/order.public.js'
+import type { CorrectionObligationFactory } from '../../refunds/refund.public.js'
 
 import { createPaymentProcessingService } from '../collections/payment-processing.service.js'
 import { createPaymentVerificationService } from '../collections/payment-verification.service.js'
@@ -12,9 +16,13 @@ import type { PaymentGateway } from '../payment.public.js'
 function createPaymentRetryService(
   connection: Connection,
   gateway: Pick<PaymentGateway, 'validate' | 'queryTransaction'>,
-  orders: ReturnType<typeof verifiedFundingOrderAccess>,
+  orders: VerifiedFundingOrderAccess,
   allocation: VerifiedAllocationService,
   auditAccess: AuditAccess,
+  moduleAccess: {
+    createNotificationService: NotificationIntentsFactory
+    createCorrectionObligationService: CorrectionObligationFactory
+  },
   clock: () => Date = () => new Date(),
 ) {
   return {
@@ -36,6 +44,7 @@ function createPaymentRetryService(
         orders,
         allocation,
         auditAccess,
+        moduleAccess,
         clock,
       ).process(claim)
       return outcome === 'committed' &&

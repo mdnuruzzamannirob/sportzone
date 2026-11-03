@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import { bangladeshPhone } from '../../shared/validation.js'
 
+type AddressInputSchema = typeof addressInput
+
 const text = (max: number) =>
   z
     .string()
@@ -37,4 +39,5 @@ const addressId = z.string().regex(/^[a-f0-9]{24}$/)
 
 const deletionInput = z.strictObject({ reason: text(2000).optional() })
 
+export type { AddressInputSchema }
 export { addressId, addressInput, addressPatch, bangladeshPhone, deletionInput, profilePatch }

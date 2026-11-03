@@ -2,6 +2,8 @@ import { type Connection, type InferSchemaType, Schema } from 'mongoose'
 import { integerField, mutableSchemaOptions } from '../../shared/database/schema.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 
+type DeliveryException = InferSchemaType<typeof schema>
+
 const oid = { type: Schema.Types.ObjectId, required: true },
   embedded = { _id: false, strict: 'throw' } as const
 
@@ -74,8 +76,6 @@ schema.pre(
     throw new ApiError('STATE_CONFLICT')
   },
 )
-
-type DeliveryException = InferSchemaType<typeof schema>
 
 function deliveryExceptionModel(connection: Connection) {
   return connection.models.DeliveryException

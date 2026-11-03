@@ -1,7 +1,8 @@
-import type { Types } from 'mongoose'
 import type { IdentityModels } from '../auth.model.js'
 import type { RecoveryOptions } from '../recovery/password-recovery.service.js'
 import { createProofCodec, type ProofEnvelope, proofHash } from './proof.crypto.js'
+
+type ResetDelivery = ReturnType<typeof createResetDelivery>
 
 function createDelivery(
   models: IdentityModels,
@@ -43,9 +44,9 @@ function createDelivery(
         )
     },
     async message(claim: {
-      id: Types.ObjectId
-      userId: Types.ObjectId
-      challengeId?: Types.ObjectId | null | undefined
+      id: string
+      userId: string
+      challengeId?: string | null | undefined
       recipient: string
     }) {
       if (!claim.challengeId) throw new Error('Proof delivery unavailable.')
@@ -127,8 +128,6 @@ const createEmailChangeDelivery = (
   options: RecoveryOptions,
   clock: () => Date = () => new Date(),
 ) => createDelivery(models, options, clock, 'email_change')
-
-type ResetDelivery = ReturnType<typeof createResetDelivery>
 
 const createAdminResetDelivery = (
   models: IdentityModels,

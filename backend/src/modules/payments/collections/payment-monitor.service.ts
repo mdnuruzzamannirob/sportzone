@@ -4,10 +4,9 @@ import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
 import { pageMeta } from '../../../shared/pagination.js'
 import { idempotencyKey as paymentInitiationKey } from '../../../shared/validation.js'
-import type { AuditAccess } from '../../audit/audit.public.js'
-import { paymentAuditAccess } from '../../audit/audit.service.js'
+import type { AuditAccess, PaymentAuditReader } from '../../audit/audit.public.js'
 import type { AdminAccountAccess } from '../../auth/auth.public.js'
-import { correctionMonitoringAccess } from '../../refunds/obligations/correction-obligation.service.js'
+import type { CorrectionMonitor } from '../../refunds/refund.public.js'
 
 import { type Payment, paymentModel } from '../payment.model.js'
 import {
@@ -50,13 +49,17 @@ function createPaymentMonitorService(
   connection: Connection,
   access: AdminAccountAccess,
   auditAccess: AuditAccess,
+  moduleAccess: {
+    paymentAuditAccess: PaymentAuditReader
+    correctionMonitoringAccess: CorrectionMonitor
+  },
 ) {
   const payments = paymentModel(connection),
     { attempts, collections, intake } = paymentRecordModels(connection),
     audit = auditAccess.write,
     lookup = auditAccess.lookup,
-    readAudit = paymentAuditAccess(connection),
-    corrections = correctionMonitoringAccess(connection)
+    readAudit = moduleAccess.paymentAuditAccess,
+    corrections = moduleAccess.correctionMonitoringAccess
   async function ready() {
     try {
       await verifyPaymentRecordPersistence(connection)

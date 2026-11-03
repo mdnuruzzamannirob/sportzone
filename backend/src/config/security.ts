@@ -2,6 +2,25 @@ import { z } from 'zod'
 import { createEncryptionKeyring, type EncryptionKeyring } from '../shared/crypto.js'
 import { ConfigurationError } from '../shared/errors/configuration-error.js'
 
+type SessionOptions = z.infer<typeof sessionOptionsSchema>
+
+type BrowserSecurityOptions = {
+  secret: string
+  contextTtlSeconds: number
+  storefrontOrigin: string
+  adminOrigin: string
+}
+
+type RecoveryOptions = {
+  ttlSeconds: number
+  cooldownSeconds: number
+  responseFloorMs: number
+  storefrontOrigin: string
+  encryption: EncryptionKeyring
+}
+
+type GuestAccessOptions = RecoveryOptions & { sessionTtlSeconds: number }
+
 const securitySecretSchema = z
   .string()
   .regex(/^[a-f0-9]{64}$/)
@@ -45,7 +64,6 @@ const sessionOptionsSchema = z
       /* The field refinement reports malformed origins without values. */
     }
   })
-type SessionOptions = z.infer<typeof sessionOptionsSchema>
 const sessionFields: Record<string, string> = {
   secret: 'SESSION_SECRET',
   customerTtlSeconds: 'CUSTOMER_SESSION_TTL_SECONDS',
@@ -80,12 +98,6 @@ function loadSessionOptions(environment: NodeJS.ProcessEnv): SessionOptions {
     appEnvironment: environment.APP_ENV,
     apiOrigin: environment.API_PUBLIC_ORIGIN,
   })
-}
-type BrowserSecurityOptions = {
-  secret: string
-  contextTtlSeconds: number
-  storefrontOrigin: string
-  adminOrigin: string
 }
 function validateBrowserSecurityOptions(input: BrowserSecurityOptions, secure: boolean) {
   if (
@@ -142,13 +154,6 @@ function loadBrowserSecurityOptions(
   } catch {
     throw new ConfigurationError(['browser_security_configuration'])
   }
-}
-type RecoveryOptions = {
-  ttlSeconds: number
-  cooldownSeconds: number
-  responseFloorMs: number
-  storefrontOrigin: string
-  encryption: EncryptionKeyring
 }
 function loadProofOptions(
   environment: NodeJS.ProcessEnv,
@@ -214,8 +219,6 @@ const loadEmailChangeOptions = (environment: NodeJS.ProcessEnv) =>
 
 const loadAdminRecoveryOptions = (environment: NodeJS.ProcessEnv) =>
   loadProofOptions(environment, 'ADMIN_PASSWORD_RESET')
-
-type GuestAccessOptions = RecoveryOptions & { sessionTtlSeconds: number }
 function loadGuestAccessOptions(environment: NodeJS.ProcessEnv): GuestAccessOptions {
   const proof = loadProofOptions(environment, 'GUEST_ORDER_ACCESS')
   const raw = environment.GUEST_ORDER_SESSION_TTL_SECONDS ?? '',

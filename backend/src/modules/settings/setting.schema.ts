@@ -1,6 +1,14 @@
 import { z } from 'zod'
 import { paginationSchema } from '../../shared/pagination.js'
 
+type PublicHomeSettingsSchema = typeof publicHomeSettings
+
+type PaymentChannelsSchema = typeof paymentChannels
+
+type PublicPolicyLinkSchema = typeof publicPolicyLink
+
+type PolicyTypeSchema = typeof policyType
+
 const policyType = z.enum([
   'shipping',
   'cancellation',
@@ -233,6 +241,12 @@ const publicHomeSettings = publicContact.extend({
   banner: bannerInput.extend({ image: mediaRef }).optional(),
 })
 
+export type {
+  PaymentChannelsSchema,
+  PolicyTypeSchema,
+  PublicHomeSettingsSchema,
+  PublicPolicyLinkSchema,
+}
 export {
   bannerInput,
   contactInfo,

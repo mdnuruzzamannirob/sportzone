@@ -6,6 +6,8 @@ import {
 } from '../../shared/database/schema.js'
 import { policyType } from './setting.schema.js'
 
+type StoreSettings = InferSchemaType<typeof schema>
+
 const embedded = { _id: false, strict: 'throw', versionKey: false } as const
 
 const contact = new Schema({ email: String, phone: String, website: String }, embedded)
@@ -95,8 +97,6 @@ const schema = new Schema(
 )
 
 schema.index({ key: 1 }, { unique: true, name: 'settings_primary_unique' })
-
-type StoreSettings = InferSchemaType<typeof schema>
 
 function settingsModel(connection: Connection) {
   return connection.models.StoreSettings

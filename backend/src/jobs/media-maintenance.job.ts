@@ -23,7 +23,14 @@ function mediaMaintenanceJob(
       await media.verifyPersistence()
       const claim = await leases.acquire()
       if (!claim)
-        return { acquired: false, examined: 0, deleted: 0, reconciled: 0, pending: 0, blocked: 0 }
+        return {
+          acquired: false,
+          examined: 0,
+          deleted: 0,
+          reconciled: 0,
+          pending: 0,
+          blocked: 0,
+        }
       try {
         const fence = () =>
           inTransaction(connection, (session) => leases.fence(session, claim.owner))

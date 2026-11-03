@@ -14,6 +14,8 @@ import type { SessionKind, SessionService } from '../sessions/session.service.js
 import { createProofCodec, proofHash } from '../verification/proof.crypto.js'
 import { changeInput, confirmation, issuance } from './password-recovery.schema.js'
 
+type RecoveryService = ReturnType<typeof createRecoveryService>
+
 function createRecoveryService(
   connection: Connection,
   models: IdentityModels,
@@ -245,8 +247,6 @@ function createRecoveryService(
     },
   }
 }
-
-type RecoveryService = ReturnType<typeof createRecoveryService>
 
 export { loadRecoveryOptions, type RecoveryOptions } from '../../../config/security.js'
 export type { RecoveryService }

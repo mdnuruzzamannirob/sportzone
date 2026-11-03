@@ -12,6 +12,8 @@ type MediaDependencies = {
   evidence?: MediaAccess['evidence']
 }
 
+type MediaContext = ReturnType<typeof createMediaContext>
+
 function key(value: string) {
   if (!/^[a-f0-9]{24}$/i.test(value)) throw new ApiError('VALIDATION_FAILED')
   return new Types.ObjectId(value)
@@ -37,8 +39,6 @@ function createMediaContext(
     clock,
   }
 }
-
-type MediaContext = ReturnType<typeof createMediaContext>
 
 export type { MediaContext, MediaDependencies }
 export { createMediaContext, key, requireTransaction }

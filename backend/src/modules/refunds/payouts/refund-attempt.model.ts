@@ -2,6 +2,8 @@ import { type Connection, type InferSchemaType, Schema } from 'mongoose'
 import { integerField, mutableSchemaOptions } from '../../../shared/database/schema.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 
+type Attempt = InferSchemaType<typeof schema>
+
 const schema = new Schema(
   {
     refundId: { type: Schema.Types.ObjectId, required: true, immutable: true },
@@ -111,8 +113,6 @@ schema.pre(
 schema.pre('deleteOne', { document: true, query: true }, () => {
   throw new ApiError('STATE_CONFLICT')
 })
-
-type Attempt = InferSchemaType<typeof schema>
 
 function refundAttemptModel(connection: Connection) {
   return connection.models.RefundAttempt

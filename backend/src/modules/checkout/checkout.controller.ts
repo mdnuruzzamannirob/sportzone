@@ -4,13 +4,17 @@ import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { respond } from '../../shared/responses.js'
 import type { SessionCookies } from '../auth/auth.public.js'
-import { checkoutSubmitInput } from './checkout.schema.js'
+import type { CheckoutSubmitInputSchema } from './checkout.schema.js'
 import type { createCheckoutIntentService, createCheckoutQuoteService } from './checkout.service.js'
-import { checkoutSubmitResult } from './checkout-intent.schema.js'
+import type { CheckoutSubmitResultSchema } from './checkout-intent.schema.js'
 
 function createCheckoutController(
   service: Pick<ReturnType<typeof createCheckoutQuoteService>, 'create'>,
   cookies: SessionCookies,
+  moduleAccess: {
+    schemaCheckoutSubmitInput: CheckoutSubmitInputSchema
+    schemaCheckoutSubmitResult: CheckoutSubmitResultSchema
+  },
 ) {
   const postCheckoutQuotes: RequestHandler = async (req, res) => {
     parseInput(z.strictObject({}), req.query)
@@ -37,7 +41,7 @@ function createCheckoutController(
     ): RequestHandler =>
     async (req, res) => {
       parseInput(z.strictObject({}), req.query)
-      const input = parseInput(checkoutSubmitInput, req.body)
+      const input = parseInput(moduleAccess.schemaCheckoutSubmitInput, req.body)
       // Online submission is activated by its owning payment integration, never by this COD flag.
       if (input.method !== 'cod') throw new ApiError('BUSINESS_RULE_VIOLATION')
       const cookie = req.get('Cookie'),
@@ -66,7 +70,7 @@ function createCheckoutController(
       } = result.order
       respond(
         res,
-        parseInput(checkoutSubmitResult, {
+        parseInput(moduleAccess.schemaCheckoutSubmitResult, {
           order: {
             id,
             orderNumber,

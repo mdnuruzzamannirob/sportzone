@@ -1,5 +1,13 @@
 import { z } from 'zod'
 
+type DeliveryDeadlineManifest = z.infer<typeof deliveryDeadlineManifest>
+
+type DeliveryDeadlineBasis = z.infer<typeof deliveryDeadlineBasis>
+
+type DeliveryDeadlineBasisSchema = typeof deliveryDeadlineBasis
+
+type DeliveryDeadlineSchema = typeof deliveryDeadline
+
 const text = (max: number) => z.string().trim().min(1).max(max)
 
 const date = z.iso.datetime({ offset: true })
@@ -83,11 +91,12 @@ const deliveryDeadline = z.strictObject({
   handoverStatus: z.enum(['awaiting_payment', 'pending', 'met', 'overdue']).optional(),
 })
 
-type DeliveryDeadlineManifest = z.infer<typeof deliveryDeadlineManifest>
-
-type DeliveryDeadlineBasis = z.infer<typeof deliveryDeadlineBasis>
-
-export type { DeliveryDeadlineBasis, DeliveryDeadlineManifest }
+export type {
+  DeliveryDeadlineBasis,
+  DeliveryDeadlineBasisSchema,
+  DeliveryDeadlineManifest,
+  DeliveryDeadlineSchema,
+}
 export {
   deliveryDeadline,
   deliveryDeadlineBasis,

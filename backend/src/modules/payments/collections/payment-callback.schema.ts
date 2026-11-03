@@ -1,5 +1,13 @@
 import { z } from 'zod'
 
+type PaymentCallbackOptions = {
+  storeId: string
+  mode: 'sandbox'
+  storefrontOrigin: string
+  returns: Record<'success' | 'fail' | 'cancel', string>
+  rateLimit: number
+}
+
 const text = (max: number) =>
   z
     .string()
@@ -57,14 +65,6 @@ const paymentIpnForm = z
   .refine(
     (value) => !['VALID', 'VALIDATED'].includes(value.status) || Boolean(value.val_id?.trim()),
   )
-
-type PaymentCallbackOptions = {
-  storeId: string
-  mode: 'sandbox'
-  storefrontOrigin: string
-  returns: Record<'success' | 'fail' | 'cancel', string>
-  rateLimit: number
-}
 
 const paymentCallbackOptions = z
   .strictObject({

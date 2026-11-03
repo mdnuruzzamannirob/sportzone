@@ -1,6 +1,13 @@
 import { z } from 'zod'
 import { parseInput } from './middleware/validate.js'
 
+type PageMeta = {
+  page: number
+  pageSize: number
+  totalItems: number
+  totalPages: number
+}
+
 const positiveInteger = z
   .string()
   .regex(/^[1-9]\d*$/)
@@ -17,12 +24,6 @@ const paginationSchema = z
 function parsePagination(query: unknown) {
   const input = parseInput(paginationSchema, query)
   return { ...input, offset: (input.page - 1) * input.pageSize }
-}
-type PageMeta = {
-  page: number
-  pageSize: number
-  totalItems: number
-  totalPages: number
 }
 function pageMeta(input: { page: number; pageSize: number }, totalItems: number): PageMeta {
   if (

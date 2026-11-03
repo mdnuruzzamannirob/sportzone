@@ -91,7 +91,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
       config.HEALTH_MONITOR_TOKEN,
     ])
     try {
-      const runtime = await startServer(config, logger)
+      const runtime = await startServer(config)
       const shutdown = () => {
         void runtime.close().catch(() => {
           logger.lifecycle('shutdown_failed')

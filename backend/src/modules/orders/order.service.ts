@@ -4,8 +4,9 @@ import { z } from 'zod'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { pageMeta, paginationSchema } from '../../shared/pagination.js'
+import type { CommercialDigest } from '../checkout/checkout.public.js'
 import type { CustomerPaymentSummaryAccess } from '../payments/payment.public.js'
-
+import type { PricingCalculator } from '../promotions/promotion.public.js'
 import { cancellationModel } from './cancellation.model.js'
 import { verifyCancellationPersistence } from './cancellation.persistence.js'
 import { deliveryExceptionModel } from './delivery-exception.model.js'
@@ -13,6 +14,7 @@ import { verifyDeliveryExceptionPersistence } from './delivery-exception.persist
 import { orderModels } from './order.model.js'
 import { verifyOrderPersistence } from './order.persistence.js'
 import type { GuestOrderAccess } from './order.public.js'
+import type { OrderCreationProofSchema } from './order.schema.js'
 import { initialOrderResult, orderCreateCommand } from './order.schema.js'
 import { buildOrderSnapshot } from './order-snapshot.service.js'
 
@@ -33,6 +35,11 @@ function createOrderService(
   connection: Connection,
   checkout: OrderCreationAccess,
   audit: (session: ClientSession, event: unknown) => Promise<void>,
+  moduleAccess: {
+    checkoutCommercialDigest: CommercialDigest
+    calculatePricing: PricingCalculator
+    schemaOrderCreationProof: OrderCreationProofSchema
+  },
   clock: () => Date = () => new Date(),
 ) {
   const { orders, balances } = orderModels(connection)
@@ -47,7 +54,7 @@ function createOrderService(
       }
       const proof = await checkout.authorize(session, command)
       const placedAt = clock(),
-        data = buildOrderSnapshot(proof, placedAt)
+        data = buildOrderSnapshot(proof, placedAt, moduleAccess)
       if (
         data.proof.orderId !== command.orderId ||
         data.proof.checkoutIntentId !== command.checkoutIntentId
@@ -486,8 +493,8 @@ function verifiedFundingOrderAccess(connection: Connection) {
       const row = await orders.findById(orderId).session(session)
       if (!row) throw new ApiError('STATE_CONFLICT')
       return {
-        orderId: row._id,
-        ...(row.userId ? { userId: row.userId } : {}),
+        orderId: row._id.toHexString(),
+        ...(row.userId ? { userId: row.userId.toHexString() } : {}),
         orderNumber: row.orderNumber,
         email: row.customerSnapshot.emailNormalized,
         name: row.customerSnapshot.name,
@@ -1020,8 +1027,8 @@ function returnNotificationOrderAccess(connection: Connection) {
     const row = await orders.findById(orderId).session(session)
     if (!row) throw new ApiError('NOT_FOUND')
     return {
-      id: row._id,
-      ...(row.userId ? { userId: row.userId } : {}),
+      id: row._id.toHexString(),
+      ...(row.userId ? { userId: row.userId.toHexString() } : {}),
       email: row.customerSnapshot.emailNormalized,
       name: row.customerSnapshot.name,
       orderNumber: row.orderNumber,
@@ -1083,8 +1090,8 @@ function complaintOrderAccess(connection: Connection) {
       .session(session)
     if (!row) throw new ApiError('NOT_FOUND')
     return {
-      orderId: row._id,
-      ...(row.userId ? { userId: row.userId } : {}),
+      orderId: row._id.toHexString(),
+      ...(row.userId ? { userId: row.userId.toHexString() } : {}),
       contact: {
         name: row.customerSnapshot.name,
         emailNormalized: row.customerSnapshot.emailNormalized,

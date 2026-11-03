@@ -1,7 +1,8 @@
 import type { Connection } from 'mongoose'
 import { z } from 'zod'
 import { inTransaction } from '../../../shared/database/transaction.js'
-import type { verifiedFundingOrderAccess } from '../../orders/order.service.js'
+import type { VerifiedFundingOrderAccess } from '../../orders/order.public.js'
+
 import { paymentInitiationModel } from '../attempts/payment-initiation.model.js'
 import { paymentModel } from '../payment.model.js'
 import { paymentRecordModels } from './payment-record.model.js'
@@ -23,7 +24,7 @@ const input = z.strictObject({
 // Narrow evidence reader for notification dispatch; no credentials, bank references or models escape.
 function paymentNotificationAccess(
   connection: Connection,
-  target: ReturnType<typeof verifiedFundingOrderAccess>['notificationTarget'],
+  target: VerifiedFundingOrderAccess['notificationTarget'],
 ) {
   const payments = paymentModel(connection),
     { attempts, collections, intake } = paymentRecordModels(connection)

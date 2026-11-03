@@ -11,6 +11,18 @@ import {
   validateSessionOptions,
 } from './security.js'
 
+type IdentityConfig = Readonly<{
+  sessions: ReturnType<typeof validateSessionOptions>
+  browser: ReturnType<typeof validateBrowserSecurityOptions>
+  recovery?: ReturnType<typeof loadRecoveryOptions>
+  emailVerification?: ReturnType<typeof loadEmailVerificationOptions>
+  emailChange?: ReturnType<typeof loadEmailChangeOptions>
+  adminRecovery?: ReturnType<typeof loadAdminRecoveryOptions>
+  guest?: ReturnType<typeof loadGuestAccessOptions>
+}>
+
+type RuntimeConfig = Readonly<z.output<typeof schema> & { identity?: IdentityConfig }>
+
 const origin = z.string().transform((value, ctx) => {
   try {
     const url = new URL(value)
@@ -212,16 +224,6 @@ const schema = z
       }
     }
   })
-type IdentityConfig = Readonly<{
-  sessions: ReturnType<typeof validateSessionOptions>
-  browser: ReturnType<typeof validateBrowserSecurityOptions>
-  recovery?: ReturnType<typeof loadRecoveryOptions>
-  emailVerification?: ReturnType<typeof loadEmailVerificationOptions>
-  emailChange?: ReturnType<typeof loadEmailChangeOptions>
-  adminRecovery?: ReturnType<typeof loadAdminRecoveryOptions>
-  guest?: ReturnType<typeof loadGuestAccessOptions>
-}>
-type RuntimeConfig = Readonly<z.output<typeof schema> & { identity?: IdentityConfig }>
 function loadEnvironment(environment: NodeJS.ProcessEnv): RuntimeConfig {
   const parsed = schema.safeParse(environment)
   if (!parsed.success)

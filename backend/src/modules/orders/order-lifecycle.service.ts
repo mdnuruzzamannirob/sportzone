@@ -8,7 +8,7 @@ import {
 } from '../../shared/validation.js'
 import type { AuditAccess } from '../audit/audit.public.js'
 import type { AdminAccountAccess } from '../auth/auth.public.js'
-import { createNotificationService } from '../notifications/notification.service.js'
+import type { NotificationIntentsFactory } from '../notifications/notification.public.js'
 
 import type { FulfillmentPaymentAccess } from '../payments/payment.public.js'
 
@@ -43,6 +43,7 @@ function createOrderLifecycleService(
   payment: FulfillmentPaymentAccess,
   allocation: ReturnType<typeof createFulfillmentAllocationService>,
   auditAccess: AuditAccess,
+  moduleAccess: { createNotificationService: NotificationIntentsFactory },
   approvedDeadline?: (session: ClientSession, basis: unknown) => Promise<void>,
   clock: () => Date = () => new Date(),
 ) {
@@ -180,10 +181,10 @@ function createOrderLifecycleService(
                 ? 'delivery_completion'
                 : undefined
         if (eventType)
-          await createNotificationService(connection, clock).enqueueCommerce(
+          await moduleAccess.createNotificationService(clock).enqueueCommerce(
             {
-              orderId: row._id,
-              ...(row.userId ? { userId: row.userId } : {}),
+              orderId: row._id.toHexString(),
+              ...(row.userId ? { userId: row.userId.toHexString() } : {}),
               email: row.customerSnapshot.emailNormalized,
               name: row.customerSnapshot.name,
               eventType,

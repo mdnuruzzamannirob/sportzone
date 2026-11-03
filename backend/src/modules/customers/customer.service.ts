@@ -11,6 +11,8 @@ import {
   profilePatch,
 } from './customer.schema.js'
 
+type CustomerService = ReturnType<typeof createCustomerService>
+
 const addressDto = (address: CustomerProfile['addresses'][number]) => ({
   ...address,
 })
@@ -125,8 +127,6 @@ function createCustomerService(
     },
   }
 }
-
-type CustomerService = ReturnType<typeof createCustomerService>
 
 export type { CustomerService }
 export { createCustomerService }

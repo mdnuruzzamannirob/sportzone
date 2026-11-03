@@ -2,6 +2,8 @@ import { type Connection, type InferSchemaType, Schema } from 'mongoose'
 import { integerField, mutableSchemaOptions } from '../../shared/database/schema.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 
+type Complaint = InferSchemaType<typeof schema>
+
 const embedded = { _id: false, strict: 'throw' } as const
 
 const schema = new Schema(
@@ -64,8 +66,6 @@ schema.pre(
     throw new ApiError('STATE_CONFLICT')
   },
 )
-
-type Complaint = InferSchemaType<typeof schema>
 
 function complaintModel(connection: Connection) {
   return connection.models.Complaint

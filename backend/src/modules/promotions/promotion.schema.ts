@@ -2,6 +2,8 @@ import { z } from 'zod'
 import { paginationSchema } from '../../shared/pagination.js'
 import { couponTerms, pricingInput } from './pricing.schema.js'
 
+type CouponCodeSchema = typeof couponCode
+
 const couponId = z.string().regex(/^[a-f0-9]{24}$/)
 
 const couponInteger = z.int().nonnegative().max(Number.MAX_SAFE_INTEGER)
@@ -192,6 +194,7 @@ const couponHistory = z.strictObject({
 })
 
 export { parseRevision as parseCouponRevision } from '../../shared/preconditions.js'
+export type { CouponCodeSchema }
 export {
   couponAdmin,
   couponCode,

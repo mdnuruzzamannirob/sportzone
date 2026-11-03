@@ -3,10 +3,11 @@ import { z } from 'zod'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { pageMeta } from '../../shared/pagination.js'
-import { refundStatusTimelineAccess } from '../audit/audit.service.js'
+import type { RefundStatusTimeline } from '../audit/audit.public.js'
+
 import type { OrderScopeAccess, PaymentInitiationCredentials } from '../auth/auth.public.js'
-import type { CustomerOrderHistoryAccess } from '../orders/order.public.js'
-import type { complaintOrderAccess } from '../orders/order.service.js'
+import type { ComplaintOrderAccess, CustomerOrderHistoryAccess } from '../orders/order.public.js'
+
 import { refundAttemptModel } from './payouts/refund-attempt.model.js'
 import { verifyRefundAttemptPersistence } from './payouts/refund-attempt.persistence.js'
 import { refundModel } from './refund.model.js'
@@ -18,12 +19,13 @@ const id = z.string().regex(/^[a-f0-9]{24}$/)
 function createRefundHistoryService(
   connection: Connection,
   scope: OrderScopeAccess,
-  order: ReturnType<typeof complaintOrderAccess>,
+  order: ComplaintOrderAccess,
   customerOrders: CustomerOrderHistoryAccess,
+  moduleAccess: { refundStatusTimelineAccess: RefundStatusTimeline },
 ) {
   const model = refundModel(connection),
     attempts = refundAttemptModel(connection),
-    timeline = refundStatusTimelineAccess(connection)
+    timeline = moduleAccess.refundStatusTimelineAccess
   async function ready() {
     try {
       await verifyCorrectionPersistence(connection)

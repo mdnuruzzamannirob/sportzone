@@ -882,6 +882,8 @@ verification sequence. Historical task/feature acceptance is preserved, not used
 
 ### Remaining-src architecture work — ongoing, 3 November 2026
 
+This is the historical initial checkpoint. The current src outcome is recorded in the [structural closeout below](#src-structural-closeout--3-november-2026); its later verification supersedes this checkpoint for current source inputs.
+
 Owner requested the full src pass next, keeping tests/test review and outside-src migration deferred.
 This record describes applied work, not completion of the full source architecture or P03-030.
 
@@ -927,3 +929,74 @@ boundaries, rather than replaced with broad new allowances. Outside-src scripts/
 then adopt changed imports and dependency arguments; the current source-only pass does not certify
 those consumers. Boundary inventory migration, consolidated behavior/security/financial/concurrency
 verification and final review remain pending. P03-030 stays In Progress; P03-022 remains unaccepted.
+
+
+### Src structural closeout — 3 November 2026
+
+The owner requested completion of the remaining src work, retaining the modules → src → outside-src
+batches → consolidated tests/review/fix sequence. The **planned src structural phase is complete**.
+P03-030 remains In Progress for the outside-src consumer/tooling migration and final verification;
+this is not behavior acceptance, a released backend or P03-022 independent closeout acceptance.
+
+Implemented:
+
+- Completed concrete cross-module construction isolation. Checkout, order allocation/snapshots,
+  payment processing/retry/reconciliation, correction obligations, audits and notification intents
+  receive explicit owner capabilities from setup. Removed unused connection arguments and source
+  callers; retained transaction/authorization/replay checks. Simple constructor bindings use bind;
+  repeated real allocation/payment/read/schema assembly has a named root helper.
+- Kept each validation expression with its owner. Typed builders assemble the original shared schemas
+  without copying runtime rules, global setters or a second validation registry. setup exports the
+  assembled catalog/cart/wishlist/checkout/intent/inventory/order/read/report bundles and allocation
+  binding schema for the deferred contract/fixture migration.
+- Removed public-contract type cycles. Public proof/DTO contracts are independent of private
+  implementations, with ClientSession as the only permitted Mongoose boundary type. Shared stock and
+  coupon allocation records have canonical DTO declarations; discarded unconsumed public surfaces.
+- Converted cross-owner proof/notification/media identities to strings. Auth and notifications retain
+  their private storage authority; media maps immutable claim evidence and scopes in the same
+  transaction. Returns no longer receives a private media document or performs media persistence checks.
+- Finished Returns controller extraction, reused its authorization input helpers, and reused password
+  recovery HTTP mapping for both audiences. Replaced numeric/generic handler names with operation names.
+  Routes retain registration and middleware order; controllers retain HTTP mapping.
+- Standardized source declaration/export placement and removed unused dependencies and imports.
+  Final src contains twenty modules and 311 TypeScript files. Only three files were added in this pass:
+  customer.public.ts, promotion.public.ts and return.controller.ts, each with actual consumers.
+
+Environment: Node v24.20.0, existing locked TypeScript/Biome configuration; no database or provider
+operation. Changes preserve initial staged edits; the agent did not stage, commit, push, switch branches
+or change a PR. Tests, test review, contracts, API artifacts, scripts and tooling files were not edited.
+
+| Executed source check | Observed result |
+| --- | --- |
+| `node_modules/.bin/tsc --project backend/tsconfig.json --noEmit` | Passed; excludes deferred tests/contracts |
+| `node_modules/.bin/biome lint backend/src --error-on-warnings` | Passed; 311 files |
+| `node_modules/.bin/biome format backend/src` | Passed; 311 files |
+| Existing `checkBoundaries()` source-policy inspection | Passed: no source errors, zero migration violations, zero active legacy allowances; type and runtime graphs are acyclic |
+| `npm run lint:boundaries` / unfiltered checker result | Failed solely for 292 stale allowance entries in the deferred outside-src inventory; the tracked inventory was not modified or widened |
+| `node /tmp/sportzone-src-completion/source-invariants.cjs` | Static preservation check Passed: 54 model/persistence literal inventories, 223 route registrations and 1,664 Zod constructor calls retained. This is not runtime validation, a database test or API contract acceptance |
+| Runtime/unit/integration/contract/security/financial/concurrency tests and test review | Not Run; deferred by owner |
+| Full workspace typecheck/build/artifact generation/operator/provider checks | Not Run; outside-src consumers still require migration |
+
+The source-policy inspection calls the existing exported checker and reports the known outside-src
+stale inventory separately; it does not bypass or relabel the failing repository gate:
+
+```javascript
+const result = checkBoundaries()
+const stale = result.errors.filter(error =>
+  error.startsWith('scripts/ci/backend-boundary-allowances.json: remove stale '),
+)
+const sourceErrors = result.errors.filter(error => !stale.includes(error))
+// Observed: sourceErrors [], migrationViolations [], remainingAllowances 0, stale.length 292.
+```
+
+[Local ignored source closeout inventory](../../test-results/backend-refactor/src-completion.json)
+contains the source fingerprint, 48 changed constructor/function signatures, 34 schema export migration
+entries and the preservation/boundary results. Combine it with the earlier module export/move ledger
+when migrating outside-src consumers. The previous 47 source violations are resolved; no new allowance
+was introduced to obtain that result. The approved inventory→catalog stock-only exception remains the
+canonical capability boundary, not a legacy migration allowance.
+
+Next work is exclusively the owner-requested outside-src batches: migrate actual tests/helpers,
+contracts/artifact discovery, operator/build scripts and CI/boundary inventory/negative fixtures.
+Then execute consolidated backend behavior/security/financial/concurrency regression, review and fixes.
+Do not mark P03-030 or backend closeout Done from source-only checks.

@@ -201,7 +201,7 @@ function createPaymentMonitorRoutes(
     security.cors('admin'),
     security.require('admin', 'admin'),
     http.require('admin'),
-    controller.postAction,
+    controller.requestPaymentReconciliation,
   )
   router.options('/admin/provider-receipts', security.cors('admin'))
   router.get(

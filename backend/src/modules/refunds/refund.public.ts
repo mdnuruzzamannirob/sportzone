@@ -1,4 +1,5 @@
 import type { ClientSession } from 'mongoose'
+import type { AuditAccess } from '../audit/audit.public.js'
 
 interface RefundRecovery {
   due(
@@ -46,4 +47,37 @@ type RefundReportAccess = (
   pendingRefundLiabilityPoisha: number
 }>
 
-export type { RefundNotifier, RefundRecovery, RefundReportAccess }
+type CorrectionObligationFactory = (auditAccess: AuditAccess) => {
+  create(session: ClientSession, raw: unknown): Promise<string>
+}
+
+type CorrectionMonitor = (
+  session: ClientSession,
+  paymentId: string,
+  offset: number,
+  limit: number,
+) => Promise<{
+  total: number
+  items: {
+    id: string
+    sourceCollectionId: string
+    amountPoisha: number
+    status:
+      | 'under_review'
+      | 'processing'
+      | 'failed'
+      | 'approved'
+      | 'rejected'
+      | 'completed'
+      | 'requested'
+    capacityStatus: 'reserved' | 'released' | 'completed' | 'not_reserved'
+  }[]
+}>
+
+export type {
+  CorrectionMonitor,
+  CorrectionObligationFactory,
+  RefundNotifier,
+  RefundRecovery,
+  RefundReportAccess,
+}

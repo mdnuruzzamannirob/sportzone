@@ -15,8 +15,7 @@ import type {
   OrderScopeAccess,
   PaymentInitiationCredentials,
 } from '../auth/auth.public.js'
-
-import type { complaintOrderAccess } from '../orders/order.service.js'
+import type { ComplaintOrderAccess } from '../orders/order.public.js'
 
 import { complaintModel } from './support.model.js'
 import { verifyComplaintPersistence } from './support.persistence.js'
@@ -34,7 +33,7 @@ const hash = (s: string) => createHash('sha256').update(s).digest('hex')
 function createComplaintService(
   connection: Connection,
   scope: OrderScopeAccess,
-  orders: ReturnType<typeof complaintOrderAccess>,
+  orders: ComplaintOrderAccess,
   admin: AdminAccountAccess,
   auditAccess: AuditAccess,
   clock: () => Date = () => new Date(),
@@ -140,7 +139,7 @@ function createComplaintService(
               const target = await orders(session, linkedOrderId, principal)
               return save(session, {
                 scope: principal.kind === 'customer' ? principal.userId : principal.guestSessionId,
-                ...(target.userId ? { userId: target.userId.toHexString() } : {}),
+                ...(target.userId ? { userId: target.userId } : {}),
                 orderId: linkedOrderId,
                 name: target.contact.name,
                 email: target.contact.emailNormalized,

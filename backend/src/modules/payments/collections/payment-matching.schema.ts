@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import { codCollectionSummary } from './cod-collection.schema.js'
 
+type MatchingFacts = z.output<typeof matchingProof>
+
 const matchingId = z.string().regex(/^[a-f0-9]{24}$/)
 
 const money = z.int().nonnegative().max(Number.MAX_SAFE_INTEGER)
@@ -55,8 +57,6 @@ const matchingProof = z.strictObject({
   unassignedPoisha: money.optional(),
   verifiedAt: z.iso.datetime({ offset: true }),
 })
-
-type MatchingFacts = z.output<typeof matchingProof>
 
 export type { MatchingFacts }
 export {

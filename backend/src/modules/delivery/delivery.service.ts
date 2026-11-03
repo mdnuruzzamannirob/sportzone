@@ -34,6 +34,18 @@ import {
   zoneView,
 } from './delivery.schema.js'
 
+type DeliveryService = ReturnType<typeof createDeliveryService>
+
+type Charge = {
+  zoneId: Types.ObjectId
+  coverageKey: string
+  status: string
+  effectiveFrom: Date
+  effectiveTo?: Date
+  amountPoisha: number
+  ruleVersion: number
+}
+
 function parseTransitionInput(action: 'activate' | 'deactivate' | 'supersede', raw: unknown) {
   if (action === 'activate') return parseInput(chargeActivate, raw)
   if (action === 'deactivate') return parseInput(chargeDeactivate, raw)
@@ -464,18 +476,6 @@ function createDeliveryService(
       return { processed }
     },
   }
-}
-
-type DeliveryService = ReturnType<typeof createDeliveryService>
-
-type Charge = {
-  zoneId: Types.ObjectId
-  coverageKey: string
-  status: string
-  effectiveFrom: Date
-  effectiveTo?: Date
-  amountPoisha: number
-  ruleVersion: number
 }
 
 // Delivery-owned coverage read boundary only. It does not quote/lock a charge or seed master data.

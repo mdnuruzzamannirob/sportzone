@@ -17,4 +17,10 @@ type CheckoutSettingsAccess = (
   }[]
 }>
 
+export type {
+  PaymentChannelsSchema,
+  PolicyTypeSchema,
+  PublicHomeSettingsSchema,
+  PublicPolicyLinkSchema,
+} from './setting.schema.js'
 export type { CheckoutSettingsAccess }

@@ -4,6 +4,7 @@ import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import type { PaymentMethodAccess } from '../auth/auth.public.js'
 import type { PaymentMethodOrderAccess } from '../orders/order.public.js'
+import type { PaymentChannelsSchema } from '../settings/setting.public.js'
 
 import { paymentMethodsQuery, paymentMethodsView } from './attempts/payment-eligibility.schema.js'
 import { paymentEligibility } from './attempts/payment-eligibility.service.js'
@@ -17,8 +18,9 @@ function createPaymentMethodsService(
     settings(session: ClientSession): Promise<unknown>
     verified?: (session: ClientSession) => Promise<unknown>
   },
+  moduleAccess: { schemaPaymentChannels: PaymentChannelsSchema },
 ) {
-  const eligibility = paymentEligibility(dependencies.verified),
+  const eligibility = paymentEligibility(moduleAccess, dependencies.verified),
     balance = paymentMethodBalanceAccess(connection)
   return {
     async read(credentials: Parameters<typeof dependencies.access.owned>[0], raw: unknown) {

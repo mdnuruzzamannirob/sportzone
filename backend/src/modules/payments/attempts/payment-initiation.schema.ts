@@ -2,6 +2,8 @@ import { z } from 'zod'
 import { idempotencyKey as paymentInitiationKey } from '../../../shared/validation.js'
 import { attemptId } from './payment-attempt.schema.js'
 
+type PublicPaymentAttemptSchema = typeof publicPaymentAttempt
+
 const paymentInitiationInput = z.strictObject({
   requestedChannel: z.enum(['bkash', 'nagad', 'rocket']),
 })
@@ -59,6 +61,7 @@ const publicPaymentAttempt = z.strictObject({
   expiresAt: z.iso.datetime({ offset: true }).optional(),
 })
 
+export type { PublicPaymentAttemptSchema }
 export {
   paymentAttemptParams,
   paymentAttemptStatus,

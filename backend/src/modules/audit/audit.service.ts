@@ -228,7 +228,7 @@ function paymentReconciliationScheduleAccess(connection: Connection) {
       { $sort: { requestedAt: -1, _id: -1 } },
       { $limit: 100 },
     ])
-    return rows.map((r) => ({ paymentId: r._id, requestedAt: r.requestedAt }))
+    return rows.map((r) => ({ paymentId: r._id.toHexString(), requestedAt: r.requestedAt }))
   }
 }
 

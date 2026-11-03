@@ -22,6 +22,44 @@ import {
   reviewView,
 } from './review.schema.js'
 
+type ReviewAudit = {
+  actorType: 'customer' | 'admin'
+  actorId: string
+  action: string
+  targetType: 'review'
+  targetId: string
+  operationKey: string
+  occurredAt: Date
+  beforeDigest?: string
+  afterDigest: string
+  reason?: string
+}
+
+type Dependencies = {
+  accounts: CustomerAccountAccess
+  catalog: ProductReviewAccess
+  audit(session: ClientSession, event: ReviewAudit): Promise<void>
+  // Trusted owning purchase capability must check delivered eligibility and fence its
+  // durable evidence in this session. No adapter means no verified review creation.
+  eligibility?(
+    session: ClientSession,
+    selection: {
+      userId: string
+      productId: string
+      qualifyingOrderItemId: string
+    },
+  ): Promise<unknown>
+  moderator?(token: string | undefined, session: ClientSession): Promise<string>
+  moderationReceipt?(
+    session: ClientSession,
+    identity: {
+      actorId: string
+      reviewId: string
+      operationKey: string
+    },
+  ): Promise<unknown>
+}
+
 const empty = paginationSchema
 
 // Explicit projection: customer/order/identity/moderation details never enter public views.
@@ -131,44 +169,6 @@ function createReviewQueryService(
       )
     },
   }
-}
-
-type ReviewAudit = {
-  actorType: 'customer' | 'admin'
-  actorId: string
-  action: string
-  targetType: 'review'
-  targetId: string
-  operationKey: string
-  occurredAt: Date
-  beforeDigest?: string
-  afterDigest: string
-  reason?: string
-}
-
-type Dependencies = {
-  accounts: CustomerAccountAccess
-  catalog: ProductReviewAccess
-  audit(session: ClientSession, event: ReviewAudit): Promise<void>
-  // Trusted owning purchase capability must check delivered eligibility and fence its
-  // durable evidence in this session. No adapter means no verified review creation.
-  eligibility?(
-    session: ClientSession,
-    selection: {
-      userId: string
-      productId: string
-      qualifyingOrderItemId: string
-    },
-  ): Promise<unknown>
-  moderator?(token: string | undefined, session: ClientSession): Promise<string>
-  moderationReceipt?(
-    session: ClientSession,
-    identity: {
-      actorId: string
-      reviewId: string
-      operationKey: string
-    },
-  ): Promise<unknown>
 }
 
 const digest = (row: HydratedDocument<ReviewRecord>) =>

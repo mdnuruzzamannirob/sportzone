@@ -14,20 +14,20 @@ import type {
   PaymentInitiationCredentials,
 } from '../auth/auth.public.js'
 import type { ReturnReceiptService } from '../inventory/inventory.public.js'
-import type { ClaimEvidenceMetadataAccess } from '../media/media.public.js'
-import { type MediaService, verifyMediaPersistence } from '../media/media.service.js'
-import type { MediaFile } from '../media/media.types.js'
+import type {
+  ClaimEvidenceMetadataAccess,
+  ClaimMediaAccess,
+  MediaFile,
+} from '../media/media.public.js'
 import type {
   ClaimEligibilitySnapshotAccess,
   ClaimQuantityAccess,
   ClaimRestockAccess,
   ClaimReviewQuantityAccess,
+  ComplaintOrderAccess,
   CustomerOrderHistoryAccess,
+  ReturnNotificationOrderAccess,
 } from '../orders/order.public.js'
-import type {
-  complaintOrderAccess,
-  returnNotificationOrderAccess,
-} from '../orders/order.service.js'
 
 import { returnModel } from './return.model.js'
 import { verifyReturnPersistence } from './return.persistence.js'
@@ -52,7 +52,7 @@ type Row = HydratedDocument<
 function createReturnHistoryService(
   connection: Connection,
   scope: OrderScopeAccess,
-  order: ReturnType<typeof complaintOrderAccess>,
+  order: ComplaintOrderAccess,
   evidence: ClaimEvidenceMetadataAccess,
   admins?: AdminAccountAccess,
   customerOrders?: CustomerOrderHistoryAccess,
@@ -422,7 +422,8 @@ function createReturnService(
   auditAccess: AuditAccess,
   clock: () => Date = () => new Date(),
   evidence?: {
-    attach: MediaService['attach']
+    verifyPersistence: ClaimMediaAccess['verifyPersistence']
+    attach: ClaimMediaAccess['attach']
     credential?: string
   },
 ) {
@@ -448,8 +449,10 @@ function createReturnService(
       const evidenceIds: Types.ObjectId[][] = input.items.map(() => [])
       const allAssets = input.items.flatMap((item) => item.evidenceAssetIds ?? [])
       if (new Set(allAssets).size !== allAssets.length) throw new ApiError('VALIDATION_FAILED')
-      if (allAssets.length && !evidence) throw new ApiError('SERVICE_UNAVAILABLE')
-      if (allAssets.length) await verifyMediaPersistence(connection)
+      if (allAssets.length) {
+        if (!evidence) throw new ApiError('SERVICE_UNAVAILABLE')
+        await evidence.verifyPersistence()
+      }
       for (const [index, item] of input.items.entries()) {
         for (const assetId of item.evidenceAssetIds ?? []) {
           if (!evidence) throw new ApiError('SERVICE_UNAVAILABLE')
@@ -458,7 +461,7 @@ function createReturnService(
             assetId,
             {
               targetType: 'claim',
-              targetId: new Types.ObjectId(input.claimId),
+              targetId: input.claimId,
               slot: `item:${item.orderItemId}`,
             },
             session,
@@ -470,11 +473,11 @@ function createReturnService(
               if (
                 asset.assetKind !== 'claim_evidence' ||
                 asset.access !== 'private' ||
-                asset.orderId?.toHexString() !== input.orderId ||
+                asset.orderId !== input.orderId ||
                 asset.claimType !== input.claimType ||
-                !asset.orderItemIds.some((id) => id.toHexString() === item.orderItemId) ||
+                !asset.orderItemIds.some((id) => id === item.orderItemId) ||
                 asset.owner.kind !== ownerKind ||
-                asset.owner.principalId.toHexString() !== ownerId
+                asset.owner.principalId !== ownerId
               )
                 throw new ApiError('FORBIDDEN')
               evidenceIds[index]?.push(new Types.ObjectId(assetId))
@@ -560,7 +563,7 @@ function refundClaimSnapshotAccess(connection: Connection) {
 // Existing transition audit is the immutable event proof, even after later claim changes.
 function returnNotificationProofAccess(
   connection: Connection,
-  order: ReturnType<typeof returnNotificationOrderAccess>,
+  order: ReturnNotificationOrderAccess,
   auditAccess: AuditAccess,
 ) {
   const model = returnModel(connection),
@@ -660,7 +663,7 @@ function createReturnOperationsService(
       credentials: PaymentInitiationCredentials,
       orderId: string,
       mutating?: boolean,
-    ) => MediaService
+    ) => ClaimMediaAccess
   },
   auditAccess: AuditAccess,
   clock: () => Date = () => new Date(),
@@ -820,7 +823,9 @@ function createReturnOperationsService(
             (session, command) => dependencies.eligibility(session, principal, command),
             auditAccess,
             clock,
-            media ? { attach: media.attach } : undefined,
+            media
+              ? { attach: media.attach, verifyPersistence: media.verifyPersistence }
+              : undefined,
           )
           await service.create(session, command)
           return claimId
@@ -865,9 +870,9 @@ function createReturnOperationsService(
       const result = await dependencies.media(credentials, orderId, true).uploadEvidence(
         undefined,
         {
-          orderId: new Types.ObjectId(orderId),
+          orderId,
           claimType: scope.claimType,
-          orderItemIds: scope.orderItemIds.map((id) => new Types.ObjectId(id)),
+          orderItemIds: scope.orderItemIds,
         },
         file,
       )

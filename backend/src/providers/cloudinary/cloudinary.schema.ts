@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import { ConfigurationError } from '../../shared/errors/configuration-error.js'
 
+type CloudinaryOptions = z.infer<typeof optionsSchema>
+
 const optionsSchema = z.strictObject({
   cloudName: z.string().regex(/^[a-z0-9_-]{1,64}$/),
   apiKey: z.string().regex(/^[0-9]{1,64}$/),
@@ -11,7 +13,6 @@ const optionsSchema = z.strictObject({
     .regex(/^[A-Za-z0-9_-]+$/),
   timeoutMs: z.int().min(1).max(60000),
 })
-type CloudinaryOptions = z.infer<typeof optionsSchema>
 function validateCloudinaryOptions(input: unknown): Readonly<CloudinaryOptions> {
   const parsed = optionsSchema.safeParse(input)
   if (!parsed.success) throw new ConfigurationError(['cloudinary_configuration'])

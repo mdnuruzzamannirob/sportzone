@@ -5,7 +5,7 @@ import { respond } from '../../../shared/responses.js'
 import { readContextCookie } from '../sessions/browser-security.service.js'
 
 function createEmailVerificationController() {
-  const postAction =
+  const verifyEmail =
     (
       action:
         | ((raw: unknown, context: string, csrf: string) => Promise<{ accepted: true }>)
@@ -22,7 +22,7 @@ function createEmailVerificationController() {
         ),
       )
     }
-  return { postAction }
+  return { verifyEmail }
 }
 
 export { createEmailVerificationController }

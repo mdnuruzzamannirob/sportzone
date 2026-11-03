@@ -1,3 +1,6 @@
+type ErrorCode = keyof typeof errorDefinitions
+
+type FieldIssue = { field: string; code: string }
 const errorDefinitions = {
   REFUND_BALANCE_EXCEEDED: {
     status: 409,
@@ -47,8 +50,6 @@ const errorDefinitions = {
   NOT_FOUND: { status: 404, message: 'Resource not found.' },
   INTERNAL_ERROR: { status: 500, message: 'An unexpected error occurred.' },
 } as const
-type ErrorCode = keyof typeof errorDefinitions
-type FieldIssue = { field: string; code: string }
 
 // Only approved, static public messages cross the HTTP boundary.
 class ApiError extends Error {

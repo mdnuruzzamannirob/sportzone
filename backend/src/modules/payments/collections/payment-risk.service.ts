@@ -4,9 +4,8 @@ import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
 import { idempotencyKey as paymentInitiationKey } from '../../../shared/validation.js'
 import type { AuditAccess } from '../../audit/audit.public.js'
-
 import type { AdminAccountAccess } from '../../auth/auth.public.js'
-import type { verifiedFundingOrderAccess } from '../../orders/order.service.js'
+import type { VerifiedFundingOrderAccess } from '../../orders/order.public.js'
 
 import { paymentModel } from '../payment.model.js'
 import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
@@ -18,7 +17,7 @@ const hash = (value: string) => createHash('sha256').update(value).digest('hex')
 function createPaymentRiskService(
   connection: Connection,
   access: AdminAccountAccess,
-  orders: ReturnType<typeof verifiedFundingOrderAccess>,
+  orders: VerifiedFundingOrderAccess,
   settlement: ReturnType<typeof createPaymentSettlementService>,
   auditAccess: AuditAccess,
   clock: () => Date = () => new Date(),

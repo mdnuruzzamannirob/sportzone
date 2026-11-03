@@ -3,6 +3,8 @@ import { type Connection, type InferSchemaType, Schema } from 'mongoose'
 import { createDeclaredIndexes, verifyDeclaredIndexes } from '../database/indexes.js'
 import { integerField, mutableSchemaOptions } from '../database/schema.js'
 
+type JobLease = InferSchemaType<typeof schema>
+
 const schema = new Schema(
   {
     jobKey: { type: String, required: true, immutable: true },
@@ -18,7 +20,6 @@ const schema = new Schema(
 )
 schema.index({ jobKey: 1 }, { unique: true, name: 'job_key_unique' })
 schema.index({ leaseUntil: 1 }, { name: 'job_lease_expiry' })
-type JobLease = InferSchemaType<typeof schema>
 function jobLeaseModel(connection: Connection) {
   return connection.models.JobLease
     ? connection.model<JobLease>('JobLease')

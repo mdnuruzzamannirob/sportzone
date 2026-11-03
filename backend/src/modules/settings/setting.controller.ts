@@ -34,7 +34,7 @@ function createSettingsAdminController(
     res.set('ETag', `"${result.revision}"`)
     respond(res, result, 201)
   }
-  const getSettingsPolicies2: RequestHandler = async (req, res) => {
+  const getPolicy: RequestHandler = async (req, res) => {
     const result = await policies.get(token(req), id(req))
     res.set('ETag', `"${result.revision}"`)
     respond(res, result)
@@ -44,7 +44,7 @@ function createSettingsAdminController(
     res.set('ETag', `"${result.revision}"`)
     respond(res, result)
   }
-  const postAction =
+  const postPolicyTransition =
     (action: 'approve' | 'publish'): RequestHandler =>
     async (req, res) => {
       const result = await policies.transition(
@@ -63,9 +63,9 @@ function createSettingsAdminController(
     patchAdminSettings,
     getSettingsPolicies,
     postSettingsPolicies,
-    getSettingsPolicies2,
+    getPolicy,
     patchSettingsPolicies,
-    postAction,
+    postPolicyTransition,
   }
 }
 

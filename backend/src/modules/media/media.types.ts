@@ -1,5 +1,6 @@
 import type { ClientSession, Types } from 'mongoose'
 import type {
+  MediaFile,
   MediaFormat,
   MediaLookup,
   MediaProvider,
@@ -22,12 +23,6 @@ type MediaReference = {
   targetType: 'product' | 'category' | 'store_settings' | 'claim'
   targetId: Types.ObjectId
   slot: string
-}
-
-type MediaFile = {
-  name: string
-  mimeType: string
-  bytes: Uint8Array
 }
 
 interface MediaAccess {

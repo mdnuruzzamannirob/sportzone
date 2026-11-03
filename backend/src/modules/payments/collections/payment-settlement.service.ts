@@ -2,9 +2,10 @@ import type { ClientSession, Connection } from 'mongoose'
 import { assertOutsideTransaction, inTransaction } from '../../../shared/database/transaction.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import type { AuditAccess } from '../../audit/audit.public.js'
-import type { VerifiedAllocationService } from '../../orders/order.public.js'
-
-import type { verifiedFundingOrderAccess } from '../../orders/order.service.js'
+import type {
+  VerifiedAllocationService,
+  VerifiedFundingOrderAccess,
+} from '../../orders/order.public.js'
 
 import { paymentModel } from '../payment.model.js'
 import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
@@ -13,7 +14,7 @@ import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
 // independently committed funds remain visible with the durable fulfillment hold for resolution.
 function createPaymentSettlementService(
   connection: Connection,
-  orders: ReturnType<typeof verifiedFundingOrderAccess>,
+  orders: VerifiedFundingOrderAccess,
   allocation: VerifiedAllocationService,
   auditAccess: AuditAccess,
   clock: () => Date = () => new Date(),

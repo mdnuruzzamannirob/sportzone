@@ -67,4 +67,6 @@ type ProductReviewAccess = {
   ): Promise<void>
 }
 
+export type { ProductCardSchema } from './catalog.schema.js'
+export type { AttributesSchema, VariantStockViewSchema } from './products/variant.schema.js'
 export type { CatalogCheckoutAccess, CatalogReportAccess, CatalogSelections, ProductReviewAccess }

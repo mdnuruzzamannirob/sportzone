@@ -1,9 +1,10 @@
 import { type ClientSession, Types } from 'mongoose'
 import { z } from 'zod'
 import type { AuditWriter } from '../audit/audit.public.js'
-import type { OrderNotificationAccess } from '../orders/order.public.js'
-
-import type { returnNotificationOrderAccess } from '../orders/order.service.js'
+import type {
+  OrderNotificationAccess,
+  ReturnNotificationOrderAccess,
+} from '../orders/order.public.js'
 
 import type { RefundNotifier } from '../refunds/refund.public.js'
 import type { NotificationService } from './notification.service.js'
@@ -122,7 +123,7 @@ function createPaymentMessageService(verified: (raw: unknown) => Promise<boolean
 }
 
 function refundDecisionNotifier(
-  order: ReturnType<typeof returnNotificationOrderAccess>,
+  order: ReturnNotificationOrderAccess,
   notifications: Pick<NotificationService, 'enqueueRefund'>,
   audit: AuditWriter,
 ): RefundNotifier {
@@ -241,7 +242,7 @@ const returnMessagePayload = z.object({
 
 // Enqueue belongs to the enclosing claim transition transaction; this never sends mail.
 function returnDecisionNotifier(
-  order: ReturnType<typeof returnNotificationOrderAccess>,
+  order: ReturnNotificationOrderAccess,
   notifications: Pick<NotificationService, 'enqueueReturnDecision'>,
 ) {
   return async (session: ClientSession, raw: z.infer<typeof event>) => {

@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import { ApiError } from '../../shared/errors/app-error.js'
 
+type ChallengePurpose = z.infer<typeof challengePurpose>
+
 const text = (max: number) =>
   z
     .string()
@@ -47,8 +49,6 @@ const challengePurpose = z.enum([
   'password_reset',
   'guest_order_access',
 ])
-
-type ChallengePurpose = z.infer<typeof challengePurpose>
 
 // Required service policies: transport validation cannot invent password policy or coverage.
 function createIdentityContracts(policy: {

@@ -1,7 +1,15 @@
 import { z } from 'zod'
 import { paginationSchema } from '../../shared/pagination.js'
-import { fulfillmentStatus } from '../orders/order.schema.js'
-import { customerPaymentSummary } from '../orders/order-read.schema.js'
+import type {
+  CustomerPaymentSummarySchema,
+  FulfillmentStatusSchema,
+} from '../orders/order.public.js'
+
+type ReportDashboardSchema = ReturnType<typeof createReportSchemas>['reportDashboard']
+
+type ReportRecentOrderSchema = ReturnType<typeof createReportSchemas>['reportRecentOrder']
+
+type ReportViewsSchema = ReturnType<typeof createReportSchemas>['reportViews']
 
 const id = z.string().regex(/^[a-f0-9]{24}$/),
   money = z.int().nonnegative().max(Number.MAX_SAFE_INTEGER)
@@ -51,35 +59,6 @@ const meta = z.strictObject({
   ),
 })
 
-const reportRecentOrder = z.strictObject({
-  id,
-  orderNumber: z.string(),
-  fulfillmentStatus,
-  placedAt: z.iso.datetime(),
-  finalTotalPoisha: money,
-  currency: z.literal('BDT'),
-  paymentStatus: customerPaymentSummary.shape.status,
-})
-
-const reportDashboard = meta.extend({
-  ...totals.shape,
-  counts: z.strictObject({
-    activeProducts: money,
-    registeredCustomers: money,
-    totalOrders: money,
-    pendingOrders: money,
-    confirmedOrders: money,
-    processingOrders: money,
-    shippedOrders: money,
-    deliveredOrders: money,
-    cancelledOrders: money,
-    lowStockVariants: money,
-    pendingReturnRequests: money,
-  }),
-  recentOrders: z.array(reportRecentOrder),
-  lowStockItems: z.array(z.strictObject({ id, productId: id, sku: z.string(), available: money })),
-})
-
 const salesReport = meta.extend({
   filters: z.strictObject({ groupBy: z.enum(['day', 'month']) }),
   totals,
@@ -121,22 +100,61 @@ const operationalItem = z.strictObject({
   capacityStatus: z.enum(['not_reserved', 'reserved', 'completed', 'released']).optional(),
 })
 
-const reportViews = {
-  dashboard: reportDashboard,
-  sales: salesReport,
-  collections: collectionReport,
-  refunds: refundReport,
-} as const
+function createReportSchemas({
+  customerPaymentSummary,
+  fulfillmentStatus,
+}: {
+  fulfillmentStatus: FulfillmentStatusSchema
+  customerPaymentSummary: CustomerPaymentSummarySchema
+}) {
+  const reportRecentOrder = z.strictObject({
+    id,
+    orderNumber: z.string(),
+    fulfillmentStatus,
+    placedAt: z.iso.datetime(),
+    finalTotalPoisha: money,
+    currency: z.literal('BDT'),
+    paymentStatus: customerPaymentSummary.shape.status,
+  })
 
+  const reportDashboard = meta.extend({
+    ...totals.shape,
+    counts: z.strictObject({
+      activeProducts: money,
+      registeredCustomers: money,
+      totalOrders: money,
+      pendingOrders: money,
+      confirmedOrders: money,
+      processingOrders: money,
+      shippedOrders: money,
+      deliveredOrders: money,
+      cancelledOrders: money,
+      lowStockVariants: money,
+      pendingReturnRequests: money,
+    }),
+    recentOrders: z.array(reportRecentOrder),
+    lowStockItems: z.array(
+      z.strictObject({ id, productId: id, sku: z.string(), available: money }),
+    ),
+  })
+
+  const reportViews = {
+    dashboard: reportDashboard,
+    sales: salesReport,
+    collections: collectionReport,
+    refunds: refundReport,
+  } as const
+  return { reportDashboard, reportRecentOrder, reportViews }
+}
+
+export type { ReportDashboardSchema, ReportRecentOrderSchema, ReportViewsSchema }
 export {
   collectionReport,
+  createReportSchemas,
   financialTotals,
   operationalItem,
   operationalQuery,
   refundReport,
-  reportDashboard,
   reportQuery,
-  reportRecentOrder,
-  reportViews,
   salesReport,
 }

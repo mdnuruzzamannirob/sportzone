@@ -3,11 +3,13 @@ import type { ClientSession, Connection } from 'mongoose'
 import { assertOutsideTransaction, inTransaction } from '../../../shared/database/transaction.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import type { AuditAccess } from '../../audit/audit.public.js'
-import { createNotificationService } from '../../notifications/notification.service.js'
-import type { VerifiedAllocationService } from '../../orders/order.public.js'
-import type { verifiedFundingOrderAccess } from '../../orders/order.service.js'
+import type { NotificationIntentsFactory } from '../../notifications/notification.public.js'
+import type {
+  VerifiedAllocationService,
+  VerifiedFundingOrderAccess,
+} from '../../orders/order.public.js'
+import type { CorrectionObligationFactory } from '../../refunds/refund.public.js'
 
-import { createCorrectionObligationService } from '../../refunds/obligations/correction-obligation.service.js'
 import { paymentInitiationModel } from '../attempts/payment-initiation.model.js'
 import { verifyPaymentInitiationPersistence } from '../attempts/payment-initiation.persistence.js'
 import { paymentModel } from '../payment.model.js'
@@ -45,17 +47,21 @@ function collectionTime(value: string | undefined) {
 function createPaymentProcessingService(
   connection: Connection,
   verifier: Verifier,
-  orders: ReturnType<typeof verifiedFundingOrderAccess>,
+  orders: VerifiedFundingOrderAccess,
   allocation: VerifiedAllocationService,
   auditAccess: AuditAccess,
+  moduleAccess: {
+    createNotificationService: NotificationIntentsFactory
+    createCorrectionObligationService: CorrectionObligationFactory
+  },
   clock: () => Date = () => new Date(),
 ) {
   const { attempts, intake, collections } = paymentRecordModels(connection),
     payments = paymentModel(connection),
     initiations = paymentInitiationModel(connection),
     audit = auditAccess.replay,
-    notifications = createNotificationService(connection, clock),
-    corrections = createCorrectionObligationService(connection, auditAccess),
+    notifications = moduleAccess.createNotificationService(clock),
+    corrections = moduleAccess.createCorrectionObligationService(auditAccess),
     settlement = createPaymentSettlementService(connection, orders, allocation, auditAccess, clock)
   async function applyReceipt(session: ClientSession, receipt: Receipt, now: Date) {
     const collectedAt = collectionTime(receipt.providerCollectedAt)
@@ -318,9 +324,9 @@ function createPaymentProcessingService(
         ...(await orders.notificationTarget(session, mapping.orderId)),
         event: 'success',
         cause: row._id.toHexString(),
-        paymentId: payment._id,
-        attemptId: attempt._id,
-        intakeId: row._id,
+        paymentId: payment._id.toHexString(),
+        attemptId: attempt._id.toHexString(),
+        intakeId: row._id.toHexString(),
         amountPoisha: receipt.amountPoisha,
       },
       session,
@@ -397,8 +403,8 @@ function createPaymentProcessingService(
                     ...(await orders.notificationTarget(session, attempt.orderId.toHexString())),
                     event: 'pending',
                     cause: attempt._id.toHexString(),
-                    paymentId: attempt.paymentId,
-                    attemptId: attempt._id,
+                    paymentId: attempt.paymentId.toHexString(),
+                    attemptId: attempt._id.toHexString(),
                     amountPoisha: attempt.expectedAmountPoisha,
                   },
                   session,
@@ -430,8 +436,8 @@ function createPaymentProcessingService(
                   ...(await orders.notificationTarget(session, attempt.orderId.toHexString())),
                   event: 'failure',
                   cause: attempt._id.toHexString(),
-                  paymentId: attempt.paymentId,
-                  attemptId: attempt._id,
+                  paymentId: attempt.paymentId.toHexString(),
+                  attemptId: attempt._id.toHexString(),
                   amountPoisha: attempt.expectedAmountPoisha,
                 },
                 session,

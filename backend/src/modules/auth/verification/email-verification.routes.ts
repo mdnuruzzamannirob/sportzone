@@ -22,7 +22,7 @@ function createEmailVerificationRoutes(
       cors,
       throttle,
       security.require('storefront', 'context'),
-      controller.postAction(action),
+      controller.verifyEmail(action),
     )
   }
   return router

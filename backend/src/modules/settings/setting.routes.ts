@@ -8,10 +8,7 @@ import {
   createSettingsPublicController,
 } from './setting.controller.js'
 
-import type {
-  createPolicyService,
-  createSettingService,
-} from './setting.service.js'
+import type { createPolicyService, createSettingService } from './setting.service.js'
 
 function createSettingAdminRoutes(
   settings: ReturnType<typeof createSettingService>,
@@ -19,11 +16,7 @@ function createSettingAdminRoutes(
   security: BrowserSecurity,
   sessionHttp: SessionHttp,
 ) {
-  const controller = createSettingsAdminController(
-    settings,
-    policies,
-    sessionHttp,
-  )
+  const controller = createSettingsAdminController(settings, policies, sessionHttp)
 
   const router = Router()
   for (const path of [
@@ -55,26 +48,14 @@ function createSettingAdminRoutes(
   router.get('/admin/settings', clean, controller.getAdminSettings)
   router.patch('/admin/settings', clean, controller.patchAdminSettings)
   router.get('/admin/settings/policies', controller.getSettingsPolicies)
-  router.post(
-    '/admin/settings/policies',
-    clean,
-    controller.postSettingsPolicies,
-  )
-  router.get(
-    '/admin/settings/policies/:policyId',
-    clean,
-    controller.getSettingsPolicies2,
-  )
-  router.patch(
-    '/admin/settings/policies/:policyId',
-    clean,
-    controller.patchSettingsPolicies,
-  )
+  router.post('/admin/settings/policies', clean, controller.postSettingsPolicies)
+  router.get('/admin/settings/policies/:policyId', clean, controller.getPolicy)
+  router.patch('/admin/settings/policies/:policyId', clean, controller.patchSettingsPolicies)
   for (const action of ['approve', 'publish'] as const)
     router.post(
       `/admin/settings/policies/:policyId/${action}`,
       clean,
-      controller.postAction(action),
+      controller.postPolicyTransition(action),
     )
   return router
 }
@@ -102,9 +83,7 @@ function createSettingPublicRoutes(
         .filter(Boolean)
       if (
         !origin ||
-        !['GET', 'HEAD'].includes(
-          req.get('Access-Control-Request-Method') ?? '',
-        ) ||
+        !['GET', 'HEAD'].includes(req.get('Access-Control-Request-Method') ?? '') ||
         headers.some((v) => v !== 'content-type')
       )
         throw new ApiError('FORBIDDEN')
@@ -122,11 +101,7 @@ function createSettingPublicRoutes(
   for (const path of ['/storefront/contact', '/storefront/policies/:type'])
     router.options(path, cors)
   router.get('/storefront/contact', cors, controller.getStorefrontContact)
-  router.get(
-    '/storefront/policies/:type',
-    cors,
-    controller.getStorefrontPolicies,
-  )
+  router.get('/storefront/policies/:type', cors, controller.getStorefrontPolicies)
   return router
 }
 

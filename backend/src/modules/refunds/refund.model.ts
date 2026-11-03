@@ -2,6 +2,8 @@ import { type Connection, type InferSchemaType, Schema } from 'mongoose'
 import { integerField, mutableSchemaOptions } from '../../shared/database/schema.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 
+type Refund = InferSchemaType<typeof schema>
+
 const schema = new Schema(
   {
     orderId: { type: Schema.Types.ObjectId, required: true, immutable: true },
@@ -145,8 +147,6 @@ schema.pre(
     throw new ApiError('STATE_CONFLICT')
   },
 )
-
-type Refund = InferSchemaType<typeof schema>
 
 schema.pre('deleteOne', { document: true, query: true }, () => {
   throw new ApiError('STATE_CONFLICT')

@@ -3,6 +3,8 @@ import { refundApproval } from '../modules/refunds/obligations/refund-reservatio
 import { ConfigurationError } from '../shared/errors/configuration-error.js'
 import { readProtectedFile } from '../shared/protected-file.js'
 
+type RefundOperationsOptions = z.output<typeof refundOperationsOptions>
+
 const id = z.string().regex(/^[a-f0-9]{24}$/)
 const refundOperationsOptions = z
   .strictObject({
@@ -35,7 +37,6 @@ const refundOperationsOptions = z
       )
     )
   })
-type RefundOperationsOptions = z.output<typeof refundOperationsOptions>
 async function loadRefundOperationsOptions(
   env: NodeJS.ProcessEnv,
 ): Promise<RefundOperationsOptions | undefined> {

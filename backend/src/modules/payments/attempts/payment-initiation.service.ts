@@ -21,8 +21,6 @@ import { verifyPaymentInitiationPersistence } from './payment-initiation.persist
 import { paymentInitiationInput, paymentInitiationResult } from './payment-initiation.schema.js'
 import type { createPaymentRetryService } from './payment-retry.service.js'
 
-const hash = (value: string) => createHash('sha256').update(value).digest('hex')
-
 type GatewayInput = z.output<typeof initiationInput>
 
 type Gateway = Pick<PaymentGateway, 'initiate'>
@@ -56,6 +54,8 @@ type PaymentInitiationAccess<Credentials> = Omit<PaymentAttemptAccess, 'authoriz
   shortfall(session: ClientSession, orderId: string): Promise<void>
   redirectAllowed(session: ClientSession, orderId: string): Promise<boolean>
 }
+
+const hash = (value: string) => createHash('sha256').update(value).digest('hex')
 
 // No default adapter/authority: public integration is forbidden until these production capabilities exist.
 function createPaymentInitiationService<Credentials>(

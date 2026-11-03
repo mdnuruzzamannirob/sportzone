@@ -3,8 +3,8 @@ import { type ClientSession, type Connection, Types } from 'mongoose'
 import { paymentReconciliationOptions } from '../../../config/payments.js'
 import { inTransaction } from '../../../shared/database/transaction.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
-import type { AuditAccess } from '../../audit/audit.public.js'
-import { paymentReconciliationScheduleAccess } from '../../audit/audit.service.js'
+import type { AuditAccess, ReconciliationSchedule } from '../../audit/audit.public.js'
+
 import { paymentInitiationModel } from '../attempts/payment-initiation.model.js'
 import { verifyPaymentInitiationPersistence } from '../attempts/payment-initiation.persistence.js'
 import type { createPaymentProcessingService } from './payment-processing.service.js'
@@ -21,6 +21,7 @@ function createPaymentReconciliationService(
   merchantAccountKey: string,
   raw: unknown,
   auditAccess: AuditAccess,
+  moduleAccess: { paymentReconciliationScheduleAccess: ReconciliationSchedule },
   clock: () => Date = () => new Date(),
 ) {
   if (!/^[a-f0-9]{64}$/.test(merchantAccountKey)) throw new Error('Invalid reconciliation merchant')
@@ -46,13 +47,13 @@ function createPaymentReconciliationService(
           { lastCheckedAt: { $lte: new Date(now.getTime() - interval) } },
         ],
       })
-      const requested = await paymentReconciliationScheduleAccess(connection)()
+      const requested = await moduleAccess.paymentReconciliationScheduleAccess()
       const rows = await attempts
         .find({
           ...(cursor ? { _id: { $gt: new Types.ObjectId(cursor) } } : {}),
           $or: [
             ...requested.map((r) => ({
-              paymentId: r.paymentId,
+              paymentId: new Types.ObjectId(r.paymentId),
               $or: [
                 { lastCheckedAt: { $exists: false } },
                 { lastCheckedAt: { $lt: r.requestedAt } },

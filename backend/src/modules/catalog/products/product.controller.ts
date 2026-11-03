@@ -22,7 +22,7 @@ function createProductAdminController(
     const r = await service.list(token(req), req.query)
     respond(res, r.data, 200, r.page)
   }
-  const getAdminProducts2: RequestHandler = async (req, res) => {
+  const getAdminProduct: RequestHandler = async (req, res) => {
     noQuery(req)
     parseInput(z.undefined(), req.body)
     const r = await service.detail(token(req), pid(req))
@@ -68,7 +68,7 @@ function createProductAdminController(
   }
   return {
     getAdminProducts,
-    getAdminProducts2,
+    getAdminProduct,
     postAdminProducts,
     patchAdminProducts,
     postProductsDeactivate,

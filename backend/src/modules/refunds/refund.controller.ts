@@ -86,7 +86,7 @@ function createRefundController(
     const result = await service.list(token(req.get('Cookie')), req.query)
     respond(res, result.items, 200, result.pagination)
   }
-  const getAdminRefunds2: RequestHandler = async (req, res) => {
+  const getAdminRefund: RequestHandler = async (req, res) => {
     parseInput(z.strictObject({}), req.query)
     parseInput(z.undefined(), req.body)
     respond(
@@ -114,7 +114,7 @@ function createRefundController(
       ),
     )
   }
-  const postAction =
+  const postRefundOperation =
     (suffix: 'reconcile' | 'manual-confirmations' | 'review'): RequestHandler =>
     async (req, res) => {
       parseInput(z.strictObject({}), req.query)
@@ -144,10 +144,10 @@ function createRefundController(
     }
   return {
     getAdminRefunds,
-    getAdminRefunds2,
+    getAdminRefund,
     postAdminRefundGroups,
     postRefundsPayoutAttempts,
-    postAction,
+    postRefundOperation,
   }
 }
 

@@ -16,13 +16,15 @@ import {
   inventoryReservationModel,
 } from './inventory.model.js'
 import { verifyAllocationPersistence, verifyInventoryPersistence } from './inventory.persistence.js'
+import type {
+  AdjustmentResultSchema,
+  InventoryFacetSchema,
+  InventoryListSchema,
+} from './inventory.schema.js'
 import {
   adjustmentBody,
   adjustmentInput,
-  adjustmentResult,
   allocationInput,
-  inventoryFacet,
-  inventoryList,
   inventoryParams,
   inventoryQuery,
   movementQuery,
@@ -284,6 +286,11 @@ function createInventoryAdminService(
   variants: ReturnType<typeof variantInventoryAccess>,
   defaultThreshold: (session: ClientSession) => Promise<number>,
   audit: (session: ClientSession, event: unknown) => Promise<void>,
+  moduleAccess: {
+    schemaAdjustmentResult: AdjustmentResultSchema
+    schemaInventoryFacet: InventoryFacetSchema
+    schemaInventoryList: InventoryListSchema
+  },
 ) {
   const movements = inventoryMovementModel(connection)
   const digest = (raw: unknown) => createHash('sha256').update(JSON.stringify(raw)).digest('hex')
@@ -305,7 +312,7 @@ function createInventoryAdminService(
           const threshold = await defaultThreshold(session)
           if (!Number.isSafeInteger(threshold) || threshold < 0)
             throw new ApiError('SERVICE_UNAVAILABLE')
-          const parsed = inventoryFacet.safeParse(
+          const parsed = moduleAccess.schemaInventoryFacet.safeParse(
             await variants.list(
               session,
               { ...input, offset: (input.page - 1) * input.pageSize, limit: input.pageSize },
@@ -324,7 +331,10 @@ function createInventoryAdminService(
           }
           const { totalItems, ...counters } = totals
           return {
-            data: parseInput(inventoryList, { variants: facet.variants, ...counters }),
+            data: parseInput(moduleAccess.schemaInventoryList, {
+              variants: facet.variants,
+              ...counters,
+            }),
             page: pageMeta(input, totalItems),
           }
         },
@@ -420,7 +430,7 @@ function createInventoryAdminService(
             afterDigest: digest(after),
             reason: body.reason,
           })
-        return parseInput(adjustmentResult, { ...result, stock: after })
+        return parseInput(moduleAccess.schemaAdjustmentResult, { ...result, stock: after })
       })
     },
   }

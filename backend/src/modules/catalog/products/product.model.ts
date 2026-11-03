@@ -4,6 +4,10 @@ import { embedded, text } from '../model-fields.js'
 import { description, slug } from './product.schema.js'
 import { variantSchema } from './variant.model.js'
 
+type Product = InferSchemaType<typeof productSchema>
+
+type ProductVariant = InferSchemaType<typeof variantSchema>
+
 const image = new Schema(
   {
     publicId: text(200),
@@ -101,10 +105,6 @@ productSchema.index(
   { status: 1, name: 'text', keywords: 'text' },
   { name: 'product_public_search', default_language: 'none', weights: { name: 5, keywords: 2 } },
 )
-
-type Product = InferSchemaType<typeof productSchema>
-
-type ProductVariant = InferSchemaType<typeof variantSchema>
 
 function productModels(connection: Connection) {
   return {

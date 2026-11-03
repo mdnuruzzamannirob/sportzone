@@ -2,6 +2,8 @@ import { type Connection, type InferSchemaType, Schema, Types } from 'mongoose'
 import { z } from 'zod'
 import { integerField, mutableSchemaOptions } from '../../shared/database/schema.js'
 
+type IdentityModels = ReturnType<typeof createIdentityModels>
+
 const embedded = { _id: false, strict: 'throw', versionKey: false } as const
 
 function stringField(max?: number) {
@@ -308,8 +310,6 @@ function createIdentityModels(connection: Connection) {
     contexts: connection.model('IdentityBrowserContext', contextSchema, 'browserContexts'),
   }
 }
-
-type IdentityModels = ReturnType<typeof createIdentityModels>
 
 export type { IdentityModels }
 export { createIdentityModels }

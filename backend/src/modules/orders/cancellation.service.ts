@@ -13,7 +13,7 @@ import type {
   OrderScopeAccess,
   PaymentInitiationCredentials,
 } from '../auth/auth.public.js'
-import { createNotificationService } from '../notifications/notification.service.js'
+import type { NotificationIntentsFactory } from '../notifications/notification.public.js'
 
 import type { CancellationPaymentAccess } from '../payments/payment.public.js'
 
@@ -41,6 +41,7 @@ function createCancellationService(
   release: ReturnType<typeof createCancellationAllocationService>,
   payment: CancellationPaymentAccess,
   auditAccess: AuditAccess,
+  moduleAccess: { createNotificationService: NotificationIntentsFactory },
   refunds?: (
     session: ClientSession,
     input: {
@@ -289,10 +290,10 @@ function createCancellationService(
             { session },
           )
           if (changed.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
-          await createNotificationService(connection, clock).enqueueCommerce(
+          await moduleAccess.createNotificationService(clock).enqueueCommerce(
             {
-              orderId: order._id,
-              ...(order.userId ? { userId: order.userId } : {}),
+              orderId: order._id.toHexString(),
+              ...(order.userId ? { userId: order.userId.toHexString() } : {}),
               email: order.customerSnapshot.emailNormalized,
               name: order.customerSnapshot.name,
               eventType: 'order_cancellation',

@@ -1,5 +1,9 @@
 import { z } from 'zod'
 
+type RefundOutcomeProof = z.output<typeof refundOutcomeProof>
+
+type RefundOutcomeVerifier = (input: { refundId: string; attemptId: string }) => Promise<unknown>
+
 const id = z.string().regex(/^[a-f0-9]{24}$/)
 
 const refundOutcomeProof = z
@@ -33,10 +37,6 @@ const refundOutcomeProof = z
     consentAt: z.date().optional(),
   })
   .refine((p) => (p.outcome === 'paid' ? Boolean(p.paidAt) : p.paidAt === undefined))
-
-type RefundOutcomeProof = z.output<typeof refundOutcomeProof>
-
-type RefundOutcomeVerifier = (input: { refundId: string; attemptId: string }) => Promise<unknown>
 
 export type { RefundOutcomeProof, RefundOutcomeVerifier }
 export { refundOutcomeProof }

@@ -3,6 +3,8 @@ import { validateClamAvOptions } from '../providers/antivirus/clamav.schema.js'
 import { validateCloudinaryOptions } from '../providers/cloudinary/cloudinary.schema.js'
 import { ConfigurationError } from '../shared/errors/configuration-error.js'
 
+type MediaPolicy = z.infer<typeof mediaPolicySchema>
+
 const mediaPolicySchema = z.strictObject({
   maxBytes: z
     .int()
@@ -19,7 +21,6 @@ const mediaPolicySchema = z.strictObject({
     .max(7 * 86400),
   privateUrlTtlSeconds: z.int().min(1).max(300),
 })
-type MediaPolicy = z.infer<typeof mediaPolicySchema>
 function validateMediaPolicy(input: unknown): Readonly<MediaPolicy> {
   const parsed = mediaPolicySchema.safeParse(input)
   if (!parsed.success) throw new ConfigurationError(['media_policy'])

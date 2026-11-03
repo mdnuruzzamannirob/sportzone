@@ -8,6 +8,18 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 3 November 2026 — Backend src structural closeout
+
+- Completed root-wired owner capabilities and reusable schema assembly; detached proof, notification
+  and claim-media contracts. Finished Returns controllers and removed redundant constructor arguments,
+  forwarding adapters, DTO duplication and generic/numeric handler names.
+- Source compilation/lint/format Passed for 311 files; zero source boundary violations, active legacy
+  allowances or type/runtime cycles. The unfiltered boundary gate still fails on 292 stale outside-src
+  allowance entries, whose migration remains in the next batch.
+- Recorded [source checks and the outside-src migration ledger](docs/evidence/P03-021-backend-refactor.md#src-structural-closeout--3-november-2026).
+  Tests/review and outside-src consumers remain deferred; P03-030 stays In Progress. No Git/PR changes
+  or backend/application/release acceptance.
+
 ## 3 November 2026 — Backend src architecture work in progress
 
 - Separated server lifecycle from configured application composition; injected auth HTTP and audit

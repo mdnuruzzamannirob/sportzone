@@ -1,6 +1,8 @@
 import { type Connection, type InferSchemaType, Schema } from 'mongoose'
 import { integerField, mutableSchemaOptions } from '../../shared/database/schema.js'
 
+type ReviewRecord = InferSchemaType<typeof schema>
+
 const schema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, required: true },
@@ -56,8 +58,6 @@ schema.pre('save', function () {
   )
     throw new Error('Review purchase identity is immutable.')
 })
-
-type ReviewRecord = InferSchemaType<typeof schema>
 
 function reviewModel(connection: Connection) {
   return connection.models.Review

@@ -1,6 +1,19 @@
 import { type Connection, Schema, type Types } from 'mongoose'
 import { integerField, mutableSchemaOptions } from '../../shared/database/schema.js'
 
+type Payment = {
+  orderId: Types.ObjectId
+  method: 'cod' | 'online'
+  expectedPoisha: number
+  currency: 'BDT'
+  paymentStatus: (typeof paymentStates)[number]
+  riskStatus: 'clear' | 'review' | 'rejected'
+  revision: number
+  lastReconciledAt?: Date
+  createdAt?: Date
+  updatedAt?: Date
+} & Record<(typeof paymentAmounts)[number], number>
+
 const paymentStates = [
   'pending',
   'paid',
@@ -22,19 +35,6 @@ const paymentAmounts = [
   'deliveryRefundHeldPoisha',
   'deliveryRefundCompletedPoisha',
 ] as const
-
-type Payment = {
-  orderId: Types.ObjectId
-  method: 'cod' | 'online'
-  expectedPoisha: number
-  currency: 'BDT'
-  paymentStatus: (typeof paymentStates)[number]
-  riskStatus: 'clear' | 'review' | 'rejected'
-  revision: number
-  lastReconciledAt?: Date
-  createdAt?: Date
-  updatedAt?: Date
-} & Record<(typeof paymentAmounts)[number], number>
 
 const amounts = Object.fromEntries(
   paymentAmounts.map((name) => [name, { ...integerField(), required: true }]),

@@ -2,6 +2,10 @@ import { z } from 'zod'
 import { boundedText as text } from '../../../shared/validation.js'
 import { money } from '../catalog.schema.js'
 
+type AttributesSchema = typeof attributes
+
+type VariantStockViewSchema = typeof variantStockView
+
 const sku = text(64)
   .transform((value) => value.toUpperCase())
   .pipe(
@@ -133,6 +137,7 @@ const variantPatch = z
 
 const variantDeactivate = z.strictObject({ reason: z.string().trim().min(1).max(2000) })
 
+export type { AttributesSchema, VariantStockViewSchema }
 export {
   adminVariant,
   attributeSignature,

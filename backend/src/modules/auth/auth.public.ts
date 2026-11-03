@@ -225,6 +225,25 @@ interface OrderScopeAccess {
   ): Promise<T>
 }
 
+interface ResetDelivery {
+  cleanup(limit: number): Promise<void>
+  message(claim: {
+    id: string
+    userId: string
+    challengeId?: string | null | undefined
+    recipient: string
+  }): Promise<{ to: string; subject: string; text: string }>
+}
+interface GuestProofDelivery {
+  cleanup(limit: number): Promise<void>
+  message(claim: {
+    id: string
+    orderId?: string | null | undefined
+    challengeId?: string | null | undefined
+    recipient: string
+  }): Promise<{ to: string; subject: string; text: string }>
+}
+
 export type {
   AccountView,
   AdminAccountAccess,
@@ -238,11 +257,13 @@ export type {
   CustomerAdministration,
   CustomerHistories,
   CustomerProfile,
+  GuestProofDelivery,
   OrderPrincipal,
   OrderScopeAccess,
   PaymentInitiationAccess,
   PaymentInitiationCredentials,
   PaymentMethodAccess,
+  ResetDelivery,
   SessionCookies,
   SessionHttp,
 }

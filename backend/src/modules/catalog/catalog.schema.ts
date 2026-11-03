@@ -1,7 +1,14 @@
 import { z } from 'zod'
 import { paginationSchema } from '../../shared/pagination.js'
 import { boundedText as text } from '../../shared/validation.js'
-import { publicHomeSettings, publicPolicyLink } from '../settings/setting.schema.js'
+import type {
+  PublicHomeSettingsSchema,
+  PublicPolicyLinkSchema,
+} from '../settings/setting.public.js'
+
+type StorefrontHomeSchema = ReturnType<typeof createCatalogSchemas>['storefrontHome']
+
+type ProductCardSchema = typeof productCard
 
 // Existing aggregate inputs remain numeric; HTTP price filters are separately parsed strings.
 
@@ -110,24 +117,34 @@ const productDetail = productCard.safeExtend({
   relatedProducts: z.array(productCard).max(6),
 })
 
-const storefrontHome = publicHomeSettings.extend({
-  featured: z.array(productCard).max(8),
-  newArrivals: z.array(productCard).max(8),
-  discounted: z.array(productCard).max(8),
-  categories: z.array(categoryCard).max(12),
-  policyLinks: z.array(publicPolicyLink).max(7),
-})
+function createCatalogSchemas({
+  publicHomeSettings,
+  publicPolicyLink,
+}: {
+  publicHomeSettings: PublicHomeSettingsSchema
+  publicPolicyLink: PublicPolicyLinkSchema
+}) {
+  const storefrontHome = publicHomeSettings.extend({
+    featured: z.array(productCard).max(8),
+    newArrivals: z.array(productCard).max(8),
+    discounted: z.array(productCard).max(8),
+    categories: z.array(categoryCard).max(12),
+    policyLinks: z.array(publicPolicyLink).max(7),
+  })
+  return { storefrontHome }
+}
 
+export type { ProductCardSchema, StorefrontHomeSchema }
 export {
   categoryCard,
   categoryQuery,
   categorySlug,
+  createCatalogSchemas,
   money,
   productCard,
   productDetail,
   productQuery,
   publicImage,
   publicVariant,
-  storefrontHome,
   text,
 }

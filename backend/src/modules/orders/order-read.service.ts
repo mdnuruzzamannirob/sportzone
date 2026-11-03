@@ -12,21 +12,20 @@ import type {
 } from '../auth/auth.public.js'
 import type { OrderPolicySnapshotAccess } from '../checkout/checkout.public.js'
 import type { CustomerPaymentSummaryAccess } from '../payments/payment.public.js'
-
 import { createDeliveryDeadlineService } from './delivery-deadline.service.js'
 import { type Order, orderModels } from './order.model.js'
 import { verifyOrderPersistence } from './order.persistence.js'
-
-import {
-  adminOrderDetail,
-  adminOrderQuery,
-  customerDeliveryEvents,
-  customerOrderDetail,
-  customerPaymentHistory,
-  orderReadQuery,
-  orderReadSummary,
-  orderStatusView,
+import type {
+  AdminOrderDetailSchema,
+  AdminOrderQuerySchema,
+  CustomerDeliveryEventsSchema,
+  CustomerOrderDetailSchema,
+  CustomerPaymentHistorySchema,
+  OrderReadSummarySchema,
+  OrderStatusViewSchema,
 } from './order-read.schema.js'
+
+import { orderReadQuery } from './order-read.schema.js'
 
 const orderOwnerFilter = (id: string, principal: OrderPrincipal) => {
   if (principal.kind === 'guest_order' && principal.orderId !== id) throw new ApiError('NOT_FOUND')
@@ -39,6 +38,15 @@ function createOrderReadService(
   access: OrderScopeAccess,
   payment: CustomerPaymentSummaryAccess,
   policies: OrderPolicySnapshotAccess,
+  moduleAccess: {
+    schemaAdminOrderDetail: AdminOrderDetailSchema
+    schemaAdminOrderQuery: AdminOrderQuerySchema
+    schemaCustomerDeliveryEvents: CustomerDeliveryEventsSchema
+    schemaCustomerOrderDetail: CustomerOrderDetailSchema
+    schemaCustomerPaymentHistory: CustomerPaymentHistorySchema
+    schemaOrderReadSummary: OrderReadSummarySchema
+    schemaOrderStatusView: OrderStatusViewSchema
+  },
   clock: () => Date = () => new Date(),
   administrative?: {
     accounts: AdminAccountAccess
@@ -57,7 +65,7 @@ function createOrderReadService(
       ...(row.confirmedAt ? { confirmedAt: row.confirmedAt.toISOString() } : {}),
     })
   const summary = (row: HydratedDocument<Order>, paymentStatus: string) =>
-    orderReadSummary.parse({
+    moduleAccess.schemaOrderReadSummary.parse({
       id: row._id.toHexString(),
       orderNumber: row.orderNumber,
       fulfillmentStatus: row.fulfillmentStatus,
@@ -80,7 +88,7 @@ function createOrderReadService(
     if (pay.expectedPoisha !== row.pricingSnapshot.finalTotalPoisha)
       throw new ApiError('SERVICE_UNAVAILABLE')
     if (statusOnly)
-      return orderStatusView.parse({
+      return moduleAccess.schemaOrderStatusView.parse({
         fulfillmentStatus: row.fulfillmentStatus,
         ...(row.fulfillmentHold ? { fulfillmentHold: row.fulfillmentHold } : {}),
         paymentSummary: pay,
@@ -102,7 +110,7 @@ function createOrderReadService(
         !row.shippedAt &&
         !row.shipment?.dispatchReference &&
         !row.cancelledAt
-    return customerOrderDetail.parse({
+    return moduleAccess.schemaCustomerOrderDetail.parse({
       ...summary(row, pay.status),
       items: row.items.map((i) => ({
         id: i.id.toHexString(),
@@ -162,7 +170,7 @@ function createOrderReadService(
           await verifyOrderPersistence(connection)
           const row = await orders.findById(id).session(session)
           if (!row) throw new ApiError('NOT_FOUND')
-          return adminOrderDetail.parse({
+          return moduleAccess.schemaAdminOrderDetail.parse({
             ...(await detail(session, row)),
             allocationSummary: await administrative.allocation(session, id),
             // State candidates are advisory. Mutation services recheck funding, policy and allocation.
@@ -185,7 +193,7 @@ function createOrderReadService(
       )
     },
     async adminList(token: string | undefined, raw: unknown) {
-      const q = parseInput(adminOrderQuery, raw)
+      const q = parseInput(moduleAccess.schemaAdminOrderQuery, raw)
       if (!administrative) throw new ApiError('SERVICE_UNAVAILABLE')
       return administrative.accounts.owned(
         token,
@@ -266,8 +274,8 @@ function createOrderReadService(
       )
     },
     async deliveryEvents(credentials: PaymentInitiationCredentials, rawId: unknown) {
-      const full = customerOrderDetail.parse(await this.read(credentials, rawId))
-      return customerDeliveryEvents.parse({
+      const full = moduleAccess.schemaCustomerOrderDetail.parse(await this.read(credentials, rawId))
+      return moduleAccess.schemaCustomerDeliveryEvents.parse({
         status: full.fulfillmentStatus,
         ...(full.deliveryEstimate ? { estimate: full.deliveryEstimate } : {}),
         deadline: full.deliveryDeadline,
@@ -280,7 +288,7 @@ function createOrderReadService(
         await verifyOrderPersistence(connection)
         if (!(await orders.exists(orderOwnerFilter(id, principal)).session(session)))
           throw new ApiError('NOT_FOUND')
-        return customerPaymentHistory.parse(await payment.history(session, id))
+        return moduleAccess.schemaCustomerPaymentHistory.parse(await payment.history(session, id))
       })
     },
     async read(credentials: PaymentInitiationCredentials, rawId: unknown, statusOnly = false) {

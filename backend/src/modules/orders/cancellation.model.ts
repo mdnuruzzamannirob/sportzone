@@ -2,6 +2,8 @@ import { type Connection, type InferSchemaType, Schema } from 'mongoose'
 import { integerField, mutableSchemaOptions } from '../../shared/database/schema.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 
+type Cancellation = InferSchemaType<typeof schema>
+
 const schema = new Schema(
   {
     orderId: { type: Schema.Types.ObjectId, required: true, immutable: true },
@@ -50,8 +52,6 @@ schema.pre(
     throw new ApiError('STATE_CONFLICT')
   },
 )
-
-type Cancellation = InferSchemaType<typeof schema>
 
 function cancellationModel(connection: Connection) {
   return connection.models.CancellationRequest

@@ -2,6 +2,8 @@ import { type Connection, type InferSchemaType, Schema, Types } from 'mongoose'
 import { mutableSchemaOptions, optionalObjectIdField } from '../../../shared/database/schema.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 
+type Initiation = InferSchemaType<typeof schema>
+
 const initiationStatuses = [
   'dispatching',
   'accepted',
@@ -86,8 +88,6 @@ schema.pre(['updateOne', 'findOneAndUpdate'], function () {
         throw new ApiError('STATE_CONFLICT')
   }
 })
-
-type Initiation = InferSchemaType<typeof schema>
 
 function paymentInitiationModel(connection: Connection) {
   return connection.models.PaymentInitiation

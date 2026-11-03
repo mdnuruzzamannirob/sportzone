@@ -1,8 +1,9 @@
-import type { Types } from 'mongoose'
 import type { GuestAccessOptions } from '../../../config/security.js'
 import type { GuestOrderAccess } from '../../orders/order.public.js'
 import type { IdentityModels } from '../auth.model.js'
 import { createProofCodec, type ProofEnvelope, proofHash } from '../verification/proof.crypto.js'
+
+type GuestProofDelivery = ReturnType<typeof guestProofDelivery>
 
 function guestProofDelivery(
   models: IdentityModels,
@@ -44,9 +45,9 @@ function guestProofDelivery(
         )
     },
     async message(claim: {
-      id: Types.ObjectId
-      orderId?: Types.ObjectId | null | undefined
-      challengeId?: Types.ObjectId | null | undefined
+      id: string
+      orderId?: string | null | undefined
+      challengeId?: string | null | undefined
       recipient: string
     }) {
       if (!claim.orderId || !claim.challengeId) throw new Error('Guest proof delivery unavailable')
@@ -99,8 +100,6 @@ function guestProofDelivery(
     },
   }
 }
-
-type GuestProofDelivery = ReturnType<typeof guestProofDelivery>
 
 export type { GuestProofDelivery }
 export { guestProofDelivery }

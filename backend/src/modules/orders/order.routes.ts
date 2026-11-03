@@ -77,7 +77,7 @@ function createOrderAdminRoutes(
   ])
     router.options(path, cors)
   router.get('/admin/orders', cors, http.require('admin'), controller.getAdminOrders)
-  router.get('/admin/orders/:orderId', cors, http.require('admin'), controller.getAdminOrders2)
+  router.get('/admin/orders/:orderId', cors, http.require('admin'), controller.getAdminOrder)
   router.post(
     '/admin/orders/:orderId/fulfillment-transitions',
     cors,
@@ -121,7 +121,7 @@ function createOrderReadRoutes(
     ['/orders/:orderId', false],
     ['/orders/:orderId/status', true],
   ] as const)
-    router.get(path, cors, controller.getAction(status))
+    router.get(path, cors, controller.getOrderView(status))
   for (const [path, method] of [
     ['/orders/:orderId/delivery-events', 'deliveryEvents'],
     ['/orders/:orderId/payments', 'payments'],

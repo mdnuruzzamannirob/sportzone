@@ -16,6 +16,8 @@ import { createProofCodec, proofHash } from './proof.crypto.js'
 
 type User = InstanceType<IdentityModels['users']>
 
+type EmailChangeService = ReturnType<typeof createEmailChangeService>
+
 function createEmailChangeService(
   connection: Connection,
   models: IdentityModels,
@@ -214,8 +216,6 @@ function createEmailChangeService(
     },
   }
 }
-
-type EmailChangeService = ReturnType<typeof createEmailChangeService>
 
 export type { EmailChangeService }
 export { createEmailChangeService }

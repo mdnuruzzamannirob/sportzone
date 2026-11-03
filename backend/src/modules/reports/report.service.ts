@@ -9,13 +9,9 @@ import type {
   PaymentReportAccess,
 } from '../payments/payment.public.js'
 import type { RefundReportAccess } from '../refunds/refund.public.js'
+import type { ReportViewsSchema } from './report.schema.js'
 
-import {
-  operationalItem,
-  operationalQuery,
-  reportQuery as query,
-  reportViews,
-} from './report.schema.js'
+import { operationalItem, operationalQuery, reportQuery as query } from './report.schema.js'
 import { calculateFinancialReport } from './report-calculation.js'
 
 const date = (s: string) => new Date(s.length === 10 ? `${s}T00:00:00+06:00` : s)
@@ -37,6 +33,7 @@ function createReportService(
     customers(session: ClientSession): Promise<number>
     pendingReturns(session: ClientSession): Promise<number>
   },
+  moduleAccess: { schemaReportViews: ReportViewsSchema },
   clock: () => Date = () => new Date(),
 ) {
   return {
@@ -190,7 +187,7 @@ function createReportService(
         },
         false,
       )
-      return reportViews[kind].parse(result)
+      return moduleAccess.schemaReportViews[kind].parse(result)
     },
   }
 }

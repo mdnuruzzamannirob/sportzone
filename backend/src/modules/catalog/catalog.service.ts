@@ -4,7 +4,9 @@ import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { pageMeta } from '../../shared/pagination.js'
 import type { PublicImageCandidate, PublicMediaReader } from '../media/media.public.js'
-import { publicHomeSettings } from '../settings/setting.schema.js'
+import type { PublicHomeSettingsSchema } from '../settings/setting.public.js'
+import type { StorefrontHomeSchema } from './catalog.schema.js'
+
 import {
   categoryCard,
   categoryQuery,
@@ -12,7 +14,6 @@ import {
   productCard,
   productDetail,
   productQuery,
-  storefrontHome,
 } from './catalog.schema.js'
 import { categoryModel } from './categories/category.model.js'
 import { productModels } from './products/product.model.js'
@@ -22,6 +23,31 @@ import { attributeSignature, attributes } from './products/variant.schema.js'
 // A parent is singular. Reaching an active root proves the chain terminated; cycles/orphans
 // and ancestry beyond the bounded traversal cannot become public through a partial chain.
 type LookupPipeline = NonNullable<PipelineStage.Lookup['$lookup']['pipeline']>
+
+type Row = {
+  id: string
+  name: string
+  slug: string
+  parentId?: string
+  regularPricePoisha: number
+  effectivePricePoisha: number
+  availability: 'available' | 'unavailable'
+  rating?: {
+    average: number
+    count: number
+  }
+  _image?: {
+    publicId: string
+    alt: string
+  }
+}
+
+type Result = {
+  rows: Row[]
+  total: {
+    count: number
+  }[]
+}
 
 const ancestry: LookupPipeline = [
   { $match: { status: 'active' } },
@@ -197,34 +223,13 @@ const facet = (page: number, pageSize: number): PipelineStage => ({
   },
 })
 
-type Row = {
-  id: string
-  name: string
-  slug: string
-  parentId?: string
-  regularPricePoisha: number
-  effectivePricePoisha: number
-  availability: 'available' | 'unavailable'
-  rating?: {
-    average: number
-    count: number
-  }
-  _image?: {
-    publicId: string
-    alt: string
-  }
-}
-
-type Result = {
-  rows: Row[]
-  total: {
-    count: number
-  }[]
-}
-
 function createCatalogService(
   connection: Connection,
   images: PublicMediaReader,
+  moduleAccess: {
+    schemaPublicHomeSettings: PublicHomeSettingsSchema
+    schemaStorefrontHome: StorefrontHomeSchema
+  },
   homeContent?: {
     settings: () => Promise<unknown>
     policies: () => Promise<unknown>
@@ -356,9 +361,9 @@ function createCatalogService(
           homeContent.settings(),
           homeContent.policies(),
         ])
-      const safeMetadata = publicHomeSettings.safeParse(metadata)
+      const safeMetadata = moduleAccess.schemaPublicHomeSettings.safeParse(metadata)
       if (!safeMetadata.success) throw new ApiError('SERVICE_UNAVAILABLE')
-      const result = storefrontHome.safeParse({
+      const result = moduleAccess.schemaStorefrontHome.safeParse({
         ...safeMetadata.data,
         featured,
         newArrivals,
@@ -695,8 +700,14 @@ function catalogReviewVisibility(connection: Connection) {
   }
 }
 
-function catalogCheckoutAccess(connection: Connection) {
-  const catalog = createCatalogService(connection, async () => new Map())
+function catalogCheckoutAccess(
+  connection: Connection,
+  moduleAccess: {
+    schemaPublicHomeSettings: PublicHomeSettingsSchema
+    schemaStorefrontHome: StorefrontHomeSchema
+  },
+) {
+  const catalog = createCatalogService(connection, async () => new Map(), moduleAccess)
   const models = productModels(connection)
   return async (ids: readonly string[], session: ClientSession) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')

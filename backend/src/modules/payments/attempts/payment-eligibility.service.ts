@@ -2,7 +2,8 @@ import type { ClientSession } from 'mongoose'
 import { z } from 'zod'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
-import { paymentChannels } from '../../settings/setting.schema.js'
+import type { PaymentChannelsSchema } from '../../settings/setting.public.js'
+
 import {
   type PaymentChannelApproval,
   paymentChannel,
@@ -14,12 +15,13 @@ import {
 // The live provider/merchant verification adapter belongs to P07. Absence denies every online
 // channel; configured flags alone never prove activation. No provider call belongs in this read.
 function paymentEligibility(
+  moduleAccess: { schemaPaymentChannels: PaymentChannelsSchema },
   verified: (session: ClientSession) => Promise<unknown> = async () => [],
 ) {
   return async (rawFlags: unknown, amountPoisha: number | undefined, session: ClientSession) => {
     if (amountPoisha !== undefined)
       parseInput(z.int().nonnegative().max(Number.MAX_SAFE_INTEGER), amountPoisha)
-    const flags = parseInput(paymentChannels, rawFlags),
+    const flags = parseInput(moduleAccess.schemaPaymentChannels, rawFlags),
       capabilities = parseInput(
         z
           .array(verifiedChannelCapability)
@@ -94,6 +96,7 @@ function verifiedMerchantChannels(
 function paymentInitiationChannelAccess(
   settings: (session: ClientSession) => Promise<unknown>,
   rows: readonly PaymentChannelApproval[],
+  moduleAccess: { schemaPaymentChannels: PaymentChannelsSchema },
   clock: () => Date = () => new Date(),
 ) {
   const approved = z
@@ -103,7 +106,7 @@ function paymentInitiationChannelAccess(
     .parse(rows)
   return async (session: ClientSession, requested: string, amount: number) => {
     parseInput(z.int().positive().max(Number.MAX_SAFE_INTEGER), amount)
-    const flags = parseInput(paymentChannels, await settings(session)),
+    const flags = parseInput(moduleAccess.schemaPaymentChannels, await settings(session)),
       row = approved.find(
         (entry) =>
           entry.channel === requested &&

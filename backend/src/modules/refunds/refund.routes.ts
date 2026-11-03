@@ -67,7 +67,7 @@ function createRefundRoutes(
   ])
     router.options(path, cors)
   router.get('/admin/refunds', cors, http.require('admin'), controller.getAdminRefunds)
-  router.get('/admin/refunds/:refundId', cors, http.require('admin'), controller.getAdminRefunds2)
+  router.get('/admin/refunds/:refundId', cors, http.require('admin'), controller.getAdminRefund)
   router.post(
     '/admin/refund-groups',
     cors,
@@ -88,7 +88,7 @@ function createRefundRoutes(
       cors,
       security.require('admin', 'admin'),
       http.require('admin'),
-      controller.postAction(suffix),
+      controller.postRefundOperation(suffix),
     )
   }
   return router

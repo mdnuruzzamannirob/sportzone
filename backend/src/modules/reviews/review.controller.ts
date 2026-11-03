@@ -4,10 +4,7 @@ import { parseInput } from '../../shared/middleware/validate.js'
 import { respond } from '../../shared/responses.js'
 import type { SessionCookies } from '../auth/auth.public.js'
 import { reviewId } from './review.schema.js'
-import type {
-  createReviewQueryService,
-  createReviewService,
-} from './review.service.js'
+import type { createReviewQueryService, createReviewService } from './review.service.js'
 
 const productParams = z.strictObject({ productId: reviewId }),
   reviewParams = z.strictObject({ reviewId })
@@ -16,10 +13,8 @@ function createReviewController(
   service: ReturnType<typeof createReviewService>,
   cookies: SessionCookies,
 ) {
-  const customer = (req: Request) =>
-    cookies.readSessionCookie(req.get('Cookie'), 'customer')
-  const admin = (req: Request) =>
-    cookies.readSessionCookie(req.get('Cookie'), 'admin')
+  const customer = (req: Request) => cookies.readSessionCookie(req.get('Cookie'), 'customer')
+  const admin = (req: Request) => cookies.readSessionCookie(req.get('Cookie'), 'admin')
   const getProductsReviews: RequestHandler = async (req, res) => {
     parseInput(z.undefined(), req.body)
     const result = await query.publicList(
@@ -50,11 +45,7 @@ function createReviewController(
     parseInput(z.strictObject({}), req.query)
     respond(
       res,
-      await service.edit(
-        customer(req),
-        parseInput(reviewParams, req.params).reviewId,
-        req.body,
-      ),
+      await service.edit(customer(req), parseInput(reviewParams, req.params).reviewId, req.body),
     )
   }
   const getAdminReviews: RequestHandler = async (req, res) => {

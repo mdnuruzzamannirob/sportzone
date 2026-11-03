@@ -5,6 +5,12 @@ import {
   optionalObjectIdField,
 } from '../../shared/database/schema.js'
 
+type Coupon = InferSchemaType<typeof couponSchema>
+
+type CouponRedemption = InferSchemaType<typeof redemptionSchema>
+
+type CustomerCounter = InferSchemaType<typeof customerSchema>
+
 const embedded = { _id: false, strict: 'throw', versionKey: false } as const
 
 const count = { ...integerField(), required: true, default: 0 }
@@ -130,12 +136,6 @@ const customerSchema = new Schema(
 )
 
 customerSchema.index({ couponId: 1, userId: 1 }, { unique: true, name: 'coupon_customer_unique' })
-
-type Coupon = InferSchemaType<typeof couponSchema>
-
-type CouponRedemption = InferSchemaType<typeof redemptionSchema>
-
-type CustomerCounter = InferSchemaType<typeof customerSchema>
 
 function couponModels(connection: Connection) {
   return {

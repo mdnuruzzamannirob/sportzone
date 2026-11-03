@@ -993,7 +993,7 @@ function createRefundRecoveryService(
 
 function refundNotificationProofAccess(
   connection: Connection,
-  order: ReturnType<typeof import('../../orders/order.service.js').returnNotificationOrderAccess>,
+  order: import('../../orders/order.public.js').ReturnNotificationOrderAccess,
   auditAccess: AuditAccess,
 ) {
   return async (input: {

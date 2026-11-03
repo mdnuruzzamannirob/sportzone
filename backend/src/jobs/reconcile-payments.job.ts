@@ -15,7 +15,14 @@ function paymentReconciliationJob(
     async run() {
       const claim = await leases.acquire()
       if (!claim)
-        return { acquired: false, scanned: 0, resolved: 0, unresolved: 0, escalated: 0, skipped: 0 }
+        return {
+          acquired: false,
+          scanned: 0,
+          resolved: 0,
+          unresolved: 0,
+          escalated: 0,
+          skipped: 0,
+        }
       let resolved = 0,
         unresolved = 0,
         escalated = 0,
@@ -33,7 +40,14 @@ function paymentReconciliationJob(
           claim.owner,
           rows.length === options.batchSize ? rows.at(-1) : undefined,
         )
-        return { acquired: true, scanned: rows.length, resolved, unresolved, escalated, skipped }
+        return {
+          acquired: true,
+          scanned: rows.length,
+          resolved,
+          unresolved,
+          escalated,
+          skipped,
+        }
       } catch (error) {
         await leases.fail(claim.owner)
         throw error

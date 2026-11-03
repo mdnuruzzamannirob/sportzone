@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto'
 import { assertOutsideTransaction } from '../../shared/database/transaction.js'
-import type { GuestProofDelivery } from '../auth/guest-access/guest-proof-delivery.service.js'
-import type { ResetDelivery } from '../auth/verification/proof-delivery.service.js'
+import type { GuestProofDelivery, ResetDelivery } from '../auth/auth.public.js'
 import { type RetryPolicy, validateRetryPolicy } from './notification.schema.js'
 import type { NotificationService } from './notification.service.js'
 import type { EmailAdapter, EmailMessage } from './notification.types.js'
@@ -65,7 +64,14 @@ function createNotificationDeliveryService(
         const idempotencyKey = `sz-notification-${createHash('sha256').update(claim.eventKey).digest('hex')}`
         let message: Omit<EmailMessage, 'idempotencyKey'> | undefined
         try {
-          const userClaim = claim.userId ? { ...claim, userId: claim.userId } : undefined
+          const userClaim = claim.userId
+            ? {
+                id: claim.id.toHexString(),
+                userId: claim.userId.toHexString(),
+                challengeId: claim.challengeId?.toHexString(),
+                recipient: claim.recipient,
+              }
+            : undefined
           message = [
             'order_received',
             'order_confirmation',
@@ -81,7 +87,12 @@ function createNotificationDeliveryService(
                 : claim.eventType.startsWith('payment_')
                   ? await paymentDelivery?.message(claim)
                   : claim.eventType === 'guest_order_access'
-                    ? await guestDelivery?.message(claim)
+                    ? await guestDelivery?.message({
+                        id: claim.id.toHexString(),
+                        orderId: claim.orderId?.toHexString(),
+                        challengeId: claim.challengeId?.toHexString(),
+                        recipient: claim.recipient,
+                      })
                     : !userClaim
                       ? undefined
                       : claim.templateVersion === 'admin-password-reset-v1'

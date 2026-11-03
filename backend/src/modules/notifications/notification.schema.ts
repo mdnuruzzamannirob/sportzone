@@ -2,6 +2,8 @@ import { z } from 'zod'
 import { ConfigurationError } from '../../shared/errors/configuration-error.js'
 import { paginationSchema } from '../../shared/pagination.js'
 
+type RetryPolicy = z.infer<typeof policy>
+
 const policy = z
   .strictObject({
     maxAttempts: z.int().min(1).max(10),
@@ -11,8 +13,6 @@ const policy = z
     batchSize: z.int().min(1).max(100),
   })
   .refine((value) => value.maxDelayMs >= value.baseDelayMs)
-
-type RetryPolicy = z.infer<typeof policy>
 
 function validateRetryPolicy(input: RetryPolicy) {
   const result = policy.safeParse(input)

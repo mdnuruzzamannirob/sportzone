@@ -5,6 +5,10 @@ import {
   optionalObjectIdField,
 } from '../../shared/database/schema.js'
 
+type InventoryMovement = InferSchemaType<typeof movementSchema>
+
+type InventoryReservation = InferSchemaType<typeof reservationSchema>
+
 const movementSchema = new Schema(
   {
     variantId: { type: Schema.Types.ObjectId, required: true },
@@ -95,8 +99,6 @@ movementSchema.pre('bulkWrite', () => {
   throw new Error('Inventory movements are append-only.')
 })
 
-type InventoryMovement = InferSchemaType<typeof movementSchema>
-
 function inventoryMovementModel(connection: Connection) {
   return connection.models.InventoryMovement
     ? connection.model<InventoryMovement>('InventoryMovement')
@@ -140,8 +142,6 @@ reservationSchema.index(
 )
 
 reservationSchema.index({ status: 1, expiresAt: 1 }, { name: 'reservation_status_expiry' })
-
-type InventoryReservation = InferSchemaType<typeof reservationSchema>
 
 function inventoryReservationModel(connection: Connection) {
   return connection.models.InventoryReservation

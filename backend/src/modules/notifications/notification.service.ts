@@ -16,6 +16,8 @@ import {
 } from './notification.schema.js'
 import type { DeliveryOutcome } from './notification.types.js'
 
+type NotificationService = ReturnType<typeof createNotificationService>
+
 function createNotificationAdminService(
   connection: Connection,
   admins: AdminAccountAccess,
@@ -155,14 +157,21 @@ function createNotificationService(connection: Connection, clock: () => Date = (
       )
     },
     async enqueueOrderReceived(
-      input: {
-        orderId: Types.ObjectId
-        userId?: Types.ObjectId
+      rawInput: {
+        orderId: Types.ObjectId | string
+        userId?: Types.ObjectId | string
         email: string
         name: string
       },
       session: ClientSession,
     ) {
+      const { orderId, userId, ...rest } = rawInput
+      const input = {
+        ...rest,
+        orderId: new Types.ObjectId(orderId),
+        ...(userId ? { userId: new Types.ObjectId(userId) } : {}),
+      }
+
       if (!session.inTransaction())
         throw new Error('Notification intent requires business transaction.')
       await createNotificationPersistence(connection, model).verifyIndexes()
@@ -185,9 +194,9 @@ function createNotificationService(connection: Connection, clock: () => Date = (
       )
     },
     async enqueueCommerce(
-      input: {
-        orderId: Types.ObjectId
-        userId?: Types.ObjectId
+      rawInput: {
+        orderId: Types.ObjectId | string
+        userId?: Types.ObjectId | string
         email: string
         name: string
         eventType:
@@ -200,6 +209,13 @@ function createNotificationService(connection: Connection, clock: () => Date = (
       },
       session: ClientSession,
     ) {
+      const { orderId, userId, ...rest } = rawInput
+      const input = {
+        ...rest,
+        orderId: new Types.ObjectId(orderId),
+        ...(userId ? { userId: new Types.ObjectId(userId) } : {}),
+      }
+
       if (!session.inTransaction()) throw new Error('Commerce intent requires business transaction')
       await createNotificationPersistence(connection, model).verifyIndexes()
       await model.updateOne(
@@ -221,12 +237,12 @@ function createNotificationService(connection: Connection, clock: () => Date = (
       )
     },
     async enqueueReturnDecision(
-      input: {
-        orderId: Types.ObjectId
-        userId?: Types.ObjectId
+      rawInput: {
+        orderId: Types.ObjectId | string
+        userId?: Types.ObjectId | string
         email: string
         name: string
-        returnId: Types.ObjectId
+        returnId: Types.ObjectId | string
         from: 'under_review' | 'approved' | 'inspected'
         to: 'approved' | 'rejected' | 'completed'
         operationKey: string
@@ -234,6 +250,14 @@ function createNotificationService(connection: Connection, clock: () => Date = (
       },
       session: ClientSession,
     ) {
+      const { orderId, userId, returnId, ...rest } = rawInput
+      const input = {
+        ...rest,
+        orderId: new Types.ObjectId(orderId),
+        ...(userId ? { userId: new Types.ObjectId(userId) } : {}),
+        returnId: new Types.ObjectId(returnId),
+      }
+
       if (!session.inTransaction())
         throw new Error('Return notification requires business transaction')
       await createNotificationPersistence(connection, model).verifyIndexes()
@@ -262,18 +286,26 @@ function createNotificationService(connection: Connection, clock: () => Date = (
       )
     },
     async enqueueRefund(
-      input: {
-        orderId: Types.ObjectId
-        userId?: Types.ObjectId
+      rawInput: {
+        orderId: Types.ObjectId | string
+        userId?: Types.ObjectId | string
         email: string
         name: string
-        refundId: Types.ObjectId
+        refundId: Types.ObjectId | string
         status: 'approved' | 'processing' | 'completed' | 'failed' | 'rejected'
         operationKey: string
         occurredAt: Date
       },
       session: ClientSession,
     ) {
+      const { orderId, userId, refundId, ...rest } = rawInput
+      const input = {
+        ...rest,
+        orderId: new Types.ObjectId(orderId),
+        ...(userId ? { userId: new Types.ObjectId(userId) } : {}),
+        refundId: new Types.ObjectId(refundId),
+      }
+
       if (!session.inTransaction()) throw new Error('Refund intent requires transaction')
       await createNotificationPersistence(connection, model).verifyIndexes()
       await model.updateOne(
@@ -300,21 +332,31 @@ function createNotificationService(connection: Connection, clock: () => Date = (
       )
     },
     async enqueuePayment(
-      input: {
+      rawInput: {
         event: 'success' | 'failure' | 'pending'
         cause: string
-        orderId: Types.ObjectId
-        userId?: Types.ObjectId
+        orderId: Types.ObjectId | string
+        userId?: Types.ObjectId | string
         email: string
         name: string
-        paymentId: Types.ObjectId
-        attemptId: Types.ObjectId
-        intakeId?: Types.ObjectId
+        paymentId: Types.ObjectId | string
+        attemptId: Types.ObjectId | string
+        intakeId?: Types.ObjectId | string
         orderNumber: string
         amountPoisha: number
       },
       session: ClientSession,
     ) {
+      const { orderId, userId, paymentId, attemptId, intakeId, ...rest } = rawInput
+      const input = {
+        ...rest,
+        orderId: new Types.ObjectId(orderId),
+        ...(userId ? { userId: new Types.ObjectId(userId) } : {}),
+        paymentId: new Types.ObjectId(paymentId),
+        attemptId: new Types.ObjectId(attemptId),
+        ...(intakeId ? { intakeId: new Types.ObjectId(intakeId) } : {}),
+      }
+
       if (!session.inTransaction())
         throw new Error('Payment notification requires business transaction')
       await createNotificationPersistence(connection, model).verifyIndexes()
@@ -743,8 +785,6 @@ function createNotificationService(connection: Connection, clock: () => Date = (
     },
   }
 }
-
-type NotificationService = ReturnType<typeof createNotificationService>
 
 export type { NotificationService }
 export { createNotificationAdminService, createNotificationService }

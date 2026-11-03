@@ -10,7 +10,7 @@ function createReportController(
   queues: ReturnType<typeof createOperationalQueueService>,
   cookies: SessionCookies,
 ) {
-  const getAction =
+  const getReport =
     (kind: 'dashboard' | 'sales' | 'collections' | 'refunds'): RequestHandler =>
     async (req, res) => {
       parseInput(z.undefined(), req.body)
@@ -27,7 +27,7 @@ function createReportController(
     )
     respond(res, result.items, 200, result.pagination)
   }
-  return { getAction, getAdminOperationalExceptions }
+  return { getReport, getAdminOperationalExceptions }
 }
 
 export { createReportController }

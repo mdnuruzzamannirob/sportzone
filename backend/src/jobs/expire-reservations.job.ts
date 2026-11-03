@@ -44,7 +44,7 @@ function reservationExpiryJob(
           } catch (error) {
             if (!(error instanceof ApiError) || error.code !== 'STATE_CONFLICT') throw error
             // Eligibility changed, or a lease expired. The final owner/expiry fence still prevents
-            // stale runners checkpointing success, while current protected records remain retained.
+            // stale runners check pointing success, while current protected records remain retained.
             skipped++
           }
         }

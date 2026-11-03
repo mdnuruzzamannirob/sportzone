@@ -28,10 +28,10 @@ function createBrowserSecurityController(
   sessions: SessionService,
   guest?: GuestCsrfAdapter,
 ) {
-  const headAction: RequestHandler = (_req, res) => {
+  const headBrowserContext: RequestHandler = (_req, res) => {
     res.status(204).end()
   }
-  const getAction =
+  const getBrowserContext =
     (audience: 'admin' | 'storefront'): RequestHandler =>
     async (req, res) => {
       // Bootstrap also requires Origin: no credential issuance from arbitrary embedding origins.
@@ -77,7 +77,7 @@ function createBrowserSecurityController(
         expiresAt: issued.expiresAt.toISOString(),
       })
     }
-  return { headAction, getAction }
+  return { headBrowserContext, getBrowserContext }
 }
 
 export { createBrowserSecurityController }

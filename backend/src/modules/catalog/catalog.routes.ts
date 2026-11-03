@@ -52,9 +52,9 @@ function createCatalogRoutes(
     router.options(path, cors)
   router.get('/storefront/home', cors, controller.getStorefrontHome)
   router.get('/products', cors, controller.getProducts)
-  router.get('/products/:slug', cors, controller.getProducts2)
+  router.get('/products/:slug', cors, controller.getProduct)
   router.get('/categories', cors, controller.getCategories)
-  router.get('/categories/:slug', cors, controller.getCategories2)
+  router.get('/categories/:slug', cors, controller.getCategory)
   return router
 }
 

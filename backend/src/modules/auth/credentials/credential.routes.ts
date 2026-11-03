@@ -1,14 +1,10 @@
 import { type RequestHandler, Router } from 'express'
 import { z } from 'zod'
 import { parseInput } from '../../../shared/middleware/validate.js'
-import { respond } from '../../../shared/responses.js'
+import { createRecoveryActionHandler } from '../recovery/password-recovery.controller.js'
 import type { RecoveryService } from '../recovery/password-recovery.service.js'
 import { localAuthRateLimit } from '../sessions/auth-throttle.service.js'
-import {
-  type BrowserSecurity,
-  logoutProtection,
-  readContextCookie,
-} from '../sessions/browser-security.service.js'
+import { type BrowserSecurity, logoutProtection } from '../sessions/browser-security.service.js'
 import { createSessionHttp } from '../sessions/session.http.js'
 import type { SessionService } from '../sessions/session.service.js'
 import { createCredentialController } from './credential.controller.js'
@@ -55,10 +51,6 @@ function createAdminCredentialRoutes(
   }
   for (const path of ['login', 'session', 'logout', 'password-resets', 'password-resets/confirm'])
     router.options(`/admin/auth/${path}`, cors)
-  const material = (req: import('express').Request) => ({
-    context: readContextCookie(req.get('Cookie'), 'admin') ?? '',
-    csrf: req.get('X-CSRF-Token') ?? '',
-  })
   router.post('/admin/auth/login', cors, limit, context, noQuery, controller.login)
   router.get('/admin/auth/session', cors, cookies.require('admin'), noQuery, controller.current)
   router.post(
@@ -73,10 +65,14 @@ function createAdminCredentialRoutes(
     ['password-resets', recovery.request],
     ['password-resets/confirm', recovery.confirm],
   ] as const)
-    router.post(`/admin/auth/${path}`, cors, limit, context, noQuery, async (req, res) => {
-      const input = material(req)
-      respond(res, await action(req.body, input.context, input.csrf))
-    })
+    router.post(
+      `/admin/auth/${path}`,
+      cors,
+      limit,
+      context,
+      noQuery,
+      createRecoveryActionHandler(action, 'admin'),
+    )
   return router
 }
 

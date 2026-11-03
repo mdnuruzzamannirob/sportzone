@@ -8,78 +8,105 @@ import type { AuditAccess } from '../audit/audit.public.js'
 import type { CheckoutAccess, CheckoutCredentials, CheckoutPrincipal } from '../auth/auth.public.js'
 import type { CatalogCheckoutAccess } from '../catalog/catalog.public.js'
 import type { CheckoutDeliveryAccess } from '../delivery/delivery.public.js'
-import { createAllocationService } from '../inventory/inventory.service.js'
-import { createNotificationService } from '../notifications/notification.service.js'
-import type { DeliveryDeadlineService } from '../orders/order.public.js'
-import type { orderCreationProof } from '../orders/order.schema.js'
-import {
-  checkoutOrderReadAccess,
-  createOrderService,
-  expiredOrderAllocationAccess,
-  initialOrderAllocationAccess,
-} from '../orders/order.service.js'
-import { createOrderAllocationService } from '../orders/order-allocation.service.js'
-import type { PaymentEligibility } from '../payments/payment.public.js'
-import { checkoutPaymentAccess } from '../payments/payment.service.js'
-import { calculatePricing } from '../promotions/pricing.js'
-import { couponGenerationAccess, type couponQuoteAccess } from '../promotions/promotion.service.js'
+import type { InventoryAllocationFactory } from '../inventory/inventory.public.js'
+import type { NotificationIntentsFactory } from '../notifications/notification.public.js'
+import type {
+  CheckoutOrderReader,
+  DeliveryDeadlineService,
+  ExpiredOrderAllocationFactory,
+  InitialOrderAllocationAccess,
+  OrderAllocationFactory,
+  OrderCreationFactory,
+  OrderCreationProofSchema,
+} from '../orders/order.public.js'
+import type { CheckoutPaymentAccess, PaymentEligibility } from '../payments/payment.public.js'
+import type {
+  CouponGenerationReader,
+  CouponQuoteAccess,
+  PricingCalculator,
+} from '../promotions/promotion.public.js'
 import type { CheckoutSettingsAccess } from '../settings/setting.public.js'
-
-import {
-  checkoutCommercialSnapshot,
-  checkoutQuote,
-  checkoutQuoteInput,
-  checkoutSubmitInput,
-  normalizedCheckoutDraft,
-  type quoteCouponSnapshot,
+import type {
+  CheckoutCommercialSnapshotSchema,
+  CheckoutQuoteInputSchema,
+  CheckoutQuoteSchema,
+  CheckoutSubmitInputSchema,
+  NormalizedCheckoutDraftSchema,
+  QuoteCouponSnapshotSchema,
 } from './checkout.schema.js'
 import { checkoutCommercialDigest, checkoutDraftFingerprint } from './checkout-consent.policy.js'
 import { checkoutIntentModel } from './checkout-intent.model.js'
 import { verifyCheckoutIntentPersistence } from './checkout-intent.persistence.js'
-import {
-  checkoutIntentScope,
-  checkoutKeyHash,
-  checkoutOrderOutcome,
-  checkoutSubmissionFingerprint,
+import type {
+  CheckoutOrderOutcomeSchema,
+  CheckoutSubmissionFingerprint,
 } from './checkout-intent.schema.js'
+import { checkoutIntentScope, checkoutKeyHash } from './checkout-intent.schema.js'
 import { checkoutQuoteModel } from './checkout-quote.model.js'
 import { verifyCheckoutQuotePersistence } from './checkout-quote.persistence.js'
 
+type CheckoutCompletion = {
+  // Must create the order AND required allocation/payment/notification state in this transaction.
+  // No provider calls. No production completion adapter is enabled by this foundation.
+  complete(
+    session: ClientSession,
+    proof: z.output<OrderCreationProofSchema>,
+    operationKey: string,
+  ): Promise<void>
+  // Authoritative current order projection, with order/intent/owner checks inside the order owner.
+  read(
+    session: ClientSession,
+    principal: CheckoutPrincipal,
+    orderId: string,
+    intentId: string,
+  ): Promise<unknown>
+}
+
+type Draft = z.output<CheckoutQuoteInputSchema>
+
 function createCheckoutCompletionService(
-  connection: Connection,
   auditAccess: AuditAccess,
+  moduleAccess: {
+    checkoutPaymentAccess: CheckoutPaymentAccess
+    createNotificationService: NotificationIntentsFactory
+    createOrderAllocationService: OrderAllocationFactory
+    createAllocationService: InventoryAllocationFactory
+    initialOrderAllocationAccess: InitialOrderAllocationAccess
+    checkoutOrderReadAccess: CheckoutOrderReader
+    createOrderService: OrderCreationFactory
+  },
   clock: () => Date = () => new Date(),
 ): CheckoutCompletion {
-  const payments = checkoutPaymentAccess(connection),
-    notifications = createNotificationService(connection, clock),
-    allocation = createOrderAllocationService(
-      connection,
-      createAllocationService(connection, undefined, clock),
-      initialOrderAllocationAccess(connection),
+  const payments = moduleAccess.checkoutPaymentAccess,
+    notifications = moduleAccess.createNotificationService(clock),
+    allocation = moduleAccess.createOrderAllocationService(
+      moduleAccess.createAllocationService(clock),
+      moduleAccess.initialOrderAllocationAccess,
       clock,
     ),
-    readOrder = checkoutOrderReadAccess(connection)
+    readOrder = moduleAccess.checkoutOrderReadAccess
   return {
     async complete(session, proof, operationKey) {
-      await createOrderService(
-        connection,
-        {
-          authorize: async (_session, command) => {
-            if (
-              command.orderId !== proof.orderId ||
-              command.checkoutIntentId !== proof.checkoutIntentId
-            )
-              throw new ApiError('STATE_CONFLICT')
-            return proof
+      await moduleAccess
+        .createOrderService(
+          {
+            authorize: async (_session, command) => {
+              if (
+                command.orderId !== proof.orderId ||
+                command.checkoutIntentId !== proof.checkoutIntentId
+              )
+                throw new ApiError('STATE_CONFLICT')
+              return proof
+            },
           },
-        },
-        auditAccess.write,
-        clock,
-      ).create(session, {
-        orderId: proof.orderId,
-        checkoutIntentId: proof.checkoutIntentId,
-        operationKey,
-      })
+          auditAccess.write,
+          clock,
+        )
+        .create(session, {
+          orderId: proof.orderId,
+          checkoutIntentId: proof.checkoutIntentId,
+          operationKey,
+        })
       await allocation.apply(session, {
         orderId: proof.orderId,
         generation: 1,
@@ -92,8 +119,8 @@ function createCheckoutCompletionService(
       })
       await notifications.enqueueOrderReceived(
         {
-          orderId: new Types.ObjectId(proof.orderId),
-          ...(proof.userId ? { userId: new Types.ObjectId(proof.userId) } : {}),
+          orderId: proof.orderId,
+          ...(proof.userId ? { userId: proof.userId } : {}),
           email: proof.snapshot.draft.customer.email,
           name: proof.snapshot.draft.customer.name,
         },
@@ -111,12 +138,18 @@ function createCheckoutCompletionService(
 }
 
 function createCheckoutExpiryService(
-  connection: Connection,
   auditAccess: AuditAccess,
+  moduleAccess: {
+    createAllocationService: InventoryAllocationFactory
+    couponGenerationAccess: CouponGenerationReader
+    expiredOrderAllocationAccess: ExpiredOrderAllocationFactory
+    checkoutPaymentAccess: CheckoutPaymentAccess
+    createOrderAllocationService: OrderAllocationFactory
+  },
   clock: () => Date = () => new Date(),
 ) {
-  const stock = createAllocationService(connection, undefined, clock),
-    coupon = couponGenerationAccess(connection),
+  const stock = moduleAccess.createAllocationService(clock),
+    coupon = moduleAccess.couponGenerationAccess,
     audit = auditAccess.write
   return {
     due: stock.due,
@@ -146,12 +179,10 @@ function createCheckoutExpiryService(
           redemption.expiresAt?.getTime() !== first.expiresAt.getTime())
       )
         throw new ApiError('STATE_CONFLICT')
-      const orderAccess = expiredOrderAllocationAccess(
-        connection,
-        checkoutPaymentAccess(connection).authorizeHoldExpiry,
+      const orderAccess = moduleAccess.expiredOrderAllocationAccess(
+        moduleAccess.checkoutPaymentAccess.authorizeHoldExpiry,
       )
-      const allocations = createOrderAllocationService(
-        connection,
+      const allocations = moduleAccess.createOrderAllocationService(
         stock,
         {
           async authorize(transaction, id, requestedGeneration, action) {
@@ -186,36 +217,24 @@ function createCheckoutExpiryService(
   }
 }
 
-type CheckoutCompletion = {
-  // Must create the order AND required allocation/payment/notification state in this transaction.
-  // No provider calls. No production completion adapter is enabled by this foundation.
-  complete(
-    session: ClientSession,
-    proof: z.output<typeof orderCreationProof>,
-    operationKey: string,
-  ): Promise<void>
-  // Authoritative current order projection, with order/intent/owner checks inside the order owner.
-  read(
-    session: ClientSession,
-    principal: CheckoutPrincipal,
-    orderId: string,
-    intentId: string,
-  ): Promise<unknown>
-}
-
 function createCheckoutIntentService(
   connection: Connection,
   access: CheckoutAccess,
   quotes: Pick<ReturnType<typeof createCheckoutQuoteService>, 'revalidate'>,
   completion: CheckoutCompletion,
+  moduleAccess: {
+    schemaCheckoutSubmitInput: CheckoutSubmitInputSchema
+    checkoutSubmissionFingerprint: CheckoutSubmissionFingerprint
+    schemaCheckoutOrderOutcome: CheckoutOrderOutcomeSchema
+  },
   clock: () => Date = () => new Date(),
 ) {
   const intents = checkoutIntentModel(connection),
     quoteModel = checkoutQuoteModel(connection)
   async function execute(credentials: CheckoutCredentials, raw: unknown, key: unknown) {
-    const input = parseInput(checkoutSubmitInput, raw),
+    const input = parseInput(moduleAccess.schemaCheckoutSubmitInput, raw),
       idempotencyKeyHash = checkoutKeyHash(key),
-      requestFingerprint = checkoutSubmissionFingerprint(input)
+      requestFingerprint = moduleAccess.checkoutSubmissionFingerprint(input)
     // A duplicate index race aborts its transaction. Re-enter authorization in a fresh transaction
     // to observe the winner; never continue a failed session or retry an external effect.
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -244,7 +263,7 @@ function createCheckoutIntentService(
               throw new ApiError('STATE_CONFLICT')
             // Expired response windows still return the current resource, never reuse the key.
             const result = parseInput(
-              checkoutOrderOutcome,
+              moduleAccess.schemaCheckoutOrderOutcome,
               await completion.read(
                 session,
                 principal,
@@ -316,7 +335,7 @@ function createCheckoutIntentService(
             `checkout:${intentId.toHexString()}`,
           )
           const result = parseInput(
-            checkoutOrderOutcome,
+            moduleAccess.schemaCheckoutOrderOutcome,
             await completion.read(
               session,
               principal,
@@ -355,8 +374,6 @@ function createCheckoutIntentService(
 
 const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex')
 
-type Draft = z.output<typeof checkoutQuoteInput>
-
 function createCheckoutQuoteService(
   connection: Connection,
   access: CheckoutAccess,
@@ -365,10 +382,18 @@ function createCheckoutQuoteService(
     delivery: CheckoutDeliveryAccess
     settings: CheckoutSettingsAccess
     deadline: DeliveryDeadlineService
-    coupon: ReturnType<typeof couponQuoteAccess>
+    coupon: CouponQuoteAccess
     methods: PaymentEligibility
   },
   rawOptions: unknown,
+  moduleAccess: {
+    calculatePricing: PricingCalculator
+    schemaCheckoutCommercialSnapshot: CheckoutCommercialSnapshotSchema
+    schemaCheckoutQuote: CheckoutQuoteSchema
+    schemaCheckoutQuoteInput: CheckoutQuoteInputSchema
+    schemaCheckoutSubmitInput: CheckoutSubmitInputSchema
+    schemaNormalizedCheckoutDraft: NormalizedCheckoutDraftSchema
+  },
   clock: () => Date = () => new Date(),
 ) {
   const options = parseInput(checkoutOptions, rawOptions),
@@ -385,7 +410,7 @@ function createCheckoutQuoteService(
       recipient = address
     }
     if (!recipient || (!input.email && !principal.profile)) throw new ApiError('VALIDATION_FAILED')
-    return parseInput(normalizedCheckoutDraft, {
+    return parseInput(moduleAccess.schemaNormalizedCheckoutDraft, {
       items: [...input.items].sort((a, b) => a.variantId.localeCompare(b.variantId)),
       recipient,
       customer: {
@@ -399,7 +424,7 @@ function createCheckoutQuoteService(
   }
   async function build(
     principal: CheckoutPrincipal,
-    draft: z.output<typeof normalizedCheckoutDraft>,
+    draft: z.output<NormalizedCheckoutDraftSchema>,
     session: ClientSession,
     ids?: Map<string, string>,
   ) {
@@ -432,8 +457,8 @@ function createCheckoutQuoteService(
         effectiveUnitPoisha: selected.estimatedUnitPoisha,
       }
     })
-    let pricing: ReturnType<typeof calculatePricing>
-    let coupon: z.output<typeof quoteCouponSnapshot> | undefined
+    let pricing: ReturnType<PricingCalculator>
+    let coupon: z.output<QuoteCouponSnapshotSchema> | undefined
     if (draft.couponCode) {
       const quoted = await dependencies.coupon(
         draft.couponCode,
@@ -454,7 +479,7 @@ function createCheckoutQuoteService(
         discountPoisha: quoted.termsSnapshot.discountPoisha,
       }
     } else
-      pricing = calculatePricing({
+      pricing = moduleAccess.calculatePricing({
         items: lines.map(({ productId, categoryIds, ...line }) => {
           void productId
           void categoryIds
@@ -490,7 +515,7 @@ function createCheckoutQuoteService(
     const { items: pricedItems, couponEligibleSubtotalPoisha, ...totals } = pricing
     void pricedItems
     void couponEligibleSubtotalPoisha
-    return parseInput(checkoutCommercialSnapshot, {
+    return parseInput(moduleAccess.schemaCheckoutCommercialSnapshot, {
       draft,
       items,
       ...(coupon ? { coupon } : {}),
@@ -511,7 +536,7 @@ function createCheckoutQuoteService(
   }
   return {
     async create(credentials: CheckoutCredentials, raw: unknown) {
-      const input = parseInput(checkoutQuoteInput, raw)
+      const input = parseInput(moduleAccess.schemaCheckoutQuoteInput, raw)
       return access.owned(credentials, async (principal, session) => {
         await verify()
         const now = clock(),
@@ -521,14 +546,14 @@ function createCheckoutQuoteService(
         const row = new model({
           scopeType: principal.scopeType,
           scopeKeyHash: principal.scopeKeyHash,
-          requestFingerprint: checkoutDraftFingerprint(draft),
+          requestFingerprint: checkoutDraftFingerprint(draft, moduleAccess),
           commercialSnapshot: snapshot,
-          commercialDigest: checkoutCommercialDigest(snapshot),
+          commercialDigest: checkoutCommercialDigest(snapshot, moduleAccess),
           quotedAt: now,
           expiresAt,
         })
         await row.save({ session })
-        return parseInput(checkoutQuote, {
+        return parseInput(moduleAccess.schemaCheckoutQuote, {
           ...snapshot.pricing,
           quoteId: row._id.toHexString(),
           items: snapshot.items,
@@ -544,7 +569,7 @@ function createCheckoutQuoteService(
     // authorizes a supplied identity nor consumes/locks stock or consent by itself.
     async revalidate(principal: CheckoutPrincipal, raw: unknown, session: ClientSession) {
       if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
-      const input = parseInput(checkoutSubmitInput, raw)
+      const input = parseInput(moduleAccess.schemaCheckoutSubmitInput, raw)
       await verify()
       const row = await model
         .findOne({
@@ -558,15 +583,15 @@ function createCheckoutQuoteService(
       if (!row.expiresAt) throw new ApiError('SERVICE_UNAVAILABLE')
       if (row.expiresAt <= clock()) throw new ApiError('QUOTE_EXPIRED')
       const draft = normalize(principal, input)
-      if (row.requestFingerprint !== checkoutDraftFingerprint(draft))
+      if (row.requestFingerprint !== checkoutDraftFingerprint(draft, moduleAccess))
         throw new ApiError('QUOTE_CHANGED')
       const stored = parseInput(
-        checkoutCommercialSnapshot,
+        moduleAccess.schemaCheckoutCommercialSnapshot,
         row.toObject({ flattenMaps: true }).commercialSnapshot,
       )
       if (
-        checkoutCommercialDigest(stored) !== row.commercialDigest ||
-        checkoutDraftFingerprint(stored.draft) !== row.requestFingerprint
+        checkoutCommercialDigest(stored, moduleAccess) !== row.commercialDigest ||
+        checkoutDraftFingerprint(stored.draft, moduleAccess) !== row.requestFingerprint
       )
         throw new ApiError('STATE_CONFLICT')
       const current = await build(
@@ -576,7 +601,7 @@ function createCheckoutQuoteService(
         new Map(stored.items.map((line) => [line.variantId, line.id])),
       )
       if (
-        row.commercialDigest !== checkoutCommercialDigest(current) ||
+        row.commercialDigest !== checkoutCommercialDigest(current, moduleAccess) ||
         input.acceptedTermsVersion !==
           stored.policyVersions.find((policy) => policy.type === 'terms')?.version ||
         hash([...input.acceptedPolicyVersionIds].sort()) !==

@@ -3,6 +3,8 @@ import { claimText, claimId as id } from '../modules/returns/return.schema.js'
 import { ConfigurationError } from '../shared/errors/configuration-error.js'
 import { readProtectedFile } from '../shared/protected-file.js'
 
+type ReturnOperationsOptions = z.output<typeof returnOperationsOptions>
+
 const returnOperationsOptions = z.strictObject({
   policyVersion: z.string().trim().min(1).max(100),
   exceptions: z
@@ -15,7 +17,6 @@ const returnOperationsOptions = z.strictObject({
     )
     .max(1000),
 })
-type ReturnOperationsOptions = z.output<typeof returnOperationsOptions>
 async function loadReturnOperationsOptions(
   env: NodeJS.ProcessEnv,
 ): Promise<ReturnOperationsOptions | undefined> {

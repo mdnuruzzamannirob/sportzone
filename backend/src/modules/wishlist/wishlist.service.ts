@@ -5,12 +5,14 @@ import type { CustomerAccountAccess } from '../auth/auth.public.js'
 import type { CatalogSelections } from '../catalog/catalog.public.js'
 import { wishlistModel } from './wishlist.model.js'
 import { verifyWishlistPersistence } from './wishlist.persistence.js'
-import { wishlistParams, wishlistResponse } from './wishlist.schema.js'
+import type { WishlistResponseSchema } from './wishlist.schema.js'
+import { wishlistParams } from './wishlist.schema.js'
 
 function createWishlistService(
   connection: Connection,
   access: CustomerAccountAccess,
   catalog: Pick<CatalogSelections, 'wishlistProducts'>,
+  moduleAccess: { schemaWishlistResponse: WishlistResponseSchema },
 ) {
   const lists = wishlistModel(connection)
   return {
@@ -29,7 +31,7 @@ function createWishlistService(
             .lean()
           const ids = row?.productIds.map((id) => id.toHexString()) ?? []
           const cards = await catalog.wishlistProducts(ids, transaction)
-          return parseInput(wishlistResponse, {
+          return parseInput(moduleAccess.schemaWishlistResponse, {
             products: ids.map((id) => cards.get(id) ?? { id, availability: 'unavailable' }),
           })
         },

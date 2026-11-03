@@ -13,6 +13,7 @@ type LifecycleEvent =
   | 'database_connected'
   | 'database_disconnected'
   | 'database_error'
+
 type RequestEvent = {
   requestId: string
   method: string
@@ -23,9 +24,15 @@ type RequestEvent = {
   securityReason?: 'rate_limited' | 'throttle_unavailable'
   errorCode?: ErrorCode
 }
+
+type Logger = ReturnType<typeof createLogger>
+
 const methods = new Set(['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'])
 function createLogger(
-  config: { APP_ENV: 'local' | 'test' | 'staging' | 'production'; RELEASE_ID: string },
+  config: {
+    APP_ENV: 'local' | 'test' | 'staging' | 'production'
+    RELEASE_ID: string
+  },
   sink: (line: string) => void = (line) => {
     process.stdout.write(`${line}\n`)
   },
@@ -94,7 +101,6 @@ function createLogger(
     },
   }
 }
-type Logger = ReturnType<typeof createLogger>
 function logConfigurationFailure(
   fields: readonly string[],
   sink: (line: string) => void = (line) => {

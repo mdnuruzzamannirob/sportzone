@@ -10,7 +10,7 @@ import {
 import type { AuditAccess } from '../audit/audit.public.js'
 import type { AdminAccountAccess } from '../auth/auth.public.js'
 import type { RecoveryReceiptService } from '../inventory/inventory.public.js'
-import { createNotificationService } from '../notifications/notification.service.js'
+import type { NotificationIntentsFactory } from '../notifications/notification.public.js'
 
 import type { CancellationPaymentAccess } from '../payments/payment.public.js'
 
@@ -29,6 +29,7 @@ function createDeliveryExceptionService(
   payment: CancellationPaymentAccess,
   restore: RecoveryReceiptService,
   auditAccess: AuditAccess,
+  moduleAccess: { createNotificationService: NotificationIntentsFactory },
   verifyDisposition?: DeliveryDispositionVerifier,
   refunds?: (
     session: ClientSession,
@@ -265,10 +266,10 @@ function createDeliveryExceptionService(
             transitionOptions,
           )
           if (changed.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
-          await createNotificationService(connection, clock).enqueueCommerce(
+          await moduleAccess.createNotificationService(clock).enqueueCommerce(
             {
-              orderId: row._id,
-              ...(row.userId ? { userId: row.userId } : {}),
+              orderId: row._id.toHexString(),
+              ...(row.userId ? { userId: row.userId.toHexString() } : {}),
               email: row.customerSnapshot.emailNormalized,
               name: row.customerSnapshot.name,
               eventType: 'order_cancellation',

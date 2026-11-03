@@ -1,6 +1,8 @@
 import { type Connection, type InferSchemaType, Schema } from 'mongoose'
 import { mutableSchemaOptions } from '../../shared/database/schema.js'
 
+type WishlistRecord = InferSchemaType<typeof schema>
+
 const schema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, required: true },
@@ -18,8 +20,6 @@ const schema = new Schema(
 )
 
 schema.index({ userId: 1 }, { unique: true, name: 'wishlist_user_unique' })
-
-type WishlistRecord = InferSchemaType<typeof schema>
 
 function wishlistModel(connection: Connection) {
   return connection.models.Wishlist

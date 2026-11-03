@@ -26,4 +26,14 @@ type OrderPolicySnapshotAccess = (
   }[]
 >
 
-export type { OrderPolicySnapshotAccess, ReservationExpiry }
+type CommercialDigest = (raw: unknown) => string
+
+export type {
+  CheckoutCommercialSnapshotSchema,
+  QuoteCouponSnapshotSchema,
+  QuoteLineSchema,
+  QuotePolicyRefSchema,
+  QuoteTotalsSchema,
+} from './checkout.schema.js'
+export type { CheckoutOrderSummarySchema } from './checkout-intent.schema.js'
+export type { CommercialDigest, OrderPolicySnapshotAccess, ReservationExpiry }

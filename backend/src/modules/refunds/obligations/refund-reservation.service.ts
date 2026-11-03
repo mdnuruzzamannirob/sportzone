@@ -26,10 +26,6 @@ import { planMultiSourceMerchandiseRefund } from './refund-allocation.policy.js'
 import { customerRefundRequestInput, customerRefundRequestResult } from './refund-request.schema.js'
 import { refundGroupInput as command, refundApproval } from './refund-reservation.schema.js'
 
-const id = z.string().regex(/^[a-f0-9]{24}$/)
-
-const hash = (s: string) => createHash('sha256').update(s).digest('hex')
-
 type Item = {
   orderItemId: string
   unitAmounts: {
@@ -47,6 +43,10 @@ type Slice = {
   correctionAmountPoisha: number
   amountPoisha: number
 }
+
+const id = z.string().regex(/^[a-f0-9]{24}$/)
+
+const hash = (s: string) => createHash('sha256').update(s).digest('hex')
 
 // Only explicit local assembly currently supplies the protected policy authority. No provider call.
 function createRefundReservationService(

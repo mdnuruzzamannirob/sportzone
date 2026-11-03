@@ -5,6 +5,8 @@ import {
   optionalObjectIdField,
 } from '../../../shared/database/schema.js'
 
+type Category = InferSchemaType<typeof categorySchema>
+
 const categorySchema = new Schema(
   {
     name: { type: String, required: true, trim: true, maxlength: 200 },
@@ -41,8 +43,6 @@ categorySchema.index(
 )
 
 categorySchema.index({ status: 1, sortOrder: 1, _id: 1 }, { name: 'category_public_sort' })
-
-type Category = InferSchemaType<typeof categorySchema>
 
 function categoryModel(connection: Connection) {
   return connection.models.Category

@@ -36,8 +36,8 @@ function createBrowserSecurityRoutes(
   for (const audience of ['storefront', 'admin'] as const) {
     const path = audience === 'admin' ? '/admin/auth/csrf' : '/auth/csrf'
     router.options(path, security.cors(audience))
-    router.head(path, security.cors(audience), controller.headAction)
-    router.get(path, security.cors(audience), limit, controller.getAction(audience))
+    router.head(path, security.cors(audience), controller.headBrowserContext)
+    router.get(path, security.cors(audience), limit, controller.getBrowserContext(audience))
   }
   return router
 }

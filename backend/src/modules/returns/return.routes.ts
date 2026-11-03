@@ -1,12 +1,8 @@
-import { type Request, type RequestHandler, Router } from 'express'
-import { z } from 'zod'
+import { type RequestHandler, Router } from 'express'
 import { ApiError } from '../../shared/errors/app-error.js'
-
-import { parseInput } from '../../shared/middleware/validate.js'
-import { respond } from '../../shared/responses.js'
 import type { BrowserSecurity, SessionHttp } from '../auth/auth.public.js'
-import { claimEvidenceMultipart } from '../media/media.controller.js'
-import { claimCompleteInput, claimId, claimInspectionInput } from './return.schema.js'
+import type { ClaimEvidenceMultipart } from '../media/media.public.js'
+import { createReturnController, createReturnHistoryController } from './return.controller.js'
 import type {
   createReturnHistoryService,
   createReturnLifecycleService,
@@ -20,66 +16,21 @@ function createReturnHistoryRoutes(
   security: BrowserSecurity,
   sessionHttp: SessionHttp,
 ) {
+  const controller = createReturnHistoryController(service, sessionHttp)
+
   const router = Router(),
     cors = security.cors('storefront'),
     adminCors = security.cors('admin'),
     http = sessionHttp
-  const credentials = (req: Request) => ({
-    customerPresent: (req.get('Cookie') ?? '')
-      .split(';')
-      .some((p) => p.trim().startsWith('sz_customer_sid=')),
-    customerToken: sessionHttp.readSessionCookie(req.get('Cookie'), 'customer'),
-    guestToken: sessionHttp.readGuestCookie(req.get('Cookie')),
-  })
+
   for (const path of ['/me/claims', '/orders/:orderId/claims', '/claims/:claimId'])
     router.options(path, cors)
   for (const path of ['/admin/claims', '/admin/claims/:claimId']) router.options(path, adminCors)
-  router.get('/me/claims', cors, async (req, res) => {
-    parseInput(z.undefined(), req.body)
-    const result = await service.mine(credentials(req), req.query)
-    respond(res, result.items, 200, result.pagination)
-  })
-  router.get('/admin/claims', adminCors, http.require('admin'), async (req, res) => {
-    parseInput(z.undefined(), req.body)
-    const result = await service.adminList(
-      sessionHttp.readSessionCookie(req.get('Cookie'), 'admin'),
-      req.query,
-    )
-    respond(res, result.items, 200, result.pagination)
-  })
-  router.get('/admin/claims/:claimId', adminCors, http.require('admin'), async (req, res) => {
-    parseInput(z.undefined(), req.body)
-    parseInput(z.strictObject({}), req.query)
-    respond(
-      res,
-      await service.adminDetail(
-        sessionHttp.readSessionCookie(req.get('Cookie'), 'admin'),
-        parseInput(z.strictObject({ claimId }), req.params).claimId,
-      ),
-    )
-  })
-  router.get('/orders/:orderId/claims', cors, async (req, res) => {
-    parseInput(z.undefined(), req.body)
-    parseInput(z.strictObject({}), req.query)
-    respond(
-      res,
-      await service.list(
-        credentials(req),
-        parseInput(z.strictObject({ orderId: claimId }), req.params).orderId,
-      ),
-    )
-  })
-  router.get('/claims/:claimId', cors, async (req, res) => {
-    parseInput(z.undefined(), req.body)
-    parseInput(z.strictObject({}), req.query)
-    respond(
-      res,
-      await service.detail(
-        credentials(req),
-        parseInput(z.strictObject({ claimId }), req.params).claimId,
-      ),
-    )
-  })
+  router.get('/me/claims', cors, controller.getMeClaims)
+  router.get('/admin/claims', adminCors, http.require('admin'), controller.getAdminClaims)
+  router.get('/admin/claims/:claimId', adminCors, http.require('admin'), controller.getAdminClaim)
+  router.get('/orders/:orderId/claims', cors, controller.getOrdersClaims)
+  router.get('/claims/:claimId', cors, controller.getClaims)
   return router
 }
 
@@ -100,23 +51,24 @@ function createReturnRoutes(
   ) => Promise<{
     url: string
   }>,
+  claimEvidenceMultipart: ClaimEvidenceMultipart,
 ) {
+  const controller = createReturnController(
+    operations,
+    lifecycle,
+    physical,
+    history,
+    sessionHttp,
+    maxBytes,
+    adminEvidence,
+    claimEvidenceMultipart,
+  )
+
   const router = Router(),
     customer = security.cors('storefront'),
     admin = security.cors('admin'),
     http = sessionHttp
-  const credentials = (req: Request) => ({
-    customerPresent: (req.get('Cookie') ?? '')
-      .split(';')
-      .some((p) => p.trim().startsWith('sz_customer_sid=')),
-    customerToken: sessionHttp.readSessionCookie(req.get('Cookie'), 'customer'),
-    guestToken: sessionHttp.readGuestCookie(req.get('Cookie')),
-    csrfToken: req.get('X-CSRF-Token'),
-  })
-  const emptyQuery = (req: Request) => parseInput(z.strictObject({}), req.query)
-  const order = (req: Request) =>
-    parseInput(z.strictObject({ orderId: claimId }), req.params).orderId
-  const claim = (req: Request) => parseInput(z.strictObject({ claimId }), req.params).claimId
+
   const customerMutation: RequestHandler = (req, _res, next) => {
     if (req.get('Origin') !== storefrontOrigin) throw new ApiError('CSRF_INVALID')
     next()
@@ -128,39 +80,20 @@ function createReturnRoutes(
     '/orders/:orderId/claims/evidence/:assetId',
   ])
     router.options(path, customer)
-  router.get('/orders/:orderId/claim-eligibility', customer, async (req, res) => {
-    emptyQuery(req)
-    parseInput(z.undefined(), req.body)
-    respond(res, await operations.eligibility(credentials(req), order(req)))
-  })
-  router.post('/orders/:orderId/claims', customer, customerMutation, async (req, res) => {
-    emptyQuery(req)
-    respond(
-      res,
-      await operations.submit(credentials(req), order(req), req.body, req.get('Idempotency-Key')),
-      201,
-    )
-  })
+  router.get('/orders/:orderId/claim-eligibility', customer, controller.getOrdersClaimEligibility)
+  router.post('/orders/:orderId/claims', customer, customerMutation, controller.postOrdersClaims)
   router.post(
     '/orders/:orderId/claims/evidence-uploads',
     customer,
     customerMutation,
     async (req, _res, next) => {
-      await operations.authorize(credentials(req), order(req))
+      await operations.authorize(controller.readCredentials(req), controller.parseOrderId(req))
       next()
     },
     uploadThrottle,
-    async (req, res) => {
-      const parsed = await claimEvidenceMultipart(req, maxBytes)
-      respond(res, await operations.upload(credentials(req), order(req), parsed.input, parsed.file))
-    },
+    controller.postClaimsEvidenceUploads,
   )
-  router.get('/orders/:orderId/claims/evidence/:assetId', customer, async (req, res) => {
-    emptyQuery(req)
-    parseInput(z.undefined(), req.body)
-    const p = parseInput(z.strictObject({ orderId: claimId, assetId: claimId }), req.params)
-    respond(res, await operations.privateEvidence(credentials(req), p.orderId, p.assetId))
-  })
+  router.get('/orders/:orderId/claims/evidence/:assetId', customer, controller.getClaimsEvidence)
   for (const path of [
     '/admin/claims/:claimId/review',
     '/admin/claims/:claimId/receipt',
@@ -169,82 +102,40 @@ function createReturnRoutes(
     '/admin/claims/:claimId/evidence/:assetId',
   ])
     router.options(path, admin)
-  const actor = (req: Request) => sessionHttp.readSessionCookie(req.get('Cookie'), 'admin')
+
   router.post(
     '/admin/claims/:claimId/review',
     admin,
     security.require('admin', 'admin'),
     http.require('admin'),
-    async (req, res) => {
-      emptyQuery(req)
-      respond(
-        res,
-        await operations.review(actor(req), claim(req), req.body, req.get('Idempotency-Key')),
-      )
-    },
+    controller.postClaimsReview,
   )
   router.post(
     '/admin/claims/:claimId/receipt',
     admin,
     security.require('admin', 'admin'),
     http.require('admin'),
-    async (req, res) => {
-      emptyQuery(req)
-      respond(
-        res,
-        await operations.receive(actor(req), claim(req), req.body, req.get('Idempotency-Key')),
-      )
-    },
+    controller.postClaimsReceipt,
   )
   router.post(
     '/admin/claims/:claimId/inspection',
     admin,
     security.require('admin', 'admin'),
     http.require('admin'),
-    async (req, res) => {
-      emptyQuery(req)
-      const input = parseInput(claimInspectionInput, req.body)
-      const id = claim(req)
-      await physical.inspect(
-        actor(req),
-        id,
-        { items: input.items, reason: input.notes ?? 'Inspection recorded' },
-        req.get('Idempotency-Key'),
-      )
-      respond(res, await history.adminDetail(actor(req), id))
-    },
+    controller.postClaimsInspection,
   )
   router.post(
     '/admin/claims/:claimId/complete',
     admin,
     security.require('admin', 'admin'),
     http.require('admin'),
-    async (req, res) => {
-      emptyQuery(req)
-      const input = parseInput(claimCompleteInput, req.body),
-        id = claim(req)
-      await lifecycle.transition(
-        actor(req),
-        id,
-        {
-          to: 'completed',
-          reason: input.reason ?? 'Claim inspection/review complete',
-        },
-        req.get('Idempotency-Key'),
-      )
-      respond(res, await history.adminDetail(actor(req), id))
-    },
+    controller.postClaimsComplete,
   )
   router.get(
     '/admin/claims/:claimId/evidence/:assetId',
     admin,
     http.require('admin'),
-    async (req, res) => {
-      emptyQuery(req)
-      parseInput(z.undefined(), req.body)
-      const p = parseInput(z.strictObject({ claimId, assetId: claimId }), req.params)
-      respond(res, await adminEvidence(actor(req), p.claimId, p.assetId))
-    },
+    controller.getAdminClaimEvidence,
   )
   return router
 }

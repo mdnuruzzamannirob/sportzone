@@ -6,6 +6,12 @@ type QuotaStore = {
   increment(key: string, expiresAt: Date, limit: number): Promise<number>
 }
 
+type Bucket = {
+  _id: string
+  count: number
+  expiresAt: Date
+}
+
 const validator = {
   $jsonSchema: {
     bsonType: 'object',
@@ -22,12 +28,6 @@ const validator = {
       expiresAt: { bsonType: 'date' },
     },
   },
-}
-
-type Bucket = {
-  _id: string
-  count: number
-  expiresAt: Date
 }
 
 function createAuthQuotaStore(connection: Connection) {

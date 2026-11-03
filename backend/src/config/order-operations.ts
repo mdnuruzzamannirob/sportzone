@@ -4,6 +4,8 @@ import { ConfigurationError } from '../shared/errors/configuration-error.js'
 import { readProtectedFile } from '../shared/protected-file.js'
 import { loadDeliveryDeadlinePolicy } from './delivery.js'
 
+type OrderOperationsOptions = NonNullable<Awaited<ReturnType<typeof loadOrderOperationsOptions>>>
+
 const id = z.string().regex(/^[a-f0-9]{24}$/)
 const authorization = z.strictObject({
   orderId: id,
@@ -47,7 +49,6 @@ async function loadOrderOperationsOptions(env: NodeJS.ProcessEnv) {
     throw new ConfigurationError(['order_operations_authority'])
   }
 }
-type OrderOperationsOptions = NonNullable<Awaited<ReturnType<typeof loadOrderOperationsOptions>>>
 
 export type { OrderOperationsOptions }
 export { loadOrderOperationsOptions }

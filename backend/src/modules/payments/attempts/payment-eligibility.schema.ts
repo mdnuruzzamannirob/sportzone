@@ -1,5 +1,11 @@
 import { z } from 'zod'
 
+type PaymentChannelApproval = z.infer<typeof paymentChannelApproval>
+
+type PaymentChannelSchema = typeof paymentChannel
+
+type PaymentMethodEligibilitySchema = typeof paymentMethodEligibility
+
 const paymentChannel = z.enum(['cod', 'bkash', 'nagad', 'rocket'])
 
 const money = z.int().nonnegative().max(Number.MAX_SAFE_INTEGER)
@@ -62,9 +68,7 @@ const paymentChannelApproval = z
       v.mode === (v.appEnv === 'production' ? 'live' : 'sandbox'),
   )
 
-type PaymentChannelApproval = z.infer<typeof paymentChannelApproval>
-
-export type { PaymentChannelApproval }
+export type { PaymentChannelApproval, PaymentChannelSchema, PaymentMethodEligibilitySchema }
 export {
   paymentChannel,
   paymentChannelApproval,

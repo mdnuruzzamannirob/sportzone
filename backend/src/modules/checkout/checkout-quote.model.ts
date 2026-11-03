@@ -5,7 +5,24 @@ import {
   mutableSchemaOptions,
   optionalObjectIdField,
 } from '../../shared/database/schema.js'
-import type { checkoutCommercialSnapshot } from './checkout.schema.js'
+import type { CheckoutCommercialSnapshotSchema } from './checkout.schema.js'
+
+type CheckoutQuote = {
+  scopeType: 'customer' | 'guest_context'
+  scopeKeyHash: string
+  requestFingerprint: string
+  commercialSnapshot: z.output<CheckoutCommercialSnapshotSchema>
+  commercialDigest: string
+  quotedAt: Date
+  expiresAt: Date
+  status: 'open' | 'consumed'
+  revision: number
+  checkoutIntentId?: Types.ObjectId
+  orderId?: Types.ObjectId
+  consumedAt?: Date
+  createdAt?: Date
+  updatedAt?: Date
+}
 
 const embedded = { _id: false, strict: 'throw', versionKey: false, minimize: false } as const
 
@@ -136,7 +153,7 @@ const method = new Schema(
   embedded,
 )
 
-const snapshot = new Schema<z.output<typeof checkoutCommercialSnapshot>>(
+const snapshot = new Schema<z.output<CheckoutCommercialSnapshotSchema>>(
   {
     draft: {
       type: new Schema(
@@ -209,23 +226,6 @@ const snapshot = new Schema<z.output<typeof checkoutCommercialSnapshot>>(
   },
   embedded,
 )
-
-type CheckoutQuote = {
-  scopeType: 'customer' | 'guest_context'
-  scopeKeyHash: string
-  requestFingerprint: string
-  commercialSnapshot: z.output<typeof checkoutCommercialSnapshot>
-  commercialDigest: string
-  quotedAt: Date
-  expiresAt: Date
-  status: 'open' | 'consumed'
-  revision: number
-  checkoutIntentId?: Types.ObjectId
-  orderId?: Types.ObjectId
-  consumedAt?: Date
-  createdAt?: Date
-  updatedAt?: Date
-}
 
 const schema = new Schema<CheckoutQuote>(
   {

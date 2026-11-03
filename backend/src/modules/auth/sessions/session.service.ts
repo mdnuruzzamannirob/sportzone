@@ -8,8 +8,6 @@ import { findActiveUserSession } from './session.persistence.js'
 
 type SessionKind = 'customer' | 'admin'
 
-const tokenPattern = /^[A-Za-z0-9_-]{43}$/
-
 type SessionIdentity = {
   sessionId: Types.ObjectId
   userId: Types.ObjectId
@@ -23,6 +21,10 @@ type IssuedSession = {
   kind: SessionKind
   expiresAt: Date
 }
+
+type SessionService = ReturnType<typeof createSessionService>
+
+const tokenPattern = /^[A-Za-z0-9_-]{43}$/
 
 function createSessionService(
   connection: Connection,
@@ -258,8 +260,6 @@ function createSessionService(
     },
   }
 }
-
-type SessionService = ReturnType<typeof createSessionService>
 
 export { loadSessionOptions } from '../../../config/security.js'
 export type { IssuedSession, SessionIdentity, SessionKind, SessionOptions, SessionService }

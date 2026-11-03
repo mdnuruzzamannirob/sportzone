@@ -17,7 +17,7 @@ function createReportRoutes(
   for (const kind of ['dashboard', 'sales', 'collections', 'refunds'] as const) {
     const path = kind === 'dashboard' ? '/admin/dashboard' : `/admin/reports/${kind}`
     router.options(path, cors)
-    router.get(path, cors, http.require('admin'), controller.getAction(kind))
+    router.get(path, cors, http.require('admin'), controller.getReport(kind))
   }
   router.options('/admin/operational-exceptions', cors)
   router.get(

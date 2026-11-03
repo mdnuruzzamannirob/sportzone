@@ -231,8 +231,27 @@ type RefundPaymentSnapshotAccess = (
   delivery: { heldPoisha: number; completedPoisha: number }
 }>
 
+type CheckoutPaymentAccess = {
+  create(session: ClientSession, raw: unknown): Promise<void>
+  authorizeHoldExpiry(session: ClientSession, orderId: string): Promise<boolean>
+  read(
+    session: ClientSession,
+    orderId: string,
+  ): Promise<{
+    paymentStatus: 'pending' | 'cancelled' | 'failed' | 'paid' | 'partially_refunded' | 'refunded'
+    expectedPoisha: number
+    currency: 'BDT'
+  }>
+}
+
+export type {
+  PaymentChannelSchema,
+  PaymentMethodEligibilitySchema,
+} from './attempts/payment-eligibility.schema.js'
+export type { PublicPaymentAttemptSchema } from './attempts/payment-initiation.schema.js'
 export type {
   CancellationPaymentAccess,
+  CheckoutPaymentAccess,
   CodCollectionService,
   CorrectionPaymentSnapshotAccess,
   CustomerPaymentSummaryAccess,

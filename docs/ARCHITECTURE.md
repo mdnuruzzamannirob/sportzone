@@ -635,6 +635,22 @@ model/schema/types stay at module root. Payments separates verification, reconci
 and COD operations where implemented. Notifications owns templates and durable delivery; provider
 transport remains in providers/. Split by responsibility, not a fixed line-count threshold.
 
+Reused owner schemas are assembled through typed schema builders in the existing .schema.ts files;
+setup.ts supplies the original validators and exposes the same assembled schema bundles to backend
+contract generation and fixtures. Modules do not import another owner's runtime validators or copy
+business validation into shared/. Independent schemas remain ordinary constants. Public schema types
+may derive from pure owning validation when acyclic; proof/DTO schema contracts that would create
+cross-owner type cycles are independent type declarations, checked by their consuming assembly.
+There is no mutable schema registration or late global initialization.
+
+Inject concrete read/write capabilities or pure functions wherever possible. A connection-bound factory
+is justified when a workflow creates an authorized collaborator or supplies its operation clock per call;
+setup binds that factory to the canonical persistence owner. Simple partial application uses bind;
+real composition constructs the remaining collaborators. Do not add a separate forwarding factory file,
+generic dependency registry or service locator. Shared allocation/coupon DTOs have one owner. IDs in
+cross-owner metadata/proof capabilities are strings; their persistence owner converts them to ObjectId.
+Claim media exposes immutable evidence metadata and scoped operations, never a private asset document.
+
 Business reuse stays with its owner regardless of consumer count; technical reuse goes in the one shared/
 boundary. Similar fields or syntax do not establish the same business meaning. No module-wide giant
 service or per-action file requirement: split by cohesive responsibility and actual dependencies.

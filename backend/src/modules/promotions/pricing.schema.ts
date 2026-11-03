@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+type PricingInputSchema = typeof pricingInput
+
 const id = z.string().regex(/^[a-f0-9]{24}$/)
 
 const money = z.int().nonnegative().max(Number.MAX_SAFE_INTEGER)
@@ -45,4 +47,5 @@ const pricingInput = pricingRequest.safeExtend({
     .max(40),
 })
 
+export type { PricingInputSchema }
 export { couponTerms, pricingInput, pricingRequest }

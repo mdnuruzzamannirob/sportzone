@@ -6,6 +6,12 @@ import {
 } from '../../../shared/database/schema.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 
+type Attempt = InferSchemaType<typeof attemptSchema>
+
+type Intake = InferSchemaType<typeof intakeSchema>
+
+type Collection = InferSchemaType<typeof collectionSchema>
+
 const attemptStates = [
   'created',
   'initiated',
@@ -357,12 +363,6 @@ protect(
   [...collectionAmounts, 'revision', 'updatedAt'],
   'revision',
 )
-
-type Attempt = InferSchemaType<typeof attemptSchema>
-
-type Intake = InferSchemaType<typeof intakeSchema>
-
-type Collection = InferSchemaType<typeof collectionSchema>
 
 function paymentRecordModels(connection: Connection) {
   return {

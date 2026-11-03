@@ -37,7 +37,7 @@ function createRecoveryRoutes(
       limit,
       security.require('storefront', 'context'),
       noQuery,
-      controller.postAction(action),
+      controller.recoverPassword(action),
     )
   }
   router.post(

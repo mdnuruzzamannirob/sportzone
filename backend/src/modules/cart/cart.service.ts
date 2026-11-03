@@ -5,18 +5,17 @@ import type { CustomerAccountAccess } from '../auth/auth.public.js'
 import type { CatalogSelections } from '../catalog/catalog.public.js'
 import { cartModel } from './cart.model.js'
 import { verifyCartPersistence } from './cart.persistence.js'
-import {
-  cartMerge,
-  cartMergeResponse,
-  cartQuantity,
-  cartResponse,
-  variantParams,
-} from './cart.schema.js'
+import type { CartMergeResponseSchema, CartResponseSchema } from './cart.schema.js'
+import { cartMerge, cartQuantity, variantParams } from './cart.schema.js'
 
 function createCartService(
   connection: Connection,
   access: CustomerAccountAccess,
   catalog: Pick<CatalogSelections, 'cartSelections'>,
+  moduleAccess: {
+    schemaCartMergeResponse: CartMergeResponseSchema
+    schemaCartResponse: CartResponseSchema
+  },
   clock: () => Date = () => new Date(),
 ) {
   const carts = cartModel(connection)
@@ -120,12 +119,15 @@ function createCartService(
               value && value.availableQty >= line.quantity ? 'available' : 'unavailable',
           }
         })
-        return parseInput(merge ? cartMergeResponse : cartResponse, {
-          ...(merge ? { errors } : {}),
-          items,
-          estimatedSubtotalPoisha: subtotal,
-          revision: cart?.revision ?? 0,
-        })
+        return parseInput(
+          merge ? moduleAccess.schemaCartMergeResponse : moduleAccess.schemaCartResponse,
+          {
+            ...(merge ? { errors } : {}),
+            items,
+            estimatedSubtotalPoisha: subtotal,
+            revision: cart?.revision ?? 0,
+          },
+        )
       },
       Boolean(mutation || merge),
     )

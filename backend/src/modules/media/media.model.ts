@@ -5,6 +5,8 @@ import {
   optionalObjectIdField,
 } from '../../shared/database/schema.js'
 
+type MediaAsset = InferSchemaType<typeof schema>
+
 const embedded = { _id: false, strict: 'throw', versionKey: false } as const
 
 const schema = new Schema(
@@ -111,8 +113,6 @@ schema.index({ publicId: 1 }, { unique: true, name: 'media_public_id_unique' })
 schema.index({ orderId: 1, assetKind: 1, status: 1 }, { name: 'media_order_kind_status' })
 
 schema.index({ status: 1, expiresAt: 1 }, { name: 'media_status_expiry' })
-
-type MediaAsset = InferSchemaType<typeof schema>
 
 function mediaModel(connection: Connection) {
   return connection.models.MediaAsset

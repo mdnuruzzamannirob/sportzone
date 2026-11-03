@@ -10,8 +10,7 @@ import {
 import type { AuditAccess } from '../../audit/audit.public.js'
 import type { AdminAccountAccess } from '../../auth/auth.public.js'
 import type { CodCollectionOrderAccess } from '../../orders/order.public.js'
-
-import { createCorrectionObligationService } from '../../refunds/obligations/correction-obligation.service.js'
+import type { CorrectionObligationFactory } from '../../refunds/refund.public.js'
 
 import { paymentModel } from '../payment.model.js'
 import {
@@ -30,6 +29,7 @@ function createCodCollectionService(
   admin: AdminAccountAccess,
   orders: CodCollectionOrderAccess,
   auditAccess: AuditAccess,
+  moduleAccess: { createCorrectionObligationService: CorrectionObligationFactory },
   evidence?: (
     input: ReturnType<typeof codCollectionInput.parse> & {
       paymentId: string
@@ -41,7 +41,7 @@ function createCodCollectionService(
     { collections } = paymentRecordModels(connection),
     audit = auditAccess.write,
     lookup = auditAccess.lookup,
-    correction = createCorrectionObligationService(connection, auditAccess)
+    correction = moduleAccess.createCorrectionObligationService(auditAccess)
   async function ready() {
     try {
       await verifyPaymentRecordPersistence(connection)

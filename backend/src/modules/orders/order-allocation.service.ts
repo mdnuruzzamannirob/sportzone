@@ -1,44 +1,14 @@
-import type { ClientSession, Connection } from 'mongoose'
+import type { ClientSession } from 'mongoose'
 import { z } from 'zod'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import type { AuditAccess } from '../audit/audit.public.js'
-
-import { createAllocationService } from '../inventory/inventory.service.js'
-import { pricingInput } from '../promotions/pricing.schema.js'
-import {
-  couponGenerationAccess,
-  createCouponAllocationService,
-} from '../promotions/promotion.service.js'
-
-const id = z.string().regex(/^[a-f0-9]{24}$/)
-
-const allocationAction = z.enum(['cod', 'hold', 'commit', 'release_held', 'release_committed'])
-
-const command = z.strictObject({
-  orderId: id,
-  generation: z.int().min(1).max(Number.MAX_SAFE_INTEGER),
-  action: allocationAction,
-})
-
-const orderAllocationBinding = z.strictObject({
-  orderId: id,
-  placedAt: z.date().optional(),
-  generation: z.int().min(1),
-  userId: id.optional(),
-  pricing: pricingInput.safeExtend({ coupon: z.undefined().optional() }),
-  coupon: z
-    .strictObject({
-      couponId: id,
-      code: z.string(),
-      type: z.enum(['fixed', 'percentage']),
-      value: z.int().min(1),
-      version: z.int().nonnegative(),
-      discountPoisha: z.int().nonnegative(),
-      eligibleLineIds: z.array(id).min(1),
-    })
-    .optional(),
-})
+import type { InventoryAllocationFactory } from '../inventory/inventory.public.js'
+import type {
+  CouponAllocationFactory,
+  CouponGenerationReader,
+} from '../promotions/promotion.public.js'
+import type { OrderAllocationBindingSchema } from './order.schema.js'
 
 type OrderAllocationAccess = {
   // Owning order/payment/cancellation services must authorize and fence the exact transition in this
@@ -51,13 +21,26 @@ type OrderAllocationAccess = {
   ): Promise<unknown>
 }
 
+const id = z.string().regex(/^[a-f0-9]{24}$/)
+
+const allocationAction = z.enum(['cod', 'hold', 'commit', 'release_held', 'release_committed'])
+
+const command = z.strictObject({
+  orderId: id,
+  generation: z.int().min(1).max(Number.MAX_SAFE_INTEGER),
+  action: allocationAction,
+})
+
 function createOrderAllocationService(
-  connection: Connection,
   stock: Pick<
-    ReturnType<typeof createAllocationService>,
+    ReturnType<InventoryAllocationFactory>,
     'reserve' | 'commitCod' | 'commit' | 'release'
   >,
   access: OrderAllocationAccess,
+  moduleAccess: {
+    createCouponAllocationService: CouponAllocationFactory
+    schemaOrderAllocationBinding: OrderAllocationBindingSchema
+  },
   clock: () => Date = () => new Date(),
 ) {
   return {
@@ -65,7 +48,7 @@ function createOrderAllocationService(
       if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
       const input = parseInput(command, raw),
         data = parseInput(
-          orderAllocationBinding,
+          moduleAccess.schemaOrderAllocationBinding,
           await access.authorize(session, input.orderId, input.generation, input.action),
         )
       if (data.orderId !== input.orderId || data.generation !== input.generation)
@@ -102,13 +85,10 @@ function createOrderAllocationService(
                   )
         inventory.push(result)
       }
-      let coupon:
-        | Awaited<ReturnType<ReturnType<typeof createCouponAllocationService>['reserve']>>
-        | undefined
+      let coupon: Awaited<ReturnType<ReturnType<CouponAllocationFactory>['reserve']>> | undefined
       if (data.coupon) {
         const { couponId, ...termsSnapshot } = data.coupon
-        const coupons = createCouponAllocationService(
-          connection,
+        const coupons = moduleAccess.createCouponAllocationService(
           {
             authorize: async (_session, orderId, requested) => {
               const expected = {
@@ -173,14 +153,19 @@ function createOrderAllocationService(
 }
 
 function createCancellationAllocationService(
-  connection: Connection,
+  moduleAccess: {
+    createAllocationService: InventoryAllocationFactory
+    couponGenerationAccess: CouponGenerationReader
+    createCouponAllocationService: CouponAllocationFactory
+    schemaOrderAllocationBinding: OrderAllocationBindingSchema
+  },
   clock: () => Date = () => new Date(),
 ) {
-  const stock = createAllocationService(connection, undefined, clock),
-    coupon = couponGenerationAccess(connection)
+  const stock = moduleAccess.createAllocationService(clock),
+    coupon = moduleAccess.couponGenerationAccess
   return async (session: ClientSession, raw: unknown) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
-    const binding = orderAllocationBinding.parse(raw),
+    const binding = moduleAccess.schemaOrderAllocationBinding.parse(raw),
       generation = await stock.latestGeneration(session, binding.orderId)
     if (!generation) throw new ApiError('STATE_CONFLICT')
     const rows = await stock.generation(session, binding.orderId, generation),
@@ -211,7 +196,6 @@ function createCancellationAllocationService(
       throw new ApiError('STATE_CONFLICT')
     const action = first.status === 'held' ? 'release_held' : 'release_committed'
     await createOrderAllocationService(
-      connection,
       stock,
       {
         authorize: async (_session, id, gen, requested) => {
@@ -220,6 +204,7 @@ function createCancellationAllocationService(
           return { ...binding, generation }
         },
       },
+      moduleAccess,
       clock,
     ).apply(session, { orderId: binding.orderId, generation, action })
   }
@@ -227,14 +212,18 @@ function createCancellationAllocationService(
 
 // Trusted lifecycle coordinator fences order and payment in the same transaction first.
 function createFulfillmentAllocationService(
-  connection: Connection,
+  moduleAccess: {
+    createAllocationService: InventoryAllocationFactory
+    couponGenerationAccess: CouponGenerationReader
+    schemaOrderAllocationBinding: OrderAllocationBindingSchema
+  },
   clock: () => Date = () => new Date(),
 ) {
-  const stock = createAllocationService(connection, undefined, clock),
-    coupon = couponGenerationAccess(connection)
+  const stock = moduleAccess.createAllocationService(clock),
+    coupon = moduleAccess.couponGenerationAccess
   return async (session: ClientSession, raw: unknown, dispatch: boolean) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
-    const binding = orderAllocationBinding.parse(raw),
+    const binding = moduleAccess.schemaOrderAllocationBinding.parse(raw),
       generation = await stock.latestGeneration(session, binding.orderId)
     if (!generation) throw new ApiError('STATE_CONFLICT')
     const rows = await stock.generation(session, binding.orderId, generation),
@@ -269,13 +258,18 @@ function createFulfillmentAllocationService(
 // Payment capacity preparation. The caller must fence current order/payment eligibility in this
 // transaction. No financial-success writer; paid late recovery reuses this behind its own fence.
 function createPaymentAllocationService(
-  connection: Connection,
   access: OrderAllocationAccess,
   auditAccess: AuditAccess,
+  moduleAccess: {
+    createAllocationService: InventoryAllocationFactory
+    couponGenerationAccess: CouponGenerationReader
+    createCouponAllocationService: CouponAllocationFactory
+    schemaOrderAllocationBinding: OrderAllocationBindingSchema
+  },
   clock: () => Date = () => new Date(),
 ) {
-  const stock = createAllocationService(connection, undefined, clock),
-    coupon = couponGenerationAccess(connection),
+  const stock = moduleAccess.createAllocationService(clock),
+    coupon = moduleAccess.couponGenerationAccess,
     audit = auditAccess.write
   return {
     async ensure(session: ClientSession, orderId: string) {
@@ -283,7 +277,7 @@ function createPaymentAllocationService(
       const generation = await stock.latestGeneration(session, orderId)
       if (!generation) throw new ApiError('STATE_CONFLICT')
       const binding = parseInput(
-          orderAllocationBinding,
+          moduleAccess.schemaOrderAllocationBinding,
           await access.authorize(session, orderId, generation, 'hold'),
         ),
         rows = await stock.generation(session, orderId, generation),
@@ -320,7 +314,7 @@ function createPaymentAllocationService(
         return { generation, heldAt: first.heldAt, expiresAt: first.expiresAt }
       if (!['held', 'released'].includes(first.status) || generation >= Number.MAX_SAFE_INTEGER)
         throw new ApiError('STATE_CONFLICT')
-      const allocations = createOrderAllocationService(connection, stock, access, () => now)
+      const allocations = createOrderAllocationService(stock, access, moduleAccess, () => now)
       if (first.status === 'held')
         await allocations.apply(session, { orderId, generation, action: 'release_held' })
       for (const item of binding.pricing.items)
@@ -351,16 +345,21 @@ function createPaymentAllocationService(
 // Live commitment is atomic with funding. Late recovery runs in a separate fenced transaction so
 // capacity failure never rolls back a separately committed verified receipt.
 function createVerifiedAllocationService(
-  connection: Connection,
   auditAccess: AuditAccess,
+  moduleAccess: {
+    createAllocationService: InventoryAllocationFactory
+    couponGenerationAccess: CouponGenerationReader
+    createCouponAllocationService: CouponAllocationFactory
+    schemaOrderAllocationBinding: OrderAllocationBindingSchema
+  },
   clock: () => Date = () => new Date(),
 ) {
-  const stock = createAllocationService(connection, undefined, clock),
-    coupon = couponGenerationAccess(connection)
+  const stock = moduleAccess.createAllocationService(clock),
+    coupon = moduleAccess.couponGenerationAccess
   const service = {
     async ensureCommitted(session: ClientSession, raw: unknown): Promise<boolean> {
       if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
-      const binding = orderAllocationBinding.parse(raw),
+      const binding = moduleAccess.schemaOrderAllocationBinding.parse(raw),
         orderId = binding.orderId
       const generation = await stock.latestGeneration(session, orderId)
       if (!generation) return false
@@ -380,7 +379,6 @@ function createVerifiedAllocationService(
         return true
       if (await service.commitLive(session, binding)) return true
       const preparation = createPaymentAllocationService(
-        connection,
         {
           authorize: async (_session, id, gen, action) => {
             if (id !== orderId || !['hold', 'release_held'].includes(action))
@@ -389,6 +387,7 @@ function createVerifiedAllocationService(
           },
         },
         auditAccess,
+        moduleAccess,
         clock,
       )
       await preparation.ensure(session, orderId)
@@ -396,7 +395,7 @@ function createVerifiedAllocationService(
     },
     async commitLive(session: ClientSession, raw: unknown) {
       if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
-      const parsed = orderAllocationBinding.parse(raw),
+      const parsed = moduleAccess.schemaOrderAllocationBinding.parse(raw),
         now = clock(),
         orderId = parsed.orderId
       const generation = await stock.latestGeneration(session, orderId)
@@ -434,7 +433,6 @@ function createVerifiedAllocationService(
       )
         return false
       const allocation = createOrderAllocationService(
-        connection,
         stock,
         {
           authorize: async (_session, requested, gen, action) => {
@@ -443,6 +441,7 @@ function createVerifiedAllocationService(
             return { ...parsed, generation }
           },
         },
+        moduleAccess,
         () => now,
       )
       await allocation.apply(session, { orderId, generation, action: 'commit' })
@@ -459,5 +458,4 @@ export {
   createOrderAllocationService,
   createPaymentAllocationService,
   createVerifiedAllocationService,
-  orderAllocationBinding,
 }

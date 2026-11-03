@@ -6,6 +6,8 @@ import type { IdentityModels } from '../auth.model.js'
 import { type SessionOptions, validateSessionOptions } from '../sessions/session.service.js'
 import { proofPattern } from '../verification/proof.crypto.js'
 
+type GuestSessions = ReturnType<typeof createGuestSessionService>
+
 function createGuestSessionService(
   connection: Connection,
   models: IdentityModels,
@@ -170,8 +172,6 @@ function createGuestSessionService(
     } as const,
   }
 }
-
-type GuestSessions = ReturnType<typeof createGuestSessionService>
 
 function readGuestCookie(header: string | undefined) {
   const entries = (header ?? '')

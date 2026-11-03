@@ -1,6 +1,8 @@
 import { type Connection, type InferSchemaType, Schema } from 'mongoose'
 import { integerField, mutableSchemaOptions } from '../../shared/database/schema.js'
 
+type CartRecord = InferSchemaType<typeof schema>
+
 const line = new Schema(
   {
     variantId: { type: Schema.Types.ObjectId, required: true },
@@ -32,8 +34,6 @@ const schema = new Schema(
 )
 
 schema.index({ userId: 1 }, { unique: true, name: 'cart_user_unique' })
-
-type CartRecord = InferSchemaType<typeof schema>
 
 function cartModel(connection: Connection) {
   return connection.models.Cart

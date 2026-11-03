@@ -32,6 +32,15 @@ import {
   parseCouponRevision,
 } from './promotion.schema.js'
 
+type Action = 'reserve' | 'redeem_cod' | 'commit' | 'release_held' | 'release_redeemed'
+
+// REQUIRED owning-order boundary: authorize must fence durable order/payment/lifecycle
+// state in THIS session, verify action eligibility and return only authoritative snapshots.
+// In particular release_redeemed is allowed only for eligible pre-dispatch cancellation.
+type CouponOrderAccess = {
+  authorize(session: ClientSession, orderId: string, action: Action): Promise<unknown>
+}
+
 function createCouponAdminService(
   connection: Connection,
   access: AdminAccountAccess,
@@ -559,15 +568,6 @@ const bindingInput = z.strictObject({
   currentPricing: acceptedShape.pricing,
   termsSnapshot: acceptedShape.terms,
 })
-
-type Action = 'reserve' | 'redeem_cod' | 'commit' | 'release_held' | 'release_redeemed'
-
-// REQUIRED owning-order boundary: authorize must fence durable order/payment/lifecycle
-// state in THIS session, verify action eligibility and return only authoritative snapshots.
-// In particular release_redeemed is allowed only for eligible pre-dispatch cancellation.
-type CouponOrderAccess = {
-  authorize(session: ClientSession, orderId: string, action: Action): Promise<unknown>
-}
 
 const max = Number.MAX_SAFE_INTEGER
 

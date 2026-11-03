@@ -6,32 +6,17 @@ import {
   optionalObjectIdField,
 } from '../../shared/database/schema.js'
 import { ApiError } from '../../shared/errors/app-error.js'
-import type { quoteCouponSnapshot, quoteLine, quoteTotals } from '../checkout/checkout.schema.js'
+import type {
+  QuoteCouponSnapshotSchema,
+  QuoteLineSchema,
+  QuoteTotalsSchema,
+} from '../checkout/checkout.public.js'
+
 import type { deliveryDeadlineBasis } from './delivery-deadline.schema.js'
 import { assertFulfillmentTransition, fulfillmentHold, fulfillmentStatus } from './order.schema.js'
 
-const embedded = {
-  _id: false,
-  id: false,
-  strict: 'throw',
-  versionKey: false,
-  minimize: false,
-} as const
-
-const text = (max: number) => ({
-  type: String,
-  required: true,
-  validate: (value: string) => [...value].length <= max,
-})
-
-const number = { ...integerField(), required: true }
-
-const oid = { type: Schema.Types.ObjectId, required: true, immutable: true }
-
-const instant = { type: Date, default: undefined }
-
 type OrderItem = Omit<
-  z.output<typeof quoteLine>,
+  z.output<QuoteLineSchema>,
   'id' | 'productId' | 'variantId' | 'variantAttributes'
 > & {
   id: Types.ObjectId
@@ -77,8 +62,8 @@ type Order = {
     calculatedAt?: Date
     revision: number
   }
-  pricingSnapshot: z.output<typeof quoteTotals>
-  couponSnapshot?: Omit<z.output<typeof quoteCouponSnapshot>, 'couponId'> & {
+  pricingSnapshot: z.output<QuoteTotalsSchema>
+  couponSnapshot?: Omit<z.output<QuoteCouponSnapshotSchema>, 'couponId'> & {
     couponId: Types.ObjectId
   }
   paymentMethod: 'online' | 'cod'
@@ -118,6 +103,47 @@ type Order = {
   createdAt?: Date
   updatedAt?: Date
 }
+
+type OrderItemBalance = {
+  orderId: Types.ObjectId
+  orderItemId: Types.ObjectId
+  purchasedQty: number
+  unitCoverage: {
+    ordinal: number
+    netEntitlementPoisha: number
+    claimState: 'available' | 'protected' | 'resolved'
+    claimId?: Types.ObjectId
+    refundHeldPoisha: number
+    refundCompletedPoisha: number
+    restockOperationKey?: string
+  }[]
+  activeClaimQty: number
+  resolvedClaimQty: number
+  refundedMerchandiseQty: number
+  revision: number
+  createdAt?: Date
+  updatedAt?: Date
+}
+
+const embedded = {
+  _id: false,
+  id: false,
+  strict: 'throw',
+  versionKey: false,
+  minimize: false,
+} as const
+
+const text = (max: number) => ({
+  type: String,
+  required: true,
+  validate: (value: string) => [...value].length <= max,
+})
+
+const number = { ...integerField(), required: true }
+
+const oid = { type: Schema.Types.ObjectId, required: true, immutable: true }
+
+const instant = { type: Date, default: undefined }
 
 const line = new Schema(
   {
@@ -486,27 +512,6 @@ orderSchema.index(
   { 'customerSnapshot.emailNormalized': 1, orderNumber: 1 },
   { name: 'order_internal_guest_lookup' },
 )
-
-type OrderItemBalance = {
-  orderId: Types.ObjectId
-  orderItemId: Types.ObjectId
-  purchasedQty: number
-  unitCoverage: {
-    ordinal: number
-    netEntitlementPoisha: number
-    claimState: 'available' | 'protected' | 'resolved'
-    claimId?: Types.ObjectId
-    refundHeldPoisha: number
-    refundCompletedPoisha: number
-    restockOperationKey?: string
-  }[]
-  activeClaimQty: number
-  resolvedClaimQty: number
-  refundedMerchandiseQty: number
-  revision: number
-  createdAt?: Date
-  updatedAt?: Date
-}
 
 const balanceSchema = new Schema<OrderItemBalance>(
   {

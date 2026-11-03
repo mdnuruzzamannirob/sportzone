@@ -8,6 +8,8 @@ import { accountDto } from './account.dto.js'
 import { loginInput, registrationInput } from './credential.schema.js'
 import { hashPassword, verifyPassword } from './password.service.js'
 
+type CredentialService = ReturnType<typeof createCredentialService>
+
 function createCredentialService(
   models: IdentityModels,
   sessions: SessionService,
@@ -88,8 +90,6 @@ function createCredentialService(
     },
   }
 }
-
-type CredentialService = ReturnType<typeof createCredentialService>
 
 export { loginInput, registrationInput } from './credential.schema.js'
 export type { CredentialService }

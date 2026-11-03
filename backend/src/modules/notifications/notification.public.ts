@@ -61,4 +61,49 @@ type EmailAdapter = {
   send(message: EmailMessage): Promise<DeliveryOutcome>
 }
 
-export type { DeliveryOutcome, EmailAdapter, EmailMessage, IdentityNotifications }
+type NotificationIntentsFactory = (clock?: () => Date) => {
+  enqueueOrderReceived: (
+    rawInput: { orderId: string; userId?: string; email: string; name: string },
+    session: ClientSession,
+  ) => Promise<void>
+  enqueueCommerce: (
+    rawInput: {
+      orderId: string
+      userId?: string
+      email: string
+      name: string
+      eventType:
+        | 'order_confirmation'
+        | 'order_cancellation'
+        | 'shipment_update'
+        | 'delivery_completion'
+      operationKey: string
+      occurredAt: Date
+    },
+    session: ClientSession,
+  ) => Promise<void>
+  enqueuePayment: (
+    rawInput: {
+      event: 'success' | 'failure' | 'pending'
+      cause: string
+      orderId: string
+      userId?: string
+      email: string
+      name: string
+      paymentId: string
+      attemptId: string
+      intakeId?: string
+      orderNumber: string
+      amountPoisha: number
+    },
+    session: ClientSession,
+  ) => Promise<void>
+}
+
+export type {
+  DeliveryOutcome,
+  EmailAdapter,
+  EmailMessage,
+  IdentityNotifications,
+  NotificationIntentsFactory,
+}

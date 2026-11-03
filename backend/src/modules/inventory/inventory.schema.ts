@@ -2,8 +2,15 @@ import { Types } from 'mongoose'
 import { z } from 'zod'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { paginationSchema } from '../../shared/pagination.js'
-import { variantStockView as stockView } from '../catalog/products/variant.schema.js'
+import type { VariantStockViewSchema } from '../catalog/catalog.public.js'
+
 import type { StockCounters } from '../catalog/products/variant.service.js'
+
+type AdjustmentResultSchema = ReturnType<typeof createInventorySchemas>['adjustmentResult']
+
+type InventoryFacetSchema = ReturnType<typeof createInventorySchemas>['inventoryFacet']
+
+type InventoryListSchema = ReturnType<typeof createInventorySchemas>['inventoryList']
 
 const id = z.string().regex(/^[a-f0-9]{24}$/)
 
@@ -45,44 +52,6 @@ const operationKey = z
     (v) => v === v.trim() && [...v].every((c) => c.charCodeAt(0) > 31 && c.charCodeAt(0) !== 127),
   )
 
-const inventoryRow = z.strictObject({
-  variantId: id,
-  productId: id,
-  sku: z.string(),
-  status: z.enum(['active', 'inactive']),
-  revision: integer,
-  stock: stockView,
-  lowStockThreshold: integer.optional(),
-  effectiveLowStockThreshold: integer,
-})
-
-const inventoryList = z.strictObject({
-  variants: z.array(inventoryRow).max(100),
-  physical: integer,
-  reserved: integer,
-  committed: integer,
-  available: integer,
-})
-
-const inventoryFacet = z
-  .array(
-    z.strictObject({
-      variants: z.array(inventoryRow).max(100),
-      totals: z
-        .array(
-          z.strictObject({
-            totalItems: integer,
-            physical: integer,
-            reserved: integer,
-            committed: integer,
-            available: integer,
-          }),
-        )
-        .max(1),
-    }),
-  )
-  .length(1)
-
 const movementView = z.strictObject({
   id,
   variantId: id,
@@ -104,8 +73,6 @@ const movementView = z.strictObject({
   reason: z.string(),
   actor: z.strictObject({ type: z.enum(['system', 'admin']), id: id.optional() }),
 })
-
-const adjustmentResult = z.strictObject({ stock: stockView, movementId: id })
 
 const objectId = z
   .string()
@@ -161,14 +128,55 @@ function stockSnapshot({ physical, reserved, committed }: StockCounters) {
   return { physical, reserved, committed, available: physical - reserved - committed }
 }
 
-export { variantStockView as stockView } from '../catalog/products/variant.schema.js'
+function createInventorySchemas({ stockView }: { stockView: VariantStockViewSchema }) {
+  const inventoryRow = z.strictObject({
+    variantId: id,
+    productId: id,
+    sku: z.string(),
+    status: z.enum(['active', 'inactive']),
+    revision: integer,
+    stock: stockView,
+    lowStockThreshold: integer.optional(),
+    effectiveLowStockThreshold: integer,
+  })
+
+  const inventoryList = z.strictObject({
+    variants: z.array(inventoryRow).max(100),
+    physical: integer,
+    reserved: integer,
+    committed: integer,
+    available: integer,
+  })
+
+  const inventoryFacet = z
+    .array(
+      z.strictObject({
+        variants: z.array(inventoryRow).max(100),
+        totals: z
+          .array(
+            z.strictObject({
+              totalItems: integer,
+              physical: integer,
+              reserved: integer,
+              committed: integer,
+              available: integer,
+            }),
+          )
+          .max(1),
+      }),
+    )
+    .length(1)
+
+  const adjustmentResult = z.strictObject({ stock: stockView, movementId: id })
+  return { adjustmentResult, inventoryFacet, inventoryList, stockView }
+}
+
+export type { AdjustmentResultSchema, InventoryFacetSchema, InventoryListSchema }
 export {
   adjustmentBody,
   adjustmentInput,
-  adjustmentResult,
   allocationInput,
-  inventoryFacet,
-  inventoryList,
+  createInventorySchemas,
   inventoryParams,
   inventoryQuery,
   movementQuery,
