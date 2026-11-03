@@ -23,7 +23,7 @@ function createClamAvScanner(input: z.infer<typeof optionsSchema>): MediaScanner
       socket.on('error', () => finish('uncertain'))
       socket.on('end', () => finish('uncertain'))
       socket.on('data', (data) => {
-        result = Buffer.concat([result, data])
+        result = Buffer.concat([result, Buffer.isBuffer(data) ? data : Buffer.from(data)])
         if (result.length > 4096) {
           finish('uncertain')
           return
@@ -74,7 +74,7 @@ async function inspectClamAvVersion(input: z.infer<typeof optionsSchema>) {
     socket.on('end', () => finish())
     socket.on('connect', () => socket.write('zVERSION\0'))
     socket.on('data', (part) => {
-      bytes = Buffer.concat([bytes, part])
+      bytes = Buffer.concat([bytes, Buffer.isBuffer(part) ? part : Buffer.from(part)])
       if (bytes.length > 4096) return finish()
       const end = bytes.indexOf(0)
       if (end !== -1) finish(bytes.subarray(0, end).toString('utf8'))
