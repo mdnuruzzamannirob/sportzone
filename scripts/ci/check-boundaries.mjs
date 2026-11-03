@@ -2,7 +2,8 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { builtinModules } from 'node:module'
 import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import ts from 'typescript'
+// TypeScript 7 does not expose the legacy compiler/watch API.
+import ts from 'typescript-legacy'
 
 const workspaces = ['storefront', 'admin', 'backend']
 const builtins = new Set(builtinModules.map((name) => name.replace(/^node:/, '')))
