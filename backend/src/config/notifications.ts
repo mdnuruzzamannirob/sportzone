@@ -3,7 +3,7 @@ import { validateRetryPolicy } from '../modules/notifications/notification.schem
 import { validateEmailOptions } from '../providers/email/resend.schema.js'
 import { ConfigurationError } from '../shared/errors/configuration-error.js'
 
-export function loadNotificationWorker(environment: NodeJS.ProcessEnv) {
+function loadNotificationWorker(environment: NodeJS.ProcessEnv) {
   const number = (name: string) =>
     /^[1-9]\d*$/.test(environment[name] ?? '') ? Number(environment[name]) : NaN
   if (environment.EMAIL_DELIVERY_ENABLED !== 'true' || environment.EMAIL_PROVIDER !== 'resend')
@@ -45,5 +45,20 @@ export function loadNotificationWorker(environment: NodeJS.ProcessEnv) {
     (commerceEnabled && !['local', 'test'].includes(environment.APP_ENV ?? ''))
   )
     throw new ConfigurationError(['order_notification_activation'])
-  return { email, settings, paymentsEnabled, commerceEnabled }
+  const afterSalesEnabled = environment.AFTER_SALES_NOTIFICATIONS_ENABLED === 'true'
+  if (
+    (environment.AFTER_SALES_NOTIFICATIONS_ENABLED !== undefined &&
+      !['true', 'false'].includes(environment.AFTER_SALES_NOTIFICATIONS_ENABLED)) ||
+    (afterSalesEnabled && !['local', 'test'].includes(environment.APP_ENV ?? ''))
+  )
+    throw new ConfigurationError(['after_sales_notification_activation'])
+  return {
+    email,
+    settings,
+    paymentsEnabled,
+    commerceEnabled,
+    afterSalesEnabled,
+  }
 }
+
+export { loadNotificationWorker }

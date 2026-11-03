@@ -1,19 +1,28 @@
-import { validateSessionOptions } from '../modules/auth/sessions/session.service.js'
-import { validateBrowserSecurityOptions } from '../modules/auth/sessions/browser-security.service.js'
-import {
-  loadRecoveryOptions,
-  loadEmailChangeOptions,
-  loadAdminRecoveryOptions,
-  loadGuestAccessOptions,
-} from './security.js'
-import { ConfigurationError } from '../shared/errors/configuration-error.js'
-export { ConfigurationError } from '../shared/errors/configuration-error.js'
 import { z } from 'zod'
+import { ConfigurationError } from '../shared/errors/configuration-error.js'
+import {
+  loadAdminRecoveryOptions,
+  loadEmailChangeOptions,
+  loadEmailVerificationOptions,
+  loadGuestAccessOptions,
+  loadRecoveryOptions,
+  securitySecretSchema,
+  validateBrowserSecurityOptions,
+  validateSessionOptions,
+} from './security.js'
 
-const secret = z
-  .string()
-  .regex(/^[a-f0-9]{64}$/)
-  .refine((value) => !/^(.)\1+$/.test(value))
+type IdentityConfig = Readonly<{
+  sessions: ReturnType<typeof validateSessionOptions>
+  browser: ReturnType<typeof validateBrowserSecurityOptions>
+  recovery?: ReturnType<typeof loadRecoveryOptions>
+  emailVerification?: ReturnType<typeof loadEmailVerificationOptions>
+  emailChange?: ReturnType<typeof loadEmailChangeOptions>
+  adminRecovery?: ReturnType<typeof loadAdminRecoveryOptions>
+  guest?: ReturnType<typeof loadGuestAccessOptions>
+}>
+
+type RuntimeConfig = Readonly<z.output<typeof schema> & { identity?: IdentityConfig }>
+
 const origin = z.string().transform((value, ctx) => {
   try {
     const url = new URL(value)
@@ -75,6 +84,14 @@ const schema = z
       .enum(['true', 'false'])
       .default('false')
       .transform((value) => value === 'true'),
+    PAYMENT_MATCHING_EVIDENCE_FILE: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.string().min(1).max(4096).optional(),
+    ),
+    EMAIL_VERIFICATION_ENABLED: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((value) => value === 'true'),
     EMAIL_CHANGE_ENABLED: z
       .enum(['true', 'false'])
       .default('false')
@@ -91,8 +108,8 @@ const schema = z
     ADMIN_SESSION_TTL_SECONDS: z.string().optional(),
     SESSION_COOKIE_SAME_SITE: z.enum(['lax', 'strict']).optional(),
     BROWSER_CONTEXT_TTL_SECONDS: z.string().optional(),
-    SESSION_SECRET: secret,
-    HEALTH_MONITOR_TOKEN: secret,
+    SESSION_SECRET: securitySecretSchema,
+    HEALTH_MONITOR_TOKEN: securitySecretSchema,
     API_PUBLIC_ORIGIN: origin,
     STOREFRONT_ORIGIN: origin,
     ADMIN_ORIGIN: origin,
@@ -116,6 +133,12 @@ const schema = z
         code: 'custom',
         path: ['GUEST_ACCESS_ENABLED'],
         message: 'Customer auth infrastructure required',
+      })
+    if (value.EMAIL_VERIFICATION_ENABLED && !value.CUSTOMER_AUTH_ENABLED)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['EMAIL_VERIFICATION_ENABLED'],
+        message: 'Customer authentication required',
       })
     if (value.PASSWORD_RECOVERY_ENABLED) {
       if (!value.CUSTOMER_AUTH_ENABLED)
@@ -201,16 +224,7 @@ const schema = z
       }
     }
   })
-export type IdentityConfig = Readonly<{
-  sessions: ReturnType<typeof validateSessionOptions>
-  browser: ReturnType<typeof validateBrowserSecurityOptions>
-  recovery?: ReturnType<typeof loadRecoveryOptions>
-  emailChange?: ReturnType<typeof loadEmailChangeOptions>
-  adminRecovery?: ReturnType<typeof loadAdminRecoveryOptions>
-  guest?: ReturnType<typeof loadGuestAccessOptions>
-}>
-export type RuntimeConfig = Readonly<z.output<typeof schema> & { identity?: IdentityConfig }>
-export function loadEnvironment(environment: NodeJS.ProcessEnv): RuntimeConfig {
+function loadEnvironment(environment: NodeJS.ProcessEnv): RuntimeConfig {
   const parsed = schema.safeParse(environment)
   if (!parsed.success)
     throw new ConfigurationError(
@@ -258,6 +272,9 @@ export function loadEnvironment(environment: NodeJS.ProcessEnv): RuntimeConfig {
     ...(config.PASSWORD_RECOVERY_ENABLED
       ? { recovery: Object.freeze(loadRecoveryOptions(input)) }
       : {}),
+    ...(config.EMAIL_VERIFICATION_ENABLED
+      ? { emailVerification: Object.freeze(loadEmailVerificationOptions(input)) }
+      : {}),
     ...(config.EMAIL_CHANGE_ENABLED
       ? { emailChange: Object.freeze(loadEmailChangeOptions(input)) }
       : {}),
@@ -267,3 +284,7 @@ export function loadEnvironment(environment: NodeJS.ProcessEnv): RuntimeConfig {
   })
   return Object.freeze({ ...config, identity })
 }
+
+export { ConfigurationError } from '../shared/errors/configuration-error.js'
+export type { IdentityConfig, RuntimeConfig }
+export { loadEnvironment }

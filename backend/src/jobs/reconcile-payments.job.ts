@@ -1,12 +1,11 @@
 import type { Connection } from 'mongoose'
+import { paymentReconciliationOptions } from '../config/payments.js'
+import type { PaymentReconciliation } from '../modules/payments/payment.public.js'
 import { jobLeaseService } from '../shared/jobs/job-lease.service.js'
-import {
-  paymentReconciliationOptions,
-  type paymentReconciliationService,
-} from '../modules/payments/payment-reconciliation.service.js'
-export function paymentReconciliationJob(
+
+function paymentReconciliationJob(
   connection: Connection,
-  domain: ReturnType<typeof paymentReconciliationService>,
+  domain: PaymentReconciliation,
   raw: unknown,
   clock: () => Date = () => new Date(),
 ) {
@@ -16,7 +15,14 @@ export function paymentReconciliationJob(
     async run() {
       const claim = await leases.acquire()
       if (!claim)
-        return { acquired: false, scanned: 0, resolved: 0, unresolved: 0, escalated: 0, skipped: 0 }
+        return {
+          acquired: false,
+          scanned: 0,
+          resolved: 0,
+          unresolved: 0,
+          escalated: 0,
+          skipped: 0,
+        }
       let resolved = 0,
         unresolved = 0,
         escalated = 0,
@@ -34,7 +40,14 @@ export function paymentReconciliationJob(
           claim.owner,
           rows.length === options.batchSize ? rows.at(-1) : undefined,
         )
-        return { acquired: true, scanned: rows.length, resolved, unresolved, escalated, skipped }
+        return {
+          acquired: true,
+          scanned: rows.length,
+          resolved,
+          unresolved,
+          escalated,
+          skipped,
+        }
       } catch (error) {
         await leases.fail(claim.owner)
         throw error
@@ -42,3 +55,5 @@ export function paymentReconciliationJob(
     },
   }
 }
+
+export { paymentReconciliationJob }

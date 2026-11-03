@@ -1,12 +1,18 @@
 import { Types } from 'mongoose'
-import { calculatePricing } from '../../src/modules/promotions/pricing.service.js'
-import { checkoutCommercialSnapshot } from '../../src/modules/checkout/checkout.schema.js'
-import { checkoutCommercialDigest } from '../../src/modules/checkout/checkout-consent.service.js'
+import { checkoutCommercialDigest } from '../../src/modules/checkout/checkout-consent.policy.js'
 import { deliveryDeadlineRule } from '../../src/modules/orders/delivery-deadline.schema.js'
 import { deliveryDeadlineDigest } from '../../src/modules/orders/delivery-deadline.service.js'
-import { orderCreationProof } from '../../src/modules/orders/order.schema.js'
-export const orderTestTime = new Date('2026-10-26T00:00:01Z')
-export function syntheticOrderProof(
+import { calculatePricing } from '../../src/modules/promotions/pricing.js'
+import {
+  checkoutSchemas,
+  composeCheckoutCommercialDigestDependencies,
+  orderSchemas,
+} from '../../src/setup.js'
+
+const { checkoutCommercialSnapshot } = checkoutSchemas
+const { orderCreationProof } = orderSchemas
+const orderTestTime = new Date('2026-10-26T00:00:01Z')
+function syntheticOrderProof(
   options: {
     userId?: string | null
     online?: boolean
@@ -120,8 +126,13 @@ export function syntheticOrderProof(
     quoteId: id(),
     userId: options.userId ?? null,
     acceptedAt: '2026-10-26T00:00:00Z',
-    commercialDigest: checkoutCommercialDigest(snapshot),
+    commercialDigest: checkoutCommercialDigest(
+      snapshot,
+      composeCheckoutCommercialDigestDependencies(),
+    ),
     snapshot,
     notes: 'Synthetic note',
   })
 }
+
+export { orderTestTime, syntheticOrderProof }

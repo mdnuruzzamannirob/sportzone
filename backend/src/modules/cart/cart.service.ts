@@ -1,29 +1,34 @@
-import { Types, type Connection } from 'mongoose'
+import { type Connection, Types } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
-import type { CustomerAccountAccess } from '../auth/customer-account.service.js'
-import type { catalogService } from '../catalog/catalog.service.js'
+import type { CustomerAccountAccess } from '../auth/auth.public.js'
+import type { CatalogSelections } from '../catalog/catalog.public.js'
 import { cartModel } from './cart.model.js'
 import { verifyCartPersistence } from './cart.persistence.js'
-import {
-  cartMerge,
-  cartMergeResponse,
-  cartQuantity,
-  cartResponse,
-  variantParams,
-} from './cart.schema.js'
+import type { CartMergeResponseSchema, CartResponseSchema } from './cart.schema.js'
+import { cartMerge, cartQuantity, variantParams } from './cart.schema.js'
 
-export function cartService(
+function createCartService(
   connection: Connection,
   access: CustomerAccountAccess,
-  catalog: Pick<ReturnType<typeof catalogService>, 'cartSelections'>,
+  catalog: Pick<CatalogSelections, 'cartSelections'>,
+  moduleAccess: {
+    schemaCartMergeResponse: CartMergeResponseSchema
+    schemaCartResponse: CartResponseSchema
+  },
   clock: () => Date = () => new Date(),
 ) {
   const carts = cartModel(connection)
   async function perform(
     token: string | undefined,
-    mutation?: { variantId: string; quantity?: number },
-    merge?: { variantId: string; quantity: number }[],
+    mutation?: {
+      variantId: string
+      quantity?: number
+    },
+    merge?: {
+      variantId: string
+      quantity: number
+    }[],
   ) {
     return access.owned(
       token,
@@ -35,7 +40,10 @@ export function cartService(
         }
         const userId = new Types.ObjectId(user.id)
         let cart = await carts.findOne({ userId }).session(transaction)
-        const errors: { variantId: string; code: 'BUSINESS_RULE_VIOLATION' }[] = []
+        const errors: {
+          variantId: string
+          code: 'BUSINESS_RULE_VIOLATION'
+        }[] = []
         if (merge) {
           if (!cart) cart = new carts({ userId, items: [], revision: 0 })
           const quantities = new Map<string, number>()
@@ -111,12 +119,15 @@ export function cartService(
               value && value.availableQty >= line.quantity ? 'available' : 'unavailable',
           }
         })
-        return parseInput(merge ? cartMergeResponse : cartResponse, {
-          ...(merge ? { errors } : {}),
-          items,
-          estimatedSubtotalPoisha: subtotal,
-          revision: cart?.revision ?? 0,
-        })
+        return parseInput(
+          merge ? moduleAccess.schemaCartMergeResponse : moduleAccess.schemaCartResponse,
+          {
+            ...(merge ? { errors } : {}),
+            items,
+            estimatedSubtotalPoisha: subtotal,
+            revision: cart?.revision ?? 0,
+          },
+        )
       },
       Boolean(mutation || merge),
     )
@@ -140,3 +151,5 @@ export function cartService(
     },
   }
 }
+
+export { createCartService }

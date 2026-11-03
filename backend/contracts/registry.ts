@@ -1,156 +1,26 @@
-import {
-  orderReadQuery,
-  orderReadSummary,
-  customerOrderDetail,
-  orderStatusView,
-} from '../src/modules/orders/order-read.schema.js'
-import {
-  paymentMonitorQuery,
-  paymentMonitorPage,
-  paymentMonitorList,
-  paymentMonitorDetail,
-  paymentReconcileInput,
-  paymentReconcileResult,
-} from '../src/modules/payments/payment-monitor.schema.js'
-import {
-  paymentRiskParams,
-  paymentRiskInput,
-  paymentRiskResult,
-} from '../src/modules/payments/payment-risk.schema.js'
-import {
-  paymentIpnForm,
-  paymentReturnForm,
-  paymentReturnParams,
-} from '../src/modules/payments/payment-callback.schema.js'
-import {
-  paymentInitiationInput,
-  paymentInitiationResult,
-  paymentInitiationParams,
-  paymentAttemptParams,
-  paymentAttemptStatus,
-} from '../src/modules/payments/payment-initiation.schema.js'
-import {
-  paymentMethodsQuery,
-  paymentMethodsView,
-} from '../src/modules/payments/payment-eligibility.schema.js'
-import { storefrontHome } from '../src/modules/catalog/catalog.schema.js'
-import {
-  guestChallengeInput,
-  guestExchangeInput,
-  guestAccepted,
-  guestExchangeView,
-  guestSessionView,
-  guestLogoutView,
-} from '../src/modules/auth/guest-access/guest-access.schema.js'
-import { checkoutSubmitResult } from '../src/modules/checkout/checkout-intent.schema.js'
-import { deliveryAreasQuery, deliveryAreas } from '../src/modules/delivery/delivery.schema.js'
-import {
-  checkoutQuoteInput,
-  checkoutQuote,
-  checkoutSubmitInput,
-} from '../src/modules/checkout/checkout.schema.js'
-import {
-  zoneInput,
-  zonePatch,
-  zoneView,
-  zoneParams,
-  zoneQuery,
-  chargeInput,
-  chargeView,
-  chargeQuery,
-  chargeParams,
-  chargeActivate,
-  chargeDeactivate,
-  chargeSupersede,
-  chargeReplacement,
-} from '../src/modules/delivery/delivery.schema.js'
-import {
-  settingsPatch,
-  settingsView,
-  publicContact,
-} from '../src/modules/settings/settings.schema.js'
-import {
-  policyDraftInput,
-  policyDraftPatch,
-  policyParams,
-  policyListQuery,
-  policyDocument,
-  policySummary,
-  policyCreated,
-  policyApprove,
-  policyPublish,
-  policyPublication,
-  policyPublic,
-  policyType,
-} from '../src/modules/settings/policy.schema.js'
-import {
-  productCreate,
-  productPatch,
-  productDeactivate,
-  productParams,
-  productListQuery,
-  adminProduct,
-  adminProductDetail,
-} from '../src/modules/catalog/products/product-admin.schema.js'
-import {
-  variantInput,
-  variantPatch,
-  variantParams as adminVariantParams,
-  variantDeactivate,
-} from '../src/modules/catalog/variants/variant.schema.js'
-import {
-  categoryCreate,
-  categoryPatch,
-  categoryDeactivate,
-  categoryParams,
-  categoryListQuery,
-  adminCategory,
-} from '../src/modules/catalog/categories/category-admin.schema.js'
-import { adminVariant } from '../src/modules/catalog/variants/variant.schema.js'
-import {
-  inventoryQuery,
-  movementQuery,
-  inventoryParams,
-  inventoryList,
-  movementView,
-  adjustmentBody,
-  adjustmentResult,
-} from '../src/modules/inventory/inventory-admin.schema.js'
-import {
-  couponInput,
-  couponPatch,
-  couponDeactivate,
-  couponAdmin,
-  couponHistory,
-  couponParams,
-  couponListQuery,
-  couponHistoryQuery,
-} from '../src/modules/promotions/coupon-admin.schema.js'
-import {
-  wishlistParams,
-  wishlistResponse,
-  wishlistSaved,
-} from '../src/modules/cart/wishlist.schema.js'
-import {
-  cartMerge,
-  cartMergeResponse,
-  cartQuantity,
-  cartResponse,
-  variantParams,
-} from '../src/modules/cart/cart.schema.js'
 import { z } from 'zod'
 import { createIdentityContracts } from '../src/modules/auth/auth.schema.js'
-import {
-  loginInput,
-  registrationInput,
-} from '../src/modules/auth/credentials/credentials.schema.js'
+import { loginInput, registrationInput } from '../src/modules/auth/credentials/credential.schema.js'
 import { newPasswordPolicy } from '../src/modules/auth/credentials/password.service.js'
+import {
+  guestAccepted,
+  guestChallengeInput,
+  guestExchangeInput,
+  guestExchangeView,
+  guestLogoutView,
+  guestSessionView,
+} from '../src/modules/auth/guest-access/guest-access.schema.js'
 import {
   changeInput,
   confirmation,
   issuance,
 } from '../src/modules/auth/recovery/password-recovery.schema.js'
 import { confirmInput, requestInput } from '../src/modules/auth/verification/email-change.schema.js'
+import {
+  emailVerificationConfirmation,
+  emailVerificationInput,
+} from '../src/modules/auth/verification/email-verification.schema.js'
+import { cartMerge, cartQuantity, variantParams } from '../src/modules/cart/cart.schema.js'
 import {
   categoryCard,
   categoryQuery,
@@ -160,15 +30,159 @@ import {
   productQuery,
 } from '../src/modules/catalog/catalog.schema.js'
 import {
+  adminCategory,
+  categoryCreate,
+  categoryDeactivate,
+  categoryListQuery,
+  categoryParams,
+  categoryPatch,
+} from '../src/modules/catalog/categories/category.schema.js'
+import {
+  adminProduct,
+  adminProductDetail,
+  productCreate,
+  productDeactivate,
+  productListQuery,
+  productParams,
+  productPatch,
+} from '../src/modules/catalog/products/product.schema.js'
+import {
+  adminVariant,
+  variantParams as adminVariantParams,
+  variantDeactivate,
+  variantInput,
+  variantPatch,
+} from '../src/modules/catalog/products/variant.schema.js'
+import {
   addressInput,
   addressPatch,
   bangladeshPhone,
   deletionInput,
   profilePatch,
 } from '../src/modules/customers/customer.schema.js'
+import {
+  chargeActivate,
+  chargeDeactivate,
+  chargeInput,
+  chargeParams,
+  chargeQuery,
+  chargeReplacement,
+  chargeSupersede,
+  chargeView,
+  deliveryAreas,
+  deliveryAreasQuery,
+  zoneInput,
+  zoneParams,
+  zonePatch,
+  zoneQuery,
+  zoneView,
+} from '../src/modules/delivery/delivery.schema.js'
+import {
+  adjustmentBody,
+  inventoryParams,
+  inventoryQuery,
+  movementQuery,
+  movementView,
+} from '../src/modules/inventory/inventory.schema.js'
+import { orderReadQuery } from '../src/modules/orders/order-read.schema.js'
+import {
+  paymentMethodsQuery,
+  paymentMethodsView,
+} from '../src/modules/payments/attempts/payment-eligibility.schema.js'
+import {
+  paymentAttemptParams,
+  paymentAttemptStatus,
+  paymentInitiationInput,
+  paymentInitiationParams,
+  paymentInitiationResult,
+} from '../src/modules/payments/attempts/payment-initiation.schema.js'
+import {
+  paymentIpnForm,
+  paymentReturnForm,
+  paymentReturnParams,
+} from '../src/modules/payments/collections/payment-callback.schema.js'
+import {
+  collectionAllocationInput,
+  collectionSummary,
+  linkedReceipt,
+  matchingId,
+  receiptLinkInput,
+} from '../src/modules/payments/collections/payment-matching.schema.js'
+import {
+  paymentMonitorDetail,
+  paymentMonitorList,
+  paymentMonitorPage,
+  paymentMonitorQuery,
+  paymentReconcileInput,
+  paymentReconcileResult,
+  providerReceipt,
+  providerReceiptQuery,
+} from '../src/modules/payments/collections/payment-monitor.schema.js'
+import {
+  paymentRiskInput,
+  paymentRiskParams,
+  paymentRiskResult,
+} from '../src/modules/payments/collections/payment-risk.schema.js'
+import {
+  couponAdmin,
+  couponDeactivate,
+  couponHistory,
+  couponHistoryQuery,
+  couponInput,
+  couponListQuery,
+  couponParams,
+  couponPatch,
+  couponPreviewInput,
+  couponPreviewResult,
+} from '../src/modules/promotions/promotion.schema.js'
+import {
+  customerRefundRequestInput,
+  customerRefundRequestResult,
+} from '../src/modules/refunds/obligations/refund-request.schema.js'
+import {
+  policyApprove,
+  policyCreated,
+  policyDocument,
+  policyDraftInput,
+  policyDraftPatch,
+  policyListQuery,
+  policyParams,
+  policyPublic,
+  policyPublication,
+  policyPublish,
+  policySummary,
+  policyType,
+  publicContact,
+  settingsPatch,
+  settingsView,
+} from '../src/modules/settings/setting.schema.js'
+import { wishlistParams, wishlistSaved } from '../src/modules/wishlist/wishlist.schema.js'
+import {
+  cartSchemas,
+  catalogSchemas,
+  checkoutIntentSchemas,
+  checkoutSchemas,
+  inventorySchemas,
+  orderReadSchemas,
+  wishlistSchemas,
+} from '../src/setup.js'
+import { localDomainOperations } from './local-domain-registry.js'
 
 // This registry is build tooling, never imported by an HTTP listener. Runtime refinements,
 // transactions, area eligibility and cryptography remain owned by their domain services.
+const {
+  orderReadSummary,
+  customerOrderDetail,
+  customerDeliveryEvents,
+  customerPaymentHistory,
+  orderStatusView,
+} = orderReadSchemas
+const { storefrontHome } = catalogSchemas
+const { checkoutSubmitResult } = checkoutIntentSchemas
+const { checkoutQuoteInput, checkoutQuote, checkoutSubmitInput } = checkoutSchemas
+const { inventoryList, adjustmentResult } = inventorySchemas
+const { wishlistResponse } = wishlistSchemas
+const { cartMergeResponse, cartResponse } = cartSchemas
 const identity = createIdentityContracts({
   newPassword: newPasswordPolicy,
   phone: bangladeshPhone,
@@ -176,12 +190,14 @@ const identity = createIdentityContracts({
     throw new Error('Coverage cannot be evaluated during contract generation')
   },
 })
-export type Operation = {
+type Operation = {
   method: string
   path: string
   access:
     | 'public'
     | 'public_csrf'
+    | 'customer_or_context'
+    | 'customer_guest_or_context'
     | 'customer'
     | 'admin'
     | 'monitor'
@@ -208,6 +224,8 @@ export type Operation = {
 }
 const empty = z.strictObject({})
 const runtimeInputs: Record<string, z.ZodType> = {
+  'POST /auth/email-verifications': emailVerificationInput,
+  'POST /auth/email-verifications/confirm': emailVerificationConfirmation,
   'POST /auth/register': registrationInput,
   'POST /auth/login': loginInput,
   'POST /admin/auth/login': loginInput,
@@ -224,6 +242,8 @@ const runtimeInputs: Record<string, z.ZodType> = {
   'POST /me/deletion-requests': deletionInput,
 }
 const identityActivation = (path: string) => {
+  if (path.startsWith('/auth/email-verifications'))
+    return 'CUSTOMER_AUTH_ENABLED and EMAIL_VERIFICATION_ENABLED with protected proof delivery configuration'
   if (path.endsWith('/auth/csrf'))
     return 'CUSTOMER_AUTH_ENABLED or ADMIN_AUTH_ENABLED; guest selection additionally requires GUEST_ACCESS_ENABLED and a verified guest session'
   if (path.startsWith('/admin/'))
@@ -233,23 +253,102 @@ const identityActivation = (path: string) => {
   if (path.includes('email-changes')) return 'CUSTOMER_AUTH_ENABLED and EMAIL_CHANGE_ENABLED'
   return 'CUSTOMER_AUTH_ENABLED'
 }
-const identities: Operation[] = identity.operations
-  .filter((op) => !op.path.startsWith('/auth/email-verifications'))
-  .map((op) => ({
-    ...op,
-    request: runtimeInputs[`${op.method} ${op.path}`] ?? op.request,
-    activation: identityActivation(op.path),
-    query: op.path.endsWith('/auth/csrf')
-      ? z.strictObject({
-          sessionKind: (op.namespace === 'admin'
-            ? z.literal('context')
-            : z.enum(['context', 'customer', 'guest'])
-          ).optional(),
-        })
-      : op.query,
-  }))
+const identities: Operation[] = identity.operations.map((op) => ({
+  ...op,
+  request: runtimeInputs[`${op.method} ${op.path}`] ?? op.request,
+  activation: identityActivation(op.path),
+  query: op.path.endsWith('/auth/csrf')
+    ? z.strictObject({
+        sessionKind: (op.namespace === 'admin'
+          ? z.literal('context')
+          : z.enum(['context', 'customer', 'guest'])
+        ).optional(),
+      })
+    : op.query,
+}))
 
-export const operations: readonly Operation[] = [
+const operations: readonly Operation[] = [
+  ...localDomainOperations,
+  {
+    method: 'POST',
+    path: '/orders/{orderId}/refund-requests',
+    namespace: 'storefront',
+    access: 'customer_or_guest',
+    params: paymentInitiationParams,
+    query: empty,
+    request: customerRefundRequestInput,
+    response: customerRefundRequestResult,
+    status: 200,
+    csrf: true,
+    idempotency: true,
+    replay:
+      'Exact body/key; canonical source/unit reservations prevent new-key duplicates; no approval or payout',
+    activation:
+      'CUSTOMER_AUTH_ENABLED with REFUND_OPERATIONS_ENABLED and RETURN_OPERATIONS_ENABLED; local/test only',
+  },
+  {
+    method: 'POST',
+    path: '/admin/provider-receipts/{intakeId}/link',
+    namespace: 'admin',
+    access: 'admin',
+    params: z.strictObject({ intakeId: matchingId }),
+    query: empty,
+    request: receiptLinkInput,
+    response: linkedReceipt,
+    status: 200,
+    csrf: true,
+    idempotency: true,
+    replay: 'Exact source identity and payload; no second collection on replay',
+    activation:
+      'ADMIN_AUTH_ENABLED; local/test only; protected PAYMENT_MATCHING_EVIDENCE_FILE authority required',
+  },
+  {
+    method: 'POST',
+    path: '/admin/payment-collections/{collectionId}/allocate',
+    namespace: 'admin',
+    access: 'admin',
+    params: z.strictObject({ collectionId: matchingId }),
+    query: empty,
+    request: collectionAllocationInput,
+    response: collectionSummary,
+    status: 200,
+    csrf: true,
+    idempotency: true,
+    ifMatch: true,
+    etag: true,
+    replay:
+      'Original If-Match and payload bind the key; source face amounts and existing refund floors preserved',
+    activation:
+      'ADMIN_AUTH_ENABLED; local/test only; protected PAYMENT_MATCHING_EVIDENCE_FILE authority required',
+  },
+  {
+    method: 'GET',
+    path: '/admin/provider-receipts',
+    namespace: 'admin',
+    access: 'admin',
+    params: empty,
+    query: providerReceiptQuery,
+    response: z.array(providerReceipt),
+    status: 200,
+    paginated: true,
+    csrf: false,
+    replay: 'Read-only redacted independently verified intake history',
+    activation: 'ADMIN_AUTH_ENABLED; local/test only; reviewed payment-record persistence',
+  },
+  {
+    method: 'POST',
+    path: '/coupons/preview',
+    access: 'customer_or_context',
+    namespace: 'storefront',
+    params: empty,
+    query: empty,
+    request: couponPreviewInput,
+    response: couponPreviewResult,
+    status: 200,
+    csrf: true,
+    replay: 'Read-only pricing advisory; no coupon capacity reserved',
+    activation: 'CUSTOMER_AUTH_ENABLED; local/test only; customer session or guest browser context',
+  },
   ...identities,
   {
     method: 'GET',
@@ -430,6 +529,22 @@ export const operations: readonly Operation[] = [
     activation:
       'CUSTOMER_ORDER_READ_ENABLED plus customer auth; guest proof requires GUEST_ACCESS_ENABLED; local/test only',
   },
+  ...[
+    { path: '/orders/{orderId}/delivery-events', response: customerDeliveryEvents },
+    { path: '/orders/{orderId}/payments', response: customerPaymentHistory },
+  ].map((op) => ({
+    ...op,
+    method: 'GET',
+    namespace: 'storefront' as const,
+    access: 'customer_or_guest' as const,
+    params: paymentInitiationParams,
+    query: empty,
+    status: 200,
+    csrf: false,
+    replay: 'Read-only owned projection; no funding or fulfillment mutation',
+    activation:
+      'CUSTOMER_ORDER_READ_ENABLED with current customer/exact guest scope; local/test only',
+  })),
   {
     method: 'GET',
     path: '/orders/{orderId}/status',
@@ -1161,19 +1276,19 @@ export const operations: readonly Operation[] = [
   },
 ]
 
-export const transportOperations = [
+const transportOperations = [
   { method: 'HEAD', path: '/auth/csrf', status: 204 },
   { method: 'HEAD', path: '/admin/auth/csrf', status: 204 },
 ] as const
 
-export function operationId(op: Pick<Operation, 'method' | 'path'>) {
+function operationId(op: Pick<Operation, 'method' | 'path'>) {
   return `${op.method.toLowerCase()}_${op.path
     .replace(/[{}]/g, '')
     .replace(/[^a-zA-Z0-9]+/g, '_')
     .replace(/^_|_$/g, '')}`
 }
 
-export function assertOperationParity(
+function assertOperationParity(
   actual: readonly { method: string; path: string }[],
   expected: readonly Pick<Operation, 'method' | 'path'>[] = operations,
 ) {
@@ -1191,3 +1306,6 @@ export function assertOperationParity(
   const ids = expected.map(operationId)
   if (new Set(ids).size !== ids.length) throw new Error('Duplicate operation ID')
 }
+
+export type { Operation }
+export { assertOperationParity, operationId, operations, transportOperations }

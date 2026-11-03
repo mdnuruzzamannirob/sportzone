@@ -2,9 +2,11 @@ import { isDeepStrictEqual } from 'node:util'
 import type { Connection } from 'mongoose'
 import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 import { reviewModel } from './review.model.js'
+
 const id = { bsonType: 'objectId' },
   date = { bsonType: 'date' }
-export const reviewValidator = {
+
+const reviewValidator = {
   $jsonSchema: {
     bsonType: 'object',
     additionalProperties: false,
@@ -54,6 +56,7 @@ export const reviewValidator = {
     ],
   },
 }
+
 async function verify(connection: Connection) {
   const row = await connection.db?.listCollections({ name: 'reviews' }, { nameOnly: false }).next()
   if (
@@ -64,7 +67,8 @@ async function verify(connection: Connection) {
   )
     throw new Error('Review persistence requires reviewed bootstrap/migration.')
 }
-export async function initializeReviewPersistence(connection: Connection) {
+
+async function initializeReviewPersistence(connection: Connection) {
   if (!connection.db) throw new Error('Database unavailable')
   if (!(await connection.db.listCollections({ name: 'reviews' }).hasNext()))
     await connection.db.createCollection('reviews', {
@@ -75,7 +79,10 @@ export async function initializeReviewPersistence(connection: Connection) {
   await verify(connection)
   await createDeclaredIndexes(reviewModel(connection))
 }
-export async function verifyReviewPersistence(connection: Connection) {
+
+async function verifyReviewPersistence(connection: Connection) {
   await verify(connection)
   await verifyDeclaredIndexes(reviewModel(connection))
 }
+
+export { initializeReviewPersistence, reviewValidator, verifyReviewPersistence }

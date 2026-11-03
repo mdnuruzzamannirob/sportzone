@@ -1,12 +1,14 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
-import { Types, type ClientSession, type Connection } from 'mongoose'
-import type { IdentityModels } from '../auth.model.js'
-import type { SessionOptions } from '../sessions/session.service.js'
-import { validateSessionOptions } from '../sessions/session.service.js'
+import { type ClientSession, type Connection, Types } from 'mongoose'
 import { inTransaction } from '../../../shared/database/transaction.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
+import type { IdentityModels } from '../auth.model.js'
+import { type SessionOptions, validateSessionOptions } from '../sessions/session.service.js'
 import { proofPattern } from '../verification/proof.crypto.js'
-export function guestSessionService(
+
+type GuestSessions = ReturnType<typeof createGuestSessionService>
+
+function createGuestSessionService(
   connection: Connection,
   models: IdentityModels,
   options: SessionOptions,
@@ -88,11 +90,26 @@ export function guestSessionService(
       }).save({ session })
       return { token, csrfToken, orderId, expiresAt }
     },
+    async authorizeInSession(
+      token: string | undefined,
+      orderId: string,
+      transaction: ClientSession,
+      csrf?: string,
+    ) {
+      if (!transaction.inTransaction()) throw new ApiError('GUEST_PROOF_REQUIRED')
+      const row = await resolve(transaction, token, csrf)
+      if (row.orderId?.toHexString() !== orderId) throw new ApiError('GUEST_PROOF_REQUIRED')
+      return { orderId, sessionId: row._id.toHexString() }
+    },
     async owned<T>(
       token: string | undefined,
       orderId: string | undefined,
       work: (
-        scope: { orderId: string; expiresAt: Date; sessionId: string },
+        scope: {
+          orderId: string
+          expiresAt: Date
+          sessionId: string
+        },
         session: ClientSession,
       ) => Promise<T>,
       csrf?: string,
@@ -155,8 +172,8 @@ export function guestSessionService(
     } as const,
   }
 }
-export type GuestSessions = ReturnType<typeof guestSessionService>
-export function readGuestCookie(header: string | undefined) {
+
+function readGuestCookie(header: string | undefined) {
   const entries = (header ?? '')
     .split(';')
     .map((value) => value.trim())
@@ -164,3 +181,6 @@ export function readGuestCookie(header: string | undefined) {
   const token = entries.length === 1 ? entries[0]?.slice('sz_guest_order_sid='.length) : undefined
   return token && proofPattern.test(token) ? token : undefined
 }
+
+export type { GuestSessions }
+export { createGuestSessionService, readGuestCookie }

@@ -1,7 +1,8 @@
-import { loadEnvironment } from '../dist/config/env.js'
 import { openDatabase } from '../dist/config/database.js'
-import { policyService } from '../dist/modules/settings/policy.service.js'
+import { loadEnvironment } from '../dist/config/env.js'
 import { createAuditWriter } from '../dist/modules/audit/audit.service.js'
+import { createPolicyService } from '../dist/modules/settings/setting.service.js'
+
 let connection
 try {
   const config = loadEnvironment(process.env)
@@ -9,7 +10,7 @@ try {
   const denied = async () => {
     throw new Error('Worker cannot execute browser operations')
   }
-  const worker = policyService(connection, { owned: denied }, createAuditWriter(connection))
+  const worker = createPolicyService(connection, { owned: denied }, createAuditWriter(connection))
   const result = await worker.activateDue()
   console.log(JSON.stringify({ event: 'policy_activation_batch', processed: result.processed }))
 } catch {

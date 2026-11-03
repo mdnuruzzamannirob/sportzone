@@ -1,9 +1,11 @@
-import { Schema, type Connection, type InferSchemaType } from 'mongoose'
+import { type Connection, type InferSchemaType, Schema } from 'mongoose'
 import {
   integerField,
   mutableSchemaOptions,
   optionalObjectIdField,
 } from '../../../shared/database/schema.js'
+
+type Category = InferSchemaType<typeof categorySchema>
 
 const categorySchema = new Schema(
   {
@@ -32,15 +34,21 @@ const categorySchema = new Schema(
   },
   mutableSchemaOptions,
 )
+
 categorySchema.index({ slug: 1 }, { unique: true, name: 'category_slug_unique' })
+
 categorySchema.index(
   { parentId: 1, status: 1, sortOrder: 1 },
   { name: 'category_parent_status_sort' },
 )
+
 categorySchema.index({ status: 1, sortOrder: 1, _id: 1 }, { name: 'category_public_sort' })
-export type Category = InferSchemaType<typeof categorySchema>
-export function categoryModel(connection: Connection) {
+
+function categoryModel(connection: Connection) {
   return connection.models.Category
     ? connection.model<Category>('Category')
     : connection.model<Category>('Category', categorySchema, 'categories')
 }
+
+export type { Category }
+export { categoryModel }

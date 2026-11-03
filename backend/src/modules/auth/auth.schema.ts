@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import { ApiError } from '../../shared/errors/app-error.js'
 
+type ChallengePurpose = z.infer<typeof challengePurpose>
+
 const text = (max: number) =>
   z
     .string()
@@ -8,35 +10,48 @@ const text = (max: number) =>
     .min(1)
     .refine((value) => [...value].length <= max)
     .meta({ maxLength: max })
+
 const email = z.string().trim().toLowerCase().pipe(z.email().max(254))
+
 const id = z.string().regex(/^[a-f0-9]{24}$/)
+
 const instant = z.iso.datetime({ offset: false })
+
 const opaque = z
   .string()
   .min(1)
   .max(128)
   .regex(/^[A-Za-z0-9_-]+$/)
+
 const noBody = z.undefined()
+
 const emptyBody = z.union([noBody, z.strictObject({})])
+
 const credential = z.string().min(1) // Never trim or transform a password.
+
 const confirmation = z.strictObject({ token: opaque })
+
 const emailRequest = z.strictObject({ email })
+
 const csrf = z.strictObject({ csrfToken: opaque, expiresAt: instant })
+
 const accepted = z.strictObject({ accepted: z.literal(true) })
+
 const logout = z.strictObject({ revoked: z.literal(true), csrfToken: opaque })
+
 const addressParams = z.strictObject({ addressId: id })
+
 const noParams = z.strictObject({})
 
-export const challengePurpose = z.enum([
+const challengePurpose = z.enum([
   'email_verify',
   'email_change',
   'password_reset',
   'guest_order_access',
 ])
-export type ChallengePurpose = z.infer<typeof challengePurpose>
 
 // Required service policies: transport validation cannot invent password policy or coverage.
-export function createIdentityContracts(policy: {
+function createIdentityContracts(policy: {
   newPassword: z.ZodType<string, string>
   phone: z.ZodType<string, string>
   servesArea: (districtKey: string, areaKey: string) => boolean
@@ -214,14 +229,14 @@ export function createIdentityContracts(policy: {
 }
 
 // A server-output defect must never be reported as invalid client input.
-export function parseIdentityResponse<T extends z.ZodType>(schema: T, value: unknown): z.output<T> {
+function parseIdentityResponse<T extends z.ZodType>(schema: T, value: unknown): z.output<T> {
   const result = schema.safeParse(value)
   if (!result.success) throw new ApiError('INTERNAL_ERROR')
   return result.data
 }
 
 // Pure state precondition only: hash verification and atomic consumption remain mandatory.
-export function isChallengeCurrent(
+function isChallengeCurrent(
   state: {
     purpose: ChallengePurpose
     scopeId: string
@@ -257,3 +272,6 @@ export function isChallengeCurrent(
     state.invalidatedAt === undefined
   )
 }
+
+export type { ChallengePurpose }
+export { challengePurpose, createIdentityContracts, isChallengeCurrent, parseIdentityResponse }

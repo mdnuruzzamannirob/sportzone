@@ -3,6 +3,8 @@ import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { z } from 'zod'
 import { errorDefinitions } from '../src/shared/errors/app-error.js'
+import { localOperations } from './local-operations.js'
+
 import {
   assertOperationParity,
   type Operation,
@@ -14,7 +16,7 @@ import {
 type Schema = Record<string, unknown>
 // Never replace an unsupported schema with {}. Wire inputs use Zod's input mode;
 // runtime refinements/normalization remain authoritative and are documented explicitly.
-export function wireSchema(schema: z.core.$ZodType): Schema {
+function wireSchema(schema: z.core.$ZodType): Schema {
   if (schema instanceof z.ZodUnion) {
     const options = schema.options.filter((item) => !(item instanceof z.ZodUndefined))
     if (options.length === 1 && options[0]) return wireSchema(options[0])
@@ -67,6 +69,14 @@ const errorEnvelope = (codes = Object.keys(errorDefinitions)) =>
 function security(op: Operation) {
   if (op.access === 'monitor') return [{ MonitorBearer: [] }]
   if (op.access === 'public' || op.access === 'provider_callback') return []
+  if (op.access === 'customer_or_context' || op.access === 'customer_guest_or_context')
+    return [
+      { BrowserContext: [], CsrfHeader: [] },
+      { CustomerSession: [], CsrfHeader: [] },
+      ...(op.access === 'customer_guest_or_context'
+        ? [{ GuestOrderSession: [], CsrfHeader: [] }]
+        : []),
+    ]
   if (op.access === 'customer_or_guest')
     return [
       { CustomerSession: [], ...(op.csrf ? { CsrfHeader: [] } : {}) },
@@ -218,7 +228,7 @@ function openOperation(op: Operation) {
   }
 }
 
-export function generateArtifacts(apiMarkdown: string) {
+function generateArtifacts(apiMarkdown: string) {
   assertOperationParity(operations)
   const matrix = apiMarkdown.split('### D.3 Endpoint response/status/error matrix')[1]
   if (!matrix) throw new Error('Missing canonical API operation matrix')
@@ -402,21 +412,23 @@ export function generateArtifacts(apiMarkdown: string) {
     },
     'planned-operations.json': {
       description:
-        'Specification inventory only; not a runnable collection or proof of availability. DTO/access/header definitions remain in docs/API.md until implemented in the registry.',
+        'Complete specification inventory reconciled with executable typed contracts. Activation conditions, including local/test-only admission, remain mandatory; generated contracts are not proof of deployed availability.',
       operations: documented.map((op) => ({
         ...op,
         operationId: operationId(op),
         implementation: operations.some((row) => row.method === op.method && row.path === op.path)
           ? 'implemented-conditional'
-          : 'planned',
+          : localOperations.some((row) => row.method === op.method && row.path === op.path)
+            ? 'implemented-local-only'
+            : 'planned',
       })),
     },
   }
 }
-export function serialize(value: unknown) {
+function serialize(value: unknown) {
   return `${JSON.stringify(value, null, 2)}\n`
 }
-export function writeArtifacts(workspace: string, check: boolean) {
+function writeArtifacts(workspace: string, check: boolean) {
   const artifacts = generateArtifacts(readFileSync(resolve(workspace, '../docs/API.md'), 'utf8'))
   if (!check) mkdirSync(resolve(workspace, 'api'), { recursive: true })
   for (const [name, artifact] of Object.entries(artifacts)) {
@@ -437,3 +449,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     `API artifacts ${args.length ? 'verified' : 'generated'}: ${writeArtifacts(process.cwd(), args.length === 1)}`,
   )
 }
+
+export { generateArtifacts, serialize, wireSchema, writeArtifacts }

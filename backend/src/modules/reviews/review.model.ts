@@ -1,5 +1,8 @@
-import { Schema, type Connection, type InferSchemaType } from 'mongoose'
+import { type Connection, type InferSchemaType, Schema } from 'mongoose'
 import { integerField, mutableSchemaOptions } from '../../shared/database/schema.js'
+
+type ReviewRecord = InferSchemaType<typeof schema>
+
 const schema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, required: true },
@@ -29,6 +32,7 @@ const schema = new Schema(
   },
   mutableSchemaOptions,
 )
+
 schema.index(
   { userId: 1, productId: 1 },
   {
@@ -37,11 +41,14 @@ schema.index(
     name: 'review_active_customer_product_unique',
   },
 )
+
 schema.index({ productId: 1, status: 1, createdAt: -1 }, { name: 'review_product_status_created' })
+
 schema.pre('validate', function () {
   if (this.status !== 'pending' && (!this.moderatedAt || !this.moderationReason))
     this.invalidate('status', 'Moderation requires a reason and timestamp.')
 })
+
 schema.pre('save', function () {
   if (
     !this.isNew &&
@@ -51,9 +58,12 @@ schema.pre('save', function () {
   )
     throw new Error('Review purchase identity is immutable.')
 })
-export type ReviewRecord = InferSchemaType<typeof schema>
-export function reviewModel(connection: Connection) {
+
+function reviewModel(connection: Connection) {
   return connection.models.Review
     ? connection.model<ReviewRecord>('Review')
     : connection.model<ReviewRecord>('Review', schema, 'reviews')
 }
+
+export type { ReviewRecord }
+export { reviewModel }

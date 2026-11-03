@@ -1,4 +1,11 @@
-export const errorDefinitions = {
+type ErrorCode = keyof typeof errorDefinitions
+
+type FieldIssue = { field: string; code: string }
+const errorDefinitions = {
+  REFUND_BALANCE_EXCEEDED: {
+    status: 409,
+    message: 'The requested refund exceeds the available balance.',
+  },
   OUT_OF_STOCK: { status: 409, message: 'Requested stock is not available.' },
   QUOTE_CHANGED: { status: 409, message: 'Review and confirm a new checkout quote.' },
   QUOTE_EXPIRED: { status: 409, message: 'Checkout quote has expired.' },
@@ -43,11 +50,9 @@ export const errorDefinitions = {
   NOT_FOUND: { status: 404, message: 'Resource not found.' },
   INTERNAL_ERROR: { status: 500, message: 'An unexpected error occurred.' },
 } as const
-export type ErrorCode = keyof typeof errorDefinitions
-export type FieldIssue = { field: string; code: string }
 
 // Only approved, static public messages cross the HTTP boundary.
-export class ApiError extends Error {
+class ApiError extends Error {
   readonly status: number
   constructor(
     readonly code: ErrorCode,
@@ -57,3 +62,6 @@ export class ApiError extends Error {
     this.status = errorDefinitions[code].status
   }
 }
+
+export type { ErrorCode, FieldIssue }
+export { ApiError, errorDefinitions }

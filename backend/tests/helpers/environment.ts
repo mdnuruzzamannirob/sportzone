@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto'
-export function testEnvironment(): NodeJS.ProcessEnv {
+
+function testEnvironment(): NodeJS.ProcessEnv {
   return {
     NODE_ENV: 'test',
     APP_ENV: 'test',
@@ -17,7 +18,7 @@ export function testEnvironment(): NodeJS.ProcessEnv {
   }
 }
 
-export function identityEnvironment(): NodeJS.ProcessEnv {
+function identityEnvironment(): NodeJS.ProcessEnv {
   return {
     ...testEnvironment(),
     API_PUBLIC_ORIGIN: 'https://api.example.test',
@@ -45,3 +46,5 @@ export function identityEnvironment(): NodeJS.ProcessEnv {
     ),
   }
 }
+
+export { identityEnvironment, testEnvironment }

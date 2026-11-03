@@ -1,8 +1,11 @@
 import { readFile } from 'node:fs/promises'
 import { z } from 'zod'
-import { policyType } from '../modules/settings/policy.schema.js'
+import { policyType } from '../modules/settings/setting.schema.js'
 import { ConfigurationError } from '../shared/errors/configuration-error.js'
-export const policyApproval = z.strictObject({
+
+type PolicyApproval = z.infer<typeof policyApproval>
+
+const policyApproval = z.strictObject({
   evidenceRef: z.string().min(1).max(2000),
   type: policyType,
   version: z.string().min(1).max(100),
@@ -11,10 +14,7 @@ export const policyApproval = z.strictObject({
   approvedAt: z.iso.datetime({ offset: true }),
   approvedBy: z.string().trim().min(1).max(120),
 })
-export type PolicyApproval = z.infer<typeof policyApproval>
-export async function loadPolicyApprovals(
-  env: NodeJS.ProcessEnv,
-): Promise<readonly PolicyApproval[]> {
+async function loadPolicyApprovals(env: NodeJS.ProcessEnv): Promise<readonly PolicyApproval[]> {
   if (!env.POLICY_APPROVALS_FILE) return []
   try {
     const raw = await readFile(env.POLICY_APPROVALS_FILE)
@@ -30,3 +30,6 @@ export async function loadPolicyApprovals(
     throw new ConfigurationError(['POLICY_APPROVALS_FILE'])
   }
 }
+
+export type { PolicyApproval }
+export { loadPolicyApprovals, policyApproval }

@@ -1,27 +1,33 @@
-import { Types, type ClientSession } from 'mongoose'
-import { parseInput } from '../../shared/middleware/validate.js'
+import { type ClientSession, Types } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
-import type { AddressCoverage } from '../delivery/delivery-coverage.service.js'
-import type { CustomerAccountAccess, CustomerProfile } from '../auth/customer-account.service.js'
+import { parseInput } from '../../shared/middleware/validate.js'
+import type { CustomerAccountAccess, CustomerProfile } from '../auth/auth.public.js'
+import type { AddressCoverage } from '../delivery/delivery.public.js'
 import {
-  profilePatch,
+  addressId,
   addressInput,
   addressPatch,
-  addressId,
   deletionInput,
+  profilePatch,
 } from './customer.schema.js'
+
+type CustomerService = ReturnType<typeof createCustomerService>
 
 const addressDto = (address: CustomerProfile['addresses'][number]) => ({
   ...address,
 })
-export function createProfileService(
+
+function createCustomerService(
   access: CustomerAccountAccess,
   coverage: AddressCoverage,
   clock: () => Date = () => new Date(),
 ) {
   const owned = access.owned
   async function supported(
-    address: { districtKey: string; areaKey: string },
+    address: {
+      districtKey: string
+      areaKey: string
+    },
     session: ClientSession,
   ) {
     if (!(await coverage.supports(address.districtKey, address.areaKey, session)))
@@ -121,4 +127,6 @@ export function createProfileService(
     },
   }
 }
-export type ProfileService = ReturnType<typeof createProfileService>
+
+export type { CustomerService }
+export { createCustomerService }

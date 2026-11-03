@@ -86,13 +86,24 @@ keep the repository's replica-set tool running in a separate terminal:
 npm run db:local --workspace=backend
 ```
 
-Create a private root `.env` from [.env.example](.env.example), supply the MongoDB URI/database and
-independently generated `SESSION_SECRET` and `HEALTH_MONITOR_TOKEN`. For the backend stage, start only
+Create a private root `.env` from [.env.example](.env.example). The template groups runtime, identity,
+commerce, providers and workers, with local session/proof timing and technical worker defaults. Supply
+the URI of a running replica set and independently generated `SESSION_SECRET` and `HEALTH_MONITOR_TOKEN`;
+proof activation also needs a private versioned key map. Templates contain illustrative placeholders,
+reserved example domains and policy paths; replace these with actual credentials, origins and reviewed
+files before enabling their features. Private files must never contain copied example credentials. Frontend reference values still belong
+in each client’s own environment. For the backend stage, start only
 its compiler and API from the repository root:
 
 ```sh
 npm run dev:backend
 ```
+
+Fix backend lint issues with `npm run lint --workspace=backend`, or check without edits using
+`npm run lint:check --workspace=backend`. CI uses the check-only command.
+Format backend-owned code/configuration from the repository root with
+`npm run format --workspace=backend`; verify it without edits with
+`npm run format:check --workspace=backend`.
 
 For integrated work across all three applications:
 
@@ -155,6 +166,10 @@ Select checks for the changed area using [Testing §15.5](docs/TESTING.md#155-ch
 | Browser verification                   | `npm run test:ui`                                                    |
 | Security scans                         | `npm run test:security`                                              |
 | Complete integration inventory         | `npm run ci`                                                         |
+
+Backend unit/integration tests are grouped under `backend/tests/{unit,integration}/<owner>/`.
+Cross-workflow fixtures live in `backend/tests/helpers/commerce/`; scenario files register their own
+fixture lifecycle explicitly. Existing recursive Vitest discovery and workspace commands are unchanged.
 
 Backend integration tests own their isolated replica sets and never use the configured `MONGODB_URI`.
 The first run downloads the pinned MongoDB binary. On Ubuntu 26, use `MONGOMS_DISTRO=ubuntu-24.04` for the

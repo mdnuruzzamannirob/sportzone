@@ -10,6 +10,8 @@ declare global {
     }
   }
 }
-export function respond<T>(res: Response, data: T, status = 200, page?: PageMeta) {
+function respond<T>(res: Response, data: T, status = 200, page?: PageMeta) {
   return res.status(status).json({ data, meta: { ...page, requestId: res.locals.requestId } })
 }
+
+export { respond }

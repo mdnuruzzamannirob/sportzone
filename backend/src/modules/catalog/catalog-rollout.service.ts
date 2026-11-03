@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
 import type { Connection } from 'mongoose'
+import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 import { categoryModel } from './categories/category.model.js'
 import { productModels } from './products/product.model.js'
 import {
@@ -8,10 +9,10 @@ import {
   productCollectionValidators,
   verifyProductPersistence,
 } from './products/product.persistence.js'
-import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 
 const validators: Readonly<Record<string, unknown>> = productCollectionValidators
-export async function inspectCatalogRollout(connection: Connection) {
+
+async function inspectCatalogRollout(connection: Connection) {
   if (!connection.db) throw new Error('Catalog rollout database unavailable.')
   const products = productModels(connection)
   const collections = []
@@ -71,7 +72,7 @@ export async function inspectCatalogRollout(connection: Connection) {
   return { ...state, digest }
 }
 
-export async function applyCatalogRollout(connection: Connection, expectedDigest: string) {
+async function applyCatalogRollout(connection: Connection, expectedDigest: string) {
   if (!/^[a-f0-9]{64}$/.test(expectedDigest)) throw new Error('Reviewed plan digest required.')
   const before = await inspectCatalogRollout(connection)
   if (!before.safeToApply || before.digest !== expectedDigest)
@@ -84,3 +85,5 @@ export async function applyCatalogRollout(connection: Connection, expectedDigest
   await verifyDeclaredIndexes(categoryModel(connection))
   return inspectCatalogRollout(connection)
 }
+
+export { applyCatalogRollout, inspectCatalogRollout }

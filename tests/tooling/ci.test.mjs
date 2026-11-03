@@ -353,13 +353,19 @@ test('scoped inventory ignores unrelated invalid frontend manifests', (t) => {
   assert.throws(() => ciPlan(root, ['unknown']), /Unknown CI scope/)
 })
 test('CI-21: hosted checks use one install and one inventory invocation with pinned actions', () => {
-  const content = readFileSync('.github/workflows/ci.yml', 'utf8')
+  const raw = readFileSync('.github/workflows/ci.yml', 'utf8')
+  const content = raw
+    .split('\n')
+    .filter((line) => !line.trimStart().startsWith('#'))
+    .join('\n')
   assert.equal((content.match(/run: npm ci /g) ?? []).length, 1)
   assert.equal((content.match(/run: npm run ci -- --scope=/gm) ?? []).length, 1)
   assert.ok(content.includes('name: CI required result'))
   assert.ok(content.includes('fetch-depth: 0'))
-  assert.ok(content.includes("if: steps.affected.outputs.browser == 'true'"))
-  assert.ok(content.includes('CI_SCOPE: ${{ steps.affected.outputs.scope }}'))
+  assert.equal(content.includes('playwright install'), false)
+  assert.ok(raw.includes('# Restore these frontend/browser steps'))
+  assert.ok(content.includes('run: npm run ci -- --scope=supply-chain,backend'))
+  assert.equal(content.includes('CI_SCOPE:'), false)
   assert.ok(content.includes('if: ${{ always() }}'))
   for (const match of content.matchAll(/uses: (\S+)/g)) assert.match(match[1], /@[a-f0-9]{40}$/)
   for (const unsafe of [
@@ -594,6 +600,11 @@ test('Docker inputs are blocking in the required CI job; manual provider checks 
     'backend/Dockerfile',
     'backend/Dockerfile.dockerignore',
     'backend/scripts/staging-inventory.mjs',
+    'backend/scripts/reconcile-payments.mjs',
+    'backend/scripts/reconcile-refunds.mjs',
+    'backend/scripts/media-maintenance.mjs',
+    'backend/scripts/lib/environment.mjs',
+    'backend/src/app.ts',
     'package-lock.json',
   ])
     assert.equal(containerInputsChanged([path]), true)

@@ -2,34 +2,31 @@ import { randomBytes } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
 import { type ClientSession, type Connection, Types } from 'mongoose'
 import type { RecoveryOptions } from '../../../config/security.js'
-import { changeInput, confirmation, issuance } from './password-recovery.schema.js'
-
-export {
-  loadRecoveryOptions,
-  type RecoveryOptions,
-} from '../../../config/security.js'
-
 import { inTransaction } from '../../../shared/database/transaction.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
-import type { RegistrationNotifications } from '../../notifications/notification.service.js'
+import type { IdentityNotifications } from '../../notifications/notification.public.js'
 import type { IdentityModels } from '../auth.model.js'
 import { hashPassword, verifyPassword } from '../credentials/password.service.js'
 import type { BrowserSecurity } from '../sessions/browser-security.service.js'
 import { ChallengeUnavailableError, consumeUserChallenge } from '../sessions/session.persistence.js'
 import type { SessionKind, SessionService } from '../sessions/session.service.js'
-import { proofHash } from '../verification/proof.crypto.js'
+import { createProofCodec, proofHash } from '../verification/proof.crypto.js'
+import { changeInput, confirmation, issuance } from './password-recovery.schema.js'
 
-export function createRecoveryService(
+type RecoveryService = ReturnType<typeof createRecoveryService>
+
+function createRecoveryService(
   connection: Connection,
   models: IdentityModels,
   sessions: SessionService,
   security: BrowserSecurity,
-  notifications: RegistrationNotifications,
+  notifications: Pick<IdentityNotifications, 'enqueuePasswordReset'>,
   options: RecoveryOptions,
   clock: () => Date = () => new Date(),
   kind: SessionKind = 'customer',
 ) {
+  const encryption = createProofCodec(options.encryption)
   const audience = kind === 'admin' ? 'admin' : 'storefront'
   const hashPurpose = kind === 'admin' ? 'admin_password_reset' : 'password_reset'
   async function invalidate(userId: Types.ObjectId, session: ClientSession, allIdentity = false) {
@@ -101,7 +98,7 @@ export function createRecoveryService(
           const now = clock(),
             expiresAt = new Date(now.getTime() + options.ttlSeconds * 1000)
           const revision = updated.challengeRevisions.password_reset
-          const deliveryEnvelope = options.encryption.encrypt(proof, {
+          const deliveryEnvelope = encryption.encrypt(proof, {
             id: id.toHexString(),
             userId: user._id.toHexString(),
             email: input.email,
@@ -124,9 +121,9 @@ export function createRecoveryService(
           }).save({ session })
           await notifications.enqueuePasswordReset(
             {
-              id: notificationId,
-              challengeId: id,
-              userId: user._id,
+              id: notificationId.toHexString(),
+              challengeId: id.toHexString(),
+              userId: user._id.toHexString(),
               email: input.email,
             },
             session,
@@ -250,4 +247,7 @@ export function createRecoveryService(
     },
   }
 }
-export type RecoveryService = ReturnType<typeof createRecoveryService>
+
+export { loadRecoveryOptions, type RecoveryOptions } from '../../../config/security.js'
+export type { RecoveryService }
+export { createRecoveryService }

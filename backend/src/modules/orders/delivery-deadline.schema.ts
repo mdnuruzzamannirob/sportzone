@@ -1,8 +1,20 @@
 import { z } from 'zod'
+
+type DeliveryDeadlineManifest = z.infer<typeof deliveryDeadlineManifest>
+
+type DeliveryDeadlineBasis = z.infer<typeof deliveryDeadlineBasis>
+
+type DeliveryDeadlineBasisSchema = typeof deliveryDeadlineBasis
+
+type DeliveryDeadlineSchema = typeof deliveryDeadline
+
 const text = (max: number) => z.string().trim().min(1).max(max)
+
 const date = z.iso.datetime({ offset: true })
+
 const days = z.int().min(1).max(3660)
-export const deliveryDeadlineRule = z
+
+const deliveryDeadlineRule = z
   .strictObject({
     version: text(100).refine((value) => value !== 'unconfigured'),
     timezone: z.literal('Asia/Dhaka'),
@@ -16,6 +28,13 @@ export const deliveryDeadlineRule = z
       .strictObject({
         startEvent: z.enum(['placedAt', 'confirmedAt']),
         calendarDays: days,
+      })
+      .optional(),
+    prepaid: z
+      .strictObject({
+        ruleRef: text(2000),
+        handoverHours: z.int().min(1).max(8760),
+        deliveryCalendarDays: days,
       })
       .optional(),
     // Empty means an explicit reviewed determination that no additional cap applies;
@@ -35,24 +54,32 @@ export const deliveryDeadlineRule = z
     (value) =>
       !value.effectiveTo || Date.parse(value.effectiveTo) > Date.parse(value.effectiveFrom),
   )
-export const deliveryDeadlineReview = z.strictObject({
+
+const deliveryDeadlineReview = z.strictObject({
   evidenceRef: text(2000),
   approvedAt: date,
   approvedBy: text(120),
   ruleDigest: z.string().regex(/^[a-f0-9]{64}$/),
 })
-export const deliveryDeadlineManifest = z.strictObject({
+
+const deliveryDeadlineManifest = z.strictObject({
   rule: deliveryDeadlineRule,
   review: deliveryDeadlineReview,
 })
-export const deliveryDeadlineBasis = deliveryDeadlineManifest.extend({
+
+const deliveryDeadlineBasis = deliveryDeadlineManifest.extend({
   capturedAt: date,
 })
-export const deliveryDeadlineEvents = z.strictObject({
+
+const deliveryDeadlineEvents = z.strictObject({
   placedAt: date.optional(),
   confirmedAt: date.optional(),
+  fullyPaidAt: date.optional(),
+  shippedAt: date.optional(),
+  paymentMethod: z.enum(['online', 'cod']).optional(),
 })
-export const deliveryDeadline = z.strictObject({
+
+const deliveryDeadline = z.strictObject({
   status: z.enum(['awaiting_start', 'calculated', 'under_review']),
   startEvent: z.literal('confirmedAt'),
   ruleVersion: text(100),
@@ -60,6 +87,21 @@ export const deliveryDeadline = z.strictObject({
   targetDeadlineAt: date.optional(),
   legalCapAt: date.optional(),
   effectiveAt: date.optional(),
+  handoverDeadlineAt: date.optional(),
+  handoverStatus: z.enum(['awaiting_payment', 'pending', 'met', 'overdue']).optional(),
 })
-export type DeliveryDeadlineManifest = z.infer<typeof deliveryDeadlineManifest>
-export type DeliveryDeadlineBasis = z.infer<typeof deliveryDeadlineBasis>
+
+export type {
+  DeliveryDeadlineBasis,
+  DeliveryDeadlineBasisSchema,
+  DeliveryDeadlineManifest,
+  DeliveryDeadlineSchema,
+}
+export {
+  deliveryDeadline,
+  deliveryDeadlineBasis,
+  deliveryDeadlineEvents,
+  deliveryDeadlineManifest,
+  deliveryDeadlineReview,
+  deliveryDeadlineRule,
+}

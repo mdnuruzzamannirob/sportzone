@@ -1,7 +1,8 @@
-import type { Connection } from 'mongoose'
 import { isDeepStrictEqual } from 'node:util'
+import type { Connection } from 'mongoose'
 import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 import { deliveryExceptionModel } from './delivery-exception.model.js'
+
 const oid = { bsonType: 'objectId' },
   date = { bsonType: 'date' },
   text = { bsonType: 'string', minLength: 1, maxLength: 2000 },
@@ -12,13 +13,15 @@ const oid = { bsonType: 'objectId' },
     maximum: Number.MAX_SAFE_INTEGER,
     multipleOf: 1,
   }
+
 const object = (properties: Record<string, unknown>, required: string[]) => ({
   bsonType: 'object',
   additionalProperties: false,
   properties,
   required,
 })
-export const deliveryExceptionValidator = {
+
+const deliveryExceptionValidator = {
   $and: [
     {
       $expr: {
@@ -131,6 +134,7 @@ export const deliveryExceptionValidator = {
     },
   ],
 }
+
 async function shape(connection: Connection) {
   const row = await connection.db
     ?.listCollections({ name: 'deliveryExceptions' }, { nameOnly: false })
@@ -143,7 +147,8 @@ async function shape(connection: Connection) {
   )
     throw new Error('Delivery exception persistence requires reviewed bootstrap')
 }
-export async function verifyDeliveryExceptionPersistence(connection: Connection) {
+
+async function verifyDeliveryExceptionPersistence(connection: Connection) {
   await shape(connection)
   await verifyDeclaredIndexes(deliveryExceptionModel(connection))
   if (
@@ -153,7 +158,8 @@ export async function verifyDeliveryExceptionPersistence(connection: Connection)
   )
     throw new Error('Exception evidence cannot expire')
 }
-export async function initializeDeliveryExceptionPersistence(connection: Connection) {
+
+async function initializeDeliveryExceptionPersistence(connection: Connection) {
   if (!connection.db) throw new Error('Database unavailable')
   if (!(await connection.db.listCollections({ name: 'deliveryExceptions' }).hasNext()))
     await connection.db.createCollection('deliveryExceptions', {
@@ -164,4 +170,10 @@ export async function initializeDeliveryExceptionPersistence(connection: Connect
   await shape(connection)
   await createDeclaredIndexes(deliveryExceptionModel(connection))
   await verifyDeliveryExceptionPersistence(connection)
+}
+
+export {
+  deliveryExceptionValidator,
+  initializeDeliveryExceptionPersistence,
+  verifyDeliveryExceptionPersistence,
 }

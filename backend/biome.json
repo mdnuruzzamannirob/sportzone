@@ -15,8 +15,6 @@
   "javascript": {
     "jsxRuntime": "transparent"
   },
-  "extends": [
-    "../biome.json"
-  ],
+  "extends": ["../biome.json"],
   "root": false
 }

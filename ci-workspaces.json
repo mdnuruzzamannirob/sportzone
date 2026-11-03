@@ -3,43 +3,26 @@
   "scopes": {
     "repository": {
       "ownerTask": "P01-019",
-      "checks": [
-        "workspaces:check",
-        "lint",
-        "test:unit",
-        "lint:boundaries",
-        "format:check"
-      ]
+      "checks": ["workspaces:check", "lint", "test:unit", "lint:boundaries", "format:check"]
     },
     "storefront": {
       "state": "active",
       "ownerTask": "P02-015",
-      "checks": [
-        "lint",
-        "typecheck",
-        "test:unit",
-        "build",
-        "test:smoke"
-      ]
+      "checks": ["lint", "typecheck", "test:unit", "build", "test:smoke"]
     },
     "admin": {
       "state": "active",
       "ownerTask": "P02-016",
-      "checks": [
-        "lint",
-        "typecheck",
-        "test:unit",
-        "build",
-        "test:smoke"
-      ]
+      "checks": ["lint", "typecheck", "test:unit", "build", "test:smoke"]
     },
     "backend": {
       "state": "active",
       "ownerTask": "P03-021",
       "rootChecks": ["test:unit", "lint:boundaries", "format:backend"],
       "checks": [
-        "lint",
+        "lint:check",
         "typecheck",
+        "format:check",
         "test:contract",
         "test:unit",
         "build",
@@ -49,15 +32,11 @@
     },
     "browser": {
       "ownerTask": "P01-019",
-      "checks": [
-        "test:ui"
-      ]
+      "checks": ["test:ui"]
     },
     "supply-chain": {
       "ownerTask": "P01-016",
-      "checks": [
-        "test:security"
-      ]
+      "checks": ["test:security"]
     }
   }
 }

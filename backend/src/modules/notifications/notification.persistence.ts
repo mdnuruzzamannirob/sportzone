@@ -1,8 +1,8 @@
-import type { Connection } from 'mongoose'
 import { isDeepStrictEqual } from 'node:util'
+import type { Connection } from 'mongoose'
 import type { NotificationModel } from './notification.model.js'
 
-export function createNotificationPersistence(connection: Connection, model: NotificationModel) {
+function createNotificationPersistence(connection: Connection, model: NotificationModel) {
   return {
     // Explicit additive bootstrap, never automatic HTTP startup or deletion.
     async initialize() {
@@ -51,7 +51,10 @@ export function createNotificationPersistence(connection: Connection, model: Not
           !isDeepStrictEqual(existing.options?.validator, adminResetNotificationValidator) &&
           !isDeepStrictEqual(existing.options?.validator, orderReceivedNotificationValidator) &&
           !isDeepStrictEqual(existing.options?.validator, guestNotificationValidator) &&
-          !isDeepStrictEqual(existing.options?.validator, paymentNotificationValidator)
+          !isDeepStrictEqual(existing.options?.validator, paymentNotificationValidator) &&
+          !isDeepStrictEqual(existing.options?.validator, commerceNotificationValidator) &&
+          !isDeepStrictEqual(existing.options?.validator, returnNotificationValidator) &&
+          !isDeepStrictEqual(existing.options?.validator, refundNotificationValidator)
         )
           throw new Error('Notification collection requires reviewed migration.')
         await connection.db.command({
@@ -82,7 +85,7 @@ export function createNotificationPersistence(connection: Connection, model: Not
   }
 }
 
-export const legacyRegistrationNotificationValidator = {
+const legacyRegistrationNotificationValidator = {
   $jsonSchema: {
     bsonType: 'object',
     additionalProperties: false,
@@ -135,7 +138,7 @@ export const legacyRegistrationNotificationValidator = {
 }
 
 // Immutable known predecessor above; extend only the current validator for this additive migration.
-export const foundationNotificationValidator = {
+const foundationNotificationValidator = {
   $jsonSchema: {
     ...legacyRegistrationNotificationValidator.$jsonSchema,
     properties: {
@@ -148,7 +151,7 @@ export const foundationNotificationValidator = {
 }
 
 // P03-010 additive event/payload contract; known foundation predecessor remains immutable.
-export const passwordResetNotificationValidator = {
+const passwordResetNotificationValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -183,7 +186,7 @@ export const passwordResetNotificationValidator = {
 }
 
 // Additive P03-011 contract; preserve exact known predecessor validators above.
-export const emailChangeNotificationValidator = {
+const emailChangeNotificationValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -227,7 +230,7 @@ export const emailChangeNotificationValidator = {
 }
 
 // P03-012 adds an admin-specific reset template without changing challenge purpose.
-export const adminResetNotificationValidator = {
+const adminResetNotificationValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -278,7 +281,7 @@ export const adminResetNotificationValidator = {
 }
 
 // Additive checkout receipt event; retain every exact known predecessor for explicit migration.
-export const orderReceivedNotificationValidator = {
+const orderReceivedNotificationValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -327,7 +330,7 @@ export const orderReceivedNotificationValidator = {
 }
 
 // Guest proofs retain challenge-only payloads, with order scope instead of account scope.
-export const guestNotificationValidator = {
+const guestNotificationValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -388,7 +391,8 @@ const paymentPayload = {
     },
   },
 }
-export const paymentNotificationValidator = {
+
+const paymentNotificationValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -455,7 +459,7 @@ export const paymentNotificationValidator = {
 }
 
 // Commerce expansion preserves the exact payment predecessor and all proof branch restrictions.
-export const registrationNotificationValidator = {
+const commerceNotificationValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -538,4 +542,214 @@ export const registrationNotificationValidator = {
       ],
     },
   ],
+}
+
+// Additive private return events retain the exact prior commerce validator as a predecessor.
+const returnNotificationValidator = {
+  $and: [
+    {
+      $jsonSchema: {
+        ...commerceNotificationValidator.$and[0]?.$jsonSchema,
+        properties: {
+          ...commerceNotificationValidator.$and[0]?.$jsonSchema?.properties,
+          eventType: {
+            enum: [
+              'registration',
+              'password_reset',
+              'email_change',
+              'order_received',
+              'guest_order_access',
+              'payment_success',
+              'payment_failure',
+              'payment_pending',
+              'order_confirmation',
+              'order_cancellation',
+              'shipment_update',
+              'delivery_completion',
+              'return_update',
+            ],
+          },
+          templateVersion: {
+            enum: [
+              'registration-v1',
+              'password-reset-v1',
+              'email-change-v1',
+              'admin-password-reset-v1',
+              'order-received-v1',
+              'guest-order-access-v1',
+              'payment-success-v1',
+              'payment-failure-v1',
+              'payment-pending-v1',
+              'order-confirmation-v1',
+              'order-cancellation-v1',
+              'shipment-update-v1',
+              'delivery-completion-v1',
+              'return-update-v1',
+            ],
+          },
+          payload: {
+            ...paymentPayload,
+            properties: {
+              ...paymentPayload.properties,
+              operationKey: { bsonType: 'string', pattern: '^[a-f0-9]{64}$' },
+              occurredAt: { bsonType: 'date' },
+              returnId: { bsonType: 'objectId' },
+              returnFrom: { enum: ['under_review', 'approved', 'inspected'] },
+              returnTo: { enum: ['approved', 'rejected', 'completed'] },
+            },
+          },
+        },
+      },
+    },
+    {
+      $or: [
+        {
+          $and: [
+            commerceNotificationValidator.$and[1],
+            {
+              'payload.returnId': { $exists: false },
+              'payload.returnFrom': { $exists: false },
+              'payload.returnTo': { $exists: false },
+            },
+          ],
+        },
+        {
+          eventType: 'return_update',
+          templateVersion: 'return-update-v1',
+          orderId: { $type: 'objectId' },
+          'payload.operationKey': { $type: 'string' },
+          'payload.occurredAt': { $type: 'date' },
+          'payload.returnId': { $type: 'objectId' },
+          'payload.returnFrom': { $type: 'string' },
+          'payload.returnTo': { $type: 'string' },
+          $or: [
+            {
+              'payload.returnFrom': 'under_review',
+              'payload.returnTo': { $in: ['approved', 'rejected'] },
+            },
+            {
+              'payload.returnFrom': { $in: ['approved', 'inspected'] },
+              'payload.returnTo': 'completed',
+            },
+          ],
+          'payload.challengeId': { $exists: false },
+          'payload.paymentId': { $exists: false },
+          'payload.attemptId': { $exists: false },
+          'payload.intakeId': { $exists: false },
+          'payload.orderNumber': { $exists: false },
+          'payload.amountPoisha': { $exists: false },
+        },
+      ],
+    },
+  ],
+} as const
+
+// Additive successor; exact prior return schema remains an accepted migration predecessor.
+const refundNotificationValidator = {
+  $and: [
+    {
+      $jsonSchema: {
+        ...returnNotificationValidator.$and[0].$jsonSchema,
+        properties: {
+          ...returnNotificationValidator.$and[0].$jsonSchema.properties,
+          eventType: {
+            enum: [
+              ...returnNotificationValidator.$and[0].$jsonSchema.properties.eventType.enum,
+              'refund_update',
+            ],
+          },
+          templateVersion: {
+            enum: [
+              ...returnNotificationValidator.$and[0].$jsonSchema.properties.templateVersion.enum,
+              'refund-update-v1',
+            ],
+          },
+          payload: {
+            ...returnNotificationValidator.$and[0].$jsonSchema.properties.payload,
+            properties: {
+              ...returnNotificationValidator.$and[0].$jsonSchema.properties.payload.properties,
+              refundId: { bsonType: 'objectId' },
+              refundStatus: { enum: ['approved', 'processing', 'completed', 'failed', 'rejected'] },
+            },
+          },
+        },
+      },
+    },
+    {
+      $or: [
+        {
+          $and: [
+            returnNotificationValidator.$and[1],
+            { 'payload.refundId': { $exists: false }, 'payload.refundStatus': { $exists: false } },
+          ],
+        },
+        {
+          eventType: 'refund_update',
+          templateVersion: 'refund-update-v1',
+          orderId: { $type: 'objectId' },
+          'payload.refundId': { $type: 'objectId' },
+          'payload.refundStatus': { $type: 'string' },
+          'payload.operationKey': { $type: 'string' },
+          'payload.occurredAt': { $type: 'date' },
+          ...Object.fromEntries(
+            [
+              'challengeId',
+              'paymentId',
+              'attemptId',
+              'intakeId',
+              'orderNumber',
+              'amountPoisha',
+              'returnId',
+              'returnFrom',
+              'returnTo',
+            ].map((k) => [`payload.${k}`, { $exists: false }]),
+          ),
+        },
+      ],
+    },
+  ],
+}
+
+// Exact additive proof-notification successor; historical event shapes stay unchanged.
+const registrationNotificationValidator = {
+  $or: [
+    refundNotificationValidator,
+    {
+      $and: [
+        {
+          $jsonSchema: {
+            ...foundationNotificationValidator.$jsonSchema,
+            properties: {
+              ...foundationNotificationValidator.$jsonSchema.properties,
+              eventType: { enum: ['email_verification'] },
+              templateVersion: { enum: ['email-verification-v1'] },
+              payload: {
+                bsonType: 'object',
+                additionalProperties: false,
+                required: ['challengeId'],
+                properties: { challengeId: { bsonType: 'objectId' } },
+              },
+            },
+          },
+        },
+        { userId: { $type: 'objectId' }, orderId: { $exists: false } },
+      ],
+    },
+  ],
+}
+
+export {
+  adminResetNotificationValidator,
+  commerceNotificationValidator,
+  createNotificationPersistence,
+  emailChangeNotificationValidator,
+  foundationNotificationValidator,
+  guestNotificationValidator,
+  legacyRegistrationNotificationValidator,
+  orderReceivedNotificationValidator,
+  passwordResetNotificationValidator,
+  paymentNotificationValidator,
+  refundNotificationValidator,
+  registrationNotificationValidator,
+  returnNotificationValidator,
 }

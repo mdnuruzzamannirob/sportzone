@@ -1,23 +1,28 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { Types, type ClientSession, type Connection, type HydratedDocument } from 'mongoose'
-import type { CustomerAccountAccess } from '../auth/customer-account.service.js'
-import type { productReviewAccess } from '../catalog/products/product.service.js'
+import { type ClientSession, type Connection, type HydratedDocument, Types } from 'mongoose'
 import { inTransaction } from '../../shared/database/transaction.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
-import { reviewModel, type ReviewRecord } from './review.model.js'
+import { pageMeta, paginationSchema } from '../../shared/pagination.js'
+import type { AdminAccountAccess, CustomerAccountAccess } from '../auth/auth.public.js'
+import type { ProductReviewAccess } from '../catalog/catalog.public.js'
+
+import { type ReviewRecord, reviewModel } from './review.model.js'
 import { verifyReviewPersistence } from './review.persistence.js'
 import {
+  reviewAdminQuery as adminQuery,
+  adminReviewView,
+  moderationKey,
+  moderationReceipt,
   purchaseProof,
   reviewCreate,
   reviewEdit,
   reviewId,
   reviewModeration,
-  moderationKey,
-  moderationReceipt,
+  reviewView,
 } from './review.schema.js'
 
-export type ReviewAudit = {
+type ReviewAudit = {
   actorType: 'customer' | 'admin'
   actorId: string
   action: string
@@ -29,22 +34,143 @@ export type ReviewAudit = {
   afterDigest: string
   reason?: string
 }
+
 type Dependencies = {
   accounts: CustomerAccountAccess
-  catalog: ReturnType<typeof productReviewAccess>
+  catalog: ProductReviewAccess
   audit(session: ClientSession, event: ReviewAudit): Promise<void>
   // Trusted owning purchase capability must check delivered eligibility and fence its
   // durable evidence in this session. No adapter means no verified review creation.
   eligibility?(
     session: ClientSession,
-    selection: { userId: string; productId: string; qualifyingOrderItemId: string },
+    selection: {
+      userId: string
+      productId: string
+      qualifyingOrderItemId: string
+    },
   ): Promise<unknown>
   moderator?(token: string | undefined, session: ClientSession): Promise<string>
   moderationReceipt?(
     session: ClientSession,
-    identity: { actorId: string; reviewId: string; operationKey: string },
+    identity: {
+      actorId: string
+      reviewId: string
+      operationKey: string
+    },
   ): Promise<unknown>
 }
+
+const empty = paginationSchema
+
+// Explicit projection: customer/order/identity/moderation details never enter public views.
+function publicView(row: {
+  _id: Types.ObjectId
+  productId: Types.ObjectId
+  rating: number
+  comment: string
+  status: string
+  createdAt: Date
+}) {
+  return reviewView.parse({
+    id: row._id.toHexString(),
+    productId: row.productId.toHexString(),
+    rating: row.rating,
+    comment: row.comment,
+    status: row.status,
+    createdAt: row.createdAt.toISOString(),
+    verifiedPurchase: true as const,
+  })
+}
+
+function createReviewQueryService(
+  connection: Connection,
+  customers: CustomerAccountAccess,
+  admins: AdminAccountAccess,
+  publicVisibility?: (session: ClientSession, productId: string) => Promise<boolean>,
+) {
+  const reviews = reviewModel(connection)
+  return {
+    async publicList(rawId: unknown, raw: unknown) {
+      const productId = parseInput(reviewId, rawId),
+        query = parseInput(empty, raw)
+      if (!publicVisibility) throw new ApiError('SERVICE_UNAVAILABLE')
+      return inTransaction(connection, async (session) => {
+        if (!(await publicVisibility(session, productId))) throw new ApiError('NOT_FOUND')
+        await verifyReviewPersistence(connection)
+        const filter = {
+          productId: new Types.ObjectId(productId),
+          status: 'approved' as const,
+          isActive: true,
+        }
+        const rows = await reviews
+          .find(filter)
+          .sort({ createdAt: -1, _id: -1 })
+          .skip((query.page - 1) * query.pageSize)
+          .limit(query.pageSize)
+          .session(session)
+        return {
+          items: rows.map(publicView),
+          pagination: pageMeta(query, await reviews.countDocuments(filter).session(session)),
+        }
+      })
+    },
+    async ownList(token: string | undefined, raw: unknown) {
+      const query = parseInput(empty, raw)
+      return customers.owned(
+        token,
+        async (profile, { transaction }) => {
+          await verifyReviewPersistence(connection)
+          const filter = { userId: new Types.ObjectId(profile.id), isActive: true }
+          const rows = await reviews
+            .find(filter)
+            .sort({ createdAt: -1, _id: -1 })
+            .skip((query.page - 1) * query.pageSize)
+            .limit(query.pageSize)
+            .session(transaction)
+          return {
+            items: rows.map(publicView),
+            pagination: pageMeta(query, await reviews.countDocuments(filter).session(transaction)),
+          }
+        },
+        false,
+      )
+    },
+    async adminList(token: string | undefined, raw: unknown) {
+      const query = parseInput(adminQuery, raw)
+      return admins.owned(
+        token,
+        async (_actorId, session) => {
+          await verifyReviewPersistence(connection)
+          const filter = {
+            isActive: true,
+            ...(query.status ? { status: query.status } : {}),
+            ...(query.productId ? { productId: new Types.ObjectId(query.productId) } : {}),
+          }
+          const rows = await reviews
+            .find(filter)
+            .sort({ createdAt: -1, _id: -1 })
+            .skip((query.page - 1) * query.pageSize)
+            .limit(query.pageSize)
+            .session(session)
+          return {
+            items: rows.map((row) =>
+              adminReviewView.parse({
+                ...publicView(row),
+                userId: row.userId.toHexString(),
+                orderId: row.orderId.toHexString(),
+                ...(row.moderationReason ? { moderationReason: row.moderationReason } : {}),
+                ...(row.moderatedAt ? { moderatedAt: row.moderatedAt.toISOString() } : {}),
+              }),
+            ),
+            pagination: pageMeta(query, await reviews.countDocuments(filter).session(session)),
+          }
+        },
+        false,
+      )
+    },
+  }
+}
+
 const digest = (row: HydratedDocument<ReviewRecord>) =>
   createHash('sha256')
     .update(
@@ -56,15 +182,19 @@ const digest = (row: HydratedDocument<ReviewRecord>) =>
       }),
     )
     .digest('hex')
-const dto = (row: HydratedDocument<ReviewRecord>) => ({
-  id: row._id.toHexString(),
-  productId: row.productId.toHexString(),
-  rating: row.rating,
-  comment: row.comment,
-  status: row.status,
-  verifiedPurchase: true,
-})
-export function createReviewService(
+
+const dto = (row: HydratedDocument<ReviewRecord>) =>
+  reviewView.parse({
+    id: row._id.toHexString(),
+    productId: row.productId.toHexString(),
+    rating: row.rating,
+    comment: row.comment,
+    status: row.status,
+    createdAt: row.createdAt.toISOString(),
+    verifiedPurchase: true,
+  })
+
+function createReviewService(
   connection: Connection,
   dependencies: Dependencies,
   clock: () => Date = () => new Date(),
@@ -84,7 +214,10 @@ export function createReviewService(
   }
   async function summary(session: ClientSession, productId: string) {
     const [row] = await reviews
-      .aggregate<{ count: number; average: number }>([
+      .aggregate<{
+        count: number
+        average: number
+      }>([
         {
           $match: { productId: new Types.ObjectId(productId), isActive: true, status: 'approved' },
         },
@@ -280,3 +413,6 @@ export function createReviewService(
     },
   }
 }
+
+export type { ReviewAudit }
+export { createReviewQueryService, createReviewService }

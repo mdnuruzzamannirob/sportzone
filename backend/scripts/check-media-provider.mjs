@@ -1,8 +1,9 @@
-import { checkCloudinaryConnection } from '../dist/providers/cloudinary/cloudinary.client.js'
-import { createClamAvScanner } from '../dist/providers/antivirus/clamav.client.js'
 import { validateMediaPolicy } from '../dist/config/media.js'
+import { createClamAvScanner } from '../dist/providers/antivirus/clamav.client.js'
+import { checkCloudinaryConnection } from '../dist/providers/cloudinary/cloudinary.client.js'
 
 // No uploads, deletes, DB writes, policy approval or runtime activation.
+
 let stage = 'environment'
 try {
   if (!['local', 'test', 'staging'].includes(process.env.APP_ENV))

@@ -1,18 +1,24 @@
 import { z } from 'zod'
 
+type PricingInputSchema = typeof pricingInput
+
 const id = z.string().regex(/^[a-f0-9]{24}$/)
+
 const money = z.int().nonnegative().max(Number.MAX_SAFE_INTEGER)
-export const couponTerms = z.discriminatedUnion('type', [
+
+const couponTerms = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('fixed'), value: money.min(1) }),
   z.strictObject({ type: z.literal('percentage'), value: z.int().min(1).max(10000) }),
 ])
+
 const selection = z.strictObject({
   id,
   variantId: id,
   quantity: z.int().min(1).max(50),
   couponEligible: z.boolean(),
 })
-export const pricingRequest = z
+
+const pricingRequest = z
   .strictObject({
     items: z.array(selection).min(1).max(40),
     coupon: couponTerms.optional(),
@@ -29,7 +35,8 @@ export const pricingRequest = z
         message: 'Duplicate item or variant identity',
       })
   })
-export const pricingInput = pricingRequest.safeExtend({
+
+const pricingInput = pricingRequest.safeExtend({
   items: z
     .array(
       selection
@@ -39,3 +46,6 @@ export const pricingInput = pricingRequest.safeExtend({
     .min(1)
     .max(40),
 })
+
+export type { PricingInputSchema }
+export { couponTerms, pricingInput, pricingRequest }

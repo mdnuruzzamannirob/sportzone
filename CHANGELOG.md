@@ -8,6 +8,305 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 3 November 2026 — Explicit backend lint fix/check scripts
+
+- Backend lint/format apply safe fixes; lint:check/format:check validate without edits. CI uses
+  lint:check and enforces its inventory entry when that script exists.
+
+## 3 November 2026 — Backend formatting, env examples and CI scope
+
+- Added backend format/format:check scripts and executable CI coverage for backend JSON configuration.
+- Populated local/staging env templates with illustrative values; preserved actual private configuration.
+- Commented frontend/browser hosted steps for the owner-selected backend stage, retaining security,
+  backend checks, image gate and future integrated verification requirements.
+- [Changes and verification](docs/evidence/P03-021-backend-refactor.md#environment-examples-workspace-formatting-and-backend-stage-ci--3-november-2026).
+
+## 3 November 2026 — Backend refactor closed; local configuration organized
+
+- Organized env keys and local technical defaults, preserving private credentials and explicit feature
+  admission. Grouped root/backend manifest scripts and dependencies without command/version changes.
+- P03-030 Done after local regression/fixes and owner-directed Docker deferral. Image verification
+  remains unverified; CI/release and P03-022/external acceptance are unchanged.
+- [Closeout evidence](docs/evidence/P03-021-backend-refactor.md#owner-authorized-refactor-closeout-and-environment-cleanup--3-november-2026).
+
+## 3 November 2026 — Backend final local verification and fixes
+
+- Corrected detached proof IDs at auth persistence queries; updated existing route/stock parity fixtures.
+  Recorded exact reviewed synthetic encryption-vector scanner fingerprints without broad exclusions.
+- Local unit/contract/integration/tooling regression, compiled smoke, static checks and security pass
+  through the recorded full run and affected rechecks. Docker image verification is blocked by daemon
+  permissions; P03-030 remains In Progress, with no stage/provider/release acceptance.
+- [Results, resolved failures and remaining blocker](docs/evidence/P03-021-backend-refactor.md#final-backend-verification-and-corrections--3-november-2026).
+
+## 3 November 2026 — Backend outside-src structural closeout
+
+- Migrated contract/operator/test consumers; organized suites by owner and split commerce scenarios
+  into workflow files with reusable fixtures. Preserved generated API artifacts and operator commands.
+- Synchronized Docker/CI script dependencies and retired stale boundary waivers; current boundaries,
+  backend compilation/build/lint and API freshness pass.
+- [Structural evidence and deferred verification](docs/evidence/P03-021-backend-refactor.md#outside-src-structural-closeout--3-november-2026).
+  Runtime tests/review/fixes remain pending; P03-030 stays In Progress. No commit/push or release acceptance.
+
+## 3 November 2026 — Backend src structural closeout
+
+- Completed root-wired owner capabilities and reusable schema assembly; detached proof, notification
+  and claim-media contracts. Finished Returns controllers and removed redundant constructor arguments,
+  forwarding adapters, DTO duplication and generic/numeric handler names.
+- Source compilation/lint/format Passed for 311 files; zero source boundary violations, active legacy
+  allowances or type/runtime cycles. The unfiltered boundary gate still fails on 292 stale outside-src
+  allowance entries, whose migration remains in the next batch.
+- Recorded [source checks and the outside-src migration ledger](docs/evidence/P03-021-backend-refactor.md#src-structural-closeout--3-november-2026).
+  Tests/review and outside-src consumers remain deferred; P03-030 stays In Progress. No Git/PR changes
+  or backend/application/release acceptance.
+
+## 3 November 2026 — Backend src architecture work in progress
+
+- Separated server lifecycle from configured application composition; injected auth HTTP and audit
+  capabilities, detached public DTO/provider/job contracts, and consolidated shared input validation.
+- Standardized bottom exports across src. Source compilation, lint and format passed for 308 files;
+  runtime imports are acyclic. Full src remains unfinished: 47 source boundary violations and stale
+  allowance inventory still require resolution. Tests/review and outside-src consumers remain deferred.
+- Updated the [existing P03-030 evidence](docs/evidence/P03-021-backend-refactor.md#remaining-src-architecture-work--ongoing-3-november-2026).
+  No commit/push/branch/PR operations or application acceptance.
+
+## 3 November 2026 — Whole-module structural batch
+
+- Organized all twenty module owners, extracted wishlist, placed variants under products and separated
+  payment attempts/collections and refund obligations/payouts. Consolidated cohesive services/schemas,
+  separated HTTP handlers and moved audit/notification/delivery-exception routes to their owners.
+- Module source count 275 → 251; source-only compilation/module lint/format passed. No tests executed,
+  no test/contract/script/tooling edits, and no commit/push/PR changes in this batch.
+- Recorded the [owner-directed staged sequence and remaining verification](docs/evidence/P03-021-backend-refactor.md#p03-030--whole-module-structural-pass-3-november-2026).
+  Full src integration, outside-src consumer migration and consolidated behavior review remain pending.
+
+## 3 November 2026 — Completed backend package review corrections
+
+- Reviewed WP00–WP04 and corrected naming/cohesion gaps: consolidated credential/customer route files,
+  account access and delivery coverage; aligned factories/types and all executable consumers.
+- Recorded adopted-owner file conventions in Architecture/Refactor Plan; four source files removed,
+  27 private-type allowances eliminated, no API/database/security behavior changed.
+- Recorded [P03-029 findings and verification](docs/evidence/P03-021-backend-refactor.md#p03-029--completed-wp00wp04-review-and-corrections-3-november-2026):
+  856 integration cases Passed alongside affected unit/contract/boundary and preservation checks.
+
+## 3 November 2026 — Identity, customer and technical health refactor
+
+- Injected order/audit capabilities into auth; introduced detached identity/notification contracts and
+  customer HTTP controllers. Reused credential handlers and consolidated media-admin authorization.
+- Moved health outside business modules, preserving HTTP behavior and executable route inventory;
+  retained canonical models/security fences and removed 26 legacy boundary allowances.
+- Recorded [WP04/P03-028 verification](docs/evidence/P03-021-backend-refactor.md#p03-028--wp04-identity-customer-and-technical-health-3-november-2026),
+  including a corrected Markdown-spacing parser in the existing identity index test. No new test file,
+  package, collection or feature activation.
+
+## 3 November 2026 — Local Git recovery
+
+- Recovered the exact original HEAD commit after zero-byte Git object corruption; preserved history,
+  index and all 827 worktree files. Full object integrity verification passed after backed-up repair.
+- Retained the original [WP03 verification record and recovery details](docs/evidence/P03-021-backend-refactor.md#p03-027--wp03-delivery-pilot-3-november-2026).
+
+## 3 November 2026 — Delivery module refactor pilot
+
+- Separated delivery HTTP controllers from middleware/route registration; root setup injects existing
+  auth guards. Published narrow auth/delivery types and migrated coverage consumers off private types.
+- Retained charge/coverage behavior and canonical persistence; normalized module exports and reused
+  the shared digest. Seven legacy allowances removed; no new dependency or API/data contract.
+- Recorded [WP03/P03-027 verification and limits](docs/evidence/P03-021-backend-refactor.md#p03-027--wp03-delivery-pilot-3-november-2026),
+  including passing affected tests, targeted sandbox rechecks and an unreadable Git HEAD object.
+
+## 3 November 2026 — Backend technical foundation refactor
+
+- Moved session/browser option validation into existing configuration ownership; extracted reusable
+  encryption/keyring and JSON digest mechanics while retaining auth-owned proof binding.
+- Replaced service-derived operations configuration typing with an explicit orders public contract;
+  removed five legacy allowances. No environment, API or persistence contract changed.
+- Recorded [WP02/P03-026 checks and review](docs/evidence/P03-021-backend-refactor.md#p03-026--wp02-technical-foundation-3-november-2026):
+  219 unit and 155 isolated integration cases plus compiled smoke passed; stage acceptance remains separate.
+
+## 3 November 2026 — Backend refactor contracts and boundary enforcement
+
+- Reconciled the selected module/file/dependency target in Architecture, Database, API, Implementation Plan
+  and Testing; corrected the existing collection inventory to 39 without schema or runtime changes.
+- Extended the existing checker/fixtures for public type contracts, private composition, inline/dynamic
+  imports and source cycles. Added one exact migration data inventory with owning removal packages;
+  new violations and stale allowances fail without waiving stock/provider/persistence safeguards.
+- Recorded [WP01/P03-025 verification and limits](docs/evidence/P03-021-backend-refactor.md#p03-025--wp01-contracts-and-enforcement-3-november-2026),
+  including three process-test failures reproduced on untouched HEAD and passing outside-sandbox reruns.
+  Backend runtime inputs, generated APIs, feature activation and stage/external acceptance remain unchanged.
+
+## 3 November 2026 — Backend refactor baseline inventory
+
+- Completed WP00/P03-024 inventory and impact mapping: 491 backend files, 170 operations, 41 scripts,
+  canonical persistence fingerprints and affected tooling/worker consumers; runtime code remains unchanged.
+- Reused the [existing refactor evidence record](docs/evidence/P03-021-backend-refactor.md#p03-024--wp00-follow-up-baseline-3-november-2026)
+  for selected baseline results, type-only coupling and collection/activation documentation discrepancies.
+  Existing staged planning changes and all application/external acceptance gates are preserved.
+
+## 3 November 2026 — Whole-backend refactor planning
+
+- Added the [backend refactor plan](docs/BACKEND_REFACTOR_PLAN.md) covering the selected module boundaries,
+  file/reuse conventions, dependency and workflow rules, complete migration packages, verification and rollback.
+- Linked the plan from Implementation Plan §3.6 and identified owning-specification differences to reconcile
+  before code changes. Documentation only; no backend refactor, task acceptance or release is claimed.
+- Clarified refactor-only execution: preserve existing behavior, change files only for demonstrated reasons,
+  reuse tests/records and select affected checks; missing features and unrelated fixes are separate scope.
+
+## 2 November 2026 — Whole-backend implementation audit and API gap closure
+
+- Audited all 170 specified operations against runtime; identified nine missing surfaces despite earlier task completion records.
+- Implemented all nine missing operations: purpose-bound initial email verification, scoped delivery/payment histories, read-only coupon preview, protected receipt matching/allocation and customer refund submission. Added their owning typed contracts and regenerated OpenAPI/Postman.
+- Customer requests retain unapproved plans without financial/unit holds or attempts; protected approval atomically rechecks and reserves actual capacity. Closed cancellation/delivery obligations use separate post-closure qualification. Added the exact-predecessor notification validator migration and safe activation procedures.
+- Added all-170-operation runtime parity and complete application/worker/bootstrap verification. P03-023 tracks these gap closures; Promoted the 63 existing local-only operations to owning typed contracts, covering all 170 operations; actual HTTP scenarios validate response DTO/status/pagination parity. Corrected refund-group creation to specified HTTP 201 and excluded initial-verification identity proofs from admin resend. P03-022 retains real external/stage acceptance. No stage or external gate is self-approved.
+
+## 2 November 2026 — Package G backend verification preparation
+
+- Added explicitly admitted, leased media maintenance with retention/legal-hold safeguards and restart/uncertain-delete regression; composed standalone local/test public media independently of returns.
+- Included payment/refund reconciliation and media worker entries plus reviewed staging scripts in the restricted runtime image context.
+- Fixed the payment-bootstrap test's blocking child-process invocation; retained protected static bootstrap stage diagnostics.
+- Started backend closeout verification; [current evidence and external acceptance limits](docs/evidence/P09-011-staging-runtime.md#package-g-verification). No hosted staging, media-policy approval or independent backend acceptance is claimed.
+
+## 2 November 2026 — Package F backend operations completion
+
+- Completed authoritative financial reports/dashboard and bounded sanitized operational queues using domain-owned source projections and explicit current cutoff/event dates.
+- Added anonymous/scoped complaint intake and protected contact/response, customer histories/privacy decisions, safe notification retry admission and actual server composition.
+- Connected protected final-delivery custody, one-time stock recovery and canonical source-funded refund through verified payout; added additive complaint/index rollout and recovery procedures.
+- Recorded P06-016/017 and P09-002/014/015/016/017/018 engineering completion with [affected verification and review](docs/evidence/P06-016-017-commerce-delivery-support.md#package-f-completion). No external qualification, backend closeout or release claim.
+
+## 2 November 2026 — Package E development completion
+
+- Completed customer cross-order claim/refund history, exact guest/customer private refund reads,
+  safe status/investigation timelines, separate merchandise/correction totals and explicit server activation.
+- Connected review HTTP to canonical purchase/refund facts; resolved zero-price units without inventing payout,
+  preserved historical reviews and retained moderation/auth/CSRF/privacy protections.
+- Recorded P05-016/P08-016/P08-019 Done with affected replica-set/API regression and executor review;
+  [evidence](docs/evidence/P05-016-P08-019-local-reads.md#package-e-completion). No deployed release or milestone claim.
+
+## 2 November 2026 — Package D refund outcome and recovery
+
+- Completed P08-009/010/011 with independently bound payout proof, atomic source/order/unit/delivery settlement and guarded review/reconcile/manual-confirmation APIs.
+- Added explicit safe retry, qualified lost-reference recovery, consented manual fallback, original-transfer uniqueness and a durable lease/cursor reconciliation runner.
+- Added transactional status-specific refund intents and verified return/refund worker composition; migrated only known notification predecessors and retained all history.
+- Verified final 806 unit and 23 focused recovery cases, 446-case integration regression plus 313 checkout rerun, 112 contracts and 80 tooling cases. [Evidence and release scope](docs/evidence/P08-009-010-local-refund-evidence.md#package-d-completion).
+- Narrowly classified a known English-prose scanner false positive; same-document credential detection remains verified. Counts: 122 Done, 9 Blocked, 77 Not Started, 2 Deferred; no real payout or release/milestone qualification claimed.
+
+## 2 November 2026 — Package C refund foundation and dispatch
+
+- Completed P08-005/006/007/008 with protected local/test policy configuration and canonical admin refund group/list/detail/gateway-attempt APIs.
+- Bound gateway dispatch to the verified source merchant, retained payload conflicts across replay aliases and mapped exhausted unit capacity to the canonical refund-balance error.
+- Combined the existing Package B prerequisite commit into main's working tree, preserving C changes and prior returnOptions compatibility; consolidated tests cover both packages.
+- Recorded 802 unit, 396 integration, 112 contract and 79 tooling passes in [Package C evidence](docs/evidence/P06-013-P08-005-008-durable-reservations.md#package-c-completion). Counts: 119 Done, 12 Blocked, 77 Not Started, 2 Deferred. Outcome/recovery and live qualification retain their owning tasks.
+
+## 1 November 2026 — Package B returns completion
+
+- Completed P08-002/003/004: scoped eligibility/submission/private evidence and protected admin review, receipt, inspection and completion APIs.
+- Added cumulative physical batches, parcel/key replay protection, accepted/rejected-unit resolution and atomic resellable-only stock restoration.
+- Wired explicit local/test return and Cloudinary/ClamAV startup, protected exception configuration and additive exact-predecessor validator upgrade; synchronized API/database/testing/operations contracts.
+- Recorded passing backend verification and executor review in [Package B evidence](docs/evidence/P08-003-004-local-return-inspection.md#package-b-completion). Counts: 115 Done, 16 Blocked, 77 Not Started, 2 Deferred. Live qualification and milestones retain their own gates.
+
+## 1 November 2026 — Package A development closeout
+
+- Owner approved separating ordinary development completion from live-release qualification; aligned the owning completion/testing instructions.
+- Marked P06-003 and Package A P06-011/012/013/014 Done using the verified implementation, affected tests and executor review.
+- Assigned outstanding policy/publication and actual cash qualification explicitly to existing P11-007/P11-008 release checklists; preserved runtime safeguards and stage/milestone gates.
+- Counts: 112 Done, 19 Blocked, 77 Not Started, 2 Deferred; no production launch or external success claimed.
+
+## 1 November 2026 — Prepaid delivery timing mapping
+
+- Added optional reviewed prepaid delivery caps and separate courier-handover milestones, using canonical verified full-payment events rather than fulfillment timestamps.
+- Propagated rules through quote/order snapshots, froze confirmation's funding event, and exposed current handover status through protected order projections.
+- Added exact-predecessor additive local/test validator migration, schema/API compatibility and real payment/confirmation rollback coverage.
+- No qualified policy review, actual cash receipt, deployed activation or independent task acceptance is inferred from automated verification.
+
+## 1 November 2026 — Protected order-operation authorities
+
+- Implemented protected original-receipt integrity/binding verification and configured deadline-registry checks.
+- Wired explicit local/test server activation and request-bound funded-cancellation authorities without default financial evidence or review records.
+- Added configuration, privacy/tamper, real server startup and cancellation replay/rollback coverage; real policy/cash qualification and full task acceptance remain outstanding.
+
+## 1 November 2026 — Bangladesh policy preparation
+
+- Inspected official Bangladesh digital-commerce sources and prepared Bangla order/delivery/COD policy text plus an original-receipt verification procedure.
+- Recorded the missing full-payment/hourly-handover timing mapping; retained genuine policy review, deployed activation and task acceptance gates.
+- Documentation/evidence only; no invented approval, financial receipt or env activation.
+
+## 1 November 2026 — Package A order operations integration
+
+- Added protected admin order list/detail, fulfillment-transition and COD collection HTTP with explicit root capability composition, customer history and funded cancellation.
+- Reused historical projections, added bounded allocation/audit and collection balance projections, and mapped unavailable cancellation persistence to 503.
+- Added real replica-set HTTP/race/replay/ownership coverage; qualified policy/cash authority, deployed activation and independent task acceptance remain outstanding.
+
+## 1 November 2026 — Durable refund reservations and funded cancellation
+
+- Added source/order/unit/delivery reservations, durable obligations/attempts and explicit additive local migration.
+- Joined paid and partially collected COD cancellation with refund intents, allocation release and audit atomically; added explicit local cancellation HTTP.
+- Added one-shot gateway dispatch that preserves held funds and original identity on uncertainty; corrected payment-monitor classification.
+- Verified payout completion, reconciliation, real policy/provider evidence and full task acceptance remain outstanding.
+
+## 1 November 2026 — Blocked backend task review
+
+- Reviewed all 24 blocked tasks against current code, dependencies and acceptance evidence; retained explicit incomplete code and external approval blockers.
+- Added real local review composition with delivered purchase, catalog visibility, admin fences and durable moderation replay.
+- Added local customer search/detail and audited suspension/reactivation with atomic session revocation and rollback checks.
+- Full task acceptance and external gates remain unresolved.
+
+## 1 November 2026 — Private reporting and customer read foundation
+
+- Added non-authoritative financial report arithmetic and an admin-scoped masked customer detail capability.
+- P09-002/015 remain Blocked pending accepted prerequisites, full integration and independent review.
+
+## 1 November 2026 — Local support and audit reads
+
+- Added locally composed administrative complaint queue and redacted audit history with current-session checks.
+- P09-016/017 remain Blocked on dependencies, remaining operations, query profiles and independent acceptance.
+
+## 1 November 2026 — Local payment correction advisory
+
+- Bound read-only correction calculations to verified, order-linked source balances and added deterministic multi-source planning.
+- P08-006/007 remain Blocked pending prerequisites, atomic reservation and independent acceptance.
+
+## 1 November 2026 — Local review visibility and administrator claim reads
+
+- Added Catalog-owned review visibility checks and locally composed, admin-protected claim queue and detail reads.
+- P05-016 and P08-019 remain Blocked pending accepted dependencies, full integration and independent review.
+
+## 31 October 2026 — Local review and claim reads
+
+- Added locally composed review reading, submission and moderation routes and scoped claim reads with private evidence metadata.
+- P05-016 and P08-019 remain Blocked on accepted dependencies, full integration and independent review.
+
+## 31 October 2026 — Local return decisions and review qualification
+
+- Added transactional return-decision notification intents and proof-checked local delivery with no payout-success implication.
+- Added transaction-fenced delivered-purchase review qualification and an additive notification-validator migration.
+- P08-011/016 remain Blocked on refund prerequisites, integrated runtime and independent acceptance.
+
+## 31 October 2026 — Private refund status and manual evidence checks
+
+- Added redacted gateway refund status reports and non-authorizing retry assessment.
+- Added two-phase admin and manual evidence verification; durable reconciliation, protected evidence sources and payout completion remain blocked.
+
+## 31 October 2026 — Local multi-source refund planning and provider transport
+
+- Added private, nonbinding multi-source unit/delivery refund plans with source and order capacity limits.
+- Added isolated SSLCOMMERZ initiation transport; acceptance remains unverified and no runtime payout executor is enabled.
+- P08-007/008 remain Blocked pending atomic reservations, durable attempts, prerequisites and provider-backed acceptance.
+
+## 31 October 2026 — Private refund advisory
+
+- Added read-only, single-source claim/order/payment refund calculations with original unit amounts and held/completed capacity limits.
+- Added transient payout-attempt fact validation; full attempt persistence, multi-source allocation, reservation and payout remain blocked.
+
+## 31 October 2026 — Private physical return inspection
+
+- Added local receipt/inspection and transactionally restocked only selected inspected resellable units, with ordinal fences and replay/race protection.
+- Extended explicit local/test validator upgrade; P08-003/004 remain Blocked on prerequisites, further receipt batches, partial-case resolution and integrated acceptance.
+
+## 31 October 2026 — Private return eligibility and review
+
+- Added scoped delivered-order eligibility, inclusive seven-day physical window and protected policy exceptions.
+- Added private partial approval/rejection, exact unit release, shortage resolution and atomic private Media evidence attachment.
+- Added strict lifecycle persistence, explicit additive local/test upgrade and race/replay/rollback/boundary checks.
+- P08-002/003 remain Blocked on prerequisites and remaining physical lifecycle, HTTP and qualified integration work; no release acceptance implied.
+
 ## 31 October 2026 — CI scope and container-gate corrections
 
 - Prose-only changes now run repository/security checks without unnecessary application/browser builds;

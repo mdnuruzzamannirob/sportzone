@@ -1,7 +1,7 @@
 import type { ErrorRequestHandler } from 'express'
 import { ApiError } from '../errors/app-error.js'
 
-export const handleError: ErrorRequestHandler = (error: unknown, _req, res, _next) => {
+const handleError: ErrorRequestHandler = (error: unknown, _req, res, _next) => {
   // A partial response cannot be replaced safely; never append HTML or raw errors.
   if (res.headersSent) {
     res.destroy()
@@ -18,3 +18,5 @@ export const handleError: ErrorRequestHandler = (error: unknown, _req, res, _nex
     meta: { requestId: res.locals.requestId },
   })
 }
+
+export { handleError }

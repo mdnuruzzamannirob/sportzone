@@ -1,13 +1,13 @@
-import express, { type Router } from 'express'
 import { randomUUID } from 'node:crypto'
-import type { HealthDependencies } from './modules/health/health.service.js'
+import express, { type Router } from 'express'
+import type { HealthDependencies } from './health/health.service.js'
 import { createApiRouter } from './routes.js'
 import { ApiError } from './shared/errors/app-error.js'
 import type { Logger } from './shared/logger.js'
 import { handleError } from './shared/middleware/handle-error.js'
 import { securityAction } from './shared/security-actions.js'
 
-export function createApp({
+function createApp({
   apiRouter,
   health,
   logger,
@@ -79,7 +79,8 @@ export function createApp({
     if (
       mediaUploadsEnabled &&
       req.method === 'POST' &&
-      req.path === '/api/v1/admin/media/uploads' &&
+      (req.path === '/api/v1/admin/media/uploads' ||
+        /^\/api\/v1\/orders\/[a-f0-9]{24}\/claims\/evidence-uploads$/.test(req.path)) &&
       req.is('multipart/form-data')
     ) {
       next()
@@ -96,3 +97,5 @@ export function createApp({
   app.use(handleError)
   return app
 }
+
+export { createApp }

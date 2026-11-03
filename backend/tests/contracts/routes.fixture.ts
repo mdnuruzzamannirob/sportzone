@@ -1,34 +1,75 @@
-import { orderReadRoutes } from '../../src/modules/orders/order-read.routes.js'
-import { paymentMonitorRoutes } from '../../src/modules/payments/payment-monitor.routes.js'
-import { paymentRiskRoutes } from '../../src/modules/payments/payment-risk.routes.js'
-import { paymentCallbackRoutes } from '../../src/modules/payments/payment-callback.routes.js'
-import { paymentInitiationRoutes } from '../../src/modules/payments/payment-initiation.routes.js'
-import { paymentMethodsRoutes } from '../../src/modules/payments/payment-methods.routes.js'
-import { guestAccessRoutes } from '../../src/modules/auth/guest-access/guest-access.routes.js'
-import { deliveryAreaRoutes } from '../../src/modules/delivery/delivery.routes.js'
-import { checkoutRoutes } from '../../src/modules/checkout/checkout.routes.js'
-import { deliveryRoutes } from '../../src/modules/delivery/delivery.routes.js'
-import {
-  settingsAdminRoutes,
-  settingsPublicRoutes,
-} from '../../src/modules/settings/settings.routes.js'
-import { productAdminRoutes } from '../../src/modules/catalog/products/product-admin.routes.js'
-import { categoryAdminRoutes } from '../../src/modules/catalog/categories/category-admin.routes.js'
-import { inventoryAdminRoutes } from '../../src/modules/inventory/inventory-admin.routes.js'
-import { couponAdminRoutes } from '../../src/modules/promotions/coupon-admin.routes.js'
-import { wishlistRoutes } from '../../src/modules/cart/wishlist.routes.js'
-import { cartRoutes } from '../../src/modules/cart/cart.routes.js'
-import type { RequestHandler, Router } from 'express'
+import type { RequestHandler } from 'express'
+import { Router } from 'express'
 import { z } from 'zod'
-import { adminRoutes } from '../../src/modules/auth/credentials/admin-auth.routes.js'
-import { customerRoutes } from '../../src/modules/auth/credentials/customer-auth.routes.js'
-import { recoveryRoutes } from '../../src/modules/auth/recovery/password-recovery.routes.js'
-import { browserSecurityRoutes } from '../../src/modules/auth/sessions/browser-security.routes.js'
-import { emailChangeRoutes } from '../../src/modules/auth/verification/email-change.routes.js'
-import { catalogRoutes } from '../../src/modules/catalog/catalog.routes.js'
-import { profileRoutes } from '../../src/modules/customers/customer.routes.js'
-import { mediaRoutes } from '../../src/modules/media/media.routes.js'
+import { createAuditRoutes } from '../../src/modules/audit/audit.routes.js'
+import { sessionCookies } from '../../src/modules/auth/auth.composition.js'
+import {
+  createAdminCredentialRoutes,
+  createCustomerCredentialRoutes,
+} from '../../src/modules/auth/credentials/credential.routes.js'
+import { createGuestAccessRoutes } from '../../src/modules/auth/guest-access/guest-access.routes.js'
+import { createRecoveryRoutes } from '../../src/modules/auth/recovery/password-recovery.routes.js'
+import { createBrowserSecurityRoutes } from '../../src/modules/auth/sessions/browser-security.routes.js'
+import { createEmailChangeRoutes } from '../../src/modules/auth/verification/email-change.routes.js'
+import { createEmailVerificationRoutes } from '../../src/modules/auth/verification/email-verification.routes.js'
+import { createCartRoutes } from '../../src/modules/cart/cart.routes.js'
+import { createCatalogRoutes } from '../../src/modules/catalog/catalog.routes.js'
+import { createCategoryAdminRoutes } from '../../src/modules/catalog/categories/category.routes.js'
+import { createProductAdminRoutes } from '../../src/modules/catalog/products/product.routes.js'
+import { createCheckoutRoutes } from '../../src/modules/checkout/checkout.routes.js'
+import {
+  createCustomerAdminRoutes,
+  createCustomerRoutes,
+} from '../../src/modules/customers/customer.routes.js'
+import {
+  createDeliveryAreaRoutes,
+  createDeliveryRoutes,
+} from '../../src/modules/delivery/delivery.routes.js'
+import { createInventoryAdminRoutes } from '../../src/modules/inventory/inventory.routes.js'
+import { claimEvidenceMultipart } from '../../src/modules/media/media.controller.js'
+import { createMediaRoutes } from '../../src/modules/media/media.routes.js'
+import { createNotificationRoutes } from '../../src/modules/notifications/notification.routes.js'
+import {
+  createCancellationRoutes,
+  createDeliveryExceptionRoutes,
+  createOrderAdminRoutes,
+  createOrderReadRoutes,
+} from '../../src/modules/orders/order.routes.js'
+import {
+  createPaymentCallbackRoutes,
+  createPaymentInitiationRoutes,
+  createPaymentMatchingRoutes,
+  createPaymentMethodsRoutes,
+  createPaymentMonitorRoutes,
+  createPaymentRiskRoutes,
+} from '../../src/modules/payments/payment.routes.js'
+import {
+  createCouponAdminRoutes,
+  createCouponPreviewRoutes,
+} from '../../src/modules/promotions/promotion.routes.js'
+import {
+  createRefundHistoryRoutes,
+  createRefundRequestRoutes,
+  createRefundRoutes,
+} from '../../src/modules/refunds/refund.routes.js'
+import { createReportRoutes } from '../../src/modules/reports/report.routes.js'
+import {
+  createReturnHistoryRoutes,
+  createReturnRoutes,
+} from '../../src/modules/returns/return.routes.js'
+import { createReviewRoutes } from '../../src/modules/reviews/review.routes.js'
+import {
+  createSettingAdminRoutes,
+  createSettingPublicRoutes,
+} from '../../src/modules/settings/setting.routes.js'
+import {
+  createSupportReadRoutes,
+  createSupportRoutes,
+} from '../../src/modules/support/support.routes.js'
+import { createWishlistRoutes } from '../../src/modules/wishlist/wishlist.routes.js'
 import { createApiRouter } from '../../src/routes.js'
+import { composeCheckoutRoutesDependencies } from '../../src/setup.js'
+import { sessionHttpFor } from '../helpers/auth.js'
 
 const unused = async (): Promise<never> => {
   throw new Error('Parity fixture must not call a domain service')
@@ -72,6 +113,7 @@ const profile = {
   requestDeletion: unused,
 }
 const media = {
+  verifyPersistence: unused,
   uploadPublic: unused,
   uploadEvidence: unused,
   reconcileUpload: unused,
@@ -84,24 +126,161 @@ const media = {
   cleanup: unused,
   maintenanceBatch: unused,
 }
+// These routers are locally composed only and are deliberately excluded from live registry parity.
+export function localOnlyRouters() {
+  return [
+    createReportRoutes({ read: unused }, security, sessionHttpFor(sessions), { list: unused }),
+    createSupportRoutes(
+      {
+        complaints: {
+          adminDetail: unused,
+          intake: unused,
+          mine: unused,
+          adminList: unused,
+          submit: unused,
+          list: unused,
+          resolve: unused,
+        },
+        customers: { owned: unused, authorizeInSession: unused },
+      },
+      security,
+      sessionHttpFor(sessions),
+      { middleware: () => guard },
+      'https://shop.example.test',
+    ),
+    createNotificationRoutes({ list: unused, retry: unused }, security, sessionHttpFor(sessions)),
+    createDeliveryExceptionRoutes(
+      { list: unused, create: unused, resolve: unused },
+      security,
+      sessionHttpFor(sessions),
+    ),
+    createRefundHistoryRoutes(
+      { mine: unused, list: unused, detail: unused, forCustomer: unused },
+      security,
+      sessionCookies,
+    ),
+    createRefundRoutes(
+      {
+        list: unused,
+        detail: unused,
+        group: unused,
+        payout: unused,
+        reconcile: unused,
+        confirmManual: unused,
+        review: unused,
+      },
+      security,
+      sessionHttpFor(sessions),
+    ),
+    createReturnRoutes(
+      {
+        authorize: unused,
+        eligibility: unused,
+        submit: unused,
+        upload: unused,
+        privateEvidence: unused,
+        review: unused,
+        receive: unused,
+      },
+      { transition: unused },
+      { receive: unused, inspect: unused },
+      {
+        adminList: unused,
+        adminDetail: unused,
+        list: unused,
+        detail: unused,
+        mine: unused,
+        forCustomer: unused,
+      },
+      security,
+      sessionHttpFor(sessions),
+      'https://shop.example.test',
+      1024,
+      guard,
+      unused,
+      claimEvidenceMultipart,
+    ),
+    createOrderAdminRoutes(
+      { adminRead: unused, adminList: unused },
+      { transition: unused },
+      { collect: unused },
+      security,
+      sessionHttpFor(sessions),
+    ),
+    createCancellationRoutes(
+      { request: unused, decide: unused, list: unused, adminList: unused },
+      security,
+      sessionHttpFor(sessions),
+      'https://shop.example.test',
+    ),
+    createCustomerAdminRoutes(
+      {
+        list: unused,
+        detail: unused,
+        decideStatus: unused,
+        history: unused,
+        privacy: unused,
+        decidePrivacy: unused,
+      },
+      { cors: guard, requireBrowser: guard, requireSession: guard, readToken: () => undefined },
+    ),
+    Router().use(
+      createSupportReadRoutes({ adminList: unused }, security, sessionHttpFor(sessions)),
+      createAuditRoutes({ list: unused }, security, sessionHttpFor(sessions)),
+    ),
+    createReturnHistoryRoutes(
+      {
+        list: unused,
+        detail: unused,
+        adminList: unused,
+        adminDetail: unused,
+        mine: unused,
+        forCustomer: unused,
+      },
+      security,
+      sessionHttpFor(sessions),
+    ),
+    createReviewRoutes(
+      { publicList: unused, ownList: unused, adminList: unused },
+      { create: unused, readOwn: unused, edit: unused, moderate: unused },
+      security,
+      sessionHttpFor(sessions),
+    ),
+  ]
+}
 export function registeredRouter() {
   return createApiRouter({ isReady: async () => true }, [
-    paymentCallbackRoutes(
+    createCouponPreviewRoutes({ preview: unused }, security, sessionCookies),
+    createRefundRequestRoutes(
+      { request: unused },
+      security,
+      guard,
+      'https://shop.example.test',
+      sessionCookies,
+    ),
+    createPaymentMatchingRoutes(
+      { link: unused, allocate: unused },
+      security,
+      sessionHttpFor(sessions),
+    ),
+    createPaymentCallbackRoutes(
       { malformed: unused, receive: unused, redirect: () => 'https://shop.example.test/result' },
       guard,
     ),
-    paymentInitiationRoutes(
+    createPaymentInitiationRoutes(
       { initiate: unused, read: unused },
       security,
       guard,
       'https://shop.example.test',
+      sessionCookies,
     ),
-    paymentMethodsRoutes({ read: unused }, []),
-    browserSecurityRoutes(security, sessions),
-    guestAccessRoutes(
+    createPaymentMethodsRoutes({ read: unused }, [], sessionCookies),
+    createBrowserSecurityRoutes(security, sessions),
+    createGuestAccessRoutes(
       { request: unused, exchange: unused },
       {
         issueAfterProof: unused,
+        authorizeInSession: unused,
         owned: unused,
         refresh: unused,
         verify: unused,
@@ -111,17 +290,23 @@ export function registeredRouter() {
       security,
       guard,
     ),
-    customerRoutes(credentials, security, sessions),
-    adminRoutes(credentials, recovery, security, sessions),
-    recoveryRoutes(recovery, security, sessions),
-    emailChangeRoutes(recovery, security, sessions),
-    profileRoutes(profile, security, sessions),
-    categoryAdminRoutes(
+    createCustomerCredentialRoutes(credentials, security, sessions),
+    createEmailVerificationRoutes({ request: unused, confirm: unused }, security, guard),
+    createAdminCredentialRoutes(credentials, recovery, security, sessions),
+    createRecoveryRoutes(recovery, security, sessions),
+    createEmailChangeRoutes(recovery, security, sessions),
+    createCustomerRoutes(profile, {
+      cors: guard,
+      requireBrowser: guard,
+      requireSession: guard,
+      readToken: () => undefined,
+    }),
+    createCategoryAdminRoutes(
       { list: unused, create: unused, patch: unused, deactivate: unused },
       security,
-      sessions,
+      sessionHttpFor(sessions),
     ),
-    productAdminRoutes(
+    createProductAdminRoutes(
       {
         list: unused,
         detail: unused,
@@ -133,11 +318,18 @@ export function registeredRouter() {
         deactivateVariant: unused,
       },
       security,
-      sessions,
+      sessionHttpFor(sessions),
     ),
-    deliveryAreaRoutes(unused, []),
-    checkoutRoutes({ create: unused }, security, guard, { submitWithOutcome: unused }),
-    deliveryRoutes(
+    createDeliveryAreaRoutes(unused, []),
+    createCheckoutRoutes(
+      { create: unused },
+      security,
+      guard,
+      { submitWithOutcome: unused },
+      sessionCookies,
+      composeCheckoutRoutesDependencies(),
+    ),
+    createDeliveryRoutes(
       {
         zones: unused,
         createZone: unused,
@@ -147,10 +339,9 @@ export function registeredRouter() {
         transition: unused,
         runDue: unused,
       },
-      security,
-      sessions,
+      { cors: guard, requireBrowser: guard, requireSession: guard, readToken: () => undefined },
     ),
-    settingsAdminRoutes(
+    createSettingAdminRoutes(
       { get: unused, patch: unused, contact: unused },
       {
         create: unused,
@@ -163,21 +354,37 @@ export function registeredRouter() {
         activateDue: unused,
       },
       security,
-      sessions,
+      sessionHttpFor(sessions),
     ),
-    settingsPublicRoutes({ contact: unused }, { publicPolicy: unused }, []),
-    inventoryAdminRoutes({ list: unused, history: unused, adjust: unused }, security, sessions),
-    paymentMonitorRoutes({ list: unused, detail: unused, reconcile: unused }, security, sessions),
-    orderReadRoutes({ list: unused, read: unused }, security),
-    paymentRiskRoutes({ decide: unused }, security, sessions),
-    couponAdminRoutes(
+    createSettingPublicRoutes({ contact: unused }, { publicPolicy: unused }, []),
+    createInventoryAdminRoutes(
+      { list: unused, history: unused, adjust: unused },
+      security,
+      sessionHttpFor(sessions),
+    ),
+    createPaymentMonitorRoutes(
+      { list: unused, detail: unused, reconcile: unused, receipts: unused },
+      security,
+      sessionHttpFor(sessions),
+    ),
+    createOrderReadRoutes(
+      { list: unused, read: unused, deliveryEvents: unused, payments: unused },
+      security,
+      sessionCookies,
+    ),
+    createPaymentRiskRoutes({ decide: unused }, security, sessionHttpFor(sessions)),
+    createCouponAdminRoutes(
       { create: unused, update: unused, deactivate: unused, list: unused, history: unused },
       security,
-      sessions,
+      sessionHttpFor(sessions),
     ),
-    cartRoutes({ read: unused, put: unused, remove: unused, merge: unused }, security, sessions),
-    wishlistRoutes({ read: unused, set: unused }, security, sessions),
-    catalogRoutes(
+    createCartRoutes(
+      { read: unused, put: unused, remove: unused, merge: unused },
+      security,
+      sessionHttpFor(sessions),
+    ),
+    createWishlistRoutes({ read: unused, set: unused }, security, sessionHttpFor(sessions)),
+    createCatalogRoutes(
       {
         products: unused,
         product: unused,
@@ -189,7 +396,7 @@ export function registeredRouter() {
       },
       [],
     ),
-    mediaRoutes(media, security, sessions, 1024, guard),
+    createMediaRoutes(media, security, sessionHttpFor(sessions), 1024, guard),
   ])
 }
 const layerSchema = z.array(

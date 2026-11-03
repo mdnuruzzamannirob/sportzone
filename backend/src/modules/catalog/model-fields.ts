@@ -1,4 +1,4 @@
-export function text(max: number) {
+function text(max: number) {
   return {
     type: String,
     required: true as const,
@@ -10,4 +10,7 @@ export function text(max: number) {
       value === value.trim() && value.length > 0 && [...value].length <= max,
   }
 }
-export const embedded = { _id: false, strict: 'throw', versionKey: false } as const
+
+const embedded = { _id: false, strict: 'throw', versionKey: false } as const
+
+export { embedded, text }

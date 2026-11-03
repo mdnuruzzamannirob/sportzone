@@ -2,7 +2,8 @@ import { randomUUID } from 'node:crypto'
 import type { ClientSession, Connection } from 'mongoose'
 import { ApiError } from '../errors/app-error.js'
 import { jobLeaseModel, verifyJobLeases } from './job-lease.model.js'
-export function jobLeaseService(
+
+function jobLeaseService(
   connection: Connection,
   jobKey: string,
   leaseMs: number,
@@ -87,3 +88,5 @@ export function jobLeaseService(
     },
   }
 }
+
+export { jobLeaseService }

@@ -1,18 +1,12 @@
-import { loadPaymentCallbackOptions, loadPaymentProcessingOptions } from './config/payments.js'
-import { createSslcommerzAdapter } from './providers/sslcommerz/sslcommerz.client.js'
-import { initiationInput } from './providers/sslcommerz/sslcommerz.schema.js'
-import { loadPaymentChannelApprovals, loadPaymentInitiationOptions } from './config/payments.js'
-import { loadCheckoutOptions } from './config/checkout.js'
-import { loadPolicyApprovals } from './config/settings.js'
 import { createServer } from 'node:http'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { composeApplication } from './setup.js'
-import { ConfigurationError, loadEnvironment, type RuntimeConfig } from './config/env.js'
 import { openDatabase } from './config/database.js'
+import { ConfigurationError, loadEnvironment, type RuntimeConfig } from './config/env.js'
+import { composeConfiguredApplication } from './setup.js'
 import { createLogger, logConfigurationFailure } from './shared/logger.js'
 
-export async function startServer(
+async function startServer(
   config: RuntimeConfig,
   logger = createLogger(config, undefined, [
     config.MONGODB_URI,
@@ -31,39 +25,9 @@ export async function startServer(
       return !draining && connection.readyState === 1
     },
   }
-  let app: Awaited<ReturnType<typeof composeApplication>>
+  let app: Awaited<ReturnType<typeof composeConfiguredApplication>>
   try {
-    const initiationOptions = loadPaymentInitiationOptions(process.env)
-    const initiationGateway = initiationOptions
-      ? createSslcommerzAdapter(initiationOptions)
-      : undefined
-    const callbackOptions = loadPaymentCallbackOptions(process.env)
-    const processingOptions = loadPaymentProcessingOptions(process.env)
-    app = await composeApplication(
-      connection,
-      config,
-      health,
-      logger,
-      undefined,
-      await loadPolicyApprovals(process.env),
-      await loadCheckoutOptions(process.env),
-      await loadPaymentChannelApprovals(process.env),
-      initiationGateway
-        ? {
-            gateway: initiationGateway,
-            reconciliationGateway: initiationGateway,
-            validateRequest: (input) => initiationInput.safeParse(input).success,
-          }
-        : undefined,
-      callbackOptions
-        ? {
-            options: callbackOptions,
-            ...(processingOptions
-              ? { verificationGateway: createSslcommerzAdapter(processingOptions) }
-              : {}),
-          }
-        : undefined,
-    )
+    app = await composeConfiguredApplication(connection, config, health, logger, process.env)
   } catch (error) {
     await connection.destroy()
     throw error
@@ -127,7 +91,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
       config.HEALTH_MONITOR_TOKEN,
     ])
     try {
-      const runtime = await startServer(config, logger)
+      const runtime = await startServer(config)
       const shutdown = () => {
         void runtime.close().catch(() => {
           logger.lifecycle('shutdown_failed')
@@ -145,3 +109,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     process.exitCode = 1
   }
 }
+
+export { startServer }

@@ -98,19 +98,20 @@ gateway. Scheduled jobs call shared services without bypassing invariants.
 
 ### 2.2 Module ownership
 
-| Module                                                                 | Primary route namespace(s)                                                             | Ownership                                                             |
-| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `auth` (including guest access), `customers`                           | `/auth`, `/me`, `/guest-access`, `/admin/auth`                                         | Identity, scoped access and sessions                                  |
-| `catalog`, `inventory`                                                 | `/products`, `/categories`, `/admin/products`, `/admin/categories`, `/admin/inventory` | Visibility, SKUs, stock movement                                      |
-| `cart`, `promotions`, `reviews`                                        | `/cart`, `/wishlist`, `/coupons`, `/reviews`, `/admin/coupons`                         | Cart, quotas, verification, moderation                                |
-| `checkout`, `orders`, `delivery`                                       | `/checkout`, `/orders`, `/delivery`, `/admin/orders`, `/admin/delivery`                | Snapshots, submissions, fulfillment, charge rules                     |
-| `payments`, `refunds`, `returns`                                       | `/orders/{id}/payments`, `/payments`, `/claims`, `/refunds`, `/admin/...`              | Verification, collections, claims, payouts                            |
-| `notifications`, `support`, `reporting`, `settings`, `media`, `health` | Operations defined in §§14, 16 and Appendix D                                          | Correspondence, reporting, configuration, authorized media and health |
+| Module                                                              | Primary route namespace(s)                                                             | Ownership                                                            |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `auth` (including guest access), `customers`                        | `/auth`, `/me`, `/guest-access`, `/admin/auth`                                         | Identity, scoped access and sessions                                 |
+| `catalog`, `inventory`                                              | `/products`, `/categories`, `/admin/products`, `/admin/categories`, `/admin/inventory` | Visibility, SKUs, stock movement                                     |
+| `cart`, `wishlist`, `promotions`, `reviews`                         | `/cart`, `/wishlist`, `/coupons`, `/reviews`, `/admin/coupons`                         | Selections, quotas, verification, moderation                         |
+| `checkout`, `orders`, `delivery`                                    | `/checkout`, `/orders`, `/delivery`, `/admin/orders`, `/admin/delivery`                | Snapshots, submissions, fulfillment, charge rules                    |
+| `payments`, `refunds`, `returns`                                    | `/orders/{id}/payments`, `/payments`, `/claims`, `/refunds`, `/admin/...`              | Verification, collections, claims, payouts                           |
+| `notifications`, `support`, `reports`, `settings`, `media`, `audit` | Operations defined in §§14, 16 and Appendix D                                          | Correspondence, reporting, configuration, authorized media and audit |
+| Technical `health/` outside modules                                 | `/health/live`, `/health/ready`                                                        | Liveness and restricted readiness                                    |
 
 Domain services coordinate cross-module mutations within MongoDB transactions. No external HTTP call occurs while a database transaction remains open.
 
-**Implementation mapping:** Architecture §§4–6 define target filenames and ownership. Target catalog groups products/variants/categories; cart groups cart/wishlist;
-promotions owns coupon operations; auth contains guest-access; reporting groups existing admin
+**Implementation mapping:** Architecture §§4–6 define target filenames and ownership. Catalog/products owns variants with sibling categories; cart and wishlist are distinct owners;
+promotions owns coupon operations; auth contains guest-access; reports groups existing admin
 aggregates. Delivery and media remain distinct owners. This mapping changes no URL, operation ID,
 DTO, response/error, cookie, CSRF, idempotency or authorization contract. Implemented-path references
 remain valid until verified migration. Controllers map HTTP inputs/results; services enforce domain
@@ -295,7 +296,7 @@ principal from the storefront. Unknown/duplicate query parameters are invalid. G
 | Bootstrap refresh    | New anonymous context atomically invalidates the supplied same-audience predecessor. Authenticated refresh replaces only that session's CSRF verifier by conditional update, preserving session expiry and rejecting concurrent stale refresh. Previous CSRF fails.                                                                                                                              |
 | Mutation guard       | Route selects context-only, customer-only, admin-only or customer-or-context; all unsafe methods require exact Origin and custom token header. Invalid customer cookie never falls back to anonymous checkout. These guards grant no account/order authorization; apply session/role/ownership guards as well.                                                                                   |
 | Successful exchange  | The credential/proof service must use consumeContext with its durable effect in the same MongoDB transaction. One concurrent exchange wins; failed effect rolls back consumption. Do not perform provider/email calls in that callback or start a nested independent transaction.                                                                                                                |
-| Guest handoff        | GUEST_ACCESS_ENABLED wires the order-bound refresh/verify adapter to real proof/session persistence; only one exact opaque guest cookie reaches it. Customer/admin/browser credentials cannot substitute.                                                                                                                                                                        |
+| Guest handoff        | GUEST_ACCESS_ENABLED wires the order-bound refresh/verify adapter to real proof/session persistence; only one exact opaque guest cookie reaches it. Customer/admin/browser credentials cannot substitute.                                                                                                                                                                                        |
 | Provider segregation | Register provider notifications/returns outside browser guards and bootstrap. Their own verification and acknowledgment contracts remain mandatory; omission of browser CSRF never proves payment success.                                                                                                                                                                                       |
 
 ### 4.6 Customer credentials and registration delivery intent
@@ -430,18 +431,18 @@ scoped operational fields; external provider evidence is redacted even to admini
 
 ### 6.1 Scalar types and standard objects
 
-| Type                | JSON contract                                                | Notes                                                                                         |
-| ------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
-| `Id`                | Nonempty string                                              | Stringified server ObjectId; never proof of permission                                        |
-| `MoneyPoisha`       | Nonnegative safe integer                                     | Business amounts, allocations and refund capacities; never JSON decimal BDT                   |
-| `SignedMoneyPoisha` | Signed safe integer                                          | Derived net cash-flow reporting only; a period with more payouts than collections is negative |
-| `Instant`           | ISO UTC string, e.g. `2026-10-16T00:00:00Z`                  | Reject ambiguous timezone formats in writes                                                   |
-| `Channel`           | `cod` / `bkash` / `nagad` / `rocket`                         | Business choice; actual online provider display/availability subject to verified activation   |
+| Type                | JSON contract                                                            | Notes                                                                                         |
+| ------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `Id`                | Nonempty string                                                          | Stringified server ObjectId; never proof of permission                                        |
+| `MoneyPoisha`       | Nonnegative safe integer                                                 | Business amounts, allocations and refund capacities; never JSON decimal BDT                   |
+| `SignedMoneyPoisha` | Signed safe integer                                                      | Derived net cash-flow reporting only; a period with more payouts than collections is negative |
+| `Instant`           | ISO UTC string, e.g. `2026-10-16T00:00:00Z`                              | Reject ambiguous timezone formats in writes                                                   |
+| `Channel`           | `cod` / `bkash` / `nagad` / `rocket`                                     | Business choice; actual online provider display/availability subject to verified activation   |
 | `AddressInput`      | `{recipient,phone,districtKey,areaKey,street,addressLine2?,postalCode?}` | Bangladesh-supported area keys, no arbitrary delivery-zone ID                                 |
-| `CartLineInput`     | `{variantId,quantity}`                                       | Bounded positive integer qty, unique variant                                                  |
-| `PageMeta`          | `{page,pageSize,totalItems,totalPages}`                      | Current snapshot estimate; deterministic sort on stable ID tie-break                          |
-| `PolicyRef`         | `{type,version,effectiveAt}`                                 | Approved version used for terms/checkout snapshot                                             |
-| `Revision`          | Nonnegative integer                                          | Required to prevent overwriting concurrent administrative edits                               |
+| `CartLineInput`     | `{variantId,quantity}`                                                   | Bounded positive integer qty, unique variant                                                  |
+| `PageMeta`          | `{page,pageSize,totalItems,totalPages}`                                  | Current snapshot estimate; deterministic sort on stable ID tie-break                          |
+| `PolicyRef`         | `{type,version,effectiveAt}`                                             | Approved version used for terms/checkout snapshot                                             |
+| `Revision`          | Nonnegative integer                                                      | Required to prevent overwriting concurrent administrative edits                               |
 
 `?` in tables means optional and omitted, not an empty string or accidental `null`. Values of DB nullable fields (e.g. guest order `userId`) are never assumed present. Database §2.2 defines the field, string and array bounds shared by API validators and UI controls.
 
@@ -599,13 +600,13 @@ invent offset pagination where it risks missing/duplicating mutations. Query and
 
 **Identity input registry**
 
-| DTO               | Fields / important constraints                                                                                                         |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `RegisterInput`   | `name,email,password`; public role omitted and forced `customer`; enforce approved password policy                                     |
-| `Credentials`     | `email,password`; client may **not** supply role or cookie scope                                                                       |
+| DTO               | Fields / important constraints                                                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RegisterInput`   | `name,email,password`; public role omitted and forced `customer`; enforce approved password policy                                                |
+| `Credentials`     | `email,password`; client may **not** supply role or cookie scope                                                                                  |
 | `AddressPatch`    | Optional editable `recipient,phone,districtKey,areaKey,street,addressLine2,postalCode,isDefault` only; explicit fields, no arbitrary object merge |
-| `Account`         | Database §5.1 allowlist: `id,name,email,phone?,emailVerified,addresses,status`; no hashes/security revision details                    |
-| `DeletionRequest` | Verified customer identity and approved retention/review process; **not** immediate hard deletion of financial records                 |
+| `Account`         | Database §5.1 allowlist: `id,name,email,phone?,emailVerified,addresses,status`; no hashes/security revision details                               |
+| `DeletionRequest` | Verified customer identity and approved retention/review process; **not** immediate hard deletion of financial records                            |
 
 **Repeat logout:** logout is `Public+CSRF` within the correct host/context scope, even when its former session has already
 expired or been revoked. A valid CSRF bootstrap/Origin is still required; revoke an active session if present, clear the
@@ -639,6 +640,15 @@ EMAIL_CHANGE_ENABLED defaults false and is independent of PASSWORD_RECOVERY_ENAB
 Administrator credentials use only the listed `/admin/auth/login`, `/session`, `/logout`, `/password-resets` and `/password-resets/confirm` operations, plus existing admin CSRF bootstrap. There is no administrator signup route. The backend selects admin role, Origin audience, cookie and proof namespace; clients cannot choose these fields. Admin login/current-session require an active admin and use the existing password policy, adaptive hash and session revision guards. Logout is repeatable with valid admin session CSRF or admin pre-auth context, including after expiry, and clears only the admin cookie.
 
 Admin reset uses the existing password_reset challenge purpose bound to the admin user, with an independent admin verifier domain, admin-bound AEAD and admin-password-reset-v1 delivery template. A customer-issued proof cannot become an admin proof after a role change. Confirmation consumes context/proof and updates password/security revisions/revokes admin sessions atomically; it grants no new session. Responses remain ambiguous about account existence. Admin recovery has independent TTL/cooldown/response-floor configuration and a fixed HTTPS ADMIN_ORIGIN reset link. ADMIN_AUTH_ENABLED defaults false, independently of CUSTOMER_AUTH_ENABLED; active admin configuration requires explicit session/context and ADMIN_PASSWORD_RESET policy plus protected proof keys. Existing shared-ingress/security audit/release gates remain separately owned.
+
+Initial email verification is explicitly admitted by `EMAIL_VERIFICATION_ENABLED` with customer auth
+and independent bounded proof policy/key/origin settings. Issuance consumes browser context and returns
+the same accepted response for unknown, administrative, suspended, verified and cooldown accounts.
+The worker decrypts only a current purpose/email/revision-bound encrypted envelope and sends a fragment
+link. Confirmation atomically consumes the exact expiring proof and marks the current customer email
+verified; it creates no session and accepts neither password-reset nor email-change proofs. Proofs,
+raw envelopes and encryption keys never appear in HTTP responses/logs. Email verification does not add
+a new login/purchase prerequisite beyond the existing PRD.
 
 ### 9.2 Verified guest access
 
@@ -734,7 +744,7 @@ are exposed; the presence of a schema or operation-table row never registers an 
 
 | Method | Path                            | Access | Query / request → response                                                                    | FR     |
 | ------ | ------------------------------- | ------ | --------------------------------------------------------------------------------------------- | ------ |
-| `GET`  | `/storefront/home`              | Public | `— → StorefrontHome`                            | 03     |
+| `GET`  | `/storefront/home`              | Public | `— → StorefrontHome`                                                                          | 03     |
 | `GET`  | `/categories`                   | Public | `parent?,page?,pageSize? → Category[]`                                                        | 04     |
 | `GET`  | `/categories/{slug}`            | Public | `— → CategoryDetail`                                                                          | 04     |
 | `GET`  | `/products`                     | Public | `q?,category?,minPricePoisha?,maxPricePoisha?,inStock?,sort?,page?,pageSize? → ProductCard[]` | 04     |
@@ -850,11 +860,23 @@ mutations require Origin and session CSRF. Stock and cart state are never change
 | `PATCH` | `/reviews/{reviewId}`           | C owner          | `{rating?,comment?} → Review` (moderation reset when needed)                         | 10     |
 | `GET`   | `/me/reviews`                   | C                | `page?,pageSize? → Review[]`                                                         | 02, 10 |
 
+Coupon preview is advisory and creates no holds/redemptions. Its explicit local/test customer-auth
+composition accepts a current customer session or guest browser context with Origin/CSRF checks.
+`items` contains 1–40 distinct `{variantId,quantity}` selections (quantity 1–50); optional
+`deliveryArea` is `{districtKey,areaKey}`. Prices, availability and eligible scope come from canonical
+catalog/coupon data; a supplied delivery area is resolved through current coverage. No client amount
+is accepted. An unavailable/ineligible coupon returns `{eligible:false,discountPoisha:0,
+reasonCode:"COUPON_UNAVAILABLE"}`; missing persistence and invalid stock/coverage remain errors.
+
 Coupon preview **does not consume quota** or lock price/stock; final checkout evaluates current terms, overall and per-customer capacity, and one coupon per order.
 `code` is normalized case-insensitively, percentage uses integer basis points and line allocation from Database §§2.3, 8.1–8.3.
 A per-customer-limited coupon cannot be used by a guest even if a checkout email matches an account.
 Reviews require a delivered qualifying purchase, exactly one active customer/product review, proper ownership and moderation; approved reviews alone affect public ratings.
-Do not accept a client-controlled `isVerifiedPurchase`, `status`, or `reviewedBy` field.
+Do not accept a client-controlled `isVerifiedPurchase`, `status`, or `reviewedBy` field. The private local
+qualification capability fences the selected delivered customer order/item against concurrent return
+and refund changes. An explicit local/test composition connects this capability to review HTTP
+operations with real Catalog visibility, current-admin authorization and durable moderation receipts;
+ordinary deployed activation and prerequisite acceptance remain gated.
 
 ### 10.4 Shopping DTO examples
 
@@ -890,7 +912,7 @@ The cart example is not a final payable quote. Catalog and public reviews use `2
 | `GET`  | `/orders`                                 | C                   | `page?,pageSize?,status? → OrderSummary[]` for own user only                                 | 14         |
 | `GET`  | `/orders/{orderId}`                       | C owner or G-scoped | `— → OrderDetail`                                                                            | 14, 19     |
 | `GET`  | `/orders/{orderId}/status`                | C owner or G-scoped | `— → {fulfillmentStatus,fulfillmentHold?,paymentSummary,deliveryEstimate?,deliveryDeadline}` | 14, 19     |
-| `POST` | `/orders/{orderId}/cancellation-requests` | C owner or G-scoped | `{reason} + Idempotency-Key → CancellationRequest`                                                             | 15, 19     |
+| `POST` | `/orders/{orderId}/cancellation-requests` | C owner or G-scoped | `{reason} + Idempotency-Key → CancellationRequest`                                           | 15, 19     |
 | `GET`  | `/orders/{orderId}/cancellation-requests` | C owner or G-scoped | `— → CancellationRequest[]`                                                                  | 15, 19     |
 | `GET`  | `/orders/{orderId}/delivery-events`       | C owner or G-scoped | `— → {status,estimate,deadline,exceptionSummary?,events[]}`                                  | 16, 19     |
 
@@ -991,7 +1013,14 @@ hosted payment session.
 
 Send the `CheckoutSubmitInput` body with a separate `Idempotency-Key` header. Example identifiers, contact details, coupon and policy versions are illustrative; resolve actual values from the configured environment.
 
-`CUSTOMER_ORDER_READ_ENABLED` defaults false and requires customer auth in local/test. The three
+The same scoped read composition serves `/orders/{orderId}/delivery-events` and
+`/orders/{orderId}/payments`. Delivery events project the immutable fulfillment history and
+current derived deadline; payment history returns the current canonical payment summary plus
+at most the latest 50 attempts, ordered newest first. Attempt projections contain only the
+`PaymentAttemptPublic` allowlist, never gateway redirect/session, raw provider or matching evidence.
+Both reject unexpected query/body fields and recheck current customer/exact guest ownership.
+
+`CUSTOMER_ORDER_READ_ENABLED` defaults false and requires customer auth in local/test. The five
 read routes do not activate cancellation mutations, legal approval or an order lifecycle writer.
 OrderSummary matches Appendix D.2; detail omits internal review basis, identifiers/hashes and actor
 identities/reasons while retaining owned recipient/address, line amounts, public timing and consent.
@@ -1017,6 +1046,11 @@ requires explicit dispatch-not-started verification. Unpaid stock/coupon release
 audit commit once. Collected orders require a real transaction-bound refund-obligation capability;
 without one approval is blocked and all changes roll back. Payment attempts/reconciliation history
 remain intact after cancellation. These local capabilities do not waive P06-011 acceptance.
+Explicit local cancellation HTTP composition supports scoped request/history and protected admin
+queue/decision. Its paid-decision capability reserves source-funded obligations and created attempts
+with the cancellation transaction, including partial collected COD; it does not mark a payout complete.
+Customer/guest mutations require exact storefront Origin and their current scope-bound CSRF proof;
+admin decisions require admin Origin/CSRF. Ordinary activation and operator/policy evidence remain gated.
 
 ### 11.2 Price, hold and order response rules
 
@@ -1037,6 +1071,14 @@ access. Protected order details/actions require email challenge + `guest_order` 
 recovered through same-key context replay or verified guest proof, not order-number guessing.
 
 ### 11.3 Cancellation, fulfillment and shipment
+
+A reviewed deadline rule may include optional `prepaid:{ruleRef,handoverHours,deliveryCalendarDays}`.
+This applies only to online orders with independently verified full merchandise funding. Its delivery
+cap starts at order placement; its separate handover milestone starts at the actual full-payment
+collection event. Never substitute confirmation for payment or conflate courier handover with final
+delivery. Deadline projections may return handoverDeadlineAt and handoverStatus
+(awaiting_payment/pending/met/overdue); COD excludes prepaid rules. Confirmation freezes verified
+fullyPaidAt in the operational commitment. Missing/mismatched funding evidence fails closed.
 
 Customer cancellations are **requests**, not direct order-state updates.
 The admin accepts/rejects after checking `pending/confirmed`, or `processing` with explicit not-dispatched verification; stock and coupons release exactly once in transaction.
@@ -1089,7 +1131,7 @@ evidence reference and digest) is internal; public projections use only the Deli
 | ------ | ---------------------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | `GET`  | `/checkout/payment-methods`                          | Public                     | `amountPoisha?,orderId? (owned if supplied) → {methods:[{channel,active,eligible,reasonCode?,minPoisha?,maxPoisha?}]}`              | 12     |
 | `GET`  | `/orders/{orderId}/payments`                         | C owner or G-scoped        | `— → {payment:PaymentSummary,attempts:PaymentAttemptPublic[]}`                                                                      | 12, 19 |
-| `POST` | `/orders/{orderId}/payment-attempts`                 | C owner or G-scoped        | `{requestedChannel} + Idempotency-Key → {attemptId?,expectedAmountPoisha?,state,redirectUrl?,expiresAt?}`                             | 12     |
+| `POST` | `/orders/{orderId}/payment-attempts`                 | C owner or G-scoped        | `{requestedChannel} + Idempotency-Key → {attemptId?,expectedAmountPoisha?,state,redirectUrl?,expiresAt?}`                           | 12     |
 | `GET`  | `/orders/{orderId}/payment-attempts/{attemptId}`     | C owner or G-scoped        | `— → {id,state,riskStatus?,lastCheckedAt?}`                                                                                         | 12     |
 | `POST` | `/webhooks/sslcommerz/ipn`                           | P-untrusted intake         | Provider form fields → HTTP acknowledgment; **never** client payment DTO                                                            | 12     |
 | `GET`  | `/payment-returns/sslcommerz/{result}`               | Provider/browser untrusted | Redirect to safe storefront result page; no payment mutation                                                                        | 12     |
@@ -1149,6 +1191,24 @@ confirmation. The existing merchant worker independently verifies provider outco
 proof timestamps are not rewritten to manufacture eligibility. Same key/body replays without another
 intent, changed body conflicts; concurrent equal commands converge. Risk decisions remain the existing
 audited API and cannot bypass funding/capacity. Staging/production activation remains separately gated.
+
+Supervised matching exposes the redacted paginated `/admin/provider-receipts` list under current
+admin authorization; filters are `matchingStatus?,page?,pageSize?` (maximum 100). Local/test linking
+and allocation additionally require a protected `PAYMENT_MATCHING_EVIDENCE_FILE` record binding the
+exact source proof/face amount, target order and requested action. Caller evidence references alone
+cannot establish ownership or cash. Linking preserves immutable verified provenance, initially places
+non-cancelled amounts in unassigned review, and classifies cancelled late receipts as corrections.
+A bound settled attempt may become verified-paid with its actual partial/excess disposition; this does
+not mark an incompletely funded order Paid. Risk review remains separate from financial receipt truth.
+
+Allocation requires both Idempotency-Key and original strong If-Match. Face amounts remain conserved;
+source/aggregate refund floors and order entitlement apply. This operation does not reduce merchandise
+funding without its separately required compensating order/capacity transition. Corrections receive
+canonical review intents, never automatic payouts. Replay returns current source state without another
+allocation; changed payload/original revision conflicts. `CollectionSummary` and admin payment-detail
+collection entries expose `revision`; allocation returns its strong ETag. Mutations reauthorize after
+protected evidence verification and commit classification/projection/audit together. Configuration,
+matching evidence, original provider references and raw receipts remain private.
 
 ### 12.2 Hosted initiation, retries and uncertain state
 
@@ -1396,7 +1456,15 @@ risk clearance, order confirmation or stock mutation follows from recording cash
 **History visibility:** `/me/claims` and `/me/refunds` are authenticated customer-only, sorted by created date + stable ID,
 paginated with the standard envelope. Guests must continue to use **exact order-scoped** `/orders/{orderId}/...` routes
 after email verification; no cross-order guest listing or N+1 enumeration. Admin histories require A authorization and
-field masking.
+field masking. Ownership is resolved through the Orders-owned identity projection in the same current-session transaction;
+filters and counts apply before pagination. Nested claim/refund details recheck the resource's order.
+Refund source IDs are opaque identities, never bank/provider references. Public histories exclude payout destinations,
+consent/proof references, administrative actors and attempt diagnostics. Order refund summaries expose
+`{heldPoisha,completedPoisha}` separately for merchandise and correction, from canonical capacity states.
+`investigationStatus:'none'|'under_review'` reflects an unapproved review or the latest durable unresolved-attempt
+investigation marker; a verified terminal outcome clears it. It does not imply payout success or promise a deadline.
+Missing approved calendar timing stays `under_review` with no `targetAt`. Timeline entries are chronological,
+deduplicated public status facts (maximum 40), with explicit approval/completion fields preserved separately.
 
 **`ClaimInput`:**
 `{claimType:'physical_return'|'shortage',items:[{orderItemId,quantity,reason,evidenceAssetIds?}],description?}`. Clients
@@ -1406,25 +1474,46 @@ physical returns, normal request window is 7 calendar days after delivery **subj
 exceptions**; short delivery/missing-item claims use the non-physical `shortage` flow, with no invented return shipment or
 restock.
 
-**`refund-requests`** is an eligibility submission, **not a money transfer**. For an already-qualified basis (approved
-cancellation, inspected return, approved shortage, resolved delivery exception, or documented payment correction) **and
-verified source funds**, it creates or returns `requested` source-funded `refunds` obligations from Database §9.2. The
-backend deduplicates by qualifying basis, source capacity and protected unit/delivery entitlements, even if a caller
-changes idempotency keys. If eligibility or source funds do not yet exist, return `422 BUSINESS_RULE_VIOLATION` and direct
-the caller to the claim/cancellation workflow; **do not** invent a standalone `refundRequests` collection or an unfunded
-refund. Customers cannot select `sourceCollectionId`, refund amount, payout method or internal unit ordinals. A physical
-return must still be inspected before refund approval.
+**`refund-requests`** is an eligibility submission, not a money transfer or administrator approval.
+It accepts only `{basis,basisRefId?,reason}`; the basis reference is required except for payment correction.
+Current customer/exact guest ownership, Origin/CSRF and Idempotency-Key are mandatory. The response
+`{requestStatus:'recorded',refundGroupKey?}` acknowledges a durable request/reference, never a payout.
+For a qualified inspected physical return or approved shortage and verified source funds, create canonical
+`requested/not_reserved` obligations with exact source/unit amounts. No financial hold, approval time,
+notification of approval or payout-attempt identity is created by submission. Pending requests are counted
+in subsequent request planning, and exact unit coverage/natural identities deduplicate even changed keys;
+additional newly accepted units remain a separate auditable request. Original bodies bind command keys.
+Already provisioned cancellation, resolved-delivery-exception or payment-correction obligations are
+referenced after current qualification/ownership checks. Missing eligibility/funds returns
+`422 BUSINESS_RULE_VIOLATION`; no separate `refundRequests` collection or unfunded placeholder is created.
+
+Administrator review separately rechecks protected policy/consent, current verified source balances and
+unit/delivery caps, then atomically reserves capacity, records actual approval and creates the first
+provider-ready attempt. A competing reservation can make approval fail without changing the pending
+request or moving money. Rejection before approval changes only the request/audit state; it releases no
+unheld cash and creates no failed fictional attempt. Customers cannot select source, amount, payout
+method or unit ordinals. Claim inspection remains mandatory before physical-refund qualification.
+
+Claim operations use current customer/exact guest scope, strict Origin/CSRF and mandatory request
+keys. Identical keyed submission returns the current original claim; a changed body conflicts.
+Eligibility projects bounded historical item/claimable quantities and configured policy; shortage
+has no physical-return deadline. Expired physical requests require a protected policy exception.
+Receipt quantities are per-batch additions, bounded by approved units not yet received. Inspection
+quantities apply to the newly received/uninspected batch; prior decisions are immutable. Additional
+receipt/inspection rounds retain cumulative ordinal coverage and append-only audit. Completion
+requires all approved physical units received and inspected; accepted units resolve and rejected
+units are released without refund/restock. Only inspected resellable units create stock movements.
 
 ### 13.2 Admin claim and return processing
 
-| Method | Path                                 | Access | Request → response                                                                          | FR  |
-| ------ | ------------------------------------ | ------ | ------------------------------------------------------------------------------------------- | --- |
-| `GET`  | `/admin/claims`                      | A      | `claimType?,status?,page? → Claim[]`                                                        | 32  |
-| `GET`  | `/admin/claims/{claimId}`            | A      | `— → Claim + redacted evidence and eligibility`                                             | 32  |
-| `POST` | `/admin/claims/{claimId}/review`     | A      | `{decision:enum(approve,reject),approvedItems?,reason} + Idempotency-Key → Claim`           | 32  |
-| `POST` | `/admin/claims/{claimId}/receipt`    | A      | `{receivedItems,receiptReference,notes?} + Idempotency-Key → Claim`                         | 32  |
-| `POST` | `/admin/claims/{claimId}/inspection` | A      | `{items:[{orderItemId,acceptedQty,resellableQty,reason}],notes?} + Idempotency-Key → Claim` | 32  |
-| `POST` | `/admin/claims/{claimId}/complete`   | A      | `{reason?} + Idempotency-Key → Claim`                                                       | 32  |
+| Method | Path                                 | Access | Request → response                                                                           | FR  |
+| ------ | ------------------------------------ | ------ | -------------------------------------------------------------------------------------------- | --- |
+| `GET`  | `/admin/claims`                      | A      | `claimType?,status?,page? → Claim[]`                                                         | 32  |
+| `GET`  | `/admin/claims/{claimId}`            | A      | `— → Claim + redacted evidence and eligibility`                                              | 32  |
+| `POST` | `/admin/claims/{claimId}/review`     | A      | `{decision:enum(approve,reject),approvedItems?,reason} + Idempotency-Key → Claim`            | 32  |
+| `POST` | `/admin/claims/{claimId}/receipt`    | A      | `{receivedItems:[{orderItemId,quantity}],receiptReference,notes?} + Idempotency-Key → Claim` | 32  |
+| `POST` | `/admin/claims/{claimId}/inspection` | A      | `{items:[{orderItemId,acceptedQty,resellableQty,reason}],notes?} + Idempotency-Key → Claim`  | 32  |
+| `POST` | `/admin/claims/{claimId}/complete`   | A      | `{reason?} + Idempotency-Key → Claim`                                                        | 32  |
 
 Only **physical returns** may receive `receipt` and `inspection`. Receipt/inspection requires prior approved state,
 quantities within approved claim, and audit evidence; restocking only occurs after confirmed inspection and dedicated
@@ -1442,6 +1531,23 @@ a refund basis without return receipt. Completing a claim **never** asserts a pa
 | `POST` | `/admin/refunds/{refundId}/payout-attempts`      | A      | `{method,reason} + Idempotency-Key → {attemptId,state}`                                         | 33  |
 | `POST` | `/admin/refunds/{refundId}/reconcile`            | A      | `{reason} + Idempotency-Key → {status,attemptState}`                                            | 33  |
 | `POST` | `/admin/refunds/{refundId}/manual-confirmations` | A      | `{transferReference,evidenceRef,reason} + Idempotency-Key → Refund`                             | 33  |
+
+Refund foundation composition exposes admin group creation, list/detail and gateway attempt dispatch
+under explicit local/test `REFUND_OPERATIONS_ENABLED` with current admin authorization and browser
+Origin/CSRF guards. Group creation atomically approves and reserves an already-qualified basis using
+server policy; it does not dispatch money. Replays converge on the same source-funded obligations even
+with another key. Amounts come from immutable order snapshots and verified source capacity. Missing
+persistence returns unavailable without repair. The original gateway method is the development baseline;
+a manual fallback requires protected consent authority. Delivery charges require explicit protected
+approval. Without a configured gateway, payout admission returns unavailable without consuming intent.
+The dispatcher binds the original collection to the configured merchant, persists a unique intent before
+transport and sends at most once; acknowledgment/timeout leaves processing and reserved funds. Verified
+outcome/release/retry/manual confirmation use the guarded outcome/recovery workflow (§13.5).
+Private status reports and manual verification alone never record Completed. Admin projections add
+`basisRefId?`, component amounts and, in detail/group responses, current `sourceCapacity`, `orderCapacity`
+and bounded safe attempt identities/states/provider references. They exclude original bank references,
+request keys, consent/transfer proof and unmasked destinations. `requestedAt` maps immutable createdAt;
+the bounded timeline exposes only recorded status/approval/completion facts, never invented prior states.
 
 **RefundGroupInput (admin):**
 `{orderId,basis,basisRefId?,classification,requestedItems?:[{orderItemId,quantity}],deliveryChargeRequestedPoisha?,correctionCollectionId?,reason}`.
@@ -1480,6 +1586,30 @@ records verified transfer reference/evidence (where the one-admin baseline canno
 trail and verification standard is required). The server sets `confirmedAt` from independently verified transfer evidence;
 a client-supplied timestamp is not proof. `Completed` requires verified transfer, not uploaded screenshot alone. The
 7-business-day refund target is a policy goal, not a fabricated gateway SLA.
+
+**Outcome/recovery:** Reconcile reads the current durable attempt, queries the configured provider outside
+transactions where a provider reference exists, and requires protected independent amount/identity/time
+proof before completion or terminal no-payout release. A provider status report alone never proves a
+payout. Unknown outcomes retain processing/reserved state. Manual payout-attempt admission records a
+submitted intent without executing a transfer; manual-confirmations requires independently verified
+masked destination, exact transfer reference, amount/time and applicable consent. Completion, source/
+order/unit/delivery settlement, attempt proof, audit and notification intent commit atomically.
+
+`payout-attempts` with a failed/released refund is an explicit admin retry. Only an attempt already
+closed by verified no-payout evidence can authorize a new identity; original approval/timing remain.
+Re-reserve original entitlements transactionally before creating that identity. Reconcile cannot retry.
+Review rejection releases a created, undispatched intent only; submitted/uncertain attempts require
+verified no-payout reconciliation. Same command keys bind payloads; replay never repeats payout.
+Protected proof and transfer destinations are never accepted as financial facts from HTTP request bodies.
+If initiation acknowledgment was lost, a qualified independent artifact may supply the original
+provider reference only after refund/order/source/attempt/amount/method/merchant/bank/merchant-ref
+binding; query that reference and persist it atomically with the verified outcome. Never resend to
+recover a missing provider ID. Proof timestamps must name a timezone; read-only polls do not invalidate
+later-arriving proof of an outcome after the original durable dispatch. Manual transfer references
+are provider/account-qualified and unique across confirmed manual attempts. Duplicate references
+conflict without financial effects. A single admin may operate the protected approval/confirmation
+trail; current authorization is rechecked after external verification. Approval/payout history is
+immutable causal audit, and notification delivery rechecks those facts and the original recipient.
 
 ### 13.4 Refund response and statuses
 
@@ -1552,7 +1682,7 @@ No public endpoint can mutate base/sale prices, SKU identity or stock.
 
 | Method  | Path                                        | Request → response                                                        | FR  |
 | ------- | ------------------------------------------- | ------------------------------------------------------------------------- | --- |
-| `GET`   | `/admin/products`                           | `q?,status?,page?,pageSize? → AdminProduct[]`                                       | 23  |
+| `GET`   | `/admin/products`                           | `q?,status?,page?,pageSize? → AdminProduct[]`                             | 23  |
 | `POST`  | `/admin/products`                           | `ProductCreateInput → AdminProduct`                                       | 23  |
 | `GET`   | `/admin/products/{productId}`               | `— → AdminProductDetail`                                                  | 23  |
 | `PATCH` | `/admin/products/{productId}`               | `ProductPatch + If-Match → AdminProduct`                                  | 23  |
@@ -1687,8 +1817,48 @@ conflict boundary, preventing overselling or stale CAS even across different adm
 | `GET`  | `/admin/customers/{customerId}/claims`              | `page?,pageSize?,status? → paginated Claim[]`                                                                 | 27  |
 | `GET`  | `/admin/customers/{customerId}/refunds`             | `page?,pageSize?,status? → paginated Refund[]` (masked payout sources)                                        | 27  |
 | `POST` | `/admin/customers/{customerId}/status-decisions`    | `{to:enum(active,suspended),reason} + Idempotency-Key → {status}`                                             | 27  |
+| `GET`  | `/admin/customers/{customerId}/deletion-request`    | `— → {customerId,request?,retention}`; verified privacy request metadata only                                 | 27  |
+| `POST` | `/admin/customers/{customerId}/deletion-decisions`  | `{decision:enum(under_review,approve_deactivation,reject),reason} + Idempotency-Key → {status,retained:true}` | 27  |
 | `GET`  | `/admin/reviews`                                    | `status?,productId?,page? → AdminReview[]`                                                                    | 31  |
 | `POST` | `/admin/reviews/{reviewId}/moderation`              | `{decision:enum(approve,reject,hide),reason} + Idempotency-Key → AdminReview`                                 | 31  |
+
+Configured local/test order operations may load protected reviewed deadline, original COD receipt
+and request-bound cancellation authorities at server composition. No browser route installs these
+sources. Receipt-byte integrity, binding and current admin checks precede collection; missing,
+ambiguous, tampered or unavailable originals deny a new write. An identical previously committed
+collection replay does not require resubmitting evidence or create another financial source.
+
+Admin order list/detail and fulfillment/COD mutations use current admin sessions; browser mutations
+require the exact admin Origin, CSRF and Idempotency-Key. Fulfillment mutation returns the current
+`AdminOrderDetail` after the guarded command, including on an identical historical replay; changed
+payload under the same key conflicts. Cancellation still uses its dedicated request/decision flow.
+Order-number search is exact; customer/fulfillment/payment filters and canonical pagination reject
+unknown input. Payment-status filtering intersects authoritative payment summaries before pagination.
+The protected bounded implementation admits at most 1,000 candidate orders after the other filters;
+a larger intersection returns `503 SERVICE_UNAVAILABLE`, requiring narrower filters rather than partial
+results or incorrect counts. Queries without a payment-status filter use normal database pagination.
+
+`AdminOrderDetail.allocationSummary` contains `{generation:int|null,items:[{variantId,quantity,status}]}`
+from the latest Inventory generation; status is held/committed/released/shipped, at most 50 rows.
+`fulfillmentActions` lists advisory next-state candidates, never mutation authority; services recheck
+policy, risk, funding and stock. `auditRefs` contains at most 40 latest opaque order-audit IDs, never
+raw digests or private evidence. Historical item/pricing/delivery/policy projections are shared with
+owner reads, while all admin access is separately authorized. COD `CollectionSummary` includes
+`sourceKind:cod_manual` and the canonical allocation/held/completed balances; evidence/provider secrets
+are omitted. Collection is forbidden before confirmation and delivery alone never records cash.
+
+Customer administration returns masked identity fields and excludes admin principals. Search text
+is a bounded literal name/email prefix, never caller-controlled regular-expression syntax. Status
+decisions affect only `active`/`suspended` customers; deletion-pending and deactivated states cannot
+be reactivated through this route. Decisions require current admin, Origin/CSRF and a keyed reason,
+then atomically update security revision, revoke customer sessions and retain exact transition audit.
+Reactivation never restores revoked sessions. A historical identical decision key returns current
+status without repeating the effect; a changed payload conflicts. These capabilities currently have
+explicit local/test composition only. Customer order/claim/refund histories are separately paginated and use domain-owned
+ownership projections. Privacy decisions require a verified outstanding deletion request, current admin, exact Origin,
+CSRF and keyed reason; approval deactivates the account and revokes customer sessions. It does not erase addresses or other records without retention/legal-hold clearance.
+Required identity linkage, order/financial/audit and legal-hold records remain retained. No decision performs hard deletion,
+removes financial history or waives retention. Replays never repeat revocation or alter the original request decision.
 
 Private delivery/support foundation records admin delay/failed-attempt/final-non-delivery cases with
 keyed replay and bounded contact outcomes. Failed-attempt and delay resolution leave Shipped/status
@@ -1852,25 +2022,39 @@ deadline.
 
 ### 14.4 Dashboard, complaints and audit
 
-| Method | Path                                          | Access                | Request → response                                                  | FR          |
-| ------ | --------------------------------------------- | --------------------- | ------------------------------------------------------------------- | ----------- |
-| `GET`  | `/admin/dashboard`                            | A                     | `from?,to?,asOf? → DashboardMetrics`                                | 22          |
-| `GET`  | `/admin/reports/sales`                        | A                     | `from,to,groupBy? → SalesReport`                                    | 22          |
-| `GET`  | `/admin/reports/collections`                  | A                     | `from,to,classification? → CollectionReport`                        | 22, 29      |
-| `GET`  | `/admin/reports/refunds`                      | A                     | `from,to,classification? → RefundReport`                            | 22, 33      |
-| `POST` | `/complaints`                                 | Public+CSRF or C or G | `ComplaintInput → {reference,status:'open'}`                        | 20 / PRD §3 |
-| `GET`  | `/me/complaints`                              | C                     | `page? → Complaint[]` (own)                                         | 20          |
-| `GET`  | `/orders/{orderId}/complaints`                | C owner or G-scoped   | `— → Complaint[]` (exact own order)                                 | 19, 20      |
-| `GET`  | `/admin/complaints`                           | A                     | `status?,page? → Complaint[]`                                       | 20, 26      |
-| `POST` | `/admin/complaints/{complaintId}/resolve`     | A                     | `{status,resolution,contactOutcome?} + Idempotency-Key → Complaint` | 20, 26      |
-| `GET`  | `/admin/audit-logs`                           | A                     | `targetType?,targetId?,from?,to?,page? → AdminAudit[]`              | PRD §10     |
-| `GET`  | `/admin/notifications`                        | A                     | `status?,eventType?,page? → NotificationSummary[]`                  | 20          |
-| `POST` | `/admin/notifications/{notificationId}/retry` | A                     | `{reason} + Idempotency-Key → {status}` (send intent only)          | 20          |
+| Method | Path                                          | Access                | Request → response                                                                                              | FR          |
+| ------ | --------------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------- | ----------- |
+| `GET`  | `/admin/dashboard`                            | A                     | `from?,to?,asOf? → DashboardMetrics`                                                                            | 22          |
+| `GET`  | `/admin/reports/sales`                        | A                     | `from,to,groupBy? → SalesReport`                                                                                | 22          |
+| `GET`  | `/admin/reports/collections`                  | A                     | `from,to,classification? → CollectionReport`                                                                    | 22, 29      |
+| `GET`  | `/admin/reports/refunds`                      | A                     | `from,to,classification? → RefundReport`                                                                        | 22, 33      |
+| `POST` | `/complaints`                                 | Public+CSRF or C or G | `ComplaintInput → {reference,status:'open'}`                                                                    | 20 / PRD §3 |
+| `GET`  | `/me/complaints`                              | C                     | `page? → Complaint[]` (own)                                                                                     | 20          |
+| `GET`  | `/orders/{orderId}/complaints`                | C owner or G-scoped   | `— → Complaint[]` (exact own order)                                                                             | 19, 20      |
+| `GET`  | `/admin/complaints`                           | A                     | `status?,orderId?,q?,page?,pageSize? → Complaint[]`                                                             | 20, 26      |
+| `GET`  | `/admin/complaints/{complaintId}`             | A                     | `— → ComplaintAdminDetail` (necessary contact/response history, no public lookup)                               | 20,26       |
+| `POST` | `/admin/complaints/{complaintId}/resolve`     | A                     | `{status,resolution,contactOutcome?} + Idempotency-Key → Complaint`                                             | 20, 26      |
+| `GET`  | `/admin/audit-logs`                           | A                     | `targetType?,targetId?,from?,to?,page? → AdminAudit[]`                                                          | PRD §10     |
+| `GET`  | `/admin/operational-exceptions`               | A                     | `kind:enum(stock,payments,refunds,reconciliation),page?,pageSize? → paginated sanitized operational exceptions` | 25,26,29,33 |
+| `GET`  | `/admin/notifications`                        | A                     | `status?,eventType?,page? → NotificationSummary[]`                                                              | 20          |
+| `POST` | `/admin/notifications/{notificationId}/retry` | A                     | `{reason} + Idempotency-Key → {status}` (send intent only)                                                      | 20          |
 
 **Complaint access:** anonymous contact submissions require `contactName` and `contactEmail` and may omit `orderId` and must be rate-limited/spam-guarded; they receive
 a safe reference, **not** a public arbitrary-reference lookup. To link an order, the caller must have C/G ownership of that
 order. `contactName?`/`contactEmail?` omissions for C/G are resolved only from their authenticated profile or verified order customer snapshot; the submitted contact is never ownership proof. Require valid nonempty resolved name/email. Never return other reporters' contact details. PRD complaint-response deadlines require legal/operator confirmation
-before launch.
+before launch. Intake accepts an optional `Idempotency-Key` for exact scoped replay; changed payload conflicts.
+Without a key each accepted submission is a distinct report. Global anonymous complaints have no order/customer reference.
+A registered customer may submit a global complaint using their own profile; a verified guest may default contact from their exact proven order without creating an order link, using guest-session CSRF. An explicit stale guest credential never falls back to anonymous context. An order link always requires current exact C/G ownership. Intake uses the shared network/target quota and strict fields, Origin and browser/session CSRF. Public
+response contains only `{reference,status:'open'}`, never a public lookup capability. Customer own histories are paginated;
+admin contact outcomes produce immutable response audit facts. Protected admin detail alone exposes necessary reporter contact and up to 40 recorded contacts, with unresolved response-policy status; public/customer lists omit contact. Admin search uses an escaped literal issue prefix or exact order ID, strict bounded pagination and five-second reads. An admin-recorded phone/email contact is not a claim of
+verified email delivery. Missing statutory deadline remains uncalculated, with no invented date.
+
+Operational queues show allocation shortfalls, payment risk/unassigned-fund review, nonterminal payment reconciliation
+and refund review/processing/failure respectively. Safe IDs/status/reason codes only, standard pagination and no provider
+references, proof material or customer contact. Read endpoints never retry money or mutate domain state. Notification
+retry is an audited outbox admission, restricted to failed/waiting commerce/after-sales intents with recorded known non-acceptance; uncertain, sent,
+sending, credential/proof and proof-unavailable intents cannot be resent through it. Existing delivery verification and
+stable provider idempotency keys remain authoritative.
 
 **Reporting field definitions (`DashboardMetrics` and export DTOs):**
 
@@ -1903,6 +2087,17 @@ current counters as historical. A response records its actual cutoff and consist
 Every export report returns `{from,to,asOf,timezone:'Asia/Dhaka',dateBasis,filters,totals,...}` and explicitly distinguishes period sums vs as-of balances, pending vs completed refunds and correction vs merchandise.
 Report `asOf` prevents pretending concurrent cash events constitute one fully consistent snapshot unless reporting snapshot guarantees are actually implemented.
 COD without verified collection is not paid collections.
+
+Local report profiles accept UTC instants or `YYYY-MM-DD` (midnight Asia/Dhaka), `[from,to)` up to 93 days.
+Exports require both bounds; dashboard defaults to the preceding 30 days. Future ends, reversed/empty ranges and any
+explicit historical `asOf` are rejected with `422 BUSINESS_RULE_VIOLATION` because no reconstructible historical snapshots
+exist. Current report sources share one MongoDB transaction; the response states the actual cutoff/consistency basis.
+At most 5,000 order-placement facts, receipts or completed payouts and 5,000 outstanding-COD candidates are processed per
+request; an oversized selection is rejected rather than truncated. Source reads have 5-second execution bounds; groups
+are Dhaka day/month buckets, at most 93 daily buckets. No arbitrary identity/contact rows or external export file is emitted.
+Classification filters affect `classifiedCollectedPoisha`/`classifiedCompletedPoisha` and their counts; canonical `totals`
+remain explicitly labeled all-class financial totals. Held/unassigned/COD are cutoff balances, not period cash movement.
+
 Do not label `netLinkedCashFlowPoisha` as revenue or profit; report unmatched intake and correction liabilities separately.
 
 ## 15. Idempotency, concurrency & recovery
@@ -1993,11 +2188,13 @@ Provider reference: [SSLCOMMERZ developer documentation v4](https://developer.ss
 
 ### 16.2 Media upload contract
 
-| Method   | Path                                        | Access                                  | Request → response                                                                                      |
-| -------- | ------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `POST`   | `/admin/media/uploads`                      | A                                       | Approved `multipart/form-data` product/store asset → `{assetId,publicId,url,alt?,mimeType,size}`        |
-| `POST`   | `/orders/{orderId}/claims/evidence-uploads` | C owner or G-scoped to that exact order | `multipart/form-data {file,claimType,orderItemIds[]}` → `{assetId,orderId,status:'private',expiresAt?}` |
-| `DELETE` | `/admin/media/{assetId}`                    | A                                       | Safe deletion only if unreferenced/policy permits → `204`                                               |
+| Method   | Path                                          | Access                                  | Request → response                                                                                      |
+| -------- | --------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `POST`   | `/admin/media/uploads`                        | A                                       | Approved `multipart/form-data` product/store asset → `{assetId,publicId,url,alt?,mimeType,size}`        |
+| `POST`   | `/orders/{orderId}/claims/evidence-uploads`   | C owner or G-scoped to that exact order | `multipart/form-data {file,claimType,orderItemIds[]}` → `{assetId,orderId,status:'private',expiresAt?}` |
+| `GET`    | `/orders/{orderId}/claims/evidence/{assetId}` | C owner or exact G                      | Short-lived private delivery `{url}` for the owned order asset                                          |
+| `GET`    | `/admin/claims/{claimId}/evidence/{assetId}`  | A                                       | Short-lived private delivery `{url}` for an asset attached to this exact claim                          |
+| `DELETE` | `/admin/media/{assetId}`                      | A                                       | Safe deletion only if unreferenced/policy permits → `204`                                               |
 
 Validate file type, extension, true content type, maximum size, malware/security scanning policy and server-generated object identifiers; never accept arbitrary external URLs as approved Cloudinary files.
 Claim uploads require the **path `orderId`** to match current C owner or G-scoped session, validated `claimType` and `orderItemIds[]` belonging to that order; the upload is a temporary, expiring reference that can only be attached to that same order’s eligible claim.
@@ -2005,14 +2202,15 @@ Return an **opaque** private evidence identifier; no public Cloudinary URL to co
 `assetId` is the opaque ID of `mediaAssets` (Database §6.7), mapping one server-generated Cloudinary identity to owner/order/item scope, access, validation state and transactional attachment references (Database §6.7). Create upload intent before the external call; return attachable references only after validation. Attach and target update commit together under asset CAS. Cleanup atomically claims expired unreferenced assets as `deleting`, excluding concurrent attachment; reconcile unknown provider outcomes. Private evidence retrieval requires current C/G ownership or A permission and short-lived authorized delivery. No separate generic `assets` collection is implied.
 Cleanup of unreferenced uploads is asynchronous and must not delete assets attached to immutable order/claim/audit evidence.
 
-**Media activation boundary:** optional typed media composition exposes the two admin routes
-above only with verified ledger persistence, active admin identity, scanner/provider and retention
-capabilities. Default HTTP startup does not activate media; `MEDIA_ENABLED` is not automatic account
-approval or route activation. The multipart route accepts exactly one `file`, rejects other fields,
-query parameters, compression and unsupported content, and bounds encoded input to the approved
-file limit plus 16 KiB framing. Origin/session/CSRF and a separate media throttle run before parsing
-(10 admissions/minute/network, within the existing 60/minute shared admin network cap; credential
-budgets remain separate). Other routes retain their JSON-only admission rules.
+**Media activation boundary:** optional typed composition exposes admin media and the separately
+authorized return-evidence routes only with verified ledger persistence, current identity and
+scanner/provider/retention capabilities. Explicit local/test return startup can compose these adapters
+with both `RETURN_OPERATIONS_ENABLED=true` and `MEDIA_ENABLED=true`; default startup omits them.
+Configuration does not establish provider qualification. Admin multipart accepts exactly one `file`;
+claim multipart additionally requires `claimType` and one or more `orderItemIds[]`, with no unknown
+fields, queries or compression. Encoded input is bounded to the configured file limit plus 16 KiB
+framing. Origin/current-session/CSRF and the media throttle precede parsing (10 admissions/minute/network
+within the shared network cap); other routes retain JSON-only admission.
 
 Known upload success returns the table's allowlisted DTO only after clean validation and provider
 metadata agreement. Unknown/quarantined provider outcomes return `SERVICE_UNAVAILABLE` with durable
@@ -2163,6 +2361,21 @@ runtime request/DTO schemas. `npm run api:generate --workspace=backend` produces
 Postman 2.1 collection contain implemented capabilities with explicit activation conditions; planned
 operations remain a separate non-executable specification inventory. Explicit HEAD/OPTIONS transport
 behavior is distinguished from the business operation inventory.
+
+All specified business operations have owning typed request/response schemas in the executable
+registry, including the explicitly local/test-admitted domain operations assembled by
+`backend/contracts/local-domain-registry.ts`. Their activation conditions remain mandatory;
+generating a client contract does not admit a financial or operational feature into hosted startup.
+The independent registration inventory `backend/contracts/local-operations.ts`, actual router fixtures
+and full application composition detect missing/duplicate registrations. The specification inventory
+distinguishes implemented conditional capabilities from absent planned work; tests require every
+specified business operation to have a real runtime implementation and generated wire contract.
+
+Refund-group creation returns `201` as required by Appendix D.3, including natural replays which
+return the existing group without another reservation. Payment/refund mutations never gain automatic
+client retries from generated examples. Initial verification messages are identity proofs: admin
+notification retry excludes them, like password-reset/email-change/guest-access messages; users use
+the bounded purpose-specific issuance flow instead.
 
 `npm run api:check --workspace=backend` verifies artifact freshness without rewriting files.
 `npm run test:contract --workspace=backend` additionally verifies actual router registration, response/status
@@ -2322,9 +2535,9 @@ The following field allowlists define client inputs and server responses. `*Inpu
 | `DeliveryZone`             | `id!,name!,description?,status!,revision:int!,coverageRevision:int!`                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `ETag` refers to `revision`, not `coverageRevision`                                                                                                              |
 | `DeliveryChargeInput`      | `zoneId:id!,coverageKey:string!,amountPoisha:money!,effectiveFrom:date!,effectiveTo:date?`                                                                                                                                                                                                                                                                                                                                                                                                                                      | Admin approved, no conflicting windows                                                                                                                           |
 | `DeliveryChargeRule`       | `id!,zoneId!,coverageKey!,amountPoisha!,ruleVersion:int!,status:enum(scheduled,active,inactive)!,effectiveFrom!,effectiveTo?,revision:int!,supersedesChargeId?`                                                                                                                                                                                                                                                                                                                                                                 | Historic charge amount/coverage write-once; deactivation only closes window                                                                                      |
-| `SettingsPatch`            | `storeName?,branding?:MediaRef,contact?:ContactInfo,complaintContact?:ContactInfo,address?:StoreAddress,homepageBanner:nullable<HomepageBannerInput>?,lowStockThreshold?:int,paymentChannels?:{bkashEnabled?,nagadEnabled?,rocketEnabled?,codEnabled?}`                                                                                                                                                                                                                                                                                                        | No credentials; channel flag alone cannot assert live activation; CAS required                                                                                   |
+| `SettingsPatch`            | `storeName?,branding?:MediaRef,contact?:ContactInfo,complaintContact?:ContactInfo,address?:StoreAddress,homepageBanner:nullable<HomepageBannerInput>?,lowStockThreshold?:int,paymentChannels?:{bkashEnabled?,nagadEnabled?,rocketEnabled?,codEnabled?}`                                                                                                                                                                                                                                                                         | No credentials; channel flag alone cannot assert live activation; CAS required                                                                                   |
 | `StoreSettings`            | Resolved settings read form (homepageBanner includes verified image; nullable clear inputs become omitted optional fields) plus `key:'primary',activePolicyVersions:Partial<Record<PolicyType,string>>,revision:int!,updatedBy:id?`                                                                                                                                                                                                                                                                                             | Admin only; published policies external `policyDocuments`                                                                                                        |
-| `StorefrontHome` | `featured:ProductCard[]!,newArrivals:ProductCard[]!,discounted:ProductCard[]!,categories:Category[]!,storeName?,branding:MediaRef?,contact:ContactInfo?,complaintContact:ContactInfo?,banner:HomepageBanner?,policyLinks:[{type,version,href}]!` | Bounded current public merchandising; no internal settings or unpublished policies |
+| `StorefrontHome`           | `featured:ProductCard[]!,newArrivals:ProductCard[]!,discounted:ProductCard[]!,categories:Category[]!,storeName?,branding:MediaRef?,contact:ContactInfo?,complaintContact:ContactInfo?,banner:HomepageBanner?,policyLinks:[{type,version,href}]!`                                                                                                                                                                                                                                                                                | Bounded current public merchandising; no internal settings or unpublished policies                                                                               |
 | `HomepageBanner`           | `assetId:id!,title:string!,alt:string!,href:string?,image:MediaRef!`                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Resolved approved public projection; image supplied by server from mediaAssets                                                                                   |
 | `HomepageBannerInput`      | `assetId:id!,title:string!,alt:string!,href:string?`                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Validated public media asset; relative internal destination; null in SettingsPatch removes banner safely                                                         |
 | `PolicyDraftInput`         | `type:enum(shipping,cancellation,returns,refunds,privacy,terms,complaints)!,content:string!,proposedEffectiveAt:date?`                                                                                                                                                                                                                                                                                                                                                                                                          | Server generates version and ID; content length/sanitization enforced                                                                                            |
@@ -2334,13 +2547,14 @@ The following field allowlists define client inputs and server responses. `*Inpu
 | `CustomerAdminDetail`      | `id!,name!,emailMasked!,phoneMasked?,status!,emailVerified!,createdAt:date!`                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Historic orders/claims/refunds via paginated scoped subroutes; not embedded                                                                                      |
 | `AdminOrderDetail`         | `OrderDetail` plus `customerContactMasked?,allocationSummary,fulfillmentActions[],auditRefs[]`                                                                                                                                                                                                                                                                                                                                                                                                                                  | Fields operationally necessary only; protected admin view                                                                                                        |
 | `ClaimInput`               | `claimType:enum(physical_return,shortage)!,items:[{orderItemId:id!,quantity:int!,reason:string!,evidenceAssetIds:id[]?}]!,description?`                                                                                                                                                                                                                                                                                                                                                                                         | Reject overlapping protected item ordinals; backend owns amounts/ordinal selection                                                                               |
-| `Claim`                    | `id!,orderId!,claimType!,items:[{orderItemId,requestedQty,approvedQty?,reason}]!,status!,requestedAt:date!,evidence[]`                                                                                                                                                                                                                                                                                                                                                                                                          | Claim evidence private; only masked metadata/authorized links                                                                                                    |
-| `Refund`                   | `id!,orderId!,refundGroupKey:string?,classification:enum(merchandise,payment_correction)!,basis!,sourceCollectionId!,amountPoisha!,method?,status!,capacityStatus!,requestedAt:date!,approvedAt:date?,completedAt:date?,items:[{orderItemId,amountPoisha}]!,timing:RefundTiming!,timeline:RefundStatusEvent[]!`                                                                                                                                                                                                                 | Source caps enforced; item totals reconcile; timing from approval snapshot, timeline max 40 public status facts                                                  |
+| `Claim`                    | `id!,orderId!,claimType!,items:[{orderItemId,requestedQty,approvedQty?,receivedQty?,inspectedQty?,acceptedQty?,resellableQty?,reason}]!,description?,status!,requestedAt:date!,evidence[]`                                                                                                                                                                                                                                                                                                                                      | Claim evidence private; only masked metadata/authorized links                                                                                                    |
+| `Refund`                   | `id!,orderId!,refundGroupKey:string?,classification:enum(merchandise,payment_correction)!,basis!,sourceCollectionId!,amountPoisha!,method?,status!,capacityStatus!,investigationStatus:enum(none,under_review)?,requestedAt:date!,approvedAt:date?,completedAt:date?,items:[{orderItemId,amountPoisha}]!,timing:RefundTiming!,timeline:RefundStatusEvent[]!`                                                                                                                                                                    | Source caps enforced; item totals reconcile; timing from approval snapshot, timeline max 40 public status facts                                                  |
 | `RefundStatusEvent`        | `status:enum(requested,under_review,approved,processing,completed,failed,rejected)!,at:date!,reasonCode:string?`                                                                                                                                                                                                                                                                                                                                                                                                                | Public status fact only; no actor identifiers, internal notes or transfer evidence                                                                               |
 | `RefundTiming`             | `status:enum(awaiting_approval,calculated,under_review)!,targetBusinessDays:int!,timezone:enum(Asia/Dhaka)!,policyVersion:string?,calendarVersion:string?,targetAt:date?`                                                                                                                                                                                                                                                                                                                                                       | Standard target 7 business days; approved shorter rule prevails; absent date when basis missing                                                                  |
 | `ComplaintInput`           | `orderId:id?,issue:string!,contactName:string? (required anonymous),contactEmail:string? (required anonymous),contactPhone:string?,description:string?`                                                                                                                                                                                                                                                                                                                                                                         | Order ID only with verified owner/guest proof; anti-spam limits                                                                                                  |
 | `Complaint`                | `id!,orderId?,status!,issue!,createdAt:date!,response?,resolvedAt?`                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Customer sees only own/submitted authorized complaints                                                                                                           |
 | `Review`                   | `id!,productId!,rating:int!,comment:string!,status!,createdAt:date!,verifiedPurchase:bool!`                                                                                                                                                                                                                                                                                                                                                                                                                                     | `verifiedPurchase` server-derived from delivered qualifying order                                                                                                |
+| `ComplaintAdminDetail`     | `Complaint` plus `contact:{name,email,phone?},contactHistory:[{at,outcome}],responsePolicy:{status:enum(under_review)}`                                                                                                                                                                                                                                                                                                                                                                                                         | Current admin only; necessary contact for operational response, never public lookup; history max 40                                                              |
 | `DashboardMetrics`         | `from:date!,to:date!,asOf:date!,timezone:enum(Asia/Dhaka)!,dateBasis!,counts:DashboardCounts!,recentOrders:AdminOrderSummary[]!,lowStockItems:LowStockSummary[]!,grossMerchandiseValuePoisha!,productDiscountPoisha!,couponDiscountPoisha!,netAcceptedOrderSalesPoisha!,paidCollectionsPoisha!,netLinkedCashFlowPoisha:SignedMoneyPoisha!,unattributedProviderCashPoisha!,completedMerchandiseRefundsPoisha!,completedCorrectionRefundsPoisha!,pendingRefundLiabilityPoisha!,outstandingCodPoisha!,unassignedLinkedCashPoisha!` | Counts and balances at cutoff; period cash uses event dates; lists max 20 each; all other money fields nonnegative integers                                      |
 | `DashboardCounts`          | `activeProducts:int!,registeredCustomers:int!,totalOrders:int!,pendingOrders:int!,confirmedOrders:int!,processingOrders:int!,shippedOrders:int!,deliveredOrders:int!,cancelledOrders:int!,lowStockVariants:int!,pendingReturnRequests:int!`                                                                                                                                                                                                                                                                                     | Nonnegative cutoff counts; fulfillment-status counts sum to totalOrders                                                                                          |
 | `LowStockSummary`          | `variantId:id!,productId:id!,sku:string!,available:int!,threshold:int!`                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Admin-only; nonnegative counters and approved threshold                                                                                                          |
@@ -2450,6 +2664,8 @@ Any difference between this matrix and the route's own explicitly stated `201`/`
 | `GET`    | `/admin/provider-receipts`                           | `200`              | Base + OWN + MONEY                   |
 | `POST`   | `/admin/provider-receipts/{intakeId}/link`           | `200`              | Base + OWN + MONEY + REPLAY          |
 | `POST`   | `/admin/payment-collections/{collectionId}/allocate` | `200`              | Base + OWN + CAS + MONEY + REPLAY    |
+| `GET`    | `/orders/{orderId}/claims/evidence/{assetId}`        | `200`              | Base + OWN                           |
+| `GET`    | `/admin/claims/{claimId}/evidence/{assetId}`         | `200`              | Base + OWN                           |
 | `GET`    | `/me/claims`                                         | `200`              | Base + OWN                           |
 | `GET`    | `/me/refunds`                                        | `200`              | Base + OWN + REFUND                  |
 | `GET`    | `/orders/{orderId}/claim-eligibility`                | `200`              | Base + OWN                           |
@@ -2501,6 +2717,9 @@ Any difference between this matrix and the route's own explicitly stated `201`/`
 | `GET`    | `/admin/customers/{customerId}/claims`               | `200`              | Base + OWN                           |
 | `GET`    | `/admin/customers/{customerId}/refunds`              | `200`              | Base + OWN + REFUND                  |
 | `POST`   | `/admin/customers/{customerId}/status-decisions`     | `200`              | Base + OWN + REPLAY                  |
+| `GET`    | `/admin/customers/{customerId}/deletion-request`     | `200`              | Base + OWN                           |
+| `POST`   | `/admin/customers/{customerId}/deletion-decisions`   | `200`              | Base + OWN + STATE + REPLAY          |
+| `GET`    | `/admin/operational-exceptions`                      | `200`              | Base + OWN                           |
 | `GET`    | `/admin/reviews`                                     | `200`              | Base + OWN                           |
 | `POST`   | `/admin/reviews/{reviewId}/moderation`               | `200`              | Base + OWN + REPLAY                  |
 | `GET`    | `/admin/delivery/zones`                              | `200`              | Base + OWN                           |
@@ -2531,6 +2750,7 @@ Any difference between this matrix and the route's own explicitly stated `201`/`
 | `POST`   | `/complaints`                                        | `201`              | Base                                 |
 | `GET`    | `/me/complaints`                                     | `200`              | Base + OWN                           |
 | `GET`    | `/orders/{orderId}/complaints`                       | `200`              | Base + OWN                           |
+| `GET`    | `/admin/complaints/{complaintId}`                    | `200`              | Base + OWN                           |
 | `GET`    | `/admin/complaints`                                  | `200`              | Base + OWN                           |
 | `POST`   | `/admin/complaints/{complaintId}/resolve`            | `200`              | Base + OWN + REPLAY                  |
 | `GET`    | `/admin/audit-logs`                                  | `200`              | Base + OWN                           |

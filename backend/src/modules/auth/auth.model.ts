@@ -1,8 +1,11 @@
-import { Schema, Types, type Connection, type InferSchemaType } from 'mongoose'
+import { type Connection, type InferSchemaType, Schema, Types } from 'mongoose'
 import { z } from 'zod'
 import { integerField, mutableSchemaOptions } from '../../shared/database/schema.js'
 
+type IdentityModels = ReturnType<typeof createIdentityModels>
+
 const embedded = { _id: false, strict: 'throw', versionKey: false } as const
+
 function stringField(max?: number) {
   return {
     type: String,
@@ -22,10 +25,12 @@ function stringField(max?: number) {
     },
   }
 }
+
 const requiredText = (max?: number) => ({
   ...stringField(max),
   required: true as const,
 })
+
 function dateField<const R extends boolean>(required: R) {
   return {
     type: Date,
@@ -38,6 +43,7 @@ function dateField<const R extends boolean>(required: R) {
     },
   }
 }
+
 function reference<const R extends boolean>(required: R) {
   return {
     type: Schema.Types.ObjectId,
@@ -49,6 +55,7 @@ function reference<const R extends boolean>(required: R) {
     },
   }
 }
+
 const emailField = () => ({
   ...requiredText(254),
   validate: {
@@ -57,11 +64,13 @@ const emailField = () => ({
     message: 'Invalid email',
   },
 })
+
 const digest = (required = true) => ({
   ...stringField(),
   required,
   select: false,
 })
+
 const addressSchema = new Schema(
   {
     id: reference(true),
@@ -83,6 +92,7 @@ const addressSchema = new Schema(
   },
   embedded,
 )
+
 const revisionsSchema = new Schema(
   {
     email_verify: { ...integerField(), required: true, default: 0 },
@@ -91,6 +101,7 @@ const revisionsSchema = new Schema(
   },
   embedded,
 )
+
 const deletionSchema = new Schema(
   {
     id: reference(true),
@@ -106,10 +117,12 @@ const deletionSchema = new Schema(
   },
   embedded,
 )
+
 deletionSchema.pre('validate', function () {
   if (['approved', 'rejected', 'completed'].includes(this.status) && !this.decisionAt)
     this.invalidate('decisionAt', 'Decision instant required')
 })
+
 const userSchema = new Schema(
   {
     emailNormalized: emailField(),
@@ -155,7 +168,9 @@ const userSchema = new Schema(
   },
   mutableSchemaOptions,
 )
+
 userSchema.index({ emailNormalized: 1 }, { name: 'users_email_unique', unique: true })
+
 userSchema.index({ role: 1, status: 1, createdAt: -1 }, { name: 'users_role_status_created' })
 
 const sessionSchema = new Schema(
@@ -172,6 +187,7 @@ const sessionSchema = new Schema(
   },
   mutableSchemaOptions,
 )
+
 sessionSchema.pre('validate', function () {
   const guest = this.kind === 'guest_order'
   if (
@@ -183,9 +199,13 @@ sessionSchema.pre('validate', function () {
   if (this.isNew && this.expiresAt <= (this.createdAt ?? new Date()))
     this.invalidate('expiresAt', 'Invalid issuance expiry')
 })
+
 sessionSchema.index({ tokenHash: 1 }, { name: 'sessions_token_unique', unique: true })
+
 sessionSchema.index({ userId: 1, kind: 1, revokedAt: 1 }, { name: 'sessions_user_kind_revoked' })
+
 sessionSchema.index({ expiresAt: 1 }, { name: 'sessions_expiry', expireAfterSeconds: 0 })
+
 function binaryField() {
   return {
     type: Buffer,
@@ -196,6 +216,7 @@ function binaryField() {
     },
   }
 }
+
 const envelopeSchema = new Schema(
   {
     algorithm: { ...requiredText(), enum: ['AES-256-GCM'] },
@@ -206,6 +227,7 @@ const envelopeSchema = new Schema(
   },
   embedded,
 )
+
 const challengeSchema = new Schema(
   {
     purpose: {
@@ -232,6 +254,7 @@ const challengeSchema = new Schema(
   },
   mutableSchemaOptions,
 )
+
 challengeSchema.pre('validate', function () {
   if (this.deliveryEnvelope && (this.consumedAt || this.invalidatedAt))
     this.invalidate('deliveryEnvelope', 'Inactive challenge cannot retain delivery material')
@@ -245,12 +268,16 @@ challengeSchema.pre('validate', function () {
   if (this.isNew && this.expiresAt <= (this.createdAt ?? new Date()))
     this.invalidate('expiresAt', 'Invalid issuance expiry')
 })
+
 challengeSchema.index({ secretHash: 1 }, { name: 'auth_challenges_secret_unique', unique: true })
+
 challengeSchema.index(
   { purpose: 1, orderId: 1, expiresAt: 1 },
   { name: 'auth_challenges_purpose_order_expiry' },
 )
+
 challengeSchema.index({ expiresAt: 1 }, { name: 'auth_challenges_expiry', expireAfterSeconds: 0 })
+
 const contextSchema = new Schema(
   {
     contextTokenHash: digest(),
@@ -261,18 +288,21 @@ const contextSchema = new Schema(
   },
   mutableSchemaOptions,
 )
+
 contextSchema.pre('validate', function () {
   if (this.isNew && this.expiresAt <= (this.createdAt ?? new Date()))
     this.invalidate('expiresAt', 'Invalid issuance expiry')
 })
+
 contextSchema.index(
   { contextTokenHash: 1 },
   { name: 'browser_contexts_token_unique', unique: true },
 )
+
 contextSchema.index({ expiresAt: 1 }, { name: 'browser_contexts_expiry', expireAfterSeconds: 0 })
 
 // Connection-owned models only. No global connection or automatic collection/index rollout.
-export function createIdentityModels(connection: Connection) {
+function createIdentityModels(connection: Connection) {
   return {
     users: connection.model('IdentityUser', userSchema, 'users'),
     sessions: connection.model('IdentitySession', sessionSchema, 'sessions'),
@@ -280,4 +310,6 @@ export function createIdentityModels(connection: Connection) {
     contexts: connection.model('IdentityBrowserContext', contextSchema, 'browserContexts'),
   }
 }
-export type IdentityModels = ReturnType<typeof createIdentityModels>
+
+export type { IdentityModels }
+export { createIdentityModels }

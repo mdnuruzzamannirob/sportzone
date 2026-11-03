@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
 import { spawn, spawnSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
-import { gzipSync } from 'node:zlib'
-import { MongoMemoryReplSet } from 'mongodb-memory-server-core'
 import { once } from 'node:events'
 import { createServer } from 'node:net'
 import { setTimeout as delay } from 'node:timers/promises'
+import { gzipSync } from 'node:zlib'
+import { MongoMemoryReplSet } from 'mongodb-memory-server-core'
 
 const invalid = spawnSync(process.execPath, ['dist/server.js'], {
   env: { ...process.env, PORT: 'invalid-synthetic-port' },

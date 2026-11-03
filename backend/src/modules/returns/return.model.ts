@@ -1,8 +1,13 @@
-import { ApiError } from '../../shared/errors/app-error.js'
-import { Schema, type Connection, type InferSchemaType } from 'mongoose'
+import { type Connection, type InferSchemaType, Schema } from 'mongoose'
 import { integerField, mutableSchemaOptions } from '../../shared/database/schema.js'
+import { ApiError } from '../../shared/errors/app-error.js'
+
+type ReturnRequest = InferSchemaType<typeof schema>
+
 const oid = { type: Schema.Types.ObjectId, required: true, immutable: true }
+
 const embedded = { _id: false, strict: 'throw', versionKey: false } as const
+
 const schema = new Schema(
   {
     orderId: oid,
@@ -32,6 +37,11 @@ const schema = new Schema(
             requestedQty: { ...integerField(1), max: 50, required: true },
             protectedUnitOrdinals: { type: [Number], required: true },
             approvedUnitOrdinals: { type: [Number], required: true },
+            receivedUnitOrdinals: { type: [Number], default: undefined },
+            inspectedUnitOrdinals: { type: [Number], default: undefined },
+            acceptedUnitOrdinals: { type: [Number], default: undefined },
+            resellableUnitOrdinals: { type: [Number], default: undefined },
+            inspectionReason: { type: String, maxlength: 2000 },
             reason: { type: String, required: true, maxlength: 2000 },
             evidenceRefs: { type: [Schema.Types.ObjectId], required: true },
           },
@@ -40,7 +50,28 @@ const schema = new Schema(
       ],
       required: true,
     },
-    status: { type: String, enum: ['requested'], required: true },
+    status: {
+      type: String,
+      enum: [
+        'requested',
+        'under_review',
+        'approved',
+        'awaiting_return',
+        'received',
+        'inspected',
+        'completed',
+        'rejected',
+      ],
+      required: true,
+    },
+    description: { type: String, maxlength: 2000 },
+    approvedAt: Date,
+    receivedAt: Date,
+    inspectedAt: Date,
+    receiptReference: { type: String, maxlength: 2000 },
+    completedAt: Date,
+    reviewedBy: Schema.Types.ObjectId,
+    decisionReason: { type: String, maxlength: 2000 },
     requestedAt: { type: Date, required: true, immutable: true },
     eligibilitySnapshot: {
       type: new Schema(
@@ -59,11 +90,15 @@ const schema = new Schema(
   },
   mutableSchemaOptions,
 )
+
 schema.index({ orderId: 1, status: 1, createdAt: -1 }, { name: 'return_order_history' })
+
 schema.index({ claimType: 1, status: 1, createdAt: 1 }, { name: 'return_type_queue' })
+
 schema.pre('save', function () {
   if (!this.isNew) throw new ApiError('STATE_CONFLICT')
 })
+
 schema.pre(
   [
     'updateOne',
@@ -79,12 +114,15 @@ schema.pre(
     throw new ApiError('STATE_CONFLICT')
   },
 )
+
 schema.pre('deleteOne', { document: true, query: false }, () => {
   throw new ApiError('STATE_CONFLICT')
 })
-type ReturnRequest = InferSchemaType<typeof schema>
-export function returnModel(connection: Connection) {
+
+function returnModel(connection: Connection) {
   return connection.models.ReturnRequest
     ? connection.model<ReturnRequest>('ReturnRequest')
     : connection.model<ReturnRequest>('ReturnRequest', schema, 'returnRequests')
 }
+
+export { returnModel }

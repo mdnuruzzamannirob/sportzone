@@ -1,10 +1,14 @@
-import { Schema, type Connection, type InferSchemaType } from 'mongoose'
+import { type Connection, type InferSchemaType, Schema } from 'mongoose'
 import {
   integerField,
   mutableSchemaOptions,
   optionalObjectIdField,
 } from '../../shared/database/schema.js'
+
+type MediaAsset = InferSchemaType<typeof schema>
+
 const embedded = { _id: false, strict: 'throw', versionKey: false } as const
+
 const schema = new Schema(
   {
     publicId: { type: String, required: true, match: /^sportzone\/[a-f0-9]{24}$/ },
@@ -68,6 +72,7 @@ const schema = new Schema(
   },
   mutableSchemaOptions,
 )
+
 schema.pre('validate', function () {
   const privateAsset = this.assetKind === 'claim_evidence'
   if (
@@ -102,12 +107,18 @@ schema.pre('validate', function () {
   if (['temporary', 'attached'].includes(this.status) && this.scanStatus !== 'clean')
     this.invalidate('scanStatus', 'Unvalidated media')
 })
+
 schema.index({ publicId: 1 }, { unique: true, name: 'media_public_id_unique' })
+
 schema.index({ orderId: 1, assetKind: 1, status: 1 }, { name: 'media_order_kind_status' })
+
 schema.index({ status: 1, expiresAt: 1 }, { name: 'media_status_expiry' })
-export type MediaAsset = InferSchemaType<typeof schema>
-export function mediaModel(connection: Connection) {
+
+function mediaModel(connection: Connection) {
   return connection.models.MediaAsset
     ? connection.model<MediaAsset>('MediaAsset')
     : connection.model<MediaAsset>('MediaAsset', schema, 'mediaAssets')
 }
+
+export type { MediaAsset }
+export { mediaModel }

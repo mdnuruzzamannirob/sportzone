@@ -1,22 +1,21 @@
-import { Router, type RequestHandler } from 'express'
+import { type RequestHandler, Router } from 'express'
 import { z } from 'zod'
 import { parseInput } from '../../../shared/middleware/validate.js'
-import { respond } from '../../../shared/responses.js'
-import type { BrowserSecurity } from '../sessions/browser-security.service.js'
-import { readContextCookie } from '../sessions/browser-security.service.js'
 import { localAuthRateLimit } from '../sessions/auth-throttle.service.js'
-import type { RecoveryService } from './password-recovery.service.js'
-import { createSessionHttp, readSessionCookie } from '../sessions/session.http.js'
+import type { BrowserSecurity } from '../sessions/browser-security.service.js'
 import type { SessionService } from '../sessions/session.service.js'
+import { createRecoveryController } from './password-recovery.controller.js'
+import type { RecoveryService } from './password-recovery.service.js'
 
-export function recoveryRoutes(
+function createRecoveryRoutes(
   service: RecoveryService,
   security: BrowserSecurity,
   sessions: SessionService,
   limit: RequestHandler = localAuthRateLimit(),
 ) {
-  const router = Router(),
-    cookies = createSessionHttp(sessions)
+  const controller = createRecoveryController(service, sessions)
+
+  const router = Router()
   const cors = security.cors('storefront')
   const noQuery: RequestHandler = (req, _res, next) => {
     parseInput(z.strictObject({}), req.query)
@@ -38,16 +37,7 @@ export function recoveryRoutes(
       limit,
       security.require('storefront', 'context'),
       noQuery,
-      async (req, res) => {
-        respond(
-          res,
-          await action(
-            req.body,
-            readContextCookie(req.get('Cookie'), 'storefront') ?? '',
-            req.get('X-CSRF-Token') ?? '',
-          ),
-        )
-      },
+      controller.recoverPassword(action),
     )
   }
   router.post(
@@ -56,14 +46,9 @@ export function recoveryRoutes(
     limit,
     security.require('storefront', 'customer'),
     noQuery,
-    async (req, res) => {
-      const result = await service.change(
-        req.body,
-        readSessionCookie(req.get('Cookie'), 'customer'),
-      )
-      cookies.setCookie(res, result.issued)
-      respond(res, { changed: true, csrfToken: result.issued.csrfToken })
-    },
+    controller.postMePasswordChange,
   )
   return router
 }
+
+export { createRecoveryRoutes }

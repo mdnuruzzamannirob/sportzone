@@ -2,22 +2,28 @@ import { isDeepStrictEqual } from 'node:util'
 import type { Connection } from 'mongoose'
 import { verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 import { mediaModel } from './media.model.js'
+
 type Shape = Record<string, unknown>
+
 const integer = {
   bsonType: ['int', 'long', 'double'],
   minimum: 0,
   maximum: Number.MAX_SAFE_INTEGER,
   multipleOf: 1,
 }
+
 const oid = { bsonType: 'objectId' },
   date = { bsonType: 'date' }
+
 const text = (maxLength: number): Shape => ({ bsonType: 'string', minLength: 1, maxLength })
+
 const object = (properties: Shape, required: string[]): Shape => ({
   bsonType: 'object',
   additionalProperties: false,
   properties,
   required,
 })
+
 const references = {
   bsonType: 'array',
   maxItems: 40,
@@ -31,6 +37,7 @@ const references = {
     ['targetType', 'targetId', 'slot'],
   ),
 }
+
 const validator = {
   $and: [
     {
@@ -123,6 +130,7 @@ const validator = {
     },
   ],
 }
+
 async function verifyValidator(connection: Connection) {
   if (!connection.db) throw new Error('Media database unavailable.')
   const current = await connection.db
@@ -136,7 +144,8 @@ async function verifyValidator(connection: Connection) {
   )
     throw new Error('Media collection requires explicit bootstrap or reviewed migration.')
 }
-export async function initializeMediaPersistence(connection: Connection) {
+
+async function initializeMediaPersistence(connection: Connection) {
   if (!connection.db) throw new Error('Media database unavailable.')
   const exists = await connection.db.listCollections({ name: 'mediaAssets' }).next()
   if (!exists)
@@ -149,7 +158,10 @@ export async function initializeMediaPersistence(connection: Connection) {
   await mediaModel(connection).createIndexes()
   await verifyDeclaredIndexes(mediaModel(connection))
 }
-export async function verifyMediaPersistence(connection: Connection) {
+
+async function verifyMediaPersistence(connection: Connection) {
   await verifyValidator(connection)
   await verifyDeclaredIndexes(mediaModel(connection))
 }
+
+export { initializeMediaPersistence, verifyMediaPersistence }

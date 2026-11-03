@@ -1,20 +1,16 @@
 import { createHash } from 'node:crypto'
 import type { ClientSession } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
-import type { CustomerAccountAccess, CustomerProfile } from './customer-account.service.js'
+import type { CustomerAccountAccess } from './account-access.service.js'
+import type {
+  CheckoutCredentials,
+  CheckoutPrincipal,
+  OrderPrincipal,
+  PaymentInitiationCredentials,
+} from './auth.public.js'
 import type { BrowserSecurity } from './sessions/browser-security.service.js'
-export type CheckoutCredentials = {
-  customerPresent: boolean
-  customerToken?: string | undefined
-  contextToken?: string | undefined
-  csrfToken?: string | undefined
-}
-export type CheckoutPrincipal = {
-  scopeType: 'customer' | 'guest_context'
-  scopeKeyHash: string
-  profile?: CustomerProfile
-}
-export function checkoutAccess(customers: CustomerAccountAccess, security: BrowserSecurity) {
+
+function checkoutAccess(customers: CustomerAccountAccess, security: BrowserSecurity) {
   return {
     async owned<T>(
       credentials: CheckoutCredentials,
@@ -44,8 +40,8 @@ export function checkoutAccess(customers: CustomerAccountAccess, security: Brows
   }
 }
 
-export function paymentMethodAccess(
-  customers: CustomerAccountAccess,
+function paymentMethodAccess(
+  customers: Pick<CustomerAccountAccess, 'owned'>,
   guests?: Pick<import('./guest-access/guest-session.service.js').GuestSessions, 'owned'>,
 ) {
   return {
@@ -57,7 +53,10 @@ export function paymentMethodAccess(
       },
       orderId: string,
       work: (
-        scope: { customerId?: string; guestOrderId?: string },
+        scope: {
+          customerId?: string
+          guestOrderId?: string
+        },
         session: ClientSession,
       ) => Promise<T>,
     ) {
@@ -75,19 +74,16 @@ export function paymentMethodAccess(
   }
 }
 
-export type PaymentInitiationCredentials = {
-  customerPresent: boolean
-  customerToken?: string | undefined
-  guestToken?: string | undefined
-  csrfToken?: string | undefined
-}
-export function paymentInitiationAuthAccess(
+function paymentInitiationAuthAccess(
   customers: CustomerAccountAccess,
   sessions: import('./sessions/session.service.js').SessionService,
   order: (
     session: ClientSession,
     orderId: string,
-    scope: { customerId?: string; guestOrderId?: string },
+    scope: {
+      customerId?: string
+      guestOrderId?: string
+    },
   ) => Promise<unknown>,
   guests?: Pick<import('./guest-access/guest-session.service.js').GuestSessions, 'owned'>,
 ) {
@@ -147,15 +143,66 @@ export function paymentInitiationAuthAccess(
   }
 }
 
-export type OrderPrincipal =
-  | { kind: 'customer'; userId: string }
-  | { kind: 'guest_order'; guestSessionId: string; orderId: string }
-export function orderScopeAccess(
+function orderScopeAccess(
   customers: CustomerAccountAccess,
   sessions: import('./sessions/session.service.js').SessionService,
-  guests?: Pick<import('./guest-access/guest-session.service.js').GuestSessions, 'owned'>,
+  guests?: Pick<import('./guest-access/guest-session.service.js').GuestSessions, 'owned'> &
+    Partial<
+      Pick<import('./guest-access/guest-session.service.js').GuestSessions, 'authorizeInSession'>
+    >,
 ) {
   return {
+    async inSession(
+      credentials: PaymentInitiationCredentials,
+      orderId: string,
+      session: ClientSession,
+      mutating = false,
+    ): Promise<OrderPrincipal> {
+      if (credentials.customerPresent) {
+        if (
+          mutating &&
+          !(await sessions.verifyCsrfMaterial(
+            'customer',
+            credentials.customerToken,
+            credentials.csrfToken,
+          ))
+        )
+          throw new ApiError('CSRF_INVALID')
+        return {
+          kind: 'customer',
+          userId: await customers.authorizeInSession(credentials.customerToken, session, mutating),
+        }
+      }
+      if (!guests?.authorizeInSession) throw new ApiError('GUEST_PROOF_REQUIRED')
+      if (mutating && !credentials.csrfToken) throw new ApiError('CSRF_INVALID')
+      const owner = await guests.authorizeInSession(
+        credentials.guestToken,
+        orderId,
+        session,
+        mutating ? credentials.csrfToken : undefined,
+      )
+      return { kind: 'guest_order', orderId: owner.orderId, guestSessionId: owner.sessionId }
+    },
+    // For nested resources, authenticate first, then resolve the resource's order in the same
+    // transaction; the owning domain must still verify customer/guest order ownership.
+    async ownedAny<T>(
+      credentials: PaymentInitiationCredentials,
+      work: (principal: OrderPrincipal, session: ClientSession) => Promise<T>,
+    ) {
+      if (credentials.customerPresent)
+        return customers.owned(
+          credentials.customerToken,
+          (profile, scope) => work({ kind: 'customer', userId: profile.id }, scope.transaction),
+          false,
+        )
+      if (!guests) throw new ApiError('GUEST_PROOF_REQUIRED')
+      return guests.owned(credentials.guestToken, undefined, (scope, session) =>
+        work(
+          { kind: 'guest_order', orderId: scope.orderId, guestSessionId: scope.sessionId },
+          session,
+        ),
+      )
+    },
     async owned<T>(
       credentials: PaymentInitiationCredentials,
       orderId: string,
@@ -204,3 +251,6 @@ export function orderScopeAccess(
     },
   }
 }
+
+export type { CheckoutCredentials, CheckoutPrincipal, OrderPrincipal, PaymentInitiationCredentials }
+export { checkoutAccess, orderScopeAccess, paymentInitiationAuthAccess, paymentMethodAccess }

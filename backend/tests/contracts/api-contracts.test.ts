@@ -24,6 +24,7 @@ import {
   wireSchema,
   writeArtifacts,
 } from '../../contracts/generate.js'
+import { localOperations } from '../../contracts/local-operations.js'
 import {
   assertOperationParity,
   operationId,
@@ -31,7 +32,9 @@ import {
   transportOperations,
 } from '../../contracts/registry.js'
 import { createApp } from '../../src/app.js'
-import { registeredOperations, registeredRouter } from './routes.fixture.js'
+import { createContractCheckedApp } from '../helpers/contracts.js'
+
+import { localOnlyRouters, registeredOperations, registeredRouter } from './routes.fixture.js'
 
 const markdown = readFileSync(resolve('../docs/API.md'), 'utf8')
 const artifacts = generateArtifacts(markdown)
@@ -58,8 +61,30 @@ const envelope = (path: string, method = 'get', status = '200') =>
     ).schema
 
 describe('executable API contract registry', () => {
+  it('detects real HTTP response drift without publishing injected private fields', async () => {
+    let includePrivateField = false
+    const router = Router().post('/admin/notifications/:notificationId/retry', (_req, res) => {
+      res.json({
+        data: {
+          status: 'queued',
+          ...(includePrivateField ? { evidence: 'synthetic-private-proof' } : {}),
+        },
+        meta: { requestId: res.locals.requestId },
+      })
+    })
+    const app = createContractCheckedApp({ apiRouter: router })
+    await request(app)
+      .post('/api/v1/admin/notifications/aaaaaaaaaaaaaaaaaaaaaaaa/retry')
+      .expect(200)
+    includePrivateField = true
+    const failed = await request(app)
+      .post('/api/v1/admin/notifications/aaaaaaaaaaaaaaaaaaaaaaaa/retry')
+      .expect(500)
+    expect(JSON.stringify(failed.body)).not.toContain('synthetic-private-proof')
+    expect(failed.body).not.toHaveProperty('data')
+  })
   it('reconciles actual Express routers, including explicit transport methods', () => {
-    const actual = registeredOperations(registeredRouter())
+    const actual = [registeredRouter(), ...localOnlyRouters()].flatMap(registeredOperations)
     assertOperationParity(actual.filter((op) => !['HEAD', 'OPTIONS'].includes(op.method)))
     assertOperationParity(
       actual.filter((op) => op.method === 'HEAD'),
@@ -70,7 +95,7 @@ describe('executable API contract registry', () => {
         .filter((op) => op.method === 'OPTIONS')
         .every((op) => operations.some((item) => item.path === op.path)),
     ).toBe(true)
-    expect(operations).toHaveLength(98)
+    expect(operations).toHaveLength(170)
     const prefixed = Router().use('/untracked', registeredRouter())
     expect(() => registeredOperations(prefixed)).toThrow(/mount prefix/)
   })
@@ -99,39 +124,60 @@ describe('executable API contract registry', () => {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
         const file = `${dir}/${entry.name}`
         if (entry.isDirectory()) visit(file)
-        else if (file.endsWith('.routes.ts')) actual.push(file.replace('src/modules/', ''))
+        else if (file.endsWith('.routes.ts')) actual.push(file.replace(/^src\/(?:modules\/)?/, ''))
       }
     }
     visit('src/modules')
+    visit('src/health')
     expect(actual.sort()).toEqual(
       [
-        'auth/credentials/admin-auth.routes.ts',
-        'auth/credentials/customer-auth.routes.ts',
+        'audit/audit.routes.ts',
+        'auth/credentials/credential.routes.ts',
         'auth/guest-access/guest-access.routes.ts',
         'auth/recovery/password-recovery.routes.ts',
         'auth/sessions/browser-security.routes.ts',
         'auth/verification/email-change.routes.ts',
-        'catalog/catalog.routes.ts',
-        'catalog/categories/category-admin.routes.ts',
-        'catalog/products/product-admin.routes.ts',
+        'auth/verification/email-verification.routes.ts',
         'cart/cart.routes.ts',
-        'cart/wishlist.routes.ts',
+        'catalog/catalog.routes.ts',
+        'catalog/categories/category.routes.ts',
+        'catalog/products/product.routes.ts',
         'checkout/checkout.routes.ts',
         'customers/customer.routes.ts',
         'delivery/delivery.routes.ts',
-        'health/health.routes.ts',
-        'inventory/inventory-admin.routes.ts',
+        'inventory/inventory.routes.ts',
         'media/media.routes.ts',
-        'payments/payment-methods.routes.ts',
-        'payments/payment-initiation.routes.ts',
-        'payments/payment-callback.routes.ts',
-        'payments/payment-risk.routes.ts',
-        'orders/order-read.routes.ts',
-        'payments/payment-monitor.routes.ts',
-        'promotions/coupon-admin.routes.ts',
-        'settings/settings.routes.ts',
+        'notifications/notification.routes.ts',
+        'orders/order.routes.ts',
+        'payments/payment.routes.ts',
+        'promotions/promotion.routes.ts',
+        'refunds/refund.routes.ts',
+        'reports/report.routes.ts',
+        'returns/return.routes.ts',
+        'reviews/review.routes.ts',
+        'settings/setting.routes.ts',
+        'support/support.routes.ts',
+        'wishlist/wishlist.routes.ts',
+        'health/health.routes.ts',
       ].sort(),
     )
+  })
+  it('keeps local-only domain routes aligned with planned API paths', () => {
+    const actual = localOnlyRouters()
+      .flatMap((router) => registeredOperations(router))
+      .filter((op) => !['HEAD', 'OPTIONS'].includes(op.method))
+    const expected = localOperations.map((op) => `${op.method} ${op.path}`)
+    expect(actual.map((op) => `${op.method} ${op.path}`).sort()).toEqual(expected.sort())
+    const planned = artifacts['planned-operations.json'].operations
+    for (const op of actual)
+      expect(planned.some((item) => item.method === op.method && item.path === op.path)).toBe(true)
+  })
+  it('covers every specified business operation with a real active or explicitly local-only router', () => {
+    const all = [registeredRouter(), ...localOnlyRouters()]
+      .flatMap(registeredOperations)
+      .filter((op) => !['HEAD', 'OPTIONS'].includes(op.method))
+    assertOperationParity(all, artifacts['planned-operations.json'].operations)
+    expect(all).toHaveLength(170)
   })
   it('validates the whole OpenAPI and Postman documents against official offline schemas', () => {
     const official = JSON.parse(
@@ -181,8 +227,9 @@ describe('executable API contract registry', () => {
     })
   it('keeps planned contracts non-executable and environment values blank', () => {
     const rows = artifacts['planned-operations.json'].operations
-    expect(rows).toHaveLength(164)
-    expect(rows.filter((op) => op.implementation === 'planned')).toHaveLength(66)
+    expect(rows).toHaveLength(170)
+    expect(rows.filter((op) => op.implementation === 'planned')).toHaveLength(0)
+    expect(rows.filter((op) => op.implementation === 'implemented-local-only')).toHaveLength(0)
     expect(openapi.paths['/orders/{orderId}/payment-attempts']).toMatchObject({
       post: {
         security: [
@@ -192,10 +239,23 @@ describe('executable API contract registry', () => {
       },
     })
     expect(openapi.paths['/checkout/payment-methods']).toBeDefined()
+    expect(openapi.paths['/coupons/preview']?.post).toMatchObject({
+      security: [
+        { BrowserContext: [], CsrfHeader: [] },
+        { CustomerSession: [], CsrfHeader: [] },
+      ],
+    })
+    expect(openapi.paths['/complaints']?.post).toMatchObject({
+      security: [
+        { BrowserContext: [], CsrfHeader: [] },
+        { CustomerSession: [], CsrfHeader: [] },
+        { GuestOrderSession: [], CsrfHeader: [] },
+      ],
+    })
     expect(ajv.validateSchema(envelope('/checkout/payment-methods', 'get', '200'))).toBe(true)
     expect(openapi.paths['/checkout/orders']).toBeDefined()
     expect(ajv.validateSchema(envelope('/checkout/orders', 'post', '200'))).toBe(true)
-    expect(artifacts['postman.collection.json'].item).toHaveLength(98)
+    expect(artifacts['postman.collection.json'].item).toHaveLength(170)
     expect(artifacts['postman.environment.json'].values.every((entry) => entry.value === '')).toBe(
       true,
     )

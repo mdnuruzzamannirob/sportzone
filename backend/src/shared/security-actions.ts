@@ -1,3 +1,4 @@
+type SecurityAction = (typeof actions)[keyof typeof actions]
 // Registered route patterns only. Never classify or log raw paths, IDs or input.
 const actions = {
   'POST /admin/payments/:paymentId/risk-decisions': 'admin.payment.risk_decision',
@@ -8,6 +9,15 @@ const actions = {
   'POST /guest-access/sessions': 'guest.proof.exchange',
   'GET /guest-access/session': 'guest.session.read',
   'POST /guest-access/logout': 'guest.session.logout',
+  'POST /auth/email-verifications': 'customer.email_verification.request',
+  'POST /auth/email-verifications/confirm': 'customer.email_verification.confirm',
+  'POST /coupons/preview': 'coupon.preview',
+  'GET /orders/:orderId/delivery-events': 'order.delivery_events.read',
+  'GET /orders/:orderId/payments': 'order.payments.read',
+  'GET /admin/provider-receipts': 'admin.receipt.list',
+  'POST /admin/provider-receipts/:intakeId/link': 'admin.receipt.link',
+  'POST /admin/payment-collections/:collectionId/allocate': 'admin.collection.allocate',
+  'POST /orders/:orderId/refund-requests': 'refund.request.submit',
   'POST /checkout/orders': 'checkout.order.submit',
   'POST /checkout/quotes': 'checkout.quote.create',
   'POST /admin/media/uploads': 'admin.media.upload',
@@ -34,8 +44,10 @@ const actions = {
   'POST /admin/auth/password-resets': 'admin.recovery.request',
   'POST /admin/auth/password-resets/confirm': 'admin.recovery.confirm',
 } as const
-export type SecurityAction = (typeof actions)[keyof typeof actions]
-export function securityAction(method: string, route: string): SecurityAction | undefined {
+function securityAction(method: string, route: string): SecurityAction | undefined {
   const key = `${method} ${route}`
   return Object.hasOwn(actions, key) ? actions[key as keyof typeof actions] : undefined
 }
+
+export type { SecurityAction }
+export { securityAction }

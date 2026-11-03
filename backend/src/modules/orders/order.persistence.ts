@@ -2,24 +2,31 @@ import { isDeepStrictEqual } from 'node:util'
 import type { Connection } from 'mongoose'
 import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 import { orderModels } from './order.model.js'
-import { fulfillmentStatus, fulfillmentHold } from './order.schema.js'
+import { fulfillmentHold, fulfillmentStatus } from './order.schema.js'
+
 type Shape = Record<string, unknown>
+
 const integer = {
   bsonType: ['int', 'long', 'double'],
   minimum: 0,
   maximum: Number.MAX_SAFE_INTEGER,
   multipleOf: 1,
 }
+
 const oid = { bsonType: 'objectId' },
   date = { bsonType: 'date' }
+
 const text = (maxLength: number): Shape => ({ bsonType: 'string', minLength: 1, maxLength })
+
 const object = (properties: Shape, required: string[]): Shape => ({
   bsonType: 'object',
   additionalProperties: false,
   properties,
   ...(required.length ? { required } : {}),
 })
+
 const base = { _id: oid, createdAt: date, updatedAt: date }
+
 const timing = object(
   {
     startEvent: { enum: ['placedAt', 'confirmedAt'] },
@@ -27,6 +34,7 @@ const timing = object(
   },
   ['startEvent', 'calendarDays'],
 )
+
 const deadlineBasis = object(
   {
     rule: object(
@@ -37,6 +45,14 @@ const deadlineBasis = object(
         effectiveTo: text(100),
         target: timing,
         estimate: timing,
+        prepaid: object(
+          {
+            ruleRef: text(2000),
+            handoverHours: { ...integer, minimum: 1, maximum: 8760 },
+            deliveryCalendarDays: { ...integer, minimum: 1, maximum: 3660 },
+          },
+          ['ruleRef', 'handoverHours', 'deliveryCalendarDays'],
+        ),
         legalCaps: {
           bsonType: 'array',
           maxItems: 10,
@@ -65,6 +81,7 @@ const deadlineBasis = object(
   },
   ['rule', 'review', 'capturedAt'],
 )
+
 const itemFields = {
   id: oid,
   productId: oid,
@@ -83,6 +100,7 @@ const itemFields = {
   unitRefundBasePoisha: integer,
   unitRefundRemainderQty: { ...integer, maximum: 49 },
 }
+
 const pricing = {
   regularSubtotalPoisha: integer,
   productDiscountPoisha: integer,
@@ -92,6 +110,7 @@ const pricing = {
   finalTotalPoisha: integer,
   currency: { enum: ['BDT'] },
 }
+
 const orderValidator = {
   $jsonSchema: object(
     {
@@ -146,6 +165,7 @@ const orderValidator = {
           targetDeadlineAt: date,
           legalDeadlineAt: date,
           effectiveDeadlineAt: date,
+          fullyPaidAt: date,
           calculatedAt: date,
           revision: integer,
         },
@@ -249,6 +269,7 @@ const orderValidator = {
     ],
   ),
 }
+
 const unit = {
   ordinal: { ...integer, minimum: 1, maximum: 50 },
   netEntitlementPoisha: integer,
@@ -258,6 +279,7 @@ const unit = {
   refundCompletedPoisha: integer,
   restockOperationKey: text(128),
 }
+
 const balanceValidator = {
   $and: [
     {
@@ -344,7 +366,9 @@ const balanceValidator = {
     },
   ],
 }
-export const orderValidators = { orders: orderValidator, orderItemBalances: balanceValidator }
+
+const orderValidators = { orders: orderValidator, orderItemBalances: balanceValidator }
+
 async function verify(connection: Connection, name: keyof typeof orderValidators) {
   const row = await connection.db?.listCollections({ name }, { nameOnly: false }).next()
   if (
@@ -355,7 +379,8 @@ async function verify(connection: Connection, name: keyof typeof orderValidators
   )
     throw new Error('Order persistence requires reviewed bootstrap/migration.')
 }
-export async function initializeOrderPersistence(connection: Connection) {
+
+async function initializeOrderPersistence(connection: Connection) {
   if (!connection.db) throw new Error('Order database unavailable')
   for (const name of Object.keys(orderValidators) as (keyof typeof orderValidators)[]) {
     if (!(await connection.db.listCollections({ name }).hasNext()))
@@ -370,7 +395,8 @@ export async function initializeOrderPersistence(connection: Connection) {
   await createDeclaredIndexes(models.orders)
   await createDeclaredIndexes(models.balances)
 }
-export async function verifyOrderPersistence(connection: Connection) {
+
+async function verifyOrderPersistence(connection: Connection) {
   for (const name of Object.keys(orderValidators) as (keyof typeof orderValidators)[])
     await verify(connection, name)
   const models = orderModels(connection)
@@ -378,7 +404,8 @@ export async function verifyOrderPersistence(connection: Connection) {
   await verifyDeclaredIndexes(models.balances)
 }
 
-export async function migrateOrderPostalCode(connection: Connection) {
+async function migrateOrderPostalCode(connection: Connection) {
+  await migrateOrderPrepaidTiming(connection)
   const db = connection.db
   if (!db) throw new Error('Order database unavailable')
   const row = await db.listCollections({ name: 'orders' }, { nameOnly: false }).next()
@@ -401,4 +428,44 @@ export async function migrateOrderPostalCode(connection: Connection) {
       validationLevel: 'strict',
       validationAction: 'error',
     })
+}
+
+// Explicit additive migration for the exact prior validator, never startup auto-DDL.
+async function migrateOrderPrepaidTiming(connection: Connection) {
+  const db = connection.db
+  if (!db) throw new Error('Order database unavailable')
+  const row = await db.listCollections({ name: 'orders' }, { nameOnly: false }).next()
+  if (!row) return
+  const current = orderValidators.orders
+  const prior: unknown = JSON.parse(
+    JSON.stringify(current, (key, value: unknown) =>
+      ['prepaid', 'fullyPaidAt'].includes(key) ? undefined : value,
+    ),
+  )
+  const withoutPostal = (value: unknown): unknown =>
+    JSON.parse(
+      JSON.stringify(value, (key, item: unknown) => (key === 'postalCode' ? undefined : item)),
+    )
+  const recognized = [current, prior, withoutPostal(current), withoutPostal(prior)]
+  if (
+    row.options?.validationLevel !== 'strict' ||
+    row.options?.validationAction !== 'error' ||
+    !recognized.some((value) => isDeepStrictEqual(row.options?.validator, value))
+  )
+    throw new Error('Unknown order validator; reviewed migration required')
+  if (!isDeepStrictEqual(row.options.validator, current))
+    await db.command({
+      collMod: 'orders',
+      validator: current,
+      validationLevel: 'strict',
+      validationAction: 'error',
+    })
+}
+
+export {
+  initializeOrderPersistence,
+  migrateOrderPostalCode,
+  migrateOrderPrepaidTiming,
+  orderValidators,
+  verifyOrderPersistence,
 }

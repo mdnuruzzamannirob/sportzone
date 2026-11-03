@@ -1,11 +1,20 @@
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
-import { checkoutCommercialDigest } from '../checkout/checkout-consent.service.js'
-import { calculatePricing } from '../promotions/pricing.service.js'
+import type { CommercialDigest } from '../checkout/checkout.public.js'
+import type { PricingCalculator } from '../promotions/promotion.public.js'
 import { createDeliveryDeadlineService } from './delivery-deadline.service.js'
-import { orderCreationProof } from './order.schema.js'
-export function buildOrderSnapshot(raw: unknown, placedAt: Date) {
-  const proof = parseInput(orderCreationProof, raw),
+import type { OrderCreationProofSchema } from './order.schema.js'
+
+function buildOrderSnapshot(
+  raw: unknown,
+  placedAt: Date,
+  moduleAccess: {
+    checkoutCommercialDigest: CommercialDigest
+    calculatePricing: PricingCalculator
+    schemaOrderCreationProof: OrderCreationProofSchema
+  },
+) {
+  const proof = parseInput(moduleAccess.schemaOrderCreationProof, raw),
     snapshot = proof.snapshot
   const acceptedAt = new Date(proof.acceptedAt)
   const rule = snapshot.deadlineBasis.rule
@@ -18,7 +27,7 @@ export function buildOrderSnapshot(raw: unknown, placedAt: Date) {
     !Number.isFinite(placedAt.getTime()) ||
     acceptedAt > placedAt ||
     acceptedAt < new Date(snapshot.deadlineBasis.capturedAt) ||
-    proof.commercialDigest !== checkoutCommercialDigest(snapshot)
+    proof.commercialDigest !== moduleAccess.checkoutCommercialDigest(snapshot)
   )
     throw new ApiError('STATE_CONFLICT')
   if (
@@ -45,7 +54,7 @@ export function buildOrderSnapshot(raw: unknown, placedAt: Date) {
     (snapshot.coupon && snapshot.coupon.code !== snapshot.draft.couponCode)
   )
     throw new ApiError('STATE_CONFLICT')
-  const calculated = calculatePricing({
+  const calculated = moduleAccess.calculatePricing({
     items: snapshot.items.map((item) => ({
       id: item.id,
       variantId: item.variantId,
@@ -105,6 +114,7 @@ export function buildOrderSnapshot(raw: unknown, placedAt: Date) {
   const deadline = createDeliveryDeadlineService(undefined, () => placedAt)
   const timing = deadline.projectTiming(snapshot.deadlineBasis, {
     placedAt: placedAt.toISOString(),
+    paymentMethod: snapshot.draft.method === 'cod' ? 'cod' : 'online',
   })
   if (timing.deliveryDeadline.status === 'under_review')
     throw new ApiError('BUSINESS_RULE_VIOLATION')
@@ -149,3 +159,5 @@ export function buildOrderSnapshot(raw: unknown, placedAt: Date) {
     paymentMethod: snapshot.draft.method === 'cod' ? ('cod' as const) : ('online' as const),
   }
 }
+
+export { buildOrderSnapshot }

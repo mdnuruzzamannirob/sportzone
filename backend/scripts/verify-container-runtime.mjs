@@ -1,20 +1,21 @@
 import { execFile } from 'node:child_process'
-import { promisify } from 'node:util'
 import { randomBytes, randomUUID } from 'node:crypto'
-import { mkdtemp, writeFile, rm, mkdir } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { createServer } from 'node:net'
+import { promisify } from 'node:util'
 import { MongoMemoryReplSet } from 'mongodb-memory-server-core'
 import { openDatabase } from '../dist/config/database.js'
 import {
-  inspectCatalogRollout,
   applyCatalogRollout,
+  inspectCatalogRollout,
 } from '../dist/modules/catalog/catalog-rollout.service.js'
 import { initializeAllocationPersistence } from '../dist/modules/inventory/inventory.persistence.js'
 import { initializeJobLeases } from '../dist/shared/jobs/job-lease.model.js'
 
 // Linux host networking reaches ONLY a generated loopback replica set; never reads .env files.
+
 const execute = promisify(execFile)
 const image = process.argv[2]
 if (process.platform !== 'linux' || !image || !/^[a-z0-9][a-z0-9/_.:-]*$/.test(image))

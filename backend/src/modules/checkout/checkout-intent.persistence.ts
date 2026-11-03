@@ -2,8 +2,10 @@ import { isDeepStrictEqual } from 'node:util'
 import type { Connection } from 'mongoose'
 import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 import { checkoutIntentModel } from './checkout-intent.model.js'
+
 const hash = { bsonType: 'string', pattern: '^[a-f0-9]{64}$' }
-export const checkoutIntentValidator = {
+
+const checkoutIntentValidator = {
   $and: [
     {
       $jsonSchema: {
@@ -54,6 +56,7 @@ export const checkoutIntentValidator = {
     },
   ],
 }
+
 async function verifyValidator(connection: Connection) {
   const row = await connection.db
     ?.listCollections({ name: 'checkoutIntents' }, { nameOnly: false })
@@ -66,7 +69,8 @@ async function verifyValidator(connection: Connection) {
   )
     throw new Error('Checkout intent persistence requires reviewed bootstrap/migration.')
 }
-export async function initializeCheckoutIntentPersistence(connection: Connection) {
+
+async function initializeCheckoutIntentPersistence(connection: Connection) {
   if (!connection.db) throw new Error('Checkout database unavailable')
   if (!(await connection.db.listCollections({ name: 'checkoutIntents' }).hasNext()))
     await connection.db.createCollection('checkoutIntents', {
@@ -78,10 +82,17 @@ export async function initializeCheckoutIntentPersistence(connection: Connection
   await createDeclaredIndexes(checkoutIntentModel(connection))
   await verifyCheckoutIntentPersistence(connection)
 }
-export async function verifyCheckoutIntentPersistence(connection: Connection) {
+
+async function verifyCheckoutIntentPersistence(connection: Connection) {
   await verifyValidator(connection)
   await verifyDeclaredIndexes(checkoutIntentModel(connection))
   const indexes = await checkoutIntentModel(connection).collection.indexes()
   if (indexes.some((index) => index.expireAfterSeconds !== undefined))
     throw new Error('Checkout identity registry must not expire.')
+}
+
+export {
+  checkoutIntentValidator,
+  initializeCheckoutIntentPersistence,
+  verifyCheckoutIntentPersistence,
 }

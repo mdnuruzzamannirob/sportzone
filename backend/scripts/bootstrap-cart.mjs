@@ -1,7 +1,7 @@
-import { loadEnvironment } from '../dist/config/env.js'
 import { openDatabase } from '../dist/config/database.js'
-import { initializeWishlistPersistence } from '../dist/modules/cart/wishlist.persistence.js'
+import { loadEnvironment } from '../dist/config/env.js'
 import { initializeCartPersistence } from '../dist/modules/cart/cart.persistence.js'
+import { initializeWishlistPersistence } from '../dist/modules/wishlist/wishlist.persistence.js'
 
 let connection
 try {

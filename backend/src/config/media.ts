@@ -1,8 +1,11 @@
+import { z } from 'zod'
 import { validateClamAvOptions } from '../providers/antivirus/clamav.schema.js'
 import { validateCloudinaryOptions } from '../providers/cloudinary/cloudinary.schema.js'
-import { z } from 'zod'
 import { ConfigurationError } from '../shared/errors/configuration-error.js'
-export const mediaPolicySchema = z.strictObject({
+
+type MediaPolicy = z.infer<typeof mediaPolicySchema>
+
+const mediaPolicySchema = z.strictObject({
   maxBytes: z
     .int()
     .min(1)
@@ -18,14 +21,13 @@ export const mediaPolicySchema = z.strictObject({
     .max(7 * 86400),
   privateUrlTtlSeconds: z.int().min(1).max(300),
 })
-export type MediaPolicy = z.infer<typeof mediaPolicySchema>
-export function validateMediaPolicy(input: unknown): Readonly<MediaPolicy> {
+function validateMediaPolicy(input: unknown): Readonly<MediaPolicy> {
   const parsed = mediaPolicySchema.safeParse(input)
   if (!parsed.success) throw new ConfigurationError(['media_policy'])
   return Object.freeze({ ...parsed.data, allowedFormats: [...new Set(parsed.data.allowedFormats)] })
 }
 // No policy defaults or activation from an unapproved environment configuration.
-export function loadMediaConfiguration(environment: NodeJS.ProcessEnv) {
+function loadMediaConfiguration(environment: NodeJS.ProcessEnv) {
   let policy: unknown
   try {
     policy = JSON.parse(environment.MEDIA_POLICY_JSON ?? '')
@@ -53,4 +55,52 @@ export function loadMediaConfiguration(environment: NodeJS.ProcessEnv) {
       timeoutMs: Number(environment.MEDIA_PROVIDER_TIMEOUT_MS),
     }),
   }
+}
+
+// Maintenance is independent of upload admission. It cannot create or rescan an upload.
+function loadMediaMaintenanceConfiguration(env: NodeJS.ProcessEnv) {
+  if (env.MEDIA_MAINTENANCE_ENABLED === undefined || env.MEDIA_MAINTENANCE_ENABLED === 'false')
+    return undefined
+  if (
+    env.MEDIA_MAINTENANCE_ENABLED !== 'true' ||
+    !['local', 'test', 'staging'].includes(env.APP_ENV ?? '')
+  )
+    throw new ConfigurationError(['media_maintenance_activation'])
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(env.MEDIA_POLICY_JSON ?? '')
+  } catch {
+    throw new ConfigurationError(['media_policy'])
+  }
+  const policy = mediaPolicySchema.omit({ temporaryTtlSeconds: true }).safeParse(parsed)
+  if (!policy.success) throw new ConfigurationError(['media_policy'])
+  const integer = (key: string) => (/^[1-9]\d*$/.test(env[key] ?? '') ? Number(env[key]) : NaN)
+  const job = z
+    .strictObject({ batchSize: z.int().min(1).max(100), leaseMs: z.int().min(1000).max(3600000) })
+    .safeParse({
+      batchSize: integer('MEDIA_MAINTENANCE_BATCH_SIZE'),
+      leaseMs: integer('MEDIA_MAINTENANCE_LEASE_MS'),
+    })
+  if (!job.success) throw new ConfigurationError(['media_maintenance_configuration'])
+  return {
+    ...job.data,
+    policy: validateMediaPolicy({
+      ...policy.data,
+      temporaryTtlSeconds: integer('MEDIA_TEMP_TTL_SECONDS'),
+    }),
+    cloud: validateCloudinaryOptions({
+      cloudName: env.CLOUDINARY_CLOUD_NAME ?? '',
+      apiKey: env.CLOUDINARY_API_KEY ?? '',
+      apiSecret: env.CLOUDINARY_API_SECRET ?? '',
+      timeoutMs: integer('MEDIA_PROVIDER_TIMEOUT_MS'),
+    }),
+  }
+}
+
+export type { MediaPolicy }
+export {
+  loadMediaConfiguration,
+  loadMediaMaintenanceConfiguration,
+  mediaPolicySchema,
+  validateMediaPolicy,
 }

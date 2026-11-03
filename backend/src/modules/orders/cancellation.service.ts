@@ -1,42 +1,63 @@
-import { createRegistrationNotifications } from '../notifications/notification.service.js'
 import { createHash } from 'node:crypto'
-import { Types, type Connection, type ClientSession } from 'mongoose'
-import type { AdminAccountAccess } from '../auth/admin-account.service.js'
-import type {
-  orderScopeAccess,
-  PaymentInitiationCredentials,
-} from '../auth/checkout-access.service.js'
-import type { cancellationAllocationService } from '../checkout/cancellation-allocation.service.js'
-import type { cancellationPaymentAccess } from '../payments/payment.service.js'
-import { createAuditWriter, auditOperationReader } from '../audit/audit.service.js'
-import { paymentInitiationKey } from '../payments/payment-initiation.schema.js'
-import { orderModels } from './order.model.js'
-import { orderId } from './order.schema.js'
-import { orderOwnerFilter } from './order-read.service.js'
-import { orderAllocationBinding } from './order.service.js'
-import { verifyOrderPersistence } from './order.persistence.js'
-import { cancellationModel } from './cancellation.model.js'
-import { verifyCancellationPersistence } from './cancellation.persistence.js'
-import { cancellationInput, cancellationDecision, cancellationView } from './cancellation.schema.js'
+import { type ClientSession, type Connection, Types } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
+import { pageMeta } from '../../shared/pagination.js'
+import {
+  resourceId as orderId,
+  idempotencyKey as paymentInitiationKey,
+} from '../../shared/validation.js'
+import type { AuditAccess } from '../audit/audit.public.js'
+import type {
+  AdminAccountAccess,
+  OrderScopeAccess,
+  PaymentInitiationCredentials,
+} from '../auth/auth.public.js'
+import type { NotificationIntentsFactory } from '../notifications/notification.public.js'
+
+import type { CancellationPaymentAccess } from '../payments/payment.public.js'
+
+import { cancellationModel } from './cancellation.model.js'
+import { verifyCancellationPersistence } from './cancellation.persistence.js'
+import {
+  cancellationDecision,
+  cancellationInput,
+  cancellationQuery,
+  cancellationView,
+} from './cancellation.schema.js'
+import { orderModels } from './order.model.js'
+import { verifyOrderPersistence } from './order.persistence.js'
+
+import { orderAllocationBinding } from './order.service.js'
+import type { createCancellationAllocationService } from './order-allocation.service.js'
+import { orderOwnerFilter } from './order-read.service.js'
+
 const hash = (s: string) => createHash('sha256').update(s).digest('hex')
-export function cancellationService(
+
+function createCancellationService(
   connection: Connection,
-  scope: ReturnType<typeof orderScopeAccess>,
+  scope: OrderScopeAccess,
   admin: AdminAccountAccess,
-  release: ReturnType<typeof cancellationAllocationService>,
-  payment: ReturnType<typeof cancellationPaymentAccess>,
+  release: ReturnType<typeof createCancellationAllocationService>,
+  payment: CancellationPaymentAccess,
+  auditAccess: AuditAccess,
+  moduleAccess: { createNotificationService: NotificationIntentsFactory },
   refunds?: (
     session: ClientSession,
-    input: { orderId: string; paymentId: string; requestId: string },
+    input: {
+      orderId: string
+      paymentId: string
+      requestId: string
+      actorId: string
+      reason: string
+    },
   ) => Promise<void>,
   clock: () => Date = () => new Date(),
 ) {
   const { orders } = orderModels(connection),
     requests = cancellationModel(connection),
-    audit = createAuditWriter(connection),
-    lookup = auditOperationReader(connection)
+    audit = auditAccess.write,
+    lookup = auditAccess.lookup
   const view = (r: InstanceType<typeof requests>) =>
     cancellationView.parse({
       id: r._id.toHexString(),
@@ -47,10 +68,50 @@ export function cancellationService(
       ...(r.reviewedAt ? { reviewedAt: r.reviewedAt.toISOString() } : {}),
     })
   async function ready() {
-    await verifyOrderPersistence(connection)
-    await verifyCancellationPersistence(connection)
+    try {
+      await verifyOrderPersistence(connection)
+      await verifyCancellationPersistence(connection)
+    } catch {
+      throw new ApiError('SERVICE_UNAVAILABLE')
+    }
   }
   return {
+    async list(credentials: PaymentInitiationCredentials, rawId: unknown) {
+      const id = parseInput(orderId, rawId)
+      return scope.owned(credentials, id, async (principal, session) => {
+        await ready()
+        if (!(await orders.exists(orderOwnerFilter(id, principal)).session(session)))
+          throw new ApiError('NOT_FOUND')
+        const rows = await requests
+          .find({ orderId: id })
+          .sort({ createdAt: -1, _id: -1 })
+          .limit(101)
+          .session(session)
+        if (rows.length > 100) throw new ApiError('SERVICE_UNAVAILABLE')
+        return rows.map(view)
+      })
+    },
+    async adminList(token: string | undefined, raw: unknown) {
+      const query = parseInput(cancellationQuery, raw)
+      return admin.owned(
+        token,
+        async (_actor, session) => {
+          await ready()
+          const filter = query.status ? { status: query.status } : {}
+          const rows = await requests
+            .find(filter)
+            .sort({ createdAt: -1, _id: -1 })
+            .skip((query.page - 1) * query.pageSize)
+            .limit(query.pageSize)
+            .session(session)
+          return {
+            items: rows.map(view),
+            pagination: pageMeta(query, await requests.countDocuments(filter).session(session)),
+          }
+        },
+        false,
+      )
+    },
     async request(
       credentials: PaymentInitiationCredentials,
       rawId: unknown,
@@ -195,6 +256,8 @@ export function cancellationService(
               orderId: order._id.toHexString(),
               paymentId: funds.paymentId,
               requestId: id,
+              actorId,
+              reason: input.reason,
             })
           }
           await release(session, orderAllocationBinding(order, 1))
@@ -227,10 +290,10 @@ export function cancellationService(
             { session },
           )
           if (changed.modifiedCount !== 1) throw new ApiError('STATE_CONFLICT')
-          await createRegistrationNotifications(connection, clock).enqueueCommerce(
+          await moduleAccess.createNotificationService(clock).enqueueCommerce(
             {
-              orderId: order._id,
-              ...(order.userId ? { userId: order.userId } : {}),
+              orderId: order._id.toHexString(),
+              ...(order.userId ? { userId: order.userId.toHexString() } : {}),
               email: order.customerSnapshot.emailNormalized,
               name: order.customerSnapshot.name,
               eventType: 'order_cancellation',
@@ -267,3 +330,5 @@ export function cancellationService(
     },
   }
 }
+
+export { createCancellationService }
