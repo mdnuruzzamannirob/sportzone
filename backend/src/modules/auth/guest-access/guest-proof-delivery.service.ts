@@ -1,3 +1,4 @@
+import { Types } from 'mongoose'
 import type { GuestAccessOptions } from '../../../config/security.js'
 import type { GuestOrderAccess } from '../../orders/order.public.js'
 import type { IdentityModels } from '../auth.model.js'
@@ -53,11 +54,11 @@ function guestProofDelivery(
       if (!claim.orderId || !claim.challengeId) throw new Error('Guest proof delivery unavailable')
       const challenge = await models.challenges
         .findOne({
-          _id: claim.challengeId,
+          _id: new Types.ObjectId(claim.challengeId),
           purpose: 'guest_order_access',
-          orderId: claim.orderId,
+          orderId: new Types.ObjectId(claim.orderId),
           emailNormalized: claim.recipient,
-          deliveryNotificationId: claim.id,
+          deliveryNotificationId: new Types.ObjectId(claim.id),
           expiresAt: { $gt: clock() },
           consumedAt: { $exists: false },
           invalidatedAt: { $exists: false },

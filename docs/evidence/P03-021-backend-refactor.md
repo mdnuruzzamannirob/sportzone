@@ -1036,3 +1036,63 @@ Local environment: Node v24.20.0 and existing locked tools. No Git staging, comm
 mutation. [Ignored structural inventory](../../test-results/backend-refactor/outside-src-completion.json)
 records the migration and preservation checks. P03-030 remains In Progress until consolidated final
 verification/fixes; P03-022 and all external/application/milestone acceptance remain unchanged.
+
+
+### Final backend verification and corrections — 3 November 2026
+
+Owner authorized the deferred consolidated tests/review/fix phase. Input HEAD was `a40a958`; the
+corrections below remain uncommitted. No staging, commit, push, branch or PR mutation was performed.
+This closes local regression work, superseding the earlier test deferral; image verification remains
+blocked and P03-022/provider/stage acceptance is not granted.
+
+**Findings and corrections:**
+
+- Public auth proof-delivery contracts correctly use detached string IDs, but their private queries
+  passed those strings into strict ObjectId setters. Convert challenge/user/order/notification IDs
+  inside their owning auth persistence queries. Kept encryption, scope, expiry, revision, audience,
+  replay, transaction and fail-closed behavior intact. Recovery, admin recovery, email change,
+  verification and guest suites plus actual application/worker consumers pass after correction.
+- Updated the existing route-file parity inventory for consolidated owner routers, including Audit,
+  Notifications and Wishlist. The registry still verifies all 170 operations; no test was removed.
+  Updated two stock-capability negative fixtures to the canonical catalog/products path without
+  weakening the checker or introducing migration allowances.
+- Reviewed the scanner's historical/current AES-GCM compatibility ciphertext findings. The vector
+  uses the explicitly public sequential synthetic key in the persisted-codec test. Added only the
+  two exact finding fingerprints to `.gitleaksignore`; no file/directory/rule-wide credential waiver.
+  Final source/history scan and dependency audit pass with zero findings/advisories.
+
+**Observed execution, Node v24.20.0 and existing locked tools:**
+
+| Check | Result |
+| --- | --- |
+| `npm run ci -- --scope=backend` | Initial sandbox run failed on prohibited local listeners/process behavior. Permitted run reached 90/92 tooling cases; two obsolete path fixtures failed, then were corrected. The original CI report remains Failed; it is not relabeled as an all-green pipeline |
+| `npm run test:unit` (permitted, after fixture corrections) | Passed: 92 tooling cases |
+| `npm run test:unit --workspace=backend` (permitted) | Passed: 814 cases, 51 files |
+| `npm run test:contract --workspace=backend` (permitted, after inventory correction) | Passed: 186 cases and four-artifact freshness |
+| `npm run test:integration --workspace=backend` (permitted) | Full run: 1,197 Passed / 76 Failed, 70 files; all eight failing files covered by passing rechecks below |
+| Existing Vitest integration command selecting auth/{email-change,recovery,admin-auth,guest-access,email-verification}, reviews/reviews and orders/cancellation-workflow | Passed: 156 cases, seven files after the auth correction and completed build |
+| Existing Vitest integration command selecting application/{composition,backend-completion} and notifications/notifications | Passed: 27 cases, three files; includes the eighth initially failing file and direct application/worker consumers |
+| Combined distinct integration coverage | 1,273 cases have passing observations. Rechecks overlap earlier passing cases; do not add run totals as distinct tests or describe the original full run as Passed |
+| `npm run typecheck --workspace=backend`; `npm run build --workspace=backend` | Passed after source correction |
+| `npm run lint --workspace=backend`; `npm run format:backend`; `npm run lint:boundaries` | Passed; 419 boundary inputs, zero violations/allowances |
+| `npm run test:smoke --workspace=backend` (permitted, final rebuilt output) | Passed: redacted invalid configuration, real isolated DB startup, liveness/restricted readiness, shutdown |
+| `npm run test:security` (permitted, reviewed exact fingerprints) | Passed: source/history scan, zero dependency advisories |
+| Static preservation and operator inspection | Passed: 54 model/persistence literal inventories, 223 route registrations, 1,664 Zod constructor calls; 1,456 scenario declarations, 4,950 expect calls, unchanged hooks/API artifacts; 41 operator paths, 183 named bindings and 211 constructor calls retained |
+| `node scripts/ci/container.mjs` (permitted) | Blocked: permission denied connecting to Docker socket. `sudo -n docker version` also requires interactive authentication; no socket permissions or host configuration changed |
+
+Two bootstrap failures occurred because the executor incorrectly overlapped a clean build with
+integration subprocesses: one explicitly reported missing `dist/config/database.js`. The affected
+bootstrap suites passed after build completion; no persistence/production safeguard was weakened.
+All database runs use isolated MongoDB 8.0.16 wiredTiger replica sets; no external database or real
+email/payment/refund was used. Sandbox failures are retained separately from permitted execution.
+
+Executor review checked the actual correction diff, canonical persistence/privacy, public route and
+schema parity, explicit fixture lifecycle, script packaging/discovery and unchanged business/financial
+rules. No new scenario suite, runtime package, collection or speculative source reorganization was added.
+Local rollback is reversal of these uncommitted changes and rebuilding; no migration or financial
+rollback is required or authorized.
+
+[Observed command logs and aggregate result](../../test-results/backend-refactor/final-verification/summary.json)
+retain initial failures and passing rechecks. P03-030 remains In Progress solely for the unavailable
+Docker image build/runtime check. A Docker-capable runner must execute the existing container command;
+P03-022 independent acceptance and P04-003/P09-011 external qualification remain separate.

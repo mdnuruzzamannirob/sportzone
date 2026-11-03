@@ -780,7 +780,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Depends on:** `P03-029`\
   **Deliverable:** Organize all twenty module owners, consolidate cohesive code and separate HTTP mapping; follow with remaining src wiring/contracts, outside-src consumer migration and final consolidated verification.\
   **Acceptance:** Final behavior/security/financial checks and consumer/boundary/CI reconciliation remain required after the owner-requested deferred test/review phase. No commit/push/branch/PR mutation.\
-  **Evidence:** [Outside-src structural closeout and deferred verification](./evidence/P03-021-backend-refactor.md#outside-src-structural-closeout--3-november-2026). Module/src/outside-src structural phases complete; owner-grouped tests and reusable fixtures, contract/operator callers, Docker/CI inputs and boundary enforcement migrated. Full backend typecheck/lint/build/API freshness and boundary checks Passed; zero allowances. Final runtime tests, semantic review and fixes remain deferred. Status remains In Progress; no Git/PR mutations or stage acceptance.
+  **Evidence:** [Final local verification and corrections](./evidence/P03-021-backend-refactor.md#final-backend-verification-and-corrections--3-november-2026). Structural phases and local regression/fixes complete: 814 unit, 186 contract, 92 tooling and 1,273 distinct integration cases have passing observations through full run plus affected rechecks. Type/build/lint/format/boundaries/smoke/security Passed; exact initial failures retained. Docker image build/runtime verification is Blocked by daemon access, so status remains In Progress. No Git mutation or stage/external acceptance.
 
 
 ### Phase 04 — Product catalog and inventory
@@ -2758,3 +2758,11 @@ Docker/CI consumers migrated. Preserved static case/assertion inventories and al
 retired stale boundary allowances. Backend typecheck/lint/build/format/API freshness and boundaries
 Passed. [Evidence and explicit verification limits](./evidence/P03-021-backend-refactor.md#outside-src-structural-closeout--3-november-2026).
 Final tests/review/fix remain next; In Progress, task counts and acceptance gates unchanged. No Git mutation.
+
+
+**3 November 2026 — P03-030 / final local verification:** Corrected auth string-ID persistence
+conversion and stale route/stock test inventories; reviewed exact synthetic scanner findings.
+814 unit, 186 contract, 92 tooling and 1,273 distinct integration cases verified through recorded full
+run/rechecks; type/build/style/boundaries/smoke/security Passed. Docker daemon access prevents image
+verification; task remains In Progress, counts unchanged. [Initial failures, corrections, passing rechecks and blocker](./evidence/P03-021-backend-refactor.md#final-backend-verification-and-corrections--3-november-2026).
+No Git/PR mutation or P03-022/external/milestone acceptance.

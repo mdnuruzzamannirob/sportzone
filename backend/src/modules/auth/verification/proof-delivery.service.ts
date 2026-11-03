@@ -1,3 +1,4 @@
+import { Types } from 'mongoose'
 import type { IdentityModels } from '../auth.model.js'
 import type { RecoveryOptions } from '../recovery/password-recovery.service.js'
 import { createProofCodec, type ProofEnvelope, proofHash } from './proof.crypto.js'
@@ -52,13 +53,13 @@ function createDelivery(
       if (!claim.challengeId) throw new Error('Proof delivery unavailable.')
       const challenge = await models.challenges
         .findOne({
-          _id: claim.challengeId,
+          _id: new Types.ObjectId(claim.challengeId),
           purpose,
-          userId: claim.userId,
+          userId: new Types.ObjectId(claim.userId),
           ...(purpose !== 'email_change'
             ? { emailNormalized: claim.recipient }
             : { targetEmailNormalized: claim.recipient }),
-          deliveryNotificationId: claim.id,
+          deliveryNotificationId: new Types.ObjectId(claim.id),
           expiresAt: { $gt: clock() },
           consumedAt: { $exists: false },
           invalidatedAt: { $exists: false },
@@ -94,7 +95,7 @@ function createDelivery(
       )
         throw new Error('Proof delivery unavailable.')
       const eligible = await models.users.exists({
-        _id: claim.userId,
+        _id: new Types.ObjectId(claim.userId),
         role: kind,
         status: 'active',
         emailNormalized: challenge.emailNormalized,

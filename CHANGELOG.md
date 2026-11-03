@@ -8,6 +8,15 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 3 November 2026 — Backend final local verification and fixes
+
+- Corrected detached proof IDs at auth persistence queries; updated existing route/stock parity fixtures.
+  Recorded exact reviewed synthetic encryption-vector scanner fingerprints without broad exclusions.
+- Local unit/contract/integration/tooling regression, compiled smoke, static checks and security pass
+  through the recorded full run and affected rechecks. Docker image verification is blocked by daemon
+  permissions; P03-030 remains In Progress, with no stage/provider/release acceptance.
+- [Results, resolved failures and remaining blocker](docs/evidence/P03-021-backend-refactor.md#final-backend-verification-and-corrections--3-november-2026).
+
 ## 3 November 2026 — Backend outside-src structural closeout
 
 - Migrated contract/operator/test consumers; organized suites by owner and split commerce scenarios

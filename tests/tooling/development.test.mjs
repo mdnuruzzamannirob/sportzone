@@ -652,36 +652,36 @@ test('STRUCTURE-06: job/composition factories must add assembly or orchestration
 
 test('INVENTORY-BOUNDARY-01: inventory consumes stock capabilities instead of catalog private models', (t) => {
   const { root, put } = fixture(t)
-  put('backend/src/modules/catalog/variants/variant.model.ts', 'export const model = 1')
+  put('backend/src/modules/catalog/products/variant.model.ts', 'export const model = 1')
   put(
     'backend/src/modules/inventory/inventory.service.ts',
-    'import "../catalog/variants/variant.model.js"',
+    'import "../catalog/products/variant.model.js"',
   )
   assert.ok(checkBoundaries(root).errors.some((error) => error.includes('private persistence')))
   put(
-    'backend/src/modules/catalog/variants/variant.service.ts',
+    'backend/src/modules/catalog/products/variant.service.ts',
     'import "./variant.model.js"; export const stock = 1',
   )
   put(
     'backend/src/modules/inventory/inventory.service.ts',
-    'import "../catalog/variants/variant.service.js"',
+    'import "../catalog/products/variant.service.js"',
   )
   assert.deepEqual(checkBoundaries(root).errors, [])
 })
 
 test('INVENTORY-BOUNDARY-02: checkout and jobs cannot bypass inventory through the catalog stock capability', (t) => {
   const { root, put } = fixture(t)
-  put('backend/src/modules/catalog/variants/variant.service.ts', 'export const stock = 1')
+  put('backend/src/modules/catalog/products/variant.service.ts', 'export const stock = 1')
   put(
     'backend/src/modules/inventory/allocation.service.ts',
-    'import "../catalog/variants/variant.service.js"; export const allocate = 1',
+    'import "../catalog/products/variant.service.js"; export const allocate = 1',
   )
   put(
     'backend/src/modules/checkout/helper.ts',
-    'export * from "../catalog/variants/variant.service.js"',
+    'export * from "../catalog/products/variant.service.js"',
   )
   put('backend/src/modules/checkout/checkout.service.ts', 'import "./helper.js"')
-  put('backend/src/jobs/expire.job.ts', 'import "../modules/catalog/variants/variant.service.js"')
+  put('backend/src/jobs/expire.job.ts', 'import "../modules/catalog/products/variant.service.js"')
   assert.equal(
     checkBoundaries(root).errors.filter((error) => error.includes('stock counter capability'))
       .length,
