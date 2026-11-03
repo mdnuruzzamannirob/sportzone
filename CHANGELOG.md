@@ -8,9 +8,9 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
-## 4 November 2026 — PR #10 Node type compatibility
+## 4 November 2026 — PR #11 TypeScript 7 compatibility
 
-- Normalize socket chunks to Buffer in the ClamAV client and its transport fixture, supporting Node 26 definitions without unsafe type assertions.
+- Resolve compiler entry points from the exported package manifest. Pin typescript-legacy to TypeScript 6.0.3 for the boundary checker and development watch API that TypeScript 7 no longer provides.
 
 ## 3 November 2026 — Explicit backend lint fix/check scripts
 

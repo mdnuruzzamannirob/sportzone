@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process'
-import { rmSync } from 'node:fs'
+import { readFileSync, rmSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 
@@ -11,7 +12,8 @@ if (args.length > 1 || (args.length === 1 && args[0] !== '--check')) {
   const cwd = fileURLToPath(new URL('..', import.meta.url))
   // A deleted/renamed tooling entry must not survive as executable stale output.
   rmSync(new URL('../.cache/contracts/', import.meta.url), { recursive: true, force: true })
-  const compiler = createRequire(import.meta.url).resolve('typescript/bin/tsc')
+  const manifest = createRequire(import.meta.url).resolve('typescript/package.json')
+  const compiler = resolve(dirname(manifest), JSON.parse(readFileSync(manifest, 'utf8')).bin.tsc)
   const compiled = spawnSync(process.execPath, [compiler, '--project', 'tsconfig.contracts.json'], {
     cwd,
     stdio: 'inherit',
