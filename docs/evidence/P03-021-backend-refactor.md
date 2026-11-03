@@ -7,20 +7,20 @@
 
 ## Delivered organization
 
-| Previous location / responsibility | Current owner |
-| --- | --- |
-| composition.ts, routes/index.ts | setup.ts and routes.ts; root wiring coordinates domain routers |
-| config/environment.ts, db/connection.ts | config/env.ts and config/database.ts |
-| common/, observability/, db helpers | shared/errors, middleware, database, logger and security-action classifications |
-| Flat auth services/routes | credentials/, sessions/, recovery/, verification/; one auth model/validator registration |
-| Auth wiring of customer/delivery/media | Root setup; auth exposes narrow customer-account/admin-access capabilities |
-| products/, categories/ | catalog/products, variants and categories; canonical schema/index identities retained |
-| Product/variant combined definitions | Cohesive product/variant schemas, shared catalog field helpers, one canonical registration factory |
+| Previous location / responsibility         | Current owner                                                                                                |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| composition.ts, routes/index.ts            | setup.ts and routes.ts; root wiring coordinates domain routers                                               |
+| config/environment.ts, db/connection.ts    | config/env.ts and config/database.ts                                                                         |
+| common/, observability/, db helpers        | shared/errors, middleware, database, logger and security-action classifications                              |
+| Flat auth services/routes                  | credentials/, sessions/, recovery/, verification/; one auth model/validator registration                     |
+| Auth wiring of customer/delivery/media     | Root setup; auth exposes narrow customer-account/admin-access capabilities                                   |
+| products/, categories/                     | catalog/products, variants and categories; canonical schema/index identities retained                        |
+| Product/variant combined definitions       | Cohesive product/variant schemas, shared catalog field helpers, one canonical registration factory           |
 | Media monolith / inline multipart handlers | upload, attachment, access, cleanup services; shared private context; controller owns multipart/HTTP shaping |
-| integrations/cloudinary and email adapters | providers/cloudinary, antivirus and email client/schema pairs |
-| Notification worker service | jobs/send-notifications.job.ts; durable claims and proof-delivery services reused |
-| tools/*.mjs | scripts/*.mjs; build script clears generated dist before compiling |
-| tests/*.test.ts, tests/support | tests/unit/*.test.ts and tests/helpers; integration discovery retained |
+| integrations/cloudinary and email adapters | providers/cloudinary, antivirus and email client/schema pairs                                                |
+| Notification worker service                | jobs/send-notifications.job.ts; durable claims and proof-delivery services reused                            |
+| tools/*.mjs                                | scripts/*.mjs; build script clears generated dist before compiling                                           |
+| tests/*.test.ts, tests/support             | tests/unit/*.test.ts and tests/helpers; integration discovery retained                                       |
 
 No empty future feature directories, shared UI package, repository/DI framework, dependency or infrastructure was added.
 NodeNext `.js` imports, exact public routes/DTOs, environment keys, opt-in activation, opaque sessions/CSRF, current
@@ -48,19 +48,19 @@ No developer/production database, external email, media provider or payment acco
 
 Baseline discovery: 15 unit files / 343 cases and 18 integration files / 327 cases, all passed before migration.
 
-| Check | Observed result |
-| --- | --- |
-| Backend lint/typecheck/build | Passed |
-| Backend unit/contract suite | Passed: 15 files, 343 cases; no dropped tests |
-| Final replica-set integration suite | Passed: 18 files, 327 cases; transactions, races, validators, CLI and lifecycle |
-| Root repository/tooling suite | Passed: 40 cases, including five new backend boundary test families |
-| lint:boundaries | Passed: source graph has zero violations |
-| format:check | Passed for the expanded backend/tooling scope |
-| Compiled API smoke | Passed: invalid config redaction, real DB startup, protected readiness and shutdown |
-| Frontend builds with synthetic HTTPS API origin | Passed for browser fixture consumption; application source unchanged |
-| Real API identity browser journeys | Passed: 6 unique cases across Chromium, Firefox and WebKit (4 + 2 across affected runs); no skipped cases or automatic retries |
-| Canonical AST preservation audit | Passed against baseline: 21 Schema expressions, 24 index declarations, 12 model registration expressions, 9 validator declarations |
-| Repository docs/links and final diff | Passed: repository checks and git diff --check; final result recorded below |
+| Check                                           | Observed result                                                                                                                    |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Backend lint/typecheck/build                    | Passed                                                                                                                             |
+| Backend unit/contract suite                     | Passed: 15 files, 343 cases; no dropped tests                                                                                      |
+| Final replica-set integration suite             | Passed: 18 files, 327 cases; transactions, races, validators, CLI and lifecycle                                                    |
+| Root repository/tooling suite                   | Passed: 40 cases, including five new backend boundary test families                                                                |
+| lint:boundaries                                 | Passed: source graph has zero violations                                                                                           |
+| format:check                                    | Passed for the expanded backend/tooling scope                                                                                      |
+| Compiled API smoke                              | Passed: invalid config redaction, real DB startup, protected readiness and shutdown                                                |
+| Frontend builds with synthetic HTTPS API origin | Passed for browser fixture consumption; application source unchanged                                                               |
+| Real API identity browser journeys              | Passed: 6 unique cases across Chromium, Firefox and WebKit (4 + 2 across affected runs); no skipped cases or automatic retries     |
+| Canonical AST preservation audit                | Passed against baseline: 21 Schema expressions, 24 index declarations, 12 model registration expressions, 9 validator declarations |
+| Repository docs/links and final diff            | Passed: repository checks and git diff --check; final result recorded below                                                        |
 
 Commands: `npm run lint`, `npm run test:unit`, `npm run lint:boundaries`, `npm run format:check`;
 `npm run lint --workspace=backend`, `npm run typecheck --workspace=backend`,
@@ -151,40 +151,40 @@ No permissions, project dependencies or runtime implementation were changed to r
 
 ### Complete area and ownership coverage
 
-| Backend area | Observed inventory | Disposition |
-| --- | ---: | --- |
-| `src/` | 319 files | Owner/package and current-to-target mapping for every path. |
-| `tests/` | 113 files | 51 unit suites, 52 integration suites, one contract suite plus its fixture, five helpers, two fixtures and smoke entry. |
-| `scripts/` | 41 files | All bootstrap, activation, migration, provisioning, development, qualification, worker and runtime entries retained in the inventory. |
-| `contracts/` | 4 files | Registry, local registry, independent local-operation list and generator; source-schema imports recorded. |
-| `api/` | 4 files | OpenAPI, planned-operation inventory, Postman collection/environment; all four freshness-checked. |
-| Backend root configuration/packaging | 10 files | Package/Biome, three TypeScript configs, three Vitest configs, Dockerfile and context allowlist. |
-| **Total backend** | **491 files** | No unassigned area; review-in-place does not mean mandatory rewrite. |
+| Backend area                         | Observed inventory | Disposition                                                                                                                           |
+| ------------------------------------ | -----------------: | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/`                               |          319 files | Owner/package and current-to-target mapping for every path.                                                                           |
+| `tests/`                             |          113 files | 51 unit suites, 52 integration suites, one contract suite plus its fixture, five helpers, two fixtures and smoke entry.               |
+| `scripts/`                           |           41 files | All bootstrap, activation, migration, provisioning, development, qualification, worker and runtime entries retained in the inventory. |
+| `contracts/`                         |            4 files | Registry, local registry, independent local-operation list and generator; source-schema imports recorded.                             |
+| `api/`                               |            4 files | OpenAPI, planned-operation inventory, Postman collection/environment; all four freshness-checked.                                     |
+| Backend root configuration/packaging |           10 files | Package/Biome, three TypeScript configs, three Vitest configs, Dockerfile and context allowlist.                                      |
+| **Total backend**                    |      **491 files** | No unassigned area; review-in-place does not mean mandatory rewrite.                                                                  |
 
 Current module file counts and package ownership:
 
-| Current owner | Files | Target / owning package |
-| --- | ---: | --- |
-| auth | 41 | Keep five auth subfeatures; private identity/security capabilities — WP04. |
-| customers | 4 | Profile/privacy/administration through auth-owned identity operations — WP04. |
-| health | 2 | Move to `src/health/`, preserve URLs/readiness behavior — WP04. |
-| delivery | 6 | Pilot owner, existing coverage/charge persistence — WP03. |
-| audit | 5 | Durable append/query capabilities — WP05. |
-| notifications | 11 | Intent/template/delivery interfaces — WP05; final worker parity WP14. |
-| media | 14 | Preserve meaningful upload/access/reference/cleanup services — WP05. |
-| catalog | 21 | Product-owned variants, sibling categories — WP06. |
-| inventory | 10 | Preserve sole stock-write capability — WP06. |
-| promotions | 11 | Coupon eligibility/holds/quota and deterministic allocation — WP07. |
-| cart | 10 | Five cart files stay; five wishlist files move to `modules/wishlist/` — WP07. |
-| checkout | 17 | Participant boundaries WP08, placement coordination WP09. |
-| orders | 23 | Participant boundaries WP08, lifecycle coordination WP09. |
-| payments | 37 | Attempts/collections; shared aggregate stays at parent — WP08/WP10. |
-| returns | 11 | Claims/physical inspection/disposition — WP11. |
-| refunds | 24 | Obligations/payouts; shared aggregate/assembly stays at parent — WP08/WP11. |
-| reviews | 6 | Purchase qualification/moderation — WP12. |
-| settings | 11 | Store/policy content, narrowly exposed configuration — WP12. |
-| support | 6 | Complaint scope/correspondence — WP12. |
-| reports | 4 | Keep existing name; owner-provided bounded projections — WP12. |
+| Current owner | Files | Target / owning package                                                       |
+| ------------- | ----: | ----------------------------------------------------------------------------- |
+| auth          |    41 | Keep five auth subfeatures; private identity/security capabilities — WP04.    |
+| customers     |     4 | Profile/privacy/administration through auth-owned identity operations — WP04. |
+| health        |     2 | Move to `src/health/`, preserve URLs/readiness behavior — WP04.               |
+| delivery      |     6 | Pilot owner, existing coverage/charge persistence — WP03.                     |
+| audit         |     5 | Durable append/query capabilities — WP05.                                     |
+| notifications |    11 | Intent/template/delivery interfaces — WP05; final worker parity WP14.         |
+| media         |    14 | Preserve meaningful upload/access/reference/cleanup services — WP05.          |
+| catalog       |    21 | Product-owned variants, sibling categories — WP06.                            |
+| inventory     |    10 | Preserve sole stock-write capability — WP06.                                  |
+| promotions    |    11 | Coupon eligibility/holds/quota and deterministic allocation — WP07.           |
+| cart          |    10 | Five cart files stay; five wishlist files move to `modules/wishlist/` — WP07. |
+| checkout      |    17 | Participant boundaries WP08, placement coordination WP09.                     |
+| orders        |    23 | Participant boundaries WP08, lifecycle coordination WP09.                     |
+| payments      |    37 | Attempts/collections; shared aggregate stays at parent — WP08/WP10.           |
+| returns       |    11 | Claims/physical inspection/disposition — WP11.                                |
+| refunds       |    24 | Obligations/payouts; shared aggregate/assembly stays at parent — WP08/WP11.   |
+| reviews       |     6 | Purchase qualification/moderation — WP12.                                     |
+| settings      |    11 | Store/policy content, narrowly exposed configuration — WP12.                  |
+| support       |     6 | Complaint scope/correspondence — WP12.                                        |
+| reports       |     4 | Keep existing name; owner-provided bounded projections — WP12.                |
 
 The 60 candidate responsibility moves have no target filename collisions. They include selected
 wishlist/health/variant/financial subfeature placements; mixed files and shared parent aggregates need
@@ -238,26 +238,26 @@ evidence, not proof that individual requests execute circularly. The artifact li
 and imported-call sites; dynamically injected methods require the operation-level review in WP08.
 There are no unresolved backend relative source/compiled-import mappings in the scanned inventory.
 
-| Existing workflow / entry | Participants and current transaction boundary | Refactor impact |
-| --- | --- | --- |
-| Checkout intent/completion | Auth-owned scope passes one session into intent, order creation, stock/coupon allocation, payment preparation and outbox. | Keep coordinator checkout-owned; do not construct all participants inside the domain operation. |
-| Cancellation | `cancellationService` receives auth scope/admin capability, checkout allocation callback, payment capability and optional refund callback. | Replace deep factory-derived contracts; later lifecycle must not depend on placement internals. |
-| Fulfillment | Order lifecycle receives allocation/funding/deadline capabilities; stock/coupon helpers currently live under checkout. | Separate participant rules from checkout placement without moving transaction authority accidentally. |
-| Verified collection / settlement | Receipt processing independently preserves money, uses injected order/allocation capabilities; late recovery opens its own guarded transaction. | Preserve the receipt/recovery split; do not merge into one rollback that can discard received funds. |
-| Return/shortage | Scoped return operations and admin physical operations share canonical unit guards, evidence and inventory/refund participants. | Preserve transaction session, physical-vs-missing distinction and replay identity. |
-| Refund reservation | Admin/current-scope callbacks join source funding, order/unit and claim capabilities, obligations/attempts/audit/outbox. | Extract obligation contracts before payout code moves; preserve pending capacity. |
-| Payout/recovery | Durable intent precedes external dispatch; outcome recovery uses funding/unit capabilities and guarded settlement. | Keep external calls outside transactions and uncertain outcomes recoverable. |
-| Expiry/reconciliation workers | Leases/cursors and guarded transactions invoke existing domain services. | Preserve fencing/checkpoints and script-to-compiled-entry compatibility. |
+| Existing workflow / entry        | Participants and current transaction boundary                                                                                                   | Refactor impact                                                                                       |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Checkout intent/completion       | Auth-owned scope passes one session into intent, order creation, stock/coupon allocation, payment preparation and outbox.                       | Keep coordinator checkout-owned; do not construct all participants inside the domain operation.       |
+| Cancellation                     | `cancellationService` receives auth scope/admin capability, checkout allocation callback, payment capability and optional refund callback.      | Replace deep factory-derived contracts; later lifecycle must not depend on placement internals.       |
+| Fulfillment                      | Order lifecycle receives allocation/funding/deadline capabilities; stock/coupon helpers currently live under checkout.                          | Separate participant rules from checkout placement without moving transaction authority accidentally. |
+| Verified collection / settlement | Receipt processing independently preserves money, uses injected order/allocation capabilities; late recovery opens its own guarded transaction. | Preserve the receipt/recovery split; do not merge into one rollback that can discard received funds.  |
+| Return/shortage                  | Scoped return operations and admin physical operations share canonical unit guards, evidence and inventory/refund participants.                 | Preserve transaction session, physical-vs-missing distinction and replay identity.                    |
+| Refund reservation               | Admin/current-scope callbacks join source funding, order/unit and claim capabilities, obligations/attempts/audit/outbox.                        | Extract obligation contracts before payout code moves; preserve pending capacity.                     |
+| Payout/recovery                  | Durable intent precedes external dispatch; outcome recovery uses funding/unit capabilities and guarded settlement.                              | Keep external calls outside transactions and uncertain outcomes recoverable.                          |
+| Expiry/reconciliation workers    | Leases/cursors and guarded transactions invoke existing domain services.                                                                        | Preserve fencing/checkpoints and script-to-compiled-entry compatibility.                              |
 
 ### Findings and disposition
 
-| Finding | Exact source / risk | Follow-up |
-| --- | --- | --- |
-| Collection inventory understates source-defined storage | Database §3.1 says 38 and omits `paymentInitiations`; Database §8.5 and §11.1 already specify it, and payment-initiation persistence bootstraps it. The raw auth quota store makes 39 source-defined names. | WP01 reconcile the inventory/count; do not add/drop a collection or run a migration. |
-| Type-only refund dependency component | Recovery uses `Parameters<typeof refundReservationService>`; reservation uses recovery's `RefundNotifier`. | WP01 public-contract rules and WP11 semantic type placement. No runtime failure claimed. |
-| Stale activation prose may mislead clients | Contract registry checkout activation still says COD-only/pending Phase 07, while checkout completion handles online drafts and payment preparation. Fresh generation cannot prove prose accuracy. | Reconcile complete admission chain with API/config/setup in WP01; no enablement change in WP00. |
-| Broad composition and deep implementation contracts | Root setup and exported factory-derived capabilities couple domain construction/HTTP/worker consumers. | WP01 boundary rules and WP08/WP13 contract/assembly work. Preserve working participants until replacement. |
-| Future rules exceed today's checker | Current checker passes existing allowed imports; it does not enforce the selected public-contract boundary/type-cycle rules. | WP01 positive/negative fixtures and exact migration allowances; no blanket bypass. |
+| Finding                                                 | Exact source / risk                                                                                                                                                                                         | Follow-up                                                                                                  |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Collection inventory understates source-defined storage | Database §3.1 says 38 and omits `paymentInitiations`; Database §8.5 and §11.1 already specify it, and payment-initiation persistence bootstraps it. The raw auth quota store makes 39 source-defined names. | WP01 reconcile the inventory/count; do not add/drop a collection or run a migration.                       |
+| Type-only refund dependency component                   | Recovery uses `Parameters<typeof refundReservationService>`; reservation uses recovery's `RefundNotifier`.                                                                                                  | WP01 public-contract rules and WP11 semantic type placement. No runtime failure claimed.                   |
+| Stale activation prose may mislead clients              | Contract registry checkout activation still says COD-only/pending Phase 07, while checkout completion handles online drafts and payment preparation. Fresh generation cannot prove prose accuracy.          | Reconcile complete admission chain with API/config/setup in WP01; no enablement change in WP00.            |
+| Broad composition and deep implementation contracts     | Root setup and exported factory-derived capabilities couple domain construction/HTTP/worker consumers.                                                                                                      | WP01 boundary rules and WP08/WP13 contract/assembly work. Preserve working participants until replacement. |
+| Future rules exceed today's checker                     | Current checker passes existing allowed imports; it does not enforce the selected public-contract boundary/type-cycle rules.                                                                                | WP01 positive/negative fixtures and exact migration allowances; no blanket bypass.                         |
 
 No missing feature was implemented or declared accepted. Static analysis does not prove every injected
 call path, every deployed index or every production activation policy. Those limitations are explicit
@@ -265,14 +265,14 @@ handoffs, not permission to rewrite working modules or expand this task into fea
 
 ### Observed checks and executor review
 
-| Command | Observed result |
-| --- | --- |
-| `npm run typecheck --workspace=backend` | Passed, exit 0; existing source/contracts/tests type-check. |
-| `npm run lint:boundaries` | Passed: 427 source files, zero current-rule errors. |
-| `npm run api:check --workspace=backend` | Passed: all four generated artifacts verified. |
-| `npm run test:unit --workspace=backend -- tests/unit/pricing.test.ts tests/unit/refund-calculation.test.ts tests/unit/composition.test.ts` | Passed: 60 cases, three existing files; calculation and configuration/composition baseline. |
-| `npm exec --workspace=backend -- vitest run --config vitest.contract.config.ts -t 'reconciles actual Express routers\|fails on missing, undeclared, duplicate or status-drifted operations\|fails when a route-owning module is added'` | Passed: three selected existing parity/negative cases. Other 183 cases were excluded by the name filter; they were not run or claimed passed. |
-| Inventory analyzer and consistency review | Passed: 491 backend paths, all owner/package mappings, zero candidate target collisions, no unresolved backend imports; persistence hashes and source digest retained. |
+| Command                                                                                                                                                                                                                                 | Observed result                                                                                                                                                        |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run typecheck --workspace=backend`                                                                                                                                                                                                 | Passed, exit 0; existing source/contracts/tests type-check.                                                                                                            |
+| `npm run lint:boundaries`                                                                                                                                                                                                               | Passed: 427 source files, zero current-rule errors.                                                                                                                    |
+| `npm run api:check --workspace=backend`                                                                                                                                                                                                 | Passed: all four generated artifacts verified.                                                                                                                         |
+| `npm run test:unit --workspace=backend -- tests/unit/pricing.test.ts tests/unit/refund-calculation.test.ts tests/unit/composition.test.ts`                                                                                              | Passed: 60 cases, three existing files; calculation and configuration/composition baseline.                                                                            |
+| `npm exec --workspace=backend -- vitest run --config vitest.contract.config.ts -t 'reconciles actual Express routers\|fails on missing, undeclared, duplicate or status-drifted operations\|fails when a route-owning module is added'` | Passed: three selected existing parity/negative cases. Other 183 cases were excluded by the name filter; they were not run or claimed passed.                          |
+| Inventory analyzer and consistency review                                                                                                                                                                                               | Passed: 491 backend paths, all owner/package mappings, zero candidate target collisions, no unresolved backend imports; persistence hashes and source digest retained. |
 
 The command above uses literal `|` alternation inside its quoted test filter; table escaping is only
 Markdown formatting. Full backend suites, build/smoke, replica-set integration, browser, deployment,
@@ -337,20 +337,20 @@ source, resolved target, type/runtime mode, declaration kind and imported symbol
 do not authorize new symbols. New consumers, enlarged signatures, stale entries, invalid package
 labels and changed cycles fail. No update-baseline CLI or wildcard permission was added.
 
-| Removal package | Remaining exact entries |
-| --- | ---: |
-| WP02 | 5 |
-| WP03 | 4 |
-| WP04 | 20 |
-| WP05 | 14 |
-| WP06 | 20 |
-| WP07 | 23 |
-| WP09 | 89 |
-| WP10 | 53 |
-| WP11 | 78, including the one type-cycle component |
-| WP12 | 48 |
-| WP13 | 3 |
-| **Total** | **357** |
+| Removal package |                    Remaining exact entries |
+| --------------- | -----------------------------------------: |
+| WP02            |                                          5 |
+| WP03            |                                          4 |
+| WP04            |                                         20 |
+| WP05            |                                         14 |
+| WP06            |                                         20 |
+| WP07            |                                         23 |
+| WP09            |                                         89 |
+| WP10            |                                         53 |
+| WP11            | 78, including the one type-cycle component |
+| WP12            |                                         48 |
+| WP13            |                                          3 |
+| **Total**       |                                    **357** |
 
 Remove entries with their owning migration, and all entries before WP15 technical completion. The
 current tree passing with these exact entries is not a claim that its legacy dependencies are refactored.
@@ -366,17 +366,17 @@ During execution HEAD advanced to the owner's planning-only commit `3481afdabd76
 additional Markdown table/contents formatting was preserved. No reset, staging or commit was performed
 by this task, and the backend fingerprint remained identical across that change.
 
-| Command/check | Observed result |
-| --- | --- |
-| `npm run test:unit` | Initial restricted run: 87 Passed, 3 Failed out of 90. Preserve this result; it is not retrospectively a passing full run. |
-| `node --test --test-isolation=none --test-name-pattern='CI-11:\|missing diff revisions\|TOOL-10:' tests/tooling/ci.test.mjs tests/tooling/development.test.mjs` on untouched HEAD control tree | Same three failures reproduced, including truncated child-process output and watch fixture timeout. |
-| The same three-case command outside the sandbox, current tree | Passed: all 3. Only the failed process cases were rerun; no fixture/CI/watch behavior was weakened to obtain a pass. |
-| `node --test --test-isolation=none --test-name-pattern='BOUNDARY\|STRUCTURE\|TOOL-0[1-5]' tests/tooling/development.test.mjs` | Final affected regression Passed: 47 cases after final public/composition/cycle review fixes. Unchanged passing cases from the initial run remain applicable. |
-| `npm run lint:boundaries` | Passed: 427 source files, zero errors; 357 exact legacy allowances explicitly reported. |
-| `npm run api:check --workspace=backend` | Passed: all four generated artifacts unchanged/fresh after ownership-prose changes. |
-| `node_modules/.bin/biome lint scripts/ci/check-boundaries.mjs tests/tooling/development.test.mjs --error-on-warnings` | Passed after correcting one local useConst warning. |
-| `node_modules/.bin/biome format scripts/ci/check-boundaries.mjs scripts/ci/backend-boundary-allowances.json tests/tooling/development.test.mjs` | Passed for changed tooling/data. |
-| Backend hash inventory / actual diff review | All 491 backend inputs unchanged; exact exception coverage and removal packages reviewed. |
+| Command/check                                                                                                                                                                                  | Observed result                                                                                                                                               |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run test:unit`                                                                                                                                                                            | Initial restricted run: 87 Passed, 3 Failed out of 90. Preserve this result; it is not retrospectively a passing full run.                                    |
+| `node --test --test-isolation=none --test-name-pattern='CI-11:\|missing diff revisions\|TOOL-10:' tests/tooling/ci.test.mjs tests/tooling/development.test.mjs` on untouched HEAD control tree | Same three failures reproduced, including truncated child-process output and watch fixture timeout.                                                           |
+| The same three-case command outside the sandbox, current tree                                                                                                                                  | Passed: all 3. Only the failed process cases were rerun; no fixture/CI/watch behavior was weakened to obtain a pass.                                          |
+| `node --test --test-isolation=none --test-name-pattern='BOUNDARY\|STRUCTURE\|TOOL-0[1-5]' tests/tooling/development.test.mjs`                                                                  | Final affected regression Passed: 47 cases after final public/composition/cycle review fixes. Unchanged passing cases from the initial run remain applicable. |
+| `npm run lint:boundaries`                                                                                                                                                                      | Passed: 427 source files, zero errors; 357 exact legacy allowances explicitly reported.                                                                       |
+| `npm run api:check --workspace=backend`                                                                                                                                                        | Passed: all four generated artifacts unchanged/fresh after ownership-prose changes.                                                                           |
+| `node_modules/.bin/biome lint scripts/ci/check-boundaries.mjs tests/tooling/development.test.mjs --error-on-warnings`                                                                          | Passed after correcting one local useConst warning.                                                                                                           |
+| `node_modules/.bin/biome format scripts/ci/check-boundaries.mjs scripts/ci/backend-boundary-allowances.json tests/tooling/development.test.mjs`                                                | Passed for changed tooling/data.                                                                                                                              |
+| Backend hash inventory / actual diff review                                                                                                                                                    | All 491 backend inputs unchanged; exact exception coverage and removal packages reviewed.                                                                     |
 
 Table escaping is Markdown only; quoted test filters use literal `|`. No additional full test run was
 needed after the focused rechecks. Backend application suites/build/integration/browser, migrations,
@@ -431,18 +431,18 @@ are unchanged. The existing recovery unit suite received three historical cipher
 Node v24.20.0/npm 11.19.0. Loopback-dependent tests ran outside the sandbox on isolated MongoDB
 8.0.16 with `MONGOMS_DISTRO=ubuntu-24.04`; no developer/production database or live provider was used.
 
-| Command/check | Result |
-| --- | --- |
-| `npm run typecheck --workspace=backend` | Passed |
-| `npm run build --workspace=backend` | Passed |
-| `npm run lint --workspace=backend` | Passed: 482 files |
-| `npm run lint:boundaries` | Passed: 429 source files, zero errors, 352 exact allowances |
-| `npm run api:check --workspace=backend` | Passed: all four artifacts fresh |
-| `npm run test:smoke --workspace=backend` | Passed: compiled invalid-config redaction, startup/live/restricted-ready/shutdown |
-| `npm run test:unit --workspace=backend -- <affected files below> --reporter=default --reporter=json --outputFile=../test-results/backend-refactor/wp02-unit.json` | Passed: 219 cases / 12 files |
-| `MONGOMS_DISTRO=ubuntu-24.04 npm exec --workspace=backend -- vitest run --config vitest.integration.config.ts --reporter=default --reporter=json --outputFile=../test-results/backend-refactor/wp02-integration.json <affected files below>` | Passed: 155 cases / 9 files |
-| Old/new compiled proof codecs | Passed: six bidirectional checks across admin reset, email change and guest binding; retained key and active-key rotation; unchanged envelope fields |
-| WP00 preservation fingerprints | Passed: all 59 model/persistence/API-artifact/backend-manifest files identical |
+| Command/check                                                                                                                                                                                                                                | Result                                                                                                                                               |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run typecheck --workspace=backend`                                                                                                                                                                                                      | Passed                                                                                                                                               |
+| `npm run build --workspace=backend`                                                                                                                                                                                                          | Passed                                                                                                                                               |
+| `npm run lint --workspace=backend`                                                                                                                                                                                                           | Passed: 482 files                                                                                                                                    |
+| `npm run lint:boundaries`                                                                                                                                                                                                                    | Passed: 429 source files, zero errors, 352 exact allowances                                                                                          |
+| `npm run api:check --workspace=backend`                                                                                                                                                                                                      | Passed: all four artifacts fresh                                                                                                                     |
+| `npm run test:smoke --workspace=backend`                                                                                                                                                                                                     | Passed: compiled invalid-config redaction, startup/live/restricted-ready/shutdown                                                                    |
+| `npm run test:unit --workspace=backend -- <affected files below> --reporter=default --reporter=json --outputFile=../test-results/backend-refactor/wp02-unit.json`                                                                            | Passed: 219 cases / 12 files                                                                                                                         |
+| `MONGOMS_DISTRO=ubuntu-24.04 npm exec --workspace=backend -- vitest run --config vitest.integration.config.ts --reporter=default --reporter=json --outputFile=../test-results/backend-refactor/wp02-integration.json <affected files below>` | Passed: 155 cases / 9 files                                                                                                                          |
+| Old/new compiled proof codecs                                                                                                                                                                                                                | Passed: six bidirectional checks across admin reset, email change and guest binding; retained key and active-key rotation; unchanged envelope fields |
+| WP00 preservation fingerprints                                                                                                                                                                                                               | Passed: all 59 model/persistence/API-artifact/backend-manifest files identical                                                                       |
 
 Unit file arguments (under `backend/tests/unit/`): `sessions.test.ts`, `browser-security.test.ts`,
 `recovery.test.ts`, `email-change.test.ts`, `guest-access.test.ts`, `composition.test.ts`,
@@ -525,21 +525,21 @@ Node v24.20.0/npm 11.19.0; isolated MongoDB 8.0.16 with `MONGOMS_DISTRO=ubuntu-2
 Loopback integration/unit/smoke and the three failed contract rechecks ran outside the sandbox.
 No developer/production data, deployed provider or external financial effect was used.
 
-| Command/check | Observed result |
-| --- | --- |
-| `npm run typecheck --workspace=backend` | Final Passed; initial editing check identified two missing root imports, corrected before final checks |
-| `npm run build --workspace=backend` | Passed |
-| `npm run lint --workspace=backend` | Passed: 485 files |
-| `npm run lint:boundaries` | Passed: 432 files, zero errors, 345 exact allowances |
-| `npm run format:backend` | Passed: 501 files |
-| `node_modules/.bin/biome lint tests/tooling/development.test.mjs --error-on-warnings` | Passed |
-| `node --test --test-isolation=none --test-name-pattern='BOUNDARY\|STRUCTURE\|TOOL-0[1-5]' tests/tooling/development.test.mjs` | Passed: 48 cases including the delivery negative fixture |
-| Affected unit command below | Passed: 124 cases / 6 files |
-| Affected integration command below | Passed: 428 cases / 6 files |
-| `npm run test:contract --workspace=backend` | Artifact freshness Passed for all four files; initial restricted suite: 183 Passed, 3 Failed (loopback EPERM/process-output restriction) |
-| Three-case contract command below, outside sandbox | Passed: all 3; 183 intentionally unselected. The initial full run remains recorded as failed, not retrospectively a clean full run. |
-| `npm run test:smoke --workspace=backend` | Passed: compiled invalid-config redaction, real startup/live/restricted-ready/shutdown |
-| Preservation comparison | Passed: 60 files; delivery model/persistence/schema implementations identical after export normalization; 57 other canonical persistence/artifact/manifest files byte-identical to WP00 |
+| Command/check                                                                                                                 | Observed result                                                                                                                                                                         |
+| ----------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run typecheck --workspace=backend`                                                                                       | Final Passed; initial editing check identified two missing root imports, corrected before final checks                                                                                  |
+| `npm run build --workspace=backend`                                                                                           | Passed                                                                                                                                                                                  |
+| `npm run lint --workspace=backend`                                                                                            | Passed: 485 files                                                                                                                                                                       |
+| `npm run lint:boundaries`                                                                                                     | Passed: 432 files, zero errors, 345 exact allowances                                                                                                                                    |
+| `npm run format:backend`                                                                                                      | Passed: 501 files                                                                                                                                                                       |
+| `node_modules/.bin/biome lint tests/tooling/development.test.mjs --error-on-warnings`                                         | Passed                                                                                                                                                                                  |
+| `node --test --test-isolation=none --test-name-pattern='BOUNDARY\|STRUCTURE\|TOOL-0[1-5]' tests/tooling/development.test.mjs` | Passed: 48 cases including the delivery negative fixture                                                                                                                                |
+| Affected unit command below                                                                                                   | Passed: 124 cases / 6 files                                                                                                                                                             |
+| Affected integration command below                                                                                            | Passed: 428 cases / 6 files                                                                                                                                                             |
+| `npm run test:contract --workspace=backend`                                                                                   | Artifact freshness Passed for all four files; initial restricted suite: 183 Passed, 3 Failed (loopback EPERM/process-output restriction)                                                |
+| Three-case contract command below, outside sandbox                                                                            | Passed: all 3; 183 intentionally unselected. The initial full run remains recorded as failed, not retrospectively a clean full run.                                                     |
+| `npm run test:smoke --workspace=backend`                                                                                      | Passed: compiled invalid-config redaction, real startup/live/restricted-ready/shutdown                                                                                                  |
+| Preservation comparison                                                                                                       | Passed: 60 files; delivery model/persistence/schema implementations identical after export normalization; 57 other canonical persistence/artifact/manifest files byte-identical to WP00 |
 
 Reproducible affected test commands (repository root):
 
@@ -650,22 +650,22 @@ Node v24.20.0/npm 11.19.0. Real database tests use isolated transaction-capable 
 `MONGOMS_DISTRO=ubuntu-24.04`; loopback/process suites ran outside sandbox restrictions. No live
 provider, developer/production database or financial effect was used.
 
-| Command/check | Observed result |
-| --- | --- |
-| `npm run typecheck --workspace=backend` | Passed after reconciling detached types with existing nullable/completed stored states and fixing the value import; no stored-state contract was changed |
-| `npm run build --workspace=backend` | Passed; new technical health files emitted and obsolete health/media-access artifacts absent |
-| `npm run lint --workspace=backend` | Passed: 488 files |
-| `npm run lint:boundaries` | Passed: 435 source files, zero errors, 319 exact allowances |
-| `npm run format:backend` | Passed: 504 files |
-| `node_modules/.bin/biome lint tests/tooling/development.test.mjs --error-on-warnings` | Passed |
-| `node --test --test-isolation=none --test-name-pattern='BOUNDARY\|STRUCTURE\|TOOL-0[1-5]' tests/tooling/development.test.mjs` | Passed: 49 cases |
-| `node --test --test-isolation=none --test-name-pattern='IDENTITY-BOUNDARY' tests/tooling/development.test.mjs` | Passed: final one-case recheck after extending the new negative fixture to the actual technical health path |
-| Affected unit command below | Passed: 311 cases / 14 files |
-| Affected integration command below | Initial: 812 Passed / 1 Failed out of 813 cases, 22 files; preserve this result as a failed initial run |
-| Identity suite recheck below | Passed: all 40 cases after the local fixture-parser correction; other 773 passing cases have unchanged inputs. All 813 distinct integration cases are covered by these valid results, not a claimed clean rerun of all 22 suites. |
-| `npm run test:contract --workspace=backend` | Passed: all four artifacts fresh and all 186 contract cases; real route inventory includes technical health |
-| `npm run test:smoke --workspace=backend` | Passed: redacted invalid config, actual startup/live/restricted readiness/graceful shutdown |
-| Preservation comparison | Passed: 69 model/persistence/validator/API-artifact/manifest/health inputs; changed definitions differ only in export style, health import location adjusted only for the move |
+| Command/check                                                                                                                 | Observed result                                                                                                                                                                                                                   |
+| ----------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run typecheck --workspace=backend`                                                                                       | Passed after reconciling detached types with existing nullable/completed stored states and fixing the value import; no stored-state contract was changed                                                                          |
+| `npm run build --workspace=backend`                                                                                           | Passed; new technical health files emitted and obsolete health/media-access artifacts absent                                                                                                                                      |
+| `npm run lint --workspace=backend`                                                                                            | Passed: 488 files                                                                                                                                                                                                                 |
+| `npm run lint:boundaries`                                                                                                     | Passed: 435 source files, zero errors, 319 exact allowances                                                                                                                                                                       |
+| `npm run format:backend`                                                                                                      | Passed: 504 files                                                                                                                                                                                                                 |
+| `node_modules/.bin/biome lint tests/tooling/development.test.mjs --error-on-warnings`                                         | Passed                                                                                                                                                                                                                            |
+| `node --test --test-isolation=none --test-name-pattern='BOUNDARY\|STRUCTURE\|TOOL-0[1-5]' tests/tooling/development.test.mjs` | Passed: 49 cases                                                                                                                                                                                                                  |
+| `node --test --test-isolation=none --test-name-pattern='IDENTITY-BOUNDARY' tests/tooling/development.test.mjs`                | Passed: final one-case recheck after extending the new negative fixture to the actual technical health path                                                                                                                       |
+| Affected unit command below                                                                                                   | Passed: 311 cases / 14 files                                                                                                                                                                                                      |
+| Affected integration command below                                                                                            | Initial: 812 Passed / 1 Failed out of 813 cases, 22 files; preserve this result as a failed initial run                                                                                                                           |
+| Identity suite recheck below                                                                                                  | Passed: all 40 cases after the local fixture-parser correction; other 773 passing cases have unchanged inputs. All 813 distinct integration cases are covered by these valid results, not a claimed clean rerun of all 22 suites. |
+| `npm run test:contract --workspace=backend`                                                                                   | Passed: all four artifacts fresh and all 186 contract cases; real route inventory includes technical health                                                                                                                       |
+| `npm run test:smoke --workspace=backend`                                                                                      | Passed: redacted invalid config, actual startup/live/restricted readiness/graceful shutdown                                                                                                                                       |
+| Preservation comparison                                                                                                       | Passed: 69 model/persistence/validator/API-artifact/manifest/health inputs; changed definitions differ only in export style, health import location adjusted only for the move                                                    |
 
 The single integration failure was a pre-existing whitespace-sensitive Markdown parser in
 identity.test.ts: it expected one space between table cells and found zero documented indexes after
@@ -714,14 +714,14 @@ remain accurate for their recorded revisions; this section supersedes their affe
 
 ### Review findings and dispositions
 
-| Package | Finding | Disposition |
-| --- | --- | --- |
-| WP00 | Historical baseline/operation/model inventory remains evidence of its input revision, not a current filesystem manifest. | Preserved it; checked actual current consumers before moves and recorded explicit successor paths in Plan §4.1. No baseline regeneration conceals changes. |
-| WP01 | Public/private/composition/shared/provider/cycle checks work, but import direction alone cannot establish file cohesion or consistent names. | Rechecked the existing positive/negative suite; updated obsolete customer/delivery fixture paths. Migrated another 27 admin-access consumers to the existing public type and removed their exact allowances, never renamed them into new permissions. |
-| WP02 | Configuration/technical crypto ownership is sound; proofHash still contained an opaque nested namespace ternary inherited from the original implementation. | Replaced it with a private named namespace map; all five purposes, default and legacy fallback match the original hash output. AEAD/key/binding behavior stays untouched. |
-| WP03 | Delivery coverage factories were separated into a second service file despite sharing the same feature/persistence owner; factory/controller names did not follow a consistent construction convention. | Consolidated management/coverage into delivery.service.ts, removed delivery-coverage.service.ts, migrated all consumers and aligned createDeliveryService/createDeliveryController/router names. Replaced transition-input nested branching with explicit local guarded branches. |
-| WP04 | Auth credential service was named as customer service; customer service was named only as profile service. Audience-only routers and related account capabilities remained unnecessarily fragmented. | Singular credential.* files with CredentialService/createCredentialService; CustomerService/createCustomerService in customers. Customer/admin credential routers share credential.routes.ts, and customer/admin management routers share customer.routes.ts. Admin/customer/media account access now shares account-access.service.ts. Security administration is explicitly account-management.service.ts/.schema.ts. |
-| WP04 | Root assembly, proof policies, canonical identity ownership and technical health placement were already correct after the prior package. | Retained them. Independent router factories keep the original activation/guard order. Distinct email verification/change, recovery and guest policies are not mechanically collapsed to match an illustrative tree. |
+| Package | Finding                                                                                                                                                                                                 | Disposition                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| WP00    | Historical baseline/operation/model inventory remains evidence of its input revision, not a current filesystem manifest.                                                                                | Preserved it; checked actual current consumers before moves and recorded explicit successor paths in Plan §4.1. No baseline regeneration conceals changes.                                                                                                                                                                                                                                                              |
+| WP01    | Public/private/composition/shared/provider/cycle checks work, but import direction alone cannot establish file cohesion or consistent names.                                                            | Rechecked the existing positive/negative suite; updated obsolete customer/delivery fixture paths. Migrated another 27 admin-access consumers to the existing public type and removed their exact allowances, never renamed them into new permissions.                                                                                                                                                                   |
+| WP02    | Configuration/technical crypto ownership is sound; proofHash still contained an opaque nested namespace ternary inherited from the original implementation.                                             | Replaced it with a private named namespace map; all five purposes, default and legacy fallback match the original hash output. AEAD/key/binding behavior stays untouched.                                                                                                                                                                                                                                               |
+| WP03    | Delivery coverage factories were separated into a second service file despite sharing the same feature/persistence owner; factory/controller names did not follow a consistent construction convention. | Consolidated management/coverage into delivery.service.ts, removed delivery-coverage.service.ts, migrated all consumers and aligned createDeliveryService/createDeliveryController/router names. Replaced transition-input nested branching with explicit local guarded branches.                                                                                                                                       |
+| WP04    | Auth credential service was named as customer service; customer service was named only as profile service. Audience-only routers and related account capabilities remained unnecessarily fragmented.    | Singular credential.* files with CredentialService/createCredentialService; CustomerService/createCustomerService in customers. Customer/admin credential routers share credential.routes.ts, and customer/admin management routers share customer.routes.ts. Admin/customer/media account access now shares account-access.service.ts. Security administration is explicitly account-management.service.ts/.schema.ts. |
+| WP04    | Root assembly, proof policies, canonical identity ownership and technical health placement were already correct after the prior package.                                                                | Retained them. Independent router factories keep the original activation/guard order. Distinct email verification/change, recovery and guest policies are not mechanically collapsed to match an illustrative tree.                                                                                                                                                                                                     |
 
 The review found a concrete organization/readability gap, not evidence that multiple files are
 universally wrong. The recorded Architecture §6.2/Plan §4.1 rules now identify the adopted owners'
@@ -764,19 +764,19 @@ Node v24.20.0/npm 11.19.0; isolated replica-set MongoDB 8.0.16 with
 `MONGOMS_DISTRO=ubuntu-24.04`. Loopback/process suites ran outside sandbox restrictions. No live
 provider, production/developer data or irreversible financial effect was used.
 
-| Command/check | Observed result |
-| --- | --- |
-| `npm run typecheck --workspace=backend` | Passed on final source, including updated tests/contracts |
-| `npm run build --workspace=backend` | Passed; clean dist contains canonical renamed/consolidated owners |
-| `npm run lint --workspace=backend` | Passed: 484 files |
-| `npm run lint:boundaries` | Passed: 431 source files, zero errors, 292 exact allowances |
-| `npm run format:backend` | Passed: 500 files |
-| `node --test --test-isolation=none --test-name-pattern='BOUNDARY\|STRUCTURE\|TOOL-0[1-5]' tests/tooling/development.test.mjs` | Passed: 49 cases after actual fixture-path updates |
-| Affected unit selection | Passed: 314 cases / 15 files; after proof readability cleanup only its three affected unit consumers were rerun, all 50 Passed. These are overlapping cases, not 364 distinct tests. |
-| Consolidated affected integration selection | Passed: all 856 cases / 24 files in one clean run, including the corrected index-parser case from WP04 |
-| `npm run test:contract --workspace=backend` | Passed: all four generated artifacts fresh, all 186 contract cases; executable route inventory follows both route consolidations |
-| `npm run test:smoke --workspace=backend` | Passed: compiled config-redaction/startup/live/restricted-ready/shutdown |
-| Source/policy preservation comparison | Passed: 59 persistence/artifact/manifest inputs, ten moved function bodies, seven proof namespace cases |
+| Command/check                                                                                                                 | Observed result                                                                                                                                                                      |
+| ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `npm run typecheck --workspace=backend`                                                                                       | Passed on final source, including updated tests/contracts                                                                                                                            |
+| `npm run build --workspace=backend`                                                                                           | Passed; clean dist contains canonical renamed/consolidated owners                                                                                                                    |
+| `npm run lint --workspace=backend`                                                                                            | Passed: 484 files                                                                                                                                                                    |
+| `npm run lint:boundaries`                                                                                                     | Passed: 431 source files, zero errors, 292 exact allowances                                                                                                                          |
+| `npm run format:backend`                                                                                                      | Passed: 500 files                                                                                                                                                                    |
+| `node --test --test-isolation=none --test-name-pattern='BOUNDARY\|STRUCTURE\|TOOL-0[1-5]' tests/tooling/development.test.mjs` | Passed: 49 cases after actual fixture-path updates                                                                                                                                   |
+| Affected unit selection                                                                                                       | Passed: 314 cases / 15 files; after proof readability cleanup only its three affected unit consumers were rerun, all 50 Passed. These are overlapping cases, not 364 distinct tests. |
+| Consolidated affected integration selection                                                                                   | Passed: all 856 cases / 24 files in one clean run, including the corrected index-parser case from WP04                                                                               |
+| `npm run test:contract --workspace=backend`                                                                                   | Passed: all four generated artifacts fresh, all 186 contract cases; executable route inventory follows both route consolidations                                                     |
+| `npm run test:smoke --workspace=backend`                                                                                      | Passed: compiled config-redaction/startup/live/restricted-ready/shutdown                                                                                                             |
+| Source/policy preservation comparison                                                                                         | Passed: 59 persistence/artifact/manifest inputs, ten moved function bodies, seven proof namespace cases                                                                              |
 
 Unit arguments under `tests/unit/`: admin-auth, app, auth-rate-limit, browser-security, composition,
 container-health, delivery, email-change, guest-access, identity-contracts, notifications, passwords,
@@ -853,16 +853,16 @@ changes were overwritten.
 
 ### Actual checks and deferred obligations
 
-| Check | Result / limit |
-| --- | --- |
-| `node_modules/.bin/tsc --project backend/tsconfig.json --noEmit` | Passed for src only; this excludes tests/contracts. Not a behavioral or full workspace typecheck. |
-| `node_modules/.bin/biome lint backend/src/modules --error-on-warnings` | Passed: 251 module files |
-| Module Biome format check | Passed: 251 module files |
-| Static runtime import graph | Acyclic after extracting the real consent-policy leaf; not proof of per-operation recursion/concurrency behavior |
-| Model/persistence source literals | 53 mapped model/persistence files retain their non-import string/numeric/regex/boolean/null literal sets; not a database/schema deployment test |
-| Tests and test review | **Not Run**, explicitly deferred by owner |
-| Contract generation, operator commands, build/deployment/live providers | **Not Run** in this pass |
-| Git commit/push/branch/PR operations | **Not performed**; HEAD remains `305c463` |
+| Check                                                                   | Result / limit                                                                                                                                  |
+| ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `node_modules/.bin/tsc --project backend/tsconfig.json --noEmit`        | Passed for src only; this excludes tests/contracts. Not a behavioral or full workspace typecheck.                                               |
+| `node_modules/.bin/biome lint backend/src/modules --error-on-warnings`  | Passed: 251 module files                                                                                                                        |
+| Module Biome format check                                               | Passed: 251 module files                                                                                                                        |
+| Static runtime import graph                                             | Acyclic after extracting the real consent-policy leaf; not proof of per-operation recursion/concurrency behavior                                |
+| Model/persistence source literals                                       | 53 mapped model/persistence files retain their non-import string/numeric/regex/boolean/null literal sets; not a database/schema deployment test |
+| Tests and test review                                                   | **Not Run**, explicitly deferred by owner                                                                                                       |
+| Contract generation, operator commands, build/deployment/live providers | **Not Run** in this pass                                                                                                                        |
+| Git commit/push/branch/PR operations                                    | **Not performed**; HEAD remains `305c463`                                                                                                       |
 
 Artifact: [module folder inventory, move map and deferred work](../../test-results/backend-refactor/module-folder-batch.json).
 It is ignored local output, not a new test suite or specification. Existing tests, contracts, scripts,
@@ -908,15 +908,15 @@ This record describes applied work, not completion of the full source architectu
 - Applied explicit bottom named-export lists and existing source formatting across config/providers/jobs/
   shared/root as well as modules. No package, collection, test suite or tracked architecture guide was added.
 
-| Check | Observed result |
-| --- | --- |
-| `node_modules/.bin/tsc --project backend/tsconfig.json --noEmit` | Passed; src only |
-| `node_modules/.bin/biome lint backend/src --error-on-warnings` | Passed; 308 files |
-| `node_modules/.bin/biome format backend/src` | Passed; 308 files |
-| Static runtime import graph | Acyclic; not functional/concurrency verification |
-| `npm run lint:boundaries` | Failed: 325 errors, comprising 47 source dependency violations and 278 stale exact allowances; 14 existing exact allowances remain active |
-| Tests, test review, workspace build/contracts/operator/provider checks | Not Run, deferred by owner |
-| Git commit/push/branch/PR mutations | Not performed |
+| Check                                                                  | Observed result                                                                                                                           |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `node_modules/.bin/tsc --project backend/tsconfig.json --noEmit`       | Passed; src only                                                                                                                          |
+| `node_modules/.bin/biome lint backend/src --error-on-warnings`         | Passed; 308 files                                                                                                                         |
+| `node_modules/.bin/biome format backend/src`                           | Passed; 308 files                                                                                                                         |
+| Static runtime import graph                                            | Acyclic; not functional/concurrency verification                                                                                          |
+| `npm run lint:boundaries`                                              | Failed: 325 errors, comprising 47 source dependency violations and 278 stale exact allowances; 14 existing exact allowances remain active |
+| Tests, test review, workspace build/contracts/operator/provider checks | Not Run, deferred by owner                                                                                                                |
+| Git commit/push/branch/PR mutations                                    | Not performed                                                                                                                             |
 
 Local ignored [src inventory, changed constructor signatures and remaining violations](../../test-results/backend-refactor/src-folder-batch.json)
 records 283 changed and nine added source files relative to this pass's pre-edit snapshot. Existing
@@ -966,16 +966,16 @@ Environment: Node v24.20.0, existing locked TypeScript/Biome configuration; no d
 operation. Changes preserve initial staged edits; the agent did not stage, commit, push, switch branches
 or change a PR. Tests, test review, contracts, API artifacts, scripts and tooling files were not edited.
 
-| Executed source check | Observed result |
-| --- | --- |
-| `node_modules/.bin/tsc --project backend/tsconfig.json --noEmit` | Passed; excludes deferred tests/contracts |
-| `node_modules/.bin/biome lint backend/src --error-on-warnings` | Passed; 311 files |
-| `node_modules/.bin/biome format backend/src` | Passed; 311 files |
-| Existing `checkBoundaries()` source-policy inspection | Passed: no source errors, zero migration violations, zero active legacy allowances; type and runtime graphs are acyclic |
-| `npm run lint:boundaries` / unfiltered checker result | Failed solely for 292 stale allowance entries in the deferred outside-src inventory; the tracked inventory was not modified or widened |
-| `node /tmp/sportzone-src-completion/source-invariants.cjs` | Static preservation check Passed: 54 model/persistence literal inventories, 223 route registrations and 1,664 Zod constructor calls retained. This is not runtime validation, a database test or API contract acceptance |
-| Runtime/unit/integration/contract/security/financial/concurrency tests and test review | Not Run; deferred by owner |
-| Full workspace typecheck/build/artifact generation/operator/provider checks | Not Run; outside-src consumers still require migration |
+| Executed source check                                                                  | Observed result                                                                                                                                                                                                          |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `node_modules/.bin/tsc --project backend/tsconfig.json --noEmit`                       | Passed; excludes deferred tests/contracts                                                                                                                                                                                |
+| `node_modules/.bin/biome lint backend/src --error-on-warnings`                         | Passed; 311 files                                                                                                                                                                                                        |
+| `node_modules/.bin/biome format backend/src`                                           | Passed; 311 files                                                                                                                                                                                                        |
+| Existing `checkBoundaries()` source-policy inspection                                  | Passed: no source errors, zero migration violations, zero active legacy allowances; type and runtime graphs are acyclic                                                                                                  |
+| `npm run lint:boundaries` / unfiltered checker result                                  | Failed solely for 292 stale allowance entries in the deferred outside-src inventory; the tracked inventory was not modified or widened                                                                                   |
+| `node /tmp/sportzone-src-completion/source-invariants.cjs`                             | Static preservation check Passed: 54 model/persistence literal inventories, 223 route registrations and 1,664 Zod constructor calls retained. This is not runtime validation, a database test or API contract acceptance |
+| Runtime/unit/integration/contract/security/financial/concurrency tests and test review | Not Run; deferred by owner                                                                                                                                                                                               |
+| Full workspace typecheck/build/artifact generation/operator/provider checks            | Not Run; outside-src consumers still require migration                                                                                                                                                                   |
 
 The source-policy inspection calls the existing exported checker and reports the known outside-src
 stale inventory separately; it does not bypass or relabel the failing repository gate:
@@ -1019,18 +1019,18 @@ outside-src migration deferral and stale-boundary result; historical verificatio
 - Updated existing Architecture, Testing, Operations, README and refactor-plan sections. No package,
   business behavior, collection, public route or generated API contract change is intended.
 
-| Verification | Observed result |
-| --- | --- |
-| `npm run typecheck --workspace=backend` | Passed; full source/tests/contracts compilation |
-| `npm run lint --workspace=backend` | Passed |
-| `npm run format:backend` | Passed after formatting existing export lists and migrated files |
-| `npm run build --workspace=backend` | Passed |
-| `npm run api:generate --workspace=backend` and `npm run api:check --workspace=backend` | Passed; four artifacts byte-identical to pre-batch copies |
-| `npm run lint:boundaries` | Passed; 419 files, zero errors and zero allowances |
-| Static preservation inventory | Passed: 1,456 case declarations, 51 describe declarations, 4,950 expect calls and lifecycle-hook counts retained; not runtime verification |
-| Script syntax/import/signature inspection | Passed: 42 script files, 183 named bindings and 211 constructor calls; operators not executed |
-| Unit/integration/contract/tooling/smoke tests and semantic test review | Not Run; owner deferred to final tests/review/fix phase |
-| Docker image/runtime, database and external-provider qualification | Not Run |
+| Verification                                                                           | Observed result                                                                                                                            |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `npm run typecheck --workspace=backend`                                                | Passed; full source/tests/contracts compilation                                                                                            |
+| `npm run lint --workspace=backend`                                                     | Passed                                                                                                                                     |
+| `npm run format:backend`                                                               | Passed after formatting existing export lists and migrated files                                                                           |
+| `npm run build --workspace=backend`                                                    | Passed                                                                                                                                     |
+| `npm run api:generate --workspace=backend` and `npm run api:check --workspace=backend` | Passed; four artifacts byte-identical to pre-batch copies                                                                                  |
+| `npm run lint:boundaries`                                                              | Passed; 419 files, zero errors and zero allowances                                                                                         |
+| Static preservation inventory                                                          | Passed: 1,456 case declarations, 51 describe declarations, 4,950 expect calls and lifecycle-hook counts retained; not runtime verification |
+| Script syntax/import/signature inspection                                              | Passed: 42 script files, 183 named bindings and 211 constructor calls; operators not executed                                              |
+| Unit/integration/contract/tooling/smoke tests and semantic test review                 | Not Run; owner deferred to final tests/review/fix phase                                                                                    |
+| Docker image/runtime, database and external-provider qualification                     | Not Run                                                                                                                                    |
 
 Local environment: Node v24.20.0 and existing locked tools. No Git staging, commit, push, branch or PR
 mutation. [Ignored structural inventory](../../test-results/backend-refactor/outside-src-completion.json)
@@ -1063,22 +1063,22 @@ blocked and P03-022/provider/stage acceptance is not granted.
 
 **Observed execution, Node v24.20.0 and existing locked tools:**
 
-| Check | Result |
-| --- | --- |
-| `npm run ci -- --scope=backend` | Initial sandbox run failed on prohibited local listeners/process behavior. Permitted run reached 90/92 tooling cases; two obsolete path fixtures failed, then were corrected. The original CI report remains Failed; it is not relabeled as an all-green pipeline |
-| `npm run test:unit` (permitted, after fixture corrections) | Passed: 92 tooling cases |
-| `npm run test:unit --workspace=backend` (permitted) | Passed: 814 cases, 51 files |
-| `npm run test:contract --workspace=backend` (permitted, after inventory correction) | Passed: 186 cases and four-artifact freshness |
-| `npm run test:integration --workspace=backend` (permitted) | Full run: 1,197 Passed / 76 Failed, 70 files; all eight failing files covered by passing rechecks below |
-| Existing Vitest integration command selecting auth/{email-change,recovery,admin-auth,guest-access,email-verification}, reviews/reviews and orders/cancellation-workflow | Passed: 156 cases, seven files after the auth correction and completed build |
-| Existing Vitest integration command selecting application/{composition,backend-completion} and notifications/notifications | Passed: 27 cases, three files; includes the eighth initially failing file and direct application/worker consumers |
-| Combined distinct integration coverage | 1,273 cases have passing observations. Rechecks overlap earlier passing cases; do not add run totals as distinct tests or describe the original full run as Passed |
-| `npm run typecheck --workspace=backend`; `npm run build --workspace=backend` | Passed after source correction |
-| `npm run lint --workspace=backend`; `npm run format:backend`; `npm run lint:boundaries` | Passed; 419 boundary inputs, zero violations/allowances |
-| `npm run test:smoke --workspace=backend` (permitted, final rebuilt output) | Passed: redacted invalid configuration, real isolated DB startup, liveness/restricted readiness, shutdown |
-| `npm run test:security` (permitted, reviewed exact fingerprints) | Passed: source/history scan, zero dependency advisories |
-| Static preservation and operator inspection | Passed: 54 model/persistence literal inventories, 223 route registrations, 1,664 Zod constructor calls; 1,456 scenario declarations, 4,950 expect calls, unchanged hooks/API artifacts; 41 operator paths, 183 named bindings and 211 constructor calls retained |
-| `node scripts/ci/container.mjs` (permitted) | Blocked: permission denied connecting to Docker socket. `sudo -n docker version` also requires interactive authentication; no socket permissions or host configuration changed |
+| Check                                                                                                                                                                   | Result                                                                                                                                                                                                                                                            |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run ci -- --scope=backend`                                                                                                                                         | Initial sandbox run failed on prohibited local listeners/process behavior. Permitted run reached 90/92 tooling cases; two obsolete path fixtures failed, then were corrected. The original CI report remains Failed; it is not relabeled as an all-green pipeline |
+| `npm run test:unit` (permitted, after fixture corrections)                                                                                                              | Passed: 92 tooling cases                                                                                                                                                                                                                                          |
+| `npm run test:unit --workspace=backend` (permitted)                                                                                                                     | Passed: 814 cases, 51 files                                                                                                                                                                                                                                       |
+| `npm run test:contract --workspace=backend` (permitted, after inventory correction)                                                                                     | Passed: 186 cases and four-artifact freshness                                                                                                                                                                                                                     |
+| `npm run test:integration --workspace=backend` (permitted)                                                                                                              | Full run: 1,197 Passed / 76 Failed, 70 files; all eight failing files covered by passing rechecks below                                                                                                                                                           |
+| Existing Vitest integration command selecting auth/{email-change,recovery,admin-auth,guest-access,email-verification}, reviews/reviews and orders/cancellation-workflow | Passed: 156 cases, seven files after the auth correction and completed build                                                                                                                                                                                      |
+| Existing Vitest integration command selecting application/{composition,backend-completion} and notifications/notifications                                              | Passed: 27 cases, three files; includes the eighth initially failing file and direct application/worker consumers                                                                                                                                                 |
+| Combined distinct integration coverage                                                                                                                                  | 1,273 cases have passing observations. Rechecks overlap earlier passing cases; do not add run totals as distinct tests or describe the original full run as Passed                                                                                                |
+| `npm run typecheck --workspace=backend`; `npm run build --workspace=backend`                                                                                            | Passed after source correction                                                                                                                                                                                                                                    |
+| `npm run lint --workspace=backend`; `npm run format:backend`; `npm run lint:boundaries`                                                                                 | Passed; 419 boundary inputs, zero violations/allowances                                                                                                                                                                                                           |
+| `npm run test:smoke --workspace=backend` (permitted, final rebuilt output)                                                                                              | Passed: redacted invalid configuration, real isolated DB startup, liveness/restricted readiness, shutdown                                                                                                                                                         |
+| `npm run test:security` (permitted, reviewed exact fingerprints)                                                                                                        | Passed: source/history scan, zero dependency advisories                                                                                                                                                                                                           |
+| Static preservation and operator inspection                                                                                                                             | Passed: 54 model/persistence literal inventories, 223 route registrations, 1,664 Zod constructor calls; 1,456 scenario declarations, 4,950 expect calls, unchanged hooks/API artifacts; 41 operator paths, 183 named bindings and 211 constructor calls retained  |
+| `node scripts/ci/container.mjs` (permitted)                                                                                                                             | Blocked: permission denied connecting to Docker socket. `sudo -n docker version` also requires interactive authentication; no socket permissions or host configuration changed                                                                                    |
 
 Two bootstrap failures occurred because the executor incorrectly overlapped a clean build with
 integration subprocesses: one explicitly reported missing `dist/config/database.js`. The affected
@@ -1096,3 +1096,34 @@ rollback is required or authorized.
 retain initial failures and passing rechecks. P03-030 remains In Progress solely for the unavailable
 Docker image build/runtime check. A Docker-capable runner must execute the existing container command;
 P03-022 independent acceptance and P04-003/P09-011 external qualification remain separate.
+
+
+### Owner-authorized refactor closeout and environment cleanup — 3 November 2026
+
+Owner instructed that Docker verification is not needed now and requested refactor completion, plus
+simple professional env/package organization and usable defaults. P03-030 is Done under Tasks §2;
+this explicitly supersedes its previous Docker-blocked In Progress status. The image check remains
+unverified/deferred, not Passed; container CI/release requirements are unchanged. P03-022 independent
+backend-stage acceptance and all provider/deployment/milestone gates remain separate.
+
+- Organized all 118 root template keys by responsibility, moving previously appended settings into
+  their owning groups. Kept .env private/ignored with owner-only permissions; preserved every existing
+  nonempty value, including credentials and activation flags. No private value was printed or recorded.
+- Added explicit local technical timings: customer/admin sessions 3600/1800 seconds, browser context
+  300 seconds, proof lifetime/cooldown/floor 600s/60s/100ms, guest session 3600 seconds and quote lifetime
+  900 seconds. Existing timeout/retry/batch defaults remain. Template MongoDB URI targets a local rs0
+  replica set; an actual running replica set or the URI from db:local is still required.
+- Left credentials and approval-dependent policies/evidence explicit. Did not invent merchant/channel,
+  scanner, retention or legal approvals or enable unavailable integrations. Private proof-key material
+  is preserved; missing private keys are generated independently only inside the ignored local file.
+- Grouped root/backend manifest scripts by purpose and sorted dependency declarations. Retained every
+  command, package/version and workspace; updated the root description. Lockfile/CI inventory require
+  no changes because execution and dependency sets are unchanged. README explains template defaults.
+
+Verification: private compiled loadEnvironment validation Passed with values withheld; sanitized
+example validation with ephemeral in-memory security keys Passed; env inventory and nonempty-value
+preservation Passed; manifest script/dependency equality against HEAD Passed; workspace resolution,
+manifest formatting, repository links and diff checks Passed. No backend runtime behavior changed in
+this cleanup; the preceding final regression results remain applicable and were not needlessly rerun.
+No database/provider connection or migration is implied by environment validation. No staging, commit,
+push, branch or PR mutation was performed; existing staged edits were preserved.

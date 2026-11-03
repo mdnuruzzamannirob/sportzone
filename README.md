@@ -86,8 +86,12 @@ keep the repository's replica-set tool running in a separate terminal:
 npm run db:local --workspace=backend
 ```
 
-Create a private root `.env` from [.env.example](.env.example), supply the MongoDB URI/database and
-independently generated `SESSION_SECRET` and `HEALTH_MONITOR_TOKEN`. For the backend stage, start only
+Create a private root `.env` from [.env.example](.env.example). The template groups runtime, identity,
+commerce, providers and workers, with local session/proof timing and technical worker defaults. Supply
+the URI of a running replica set and independently generated `SESSION_SECRET` and `HEALTH_MONITOR_TOKEN`;
+proof activation also needs a private versioned key map. Blank provider credentials and policy/evidence
+inputs must be configured before their features are enabled. Frontend reference values still belong
+in each client’s own environment. For the backend stage, start only
 its compiler and API from the repository root:
 
 ```sh

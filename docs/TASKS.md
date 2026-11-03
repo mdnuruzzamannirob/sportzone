@@ -136,7 +136,7 @@ The register contains 218 tasks across twelve requirement groups. Application-st
 | --------------------------------------------- | ------: | ----------: | ----: | ----------: | ------: | --------: | ------: | -------: |
 | 01 — Requirements Finalization and Planning   |      24 |           0 |     0 |           0 |       0 |         0 |      24 |        0 |
 | 02 — UI/UX Design                             |      17 |           1 |     0 |           0 |       0 |         0 |      16 |        0 |
-| 03 — Authentication and Core Backend          |      30 |           0 |     0 |           2 |       0 |         0 |      28 |        0 |
+| 03 — Authentication and Core Backend          |      30 |           0 |     0 |           1 |       0 |         0 |      29 |        0 |
 | 04 — Product Catalog and Inventory            |      20 |           7 |     0 |           0 |       0 |         0 |      12 |        1 |
 | 05 — Cart, Wishlist, Coupons, and Reviews     |      17 |           8 |     0 |           0 |       0 |         0 |       9 |        0 |
 | 06 — Checkout, Orders, and Delivery Rules     |      22 |           6 |     0 |           0 |       0 |         0 |      16 |        0 |
@@ -146,7 +146,7 @@ The register contains 218 tasks across twelve requirement groups. Application-st
 | 10 — Testing, Security Review, and Bug Fixing |      13 |          13 |     0 |           0 |       0 |         0 |       0 |        0 |
 | 11 — Deployment and Production Verification   |      11 |          11 |     0 |           0 |       0 |         0 |       0 |        0 |
 | 12 — Documentation and Handover               |       9 |           9 |     0 |           0 |       0 |         0 |       0 |        0 |
-| **Total**                                     | **218** |      **74** | **0** |       **2** |   **0** |     **0** | **140** |    **2** |
+| **Total**                                     | **218** |      **74** | **0** |       **1** |   **0** |     **0** | **141** |    **2** |
 
 ## 4. Milestone tracker
 
@@ -773,14 +773,14 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Record findings and dispositions, migrate all actual consumers/contracts/tools with removed files, enforce boundaries and pass affected regressions without changing business/security/financial contracts.\
   **Evidence:** [Review findings, corrections and consolidated verification](./evidence/P03-021-backend-refactor.md#p03-029--completed-wp00wp04-review-and-corrections-3-november-2026). Completed 3 November 2026 under Tasks §2. Four source files consolidated away; canonical names/consumers aligned and 27 private-type allowances removed. 314 unit cases with final 50-case proof recheck, 856 integration, 186 contract and 49 tooling cases Passed; type/build/style/format/smoke and preservation checks Passed. 292 allowances remain for later packages.
 
-- [ ] **P03-030 — Owner-directed whole-module source batch and deferred verification**\
-  **Status:** `In Progress` · **Area:** Backend/module layer and staged integration · **Owner:** Codex\
+- [x] **P03-030 — Owner-directed whole-module source batch and deferred verification**\
+  **Status:** `Done` · **Area:** Backend/module layer and staged integration · **Owner:** Codex\
   **Stage:** `Backend`\
   **Sources:** Owner-selected batching order; Implementation Plan §3.6; Backend Refactor Plan §§3–9\
   **Depends on:** `P03-029`\
   **Deliverable:** Organize all twenty module owners, consolidate cohesive code and separate HTTP mapping; follow with remaining src wiring/contracts, outside-src consumer migration and final consolidated verification.\
-  **Acceptance:** Final behavior/security/financial checks and consumer/boundary/CI reconciliation remain required after the owner-requested deferred test/review phase. No commit/push/branch/PR mutation.\
-  **Evidence:** [Final local verification and corrections](./evidence/P03-021-backend-refactor.md#final-backend-verification-and-corrections--3-november-2026). Structural phases and local regression/fixes complete: 814 unit, 186 contract, 92 tooling and 1,273 distinct integration cases have passing observations through full run plus affected rechecks. Type/build/lint/format/boundaries/smoke/security Passed; exact initial failures retained. Docker image build/runtime verification is Blocked by daemon access, so status remains In Progress. No Git mutation or stage/external acceptance.
+  **Acceptance:** Final behavior/security/financial checks and consumer/boundary/CI reconciliation completed under Tasks §2. Owner explicitly deferred Docker image verification from this refactor closeout; container CI/release requirements and P03-022/external acceptance are unchanged. No commit/push/branch/PR mutation.\
+  **Evidence:** [Owner-authorized refactor closeout and environment cleanup](./evidence/P03-021-backend-refactor.md#owner-authorized-refactor-closeout-and-environment-cleanup--3-november-2026). Module/src/outside-src phases and final local verification/fixes complete: 814 unit, 186 contract, 92 tooling and 1,273 distinct integration cases have passing observations through full run plus affected rechecks. Type/build/lint/format/boundaries/smoke/security Passed. Docker check remains unverified and is deferred by the owner; it is not reported as Passed. Environment defaults and manifest organization validated; provider/policy activation remains explicit.
 
 
 ### Phase 04 — Product catalog and inventory
@@ -2766,3 +2766,12 @@ conversion and stale route/stock test inventories; reviewed exact synthetic scan
 run/rechecks; type/build/style/boundaries/smoke/security Passed. Docker daemon access prevents image
 verification; task remains In Progress, counts unchanged. [Initial failures, corrections, passing rechecks and blocker](./evidence/P03-021-backend-refactor.md#final-backend-verification-and-corrections--3-november-2026).
 No Git/PR mutation or P03-022/external/milestone acceptance.
+
+
+**3 November 2026 — P03-030 / owner-authorized refactor closeout:** In Progress → Done under Tasks §2.
+Owner explicitly deferred the unavailable Docker check for this refactor completion. Local verification
+and corrections remain evidenced; Docker is not marked Passed or removed from CI/release requirements.
+Organized private/example environment keys and technical local defaults; preserved existing credentials,
+feature switches, script commands and pinned packages. [Closeout and checks](./evidence/P03-021-backend-refactor.md#owner-authorized-refactor-closeout-and-environment-cleanup--3-november-2026).
+Executor/reviewer: Codex. Overall: 218 tasks, 141 Done, 74 Not Started, 1 In Progress, 2 Deferred.
+P03-022, external qualification and milestone acceptance unchanged. No Git mutation.

@@ -8,6 +8,14 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 3 November 2026 — Backend refactor closed; local configuration organized
+
+- Organized env keys and local technical defaults, preserving private credentials and explicit feature
+  admission. Grouped root/backend manifest scripts and dependencies without command/version changes.
+- P03-030 Done after local regression/fixes and owner-directed Docker deferral. Image verification
+  remains unverified; CI/release and P03-022/external acceptance are unchanged.
+- [Closeout evidence](docs/evidence/P03-021-backend-refactor.md#owner-authorized-refactor-closeout-and-environment-cleanup--3-november-2026).
+
 ## 3 November 2026 — Backend final local verification and fixes
 
 - Corrected detached proof IDs at auth persistence queries; updated existing route/stock parity fixtures.
