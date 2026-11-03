@@ -213,6 +213,9 @@ releases, commit exact versions and lockfile, and record installed versions in r
 
 Architecture §§4–6 owns application placement. Keep backend tests outside production `src/` and organize
 them by feature under `tests/unit/` and `tests/integration/`; use fixtures/helpers for shared test setup.
+Keep independently selectable quote, placement, allocation/expiry, payment initiation, refund request,
+payout and reconciliation scenarios with their owning feature. Helpers export fixtures or explicitly
+invoked lifecycle registration; importing a helper must not register test cases in its consumers.
 Frontend tests live in each owning application's `tests/` directory; cross-app browser journeys target root `tests/e2e/`.
 Root tooling regressions live in tests/tooling, reusable app contracts in tests/helpers and browser journeys in
 tests/e2e. Preserve discovery, fixture imports and CI inventory together when moving tests.

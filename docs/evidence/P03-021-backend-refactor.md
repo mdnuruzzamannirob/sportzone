@@ -1164,3 +1164,61 @@ other applications' existing lint convention. No dependency or runtime changes. 
 format:check (508 files), executable backend CI-plan validation and repository/diff checks Passed.
 Private local configuration validates with all feature flags off and a configured database URI;
 connectivity/provider qualification was not tested. Existing actual private values were not modified.
+
+### P03-031 — Backend test refactor, 4 November 2026
+
+Owner requested a careful backend-wide test review and cleanup, including justified merges, removals
+and additions. The initial working tree was clean. Reviewed all 140 TypeScript test/helper files,
+runner discovery, helper consumers, Architecture §§4/6 and Testing §§3/5.2/15.5. Unit and integration
+names shared by a domain are not redundant: they prove distinct validation/persistence boundaries.
+No byte-equivalent test callback duplicates were found in the source inventory.
+
+Changes and executor review:
+
+- Split the 1,886-line placement/funding suite into checkout quote, COD placement, allocation lifecycle,
+  reservation expiry and payment-owned hosted-init HTTP suites. Each retains explicit fixture setup.
+- Split the mixed application commerce suite into customer projections, payment receipt matching and
+  customer refund requests. The IDE-referenced refund-request-workflow.test.ts now exists under refunds.
+- Separated refund dispatch, protected payout evidence and reconciliation from payout state transitions.
+  Kept distinct reservation/advisory and existing unit/contract cases; no new financial policy or runtime
+  code, provider call, package, configuration, persistence model or collection was introduced.
+- Found three mobile-wallet scenarios registered at import time inside commerce/refunds.ts. Moved
+  their existing loop to payout-workflow.test.ts so only its owning suite registers them. Helpers now
+  contain no it/test/describe registration calls. Existing assertions in fixture setup remain intact.
+- Removed commerce/application.ts after moving matching fixtures into payments.ts and customer refund
+  HTTP fixtures into refunds.ts. Migrated every consumer, including support complaints. Removed eight
+  unused context resource setters and the unconsumed category getter; time remains adjustable for deadline/retry scenarios.
+- Reviewed helper exports against actual named-import consumers: no unconsumed named helper exports.
+  Compared TypeScript-printer-normalized callback fingerprints against HEAD across all test/helper
+  files: 1,318 before and after, zero missing, added or changed callback bodies. This is preservation
+  evidence, not a substitute for executing the suites. The scripts used for this one-time audit lived
+  in /tmp; no generated audit tooling was added to the application.
+- Existing Vitest unit/integration/contract discovery globs include every moved file. Scripts, test
+  timeouts, CI inventory and dependency versions are unchanged. Testing §5.2 now records fixture
+  registration ownership. Historical evidence/path references remain historical.
+
+Verification environment: Node v24.20.0, local Linux, MongoDB 8.0.16 isolated single-node wiredTiger
+replica sets with generated test-only database identities and synthetic provider/email boundaries.
+Sandbox EPERM prevented local HTTP/MongoDB port binds; approved outside-sandbox reruns use the same
+local commands. They do not establish real merchant, staging, Docker or backend-stage acceptance.
+
+| Command / check | Observed result |
+| --- | --- |
+| npm run typecheck --workspace backend | Passed |
+| npm run build --workspace backend | Passed |
+| npm run lint:boundaries | Passed: 419 source files, zero errors/legacy allowances |
+| npm run lint:check --workspace backend | Passed |
+| npm run format:check --workspace backend | Passed |
+| npm run test:unit --workspace backend | Initial sandbox: 756 Passed, 58 port-bind failures; 46/51 suites Passed |
+| npm run test:unit --workspace backend -- tests/unit/infrastructure/container-health.test.ts tests/unit/auth/auth-rate-limit.test.ts tests/unit/application/app.test.ts tests/unit/auth/identity-contracts.test.ts tests/unit/operations/operations.test.ts | Passed outside sandbox: all 172 cases in the five affected suites; all 814 distinct unit cases have passing observations |
+| npm run test:contract --workspace backend | Passed outside sandbox: API artifacts current, 186 cases |
+| npm run test:integration --workspace backend | Passed outside sandbox: 79 suites, 1,258 cases in 329.24s; JSON report: test-results/database.json. Initial sandbox run: 78 suites failed setup/transport, 1 Passed; 3 Failed, 5 Passed, 1,250 not executed |
+| npm run test:smoke --workspace backend | Passed outside sandbox: redacted invalid configuration, real DB startup, live/restricted-ready probes and graceful shutdown; initial sandbox child-process output was unavailable |
+| npm run lint | Passed: repository structure/Markdown/local links |
+| git diff --check | Passed |
+
+Executor reviewed relocation/import diffs, preserved callback fingerprints, helper consumers and final
+check output. No runtime source or API/Database/Operations contract changed. No application build or
+browser tests for either frontend were run because this work is backend-test-only. External provider,
+Docker and staging qualification were not run. P03-031 is Done under the owner-authorized engineering
+convention in Tasks §2; P03-022 and external/milestone gates remain unchanged.

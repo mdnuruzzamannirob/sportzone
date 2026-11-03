@@ -8,6 +8,14 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 4 November 2026 — Backend test ownership and fixture cleanup
+
+- Separated quote, COD placement, allocation, expiry, hosted initiation, receipt matching and refund
+  request/dispatch/evidence/reconciliation scenarios into independently selectable owning suites.
+- Moved wallet scenarios out of shared fixtures so imports no longer repeat those tests; consolidated
+  application fixtures into payment/refund owners and removed unused fixture-resource setters.
+- [Scope, preservation review and checks](docs/evidence/P03-021-backend-refactor.md#p03-031--backend-test-refactor-4-november-2026).
+
 ## 3 November 2026 — Explicit backend lint fix/check scripts
 
 - Backend lint/format apply safe fixes; lint:check/format:check validate without edits. CI uses

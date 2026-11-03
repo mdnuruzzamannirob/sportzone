@@ -1,11 +1,17 @@
 import { createHash } from 'node:crypto'
 import { Types } from 'mongoose'
 import request from 'supertest'
-import { expect, it, vi } from 'vitest'
+import { expect, vi } from 'vitest'
 import { z } from 'zod'
 import { createAdminAccountAccess } from '../../../src/modules/auth/account-access.service.js'
+import { orderScopeAccess } from '../../../src/modules/auth/checkout-access.service.js'
+import type { createGuestSessionService } from '../../../src/modules/auth/guest-access/guest-session.service.js'
+import { createAuthQuotaStore } from '../../../src/modules/auth/sessions/auth-throttle.persistence.js'
+import { createAuthThrottle } from '../../../src/modules/auth/sessions/auth-throttle.service.js'
 import {
+  closedRefundRequestAccess,
   refundOrderSnapshotAccess,
+  refundRequestOrderAccess,
   refundUnitReservationAccess,
 } from '../../../src/modules/orders/order.service.js'
 import {
@@ -22,7 +28,10 @@ import type {
   RefundOutcomeVerifier,
 } from '../../../src/modules/refunds/payouts/refund-outcome.schema.js'
 import { refundModel } from '../../../src/modules/refunds/refund.model.js'
-import { refundClaimSnapshotAccess } from '../../../src/modules/returns/return.service.js'
+import {
+  refundClaimSelectionAccess,
+  refundClaimSnapshotAccess,
+} from '../../../src/modules/returns/return.service.js'
 import type { createSslcommerzAdapter } from '../../../src/providers/sslcommerz/sslcommerz.client.js'
 import { createApiRouter } from '../../../src/routes.js'
 import {
@@ -31,7 +40,7 @@ import {
   composeRefundRecovery,
 } from '../../../src/setup.js'
 import { createContractCheckedApp as createApp } from '../contracts.js'
-import { context, customer } from './base.js'
+import { authSecret, type Browser, context, customer, origin } from './base.js'
 import { processingFixture } from './payments.js'
 import { physicalReturnFixture } from './returns.js'
 import { localReviewAuth } from './reviews.js'
@@ -423,34 +432,55 @@ async function packageDFixture(
   }
 }
 
-for (const method of ['manual_bkash', 'manual_nagad', 'manual_rocket'] as const) {
-  it(`Package D: mobile wallet ${method} requires and records exact method-bound verified transfer`, async () => {
-    const f = await packageDFixture(false, 60000, method)
-    await f.payout().expect(200)
-    await f.setProof('paid')
-    await f
-      .post(
-        'manual-confirmations',
-        {
-          transferReference: 'synthetic-transfer',
-          evidenceRef: 'synthetic-proof',
-          reason: 'Method-bound wallet verification',
-        },
-        'wallet-confirm',
-      )
-      .expect(200)
-    const refund = await refundModel(context.db.connection).findById(f.refundId).orFail()
-    expect(refund.method).toBe(method)
-    expect(refund.status).toBe('completed')
-    expect(
-      (await refundAttemptModel(context.db.connection).findOne({ refundId: f.refundId }).orFail())
-        .manualEvidence?.destinationMasked,
-    ).toContain('****')
-  })
+function customerRefundRoot(
+  f: Pick<Awaited<ReturnType<typeof reservationFixture>>, 'id' | 'claimId'>,
+  guests?: ReturnType<typeof createGuestSessionService>,
+  policy: Parameters<typeof composeRefundOperationsRoutes>[2]['options'] = codRefundPolicy(f),
+) {
+  const auth = localReviewAuth()
+  const scope = orderScopeAccess(auth.customerAccounts, context.sessions, guests)
+  const router = composeRefundOperationsRoutes(
+    context.db.connection,
+    auth,
+    { options: policy },
+    () => new Date(Date.now() + 1000),
+    {
+      access: {
+        scope,
+        ownedOrder: refundRequestOrderAccess(context.db.connection),
+        claimSelection: refundClaimSelectionAccess(context.db.connection),
+        qualifiedClosed: closedRefundRequestAccess(context.db.connection),
+      },
+      origin,
+      throttle: createAuthThrottle(
+        createAuthQuotaStore(context.db.connection),
+        authSecret,
+      ).middleware('customer', 'checkout'),
+    },
+  )
+  return createApp({ apiRouter: router })
+}
+
+function customerRefundPost(
+  root: ReturnType<typeof createApp>,
+  who: Browser,
+  orderId: string,
+  input: object,
+  key = 'customer-request',
+) {
+  return request(root)
+    .post(`/api/v1/orders/${orderId}/refund-requests`)
+    .set('Origin', origin)
+    .set('Cookie', who.cookie)
+    .set('X-CSRF-Token', who.csrf)
+    .set('Idempotency-Key', key)
+    .send(input)
 }
 
 export {
   codRefundPolicy,
+  customerRefundPost,
+  customerRefundRoot,
   manualEvidenceFixture,
   packageCPost,
   packageCRoot,

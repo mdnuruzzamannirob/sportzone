@@ -9,6 +9,10 @@ import { createNotificationDeliveryService } from '../../../src/modules/notifica
 import { createPaymentMessageService } from '../../../src/modules/notifications/notification-template.js'
 import { verifiedFundingOrderAccess } from '../../../src/modules/orders/order.service.js'
 import { createVerifiedAllocationService } from '../../../src/modules/orders/order-allocation.service.js'
+import {
+  createPaymentMatchingService,
+  type PaymentMatchingAuthority,
+} from '../../../src/modules/payments/collections/payment-matching.service.js'
 import { createPaymentMonitorService } from '../../../src/modules/payments/collections/payment-monitor.service.js'
 import { paymentNotificationAccess } from '../../../src/modules/payments/collections/payment-notification.service.js'
 import { createPaymentProcessingService } from '../../../src/modules/payments/collections/payment-processing.service.js'
@@ -18,6 +22,7 @@ import { createPaymentRiskService } from '../../../src/modules/payments/collecti
 import { createPaymentSettlementService } from '../../../src/modules/payments/collections/payment-settlement.service.js'
 import { createPaymentVerificationService } from '../../../src/modules/payments/collections/payment-verification.service.js'
 import {
+  createPaymentMatchingRoutes,
   createPaymentMonitorRoutes,
   createPaymentRiskRoutes,
 } from '../../../src/modules/payments/payment.routes.js'
@@ -25,6 +30,7 @@ import { createSslcommerzAdapter } from '../../../src/providers/sslcommerz/sslco
 import {
   composeAllocationDependencies,
   composeAuditAccess,
+  composePaymentMatchingDependencies,
   composePaymentMonitorDependencies,
   composePaymentOutcomeDependencies,
   composePaymentReconciliationDependencies,
@@ -258,8 +264,66 @@ async function monitorFixture() {
   return { ...f, admin, service, monitorApp, paymentId, path, get, reconcile }
 }
 
+async function matchingFixture() {
+  const f = await monitorFixture()
+  f.change({ amount: '1.00', currency_amount: '1.00' })
+  await f.processor().process(f.claim)
+  const receipt = await paymentRecordModels(context.db.connection).intake.findOne().orFail()
+  const link = {
+    orderId: f.result.id,
+    attemptId: f.attempt._id.toHexString(),
+    reason: 'Synthetic independently reviewed settled source',
+    matchingEvidenceRef: 'synthetic:matching-case',
+  }
+  return { ...f, receipt, link }
+}
+
+function matchingRoot(verify?: PaymentMatchingAuthority) {
+  return createApp({
+    apiRouter: createPaymentMatchingRoutes(
+      createPaymentMatchingService(
+        context.db.connection,
+        createAdminAccountAccess(context.db.connection, context.identities, context.sessions),
+        verifiedFundingOrderAccess(context.db.connection),
+        createVerifiedAllocationService(
+          composeAuditAccess(context.db.connection),
+          composeAllocationDependencies(context.db.connection),
+          () => context.now,
+        ),
+        composeAuditAccess(context.db.connection),
+        composePaymentMatchingDependencies(context.db.connection),
+        verify,
+        () => context.now,
+      ),
+      context.security,
+      sessionHttpFor(context.sessions),
+    ),
+  })
+}
+
+function matchPost(
+  root: ReturnType<typeof createApp>,
+  who: Awaited<ReturnType<typeof customer>>,
+  path: string,
+  body: object,
+  key: string,
+  revision?: string,
+) {
+  const req = request(root)
+    .post(`/api/v1${path}`)
+    .set('Cookie', who.cookie)
+    .set('Origin', 'http://localhost:5173')
+    .set('X-CSRF-Token', who.csrf)
+    .set('Idempotency-Key', key)
+  if (revision !== undefined) req.set('If-Match', revision)
+  return req.send(body)
+}
+
 export {
   lateRiskFixture,
+  matchPost,
+  matchingFixture,
+  matchingRoot,
   monitorFixture,
   paymentDelivery,
   processingFixture,

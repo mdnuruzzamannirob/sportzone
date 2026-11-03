@@ -531,7 +531,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
 
 ### Phase 03 — Authentication and core backend
 
-**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 03. **Associated gate:** M1. **Tasks:** 30.
+**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 03. **Associated gate:** M1. **Tasks:** 31.
 
 - [x] **P03-001 — Bootstrap modular Express API and shared middleware**\
   **Status:** `Done` · **Area:** Backend/core · **Owner:** Codex\
@@ -782,6 +782,15 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Acceptance:** Final behavior/security/financial checks and consumer/boundary/CI reconciliation completed under Tasks §2. Owner explicitly deferred Docker image verification from this refactor closeout; container CI/release requirements and P03-022/external acceptance are unchanged. No commit/push/branch/PR mutation.\
   **Evidence:** [Owner-authorized refactor closeout and environment cleanup](./evidence/P03-021-backend-refactor.md#owner-authorized-refactor-closeout-and-environment-cleanup--3-november-2026). Module/src/outside-src phases and final local verification/fixes complete: 814 unit, 186 contract, 92 tooling and 1,273 distinct integration cases have passing observations through full run plus affected rechecks. Type/build/lint/format/boundaries/smoke/security Passed. Docker check remains unverified and is deferred by the owner; it is not reported as Passed. Environment defaults and manifest organization validated; provider/policy activation remains explicit.
 
+
+- [x] **P03-031 — Refactor backend workflow tests and fixture ownership**\
+  **Status:** `Done` · **Area:** Backend/tests · **Owner:** Codex\
+  **Stage:** `Backend`\
+  **Sources:** Owner request, 4 November 2026; Architecture §§4/6; Testing §§5.2/15.5\
+  **Depends on:** `P03-030`\
+  **Deliverable:** Review backend test inventory, separate mixed workflow responsibilities, remove import-time duplicate scenarios and retire redundant fixture assembly without losing distinct assertions.\
+  **Acceptance:** Preserve behavioral cases, discover every relocated suite, verify owning unit/contract/real replica-set integration checks and review the final diff. Backend stage/provider gates remain separate.\
+  **Evidence:** [Test refactor, preservation review and verification](./evidence/P03-021-backend-refactor.md#p03-031--backend-test-refactor-4-november-2026). Completed 4 November 2026 under Tasks §2 after executor diff review: all 1,318 callback bodies preserved, 814 distinct unit, 186 contract and 1,258 replica-set integration cases have passing observations; type/build/lint/format/boundaries/smoke Passed. Removed import-time wallet duplication and redundant fixture assembly. No backend-stage/external acceptance.
 
 ### Phase 04 — Product catalog and inventory
 
@@ -2774,4 +2783,15 @@ and corrections remain evidenced; Docker is not marked Passed or removed from CI
 Organized private/example environment keys and technical local defaults; preserved existing credentials,
 feature switches, script commands and pinned packages. [Closeout and checks](./evidence/P03-021-backend-refactor.md#owner-authorized-refactor-closeout-and-environment-cleanup--3-november-2026).
 Executor/reviewer: Codex. Overall: 218 tasks, 141 Done, 74 Not Started, 1 In Progress, 2 Deferred.
+P03-022, external qualification and milestone acceptance unchanged. No Git mutation.
+
+
+**4 November 2026 — P03-031 / backend test refactor:** In Progress → Done under Tasks §2.
+Owner requested backend-wide test cleanup; split mixed commerce suites by responsibility, moved wallet
+scenarios out of fixture imports, consolidated helper ownership and removed unused fixture mutation
+accessors. Preserved all 1,318 source callback bodies; 814 distinct unit, 186 contract and 1,258 real
+replica-set integration cases have passing observations. Type/build/style/boundaries/smoke and repository
+checks Passed after sandbox port/child-process restrictions were resolved by outside-sandbox reruns.
+[Review and commands](./evidence/P03-021-backend-refactor.md#p03-031--backend-test-refactor-4-november-2026).
+Executor/reviewer: Codex. Overall: 219 tasks, 142 Done, 74 Not Started, 1 In Progress, 2 Deferred.
 P03-022, external qualification and milestone acceptance unchanged. No Git mutation.
