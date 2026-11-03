@@ -136,12 +136,13 @@ describe('real replica-set persistence foundation', () => {
     expect(await records().countDocuments({ key: { $in: ['abort-a', 'abort-b'] } })).toBe(0)
   })
   it('rolls back a companion write when a unique-key insert fails', async () => {
+    await records().create({ key: 'rollback-duplicate', amount: 1, currency: 'BDT' })
     await expect(
       inTransaction(fixture.connection, async (session) => {
         await records().create([{ key: 'before-duplicate', amount: 1, currency: 'BDT' }], {
           session,
         })
-        await records().create([{ key: 'duplicate', amount: 2, currency: 'BDT' }], {
+        await records().create([{ key: 'rollback-duplicate', amount: 2, currency: 'BDT' }], {
           session,
         })
       }),

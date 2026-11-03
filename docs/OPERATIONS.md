@@ -823,7 +823,7 @@ Startup verifies MongoDB replica/session capability before opening HTTP. Runtime
 
 Every application response retains a fresh server UUID, no-store and nosniff; private errors remain generic. Ordinary JSON parsing is strict, uncompressed and limited to 102400 bytes by default. Unsupported media/parser/limit input maps to API 400 INVALID_REQUEST. Provider/media parsers must be added under their owning contracts. Customer/admin sessions, browser CORS/CSRF, external-provider capability gates and deployed telemetry/alerts remain their owning tasks.
 
-Successful foundation CI is evidence for its configured checks only, not application deployment or operational readiness. Browser-scope verification requires `npx playwright install --with-deps chromium firefox webkit` after locked installation; backend-private checks do not require browser setup. Testing §15.1 distinguishes target hosted scope selection from the current full-run workflow. The tests/e2e audit is mandatory through the root browser scope in the CI inventory and starts only loopback test servers on 3100/5273/5180 after both builds. `test-results/ui-report.json` and `test-results/ui/` are CI artifacts; the fixture is not a deployment asset. Missing engines/libraries fail the audit rather than silently skip it. Local engine-wrapper overrides are test-machine configuration only; see [P02-011 environment evidence](./evidence/P02-011-accessibility.md).
+Successful foundation CI is evidence for its configured checks only, not application deployment or operational readiness. Browser-scope verification requires `npx playwright install --with-deps chromium firefox webkit` after locked installation; backend-private checks do not require browser setup. Testing §15.1 defines affected hosted selection and the current backend-stage restriction. The tests/e2e audit is mandatory through the root browser scope in the CI inventory and starts only loopback test servers on 3100/5273/5180 after both builds. `test-results/ui-report.json` and `test-results/ui/` are CI artifacts; the fixture is not a deployment asset. Missing engines/libraries fail the audit rather than silently skip it. Local engine-wrapper overrides are test-machine configuration only; see [P02-011 environment evidence](./evidence/P02-011-accessibility.md).
 
 `npm run build --workspace=backend` clears only generated `backend/dist/` before compilation, so old
 module paths cannot survive a source move. The local watch coordinator also clears it before initial compilation.
@@ -934,18 +934,21 @@ or affected feature; use OP-REL-02 and OP-FIN-* instead of ad hoc manual ledger 
 
 GitHub Actions runs one job named `CI required result`, using one locked install and pinned actions.
 PRs validate feature branches; main/tag pushes and manual dispatch retain the required job. During the
-owner-selected backend stage it runs repository metadata validation plus the supply-chain/backend
-inventory. Frontend/browser environment and execution steps are commented until those stages resume;
-they are not reported as successful checks. Testing §15.1 owns this temporary scope and restoration.
+owner-selected backend stage, the affected selector uses `CI_BACKEND_ONLY=true` to select only repository,
+supply-chain and backend scopes. The job executes that selection through `CI_SCOPE`, so prose-only PRs
+avoid backend regression. Full/unknown revisions still verify the complete active backend stage. UI
+builds and browser execution remain paused; Testing §15.1 owns stage restoration before release checks.
 
 `ci-workspaces.json` retains every application/browser check for local or integrated verification.
-Security runs before backend regression. Backend includes tooling, boundaries, formatting, types,
-contracts, unit/integration, build and smoke checks. Its workspace format and format:check scripts
-include backend-owned JSON configuration without reformatting generated API artifacts. The affected
-selector still controls the required Docker image check; the manual image workflow reuses it.
+Security runs before backend regression and the conditional image gate. Backend scope includes metadata,
+tooling, boundaries, types, contracts, unit/integration, build and smoke checks. Its root format:backend
+check includes backend JSON and replaces a duplicate workspace formatter invocation; standalone workspace
+format/format:check remain available. Full repository formatting includes the same backend JSON scope.
+The affected selector controls the required Docker image check; the manual image workflow reuses it.
 
-Restore frontend/browser workflow steps before integrated staging/release verification; full local
-`npm run ci` remains available and all application/provider/milestone acceptance remains separate.
+Restore frontend API-origin values/browser installation and remove the backend-stage restriction before
+integrated staging/release verification. Full local `npm run ci` remains available, and application,
+provider and milestone acceptance remains separate.
 Follow Testing §15.5 for routine change-based verification. No deployment/provider activation is added.
 A failed command fails the required job; interrupted/cancelled jobs cannot satisfy it. Do not use
 `--if-present`, `continue-on-error` or passing placeholders to conceal missing verification.

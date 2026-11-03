@@ -43,7 +43,7 @@ afterAll(async () => {
     await fixture?.close()
   }
 })
-it('serves liveness and restricted readiness against the real MongoDB connection', async () => {
+it('starts a real backend, refuses failed startup and closes database/HTTP handles safely', async () => {
   expect((await request(runtime.server).get('/api/v1/health/live')).body.data).toEqual({
     status: 'live',
   })
@@ -56,8 +56,6 @@ it('serves liveness and restricted readiness against the real MongoDB connection
   expect(lines.join('')).not.toContain(config.MONGODB_URI)
   expect(lines.join('')).not.toContain(config.HEALTH_MONITOR_TOKEN)
   expect(lines.map((line) => JSON.parse(line).eventType)).toContain('ready')
-})
-it('cleans its new database connection when the listener port is occupied', async () => {
   await expect(
     startServer(
       config,
@@ -72,8 +70,6 @@ it('cleans its new database connection when the listener port is occupied', asyn
         .set('Authorization', `Bearer ${config.HEALTH_MONITOR_TOKEN}`)
     ).status,
   ).toBe(200)
-})
-it('rejects a failed database connection before binding a listener', async () => {
   const invalid = loadEnvironment({
     ...testEnvironment(),
     PORT: '4999',
@@ -85,8 +81,6 @@ it('rejects a failed database connection before binding a listener', async () =>
       createLogger(invalid, (line) => lines.push(line)),
     ),
   ).rejects.toMatchObject({ code: 'CONNECTION_FAILED' })
-})
-it('keeps liveness while reporting unavailable after the real DB connection closes', async () => {
   await runtime.connection.close()
   expect((await request(runtime.server).get('/api/v1/health/live')).status).toBe(200)
   expect(
@@ -97,8 +91,6 @@ it('keeps liveness while reporting unavailable after the real DB connection clos
     ).status,
   ).toBe(503)
   expect(lines.map((line) => JSON.parse(line).eventType)).toContain('database_disconnected')
-})
-it('closes idempotently and releases HTTP/database handles', async () => {
   await Promise.all([runtime.close(), runtime.close()])
   expect(runtime.server.listening).toBe(false)
   expect(runtime.connection.readyState).toBe(0)

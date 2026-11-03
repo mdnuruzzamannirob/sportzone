@@ -10,16 +10,26 @@ let backend: ChildProcess
 let sequence = 0
 const waiters = new Map<
   number,
-  { resolve: (value: unknown) => void; reject: (error: Error) => void }
+  {
+    resolve: (value: unknown) => void
+    reject: (error: Error) => void
+    timer: ReturnType<typeof setTimeout>
+  }
 >()
 async function control(type: string, extra: Record<string, string> = {}) {
+  if (!backend?.connected) throw new Error('Identity fixture unavailable')
   const id = ++sequence
   return new Promise<unknown>((resolve, reject) => {
-    waiters.set(id, { resolve, reject })
-    backend.send({ type, id, ...extra })
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       if (waiters.delete(id)) reject(new Error('Fixture control timed out'))
-    }, 15000).unref()
+    }, 15000)
+    timer.unref()
+    waiters.set(id, { resolve, reject, timer })
+    backend.send({ type, id, ...extra }, (error) => {
+      if (!error || !waiters.delete(id)) return
+      clearTimeout(timer)
+      reject(new Error('Fixture control unavailable'))
+    })
   })
 }
 test.beforeAll(async () => {
@@ -45,25 +55,38 @@ test.beforeAll(async () => {
       if ('id' in raw && typeof raw.id === 'number') {
         const pending = waiters.get(raw.id)
         waiters.delete(raw.id)
+        if (pending) clearTimeout(pending.timer)
         if ('error' in raw) pending?.reject(new Error('Fixture operation failed'))
         else pending?.resolve('result' in raw ? raw.result : undefined)
       }
     })
+    backend.once('error', () => {
+      clearTimeout(timeout)
+      reject(new Error('Identity fixture failed to start'))
+    })
     backend.once('exit', () => {
       clearTimeout(timeout)
+      for (const pending of waiters.values()) {
+        clearTimeout(pending.timer)
+        pending.reject(new Error('Identity fixture exited'))
+      }
+      waiters.clear()
       reject(new Error('Identity fixture exited'))
     })
   })
 })
 test.afterAll(async () => {
-  if (!backend?.connected) return
+  if (!backend || backend.exitCode !== null || backend.signalCode !== null) return
   await new Promise<void>((resolve) => {
-    const timer = setTimeout(() => backend.kill('SIGTERM'), 10000)
+    const terminate = setTimeout(() => backend.kill('SIGTERM'), 10000)
+    const kill = setTimeout(() => backend.kill('SIGKILL'), 15000)
     backend.once('exit', () => {
-      clearTimeout(timer)
+      clearTimeout(terminate)
+      clearTimeout(kill)
       resolve()
     })
-    backend.send({ type: 'close' })
+    if (backend.connected) backend.send({ type: 'close' }, () => {})
+    else backend.kill('SIGTERM')
   })
 })
 test.beforeEach(async () => {

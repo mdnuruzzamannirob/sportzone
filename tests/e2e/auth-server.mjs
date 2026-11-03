@@ -8,7 +8,6 @@ import { createServer as httpsServer } from 'node:https'
 import { request as upstreamRequest } from 'node:http'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { MongoMemoryReplSet } from 'mongodb-memory-server-core'
-import { Types } from 'mongoose'
 import { openDatabase } from '../../backend/dist/config/database.js'
 import { loadEnvironment } from '../../backend/dist/config/env.js'
 import {
@@ -18,7 +17,7 @@ import {
 } from '../../backend/dist/config/security.js'
 import { createIdentityModels } from '../../backend/dist/modules/auth/auth.model.js'
 import { initializeIdentityPersistence } from '../../backend/dist/modules/auth/identity.persistence.js'
-import { createRegistrationNotifications } from '../../backend/dist/modules/notifications/notification.service.js'
+import { createNotificationService } from '../../backend/dist/modules/notifications/notification.service.js'
 import { composeIdentityRoutes } from '../../backend/dist/setup.js'
 import { provisionInitialAdmin } from '../../backend/dist/modules/auth/credentials/admin-provision.service.js'
 import { hashPassword } from '../../backend/dist/modules/auth/credentials/password.service.js'
@@ -28,17 +27,31 @@ import {
   createEmailChangeDelivery,
 } from '../../backend/dist/modules/auth/verification/proof-delivery.service.js'
 import { createApp } from '../../backend/dist/app.js'
+import { deliveryModels } from '../../backend/dist/modules/delivery/delivery.model.js'
+import { initializeDeliveryPersistence } from '../../backend/dist/modules/delivery/delivery.persistence.js'
 
-let replica, connection, directory, models, environment
+let replica, connection, directory, models, environment, closing
 const servers = []
-async function stop() {
-  for (const server of servers) {
-    server.closeAllConnections()
-    await new Promise((resolve) => server.close(resolve))
-  }
-  await connection?.close()
-  await replica?.stop()
-  if (directory) await rm(directory, { recursive: true, force: true })
+function stop() {
+  closing ??= (async () => {
+    try {
+      for (const server of servers) {
+        server.closeAllConnections()
+        await new Promise((resolve) => server.close(resolve))
+      }
+    } finally {
+      try {
+        await connection?.close()
+      } finally {
+        try {
+          await replica?.stop()
+        } finally {
+          if (directory) await rm(directory, { recursive: true, force: true })
+        }
+      }
+    }
+  })()
+  return closing
 }
 try {
   directory = await mkdtemp(join(tmpdir(), 'sportzone-auth-'))
@@ -107,7 +120,7 @@ try {
   const config = loadEnvironment(environment)
   models = createIdentityModels(connection)
   await initializeIdentityPersistence(connection, models)
-  await createRegistrationNotifications(connection).initialize()
+  await createNotificationService(connection).initialize()
   await provisionInitialAdmin(connection, models, {
     name: 'Synthetic administrator',
     email: 'admin@example.test',
@@ -120,12 +133,11 @@ try {
     role: 'customer',
     emailVerifiedAt: new Date(),
   }).save()
-  const zoneId = new Types.ObjectId()
-  await connection.db
-    .collection('deliveryZones')
-    .insertOne({ _id: zoneId, name: 'Synthetic zone', status: 'active' })
-  await connection.db.collection('deliveryCharges').insertOne({
-    zoneId,
+  await initializeDeliveryPersistence(connection)
+  const delivery = deliveryModels(connection)
+  const zone = await delivery.zones.create({ name: 'Synthetic zone', status: 'active' })
+  await delivery.charges.create({
+    zoneId: zone._id,
     coverageKey: 'dhaka:dhanmondi',
     status: 'active',
     effectiveFrom: new Date(Date.now() - 1000),
@@ -213,9 +225,9 @@ try {
               ? createAdminResetDelivery(models, options)
               : createResetDelivery(models, options)
         const mail = await delivery.message({
-          id: challenge.deliveryNotificationId,
-          userId: user._id,
-          challengeId: challenge._id,
+          id: challenge.deliveryNotificationId.toHexString(),
+          userId: user._id.toHexString(),
+          challengeId: challenge._id.toHexString(),
           recipient:
             message.kind === 'email' ? challenge.targetEmailNormalized : user.emailNormalized,
         })

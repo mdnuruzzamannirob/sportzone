@@ -57,7 +57,7 @@ function fixture(t) {
     put(`${name}/package.json`, { name, private: true })
     config[name] = {
       ...(name === 'backend'
-        ? { rootChecks: ['test:unit', 'lint:boundaries', 'format:backend'] }
+        ? { rootChecks: ['lint', 'test:unit', 'lint:boundaries', 'format:backend'] }
         : {}),
       state: 'manifest-only',
       ownerTask: 'P02-001',
@@ -363,9 +363,17 @@ test('CI-21: hosted checks use one install and one inventory invocation with pin
   assert.ok(content.includes('name: CI required result'))
   assert.ok(content.includes('fetch-depth: 0'))
   assert.equal(content.includes('playwright install'), false)
-  assert.ok(raw.includes('# Restore these frontend/browser steps'))
-  assert.ok(content.includes('run: npm run ci -- --scope=supply-chain,backend'))
-  assert.equal(content.includes('CI_SCOPE:'), false)
+  assert.ok(content.includes("CI_BACKEND_ONLY: 'true'"))
+  assert.ok(content.includes('CI_SCOPE: ${{ steps.affected.outputs.scope }}'))
+  assert.ok(content.includes('run: npm run ci -- --scope="$CI_SCOPE"'))
+  assert.ok(!content.includes('run: npm run lint'))
+  const checks = ciPlan(process.cwd(), ['backend']).flatMap((scope) => scope.checks)
+  assert.equal(checks.filter((args) => args.join(' ') === 'run lint').length, 1)
+  assert.equal(checks.filter((args) => args.join(' ') === 'run format:backend').length, 1)
+  assert.ok(!checks.some((args) => args.join(' ') === 'run format:check --workspace=backend'))
+  const scripts = JSON.parse(readFileSync('package.json', 'utf8')).scripts
+  for (const name of ['format:check', 'format:backend'])
+    assert.ok(scripts[name].includes('backend/*.json'))
   assert.ok(content.includes('if: ${{ always() }}'))
   for (const match of content.matchAll(/uses: (\S+)/g)) assert.match(match[1], /@[a-f0-9]{40}$/)
   for (const unsafe of [
@@ -521,11 +529,17 @@ test('documentation-only checks exclude application builds and browsers; API con
   assert.ok(backend.some((args) => args.join(' ') === 'run lint:boundaries'))
 })
 
-test('backend-only inventory cannot drop its mandatory import-boundary check', (t) => {
+test('backend-only inventory requires unique metadata, tooling, boundary and formatting checks', (t) => {
   const { root, config, put } = activeFixture(t)
-  config.backend.rootChecks = ['test:unit', 'format:backend']
-  put('ci-workspaces.json', config)
-  assert.throws(() => ciPlan(root, ['backend']), /Missing backend root checks/)
+  const required = ['lint', 'test:unit', 'lint:boundaries', 'format:backend']
+  for (const checks of [
+    ...required.map((name) => required.filter((check) => check !== name)),
+    [...required, 'test:unit'],
+  ]) {
+    config.backend.rootChecks = checks
+    put('ci-workspaces.json', config)
+    assert.throws(() => ciPlan(root, ['backend']), /Missing backend root checks/)
+  }
 })
 
 function gitFixtureCommit(root, message) {
@@ -631,27 +645,31 @@ test('feature PRs avoid duplicate push runs while main/tags retain full verifica
   const base = gitFixtureCommit(root, 'baseline')
   put('README.md', '# Documentation\n')
   const head = gitFixtureCommit(root, 'documentation change')
-  for (const force of ['false', 'true']) {
-    const output = join(root, `output-${force}`)
-    const child = spawnSync(process.execPath, [resolve('scripts/ci/affected.mjs')], {
-      cwd: root,
-      encoding: 'utf8',
-      env: {
-        CI_EVENT: 'push',
-        CI_BASE_SHA: base,
-        CI_HEAD_SHA: head,
-        CI_FORCE_ALL: force,
-        GITHUB_OUTPUT: output,
-      },
-    })
-    assert.equal(child.status, 0, child.stderr)
-    assert.equal(
-      readFileSync(output, 'utf8'),
-      force === 'true'
-        ? 'scope=all\nbrowser=true\ncontainer=true\n'
-        : 'scope=repository,supply-chain\nbrowser=false\ncontainer=false\n',
-    )
-  }
+  for (const force of ['false', 'true'])
+    for (const backendOnly of ['false', 'true']) {
+      const output = join(root, `output-${force}-${backendOnly}`)
+      const child = spawnSync(process.execPath, [resolve('scripts/ci/affected.mjs')], {
+        cwd: root,
+        encoding: 'utf8',
+        env: {
+          CI_EVENT: 'push',
+          CI_BASE_SHA: base,
+          CI_HEAD_SHA: head,
+          CI_FORCE_ALL: force,
+          CI_BACKEND_ONLY: backendOnly,
+          GITHUB_OUTPUT: output,
+        },
+      })
+      assert.equal(child.status, 0, child.stderr)
+      assert.equal(
+        readFileSync(output, 'utf8'),
+        force === 'true'
+          ? backendOnly === 'true'
+            ? 'scope=repository,supply-chain,backend\nbrowser=false\ncontainer=true\n'
+            : 'scope=all\nbrowser=true\ncontainer=true\n'
+          : 'scope=repository,supply-chain\nbrowser=false\ncontainer=false\n',
+      )
+    }
 })
 
 test('supply-chain failures are checked before expensive application and browser suites', (t) => {

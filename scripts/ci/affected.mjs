@@ -94,6 +94,18 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
       console.log('::warning::Changed-path lookup unavailable; running the full CI inventory.')
     }
   }
+  // Hosted frontend/browser execution remains paused for the backend application stage.
+  // Prose-only PRs still use repository/security checks without backend runtime tests.
+  if (process.env.CI_BACKEND_ONLY === 'true') {
+    const selected =
+      result.scope === 'all' ? ['repository', 'supply-chain', 'backend'] : result.scope.split(',')
+    result = {
+      scope: selected
+        .filter((name) => ['repository', 'supply-chain', 'backend'].includes(name))
+        .join(','),
+      browser: false,
+    }
+  }
   if (!process.env.GITHUB_OUTPUT) throw new Error('GITHUB_OUTPUT is required')
   appendFileSync(
     process.env.GITHUB_OUTPUT,

@@ -8,6 +8,10 @@ import { BrowserRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppRoutes } from '../src/app/router'
 
+function FailedRoute(): never {
+  throw new Error('synthetic private diagnostics')
+}
+
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
 let container: HTMLDivElement
 let root: Root
@@ -110,9 +114,6 @@ describe('admin route recovery', () => {
 
   it('AD-06: rendering failure closes access and shows safe reload recovery', async () => {
     const log = vi.spyOn(console, 'error').mockImplementation(() => {})
-    function FailedRoute(): never {
-      throw new Error('synthetic private diagnostics')
-    }
     try {
       await act(() =>
         root.render(

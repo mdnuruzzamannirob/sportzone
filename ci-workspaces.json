@@ -18,11 +18,10 @@
     "backend": {
       "state": "active",
       "ownerTask": "P03-021",
-      "rootChecks": ["test:unit", "lint:boundaries", "format:backend"],
+      "rootChecks": ["lint", "test:unit", "lint:boundaries", "format:backend"],
       "checks": [
         "lint:check",
         "typecheck",
-        "format:check",
         "test:contract",
         "test:unit",
         "build",
