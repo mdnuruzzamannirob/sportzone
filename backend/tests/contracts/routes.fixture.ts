@@ -281,8 +281,7 @@ export function registeredRouter() {
         transition: unused,
         runDue: unused,
       },
-      security,
-      sessions,
+      { cors: guard, requireBrowser: guard, requireSession: guard, readToken: () => undefined },
     ),
     settingsAdminRoutes(
       { get: unused, patch: unused, contact: unused },

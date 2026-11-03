@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
 import { Types, type ClientSession, type Connection } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
@@ -6,7 +6,8 @@ import { inTransaction } from '../../shared/database/transaction.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { pageMeta } from '../../shared/pagination.js'
 import { parseRevision } from '../../shared/preconditions.js'
-import type { AdminAccountAccess } from '../auth/admin-account.service.js'
+import type { AdminAccountAccess } from '../auth/auth.public.js'
+import { jsonDigest as digest } from '../../shared/crypto.js'
 import { deliveryModels } from './delivery.model.js'
 import { verifyDeliveryPersistence } from './delivery.persistence.js'
 import {
@@ -26,14 +27,13 @@ import {
   deliveryOperationKey,
 } from './delivery.schema.js'
 
-const digest = (v: unknown) => createHash('sha256').update(JSON.stringify(v)).digest('hex')
 function revisionOf(match?: string) {
   const revision = parseRevision(match)
   if (revision === undefined) throw new ApiError('PRECONDITION_REQUIRED')
   if (!Number.isSafeInteger(revision)) throw new ApiError('PRECONDITION_FAILED')
   return revision
 }
-export function deliveryService(
+function deliveryService(
   connection: Connection,
   access: AdminAccountAccess,
   guard: (session: ClientSession) => Promise<void>,
@@ -454,3 +454,8 @@ export function deliveryService(
     },
   }
 }
+
+type DeliveryService = ReturnType<typeof deliveryService>
+
+export { deliveryService }
+export type { DeliveryService }

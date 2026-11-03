@@ -80,9 +80,9 @@ chargeSchema.index(
 chargeSchema.index({ status: 1, effectiveFrom: 1 }, { name: 'delivery_due_start' })
 chargeSchema.index({ status: 1, effectiveTo: 1 }, { name: 'delivery_due_end' })
 chargeSchema.index({ createdAt: -1, _id: -1 }, { name: 'delivery_charge_list' })
-export type DeliveryZone = InferSchemaType<typeof zoneSchema>
-export type DeliveryCharge = InferSchemaType<typeof chargeSchema>
-export function deliveryModels(connection: Connection) {
+type DeliveryZone = InferSchemaType<typeof zoneSchema>
+type DeliveryCharge = InferSchemaType<typeof chargeSchema>
+function deliveryModels(connection: Connection) {
   return {
     zones: connection.models.DeliveryZone
       ? connection.model<DeliveryZone>('DeliveryZone')
@@ -92,3 +92,6 @@ export function deliveryModels(connection: Connection) {
       : connection.model<DeliveryCharge>('DeliveryCharge', chargeSchema, 'deliveryCharges'),
   }
 }
+
+export { deliveryModels }
+export type { DeliveryZone, DeliveryCharge }

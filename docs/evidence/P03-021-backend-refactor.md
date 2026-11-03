@@ -470,3 +470,115 @@ side effects. Final backend format, repository documentation/link lint and white
 recorded with this handoff. Full backend regression, frontend/browser suites, live providers,
 deployment and external qualification were Not Run for this scoped package. P03-026 completes WP02
 under Tasks §2; next is WP03 delivery pilot. P03-022 and stage/milestone acceptance remain unchanged.
+
+## P03-027 — WP03 delivery pilot, 3 November 2026
+
+Scope: Backend Refactor Plan WP03; PRD FR-16/28, Architecture §§4/6, API §§4.7/14.3,
+Database §7.6 and Testing §15.5. Executor/reviewer: Codex. Input tree was clean;
+HEAD reported `203647bf292b8bdba3d9dfbe9052dff5391e3b60`. No staging, commit, reset,
+Git-object repair or feature activation was performed.
+
+### Final structure and ownership
+
+```text
+modules/delivery/
+├── delivery.routes.ts             # Endpoint/CORS/middleware registration
+├── delivery.controller.ts         # HTTP validation, service calls, ETags/responses
+├── delivery.schema.ts             # Existing input/output validators
+├── delivery.service.ts            # Administrative charge/zone transitions and due work
+├── delivery-coverage.service.ts    # Address eligibility, checkout charge and area reads
+├── delivery.public.ts             # Type-only detached coverage/charge capabilities
+├── delivery.model.ts              # Same canonical models, schemas and indexes
+└── delivery.persistence.ts        # Same index initialization/verification
+```
+
+- Extracted existing handlers into one real controller. Routes inject narrow middleware/token-reader
+  capabilities; root setup binds the original admin CORS → browser Origin/CSRF → session middleware
+  in the same order. Public-area body validation moved from its CORS middleware into its controller;
+  OPTIONS still returns before body validation. Status codes, headers and route namespaces are unchanged.
+- Added `auth/auth.public.ts` for the actually consumed generic admin-owned transaction capability.
+  The auth implementation explicitly satisfies it and retains its old type export for later consumers.
+  No authentication, authorization/revocation fence or transaction implementation changed.
+- Added `delivery.public.ts` for address eligibility, transaction-bound detached charge snapshots and
+  public-area reading. Customer, checkout and promotions now consume these owner types rather than
+  private factory types. Business coordination remains injected by setup, with no runtime barrel.
+- Retained two cohesive services: commercial rule management and read capabilities have distinct
+  responsibilities. No argument-forwarding composition file, generic repository, class, constants,
+  DTO mapper or empty template was needed. Existing operator scripts keep their service entry points.
+- Reused WP02's exact-JSON digest instead of duplicating SHA-256; digest inputs/order are unchanged.
+  Module declarations now list named exports at the bottom. Persistence changes are export style only.
+- Updated actual setup, HTTP integration assembly and the existing contract-registration fixture together.
+  Added one negative fixture to existing tooling tests covering delivery controller persistence bypass,
+  private auth imports, foreign model access and private coverage-type imports, plus allowed public types.
+
+All four WP03 allowances were removed, along with three consumer allowances made obsolete by the
+new delivery contract (WP04 customer, WP07 promotions, WP09 checkout). **345 remain: 344 imports
+and one type-cycle component**. No allowance was added and no checker safeguard was weakened.
+No module path was renamed; test discovery, CI inventory, package/lockfiles, environment keys and
+public API artifacts did not need changes. No business/API/data/operational contract changed, so their
+owning specifications remain settled. The pilot found no convention defect requiring a new architecture
+exception: real controllers, injected middleware and provider-owned type contracts fit the existing rules.
+
+### Observed verification and review
+
+Node v24.20.0/npm 11.19.0; isolated MongoDB 8.0.16 with `MONGOMS_DISTRO=ubuntu-24.04`.
+Loopback integration/unit/smoke and the three failed contract rechecks ran outside the sandbox.
+No developer/production data, deployed provider or external financial effect was used.
+
+| Command/check | Observed result |
+| --- | --- |
+| `npm run typecheck --workspace=backend` | Final Passed; initial editing check identified two missing root imports, corrected before final checks |
+| `npm run build --workspace=backend` | Passed |
+| `npm run lint --workspace=backend` | Passed: 485 files |
+| `npm run lint:boundaries` | Passed: 432 files, zero errors, 345 exact allowances |
+| `npm run format:backend` | Passed: 501 files |
+| `node_modules/.bin/biome lint tests/tooling/development.test.mjs --error-on-warnings` | Passed |
+| `node --test --test-isolation=none --test-name-pattern='BOUNDARY\|STRUCTURE\|TOOL-0[1-5]' tests/tooling/development.test.mjs` | Passed: 48 cases including the delivery negative fixture |
+| Affected unit command below | Passed: 124 cases / 6 files |
+| Affected integration command below | Passed: 428 cases / 6 files |
+| `npm run test:contract --workspace=backend` | Artifact freshness Passed for all four files; initial restricted suite: 183 Passed, 3 Failed (loopback EPERM/process-output restriction) |
+| Three-case contract command below, outside sandbox | Passed: all 3; 183 intentionally unselected. The initial full run remains recorded as failed, not retrospectively a clean full run. |
+| `npm run test:smoke --workspace=backend` | Passed: compiled invalid-config redaction, real startup/live/restricted-ready/shutdown |
+| Preservation comparison | Passed: 60 files; delivery model/persistence/schema implementations identical after export normalization; 57 other canonical persistence/artifact/manifest files byte-identical to WP00 |
+
+Reproducible affected test commands (repository root):
+
+```sh
+npm run test:unit --workspace=backend -- tests/unit/delivery.test.ts tests/unit/checkout-quote.test.ts tests/unit/coupon.test.ts tests/unit/composition.test.ts tests/unit/sessions.test.ts tests/unit/browser-security.test.ts --reporter=default --reporter=json --outputFile=../test-results/backend-refactor/wp03-unit.json
+MONGOMS_DISTRO=ubuntu-24.04 npm exec --workspace=backend -- vitest run --config vitest.integration.config.ts --reporter=default --reporter=json --outputFile=../test-results/backend-refactor/wp03-integration.json tests/integration/delivery.test.ts tests/integration/profile.test.ts tests/integration/checkout-quote.test.ts tests/integration/checkout-intent.test.ts tests/integration/coupon.test.ts tests/integration/composition.test.ts
+npm exec --workspace=backend -- vitest run --config vitest.contract.config.ts -t 'detects real HTTP response drift|validates real HTTP health|checks artifacts in a credential-free subprocess' --reporter=default --reporter=json --outputFile=../test-results/backend-refactor/wp03-contract-recheck.json
+```
+
+Table escaping is Markdown only; the Node test filter uses literal `|`.
+Existing delivery tests cover auth/CSRF/strict DTOs, exact/default coverage and inactive exact-zone
+rejection, revisions, overlap serialization, replay, audit rollback, due workers and additive operator
+scripts. Profile/checkout tests preserve current-coverage checks and historical charge snapshots;
+checkout composition also exercises actual configured HTTP and financial concurrency invariants.
+No separate refactor test suite or extra project document was introduced.
+
+Artifacts: [unit](../../test-results/backend-refactor/wp03-unit.json),
+[integration](../../test-results/backend-refactor/wp03-integration.json),
+[contract recheck](../../test-results/backend-refactor/wp03-contract-recheck.json),
+[preservation](../../test-results/backend-refactor/wp03-preservation.json),
+[check summary](../../test-results/backend-refactor/wp03-checks.json).
+These are ignored local output. Full backend/tooling regression, frontend/browser, live providers,
+deployment and external qualification were Not Run for this scoped package.
+
+Git limitation: during final comparison, `git show HEAD:<path>` and `git cat-file -t HEAD` reported
+that the HEAD object is empty, including a read-only check outside the sandbox. Repository metadata
+was not repaired or modified. Working-tree-versus-index diff remains usable; model/persistence/schema
+index snapshots were independently matched to WP00 byte hashes before implementation comparison.
+At that point a reliable HEAD/cached-diff review could not be claimed. The owner subsequently
+requested Git/GitHub repair: the exact original commit object was reconstructed from the intact
+index tree, original commit message and matching metadata, and verified against the original
+`203647bf292b8bdba3d9dfbe9052dff5391e3b60` SHA. Backups preceded repair; four zero-byte
+objects were quarantined and trailing NUL padding removed from backed-up reflogs. No branch/history
+rewrite occurred. Full Git integrity and HEAD/index whitespace checks then passed, and all 827
+worktree file hashes were unchanged by recovery. Local backups are in
+`/tmp/sportzone-git-recovery-20261103/`; this path is a local recovery artifact, not release evidence.
+The executor reviewed the actual working-tree/index diff and all three new source files, middleware
+ordering, retained exports, raw/typed consumer wiring and normalized persistence/schema comparison.
+Final repository documentation/link and working-tree whitespace checks are recorded in the check summary.
+
+P03-027 completes WP03 under Tasks §2. Next is WP04 identity/customer/technical-health boundaries;
+P03-022 and application/external/milestone acceptance remain unchanged.

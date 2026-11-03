@@ -1,7 +1,7 @@
 import { Types, type ClientSession } from 'mongoose'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { ApiError } from '../../shared/errors/app-error.js'
-import type { AddressCoverage } from '../delivery/delivery-coverage.service.js'
+import type { AddressCoverage } from '../delivery/delivery.public.js'
 import type { CustomerAccountAccess, CustomerProfile } from '../auth/customer-account.service.js'
 import {
   profilePatch,

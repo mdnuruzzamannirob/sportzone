@@ -1,11 +1,12 @@
 import type { Connection, ClientSession } from 'mongoose'
+import type { AdminAccountAccess } from './auth.public.js'
 import { inTransaction } from '../../shared/database/transaction.js'
 import { authorizeAccount } from './sessions/authorization.service.js'
 import type { IdentityModels } from './auth.model.js'
 import type { SessionService } from './sessions/session.service.js'
 
 // Domain coordinators with an existing transaction reuse the same authorization fences.
-export function adminTransactionAccess(
+function adminTransactionAccess(
   models: IdentityModels,
   sessions: SessionService,
   clock: () => Date = () => new Date(),
@@ -17,11 +18,11 @@ export function adminTransactionAccess(
   }
 }
 
-export function createAdminAccountAccess(
+function createAdminAccountAccess(
   connection: Connection,
   models: IdentityModels,
   sessions: SessionService,
-) {
+): AdminAccountAccess {
   return {
     async owned<T>(
       token: string | undefined,
@@ -36,4 +37,5 @@ export function createAdminAccountAccess(
     },
   }
 }
-export type AdminAccountAccess = ReturnType<typeof createAdminAccountAccess>
+export { adminTransactionAccess, createAdminAccountAccess }
+export type { AdminAccountAccess }

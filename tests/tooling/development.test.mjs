@@ -770,6 +770,39 @@ test('DEPLOY-02: Vercel separates app builds, uses the locked workspace and expo
   }
 })
 
+test('DELIVERY-BOUNDARY-01: HTTP and coverage consumers cannot bypass private persistence or auth', (t) => {
+  const { root, put } = fixture(t)
+  put('backend/src/modules/delivery/delivery.model.ts', 'export const model = 1')
+  put('backend/src/modules/delivery/delivery-coverage.service.ts', 'export const coverage = 1')
+  put('backend/src/modules/auth/sessions/session.http.ts', 'export const session = 1')
+  for (const [consumer, declaration, expected] of [
+    ['delivery/delivery.controller', 'import "./delivery.model.js"', 'delegate persistence'],
+    ['delivery/delivery.routes', 'import "../auth/sessions/session.http.js"', 'public contract'],
+    ['customers/customer.service', 'import "../delivery/delivery.model.js"', 'private persistence'],
+    [
+      'checkout/checkout-quote.service',
+      'import type {coverage} from "../delivery/delivery-coverage.service.js"',
+      'public contract',
+    ],
+  ]) {
+    put(`backend/src/modules/${consumer}.ts`, declaration)
+    assert.ok(
+      checkBoundaries(root).errors.some((error) => error.includes(expected)),
+      declaration,
+    )
+    put(`backend/src/modules/${consumer}.ts`, '')
+  }
+  put(
+    'backend/src/modules/delivery/delivery.public.ts',
+    'export interface Coverage { supports(): Promise<boolean> }',
+  )
+  put(
+    'backend/src/modules/customers/customer.service.ts',
+    'import type {Coverage} from "../delivery/delivery.public.js"',
+  )
+  assert.deepEqual(checkBoundaries(root).errors, [])
+})
+
 test('ORDER-OPERATIONS-BOUNDARY-01: admin HTTP and order projections cannot import private models', (t) => {
   const { root, put } = fixture(t)
   for (const [consumer, owner] of [

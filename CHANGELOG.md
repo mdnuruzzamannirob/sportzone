@@ -8,6 +8,21 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 3 November 2026 — Local Git recovery
+
+- Recovered the exact original HEAD commit after zero-byte Git object corruption; preserved history,
+  index and all 827 worktree files. Full object integrity verification passed after backed-up repair.
+- Retained the original [WP03 verification record and recovery details](docs/evidence/P03-021-backend-refactor.md#p03-027--wp03-delivery-pilot-3-november-2026).
+
+## 3 November 2026 — Delivery module refactor pilot
+
+- Separated delivery HTTP controllers from middleware/route registration; root setup injects existing
+  auth guards. Published narrow auth/delivery types and migrated coverage consumers off private types.
+- Retained charge/coverage behavior and canonical persistence; normalized module exports and reused
+  the shared digest. Seven legacy allowances removed; no new dependency or API/data contract.
+- Recorded [WP03/P03-027 verification and limits](docs/evidence/P03-021-backend-refactor.md#p03-027--wp03-delivery-pilot-3-november-2026),
+  including passing affected tests, targeted sandbox rechecks and an unreadable Git HEAD object.
+
 ## 3 November 2026 — Backend technical foundation refactor
 
 - Moved session/browser option validation into existing configuration ownership; extracted reusable

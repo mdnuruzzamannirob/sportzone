@@ -1,3 +1,7 @@
+import {
+  createSessionHttp,
+  readSessionCookie,
+} from '../../src/modules/auth/sessions/session.http.js'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import { Router } from 'express'
@@ -118,7 +122,16 @@ beforeEach(async () => {
     createAuditWriter(db.connection),
     () => now,
   )
-  app = createApp({ apiRouter: Router().use(deliveryRoutes(service, security, sessions)) })
+  app = createApp({
+    apiRouter: Router().use(
+      deliveryRoutes(service, {
+        cors: security.cors('admin'),
+        requireBrowser: security.require('admin', 'admin'),
+        requireSession: createSessionHttp(sessions).require('admin'),
+        readToken: (header) => readSessionCookie(header, 'admin'),
+      }),
+    ),
+  })
 })
 afterAll(async () => {
   await db?.close()

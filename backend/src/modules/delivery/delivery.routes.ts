@@ -1,19 +1,19 @@
 import { ApiError } from '../../shared/errors/app-error.js'
-import { Router } from 'express'
-import { z } from 'zod'
-import { parseInput } from '../../shared/middleware/validate.js'
-import { respond } from '../../shared/responses.js'
-import type { BrowserSecurity } from '../auth/sessions/browser-security.service.js'
-import type { SessionService } from '../auth/sessions/session.service.js'
-import { createSessionHttp, readSessionCookie } from '../auth/sessions/session.http.js'
-import { zoneParams, chargeParams } from './delivery.schema.js'
-import type { deliveryService } from './delivery.service.js'
-export function deliveryRoutes(
-  service: ReturnType<typeof deliveryService>,
-  security: BrowserSecurity,
-  sessions: SessionService,
-) {
+import { Router, type RequestHandler } from 'express'
+import { deliveryController, deliveryAreasController } from './delivery.controller.js'
+import type { DeliveryService } from './delivery.service.js'
+import type { DeliveryAreasAccess } from './delivery.public.js'
+
+interface DeliveryRouteSecurity {
+  cors: RequestHandler
+  requireBrowser: RequestHandler
+  requireSession: RequestHandler
+  readToken: (header: string | undefined) => string | undefined
+}
+
+function deliveryRoutes(service: DeliveryService, security: DeliveryRouteSecurity) {
   const router = Router()
+  const controller = deliveryController(service, security.readToken)
   for (const path of [
     '/admin/delivery/zones',
     '/admin/delivery/zones/:zoneId',
@@ -22,71 +22,30 @@ export function deliveryRoutes(
     '/admin/delivery/charges/:chargeId/deactivate',
     '/admin/delivery/charges/:chargeId/supersede',
   ])
-    router.options(path, security.cors('admin'))
+    router.options(path, security.cors)
   router.use(
     '/admin/delivery',
-    security.cors('admin'),
-    security.require('admin', 'admin'),
-    createSessionHttp(sessions).require('admin'),
+    security.cors,
+    security.requireBrowser,
+    security.requireSession,
     (_req, res, next) => {
       res.set('Access-Control-Expose-Headers', 'X-Request-Id, ETag')
       next()
     },
   )
-  const token = (req: import('express').Request) => readSessionCookie(req.get('Cookie'), 'admin')
-  router.get('/admin/delivery/zones', async (req, res) => {
-    parseInput(z.undefined(), req.body)
-    const result = await service.zones(token(req), req.query)
-    respond(res, result.data, 200, result.page)
-  })
-  router.get('/admin/delivery/charges', async (req, res) => {
-    parseInput(z.undefined(), req.body)
-    const result = await service.charges(token(req), req.query)
-    respond(res, result.data, 200, result.page)
-  })
-  router.post('/admin/delivery/zones', async (req, res) => {
-    parseInput(z.strictObject({}), req.query)
-    const result = await service.createZone(token(req), req.body)
-    res.set('ETag', `"${result.revision}"`)
-    respond(res, result, 201)
-  })
-  router.patch('/admin/delivery/zones/:zoneId', async (req, res) => {
-    parseInput(z.strictObject({}), req.query)
-    const id = parseInput(zoneParams, req.params).zoneId
-    const result = await service.patchZone(token(req), id, req.body, req.get('If-Match'))
-    res.set('ETag', `"${result.revision}"`)
-    respond(res, result)
-  })
-  router.post('/admin/delivery/charges', async (req, res) => {
-    parseInput(z.strictObject({}), req.query)
-    const result = await service.createCharge(token(req), req.body)
-    res.set('ETag', `"${result.revision}"`)
-    respond(res, result, 201)
-  })
+  router.get('/admin/delivery/zones', controller.zones)
+  router.get('/admin/delivery/charges', controller.charges)
+  router.post('/admin/delivery/zones', controller.createZone)
+  router.patch('/admin/delivery/zones/:zoneId', controller.patchZone)
+  router.post('/admin/delivery/charges', controller.createCharge)
   for (const action of ['activate', 'deactivate', 'supersede'] as const)
-    router.post(`/admin/delivery/charges/:chargeId/${action}`, async (req, res) => {
-      parseInput(z.strictObject({}), req.query)
-      const id = parseInput(chargeParams, req.params).chargeId
-      const result = await service.transition(
-        token(req),
-        id,
-        action,
-        req.body,
-        req.get('If-Match'),
-        req.get('Idempotency-Key'),
-      )
-      res.set('ETag', `"${'previous' in result ? result.previous.revision : result.revision}"`)
-      respond(res, result)
-    })
+    router.post(`/admin/delivery/charges/:chargeId/${action}`, controller.transition(action))
   return router
 }
 
-export function deliveryAreaRoutes(
-  read: ReturnType<typeof import('./delivery-coverage.service.js').deliveryAreasAccess>,
-  origins: readonly string[],
-) {
+function deliveryAreaRoutes(read: DeliveryAreasAccess, origins: readonly string[]) {
   const router = Router()
-  const cors: import('express').RequestHandler = (req, res, next) => {
+  const cors: RequestHandler = (req, res, next) => {
     res.vary('Origin')
     const origin = req.get('Origin')
     if (origin && !origins.includes(origin)) throw new ApiError('FORBIDDEN')
@@ -112,12 +71,12 @@ export function deliveryAreaRoutes(
       res.status(204).end()
       return
     }
-    parseInput(z.undefined(), req.body)
     next()
   }
   router.options('/delivery/areas', cors)
-  router.get('/delivery/areas', cors, async (req, res) => {
-    respond(res, await read(req.query))
-  })
+  router.get('/delivery/areas', cors, deliveryAreasController(read))
   return router
 }
+
+export { deliveryRoutes, deliveryAreaRoutes }
+export type { DeliveryRouteSecurity }

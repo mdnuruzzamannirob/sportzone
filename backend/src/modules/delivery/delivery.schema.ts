@@ -1,9 +1,9 @@
 import { z } from 'zod'
 import { paginationSchema } from '../../shared/pagination.js'
 const text = (max: number) => z.string().trim().min(1).max(max)
-export const deliveryId = z.string().regex(/^[a-f0-9]{24}$/)
-export const deliveryInteger = z.int().nonnegative().max(Number.MAX_SAFE_INTEGER)
-export const coverageKey = z
+const deliveryId = z.string().regex(/^[a-f0-9]{24}$/)
+const deliveryInteger = z.int().nonnegative().max(Number.MAX_SAFE_INTEGER)
+const coverageKey = z
   .string()
   .trim()
   .toLowerCase()
@@ -16,25 +16,25 @@ export const coverageKey = z
   )
 const date = z.iso.datetime({ offset: true })
 const status = z.enum(['active', 'inactive'])
-export const zoneInput = z.strictObject({
+const zoneInput = z.strictObject({
   name: text(120),
   description: text(2000).optional(),
   status,
 })
-export const zonePatch = zoneInput.partial().refine((v) => Object.keys(v).length > 0)
-export const zoneView = zoneInput.extend({
+const zonePatch = zoneInput.partial().refine((v) => Object.keys(v).length > 0)
+const zoneView = zoneInput.extend({
   id: deliveryId,
   revision: deliveryInteger,
   coverageRevision: deliveryInteger,
 })
-export const zoneParams = z.strictObject({ zoneId: deliveryId })
-export const chargeParams = z.strictObject({ chargeId: deliveryId })
-export const zoneQuery = paginationSchema
-export const chargeQuery = paginationSchema.safeExtend({
+const zoneParams = z.strictObject({ zoneId: deliveryId })
+const chargeParams = z.strictObject({ chargeId: deliveryId })
+const zoneQuery = paginationSchema
+const chargeQuery = paginationSchema.safeExtend({
   zoneId: deliveryId.optional(),
   status: z.enum(['scheduled', 'active', 'inactive']).optional(),
 })
-export const chargeInput = z
+const chargeInput = z
   .strictObject({
     zoneId: deliveryId,
     coverageKey,
@@ -43,7 +43,7 @@ export const chargeInput = z
     effectiveTo: date.optional(),
   })
   .refine((v) => !v.effectiveTo || Date.parse(v.effectiveTo) > Date.parse(v.effectiveFrom))
-export const chargeView = z.strictObject({
+const chargeView = z.strictObject({
   id: deliveryId,
   zoneId: deliveryId,
   coverageKey,
@@ -56,21 +56,21 @@ export const chargeView = z.strictObject({
   supersedesChargeId: deliveryId.optional(),
 })
 const reason = text(2000)
-export const chargeActivate = z.strictObject({ reason, effectiveAt: date.optional() })
-export const chargeDeactivate = z.strictObject({ effectiveAt: date, reason })
-export const chargeSupersede = z
+const chargeActivate = z.strictObject({ reason, effectiveAt: date.optional() })
+const chargeDeactivate = z.strictObject({ effectiveAt: date, reason })
+const chargeSupersede = z
   .strictObject({ replacement: chargeInput, effectiveAt: date, reason })
   .refine((v) => Date.parse(v.effectiveAt) === Date.parse(v.replacement.effectiveFrom))
-export const chargeReplacement = z.strictObject({ previous: chargeView, replacement: chargeView })
-export const deliveryOperationKey = z.string().regex(/^[A-Za-z0-9._:-]{1,128}$/)
-export const deliveryAreasQuery = z.strictObject({
+const chargeReplacement = z.strictObject({ previous: chargeView, replacement: chargeView })
+const deliveryOperationKey = z.string().regex(/^[A-Za-z0-9._:-]{1,128}$/)
+const deliveryAreasQuery = z.strictObject({
   district: z
     .string()
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
     .max(64)
     .optional(),
 })
-export const deliveryAreas = z.strictObject({
+const deliveryAreas = z.strictObject({
   supportedAreas: z
     .array(
       z.strictObject({
@@ -82,3 +82,25 @@ export const deliveryAreas = z.strictObject({
     .max(1000),
   zoneKeys: z.array(deliveryId).max(1000),
 })
+
+export {
+  deliveryId,
+  deliveryInteger,
+  coverageKey,
+  zoneInput,
+  zonePatch,
+  zoneView,
+  zoneParams,
+  chargeParams,
+  zoneQuery,
+  chargeQuery,
+  chargeInput,
+  chargeView,
+  chargeActivate,
+  chargeDeactivate,
+  chargeSupersede,
+  chargeReplacement,
+  deliveryOperationKey,
+  deliveryAreasQuery,
+  deliveryAreas,
+}

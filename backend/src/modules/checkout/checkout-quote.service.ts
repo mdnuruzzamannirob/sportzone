@@ -10,7 +10,7 @@ import type {
   checkoutAccess,
 } from '../auth/checkout-access.service.js'
 import type { catalogCheckoutAccess } from '../catalog/catalog.service.js'
-import type { checkoutDeliveryAccess } from '../delivery/delivery-coverage.service.js'
+import type { CheckoutDeliveryAccess } from '../delivery/delivery.public.js'
 import type { checkoutSettingsAccess } from '../settings/checkout-settings.service.js'
 import type { createDeliveryDeadlineService } from '../orders/delivery-deadline.service.js'
 import type { couponQuoteAccess } from '../promotions/coupon.service.js'
@@ -34,7 +34,7 @@ export function checkoutQuoteService(
   access: ReturnType<typeof checkoutAccess>,
   dependencies: {
     catalog: ReturnType<typeof catalogCheckoutAccess>
-    delivery: ReturnType<typeof checkoutDeliveryAccess>
+    delivery: CheckoutDeliveryAccess
     settings: ReturnType<typeof checkoutSettingsAccess>
     deadline: ReturnType<typeof createDeliveryDeadlineService>
     coupon: ReturnType<typeof couponQuoteAccess>

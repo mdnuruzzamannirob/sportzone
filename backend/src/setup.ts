@@ -1,3 +1,4 @@
+import { createSessionHttp, readSessionCookie } from './modules/auth/sessions/session.http.js'
 import {
   refundRequestOrderAccess,
   closedRefundRequestAccess,
@@ -1158,8 +1159,12 @@ export async function composeIdentityRoutes(
           deliverySettingsGuard(connection),
           createAuditWriter(connection),
         ),
-        auth.security,
-        auth.sessions,
+        {
+          cors: auth.security.cors('admin'),
+          requireBrowser: auth.security.require('admin', 'admin'),
+          requireSession: createSessionHttp(auth.sessions).require('admin'),
+          readToken: (header) => readSessionCookie(header, 'admin'),
+        },
       ),
     )
   const settings = settingsService(

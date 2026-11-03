@@ -2,12 +2,14 @@ import { parseInput } from '../../shared/middleware/validate.js'
 import { deliveryAreasQuery, deliveryAreas } from './delivery.schema.js'
 import { deliveryModels } from './delivery.model.js'
 import { verifyDeliveryPersistence } from './delivery.persistence.js'
-import type { ClientSession, Connection, Types } from 'mongoose'
+import type { Connection, Types } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
+import type {
+  AddressCoverage,
+  CheckoutDeliveryAccess,
+  DeliveryAreasAccess,
+} from './delivery.public.js'
 
-export type AddressCoverage = {
-  supports(district: string, area: string, session: ClientSession): Promise<boolean>
-}
 type Charge = {
   zoneId: Types.ObjectId
   coverageKey: string
@@ -18,7 +20,7 @@ type Charge = {
   ruleVersion: number
 }
 // Delivery-owned coverage read boundary only. It does not quote/lock a charge or seed master data.
-export function createAddressCoverage(
+function createAddressCoverage(
   connection: Connection,
   clock: () => Date = () => new Date(),
 ): AddressCoverage {
@@ -64,11 +66,11 @@ export function createAddressCoverage(
 
 // Checkout charge selection is transaction-bound and detached. The public saved-address boolean
 // remains supported independently; neither capability locks or reserves a commercial rule.
-export function checkoutDeliveryAccess(
+function checkoutDeliveryAccess(
   connection: Connection,
   clock: () => Date = () => new Date(),
-) {
-  return async (district: string, area: string, session: ClientSession) => {
+): CheckoutDeliveryAccess {
+  return async (district, area, session) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
     try {
       await verifyDeliveryPersistence(connection)
@@ -108,7 +110,10 @@ export function checkoutDeliveryAccess(
   }
 }
 
-export function deliveryAreasAccess(connection: Connection, clock: () => Date = () => new Date()) {
+function deliveryAreasAccess(
+  connection: Connection,
+  clock: () => Date = () => new Date(),
+): DeliveryAreasAccess {
   return async (raw: unknown) => {
     const input = parseInput(deliveryAreasQuery, raw),
       now = clock()
@@ -151,3 +156,6 @@ export function deliveryAreasAccess(connection: Connection, clock: () => Date = 
     })
   }
 }
+
+export { createAddressCoverage, checkoutDeliveryAccess, deliveryAreasAccess }
+export type { AddressCoverage }

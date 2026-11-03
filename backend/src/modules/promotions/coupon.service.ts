@@ -1,6 +1,6 @@
 import type { checkoutAccess, CheckoutCredentials } from '../auth/checkout-access.service.js'
 import type { catalogCheckoutAccess } from '../catalog/catalog.service.js'
-import type { checkoutDeliveryAccess } from '../delivery/delivery-coverage.service.js'
+import type { CheckoutDeliveryAccess } from '../delivery/delivery.public.js'
 import type { Connection, ClientSession } from 'mongoose'
 import type { z } from 'zod'
 import type { pricingInput } from './pricing.schema.js'
@@ -206,7 +206,7 @@ export function couponPreviewService(
   connection: Connection,
   access: ReturnType<typeof checkoutAccess>,
   catalog: ReturnType<typeof catalogCheckoutAccess>,
-  delivery: ReturnType<typeof checkoutDeliveryAccess>,
+  delivery: CheckoutDeliveryAccess,
   clock: () => Date = () => new Date(),
 ) {
   const quote = couponQuoteAccess(connection)
